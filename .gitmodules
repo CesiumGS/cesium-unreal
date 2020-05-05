@@ -1,0 +1,3 @@
+[submodule "Plugins/Cesium/ThirdParty/tinygltf"]
+	path = Plugins/Cesium/ThirdParty/tinygltf
+	url = https://github.com/syoyo/tinygltf

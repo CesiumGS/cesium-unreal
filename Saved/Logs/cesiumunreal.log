@@ -682,3 +682,4 @@ LogConfig: Setting CVar [[r.setres:1280x720]]
 [2020.05.05-05.03.51:145][696]LogSlate: Window 'Plugins' being destroyed
 [2020.05.05-05.03.51:160][696]LogSlate: Window 'Plugins' being destroyed
 [2020.05.05-05.03.51:160][696]LogDirectoryWatcher: A directory notification for '../../../Engine/Plugins/' was aborted.
+[2020.05.05-06.04.05:820][921]LogRenderer: Reallocating scene render targets to support 1652x836 Format 10 NumSamples 1 (Frame:1124).
