@@ -4,7 +4,8 @@
 
 * Check out the repo with `git clone git@github.com:CesiumGS/cesium-unreal.git --recurse-submodules` so that you get the tinygltf submodule.
 * Open cesiumunreal.uproject in the Unreal Editor.
-* Generate Visual Studio project files by choosing `File -> Refresh Visual Studio Project`.
+* Say "yes" when prompted to rebuild `cesiumunreal` and `Cesium`.
+* Generate Visual Studio project files manually by choosing `File -> Refresh Visual Studio Project` in the editor.
 * Open the project in Visual Studio by going to `File -> Open Visual Studio`
 
 ## Tips
