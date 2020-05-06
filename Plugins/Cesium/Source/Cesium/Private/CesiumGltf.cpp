@@ -6,6 +6,7 @@
 #include <locale>
 #include <codecvt>
 #include "StaticMeshDescription.h"
+#include "GltfAccessor.h"
 
 // temp
 #define WIN32_LEAN_AND_MEAN
@@ -22,11 +23,13 @@ std::string wstr_to_utf8(const FString& utf16) {
 }
 
 // Sets default values
-ACesiumGltf::ACesiumGltf()
+ACesiumGltf::ACesiumGltf() :
+	Url(TEXT("C:\\Users\\kring\\Documents\\Cesium_Man.glb"))
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	this->RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Model"));
 }
 
 // Called when the game starts or when spawned
@@ -54,22 +57,71 @@ void ACesiumGltf::BeginPlay()
 		MessageBoxA(nullptr, warnings.c_str(), "Warning", MB_OK);
 	}
 
-	this->Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	this->Mesh->SetupAttachment(this->RootComponent);
+
+	UStaticMeshComponent* pMeshComponent = NewObject<UStaticMeshComponent>();
+	pMeshComponent->AttachTo(this->RootComponent);
 
 	UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
-	this->Mesh->SetStaticMesh(pStaticMesh);
+	pMeshComponent->SetStaticMesh(pStaticMesh);
 
-	// TODO: In theory we can load the glTF data directly into the UStaticMesh by
-	// imitating what UStaticMesh::BuildFromMeshDescriptions does, and that would
-	// save us a copy.
-	FMeshDescription meshDescription;
-	FStaticMeshAttributes(meshDescription).Register();
-	FStaticMeshAttributes StaticMeshAttributes(meshDescription);
-	TVertexAttributesRef<FVector> VertexPositions = StaticMeshAttributes.GetVertexPositions();
+	pStaticMesh->bIsBuiltAtRuntime = true;
+	pStaticMesh->NeverStream = true;
+	pStaticMesh->RenderData = MakeUnique<FStaticMeshRenderData>();
+	pStaticMesh->RenderData->AllocateLODResources(1);
 
-	TArray<const FMeshDescription*> meshDescriptions({&meshDescription});
-	pStaticMesh->BuildFromMeshDescriptions(meshDescriptions);
+	FStaticMeshLODResources& LODResources = pStaticMesh->RenderData->LODResources[0];
+
+	float centimetersPerMeter = 100.0f;
+
+	for (auto meshIt = model.meshes.begin(); meshIt != model.meshes.end(); ++meshIt)
+	{
+		tinygltf::Mesh& mesh = *meshIt;
+
+		for (auto primitiveIt = mesh.primitives.begin(); primitiveIt != mesh.primitives.end(); ++primitiveIt)
+		{
+			TMap<int32, FVertexID> indexToVertexIdMap;
+
+			tinygltf::Primitive& primitive = *primitiveIt;
+			auto positionAccessorIt = primitive.attributes.find("POSITION");
+			if (positionAccessorIt == primitive.attributes.end()) {
+				// This primitive doesn't have a POSITION semantic, ignore it.
+				continue;
+			}
+
+			int positionAccessorID = positionAccessorIt->second;
+			GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
+
+			TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
+			StaticMeshBuildVertices.SetNum(positionAccessor.size());
+
+			for (size_t i = 0; i < positionAccessor.size(); ++i)
+			{
+				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+				vertex.Position = positionAccessor[i] * centimetersPerMeter;
+			}
+
+			LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
+			//LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, VertexInstanceUVs.GetNumIndices());
+
+			// TODO: handle more than one primitive
+			break;
+		}
+
+		// TODO: handle more than one mesh
+		break;
+	}
+
+	pStaticMesh->InitResources();
+
+	// Set up RenderData bounds and LOD data
+	// TODO
+	//pStaticMesh->RenderData->Bounds = MeshDescriptions[0]->GetBounds();
+	pStaticMesh->CalculateExtendedBounds();
+
+	pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
+
+	//TArray<const FMeshDescription*> meshDescriptions({&meshDescription});
+	//pStaticMesh->BuildFromMeshDescriptions(meshDescriptions);
 }
 
 // Called every frame
