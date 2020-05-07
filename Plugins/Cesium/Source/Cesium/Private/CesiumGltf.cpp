@@ -25,7 +25,7 @@ FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 
 // Sets default values
 ACesiumGltf::ACesiumGltf() :
-	Url(TEXT("C:\\Users\\kring\\Documents\\Box.gltf"))
+	Url(TEXT("C:\\Users\\kring\\Documents\\001001.glb"))
 {
 	// Structure to hold one-time initialization
 	struct FConstructorStatics
@@ -49,7 +49,17 @@ ACesiumGltf::ACesiumGltf() :
 	std::string warnings;
 
 	std::string url = wstr_to_utf8(this->Url);
-	if (!loader.LoadASCIIFromFile(&model, &errors, &warnings, url))
+	bool loadSucceeded;
+	if (this->Url.EndsWith("glb"))
+	{
+		loadSucceeded = loader.LoadBinaryFromFile(&model, &errors, &warnings, url);
+	}
+	else
+	{
+		loadSucceeded = loader.LoadASCIIFromFile(&model, &errors, &warnings, url);
+	}
+
+	if (!loadSucceeded)
 	{
 		std::cout << errors << std::endl;
 		return;
@@ -130,6 +140,19 @@ ACesiumGltf::ACesiumGltf() :
 				}
 			}
 
+			auto uvAccessorIt = primitive.attributes.find("TEXCOORD_0");
+			if (uvAccessorIt != primitive.attributes.end())
+			{
+				int uvAccessorID = uvAccessorIt->second;
+				GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+
+				for (size_t i = 0; i < uvAccessor.size(); ++i)
+				{
+					FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+					vertex.UVs[0] = uvAccessor[i];
+				}
+			}
+
 			pStaticMesh->RenderData->Bounds = BoundingBoxAndSphere;
 
 			LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
@@ -180,10 +203,40 @@ ACesiumGltf::ACesiumGltf() :
 
 			static uint32_t nextMaterialId = 0;
 
+			int materialID = primitive.material;
+			tinygltf::Material& material = model.materials[materialID];
+
+			tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
+			tinygltf::TextureInfo& texture = pbr.baseColorTexture;
+			tinygltf::Image& image = model.images[texture.index];
+
+			UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+			
+			unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+			
+			//size_t sourceIndex = 0;
+			//size_t destIndex = 0;
+			//for (size_t i = 0; i < image.image.size() / 3; ++i)
+			//{
+			//	pTextureData[destIndex++] = image.image[sourceIndex++];
+			//	pTextureData[destIndex++] = image.image[sourceIndex++];
+			//	pTextureData[destIndex++] = image.image[sourceIndex++];
+			//	pTextureData[destIndex++] = 255;
+			//}
+
+			FMemory::Memcpy(pTextureData, &image.image[0], image.image.size());
+			pTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+			//Update!
+			pTexture->UpdateResource();
+
 			UMaterial* BaseMaterial = ConstructorStatics.BaseMaterial.Object;
-			const FName ImportedSlotName(*FString::FromInt(nextMaterialId++));
+			const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 			UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, nullptr, ImportedSlotName);
-			pMaterial->SetVectorParameterValue("baseColorFactor", FVector(1.0, 0.0, 0.0));
+			pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
+			pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
+			pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
+			pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
 
 			pStaticMesh->AddMaterial(pMaterial);
 
