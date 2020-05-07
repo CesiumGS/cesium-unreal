@@ -1,29 +1,37 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class Cesium : ModuleRules
 {
-	public Cesium(ReadOnlyTargetRules Target) : base(Target)
-	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		PublicIncludePaths.AddRange(
-			new string[] {
+    public Cesium(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicIncludePaths.AddRange(
+            new string[] {
 				// ... add public include paths required here ...
 			}
-			);
-				
-		
-		PrivateIncludePaths.AddRange(
-			new string[] {
+            );
+
+
+        PrivateIncludePaths.AddRange(
+            new string[] {
 				// ... add other private include paths required here ...
-                "../ThirdParty/tinygltf"
+                "../ThirdParty/tinygltf",
+                "../../../packages/draco.CPP.1.3.3.1/build/native/include"
             }
-			);
-			
-		
-		PublicDependencyModuleNames.AddRange(
+            );
+
+        PublicAdditionalLibraries.AddRange(
+            new string[]
+            {
+                Path.Combine(ModuleDirectory, "../../../../packages/draco.CPP.1.3.3.1/build/native/lib/x64/Release/dracodec.lib")
+            }
+            );
+
+        PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"Core",

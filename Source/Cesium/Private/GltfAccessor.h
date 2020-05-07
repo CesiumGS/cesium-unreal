@@ -5,6 +5,9 @@
 template <class T>
 class GltfAccessor {
 private:
+	tinygltf::Buffer* _pGltfBuffer;
+	tinygltf::BufferView* _pGltfBufferView;
+	tinygltf::Accessor* _pGltfAccessor;
 	const unsigned char* _pBufferViewData;
 	size_t _stride;
 	size_t _offset;
@@ -40,7 +43,8 @@ public:
 		}
 
 		size_t accessorBytes = accessorByteStride * accessor.count;
-		if (accessorBytes > bufferView.byteLength || accessor.byteOffset + accessorBytesPerStride > accessorByteStride)
+		size_t bytesRemainingInBufferView = bufferView.byteLength - (accessor.byteOffset + accessorByteStride * (accessor.count - 1) + accessorBytesPerStride);
+		if (accessorBytes > bufferView.byteLength || bytesRemainingInBufferView < 0)
 		{
 			throw std::runtime_error("accessor does not fit in bufferView.");
 		}
@@ -48,6 +52,9 @@ public:
 		const unsigned char* pBufferData = &data[0];
 		const unsigned char* pBufferViewData = pBufferData + bufferView.byteOffset;
 
+		this->_pGltfBuffer = &buffer;
+		this->_pGltfBufferView = &bufferView;
+		this->_pGltfAccessor = &accessor;
 		this->_stride = accessorByteStride;
 		this->_offset = accessor.byteOffset;
 		this->_size = accessor.count;
@@ -67,5 +74,20 @@ public:
 	size_t size()
 	{
 		return this->_size;
+	}
+
+	tinygltf::Accessor& gltfBuffer()
+	{
+		return *this->_pGltfBuffer;
+	}
+
+	tinygltf::Accessor& gltfBufferView()
+	{
+		return *this->_pGltfBufferView;
+	}
+
+	tinygltf::Accessor& gltfAccessor()
+	{
+		return *this->_pGltfAccessor;
 	}
 };
