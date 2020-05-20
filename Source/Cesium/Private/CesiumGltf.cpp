@@ -39,6 +39,8 @@ ACesiumGltf::ACesiumGltf() :
 	};
 	static FConstructorStatics ConstructorStatics;
 
+	std::cout << "Constructor!" << std::endl;
+
 	this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
 
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -48,6 +50,18 @@ ACesiumGltf::ACesiumGltf() :
 }
 
 void ACesiumGltf::OnConstruction(const FTransform & Transform)
+{
+	this->LoadGltf();
+}
+
+// Called when the game starts or when spawned
+void ACesiumGltf::BeginPlay()
+{
+	Super::BeginPlay();
+	this->LoadGltf();
+}
+
+void ACesiumGltf::LoadGltf()
 {
 	std::cout << *this->Url << std::endl;
 
@@ -293,12 +307,6 @@ void ACesiumGltf::OnConstruction(const FTransform & Transform)
 
 	//TArray<const FMeshDescription*> meshDescriptions({&meshDescription});
 	//pStaticMesh->BuildFromMeshDescriptions(meshDescriptions);
-}
-
-// Called when the game starts or when spawned
-void ACesiumGltf::BeginPlay()
-{
-	Super::BeginPlay();
 }
 
 // Called every frame
