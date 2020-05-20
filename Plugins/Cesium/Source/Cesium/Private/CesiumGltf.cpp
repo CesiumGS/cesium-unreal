@@ -23,9 +23,10 @@ FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 	return FVector(gltfVector.X, gltfVector.Z, gltfVector.Y);
 }
 
+
 // Sets default values
 ACesiumGltf::ACesiumGltf() :
-	Url(TEXT("C:\\Users\\kring\\Documents\\001001.glb"))
+	Url(TEXT("C:\\Users\\kring\\Documents\\001011.glb"))
 {
 	// Structure to hold one-time initialization
 	struct FConstructorStatics
@@ -38,10 +39,17 @@ ACesiumGltf::ACesiumGltf() :
 	};
 	static FConstructorStatics ConstructorStatics;
 
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	this->RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Model"));
+}
+
+void ACesiumGltf::OnConstruction(const FTransform & Transform)
+{
+	std::cout << *this->Url << std::endl;
 
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
@@ -72,8 +80,10 @@ ACesiumGltf::ACesiumGltf() :
 	}
 
 
-	UStaticMeshComponent* pMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
+	//UStaticMeshComponent* pMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
+	UStaticMeshComponent* pMeshComponent = NewObject<UStaticMeshComponent>(this);
 	pMeshComponent->SetupAttachment(this->RootComponent);
+	pMeshComponent->RegisterComponent();
 
 	UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
 	pMeshComponent->SetStaticMesh(pStaticMesh);
@@ -124,6 +134,17 @@ ACesiumGltf::ACesiumGltf() :
 			{
 				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
 				vertex.Position = gltfVectorToUnrealVector(positionAccessor[i] * centimetersPerMeter);
+				vertex.TangentZ = FVector(0.0f, 0.0f, 1.0f);
+				vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
+
+				float binormalSign =
+					GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
+					(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
+						vertex.TangentZ.GetSafeNormal());
+
+				vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
+
+				vertex.UVs[0] = FVector2D(0.0f, 0.0f);
 				BoundingBoxAndSphere.SphereRadius = FMath::Max((vertex.Position - BoundingBoxAndSphere.Origin).Size(), BoundingBoxAndSphere.SphereRadius);
 			}
 
@@ -137,7 +158,20 @@ ACesiumGltf::ACesiumGltf() :
 				{
 					FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
 					vertex.TangentZ = gltfVectorToUnrealVector(normalAccessor[i]);
+					vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
+
+					float binormalSign =
+						GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
+						(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
+							vertex.TangentZ.GetSafeNormal());
+
+					vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
+					//vertex.TangentY = FVector(0.0f, 0.0, 0.0);
 				}
+			}
+			else
+			{
+
 			}
 
 			auto uvAccessorIt = primitive.attributes.find("TEXCOORD_0");
@@ -230,9 +264,8 @@ ACesiumGltf::ACesiumGltf() :
 			//Update!
 			pTexture->UpdateResource();
 
-			UMaterial* BaseMaterial = ConstructorStatics.BaseMaterial.Object;
 			const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-			UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, nullptr, ImportedSlotName);
+			UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(this->BaseMaterial, nullptr, ImportedSlotName);
 			pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
 			pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
 			pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
