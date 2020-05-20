@@ -15,19 +15,14 @@ public:
 	// Sets default values for this actor's properties
 	ACesiumGltf();
 
-	UPROPERTY(EditAnywhere, Category="Cesium")
-	FString Url;
+	void OnConstruction(const FTransform & Transform);
 
-	UPROPERTY()
-	UMaterial* BaseMaterial;
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	FString Url;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	void LoadGltf();
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-	virtual void OnConstruction(const FTransform & Transform);
+	class UCesiumGltfComponent* Model;
 };
