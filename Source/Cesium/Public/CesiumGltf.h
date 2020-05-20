@@ -18,6 +18,9 @@ public:
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	FString Url;
 
+	UPROPERTY()
+	UMaterial* BaseMaterial;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -25,5 +28,5 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	virtual void OnConstruction(const FTransform & Transform);
 };
