@@ -3,19 +3,8 @@
 
 #include "CesiumGltfComponent.h"
 #include "tiny_gltf.h"
-#include <locale>
-#include <codecvt>
 #include "GltfAccessor.h"
-
-static FString utf8_to_wstr(const std::string& utf8) {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> wcu8;
-	return FString(wcu8.from_bytes(utf8).c_str());
-}
-
-static std::string wstr_to_utf8(const FString& utf16) {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> wcu8;
-	return wcu8.to_bytes(*utf16);
-}
+#include "UnrealStringConversions.h"
 
 static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 {
@@ -23,7 +12,8 @@ static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 }
 
 // Sets default values for this component's properties
-UCesiumGltfComponent::UCesiumGltfComponent()
+UCesiumGltfComponent::UCesiumGltfComponent() 
+	: USceneComponent()
 {
 	// Structure to hold one-time initialization
 	struct FConstructorStatics
@@ -67,17 +57,19 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 
 	UE_LOG(LogActor, Warning, TEXT("Loading model"))
 
+	FString localUrl = Url;
+
 	// TODO: is it reasonable to use the global thread pool for this?
-	TFuture<LoadModelResult> x = Async(EAsyncExecution::ThreadPool, [&]
+	TFuture<LoadModelResult> x = Async(EAsyncExecution::ThreadPool, [localUrl]
 	{
 		tinygltf::TinyGLTF loader;
 		tinygltf::Model model;
 		std::string errors;
 		std::string warnings;
 
-		std::string url8 = wstr_to_utf8(Url);
+		std::string url8 = wstr_to_utf8(localUrl);
 		bool loadSucceeded;
-		if (Url.EndsWith("glb"))
+		if (localUrl.EndsWith("glb"))
 		{
 			loadSucceeded = loader.LoadBinaryFromFile(&model, &errors, &warnings, url8);
 		}
@@ -279,6 +271,7 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 		// Finish up in the game thread so we can create UObjects.
 		AsyncTask(ENamedThreads::GameThread, [this, result]()
 		{
+			UE_LOG(LogActor, Warning, TEXT("Back in game thread"))
 			this->Mesh = NewObject<UStaticMeshComponent>(this);
 			this->Mesh->SetupAttachment(this);
 			this->Mesh->RegisterComponent();
