@@ -3,8 +3,4 @@ Saved
 .vs
 cesiumunreal.sln
 packages
-Intermediate/*
-!Intermediate/ProjectFiles/
-Intermediate/ProjectFiles/*
-!Intermediate/ProjectFiles/packages.config
-Plugins/Cesium/Intermediate
+Intermediate
