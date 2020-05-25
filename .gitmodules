@@ -3,4 +3,4 @@
 	url = https://github.com/syoyo/tinygltf
 [submodule "Plugins/Cesium/ThirdParty/draco"]
 	path = Plugins/Cesium/ThirdParty/draco
-	url = git@github.com:google/draco.git
+	url = https://github.com/google/draco.git
