@@ -20,14 +20,15 @@ public class Cesium : ModuleRules
             new string[] {
 				// ... add other private include paths required here ...
                 "../ThirdParty/tinygltf",
-                "../../../packages/draco.CPP.1.3.3.1/build/native/include"
+                "../ThirdParty/draco/src",
+                "../ThirdParty/build/draco"
             }
             );
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../../../packages/draco.CPP.1.3.3.1/build/native/lib/x64/Release/dracodec.lib")
+                Path.Combine(ModuleDirectory, "../../ThirdParty/build/draco/Release/dracodec.lib")
             }
             );
 

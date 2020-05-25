@@ -1,8 +1,17 @@
 # Cesium for Unreal Engine
 
+## Prerequisites
+
+* Visual Studio 2017
+* CMake (add it to your path during install!)
+
 ## Getting Started
 
 * Check out the repo with `git clone git@github.com:CesiumGS/cesium-unreal.git --recurse-submodules` so that you get the tinygltf submodule.
+* Build the draco library with CMake:
+  * `cd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir draco; cd draco`
+  * `cmake ../../draco/ -G "Visual Studio 15 2017 Win64"`
+  * `cmake --build . --config Release`
 * Open cesiumunreal.uproject in the Unreal Editor.
 * Say "yes" when prompted to rebuild `cesiumunreal` and `Cesium`.
 * Generate Visual Studio project files manually by choosing `File -> Refresh Visual Studio Project` in the editor.
