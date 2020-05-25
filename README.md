@@ -14,7 +14,7 @@
   * `cmake --build . --config Release`
 * Open cesiumunreal.uproject in the Unreal Editor.
 * Say "yes" when prompted to rebuild `cesiumunreal` and `Cesium`.
-* Generate Visual Studio project files manually by choosing `File -> Refresh Visual Studio Project` in the editor.
+* Generate Visual Studio project files manually by choosing `File -> [Refresh/Generate] Visual Studio Project` in the editor.
 * Open the project in Visual Studio by going to `File -> Open Visual Studio`
 
 ## Tips
