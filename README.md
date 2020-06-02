@@ -12,6 +12,10 @@
   * `cd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir draco; cd draco`
   * `cmake ../../draco/ -G "Visual Studio 15 2017 Win64"`
   * `cmake --build . --config Release`
+* Build the uriparser library with CMake:
+  * `cd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir uriparser; cd uriparser`
+  * `cmake ../../uriparser/ -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -D URIPARSER_BUILD_TESTS:BOOL=OFF -D URIPARSER_BUILD_DOCS:BOOL=OFF -D BUILD_SHARED_LIBS:BOOL=OFF -D URIPARSER_ENABLE_INSTALL:BOOL=OFF -D URIPARSER_BUILD_TOOLS:BOOL=OFF`
+  * `cmake --build . --config Release`
 * Open cesiumunreal.uproject in the Unreal Editor.
 * Say "yes" when prompted to rebuild `cesiumunreal` and `Cesium`.
 * Generate Visual Studio project files manually by choosing `File -> [Refresh/Generate] Visual Studio Project` in the editor.

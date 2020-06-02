@@ -21,14 +21,16 @@ public class Cesium : ModuleRules
 				// ... add other private include paths required here ...
                 "../ThirdParty/tinygltf",
                 "../ThirdParty/draco/src",
-                "../ThirdParty/build/draco"
+                "../ThirdParty/build/draco",
+                "../ThirdParty/uriparser/include"
             }
             );
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../ThirdParty/build/draco/Release/dracodec.lib")
+                Path.Combine(ModuleDirectory, "../../ThirdParty/build/draco/Release/dracodec.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/build/uriparser/Release/uriparser.lib")
             }
             );
 
@@ -49,7 +51,9 @@ public class Cesium : ModuleRules
 				"Slate",
 				"SlateCore",
                 "MeshDescription",
-                "StaticMeshDescription"
+                "StaticMeshDescription",
+                "HTTP",
+                "libcurl"
 				// ... add private dependencies that you statically link with here ...	
 			}
             );

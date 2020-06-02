@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
+#include "Interfaces/IHttpRequest.h"
 #include "CesiumGltfComponent.generated.h"
-
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
@@ -24,4 +24,7 @@ protected:
 
 	FString LoadedUrl;
 	class UStaticMeshComponent* Mesh;
+
+private:
+	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
 };

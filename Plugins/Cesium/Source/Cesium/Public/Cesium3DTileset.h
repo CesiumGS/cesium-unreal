@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Cesium3DTileset.generated.h"
 
 UCLASS()
@@ -18,9 +19,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	FString Url;
 
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	uint32 IonAssetID;
+
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	FString IonAccessToken;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void IonAssetRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
+	void TilesetJsonRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
 
 public:	
 	// Called every frame
