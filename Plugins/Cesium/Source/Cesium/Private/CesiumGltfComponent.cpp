@@ -37,6 +37,7 @@ struct LoadModelResult
 	FStaticMeshRenderData* RenderData;
 	tinygltf::Image image;
 	tinygltf::PbrMetallicRoughness pbr;
+	FTransform transform;
 };
 
 void UCesiumGltfComponent::LoadModel(const FString& Url)
@@ -375,6 +376,24 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 				result.image = image;
 				result.pbr = pbr;
 
+				if (model.nodes.size() > 0 && model.nodes[0].matrix.size() > 0)
+				{
+					result.transform = FTransform(FMatrix(
+						gltfVectorToUnrealVector(FVector(model.nodes[0].matrix[0], model.nodes[0].matrix[1], model.nodes[0].matrix[2])),
+						gltfVectorToUnrealVector(FVector(model.nodes[0].matrix[8], model.nodes[0].matrix[9], model.nodes[0].matrix[10])),
+						gltfVectorToUnrealVector(FVector(model.nodes[0].matrix[4], model.nodes[0].matrix[5], model.nodes[0].matrix[6])),
+						gltfVectorToUnrealVector(FVector(
+						(model.nodes[0].matrix[12] + 736570.6875) * centimetersPerMeter,
+							(model.nodes[0].matrix[13] - 3292171.25) * centimetersPerMeter,
+							(model.nodes[0].matrix[14] - 5406424.5) * centimetersPerMeter
+						))
+					));
+				}
+				else
+				{
+					result.transform = FTransform();
+				}
+
 				section.MaterialIndex = 0;
 
 				// TODO: handle more than one primitive
@@ -404,6 +423,8 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 			this->Mesh = NewObject<UStaticMeshComponent>(this);
 			this->Mesh->SetupAttachment(this);
 			this->Mesh->RegisterComponent();
+
+			this->Mesh->SetWorldTransform(result.transform);
 
 			UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
 			this->Mesh->SetStaticMesh(pStaticMesh);
