@@ -5,13 +5,14 @@
 #include "tiny_gltf.h"
 #include "GltfAccessor.h"
 #include "UnrealStringConversions.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpResponse.h"
 
 static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 {
 	return FVector(gltfVector.X, gltfVector.Z, gltfVector.Y);
 }
 
-// Sets default values for this component's properties
 UCesiumGltfComponent::UCesiumGltfComponent() 
 	: USceneComponent()
 {
@@ -57,25 +58,153 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 
 	UE_LOG(LogActor, Warning, TEXT("Loading model"))
 
-	FString localUrl = Url;
+	FHttpModule& httpModule = FHttpModule::Get();
+	FHttpRequestRef request = httpModule.CreateRequest();
+	request->SetURL(Url);
+
+	// TODO: This delegate will be invoked in the game thread, which is totally unnecessary and a waste
+	// of the game thread's time. Ideally we'd avoid the main thread entirely, but for now we just
+	// dispatch the real work to another thread.
+	request->OnProcessRequestComplete().BindUObject(this, &UCesiumGltfComponent::ModelRequestComplete);
+	request->ProcessRequest();
+
+	this->LoadedUrl = Url;
+}
+
+struct B3dmHeader
+{
+	unsigned char magic[4];
+	uint32_t version;
+	uint32_t byteLength;
+	uint32_t featureTableJsonByteLength;
+	uint32_t featureTableBinaryByteLength;
+	uint32_t batchTableJsonByteLength;
+	uint32_t batchTableBinaryByteLength;
+};
+
+struct B3dmHeaderLegacy1
+{
+	unsigned char magic[4];
+	uint32_t version;
+	uint32_t byteLength;
+	uint32_t batchLength;
+	uint32_t batchTableByteLength;
+};
+
+struct B3dmHeaderLegacy2
+{
+	unsigned char magic[4];
+	uint32_t version;
+	uint32_t byteLength;
+	uint32_t batchTableJsonByteLength;
+	uint32_t batchTableBinaryByteLength;
+	uint32_t batchLength;
+};
+
+void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
+{
+	const TArray<uint8>& content = response->GetContent();
+	if (content.Num() < 4)
+	{
+		return;
+	}
 
 	// TODO: is it reasonable to use the global thread pool for this?
-	TFuture<LoadModelResult> x = Async(EAsyncExecution::ThreadPool, [localUrl]
+	TFuture<LoadModelResult> future = Async(EAsyncExecution::ThreadPool, [content]
 	{
 		tinygltf::TinyGLTF loader;
 		tinygltf::Model model;
 		std::string errors;
 		std::string warnings;
 
-		std::string url8 = wstr_to_utf8(localUrl);
 		bool loadSucceeded;
-		if (localUrl.EndsWith("glb"))
+
+		std::string magic = std::string(&content[0], &content[4]);
+
+		if (magic == "glTF")
 		{
-			loadSucceeded = loader.LoadBinaryFromFile(&model, &errors, &warnings, url8);
+			loadSucceeded = loader.LoadBinaryFromMemory(&model, &errors, &warnings, content.GetData(), content.Num());
+		}
+		else if (magic == "b3dm")
+		{
+			// TODO: actually use the b3dm payload
+			if (content.Num() < sizeof(B3dmHeader))
+			{
+				// TODO: report error
+				return LoadModelResult();
+			}
+
+			const B3dmHeader* pHeader = reinterpret_cast<const B3dmHeader*>(&content[0]);
+
+			B3dmHeader header = *pHeader;
+			uint32_t headerLength = sizeof(B3dmHeader);
+			uint32_t batchLength;
+
+			// Legacy header #1: [batchLength] [batchTableByteLength]
+			// Legacy header #2: [batchTableJsonByteLength] [batchTableBinaryByteLength] [batchLength]
+			// Current header: [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength]
+			// If the header is in the first legacy format 'batchTableJsonByteLength' will be the start of the JSON string (a quotation mark) or the glTF magic.
+			// Accordingly its first byte will be either 0x22 or 0x67, and so the minimum uint32 expected is 0x22000000 = 570425344 = 570MB. It is unlikely that the feature table JSON will exceed this length.
+			// The check for the second legacy format is similar, except it checks 'batchTableBinaryByteLength' instead
+			if (pHeader->batchTableJsonByteLength >= 570425344) {
+				// First legacy check
+				headerLength = sizeof(B3dmHeaderLegacy1);
+				const B3dmHeaderLegacy1* pLegacy1 = reinterpret_cast<const B3dmHeaderLegacy1*>(&content[0]);
+				batchLength = pLegacy1->batchLength;
+				header.batchTableJsonByteLength = pLegacy1->batchTableByteLength;
+				header.batchTableBinaryByteLength = 0;
+				header.featureTableJsonByteLength = 0;
+				header.featureTableBinaryByteLength = 0;
+
+				// TODO
+				//Batched3DModel3DTileContent._deprecationWarning(
+				//	"b3dm-legacy-header",
+				//	"This b3dm header is using the legacy format [batchLength] [batchTableByteLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
+				//);
+			}
+			else if (pHeader->batchTableBinaryByteLength >= 570425344) {
+				// Second legacy check
+				headerLength = sizeof(B3dmHeaderLegacy2);
+				const B3dmHeaderLegacy2* pLegacy2 = reinterpret_cast<const B3dmHeaderLegacy2*>(&content[0]);
+				batchLength = pLegacy2->batchLength;
+				header.batchTableJsonByteLength = pLegacy2->batchTableJsonByteLength;
+				header.batchTableBinaryByteLength = pLegacy2->batchTableBinaryByteLength;
+				header.featureTableJsonByteLength = 0;
+				header.featureTableBinaryByteLength = 0;
+
+				// TODO
+				//Batched3DModel3DTileContent._deprecationWarning(
+				//	"b3dm-legacy-header",
+				//	"This b3dm header is using the legacy format [batchTableJsonByteLength] [batchTableBinaryByteLength] [batchLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
+				//);
+			}
+
+			if (static_cast<uint32_t>(content.Num()) < pHeader->byteLength)
+			{
+				// TODO: report error
+				return LoadModelResult();
+			}
+
+			uint32_t glbStart =
+				headerLength +
+				header.featureTableJsonByteLength +
+				header.featureTableBinaryByteLength +
+				header.batchTableJsonByteLength +
+				header.batchTableBinaryByteLength;
+			uint32_t glbEnd = header.byteLength;
+
+			if (glbEnd <= glbStart)
+			{
+				// TODO: report error
+				return LoadModelResult();
+			}
+
+			loadSucceeded = loader.LoadBinaryFromMemory(&model, &errors, &warnings, &content[glbStart], glbEnd - glbStart);
 		}
 		else
 		{
-			loadSucceeded = loader.LoadASCIIFromFile(&model, &errors, &warnings, url8);
+			// TODO: how are external resources handled?
+			loadSucceeded = loader.LoadASCIIFromString(&model, &errors, &warnings, reinterpret_cast<const char*>(content.GetData()), content.Num(), "");
 		}
 
 		if (!loadSucceeded)
@@ -264,7 +393,7 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 
 	// TODO: what if this component is destroyed before the future resolves?
 
-	x.Then([this](const TFuture<LoadModelResult>& resultFuture)
+	future.Then([this](const TFuture<LoadModelResult>& resultFuture)
 	{
 		LoadModelResult result = std::move(resultFuture.Get());
 
@@ -313,6 +442,4 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 
 		UE_LOG(LogActor, Warning, TEXT("Then"))
 	});
-
-	this->LoadedUrl = Url;
 }
