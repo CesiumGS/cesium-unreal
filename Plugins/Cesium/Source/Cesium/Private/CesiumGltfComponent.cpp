@@ -59,6 +59,8 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 
 	UE_LOG(LogActor, Warning, TEXT("Loading model"))
 
+	this->LoadedUrl = Url;
+
 	FHttpModule& httpModule = FHttpModule::Get();
 	FHttpRequestRef request = httpModule.CreateRequest();
 	request->SetURL(Url);
@@ -68,8 +70,6 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 	// dispatch the real work to another thread.
 	request->OnProcessRequestComplete().BindUObject(this, &UCesiumGltfComponent::ModelRequestComplete);
 	request->ProcessRequest();
-
-	this->LoadedUrl = Url;
 }
 
 struct B3dmHeader

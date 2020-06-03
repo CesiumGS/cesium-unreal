@@ -7,7 +7,7 @@
 
 ## Getting Started
 
-* Check out the repo with `git clone git@github.com:CesiumGS/cesium-unreal.git --recurse-submodules` so that you get the tinygltf submodule.
+* Check out the repo with `git clone git@github.com:CesiumGS/cesium-unreal.git --recurse-submodules` so that you get the third party submodules.
 * Build the draco library with CMake:
   * `cd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir draco; cd draco`
   * `cmake ../../draco/ -G "Visual Studio 15 2017 Win64"`
