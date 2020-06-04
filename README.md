@@ -2,20 +2,22 @@
 
 ## Prerequisites
 
-* Visual Studio 2017
+* Visual Studio 2019
 * CMake (add it to your path during install!)
 
 ## Getting Started
 
 * Check out the repo with `git clone git@github.com:CesiumGS/cesium-unreal.git --recurse-submodules` so that you get the third party submodules.
 * Build the draco library with CMake:
-  * `cd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir draco; cd draco`
-  * `cmake ../../draco/ -G "Visual Studio 15 2017 Win64"`
+  * `pushd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir draco; cd draco`
+  * `cmake ../../draco/ -G "Visual Studio 16 2019"`
   * `cmake --build . --config Release`
+  * `popd`
 * Build the uriparser library with CMake:
-  * `cd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir uriparser; cd uriparser`
-  * `cmake ../../uriparser/ -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -D URIPARSER_BUILD_TESTS:BOOL=OFF -D URIPARSER_BUILD_DOCS:BOOL=OFF -D BUILD_SHARED_LIBS:BOOL=OFF -D URIPARSER_ENABLE_INSTALL:BOOL=OFF -D URIPARSER_BUILD_TOOLS:BOOL=OFF`
+  * `pushd Plugins/Cesium/ThirdParty; mkdir build; cd build; mkdir uriparser; cd uriparser`
+  * `cmake ../../uriparser/ -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -D URIPARSER_BUILD_TESTS:BOOL=OFF -D URIPARSER_BUILD_DOCS:BOOL=OFF -D BUILD_SHARED_LIBS:BOOL=OFF -D URIPARSER_ENABLE_INSTALL:BOOL=OFF -D URIPARSER_BUILD_TOOLS:BOOL=OFF`
   * `cmake --build . --config Release`
+  * `popd`
 * Open cesiumunreal.uproject in the Unreal Editor.
 * Say "yes" when prompted to rebuild `cesiumunreal` and `Cesium`.
 * Generate Visual Studio project files manually by choosing `File -> [Refresh/Generate] Visual Studio Project` in the editor.
