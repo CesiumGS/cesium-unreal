@@ -3,9 +3,9 @@
 using UnrealBuildTool;
 using System.IO;
 
-public class Cesium : ModuleRules
+public class Cesium3DTiles : ModuleRules
 {
-    public Cesium(ReadOnlyTargetRules Target) : base(Target)
+    public Cesium3DTiles(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -46,13 +46,6 @@ public class Cesium : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-                "MeshDescription",
-                "StaticMeshDescription",
-                "HTTP"
 				// ... add private dependencies that you statically link with here ...	
 			}
             );
@@ -64,7 +57,7 @@ public class Cesium : ModuleRules
 			}
 			);
 
-        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PCHUsage = PCHUsageMode.NoSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
     }

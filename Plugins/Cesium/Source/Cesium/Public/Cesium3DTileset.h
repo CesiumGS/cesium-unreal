@@ -28,8 +28,10 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 	void IonAssetRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
 	void TilesetJsonRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
+	void LoadTileset();
 
 public:	
 	// Called every frame
@@ -38,4 +40,16 @@ public:
 public:
 	// TODO: this shouldn't be public.
 	void AddGltf(class UCesiumGltfComponent* Gltf);
+
+private:
+	struct LoadedProperties
+	{
+		// UProperty values at last load
+		FString Url;
+		uint32 IonAssetID;
+		FString IonAccessToken;
+
+		// In-flight request
+		FHttpRequestPtr request;
+	} _loadedProperties;
 };
