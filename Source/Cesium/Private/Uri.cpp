@@ -56,7 +56,6 @@ std::string Uri::resolve(const std::string& base, const std::string& relative, b
 	if (useBaseQuery)
 	{
 		std::string query(baseUri.query.first, baseUri.query.afterLast);
-		std::cout << query << std::endl;
 		if (resolvedUri.query.first)
 		{
 			result += "&" + query;

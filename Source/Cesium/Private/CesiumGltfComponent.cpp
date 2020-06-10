@@ -7,6 +7,14 @@
 #include "UnrealStringConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ConstructorHelpers.h"
+#include "StaticMeshResources.h"
+#include "Async/Async.h"
+#include "MeshTypes.h"
+#include "Engine/StaticMesh.h"
+#include <iostream>
 
 static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 {
@@ -50,8 +58,8 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 
 	if (this->Mesh)
 	{
-		UE_LOG(LogActor, Warning, TEXT("Deleting old model"))
-			this->Mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+		UE_LOG(LogActor, Warning, TEXT("Deleting old model"));
+		this->Mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
 		this->Mesh->UnregisterComponent();
 		this->Mesh->DestroyComponent(false);
 		this->Mesh = nullptr;
@@ -463,4 +471,10 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		UE_LOG(LogActor, Warning, TEXT("Then"))
 	});
+}
+
+void UCesiumGltfComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	this->Mesh->DestroyComponent();
+	this->Mesh = nullptr;
 }

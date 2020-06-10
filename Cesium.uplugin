@@ -19,6 +19,11 @@
 			"Name": "Cesium",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "Cesium3DTiles",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	]
 }

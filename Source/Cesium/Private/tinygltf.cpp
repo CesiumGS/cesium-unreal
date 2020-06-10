@@ -5,4 +5,6 @@
 // #define TINYGLTF_NOEXCEPTION // optional. disable exception handling.
 #define TINYGLTF_LITTLE_ENDIAN
 #define TINYGLTF_ENABLE_DRACO
+
+#pragma warning(disable:4996 4946)
 #include "tiny_gltf.h"

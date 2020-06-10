@@ -7,6 +7,8 @@
 #include "Interfaces/IHttpRequest.h"
 #include "CesiumGltfComponent.generated.h"
 
+class UMaterial;
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
 {
@@ -19,6 +21,9 @@ public:
 	void LoadModel(const FString& Url);
 
 protected:
+	//virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	UPROPERTY(EditAnywhere)
 	UMaterial* BaseMaterial;
 

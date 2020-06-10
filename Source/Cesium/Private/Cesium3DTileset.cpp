@@ -2,13 +2,18 @@
 
 
 #include "Cesium3DTileset.h"
-#include "json.hpp"
 #include "tiny_gltf.h"
 #include "UnrealStringConversions.h"
 #include "CesiumGltfComponent.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Uri.h"
+
+#pragma warning(push)
+#pragma warning(disable: 4946)
+#include "json.hpp"
+#include "..\..\Cesium3DTiles\Public\Cesium3DTileset.h"
+#pragma warning(pop)
 
 void AddTiles(ACesium3DTileset& actor, const nlohmann::json& tile, const std::string& baseUrl);
 
@@ -27,13 +32,54 @@ void ACesium3DTileset::BeginPlay()
 {
 	Super::BeginPlay();
 
+	this->LoadTileset();
+}
+
+void ACesium3DTileset::OnConstruction(const FTransform& Transform)
+{
+	this->LoadTileset();
+}
+
+void ACesium3DTileset::LoadTileset()
+{
+	auto& loaded = this->_loadedProperties;
+
+	if (loaded.Url == this->Url && loaded.IonAccessToken == this->IonAccessToken && loaded.IonAssetID == this->IonAssetID)
+	{
+		// Nothing to do!
+		return;
+	}
+
+	UE_LOG(LogActor, Warning, TEXT("Deleting old tileset"));
+	if (loaded.request.IsValid())
+	{
+		loaded.request->OnProcessRequestComplete().Unbind();
+		loaded.request->CancelRequest();
+	}
+
+	TArray<USceneComponent*> children;
+	this->RootComponent->GetChildrenComponents(false, children);
+
+	for (USceneComponent* pComponent : children)
+	{
+		pComponent->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+		pComponent->UnregisterComponent();
+		pComponent->DestroyComponent(false);
+	}
+
+	this->RootComponent->GetChildrenComponents(false, children);
+
+	loaded.Url = this->Url;
+	loaded.IonAssetID = this->IonAssetID;
+	loaded.IonAccessToken = this->IonAccessToken;
+
 	FHttpModule& httpModule = FHttpModule::Get();
-	FHttpRequestRef request = httpModule.CreateRequest();
+	loaded.request = httpModule.CreateRequest();
 
 	if (this->Url.Len() > 0)
 	{
-		request->SetURL(this->Url);
-		request->OnProcessRequestComplete().BindUObject(this, &ACesium3DTileset::TilesetJsonRequestComplete);
+		loaded.request->SetURL(this->Url);
+		loaded.request->OnProcessRequestComplete().BindUObject(this, &ACesium3DTileset::TilesetJsonRequestComplete);
 	}
 	else
 	{
@@ -42,15 +88,26 @@ void ACesium3DTileset::BeginPlay()
 		{
 			url += "?access_token=" + this->IonAccessToken;
 		}
-		request->SetURL(url);
-		request->OnProcessRequestComplete().BindUObject(this, &ACesium3DTileset::IonAssetRequestComplete);
+		loaded.request->SetURL(url);
+		loaded.request->OnProcessRequestComplete().BindUObject(this, &ACesium3DTileset::IonAssetRequestComplete);
 	}
 
-	request->ProcessRequest();
+	loaded.request->ProcessRequest();
 }
 
 void ACesium3DTileset::IonAssetRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
 {
+	if (response->GetResponseCode() < 200 || response->GetResponseCode() >= 300)
+	{
+		UE_LOG(
+			LogActor,
+			Warning,
+			TEXT("Error from Cesium ion with HTTP status code %d: %s"),
+			response->GetResponseCode(),
+			*response->GetContentAsString());
+		return;
+	}
+
 	const TArray<uint8>& content = response->GetContent();
 
 	using nlohmann::json;
@@ -61,11 +118,13 @@ void ACesium3DTileset::IonAssetRequestComplete(FHttpRequestPtr request, FHttpRes
 	std::string urlWithToken = Uri::addQuery(url, "access_token", accessToken);
 
 	FHttpModule& httpModule = FHttpModule::Get();
-	FHttpRequestRef nextRequest = httpModule.CreateRequest();
 
-	nextRequest->SetURL(utf8_to_wstr(urlWithToken));
-	nextRequest->OnProcessRequestComplete().BindUObject(this, &ACesium3DTileset::TilesetJsonRequestComplete);
-	nextRequest->ProcessRequest();
+	auto& loaded = this->_loadedProperties;
+	loaded.request = httpModule.CreateRequest();
+
+	loaded.request->SetURL(utf8_to_wstr(urlWithToken));
+	loaded.request->OnProcessRequestComplete().BindUObject(this, &ACesium3DTileset::TilesetJsonRequestComplete);
+	loaded.request->ProcessRequest();
 }
 
 void ACesium3DTileset::TilesetJsonRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
