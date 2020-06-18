@@ -1,0 +1,6 @@
+{
+    "C_Cpp.errorSquiggles": "Enabled",
+    "files.associations": {
+        "string_span": "cpp"
+    }
+}

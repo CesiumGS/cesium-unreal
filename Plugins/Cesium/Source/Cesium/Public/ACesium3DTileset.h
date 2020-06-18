@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
-#include "Cesium3DTileset.generated.h"
+#include "ACesium3DTileset.generated.h"
+
+class Cesium3DTileset;
+class Cesium3DTilesetView;
 
 UCLASS()
 class CESIUM_API ACesium3DTileset : public AActor
@@ -42,14 +45,6 @@ public:
 	void AddGltf(class UCesiumGltfComponent* Gltf);
 
 private:
-	struct LoadedProperties
-	{
-		// UProperty values at last load
-		FString Url;
-		uint32 IonAssetID;
-		FString IonAccessToken;
-
-		// In-flight request
-		FHttpRequestPtr request;
-	} _loadedProperties;
+	Cesium3DTileset* _pTileset;
+	Cesium3DTilesetView* _pTilesetView;
 };

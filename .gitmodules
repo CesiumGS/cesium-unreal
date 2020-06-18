@@ -7,3 +7,9 @@
 [submodule "Plugins/Cesium/ThirdParty/uriparser"]
 	path = Plugins/Cesium/ThirdParty/uriparser
 	url = https://github.com/uriparser/uriparser.git
+[submodule "Plugins/Cesium/ThirdParty/glm"]
+	path = Plugins/Cesium/ThirdParty/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Plugins/Cesium/ThirdParty/GSL"]
+	path = Plugins/Cesium/ThirdParty/GSL
+	url = https://github.com/microsoft/GSL.git

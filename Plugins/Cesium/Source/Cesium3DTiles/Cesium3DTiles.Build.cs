@@ -11,8 +11,9 @@ public class Cesium3DTiles : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
-				// ... add public include paths required here ...
-			}
+                Path.Combine(ModuleDirectory, "../../ThirdParty/glm"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/GSL/include")
+            }
             );
 
 

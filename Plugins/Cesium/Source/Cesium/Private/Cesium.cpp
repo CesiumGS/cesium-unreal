@@ -1,12 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Cesium.h"
+#include "registerAll3DTileContentTypes.h"
 
 #define LOCTEXT_NAMESPACE "FCesiumModule"
 
 void FCesiumModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	registerAll3DTileContentTypes();
 }
 
 void FCesiumModule::ShutdownModule()
