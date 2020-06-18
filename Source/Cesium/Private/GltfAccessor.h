@@ -5,20 +5,20 @@
 template <class T>
 class GltfAccessor {
 private:
-	tinygltf::Buffer* _pGltfBuffer;
-	tinygltf::BufferView* _pGltfBufferView;
-	tinygltf::Accessor* _pGltfAccessor;
+	const tinygltf::Buffer* _pGltfBuffer;
+	const tinygltf::BufferView* _pGltfBufferView;
+	const tinygltf::Accessor* _pGltfAccessor;
 	const unsigned char* _pBufferViewData;
 	size_t _stride;
 	size_t _offset;
 	size_t _size;
 
 public:
-	GltfAccessor(tinygltf::Model& model, size_t accessorID)
+	GltfAccessor(const tinygltf::Model& model, size_t accessorID)
 	{
-		tinygltf::Accessor& accessor = model.accessors[accessorID];
-		tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-		tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+		const tinygltf::Accessor& accessor = model.accessors[accessorID];
+		const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+		const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
 
 		const std::vector<unsigned char>& data = buffer.data;
 		size_t bufferBytes = data.size();
@@ -76,17 +76,17 @@ public:
 		return this->_size;
 	}
 
-	tinygltf::Accessor& gltfBuffer()
+	const tinygltf::Accessor& gltfBuffer()
 	{
 		return *this->_pGltfBuffer;
 	}
 
-	tinygltf::Accessor& gltfBufferView()
+	const tinygltf::Accessor& gltfBufferView()
 	{
 		return *this->_pGltfBufferView;
 	}
 
-	tinygltf::Accessor& gltfAccessor()
+	const tinygltf::Accessor& gltfAccessor()
 	{
 		return *this->_pGltfAccessor;
 	}

@@ -9,6 +9,10 @@
 
 class UMaterial;
 
+namespace tinygltf{
+	class Model;
+}
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
 {
@@ -19,6 +23,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void LoadModel(const FString& Url);
+
+	void LoadModel(const tinygltf::Model& model);
 
 protected:
 	//virtual void BeginPlay() override;
