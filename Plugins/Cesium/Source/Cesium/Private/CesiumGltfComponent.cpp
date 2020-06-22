@@ -21,24 +21,7 @@ static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 	return FVector(gltfVector.X, gltfVector.Z, gltfVector.Y);
 }
 
-UCesiumGltfComponent::UCesiumGltfComponent() 
-	: USceneComponent()
-{
-	// Structure to hold one-time initialization
-	struct FConstructorStatics
-	{
-		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
-		FConstructorStatics() :
-			BaseMaterial(TEXT("/Cesium/GltfMaterial.GltfMaterial"))
-		{
-		}
-	};
-	static FConstructorStatics ConstructorStatics;
-
-	this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
-
-	PrimaryComponentTick.bCanEverTick = false;
-}
+static uint32_t nextMaterialId = 0;
 
 struct LoadModelResult
 {
@@ -48,41 +31,7 @@ struct LoadModelResult
 	FTransform transform;
 };
 
-void UCesiumGltfComponent::LoadModel(const FString& Url)
-{
-	if (this->LoadedUrl == Url)
-	{
-		UE_LOG(LogActor, Warning, TEXT("Model URL unchanged"))
-			return;
-	}
-
-	if (this->Mesh)
-	{
-		UE_LOG(LogActor, Warning, TEXT("Deleting old model"));
-		this->Mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
-		this->Mesh->UnregisterComponent();
-		this->Mesh->DestroyComponent(false);
-		this->Mesh = nullptr;
-	}
-
-	UE_LOG(LogActor, Warning, TEXT("Loading model"))
-
-	this->LoadedUrl = Url;
-
-	FHttpModule& httpModule = FHttpModule::Get();
-	FHttpRequestRef request = httpModule.CreateRequest();
-	request->SetURL(Url);
-
-	// TODO: This delegate will be invoked in the game thread, which is totally unnecessary and a waste
-	// of the game thread's time. Ideally we'd avoid the main thread entirely, but for now we just
-	// dispatch the real work to another thread.
-	request->OnProcessRequestComplete().BindUObject(this, &UCesiumGltfComponent::ModelRequestComplete);
-	request->ProcessRequest();
-}
-
-static uint32_t nextMaterialId = 0;
-
-void UCesiumGltfComponent::LoadModel(const tinygltf::Model& model) {
+/*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, TFunction<void(UCesiumGltfComponent*)> callback) {
 	LoadModelResult result;
 
 	FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
@@ -269,45 +218,101 @@ void UCesiumGltfComponent::LoadModel(const tinygltf::Model& model) {
 
 	result.RenderData = std::move(RenderData);
 
-	this->Mesh = NewObject<UStaticMeshComponent>(this);
-	this->Mesh->SetupAttachment(this);
-	this->Mesh->RegisterComponent();
+	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result]() {
+		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
+		UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(Gltf);
+		pMesh->SetupAttachment(Gltf);
+		pMesh->RegisterComponent();
 
-	this->Mesh->SetWorldTransform(result.transform);
+		pMesh->SetWorldTransform(result.transform);
 
-	UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
-	this->Mesh->SetStaticMesh(pStaticMesh);
+		UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
+		pMesh->SetStaticMesh(pStaticMesh);
 
-	pStaticMesh->bIsBuiltAtRuntime = true;
-	pStaticMesh->NeverStream = true;
-	pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(result.RenderData);
+		pStaticMesh->bIsBuiltAtRuntime = true;
+		pStaticMesh->NeverStream = true;
+		pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(result.RenderData);
 
-	UTexture2D* pTexture = UTexture2D::CreateTransient(result.image.width, result.image.height, PF_R8G8B8A8);
+		UTexture2D* pTexture = UTexture2D::CreateTransient(result.image.width, result.image.height, PF_R8G8B8A8);
 
-	unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 
-	FMemory::Memcpy(pTextureData, &result.image.image[0], result.image.image.size());
-	pTexture->PlatformData->Mips[0].BulkData.Unlock();
+		FMemory::Memcpy(pTextureData, &result.image.image[0], result.image.image.size());
+		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
-	//Update!
-	pTexture->UpdateResource();
+		//Update!
+		pTexture->UpdateResource();
 
-	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(this->BaseMaterial, nullptr, ImportedSlotName);
-	pMaterial->SetVectorParameterValue("baseColorFactor", FVector(result.pbr.baseColorFactor[0], result.pbr.baseColorFactor[1], result.pbr.baseColorFactor[2]));
-	pMaterial->SetScalarParameterValue("metallicFactor", result.pbr.metallicFactor);
-	pMaterial->SetScalarParameterValue("roughnessFactor", result.pbr.roughnessFactor);
-	pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
+		const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+		UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(Gltf->BaseMaterial, nullptr, ImportedSlotName);
+		pMaterial->SetVectorParameterValue("baseColorFactor", FVector(result.pbr.baseColorFactor[0], result.pbr.baseColorFactor[1], result.pbr.baseColorFactor[2]));
+		pMaterial->SetScalarParameterValue("metallicFactor", result.pbr.metallicFactor);
+		pMaterial->SetScalarParameterValue("roughnessFactor", result.pbr.roughnessFactor);
+		pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
 
-	pStaticMesh->AddMaterial(pMaterial);
+		pStaticMesh->AddMaterial(pMaterial);
 
-	pStaticMesh->InitResources();
+		pStaticMesh->InitResources();
 
-	// Set up RenderData bounds and LOD data
-	pStaticMesh->CalculateExtendedBounds();
+		// Set up RenderData bounds and LOD data
+		pStaticMesh->CalculateExtendedBounds();
 
-	pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
-	this->Mesh->SetMobility(EComponentMobility::Movable);
+		pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
+		pMesh->SetMobility(EComponentMobility::Movable);
+
+		callback(Gltf);
+	});
+}
+
+UCesiumGltfComponent::UCesiumGltfComponent() 
+	: USceneComponent()
+{
+	// Structure to hold one-time initialization
+	struct FConstructorStatics
+	{
+		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
+		FConstructorStatics() :
+			BaseMaterial(TEXT("/Cesium/GltfMaterial.GltfMaterial"))
+		{
+		}
+	};
+	static FConstructorStatics ConstructorStatics;
+
+	this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+
+	PrimaryComponentTick.bCanEverTick = false;
+}
+
+void UCesiumGltfComponent::LoadModel(const FString& Url)
+{
+	if (this->LoadedUrl == Url)
+	{
+		UE_LOG(LogActor, Warning, TEXT("Model URL unchanged"))
+			return;
+	}
+
+	if (this->Mesh)
+	{
+		UE_LOG(LogActor, Warning, TEXT("Deleting old model"));
+		this->Mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+		this->Mesh->UnregisterComponent();
+		this->Mesh->DestroyComponent(false);
+		this->Mesh = nullptr;
+	}
+
+	UE_LOG(LogActor, Warning, TEXT("Loading model"))
+
+	this->LoadedUrl = Url;
+
+	FHttpModule& httpModule = FHttpModule::Get();
+	FHttpRequestRef request = httpModule.CreateRequest();
+	request->SetURL(Url);
+
+	// TODO: This delegate will be invoked in the game thread, which is totally unnecessary and a waste
+	// of the game thread's time. Ideally we'd avoid the main thread entirely, but for now we just
+	// dispatch the real work to another thread.
+	request->OnProcessRequestComplete().BindUObject(this, &UCesiumGltfComponent::ModelRequestComplete);
+	request->ProcessRequest();
 }
 
 struct B3dmHeader
