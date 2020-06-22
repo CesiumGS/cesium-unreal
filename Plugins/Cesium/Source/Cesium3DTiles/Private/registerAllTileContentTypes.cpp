@@ -1,5 +1,5 @@
-#include "registerAll3DTileContentTypes.h"
-#include "Cesium3DTileContentFactory.h"
+#include "registerAllTileContentTypes.h"
+#include "TileContentFactory.h"
 #include "Batched3DModelContent.h"
 
 void registerAll3DTileContentTypes() {

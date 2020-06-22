@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#include "Cesium3DTilesetExternals.h"
+#include "TilesetExternals.h"
 
 class UnrealTaskProcessor : public ITaskProcessor {
 public:

@@ -1,8 +1,8 @@
-#include "Cesium3DTile.h"
+#include "Tile.h"
 #include "Tileset.h"
 #include "IAssetAccessor.h"
 #include "IAssetResponse.h"
-#include "Cesium3DTileContentFactory.h"
+#include "TileContentFactory.h"
 #include <fstream>
 
 Cesium3DTile::Cesium3DTile(const Cesium3DTiles::Tileset& tileset, VectorReference<Cesium3DTile> pParent) :

@@ -4,9 +4,9 @@
 #include <vector>
 #include <optional>
 #include <memory>
-#include "Cesium3DTilesetExternals.h"
-#include "Cesium3DTilesetView.h"
-#include "Cesium3DTile.h"
+#include "TilesetExternals.h"
+#include "TilesetView.h"
+#include "Tile.h"
 #include "IAssetRequest.h"
 
 #pragma warning(push)

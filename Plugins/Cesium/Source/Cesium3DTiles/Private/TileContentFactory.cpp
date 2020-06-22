@@ -1,5 +1,5 @@
-#include "Cesium3DTileContentFactory.h"
-#include "Cesium3DTileContent.h"
+#include "TileContentFactory.h"
+#include "TileContent.h"
 
 void Cesium3DTileContentFactory::registerContentType(const std::string& magic, Cesium3DTileContentFactory::FactoryFunction factoryFunction) {
     Cesium3DTileContentFactory::_factoryFunctions[magic] = factoryFunction;

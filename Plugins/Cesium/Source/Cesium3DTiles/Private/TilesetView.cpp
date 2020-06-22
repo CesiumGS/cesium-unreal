@@ -1,4 +1,4 @@
-#include "Cesium3DTilesetView.h"
+#include "TilesetView.h"
 #include "Tileset.h"
 #include "ViewUpdateResult.h"
 
