@@ -31,13 +31,13 @@ const ViewUpdateResult& Cesium3DTilesetView::update(const Camera& camera) {
 static void visitTile(Cesium3DTile& tile, ViewUpdateResult& result) {
     // Render all the leaf tiles.
 
-    if (tile.children().size() > 0) {
-        for (Cesium3DTile& child : tile.children()) {
+    if (tile.getChildren().size() > 0) {
+        for (Cesium3DTile& child : tile.getChildren()) {
             visitTile(child, result);
         }
     } else {
         tile.loadContent();
-        if (tile.isContentLoaded()) {
+        if (tile.getState() == Cesium3DTile::LoadState::RendererResourcesPrepared) {
             result.tilesToRenderThisFrame.push_back(&tile);
         }
     }

@@ -140,7 +140,7 @@ void Cesium3DTileset::createTile(VectorReference<Cesium3DTile>& tile, const nloh
 	{
 		const std::string& uri = contentIt->value<std::string>("uri", contentIt->value<std::string>("url", ""));
 		const std::string fullUri = Uri::resolve(baseUrl, uri, true);
-		tile->contentUri(fullUri);
+		tile->setContentUri(fullUri);
 	}
 
 	if (childrenIt != tileJson.end())
@@ -167,6 +167,6 @@ void Cesium3DTileset::createTile(VectorReference<Cesium3DTile>& tile, const nloh
 		}
 
 		VectorRange<Cesium3DTile> childTiles(this->_tiles, firstChild, afterLastChild);
-		tile->children(childTiles);
+		tile->setChildren(childTiles);
 	}
 }

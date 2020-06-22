@@ -14,6 +14,7 @@
 #include "UnrealAssetAccessor.h"
 #include "Cesium3DTileset.h"
 #include "Batched3DModelContent.h"
+#include "UnrealTaskProcessor.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4946)
@@ -38,6 +39,9 @@ void ACesium3DTileset::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//TGraphTask<int>::FConstructor x = TGraphTask<int>::CreateTask();
+	//FGraphEventRef r = x.ConstructAndDispatchWhenReady();
+
 	this->LoadTileset();
 }
 
@@ -45,6 +49,32 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform)
 {
 	//this->LoadTileset();
 }
+
+class UnrealResourcePreparer : public IPrepareRendererResources {
+public:
+	UnrealResourcePreparer(AActor* pActor) : _pActor(pActor) {}
+
+	virtual void prepare(Cesium3DTile& tile) {
+		Batched3DModelContent* pB3dm = static_cast<Batched3DModelContent*>(tile.getContent());
+		if (pB3dm) {
+			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), [&tile](UCesiumGltfComponent* pGltf) {
+				tile.finishPrepareRendererResources(pGltf);
+			});
+		}
+
+	}
+
+	virtual void cancel(Cesium3DTile& tile) {
+
+	}
+
+	virtual void free(Cesium3DTile& tile, void* pRendererResources) {
+
+	}
+
+private:
+	AActor* _pActor;
+};
 
 void ACesium3DTileset::LoadTileset()
 {
@@ -70,7 +100,9 @@ void ACesium3DTileset::LoadTileset()
 	}
 
 	Cesium3DTilesetExternals externals{
-		new UnrealAssetAccessor()
+		new UnrealAssetAccessor(),
+		new UnrealResourcePreparer(this),
+		new UnrealTaskProcessor()
 	};
 
 	if (this->Url.Len() > 0)
@@ -192,20 +224,15 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	const ViewUpdateResult& result = this->_pTilesetView->update(camera);
 
 	for (Cesium3DTile* pTile : result.tilesToRenderThisFrame) {
-		Cesium3DTileContent* pContent = pTile->content();
+		Cesium3DTileContent* pContent = pTile->getContent();
 		if (!pContent) {
 			continue;
 		}
 
-		// TODO
-		Batched3DModelContent* pB3dm = static_cast<Batched3DModelContent*>(pContent);
-		if (pB3dm && !pContent->rendererResource) {
-			UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(this);
-			this->AddGltf(Gltf);
-			Gltf->LoadModel(pB3dm->gltf());
+		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+		this->AddGltf(Gltf);
 
-			pContent->rendererResource = Gltf;
-		}
+		// TODO: activate the gltf
 	}
 
 	//APlayerCameraManager* pCameraManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
@@ -229,7 +256,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 void ACesium3DTileset::AddGltf(UCesiumGltfComponent* Gltf)
 {
-	Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	if (Gltf->GetAttachParent() == nullptr) {
+		Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	}
 }
 
 void AddTiles(ACesium3DTileset& actor, const nlohmann::json& tile, const std::string& baseUrl)

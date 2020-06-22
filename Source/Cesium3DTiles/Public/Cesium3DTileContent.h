@@ -7,8 +7,7 @@ public:
     Cesium3DTileContent(const Cesium3DTile& tile);
     virtual ~Cesium3DTileContent();
 
-    void* rendererResource;
-
 private:
+    // TODO: use VectorReference instead of a raw pointer
     const Cesium3DTile* _pTile;
 };
