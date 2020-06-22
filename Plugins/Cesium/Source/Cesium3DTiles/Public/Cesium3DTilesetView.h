@@ -4,11 +4,13 @@
 #include "Camera.h"
 #include "ViewUpdateResult.h"
 
-class Cesium3DTileset;
+namespace Cesium3DTiles {
+    class Tileset;
+}
 
 class CESIUM3DTILES_API Cesium3DTilesetView {
 public:
-    Cesium3DTilesetView(Cesium3DTileset& tileset, const std::string& name);
+    Cesium3DTilesetView(Cesium3DTiles::Tileset& tileset, const std::string& name);
 
     /// <summary>
     /// Updates this view, returning the set of tiles to render in this view.
@@ -22,7 +24,7 @@ public:
     const ViewUpdateResult& update(const Camera& camera);
 
 private:
-    Cesium3DTileset& _tileset;
+    Cesium3DTiles::Tileset& _tileset;
     std::string _name;
     ViewUpdateResult _updateResult;
 };

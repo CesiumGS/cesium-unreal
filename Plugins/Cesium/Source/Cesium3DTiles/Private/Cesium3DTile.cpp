@@ -5,7 +5,7 @@
 #include "Cesium3DTileContentFactory.h"
 #include <fstream>
 
-Cesium3DTile::Cesium3DTile(const Cesium3DTileset& tileset, VectorReference<Cesium3DTile> pParent) :
+Cesium3DTile::Cesium3DTile(const Cesium3DTiles::Tileset& tileset, VectorReference<Cesium3DTile> pParent) :
     _pTileset(&tileset),
     _pParent(pParent),
     _children(),

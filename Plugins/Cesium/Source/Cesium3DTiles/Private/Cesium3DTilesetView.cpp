@@ -4,7 +4,7 @@
 
 static void visitTile(Cesium3DTile& tile, ViewUpdateResult& result);
 
-Cesium3DTilesetView::Cesium3DTilesetView(Cesium3DTileset& tileset, const std::string& name) :
+Cesium3DTilesetView::Cesium3DTilesetView(Cesium3DTiles::Tileset& tileset, const std::string& name) :
     _tileset(tileset),
     _name(name)
 {

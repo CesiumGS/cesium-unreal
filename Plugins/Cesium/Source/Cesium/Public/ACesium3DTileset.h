@@ -7,7 +7,10 @@
 #include "Interfaces/IHttpRequest.h"
 #include "ACesium3DTileset.generated.h"
 
-class Cesium3DTileset;
+namespace Cesium3DTiles {
+	class Tileset;
+}
+
 class Cesium3DTilesetView;
 
 UCLASS()
@@ -45,6 +48,6 @@ public:
 	void AddGltf(class UCesiumGltfComponent* Gltf);
 
 private:
-	Cesium3DTileset* _pTileset;
+	Cesium3DTiles::Tileset* _pTileset;
 	Cesium3DTilesetView* _pTilesetView;
 };

@@ -78,7 +78,7 @@ private:
 
 void ACesium3DTileset::LoadTileset()
 {
-	Cesium3DTileset* pTileset = this->_pTileset;
+	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 	if (pTileset)
 	{
 		if (this->Url.Len() > 0)
@@ -107,11 +107,11 @@ void ACesium3DTileset::LoadTileset()
 
 	if (this->Url.Len() > 0)
 	{
-		pTileset = new Cesium3DTileset(externals, wstr_to_utf8(this->Url));
+		pTileset = new Cesium3DTiles::Tileset(externals, wstr_to_utf8(this->Url));
 	}
 	else
 	{
-		pTileset = new Cesium3DTileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
+		pTileset = new Cesium3DTiles::Tileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
 	}
 
 	this->_pTileset = pTileset;
