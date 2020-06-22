@@ -1,4 +1,4 @@
-#include "Cesium3DTileset.h"
+#include "Tileset.h"
 #include "IAssetAccessor.h"
 #include "IAssetResponse.h"
 #include "Uri.h"

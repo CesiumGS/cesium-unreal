@@ -1,5 +1,5 @@
 #include "Cesium3DTile.h"
-#include "Cesium3DTileset.h"
+#include "Tileset.h"
 #include "IAssetAccessor.h"
 #include "IAssetResponse.h"
 #include "Cesium3DTileContentFactory.h"
