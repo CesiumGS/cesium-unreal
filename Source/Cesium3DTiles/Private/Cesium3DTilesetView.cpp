@@ -1,5 +1,5 @@
 #include "Cesium3DTilesetView.h"
-#include "Cesium3DTileset.h"
+#include "Tileset.h"
 #include "ViewUpdateResult.h"
 
 static void visitTile(Cesium3DTile& tile, ViewUpdateResult& result);

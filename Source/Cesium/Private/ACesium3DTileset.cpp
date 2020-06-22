@@ -12,7 +12,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Engine/GameViewportClient.h"
 #include "UnrealAssetAccessor.h"
-#include "Cesium3DTileset.h"
+#include "Tileset.h"
 #include "Batched3DModelContent.h"
 #include "UnrealTaskProcessor.h"
 
