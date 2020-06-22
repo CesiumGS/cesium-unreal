@@ -7,7 +7,7 @@
 #include <atomic>
 #include <gsl/span>
 #include "IAssetRequest.h"
-#include "Cesium3DTileContent.h"
+#include "TileContent.h"
 
 class Cesium3DTileContent;
 

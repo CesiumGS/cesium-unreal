@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gsl/span>
-#include "Cesium3DTileContent.h"
+#include "TileContent.h"
 #include "tiny_gltf.h"
 
 class Batched3DModelContent : public Cesium3DTileContent {
