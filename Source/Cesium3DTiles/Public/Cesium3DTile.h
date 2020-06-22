@@ -10,7 +10,10 @@
 #include "Cesium3DTileContent.h"
 
 class Cesium3DTileContent;
-class Cesium3DTileset;
+
+namespace Cesium3DTiles {
+    class Tileset;
+}
 
 template <class T>
 class VectorReference {
@@ -117,7 +120,7 @@ public:
         RendererResourcesPrepared = 4
     };
 
-    Cesium3DTile(const Cesium3DTileset& tileset, VectorReference<Cesium3DTile> pParent = VectorReference<Cesium3DTile>());
+    Cesium3DTile(const Cesium3DTiles::Tileset& tileset, VectorReference<Cesium3DTile> pParent = VectorReference<Cesium3DTile>());
     ~Cesium3DTile();
     Cesium3DTile(Cesium3DTile& rhs) noexcept = delete;
     Cesium3DTile(Cesium3DTile&& rhs) noexcept;
@@ -155,7 +158,7 @@ protected:
 
 private:
     // Position in bounding-volume hierarchy.
-    const Cesium3DTileset* _pTileset;
+    const Cesium3DTiles::Tileset* _pTileset;
     VectorReference<Cesium3DTile> _pParent;
     VectorRange<Cesium3DTile> _children;
 
