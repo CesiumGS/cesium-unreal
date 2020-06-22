@@ -9,7 +9,7 @@
 
 namespace Cesium3DTiles {
 
-	Tileset::Tileset(const Cesium3DTilesetExternals& externals, const std::string& url) :
+	Tileset::Tileset(const TilesetExternals& externals, const std::string& url) :
 		_externals(externals),
 		_views(),
 		_url(url),
@@ -23,7 +23,7 @@ namespace Cesium3DTiles {
 		this->_pTilesetRequest->bind(std::bind(&Tileset::tilesetJsonResponseReceived, this, std::placeholders::_1));
 	}
 
-	Tileset::Tileset(const Cesium3DTilesetExternals& externals, uint32_t ionAssetID, const std::string& ionAccessToken) :
+	Tileset::Tileset(const TilesetExternals& externals, uint32_t ionAssetID, const std::string& ionAccessToken) :
 		_externals(externals),
 		_views(),
 		_url(),
@@ -43,20 +43,20 @@ namespace Cesium3DTiles {
 		this->_pTilesetRequest->bind(std::bind(&Tileset::ionResponseReceived, this, std::placeholders::_1));
 	}
 
-	Cesium3DTilesetView& Tileset::createView(const std::string& name)
+	TilesetView& Tileset::createView(const std::string& name)
 	{
-		Cesium3DTilesetView* p = new Cesium3DTilesetView(*this, name);
-		this->_views.push_back(std::move(std::unique_ptr<Cesium3DTilesetView>(p)));
+		TilesetView* p = new TilesetView(*this, name);
+		this->_views.push_back(std::move(std::unique_ptr<TilesetView>(p)));
 		return *p;
 	}
 
-	void Tileset::destroyView(Cesium3DTilesetView& view)
+	void Tileset::destroyView(TilesetView& view)
 	{
 		this->_views.erase(
 			std::remove_if(
 				this->_views.begin(),
 				this->_views.end(),
-				[&view](const std::unique_ptr<Cesium3DTilesetView>& candidate) {
+				[&view](const std::unique_ptr<TilesetView>& candidate) {
 					return candidate.get() == &view;
 				}
 			),
@@ -119,13 +119,13 @@ namespace Cesium3DTiles {
 		json& rootJson = tileset["root"];
 
 		this->_tiles.emplace_back(*this);
-		VectorReference<Cesium3DTile> rootTile(this->_tiles, this->_tiles.size() - 1);
+		VectorReference<Tile> rootTile(this->_tiles, this->_tiles.size() - 1);
 
 		this->createTile(rootTile, rootJson, baseUrl);
 		this->_pRootTile = rootTile;
 	}
 
-	void Tileset::createTile(VectorReference<Cesium3DTile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
+	void Tileset::createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
 		using nlohmann::json;
 
 		if (!tileJson.is_object())
@@ -164,11 +164,11 @@ namespace Cesium3DTiles {
 
 			for (size_t i = 0; i < childrenJson.size(); ++i) {
 				const json& childJson = childrenJson[i];
-				VectorReference<Cesium3DTile> child(this->_tiles, firstChild + i);
+				VectorReference<Tile> child(this->_tiles, firstChild + i);
 				this->createTile(child, childJson, baseUrl);
 			}
 
-			VectorRange<Cesium3DTile> childTiles(this->_tiles, firstChild, afterLastChild);
+			VectorRange<Tile> childTiles(this->_tiles, firstChild, afterLastChild);
 			tile->setChildren(childTiles);
 		}
 	}

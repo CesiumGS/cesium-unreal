@@ -4,8 +4,8 @@
 #include <memory>
 #include "IAssetAccessor.h"
 
-class UnrealAssetAccessor : public IAssetAccessor
+class UnrealAssetAccessor : public Cesium3DTiles::IAssetAccessor
 {
 public:
-    virtual std::unique_ptr<IAssetRequest> requestAsset(const std::string& url) override;
+    virtual std::unique_ptr<Cesium3DTiles::IAssetRequest> requestAsset(const std::string& url) override;
 };

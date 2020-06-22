@@ -6,14 +6,18 @@
 #include <gsl/span>
 #include <gsl/string_span>
 
-/// <summary>
-/// A completed response for a 3D Tiles asset.
-/// </summary>
-class IAssetResponse {
-public:
-    virtual ~IAssetResponse() = default;
+namespace Cesium3DTiles {
 
-    virtual uint16_t statusCode() = 0;
-    //virtual const std::map<std::string, std::string>& headers() = 0;
-    virtual gsl::span<const uint8_t> data() = 0;
-};
+    /// <summary>
+    /// A completed response for a 3D Tiles asset.
+    /// </summary>
+    class IAssetResponse {
+    public:
+        virtual ~IAssetResponse() = default;
+
+        virtual uint16_t statusCode() = 0;
+        //virtual const std::map<std::string, std::string>& headers() = 0;
+        virtual gsl::span<const uint8_t> data() = 0;
+    };
+
+}

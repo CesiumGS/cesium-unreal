@@ -5,21 +5,24 @@
 #include <optional>
 #include <gsl/span>
 
-class Cesium3DTile;
-class Cesium3DTileContent;
+namespace Cesium3DTiles {
+    class Tile;
+    class TileContent;
 
-class Cesium3DTileContentFactory {
-public:
-    Cesium3DTileContentFactory() = delete;
+    class TileContentFactory {
+    public:
+        TileContentFactory() = delete;
 
-    typedef std::unique_ptr<Cesium3DTileContent> FactoryFunctionSignature(const Cesium3DTile& tile, const gsl::span<const uint8_t>& data);
-    typedef std::function<FactoryFunctionSignature> FactoryFunction;
+        typedef std::unique_ptr<TileContent> FactoryFunctionSignature(const Tile& tile, const gsl::span<const uint8_t>& data);
+        typedef std::function<FactoryFunctionSignature> FactoryFunction;
 
-    static void registerContentType(const std::string& magic, FactoryFunction factoryFunction);
-    static std::unique_ptr<Cesium3DTileContent> createContent(const Cesium3DTile& tile, const gsl::span<const uint8_t>& data);
+        static void registerContentType(const std::string& magic, FactoryFunction factoryFunction);
+        static std::unique_ptr<TileContent> createContent(const Tile& tile, const gsl::span<const uint8_t>& data);
 
-private:
-    static std::optional<std::string> getMagic(const gsl::span<const uint8_t>& data);
+    private:
+        static std::optional<std::string> getMagic(const gsl::span<const uint8_t>& data);
 
-    static std::unordered_map<std::string, FactoryFunction> _factoryFunctions;
-};
+        static std::unordered_map<std::string, FactoryFunction> _factoryFunctions;
+    };
+
+}

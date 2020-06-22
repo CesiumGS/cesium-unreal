@@ -2,14 +2,17 @@
 
 #include <vector>
 
-class Cesium3DTile;
+namespace Cesium3DTiles {
+    class Tile;
 
-class ViewUpdateResult {
-public:
-    std::vector<Cesium3DTile*> tilesToRenderThisFrame;
-    
-    std::vector<Cesium3DTile*> newTilesToRenderThisFrame;
-    std::vector<Cesium3DTile*> tilesToNoLongerRenderThisFrame;
+    class ViewUpdateResult {
+    public:
+        std::vector<Tile*> tilesToRenderThisFrame;
 
-    uint32_t tilesLoading;
-};
+        std::vector<Tile*> newTilesToRenderThisFrame;
+        std::vector<Tile*> tilesToNoLongerRenderThisFrame;
+
+        uint32_t tilesLoading;
+    };
+
+}

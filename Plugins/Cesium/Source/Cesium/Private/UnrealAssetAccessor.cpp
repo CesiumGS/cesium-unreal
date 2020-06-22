@@ -7,7 +7,7 @@
 #include "UnrealStringConversions.h"
 #include <optional>
 
-class UnrealAssetResponse : public IAssetResponse {
+class UnrealAssetResponse : public Cesium3DTiles::IAssetResponse {
 public:
 	UnrealAssetResponse(FHttpResponsePtr pResponse) :
 		_pResponse(pResponse)
@@ -33,7 +33,7 @@ private:
 	//std::map<std::string, std::string> _headers;
 };
 
-class UnrealAssetRequest : public IAssetRequest {
+class UnrealAssetRequest : public Cesium3DTiles::IAssetRequest {
 public:
 	UnrealAssetRequest(const std::string& url) :
 		_pRequest(nullptr),
@@ -56,7 +56,7 @@ public:
 		return wstr_to_utf8(this->_pRequest->GetURL());
 	}
 
-	virtual IAssetResponse* response() override {
+	virtual Cesium3DTiles::IAssetResponse* response() override {
 		if (this->_pResponse) {
 			return this->_pResponse;
 		}
@@ -85,11 +85,10 @@ protected:
 
 private:
 	FHttpRequestPtr _pRequest;
-	IAssetResponse* _pResponse;
-	std::function<void (IAssetRequest*)> _callback;
+	Cesium3DTiles::IAssetResponse* _pResponse;
+	std::function<void (Cesium3DTiles::IAssetRequest*)> _callback;
 };
 
-std::unique_ptr<IAssetRequest> UnrealAssetAccessor::requestAsset(const std::string& url) {
+std::unique_ptr<Cesium3DTiles::IAssetRequest> UnrealAssetAccessor::requestAsset(const std::string& url) {
 	return std::make_unique<UnrealAssetRequest>(url);
 }
-

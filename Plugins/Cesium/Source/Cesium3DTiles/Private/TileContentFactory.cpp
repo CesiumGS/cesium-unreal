@@ -1,33 +1,37 @@
 #include "TileContentFactory.h"
 #include "TileContent.h"
 
-void Cesium3DTileContentFactory::registerContentType(const std::string& magic, Cesium3DTileContentFactory::FactoryFunction factoryFunction) {
-    Cesium3DTileContentFactory::_factoryFunctions[magic] = factoryFunction;
-}
+namespace Cesium3DTiles {
 
-std::unique_ptr<Cesium3DTileContent> Cesium3DTileContentFactory::createContent(const Cesium3DTile& tile, const gsl::span<const uint8_t>& data) {
-    std::string magic = Cesium3DTileContentFactory::getMagic(data).value_or("json");
-    
-    auto it = Cesium3DTileContentFactory::_factoryFunctions.find(magic);
-    if (it == Cesium3DTileContentFactory::_factoryFunctions.end()) {
-        it = Cesium3DTileContentFactory::_factoryFunctions.find("json");
+    void TileContentFactory::registerContentType(const std::string& magic, TileContentFactory::FactoryFunction factoryFunction) {
+        TileContentFactory::_factoryFunctions[magic] = factoryFunction;
     }
 
-    if (it == Cesium3DTileContentFactory::_factoryFunctions.end()) {
-        // No content type registered for this magic.
-        return std::unique_ptr<Cesium3DTileContent>();
+    std::unique_ptr<TileContent> TileContentFactory::createContent(const Cesium3DTiles::Tile& tile, const gsl::span<const uint8_t>& data) {
+        std::string magic = TileContentFactory::getMagic(data).value_or("json");
+
+        auto it = TileContentFactory::_factoryFunctions.find(magic);
+        if (it == TileContentFactory::_factoryFunctions.end()) {
+            it = TileContentFactory::_factoryFunctions.find("json");
+        }
+
+        if (it == TileContentFactory::_factoryFunctions.end()) {
+            // No content type registered for this magic.
+            return std::unique_ptr<TileContent>();
+        }
+
+        return it->second(tile, data);
     }
 
-    return it->second(tile, data);
-}
+    std::optional<std::string> TileContentFactory::getMagic(const gsl::span<const uint8_t>& data) {
+        if (data.size() >= 4) {
+            gsl::span<const uint8_t> magicData = data.subspan(0, 4);
+            return std::string(magicData.begin(), magicData.end());
+        }
 
-std::optional<std::string> Cesium3DTileContentFactory::getMagic(const gsl::span<const uint8_t>& data) {
-    if (data.size() >= 4) {
-        gsl::span<const uint8_t> magicData = data.subspan(0, 4);
-        return std::string(magicData.begin(), magicData.end());
+        return std::optional<std::string>();
     }
 
-    return std::optional<std::string>();
-}
+    std::unordered_map<std::string, TileContentFactory::FactoryFunction> TileContentFactory::_factoryFunctions;
 
-std::unordered_map<std::string, Cesium3DTileContentFactory::FactoryFunction> Cesium3DTileContentFactory::_factoryFunctions;
+}

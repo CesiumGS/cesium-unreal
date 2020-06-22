@@ -50,12 +50,12 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform)
 	//this->LoadTileset();
 }
 
-class UnrealResourcePreparer : public IPrepareRendererResources {
+class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
 public:
 	UnrealResourcePreparer(AActor* pActor) : _pActor(pActor) {}
 
-	virtual void prepare(Cesium3DTile& tile) {
-		Batched3DModelContent* pB3dm = static_cast<Batched3DModelContent*>(tile.getContent());
+	virtual void prepare(Cesium3DTiles::Tile& tile) {
+		Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
 		if (pB3dm) {
 			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), [&tile](UCesiumGltfComponent* pGltf) {
 				tile.finishPrepareRendererResources(pGltf);
@@ -64,11 +64,11 @@ public:
 
 	}
 
-	virtual void cancel(Cesium3DTile& tile) {
+	virtual void cancel(Cesium3DTiles::Tile& tile) {
 
 	}
 
-	virtual void free(Cesium3DTile& tile, void* pRendererResources) {
+	virtual void free(Cesium3DTiles::Tile& tile, void* pRendererResources) {
 
 	}
 
@@ -99,7 +99,7 @@ void ACesium3DTileset::LoadTileset()
 		}
 	}
 
-	Cesium3DTilesetExternals externals{
+	Cesium3DTiles::TilesetExternals externals{
 		new UnrealAssetAccessor(),
 		new UnrealResourcePreparer(this),
 		new UnrealTaskProcessor()
@@ -220,11 +220,11 @@ void ACesium3DTileset::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	Camera camera;
-	const ViewUpdateResult& result = this->_pTilesetView->update(camera);
+	Cesium3DTiles::Camera camera;
+	const Cesium3DTiles::ViewUpdateResult& result = this->_pTilesetView->update(camera);
 
-	for (Cesium3DTile* pTile : result.tilesToRenderThisFrame) {
-		Cesium3DTileContent* pContent = pTile->getContent();
+	for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
+		Cesium3DTiles::TileContent* pContent = pTile->getContent();
 		if (!pContent) {
 			continue;
 		}
