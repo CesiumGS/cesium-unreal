@@ -19,9 +19,6 @@ public class Cesium : ModuleRules
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
-                "../ThirdParty/tinygltf",
-                "../ThirdParty/draco/src",
-                "../ThirdParty/build/draco",
                 "../ThirdParty/uriparser/include"
             }
             );
@@ -29,7 +26,6 @@ public class Cesium : ModuleRules
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../ThirdParty/build/draco/Release/dracodec.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/build/uriparser/Release/uriparser.lib")
             }
             );

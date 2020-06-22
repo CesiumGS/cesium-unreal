@@ -83,7 +83,7 @@ void ACesium3DTileset::LoadTileset()
 	{
 		if (this->Url.Len() > 0)
 		{
-			if (pTileset->url() && wstr_to_utf8(this->Url) == pTileset->url())
+			if (pTileset->getUrl() && wstr_to_utf8(this->Url) == pTileset->getUrl())
 			{
 				// Already using this URL.
 				return;
@@ -91,7 +91,7 @@ void ACesium3DTileset::LoadTileset()
 		}
 		else
 		{
-			if (pTileset->ionAssetID() && pTileset->ionAccessToken() && this->IonAssetID == pTileset->ionAssetID() && wstr_to_utf8(this->IonAccessToken) == pTileset->ionAccessToken())
+			if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() && this->IonAssetID == pTileset->getIonAssetID() && wstr_to_utf8(this->IonAccessToken) == pTileset->getIonAccessToken())
 			{
 				// Already using this asset ID and access token.
 				return;

@@ -68,7 +68,7 @@ namespace Cesium3DTiles {
             return;
         }
 
-        IAssetAccessor* pAssetAccessor = this->_pTileset->externals().pAssetAccessor;
+        IAssetAccessor* pAssetAccessor = this->_pTileset->getExternals().pAssetAccessor;
         this->_pContentRequest = pAssetAccessor->requestAsset(*this->_contentUri);
         this->_pContentRequest->bind(std::bind(&Tile::contentResponseReceived, this, std::placeholders::_1));
 
@@ -94,7 +94,7 @@ namespace Cesium3DTiles {
 
         gsl::span<const uint8_t> data = pResponse->data();
 
-        const TilesetExternals& externals = this->_pTileset->externals();
+        const TilesetExternals& externals = this->_pTileset->getExternals();
 
         externals.pTaskProcessor->startTask([data, this]() {
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data);
@@ -106,7 +106,7 @@ namespace Cesium3DTiles {
             this->_pContent = std::move(pContent);
             this->setState(LoadState::ContentLoaded);
 
-            const TilesetExternals& externals = this->_pTileset->externals();
+            const TilesetExternals& externals = this->_pTileset->getExternals();
             if (externals.pPrepareRendererResources) {
                 this->setState(LoadState::RendererResourcesPreparing);
                 externals.pPrepareRendererResources->prepare(*this);

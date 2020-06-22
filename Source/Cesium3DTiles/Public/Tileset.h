@@ -37,25 +37,25 @@ namespace Cesium3DTiles {
         /// Gets the URL that was used to construct this tileset. If the tileset references a Cesium ion asset,
         /// this property will not have a value.
         /// </summary>
-        std::optional<std::string> url() { return this->_url; }
+        std::optional<std::string> getUrl() { return this->_url; }
 
         /// <summary>
         /// Gets the Cesium ion asset ID of this tileset. If the tileset references a URL, this property
         /// will not have a value.
         /// </summary>
-        std::optional<uint32_t> ionAssetID() { return this->_ionAssetID; }
+        std::optional<uint32_t> getIonAssetID() { return this->_ionAssetID; }
 
         /// <summary>
         /// Gets the Cesium ion access token to use to access this tileset. If the tileset references a URL, this
         /// property will not have a value.
         /// </summary>
-        std::optional<std::string> ionAccessToken() { return this->_ionAccessToken; }
+        std::optional<std::string> getIonAccessToken() { return this->_ionAccessToken; }
 
         /// <summary>
         /// Gets the external interfaces used by this tileset.
         /// </summary>
         TilesetExternals& externals() { return this->_externals; }
-        const TilesetExternals& externals() const { return this->_externals; }
+        const TilesetExternals& getExternals() const { return this->_externals; }
 
         /// <summary>
         /// Creates a new view of this tileset. Views share a common cache of tiles but do independent
@@ -75,13 +75,13 @@ namespace Cesium3DTiles {
         /// Gets the currently-active views of this tileset.
         /// </summary>
         /// <returns>The views</returns>
-        const std::vector<std::unique_ptr<TilesetView>>& views() const { return this->_views; }
+        const std::vector<std::unique_ptr<TilesetView>>& getViews() const { return this->_views; }
 
         /// <summary>
         /// Gets the root tile of this tileset, or nullptr if there is currently no root tile.
         /// </summary>
-        Tile* rootTile() { return this->_pRootTile.data(); }
-        const Tile* rootTile() const { return this->_pRootTile.data(); }
+        Tile* getRootTile() { return this->_pRootTile.data(); }
+        const Tile* getRootTile() const { return this->_pRootTile.data(); }
 
     protected:
         void ionResponseReceived(IAssetRequest* pRequest);

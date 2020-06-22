@@ -11,6 +11,7 @@ public class Cesium3DTiles : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
+                Path.Combine(ModuleDirectory, "../../ThirdParty/tinygltf"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/glm"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/GSL/include")
             }
@@ -20,7 +21,6 @@ public class Cesium3DTiles : ModuleRules
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
-                "../ThirdParty/tinygltf",
                 "../ThirdParty/draco/src",
                 "../ThirdParty/build/draco",
                 "../ThirdParty/uriparser/include"

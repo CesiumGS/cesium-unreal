@@ -27,6 +27,9 @@ public:
 
 	UCesiumGltfComponent();
 
+	UPROPERTY(EditAnywhere)
+	UMaterial* BaseMaterial;
+
 	UFUNCTION(BlueprintCallable)
 	void LoadModel(const FString& Url);
 
@@ -36,8 +39,6 @@ protected:
 	//virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UPROPERTY(EditAnywhere)
-	UMaterial* BaseMaterial;
 
 	FString LoadedUrl;
 	class UStaticMeshComponent* Mesh;
