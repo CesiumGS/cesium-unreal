@@ -20,7 +20,7 @@ namespace Cesium3DTiles {
         result.newTilesToRenderThisFrame.clear();
         result.tilesToNoLongerRenderThisFrame.clear();
 
-        Tile* pRootTile = this->_tileset.rootTile();
+        Tile* pRootTile = this->_tileset.getRootTile();
         if (!pRootTile) {
             return result;
         }
