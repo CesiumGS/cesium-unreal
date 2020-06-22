@@ -1,10 +1,14 @@
 #include "TileContent.h"
 
-Cesium3DTileContent::Cesium3DTileContent(const Cesium3DTile& tile) :
-    _pTile(&tile)
-{
-}
+namespace Cesium3DTiles {
 
-Cesium3DTileContent::~Cesium3DTileContent() {
+    TileContent::TileContent(const Tile& tile) :
+        _pTile(&tile)
+    {
+    }
+
+    TileContent::~TileContent() {
+
+    }
 
 }

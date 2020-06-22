@@ -1,13 +1,17 @@
 #pragma once
 
-class Cesium3DTile;
+namespace Cesium3DTiles {
+    
+    class Tile;
 
-class Cesium3DTileContent {
-public:
-    Cesium3DTileContent(const Cesium3DTile& tile);
-    virtual ~Cesium3DTileContent();
+    class TileContent {
+    public:
+        TileContent(const Tile& tile);
+        virtual ~TileContent();
 
-private:
-    // TODO: use VectorReference instead of a raw pointer
-    const Cesium3DTile* _pTile;
-};
+    private:
+        // TODO: use VectorReference instead of a raw pointer
+        const Tile* _pTile;
+    };
+
+}

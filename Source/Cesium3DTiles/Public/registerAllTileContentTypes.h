@@ -1,1 +1,5 @@
-CESIUM3DTILES_API void registerAll3DTileContentTypes();
+namespace Cesium3DTiles {
+
+    CESIUM3DTILES_API void registerAllTileContentTypes();
+
+}

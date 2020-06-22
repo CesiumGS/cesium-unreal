@@ -9,9 +9,8 @@
 
 namespace Cesium3DTiles {
 	class Tileset;
+	class TilesetView;
 }
-
-class Cesium3DTilesetView;
 
 UCLASS()
 class CESIUM_API ACesium3DTileset : public AActor
@@ -49,5 +48,5 @@ public:
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
-	Cesium3DTilesetView* _pTilesetView;
+	Cesium3DTiles::TilesetView* _pTilesetView;
 };
