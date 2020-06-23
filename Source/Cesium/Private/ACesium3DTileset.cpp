@@ -128,15 +128,11 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		}
 
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
-		this->AddGltf(Gltf);
+
+		if (Gltf->GetAttachParent() == nullptr) {
+			Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+		}
 
 		// TODO: activate the gltf
-	}
-}
-
-void ACesium3DTileset::AddGltf(UCesiumGltfComponent* Gltf)
-{
-	if (Gltf->GetAttachParent() == nullptr) {
-		Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	}
 }
