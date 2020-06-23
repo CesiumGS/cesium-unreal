@@ -34,8 +34,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
-	void IonAssetRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
-	void TilesetJsonRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
 	void LoadTileset();
 
 public:	
