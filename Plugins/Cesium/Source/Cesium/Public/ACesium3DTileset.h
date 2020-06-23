@@ -40,10 +40,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-public:
-	// TODO: this shouldn't be public.
-	void AddGltf(class UCesiumGltfComponent* Gltf);
-
 private:
 	Cesium3DTiles::Tileset* _pTileset;
 	Cesium3DTiles::TilesetView* _pTilesetView;
