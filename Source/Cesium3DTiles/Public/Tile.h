@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 #include <atomic>
-#include <gsl/span>
+#include <glm/mat4x4.hpp>
 #include "IAssetRequest.h"
 #include "TileContent.h"
 #include "VectorReference.h"
 #include "VectorRange.h"
-
+#include "BoundingVolume.h"
 
 namespace Cesium3DTiles {
     class Tileset;
@@ -51,6 +51,11 @@ namespace Cesium3DTiles {
             RendererResourcesPrepared = 4
         };
 
+        enum Refine {
+            Add = 0,
+            Replace = 1
+        };
+
         Tile(const Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
         ~Tile();
         Tile(Tile& rhs) noexcept = delete;
@@ -64,8 +69,26 @@ namespace Cesium3DTiles {
         const VectorRange<Tile>& getChildren() const { return this->_children; }
         void setChildren(const VectorRange<Tile>& children);
 
+        const BoundingVolume& getBoundingVolume() const { return this->_boundingVolume; }
+        void setBoundingVolume(const BoundingVolume& value) { this->_boundingVolume = value; }
+
+        const std::optional<BoundingVolume>& getViewerRequestVolume() const { return this->_viewerRequestVolume; }
+        void setViewerRequestVolume(const std::optional<BoundingVolume>& value) { this->_viewerRequestVolume = value; }
+
+        double getGeometricError() const { return this->_geometricError; }
+        void setGeometricError(double value) { this->_geometricError = value; }
+
+        const std::optional<Refine>& getRefine() const { return this->_refine; }
+        void setRefine(const std::optional<Refine>& value) { this->_refine = value; }
+
+        const std::optional<glm::dmat4x4>& getTransform() const { return this->_transform; }
+        void setTransform(const std::optional<glm::dmat4x4>& value) { this->_transform = value; }
+
         const std::optional<std::string>& getContentUri() const { return this->_contentUri; }
         void setContentUri(const std::optional<std::string>& value);
+
+        const std::optional<BoundingVolume>& getContentBoundingVolume() const { return this->_contentBoundingVolume; }
+        void setContentBoundingVolume(const std::optional<BoundingVolume>& value) { this->_contentBoundingVolume = value; }
 
         TileContent* getContent() { return this->_pContent.get(); }
         const TileContent* getContent() const { return this->_pContent.get(); }
@@ -95,7 +118,14 @@ namespace Cesium3DTiles {
 
         // Properties from tileset.json.
         // These are immutable after the tile leaves TileState::Unloaded.
+        BoundingVolume _boundingVolume;
+        std::optional<BoundingVolume> _viewerRequestVolume;
+        double _geometricError;
+        std::optional<Refine> _refine;
+        std::optional<glm::dmat4x4> _transform;
+
         std::optional<std::string> _contentUri;
+        std::optional<BoundingVolume> _contentBoundingVolume;
 
         // Load state and data.
         std::atomic<LoadState> _state;

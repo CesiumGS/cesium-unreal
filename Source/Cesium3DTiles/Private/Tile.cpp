@@ -11,7 +11,13 @@ namespace Cesium3DTiles {
         _pTileset(&tileset),
         _pParent(pParent),
         _children(),
+        _boundingVolume(BoundingBox(glm::dvec3(), glm::dvec3(), glm::dvec3(), glm::dvec3())),
+        _viewerRequestVolume(),
+        _geometricError(0.0),
+        _refine(),
+        _transform(),
         _contentUri(),
+        _contentBoundingVolume(),
         _state(LoadState::Unloaded),
         _pContentRequest(nullptr),
         _pContent(nullptr),
@@ -26,7 +32,13 @@ namespace Cesium3DTiles {
         _pTileset(rhs._pTileset),
         _pParent(rhs._pParent),
         _children(rhs._children),
+        _boundingVolume(rhs._boundingVolume),
+        _viewerRequestVolume(rhs._viewerRequestVolume),
+        _geometricError(rhs._geometricError),
+        _refine(rhs._refine),
+        _transform(rhs._transform),
         _contentUri(rhs._contentUri),
+        _contentBoundingVolume(rhs._contentBoundingVolume),
         _state(rhs.getState()),
         _pContentRequest(std::move(rhs._pContentRequest)),
         _pContent(std::move(rhs._pContent)),
@@ -39,7 +51,13 @@ namespace Cesium3DTiles {
             this->_pTileset = rhs._pTileset;
             this->_pParent = rhs._pParent;
             this->_children = rhs._children;
+            this->_boundingVolume = rhs._boundingVolume;
+            this->_viewerRequestVolume = rhs._viewerRequestVolume;
+            this->_geometricError = rhs._geometricError;
+            this->_refine = rhs._refine;
+            this->_transform = rhs._transform;
             this->_contentUri = rhs._contentUri;
+            this->_contentBoundingVolume = rhs._contentBoundingVolume;
             this->setState(rhs.getState());
             this->_pContentRequest = std::move(rhs._pContentRequest);
             this->_pContent = std::move(rhs._pContent);

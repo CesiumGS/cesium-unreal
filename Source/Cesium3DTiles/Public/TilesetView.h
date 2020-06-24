@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include "Camera.h"
 #include "ViewUpdateResult.h"
+#include "TileSelectionState.h"
 
 namespace Cesium3DTiles {
     class Tileset;
@@ -23,9 +25,13 @@ namespace Cesium3DTiles {
         const ViewUpdateResult& update(const Camera& camera);
 
     private:
+        void _visitTile(int32_t lastFrameNumber, const Camera& camera, double maximumScreenSpaceError, Tile& tile, ViewUpdateResult& result);
+
         Tileset& _tileset;
         std::string _name;
         ViewUpdateResult _updateResult;
+        int32_t _lastFrameNumber;
+        std::unordered_map<Tile*, TileSelectionState> _lastSelectionResults;
     };
 
 }

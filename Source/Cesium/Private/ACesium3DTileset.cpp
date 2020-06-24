@@ -3,10 +3,9 @@
 
 #include "ACesium3DTileset.h"
 #include "tiny_gltf.h"
-#include "UnrealStringConversions.h"
+#include "UnrealConversions.h"
 #include "CesiumGltfComponent.h"
 #include "HttpModule.h"
-#include "Interfaces/IHttpResponse.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
@@ -15,6 +14,7 @@
 #include "Tileset.h"
 #include "Batched3DModelContent.h"
 #include "UnrealTaskProcessor.h"
+#include "Math/UnrealMathUtility.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4946)
@@ -118,8 +118,44 @@ void ACesium3DTileset::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	Cesium3DTiles::Camera camera;
+	APlayerCameraManager* pCameraManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+
+	UGameViewportClient* pViewport = GetWorld()->GetGameViewport();
+
+	FVector2D size;
+	pViewport->GetViewportSize(size);
+
+	const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
+	const FVector& location = pov.Location;
+
+	double horizontalFieldOfView = FMath::DegreesToRadians(pov.FOV);
+
+	double aspectRatio = size.X / size.Y;
+	double verticalFieldOfView = atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
+
+	FVector direction = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+		
+	FVector up = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 1.0f, 0.0f));
+
+	Cesium3DTiles::Camera camera(
+		unrealFVectorToCesiumVector(location),
+		unrealFVectorToCesiumVector(direction),
+		unrealFVectorToCesiumVector(up),
+		glm::dvec2(size.X, size.Y),
+		horizontalFieldOfView,
+		verticalFieldOfView
+	);
+
 	const Cesium3DTiles::ViewUpdateResult& result = this->_pTilesetView->update(camera);
+
+	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
+		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+		if (Gltf) {
+			Gltf->SetVisibility(false, true);
+		} else {
+			UE_LOG(LogActor, Warning, TEXT("Weird"));
+		}
+	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
 		Cesium3DTiles::TileContent* pContent = pTile->getContent();
@@ -132,6 +168,8 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		if (Gltf->GetAttachParent() == nullptr) {
 			Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 		}
+
+		Gltf->SetVisibility(true, true);
 
 		// TODO: activate the gltf
 	}
