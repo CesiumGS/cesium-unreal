@@ -73,6 +73,10 @@ namespace Cesium3DTiles {
         void updateViewParameters(const glm::dvec2& viewportSize, double horizontalFieldOfView, double verticalFieldOfView);
 
         bool isBoundingVolumeVisible(const BoundingVolume& boundingVolume) const;
+        bool isBoundingVolumeVisible(const BoundingBox& boundingVolume) const;
+        bool isBoundingVolumeVisible(const BoundingRegion& boundingRegion) const;
+        bool isBoundingVolumeVisible(const BoundingSphere& boundingSphere) const;
+
         double computeDistanceToBoundingVolume(const BoundingVolume& boundingVolume) const;
         double computeScreenSpaceError(double geometricError, double distance) const;
 

@@ -36,6 +36,37 @@ namespace Cesium3DTiles {
     }
 
     bool Camera::isBoundingVolumeVisible(const BoundingVolume& boundingVolume) const {
+        // TODO: use plane masks
+        switch (boundingVolume.index()) {
+        case 0:
+        {
+            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            return this->isBoundingVolumeVisible(boundingBox);
+        }
+        case 1:
+        {
+            const BoundingRegion& boundingRegion = std::get<BoundingRegion>(boundingVolume);
+            return this->isBoundingVolumeVisible(boundingRegion);
+        }
+        case 2:
+        {
+            const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
+            return this->isBoundingVolumeVisible(boundingSphere);
+        }
+        default:
+            return true;
+        }
+    }
+
+    bool Camera::isBoundingVolumeVisible(const BoundingBox& boundingVolume) const {
+        return true;
+    }
+
+    bool Camera::isBoundingVolumeVisible(const BoundingRegion& boundingRegion) const {
+        return true;
+    }
+
+    bool Camera::isBoundingVolumeVisible(const BoundingSphere& boundingSphere) const {
         return true;
     }
 
