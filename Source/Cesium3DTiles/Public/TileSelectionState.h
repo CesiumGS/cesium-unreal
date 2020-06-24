@@ -6,7 +6,7 @@ namespace Cesium3DTiles {
 
     class TileSelectionState {
     public:
-        enum Result {
+        enum class Result {
             /// <summary>
             /// There was no selection result, perhaps because the tile wasn't visited last frame.
             /// </summary>

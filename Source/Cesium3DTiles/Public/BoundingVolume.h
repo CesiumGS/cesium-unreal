@@ -6,7 +6,5 @@
 #include "BoundingSphere.h"
 
 namespace Cesium3DTiles {
-
     typedef std::variant<BoundingBox, BoundingRegion, BoundingSphere> BoundingVolume;
-
 }

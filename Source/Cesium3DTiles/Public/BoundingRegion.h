@@ -1,6 +1,10 @@
 #pragma once
 
+#include "CullingResult.h"
+
 namespace Cesium3DTiles {
+
+    class Plane;
 
     class BoundingRegion {
     public:
@@ -21,6 +25,8 @@ namespace Cesium3DTiles {
             maximumHeight(maximumHeight)
         {
         }
+
+        CullingResult intersectPlane(const Plane& plane) const;
         
         double west;
         double south;

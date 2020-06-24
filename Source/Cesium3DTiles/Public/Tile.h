@@ -18,7 +18,7 @@ namespace Cesium3DTiles {
 
     class CESIUM3DTILES_API Tile {
     public:
-        enum LoadState {
+        enum class LoadState {
             /// <summary>
             /// Something went wrong while loading this tile.
             /// </summary>
@@ -51,7 +51,7 @@ namespace Cesium3DTiles {
             RendererResourcesPrepared = 4
         };
 
-        enum Refine {
+        enum class Refine {
             Add = 0,
             Replace = 1
         };

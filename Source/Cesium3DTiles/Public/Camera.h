@@ -1,9 +1,11 @@
 #pragma once
 
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
-#include "glm/mat3x3.hpp"
+#include <vector>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/mat3x3.hpp>
 #include "BoundingVolume.h"
+#include "Plane.h"
 
 namespace Cesium3DTiles {
 
@@ -73,14 +75,13 @@ namespace Cesium3DTiles {
         void updateViewParameters(const glm::dvec2& viewportSize, double horizontalFieldOfView, double verticalFieldOfView);
 
         bool isBoundingVolumeVisible(const BoundingVolume& boundingVolume) const;
-        bool isBoundingVolumeVisible(const BoundingBox& boundingVolume) const;
-        bool isBoundingVolumeVisible(const BoundingRegion& boundingRegion) const;
-        bool isBoundingVolumeVisible(const BoundingSphere& boundingSphere) const;
 
         double computeDistanceToBoundingVolume(const BoundingVolume& boundingVolume) const;
         double computeScreenSpaceError(double geometricError, double distance) const;
 
     private:
+        void _updateCullingVolume();
+
         glm::dvec3 _position;
         glm::dvec3 _direction;
         glm::dvec3 _up;
@@ -88,6 +89,11 @@ namespace Cesium3DTiles {
         double _horizontalFieldOfView;
         double _verticalFieldOfView;
         double _sseDenominator;
+
+        Plane _leftPlane;
+        Plane _rightPlane;
+        Plane _topPlane;
+        Plane _bottomPlane;
     };
 
 }
