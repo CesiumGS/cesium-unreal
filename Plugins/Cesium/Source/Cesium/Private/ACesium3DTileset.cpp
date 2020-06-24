@@ -138,7 +138,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	FVector up = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 1.0f, 0.0f));
 
 	Cesium3DTiles::Camera camera(
-		unrealFVectorToCesiumVector(location),
+		unrealFVectorToCesiumVector(location) / 100.0,
 		unrealFVectorToCesiumVector(direction),
 		unrealFVectorToCesiumVector(up),
 		glm::dvec2(size.X, size.Y),

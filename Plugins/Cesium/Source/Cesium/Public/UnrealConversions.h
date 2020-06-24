@@ -7,42 +7,42 @@
 FString utf8_to_wstr(const std::string& utf8);
 std::string wstr_to_utf8(const FString& utf16);
 
-inline glm::dvec3 cesiumVectorToUnrealVector(const glm::dvec3& gltfVector)
+inline glm::dvec3 cesiumVectorToUnrealVector(const glm::dvec3& cesiumVector)
 {
-	return glm::dvec3(gltfVector.x, gltfVector.z, gltfVector.y);
+	return glm::dvec3(cesiumVector.x, cesiumVector.z, cesiumVector.y);
 }
 
-inline FVector cesiumVectorToUnrealFVector(const glm::dvec3& gltfVector)
+inline FVector cesiumVectorToUnrealFVector(const glm::dvec3& cesiumVector)
 {
-	return FVector(gltfVector.x, gltfVector.z, gltfVector.y);
+	return FVector(cesiumVector.x, cesiumVector.z, cesiumVector.y);
 }
 
-inline glm::dvec3 cesiumFVectorToUnrealVector(const FVector& gltfVector)
+inline glm::dvec3 cesiumFVectorToUnrealVector(const FVector& cesiumVector)
 {
-	return glm::dvec3(gltfVector.X, gltfVector.Z, gltfVector.Y);
+	return glm::dvec3(cesiumVector.X, cesiumVector.Z, cesiumVector.Y);
 }
 
-inline FVector cesiumFVectorToUnrealFVector(const FVector& gltfVector)
+inline FVector cesiumFVectorToUnrealFVector(const FVector& cesiumVector)
 {
-	return FVector(gltfVector.X, gltfVector.Z, gltfVector.Y);
+	return FVector(cesiumVector.X, cesiumVector.Z, cesiumVector.Y);
 }
 
-inline glm::dvec3 unrealVectorToCesiumVector(const glm::dvec3& gltfVector)
+inline glm::dvec3 unrealVectorToCesiumVector(const glm::dvec3& unrealVector)
 {
-	return glm::dvec3(gltfVector.x, gltfVector.z, gltfVector.y);
+	return glm::dvec3(unrealVector.x, unrealVector.z, unrealVector.y);
 }
 
-inline FVector unrealVectorToCesiumFVector(const glm::dvec3& gltfVector)
+inline FVector unrealVectorToCesiumFVector(const glm::dvec3& unrealVector)
 {
-	return FVector(gltfVector.x, gltfVector.z, gltfVector.y);
+	return FVector(unrealVector.x, unrealVector.z, unrealVector.y);
 }
 
-inline glm::dvec3 unrealFVectorToCesiumVector(const FVector& gltfVector)
+inline glm::dvec3 unrealFVectorToCesiumVector(const FVector& unrealVector)
 {
-	return glm::dvec3(gltfVector.X, gltfVector.Z, gltfVector.Y);
+	return glm::dvec3(unrealVector.X, unrealVector.Z, unrealVector.Y);
 }
 
-inline FVector unrealFVectorToCesiumFVector(const FVector& gltfVector)
+inline FVector unrealFVectorToCesiumFVector(const FVector& unrealVector)
 {
-	return FVector(gltfVector.X, gltfVector.Z, gltfVector.Y);
+	return FVector(unrealVector.X, unrealVector.Z, unrealVector.Y);
 }
