@@ -4,7 +4,7 @@
 #include "CesiumGltfComponent.h"
 #include "tiny_gltf.h"
 #include "GltfAccessor.h"
-#include "UnrealStringConversions.h"
+#include "UnrealConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Materials/Material.h"
@@ -271,6 +271,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
 		loadModelGameThreadPart(Gltf, std::move(result));
+		Gltf->SetVisibility(false, true);
 		callback(Gltf);
 	});
 }

@@ -4,7 +4,7 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
-#include "UnrealStringConversions.h"
+#include "UnrealConversions.h"
 #include <optional>
 
 class UnrealAssetResponse : public Cesium3DTiles::IAssetResponse {

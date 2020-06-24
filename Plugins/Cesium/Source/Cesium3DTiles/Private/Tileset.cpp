@@ -125,6 +125,40 @@ namespace Cesium3DTiles {
 		this->_pRootTile = rootTile;
 	}
 
+	std::optional<BoundingVolume> getBoundingVolumeProperty(const nlohmann::json& tileJson, const std::string& key) {
+		using nlohmann::json;
+
+		json::const_iterator bvIt = tileJson.find(key);
+		if (bvIt == tileJson.end()) {
+			return std::optional<BoundingVolume>();
+		}
+
+		json::const_iterator boxIt = bvIt->find("box");
+		if (boxIt != bvIt->end() && boxIt->is_array() && boxIt->size() >= 12) {
+			const json& a = *boxIt;
+			return BoundingBox(
+				glm::dvec3(a[0], a[1], a[2]),
+				glm::dvec3(a[3], a[4], a[5]),
+				glm::dvec3(a[6], a[7], a[8]),
+				glm::dvec3(a[9], a[10], a[11])
+			);
+		}
+
+		json::const_iterator regionIt = bvIt->find("region");
+		if (regionIt != bvIt->end() && regionIt->is_array() && boxIt->size() >= 6) {
+			const json& a = *boxIt;
+			return BoundingRegion(a[0], a[1], a[2], a[3], a[4], a[5]);
+		}
+
+		json::const_iterator sphereIt = bvIt->find("sphere");
+		if (sphereIt != bvIt->end() && sphereIt->is_array() && boxIt->size() >= 4) {
+			const json& a = *boxIt;
+			return BoundingSphere(glm::dvec3(a[0], a[1], a[2]), a[3]);
+		}
+
+		return std::optional<BoundingVolume>();
+	}
+
 	void Tileset::createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
 		using nlohmann::json;
 
@@ -140,10 +174,31 @@ namespace Cesium3DTiles {
 
 		if (contentIt != tileJson.end())
 		{
-			const std::string& uri = contentIt->value<std::string>("uri", contentIt->value<std::string>("url", ""));
-			const std::string fullUri = Uri::resolve(baseUrl, uri, true);
-			tile->setContentUri(fullUri);
+			json::const_iterator uriIt = contentIt->find("uri");
+			if (uriIt == contentIt->end()) {
+				uriIt = contentIt->find("url");
+			}
+
+			if (uriIt != contentIt->end()) {
+				const std::string& uri = *uriIt;
+				const std::string fullUri = Uri::resolve(baseUrl, uri, true);
+				tile->setContentUri(fullUri);
+			} else {
+				tile->finishPrepareRendererResources();
+			}
+		} else {
+			tile->finishPrepareRendererResources();
 		}
+
+		std::optional<BoundingVolume> boundingVolume = getBoundingVolumeProperty(tileJson, "boundingVolume");
+		if (!boundingVolume) {
+			// TODO: report missing required property
+			return;
+		}
+
+		// TODO: set all tile properties!
+
+		tile->setBoundingVolume(*boundingVolume);
 
 		if (childrenIt != tileJson.end())
 		{
