@@ -1,8 +1,11 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include "CullingResult.h"
 
 namespace Cesium3DTiles {
+
+    class Plane;
 
     class BoundingBox {
     public:
@@ -19,6 +22,8 @@ namespace Cesium3DTiles {
             yAxisDirectionAndHalfLength(yAxisDirectionAndHalfLength),
             zAxisDirectionAndHalfLength(zAxisDirectionAndHalfLength)
         {}
+
+        CullingResult intersectPlane(const Plane& plane) const;
 
         glm::dvec3 center;
         glm::dvec3 xAxisDirectionAndHalfLength;
