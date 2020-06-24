@@ -55,7 +55,8 @@ namespace Cesium3DTiles {
 
         glm::dvec3 right = glm::cross(this->_direction, this->_up);
 
-        glm::dvec3 nearCenter = this->_position + this->_direction;
+        glm::dvec3 nearCenter = this->_direction * n;
+        nearCenter = this->_position + nearCenter;
 
         //Left plane computation
         glm::dvec3 normal = right * l;

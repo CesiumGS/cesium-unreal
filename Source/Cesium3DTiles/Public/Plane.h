@@ -8,11 +8,14 @@ namespace Cesium3DTiles {
     public:
         Plane() {}
 
-        Plane(const glm::vec4& coefficients) :
+        Plane(const glm::dvec4& coefficients) :
             coefficients(coefficients)
         {}
         
-        glm::vec4 coefficients;
+        glm::dvec4 coefficients;
+
+        glm::dvec3 getNormal() const { return glm::dvec3(this->coefficients); }
+        double getDistance() const { return this->coefficients.w; }
     };
 
 }
