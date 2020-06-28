@@ -1,4 +1,4 @@
-#include "BoundingSphere.h"
+#include "Cesium3DTiles/BoundingSphere.h"
 
 namespace Cesium3DTiles {
 

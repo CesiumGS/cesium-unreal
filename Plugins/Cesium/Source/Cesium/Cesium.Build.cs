@@ -19,14 +19,20 @@ public class Cesium : ModuleRules
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
-                "../ThirdParty/uriparser/include"
+                "../ThirdParty/cesium-native/include",
+                "../ThirdParty/uriparser/include",
+                "../ThirdParty/cesium-native/extern/tinygltf",
+                "../ThirdParty/cesium-native/extern/glm",
+                "../ThirdParty/cesium-native/extern/GSL/include",
             }
             );
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../ThirdParty/build/uriparser/Release/uriparser.lib")
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/Debug/cesium-native.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/uriparser/Release/uriparser.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/draco/Release/draco.lib"),
             }
             );
 
@@ -48,8 +54,7 @@ public class Cesium : ModuleRules
 				"SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
-                "HTTP",
-                "Cesium3DTiles"
+                "HTTP"
 				// ... add private dependencies that you statically link with here ...	
 			}
             );

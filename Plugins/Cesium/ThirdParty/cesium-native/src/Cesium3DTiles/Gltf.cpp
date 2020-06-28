@@ -1,4 +1,4 @@
-#include "Gltf.h"
+#include "Cesium3DTiles/Gltf.h"
 
 namespace Cesium3DTiles {
     Gltf::LoadResult Gltf::load(const gsl::span<const uint8_t>& data)

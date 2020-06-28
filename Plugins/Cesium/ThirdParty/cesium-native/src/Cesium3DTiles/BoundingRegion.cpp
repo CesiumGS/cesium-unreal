@@ -1,4 +1,4 @@
-#include "BoundingRegion.h"
+#include "Cesium3DTiles/BoundingRegion.h"
 
 namespace Cesium3DTiles {
 

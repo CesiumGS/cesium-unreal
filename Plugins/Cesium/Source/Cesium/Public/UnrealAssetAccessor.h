@@ -2,7 +2,7 @@
 
 #include <list>
 #include <memory>
-#include "IAssetAccessor.h"
+#include "Cesium3DTiles/IAssetAccessor.h"
 
 class UnrealAssetAccessor : public Cesium3DTiles::IAssetAccessor
 {

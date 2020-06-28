@@ -1,6 +1,6 @@
 #include "UnrealAssetAccessor.h"
-#include "IAssetRequest.h"
-#include "IAssetResponse.h"
+#include "Cesium3DTiles/IAssetRequest.h"
+#include "Cesium3DTiles/IAssetResponse.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"

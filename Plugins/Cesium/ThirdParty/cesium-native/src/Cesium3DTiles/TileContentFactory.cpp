@@ -1,5 +1,5 @@
-#include "TileContentFactory.h"
-#include "TileContent.h"
+#include "Cesium3DTiles/TileContentFactory.h"
+#include "Cesium3DTiles/TileContent.h"
 
 namespace Cesium3DTiles {
 

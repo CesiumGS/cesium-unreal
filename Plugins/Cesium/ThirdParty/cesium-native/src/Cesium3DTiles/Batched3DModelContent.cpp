@@ -1,4 +1,4 @@
-#include "Batched3DModelContent.h"
+#include "Cesium3DTiles/Batched3DModelContent.h"
 #include <stdexcept>
 #include "tiny_gltf.h"
 

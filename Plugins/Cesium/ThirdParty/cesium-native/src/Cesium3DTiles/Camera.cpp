@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "Cesium3DTiles/Camera.h"
 
 namespace Cesium3DTiles {
 
@@ -40,7 +40,7 @@ namespace Cesium3DTiles {
     }
 
     void Camera::_updateCullingVolume() {
-        double aspectRatio = this->_viewportSize.y / this->_viewportSize.x;
+        double aspectRatio = this->_viewportSize.x / this->_viewportSize.y;
         double fov = this->_horizontalFieldOfView;
         double fovy = this->_verticalFieldOfView;
 
@@ -66,10 +66,10 @@ namespace Cesium3DTiles {
         normal = glm::cross(normal, this->_up);
         glm::normalize(normal);
 
-        this->_leftPlane = Plane(glm::dvec4(
+        this->_leftPlane = Plane(
             normal,
             -glm::dot(normal, this->_position)
-        ));
+        );
 
         //Right plane computation
         normal = right * r;
@@ -78,10 +78,10 @@ namespace Cesium3DTiles {
         normal = glm::cross(this->_up, normal);
         normal = normalize(normal);
 
-        this->_rightPlane = Plane(glm::dvec4(
+        this->_rightPlane = Plane(
             normal,
             -glm::dot(normal, this->_position)
-        ));
+        );
 
         //Bottom plane computation
         normal = this->_up * b;
@@ -90,10 +90,10 @@ namespace Cesium3DTiles {
         normal = glm::cross(right, normal);
         normal = glm::normalize(normal);
 
-        this->_bottomPlane = Plane(glm::dvec4(
+        this->_bottomPlane = Plane(
             normal,
             -glm::dot(normal, this->_position)
-        ));
+        );
 
         //Top plane computation
         normal = this->_up * t;
@@ -102,10 +102,10 @@ namespace Cesium3DTiles {
         normal = glm::cross(normal, right);
         normal = glm::normalize(normal);
 
-        this->_topPlane = Plane(glm::dvec4(
+        this->_topPlane = Plane(
             normal,
             -glm::dot(normal, this->_position)
-        ));
+        );
     }
 
     template <class T>

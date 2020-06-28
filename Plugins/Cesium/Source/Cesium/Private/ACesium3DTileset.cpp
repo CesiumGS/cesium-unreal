@@ -11,8 +11,8 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Engine/GameViewportClient.h"
 #include "UnrealAssetAccessor.h"
-#include "Tileset.h"
-#include "Batched3DModelContent.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/Batched3DModelContent.h"
 #include "UnrealTaskProcessor.h"
 #include "Math/UnrealMathUtility.h"
 
@@ -133,14 +133,18 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	double aspectRatio = size.X / size.Y;
 	double verticalFieldOfView = atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
 
-	FVector direction = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+	FVector direction = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
 		
-	FVector up = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 1.0f, 0.0f));
+	FVector up = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+
+	auto tryTransform = [](const FVector& v) {
+		return glm::dvec3(v.X, -v.Y, v.Z);
+	};
 
 	Cesium3DTiles::Camera camera(
-		unrealFVectorToCesiumVector(location) / 100.0,
-		unrealFVectorToCesiumVector(direction),
-		unrealFVectorToCesiumVector(up),
+		tryTransform(location) / 100.0,
+		tryTransform(direction),
+		tryTransform(up),
 		glm::dvec2(size.X, size.Y),
 		horizontalFieldOfView,
 		verticalFieldOfView
