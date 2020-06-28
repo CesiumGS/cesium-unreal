@@ -8,7 +8,7 @@
 ## Getting Started
 
 * Check out the repo with `git clone git@github.com:CesiumGS/cesium-unreal.git --recurse-submodules` so that you get the third party submodules.
-* Build `cesium-native` by following the instructions in `Plugins\Cesium\ThirdParty\cesium-native\README.md`
+* Build `cesium-native` by following the instructions in `Plugins\Cesium\ThirdParty\cesium-native\README.md`. Skip step 1 (cloning the repo) because it is already included as a git submodule in this repo under `Plugins\Cesium\ThirdParty\cesium-native`.
 * Open cesiumunreal.uproject in the Unreal Editor.
 * Say "yes" when prompted to rebuild `cesiumunreal` and `Cesium`.
 * Generate Visual Studio project files manually by choosing `File -> [Refresh/Generate] Visual Studio Project` in the editor.
