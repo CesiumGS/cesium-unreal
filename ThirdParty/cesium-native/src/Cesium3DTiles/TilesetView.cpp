@@ -32,22 +32,46 @@ namespace Cesium3DTiles {
         return result;
     }
 
-    void markChildrenNonRendered(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result, bool skipTile) {
+    static TileSelectionState::Result getTileLastSelectionResult(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, Tile& tile) {
         auto it = lastSelectionResults.find(&tile);
         if (it == lastSelectionResults.end()) {
-            return;
+            return TileSelectionState::Result::None;
         }
 
-        TileSelectionState::Result selectionResult = it->second.getResult(lastFrameNumber);
-        if (!skipTile && selectionResult == TileSelectionState::Result::Rendered) {
+        return it->second.getResult(lastFrameNumber);
+    }
+
+    static void markTileNonRendered(TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
+        if (lastResult == TileSelectionState::Result::Rendered) {
             result.tilesToNoLongerRenderThisFrame.push_back(&tile);
-        } else if (selectionResult == TileSelectionState::Result::Refined) {
+        }
+    }
+
+    static void markTileNonRendered(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = getTileLastSelectionResult(lastSelectionResults, lastFrameNumber, tile);
+        markTileNonRendered(lastResult, tile, result);
+    }
+
+    static void markChildrenNonRendered(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
+        if (lastResult == TileSelectionState::Result::Refined) {
             for (Tile& child : tile.getChildren()) {
-                markChildrenNonRendered(lastSelectionResults, lastFrameNumber, child, result, false);
+                TileSelectionState::Result childLastResult = getTileLastSelectionResult(lastSelectionResults, lastFrameNumber, tile);
+                markTileNonRendered(childLastResult, child, result);
+                markChildrenNonRendered(lastSelectionResults, lastFrameNumber, childLastResult, child, result);
             }
         }
     }
 
+    static void markChildrenNonRendered(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = getTileLastSelectionResult(lastSelectionResults, lastFrameNumber, tile);
+        markChildrenNonRendered(lastSelectionResults, lastFrameNumber, lastResult, tile, result);
+    }
+
+    static void markTileAndChildrenNonRendered(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = getTileLastSelectionResult(lastSelectionResults, lastFrameNumber, tile);
+        markTileNonRendered(lastResult, tile, result);
+        markChildrenNonRendered(lastSelectionResults, lastFrameNumber, lastResult, tile, result);
+    }
 
     void TilesetView::_visitTile(int32_t lastFrameNumber, const Camera& camera, double maximumScreenSpaceError, Tile& tile, ViewUpdateResult& result) {
         // Is this tile renderable?
@@ -59,7 +83,7 @@ namespace Cesium3DTiles {
         // Is this tile visible?
         const BoundingVolume& boundingVolume = tile.getBoundingVolume();
         if (!camera.isBoundingVolumeVisible(boundingVolume)) {
-            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result, false);
+            markTileAndChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result);
             this->_lastSelectionResults[&tile] = TileSelectionState(lastFrameNumber + 1, TileSelectionState::Result::Culled);
             return;
         }
@@ -69,7 +93,7 @@ namespace Cesium3DTiles {
         VectorRange<Tile> children = tile.getChildren();
         if (children.size() == 0) {
             // Render this leaf tile.
-            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result, true);
+            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result);
             this->_lastSelectionResults[&tile] = TileSelectionState(lastFrameNumber + 1, TileSelectionState::Result::Rendered);
             result.tilesToRenderThisFrame.push_back(&tile);
         }
@@ -79,7 +103,7 @@ namespace Cesium3DTiles {
 
         if (sse <= maximumScreenSpaceError) {
             // Tile meets SSE requirements, render it.
-            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result, true);
+            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result);
             this->_lastSelectionResults[&tile] = TileSelectionState(lastFrameNumber + 1, TileSelectionState::Result::Rendered);
             result.tilesToRenderThisFrame.push_back(&tile);
             return;
@@ -93,13 +117,13 @@ namespace Cesium3DTiles {
 
         if (!allChildrenAreReady) {
             // Can't refine because all children aren't yet ready, so render this tile for now.
-            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result, true);
+            markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result);
             this->_lastSelectionResults[&tile] = TileSelectionState(lastFrameNumber + 1, TileSelectionState::Result::Rendered);
             result.tilesToRenderThisFrame.push_back(&tile);
             return;
         }
 
-        markChildrenNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result, false);
+        markTileNonRendered(this->_lastSelectionResults, lastFrameNumber, tile, result);
         this->_lastSelectionResults[&tile] = TileSelectionState(lastFrameNumber + 1, TileSelectionState::Result::Refined);
 
         for (Tile& child : children) {
