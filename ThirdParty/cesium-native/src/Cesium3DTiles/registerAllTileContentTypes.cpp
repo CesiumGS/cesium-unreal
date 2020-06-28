@@ -1,6 +1,6 @@
-#include "registerAllTileContentTypes.h"
-#include "TileContentFactory.h"
-#include "Batched3DModelContent.h"
+#include "Cesium3DTiles/registerAllTileContentTypes.h"
+#include "Cesium3DTiles/TileContentFactory.h"
+#include "Cesium3DTiles/Batched3DModelContent.h"
 
 namespace Cesium3DTiles {
 

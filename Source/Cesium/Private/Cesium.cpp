@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Cesium.h"
-#include "registerAllTileContentTypes.h"
+#include "Cesium3DTiles/registerAllTileContentTypes.h"
 
 #define LOCTEXT_NAMESPACE "FCesiumModule"
 

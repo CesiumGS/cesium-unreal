@@ -15,7 +15,7 @@
 #include "MeshTypes.h"
 #include "Engine/StaticMesh.h"
 #include <iostream>
-#include "Gltf.h"
+#include "Cesium3DTiles/Gltf.h"
 
 static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
 {

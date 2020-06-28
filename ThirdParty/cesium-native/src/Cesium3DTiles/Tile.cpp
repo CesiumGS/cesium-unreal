@@ -1,8 +1,8 @@
-#include "Tile.h"
-#include "Tileset.h"
-#include "IAssetAccessor.h"
-#include "IAssetResponse.h"
-#include "TileContentFactory.h"
+#include "Cesium3DTiles/Tile.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/IAssetAccessor.h"
+#include "Cesium3DTiles/IAssetResponse.h"
+#include "Cesium3DTiles/TileContentFactory.h"
 #include <fstream>
 
 namespace Cesium3DTiles {
@@ -11,7 +11,7 @@ namespace Cesium3DTiles {
         _pTileset(&tileset),
         _pParent(pParent),
         _children(),
-        _boundingVolume(BoundingBox(glm::dvec3(), glm::dvec3(), glm::dvec3(), glm::dvec3())),
+        _boundingVolume(BoundingBox(glm::dvec3(), glm::dmat4())),
         _viewerRequestVolume(),
         _geometricError(0.0),
         _refine(),

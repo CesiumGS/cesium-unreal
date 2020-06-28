@@ -1,6 +1,6 @@
-#include "Tileset.h"
-#include "IAssetAccessor.h"
-#include "IAssetResponse.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/IAssetAccessor.h"
+#include "Cesium3DTiles/IAssetResponse.h"
 #include "Uri.h"
 #pragma warning(push)
 #pragma warning(disable: 4946)
@@ -138,9 +138,7 @@ namespace Cesium3DTiles {
 			const json& a = *boxIt;
 			return BoundingBox(
 				glm::dvec3(a[0], a[1], a[2]),
-				glm::dvec3(a[3], a[4], a[5]),
-				glm::dvec3(a[6], a[7], a[8]),
-				glm::dvec3(a[9], a[10], a[11])
+				glm::dmat3(a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11])
 			);
 		}
 

@@ -1,6 +1,6 @@
-#include "TilesetView.h"
-#include "Tileset.h"
-#include "ViewUpdateResult.h"
+#include "Cesium3DTiles/TilesetView.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/ViewUpdateResult.h"
 
 namespace Cesium3DTiles {
 

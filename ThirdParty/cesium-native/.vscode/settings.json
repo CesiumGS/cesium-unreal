@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "variant": "cpp",
+        "cmath": "cpp",
+        "xutility": "cpp",
+        "random": "cpp",
+        "optional": "cpp",
+        "type_traits": "cpp"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+}
