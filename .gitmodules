@@ -13,3 +13,6 @@
 [submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/Catch2"]
 	path = Plugins/Cesium/ThirdParty/cesium-native/extern/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/GSL"]
+	path = Plugins/Cesium/ThirdParty/cesium-native/extern/GSL
+	url = https://github.com/microsoft/GSL.git
