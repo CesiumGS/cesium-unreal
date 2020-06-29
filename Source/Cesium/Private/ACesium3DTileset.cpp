@@ -161,7 +161,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		if (Gltf) {
 			Gltf->SetVisibility(false, true);
 		} else {
-			UE_LOG(LogActor, Warning, TEXT("Weird"));
+			// TODO: why is this happening?
 		}
 	}
 
