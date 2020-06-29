@@ -20,7 +20,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void OnConstruction(const FTransform & Transform);
+	virtual void OnConstruction(const FTransform& Transform);
 
 	class UCesiumGltfComponent* Model;
 };

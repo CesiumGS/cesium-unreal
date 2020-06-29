@@ -19,18 +19,20 @@ public class Cesium : ModuleRules
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
-                "../ThirdParty/tinygltf",
-                "../ThirdParty/draco/src",
-                "../ThirdParty/build/draco",
-                "../ThirdParty/uriparser/include"
+                "../ThirdParty/cesium-native/include",
+                "../ThirdParty/uriparser/include",
+                "../ThirdParty/cesium-native/extern/tinygltf",
+                "../ThirdParty/cesium-native/extern/glm",
+                "../ThirdParty/cesium-native/extern/GSL/include",
             }
             );
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../ThirdParty/build/draco/Release/dracodec.lib"),
-                Path.Combine(ModuleDirectory, "../../ThirdParty/build/uriparser/Release/uriparser.lib")
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/Debug/cesium-native.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/uriparser/Release/uriparser.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/draco/Release/draco.lib"),
             }
             );
 
@@ -52,8 +54,7 @@ public class Cesium : ModuleRules
 				"SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
-                "HTTP",
-                "libcurl"
+                "HTTP"
 				// ... add private dependencies that you statically link with here ...	
 			}
             );
@@ -65,5 +66,8 @@ public class Cesium : ModuleRules
 			}
 			);
 
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PrivatePCHHeaderFile = "Private/PCH.h";
+        CppStandard = CppStandardVersion.Cpp17;
     }
 }
