@@ -5,7 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
-#include "Cesium3DTileset.generated.h"
+#include "ACesium3DTileset.generated.h"
+
+namespace Cesium3DTiles {
+	class Tileset;
+	class TilesetView;
+}
 
 UCLASS()
 class CESIUM_API ACesium3DTileset : public AActor
@@ -25,17 +30,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	FString IonAccessToken;
 
+	UPROPERTY(EditAnywhere, Category = "Cesium Debug")
+	bool SuspendUpdate;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	void IonAssetRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
-	void TilesetJsonRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
+	virtual void OnConstruction(const FTransform& Transform) override;
+	void LoadTileset();
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-public:
-	// TODO: this shouldn't be public.
-	void AddGltf(class UCesiumGltfComponent* Gltf);
+private:
+	Cesium3DTiles::Tileset* _pTileset;
+	Cesium3DTiles::TilesetView* _pTilesetView;
 };
