@@ -41,4 +41,59 @@ namespace Cesium3DTiles {
         return CullingResult::Intersecting;
     }
 
+    double BoundingBox::computeDistanceSquaredToPosition(const glm::dvec3& position) const {
+        glm::dvec3 offset = position - this->center;
+
+        const glm::dmat3& halfAxes = this->halfAxes;
+        glm::dvec3 u = halfAxes[0];
+        glm::dvec3 v = halfAxes[1];
+        glm::dvec3 w = halfAxes[2];
+
+        double uHalf = glm::length(u);
+        double vHalf = glm::length(v);
+        double wHalf = glm::length(w);
+
+        u /= uHalf;
+        v /= vHalf;
+        w /= wHalf;
+
+        glm::dvec3 pPrime(
+            glm::dot(offset, u),
+            glm::dot(offset, v),
+            glm::dot(offset, w)
+        );
+
+        double distanceSquared = 0.0;
+        double d;
+
+        if (pPrime.x < -uHalf) {
+            d = pPrime.x + uHalf;
+            distanceSquared += d * d;
+        }
+        else if (pPrime.x > uHalf) {
+            d = pPrime.x - uHalf;
+            distanceSquared += d * d;
+        }
+
+        if (pPrime.y < -vHalf) {
+            d = pPrime.y + vHalf;
+            distanceSquared += d * d;
+        }
+        else if (pPrime.y > vHalf) {
+            d = pPrime.y - vHalf;
+            distanceSquared += d * d;
+        }
+
+        if (pPrime.z < -wHalf) {
+            d = pPrime.z + wHalf;
+            distanceSquared += d * d;
+        }
+        else if (pPrime.z > wHalf) {
+            d = pPrime.z - wHalf;
+            distanceSquared += d * d;
+        }
+
+        return distanceSquared;
+    }
+
 }

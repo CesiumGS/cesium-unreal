@@ -76,7 +76,7 @@ namespace Cesium3DTiles {
 
         bool isBoundingVolumeVisible(const BoundingVolume& boundingVolume) const;
 
-        double computeDistanceToBoundingVolume(const BoundingVolume& boundingVolume) const;
+        double computeDistanceSquaredToBoundingVolume(const BoundingVolume& boundingVolume) const;
         double computeScreenSpaceError(double geometricError, double distance) const;
 
     private:

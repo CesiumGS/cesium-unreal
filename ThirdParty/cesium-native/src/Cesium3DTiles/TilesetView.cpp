@@ -25,7 +25,7 @@ namespace Cesium3DTiles {
 
         int32_t lastFrameNumber = this->_lastFrameNumber;
 
-        this->_visitTile(lastFrameNumber, camera, 0.0, *pRootTile, result);
+        this->_visitTile(lastFrameNumber, camera, 16.0, *pRootTile, result);
 
         this->_lastFrameNumber = lastFrameNumber + 1;
 
@@ -88,7 +88,8 @@ namespace Cesium3DTiles {
             return;
         }
 
-        double distance = camera.computeDistanceToBoundingVolume(boundingVolume);
+        double distanceSquared = camera.computeDistanceSquaredToBoundingVolume(boundingVolume);
+        double distance = sqrt(distanceSquared);
 
         VectorRange<Tile> children = tile.getChildren();
         if (children.size() == 0) {
