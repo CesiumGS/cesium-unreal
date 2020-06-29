@@ -1,4 +1,5 @@
 #include "Cesium3DTiles/Camera.h"
+#include <algorithm>
 
 namespace Cesium3DTiles {
 
@@ -162,11 +163,23 @@ namespace Cesium3DTiles {
         }
     }
 
-    double Camera::computeDistanceToBoundingVolume(const BoundingVolume& boundingVolume) const {
-        return 0.0;
+    double Camera::computeDistanceSquaredToBoundingVolume(const BoundingVolume& boundingVolume) const {
+        switch (boundingVolume.index()) {
+        case 0:
+        {
+            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            return boundingBox.computeDistanceSquaredToPosition(this->_position);
+        }
+        // TODO: handle other bounding volume types
+        default:
+            return 0.0;
+        }
     }
 
     double Camera::computeScreenSpaceError(double geometricError, double distance) const {
-        return 9999999999.0;
+        // Avoid divide by zero when viewer is inside the tile
+        distance = std::max(distance, 1e-7);
+        double sseDenominator = this->_sseDenominator;
+        return (geometricError * this->_viewportSize.y) / (distance * sseDenominator);
     }
 }

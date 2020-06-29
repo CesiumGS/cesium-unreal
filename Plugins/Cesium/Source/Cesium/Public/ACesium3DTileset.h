@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	FString IonAccessToken;
 
+	UPROPERTY(EditAnywhere, Category = "Cesium Debug")
+	bool SuspendUpdate;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

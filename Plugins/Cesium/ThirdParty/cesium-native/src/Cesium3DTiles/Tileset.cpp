@@ -125,7 +125,7 @@ namespace Cesium3DTiles {
 		this->_pRootTile = rootTile;
 	}
 
-	std::optional<BoundingVolume> getBoundingVolumeProperty(const nlohmann::json& tileJson, const std::string& key) {
+	static std::optional<BoundingVolume> getBoundingVolumeProperty(const nlohmann::json& tileJson, const std::string& key) {
 		using nlohmann::json;
 
 		json::const_iterator bvIt = tileJson.find(key);
@@ -157,6 +157,17 @@ namespace Cesium3DTiles {
 		return std::optional<BoundingVolume>();
 	}
 
+	static std::optional<double> getScalarProperty(const nlohmann::json& tileJson, const std::string& key) {
+		using nlohmann::json;
+
+		json::const_iterator it = tileJson.find(key);
+		if (it == tileJson.end() || !it->is_number()) {
+			return std::optional<double>();
+		}
+
+		return it->get<double>();
+	}
+
 	void Tileset::createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
 		using nlohmann::json;
 
@@ -184,6 +195,8 @@ namespace Cesium3DTiles {
 			} else {
 				tile->finishPrepareRendererResources();
 			}
+
+			tile->setContentBoundingVolume(getBoundingVolumeProperty(*contentIt, "boundingVolume"));
 		} else {
 			tile->finishPrepareRendererResources();
 		}
@@ -194,9 +207,30 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		// TODO: set all tile properties!
+
+		std::optional<double> geometricError = getScalarProperty(tileJson, "geometricError");
+		if (!geometricError) {
+			// TODO: report missing required property
+			return;
+		}
 
 		tile->setBoundingVolume(*boundingVolume);
+		tile->setGeometricError(*geometricError);
+		tile->setViewerRequestVolume(getBoundingVolumeProperty(tileJson, "viewerRequestVolume"));
+		
+		json::const_iterator refineIt = tileJson.find("refine");
+		if (refineIt != tileJson.end()) {
+			const std::string& refine = *refineIt;
+			if (refine == "REPLACE") {
+				tile->setRefine(Tile::Refine::Replace);
+			} else if (refine == "ADD") {
+				tile->setRefine(Tile::Refine::Add);
+			} else {
+				// TODO: report invalid value
+			}
+		}
+
+		// TODO: load transform
 
 		if (childrenIt != tileJson.end())
 		{

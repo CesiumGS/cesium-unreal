@@ -118,6 +118,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (this->SuspendUpdate) {
+		return;
+	}
+
 	APlayerCameraManager* pCameraManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
 	UGameViewportClient* pViewport = GetWorld()->GetGameViewport();
