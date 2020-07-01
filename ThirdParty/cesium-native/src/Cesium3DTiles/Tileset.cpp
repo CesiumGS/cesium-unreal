@@ -168,6 +168,23 @@ namespace Cesium3DTiles {
 		return it->get<double>();
 	}
 
+	static std::optional<glm::dmat4x4> getTransformProperty(const nlohmann::json& tileJson, const std::string& key) {
+		using nlohmann::json;
+
+		json::const_iterator it = tileJson.find(key);
+		if (it == tileJson.end() || !it->is_array() || it->size() < 16) {
+			return std::optional<glm::dmat4x4>();
+		}
+
+		const json& a = *it;
+		return glm::dmat4(
+			glm::dvec4(a[0], a[1], a[2], a[3]),
+			glm::dvec4(a[4], a[5], a[6], a[7]),
+			glm::dvec4(a[8], a[9], a[10], a[11]),
+			glm::dvec4(a[12], a[13], a[14], a[15])
+		);
+	}
+
 	void Tileset::createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
 		using nlohmann::json;
 
@@ -230,7 +247,7 @@ namespace Cesium3DTiles {
 			}
 		}
 
-		// TODO: load transform
+		tile->setTransform(getTransformProperty(tileJson, "transform"));
 
 		if (childrenIt != tileJson.end())
 		{
