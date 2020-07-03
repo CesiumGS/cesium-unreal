@@ -15,6 +15,7 @@
 #include "Cesium3DTiles/Batched3DModelContent.h"
 #include "UnrealTaskProcessor.h"
 #include "Math/UnrealMathUtility.h"
+#include "Cesium3DTiles/Transforms.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4946)
@@ -122,6 +123,12 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
+	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
+	if (!pRootTile) {
+		return;
+	}
+
+
 	APlayerCameraManager* pCameraManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
 	UGameViewportClient* pViewport = GetWorld()->GetGameViewport();
@@ -145,10 +152,27 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return glm::dvec3(v.X, -v.Y, v.Z);
 	};
 
+	glm::dvec3 cesiumPosition = tryTransform(location) / 100.0;
+	glm::dvec3 cesiumDirection = tryTransform(direction);
+	glm::dvec3 cesiumUp = tryTransform(up);
+
+	if (this->PlaceTilesetBoundingVolumeCenterAtWorldOrigin) {
+		const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
+		glm::dvec3 bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
+		cesiumPosition += bvCenter;
+
+		if (this->AlignTilesetUpWithZ) {
+			glm::dmat4x4 enuToFixed = Cesium3DTiles::Transforms::eastNorthUpToFixedFrame(bvCenter);
+			glm::dmat3x3 enuToFixedRotation(enuToFixed);
+			cesiumDirection = enuToFixedRotation * cesiumDirection;
+			cesiumUp = enuToFixedRotation * cesiumUp;
+		}
+	}
+
 	Cesium3DTiles::Camera camera(
-		tryTransform(location) / 100.0,
-		tryTransform(direction),
-		tryTransform(up),
+		cesiumPosition,
+		cesiumDirection,
+		cesiumUp,
 		glm::dvec2(size.X, size.Y),
 		horizontalFieldOfView,
 		verticalFieldOfView

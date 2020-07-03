@@ -37,4 +37,25 @@ namespace Cesium3DTiles {
         }
     }
 
+    glm::dvec3 getBoundingVolumeCenter(const BoundingVolume& boundingVolume) {
+        switch (boundingVolume.index()) {
+        case 0:
+        {
+            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            return boundingBox.center;
+        }
+        case 1:
+        {
+            throw std::exception("TODO: Computing center of bounding region is not yet supported.");
+        }
+        case 2:
+        {
+            const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
+            return boundingSphere.center;
+        }
+        default:
+            return glm::dvec3(0.0);
+        }
+    }
+
 }
