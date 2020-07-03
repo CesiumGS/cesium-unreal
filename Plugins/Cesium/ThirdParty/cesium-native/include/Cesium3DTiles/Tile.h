@@ -81,8 +81,12 @@ namespace Cesium3DTiles {
         const std::optional<Refine>& getRefine() const { return this->_refine; }
         void setRefine(const std::optional<Refine>& value) { this->_refine = value; }
 
-        const std::optional<glm::dmat4x4>& getTransform() const { return this->_transform; }
-        void setTransform(const std::optional<glm::dmat4x4>& value) { this->_transform = value; }
+        /// <summary>
+        /// Gets the transformation matrix for this tile. This matrix does _not_ need to be multiplied
+        /// with the tile's parent's transform as this has already been done.
+        /// </summary>
+        const glm::dmat4x4& getTransform() const { return this->_transform; }
+        void setTransform(const glm::dmat4x4& value) { this->_transform = value; }
 
         const std::optional<std::string>& getContentUri() const { return this->_contentUri; }
         void setContentUri(const std::optional<std::string>& value);
@@ -122,7 +126,7 @@ namespace Cesium3DTiles {
         std::optional<BoundingVolume> _viewerRequestVolume;
         double _geometricError;
         std::optional<Refine> _refine;
-        std::optional<glm::dmat4x4> _transform;
+        glm::dmat4x4 _transform;
 
         std::optional<std::string> _contentUri;
         std::optional<BoundingVolume> _contentBoundingVolume;

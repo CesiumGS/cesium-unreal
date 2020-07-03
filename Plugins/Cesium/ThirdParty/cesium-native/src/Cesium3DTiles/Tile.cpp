@@ -15,7 +15,7 @@ namespace Cesium3DTiles {
         _viewerRequestVolume(),
         _geometricError(0.0),
         _refine(),
-        _transform(),
+        _transform(1.0),
         _contentUri(),
         _contentBoundingVolume(),
         _state(LoadState::Unloaded),

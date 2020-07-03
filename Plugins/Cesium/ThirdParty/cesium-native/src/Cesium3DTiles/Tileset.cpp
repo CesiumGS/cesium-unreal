@@ -193,7 +193,18 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		const bool leavesOnly = true;
+		Tile* pParent = tile->getParent();
+
+		std::optional<glm::dmat4x4> tileTransform = getTransformProperty(tileJson, "transform");
+		glm::dmat4x4 transform = tileTransform.value_or(glm::dmat4x4(1.0));
+
+		if (tileTransform && pParent) {
+			transform = pParent->getTransform() * transform;
+		} else if (pParent) {
+			transform = pParent->getTransform();
+		}
+
+		tile->setTransform(transform);
 
 		json::const_iterator contentIt = tileJson.find("content");
 		json::const_iterator childrenIt = tileJson.find("children");
@@ -213,7 +224,10 @@ namespace Cesium3DTiles {
 				tile->finishPrepareRendererResources();
 			}
 
-			tile->setContentBoundingVolume(getBoundingVolumeProperty(*contentIt, "boundingVolume"));
+			std::optional<BoundingVolume> contentBoundingVolume = getBoundingVolumeProperty(*contentIt, "boundingVolume");
+			if (contentBoundingVolume) {
+				tile->setContentBoundingVolume(transformBoundingVolume(transform, contentBoundingVolume.value()));
+			}
 		} else {
 			tile->finishPrepareRendererResources();
 		}
@@ -224,16 +238,20 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-
 		std::optional<double> geometricError = getScalarProperty(tileJson, "geometricError");
 		if (!geometricError) {
 			// TODO: report missing required property
 			return;
 		}
 
-		tile->setBoundingVolume(*boundingVolume);
-		tile->setGeometricError(*geometricError);
-		tile->setViewerRequestVolume(getBoundingVolumeProperty(tileJson, "viewerRequestVolume"));
+		//tile->setBoundingVolume(transformBoundingVolume(transform, boundingVolume.value()));
+		tile->setBoundingVolume(boundingVolume.value());
+		tile->setGeometricError(geometricError.value());
+
+		std::optional<BoundingVolume> viewerRequestVolume = getBoundingVolumeProperty(tileJson, "viewerRequestVolume");
+		if (viewerRequestVolume) {
+			tile->setViewerRequestVolume(transformBoundingVolume(transform, viewerRequestVolume.value()));
+		}
 		
 		json::const_iterator refineIt = tileJson.find("refine");
 		if (refineIt != tileJson.end()) {
@@ -246,8 +264,6 @@ namespace Cesium3DTiles {
 				// TODO: report invalid value
 			}
 		}
-
-		tile->setTransform(getTransformProperty(tileJson, "transform"));
 
 		if (childrenIt != tileJson.end())
 		{
