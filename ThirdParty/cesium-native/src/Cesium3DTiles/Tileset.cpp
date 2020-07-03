@@ -244,8 +244,8 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		//tile->setBoundingVolume(transformBoundingVolume(transform, boundingVolume.value()));
-		tile->setBoundingVolume(boundingVolume.value());
+		tile->setBoundingVolume(transformBoundingVolume(transform, boundingVolume.value()));
+		//tile->setBoundingVolume(boundingVolume.value());
 		tile->setGeometricError(geometricError.value());
 
 		std::optional<BoundingVolume> viewerRequestVolume = getBoundingVolumeProperty(tileJson, "viewerRequestVolume");
