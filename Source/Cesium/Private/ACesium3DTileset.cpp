@@ -178,7 +178,5 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		}
 
 		Gltf->SetVisibility(true, true);
-
-		// TODO: activate the gltf
 	}
 }

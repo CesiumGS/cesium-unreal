@@ -30,6 +30,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	FString IonAccessToken;
 
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	bool UseLocalOrigin;
+	
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	bool AutomaticLocalOrigin;
+	
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	FTransform LocalOrigin;
+
 	UPROPERTY(EditAnywhere, Category = "Cesium Debug")
 	bool SuspendUpdate;
 
