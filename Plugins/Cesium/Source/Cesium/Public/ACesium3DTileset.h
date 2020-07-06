@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include <glm/mat4x4.hpp>
 #include "ACesium3DTileset.generated.h"
 
 namespace Cesium3DTiles {
@@ -65,6 +66,9 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Debug")
 	bool SuspendUpdate;
+
+	glm::dmat4x4 GetWorldToTilesetTransform() const;
+	glm::dmat4x4 GetTilesetToWorldTransform() const;
 
 protected:
 	// Called when the game starts or when spawned

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
 #include "Interfaces/IHttpRequest.h"
+#include <glm/mat4x4.hpp>
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterial;
@@ -25,7 +26,7 @@ public:
 	/// The final component creation is done in the game thread (as required by Unreal Engine) and
 	/// the provided callback is raised in the game thread with the result.
 	/// </summary>
-	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, TFunction<void (UCesiumGltfComponent*)>);
+	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
 
 	UCesiumGltfComponent();
 

@@ -23,3 +23,11 @@ After loading the project in Unreal Editor and click "yes" to rebuild, something
 ### Hot Reloading
 
 Changes made to the game project (cesiumunreal), when compiled, will be hot-reloaded by the Unreal Editor. But this doesn't work for changes in the plugin (Cesium). To build and reload plugin changes without restarting the editor, go to Window -> Developer Tools -> Modules, search for Cesium, and click the "Recompile" button next to it.
+
+### Coordinate Systems
+
+There are a bunch of coordinate systems involved, and it can get confusing. The most important ones are:
+
+* Unreal Engine: Left-handed, +X is forward, +Y is right, +Z is up
+* [glTF](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#coordinate-system-and-units): Right-handed, +X is left, +Y is up, +Z is forward
+* Cesium: Right-handed, +X is forward, +Y is left, +Z is up
