@@ -269,7 +269,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pMesh->RegisterComponent();
 
 	const glm::dmat4x4& transform = unrealToOrFromCesium * scaleToUnrealWorld * loadResult.transform;
-	pMesh->SetWorldTransform(FTransform(FMatrix(
+	pMesh->SetRelativeTransform(FTransform(FMatrix(
 		FVector(transform[0].x, transform[0].y, transform[0].z),
 		FVector(transform[1].x, transform[1].y, transform[1].z),
 		FVector(transform[2].x, transform[2].y, transform[2].z),
