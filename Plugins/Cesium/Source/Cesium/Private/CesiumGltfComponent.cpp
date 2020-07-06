@@ -17,23 +17,7 @@
 #include <iostream>
 #include "Cesium3DTiles/Gltf.h"
 #include <glm/ext/matrix_transform.hpp>
-
-// Invert left and right vectors to turn glTF's right-handed coordinate
-// system into a left-handed one like Unreal's. This does _not_ bring the
-// coordinate fully into Unreal Engine's coordinate system (which is Z-up),
-// but after this X axis inversion, the normal glTF->Cesium transformation
-// will actually end up bringing the coordinates into the Unreal Engine
-// axes.
-
-static glm::dvec3 gltfToLeftHanded(const glm::dvec3& rightHandedVector)
-{
-	return glm::dvec3(-rightHandedVector.x, rightHandedVector.y, rightHandedVector.z);
-}
-
-static FVector gltfToLeftHanded(const FVector& rightHandedVector)
-{
-	return FVector(-rightHandedVector.X, rightHandedVector.Y, rightHandedVector.Z);
-}
+#include <glm/mat3x3.hpp>
 
 static uint32_t nextMaterialId = 0;
 
@@ -57,8 +41,11 @@ glm::dmat4x4 gltfAxesToCesiumAxes(
 
 double centimetersPerMeter = 100.0;
 
-glm::dmat4x4 scaleToUnrealWorld = glm::scale(glm::dmat4x4(1.0), glm::dvec3(centimetersPerMeter, centimetersPerMeter, centimetersPerMeter));
+// Scale Cesium's meters up to Unreal's centimeters.
+glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
 
+// Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
+// system by inverting the Y coordinate. This same transformation can also go the other way.
 glm::dmat4x4 unrealToOrFromCesium(
 	glm::dvec4(1.0, 0.0, 0.0, 0.0),
 	glm::dvec4(0.0, -1.0, 0.0, 0.0),
@@ -97,8 +84,6 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model, cons
 			const std::vector<double>& min = positionAccessor.gltfAccessor().minValues;
 			const std::vector<double>& max = positionAccessor.gltfAccessor().maxValues;
 
-			//glm::dvec3 minPosition = gltfToLeftHanded(glm::dvec3(min[0], min[1], min[2]));
-			//glm::dvec3 maxPosition = gltfToLeftHanded(glm::dvec3(max[0], max[1], max[2]));
 			glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
 			glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
 
@@ -117,7 +102,6 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model, cons
 			for (size_t i = 0; i < positionAccessor.size(); ++i)
 			{
 				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-				//vertex.Position = gltfToLeftHanded(positionAccessor[i]);
 				vertex.Position = positionAccessor[i];
 				vertex.TangentZ = FVector(0.0f, 0.0f, 1.0f);
 				vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
@@ -142,7 +126,6 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model, cons
 				for (size_t i = 0; i < normalAccessor.size(); ++i)
 				{
 					FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-					//vertex.TangentZ = gltfToLeftHanded(normalAccessor[i]);
 					vertex.TangentZ = normalAccessor[i];
 					vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
 
