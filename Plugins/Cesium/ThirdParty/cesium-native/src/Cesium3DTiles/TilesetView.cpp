@@ -55,7 +55,7 @@ namespace Cesium3DTiles {
     static void markChildrenNonRendered(std::unordered_map<Tile*, TileSelectionState>& lastSelectionResults, int32_t lastFrameNumber, TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
         if (lastResult == TileSelectionState::Result::Refined) {
             for (Tile& child : tile.getChildren()) {
-                TileSelectionState::Result childLastResult = getTileLastSelectionResult(lastSelectionResults, lastFrameNumber, tile);
+                TileSelectionState::Result childLastResult = getTileLastSelectionResult(lastSelectionResults, lastFrameNumber, child);
                 markTileNonRendered(childLastResult, child, result);
                 markChildrenNonRendered(lastSelectionResults, lastFrameNumber, childLastResult, child, result);
             }
