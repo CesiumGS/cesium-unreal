@@ -181,9 +181,14 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return glm::dvec3(v.X, -v.Y, v.Z);
 	};
 
-	glm::dvec3 cesiumPosition = tryTransform(location) / 100.0;
-	glm::dvec3 cesiumDirection = tryTransform(direction);
-	glm::dvec3 cesiumUp = tryTransform(up);
+	const FTransform& tilesetToWorld = this->RootComponent->GetComponentToWorld();
+	FVector locationRelativeToTileset = tilesetToWorld.InverseTransformPosition(location);
+	FVector directionRelativeToTileset = tilesetToWorld.InverseTransformVector(direction);
+	FVector upRelativeToTileset = tilesetToWorld.InverseTransformVector(up);
+
+	glm::dvec3 cesiumPosition = tryTransform(locationRelativeToTileset) / 100.0;
+	glm::dvec3 cesiumDirection = tryTransform(directionRelativeToTileset);
+	glm::dvec3 cesiumUp = tryTransform(upRelativeToTileset);
 
 	glm::dmat4x4 transform = this->GetWorldToTilesetTransform();
 
