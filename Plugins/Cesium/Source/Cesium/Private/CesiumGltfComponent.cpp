@@ -16,11 +16,8 @@
 #include "Engine/StaticMesh.h"
 #include <iostream>
 #include "Cesium3DTiles/Gltf.h"
-
-static FVector gltfVectorToUnrealVector(const FVector& gltfVector)
-{
-	return FVector(gltfVector.X, gltfVector.Z, gltfVector.Y);
-}
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/mat3x3.hpp>
 
 static uint32_t nextMaterialId = 0;
 
@@ -29,10 +26,34 @@ struct LoadModelResult
 	FStaticMeshRenderData* RenderData;
 	tinygltf::Image image;
 	tinygltf::PbrMetallicRoughness pbr;
-	FTransform transform;
+	glm::dmat4x4 transform;
 };
 
-static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
+// https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
+// If we invert the X axis in a glTF to make the coordinate system left-handed,
+// then this same matrix also transforms glTF coordinates to Unreal Engine coordinates.
+glm::dmat4x4 gltfAxesToCesiumAxes(
+	glm::dvec4(1.0,  0.0,  0.0, 0.0),
+	glm::dvec4(0.0,  0.0, 1.0, 0.0),
+	glm::dvec4(0.0, -1.0,  0.0, 0.0),
+	glm::dvec4(0.0,  0.0,  0.0, 1.0)
+);
+
+double centimetersPerMeter = 100.0;
+
+// Scale Cesium's meters up to Unreal's centimeters.
+glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
+
+// Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
+// system by inverting the Y coordinate. This same transformation can also go the other way.
+glm::dmat4x4 unrealToOrFromCesium(
+	glm::dvec4(1.0, 0.0, 0.0, 0.0),
+	glm::dvec4(0.0, -1.0, 0.0, 0.0),
+	glm::dvec4(0.0, 0.0, 1.0, 0.0),
+	glm::dvec4(0.0, 0.0, 0.0, 1.0)
+);
+
+static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model, const glm::dmat4x4& transform) {
 	LoadModelResult result;
 
 	FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
@@ -40,7 +61,7 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
 
 	FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-	float centimetersPerMeter = 100.0f;
+	//double centimetersPerMeter = 100.0;
 
 	for (auto meshIt = model.meshes.begin(); meshIt != model.meshes.end(); ++meshIt)
 	{
@@ -63,10 +84,13 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
 			const std::vector<double>& min = positionAccessor.gltfAccessor().minValues;
 			const std::vector<double>& max = positionAccessor.gltfAccessor().maxValues;
 
-			FVector minPosition = gltfVectorToUnrealVector(FVector(min[0], min[1], min[2])) * centimetersPerMeter;
-			FVector maxPosition = gltfVectorToUnrealVector(FVector(max[0], max[1], max[2])) * centimetersPerMeter;
+			glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
+			glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
 
-			FBox aaBox(minPosition, maxPosition);
+			FBox aaBox(
+				FVector(minPosition.x, minPosition.y, minPosition.z),
+				FVector(maxPosition.x, maxPosition.y, maxPosition.z)
+			);
 
 			FBoxSphereBounds BoundingBoxAndSphere;
 			aaBox.GetCenterAndExtents(BoundingBoxAndSphere.Origin, BoundingBoxAndSphere.BoxExtent);
@@ -78,7 +102,7 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
 			for (size_t i = 0; i < positionAccessor.size(); ++i)
 			{
 				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-				vertex.Position = gltfVectorToUnrealVector(positionAccessor[i] * centimetersPerMeter);
+				vertex.Position = positionAccessor[i];
 				vertex.TangentZ = FVector(0.0f, 0.0f, 1.0f);
 				vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
 
@@ -102,7 +126,7 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
 				for (size_t i = 0; i < normalAccessor.size(); ++i)
 				{
 					FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-					vertex.TangentZ = gltfVectorToUnrealVector(normalAccessor[i]);
+					vertex.TangentZ = normalAccessor[i];
 					vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
 
 					float binormalSign =
@@ -158,12 +182,12 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
 			TArray<uint32> IndexBuffer;
 			IndexBuffer.SetNumZeroed(indexAccessor.size());
 
-			for (size_t i = 0; i < indexAccessor.size(); ++i)
+			for (size_t i = 0, outIndex = indexAccessor.size() - 1; i < indexAccessor.size(); ++i, --outIndex)
 			{
 				uint16_t index = indexAccessor[i];
 				MinVertexIndex = FMath::Min(MinVertexIndex, static_cast<const uint32_t>(index));
 				MaxVertexIndex = FMath::Max(MaxVertexIndex, static_cast<const uint32_t>(index));
-				IndexBuffer[i] = index;
+				IndexBuffer[outIndex] = index;
 			}
 
 			section.NumTriangles = indexAccessor.size() / 3;
@@ -191,20 +215,20 @@ static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model) {
 
 			if (model.nodes.size() > 0 && model.nodes[0].matrix.size() > 0)
 			{
-				result.transform = FTransform(FMatrix(
-					gltfVectorToUnrealVector(FVector(model.nodes[0].matrix[0], model.nodes[0].matrix[1], model.nodes[0].matrix[2])),
-					gltfVectorToUnrealVector(FVector(model.nodes[0].matrix[8], model.nodes[0].matrix[9], model.nodes[0].matrix[10])),
-					gltfVectorToUnrealVector(FVector(model.nodes[0].matrix[4], model.nodes[0].matrix[5], model.nodes[0].matrix[6])),
-					gltfVectorToUnrealVector(FVector(
-						(model.nodes[0].matrix[12] + 736570.6875) * centimetersPerMeter,
-						(model.nodes[0].matrix[13] - 3292171.25) * centimetersPerMeter,
-						(model.nodes[0].matrix[14] - 5406424.5) * centimetersPerMeter
-					))
-				));
+				const std::vector<double>& matrix = model.nodes[0].matrix;
+
+				glm::dmat4x4 nodeTransformGltf(
+					glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
+					glm::dvec4(matrix[4], matrix[5], matrix[6], matrix[7]),
+					glm::dvec4(matrix[8], matrix[9], matrix[10], matrix[11]),
+					glm::dvec4(matrix[12], matrix[13], matrix[14], matrix[15])
+				);
+
+				result.transform = transform * gltfAxesToCesiumAxes * nodeTransformGltf;
 			}
 			else
 			{
-				result.transform = FTransform();
+				result.transform = transform * gltfAxesToCesiumAxes;
 			}
 
 			section.MaterialIndex = 0;
@@ -227,7 +251,13 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pMesh->SetupAttachment(pGltf);
 	pMesh->RegisterComponent();
 
-	pMesh->SetWorldTransform(loadResult.transform);
+	const glm::dmat4x4& transform = unrealToOrFromCesium * scaleToUnrealWorld * loadResult.transform;
+	pMesh->SetRelativeTransform(FTransform(FMatrix(
+		FVector(transform[0].x, transform[0].y, transform[0].z),
+		FVector(transform[1].x, transform[1].y, transform[1].z),
+		FVector(transform[2].x, transform[2].y, transform[2].z),
+		FVector(transform[3].x, transform[3].y, transform[3].z)
+	)));
 
 	UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
 	pMesh->SetStaticMesh(pStaticMesh);
@@ -252,6 +282,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pMaterial->SetScalarParameterValue("metallicFactor", loadResult.pbr.metallicFactor);
 	pMaterial->SetScalarParameterValue("roughnessFactor", loadResult.pbr.roughnessFactor);
 	pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
+	pMaterial->TwoSided = true;
 
 	pStaticMesh->AddMaterial(pMaterial);
 
@@ -265,8 +296,8 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 
 }
 
-/*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, TFunction<void(UCesiumGltfComponent*)> callback) {
-	LoadModelResult result = loadModelAnyThreadPart(model);
+/*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
+	LoadModelResult result = loadModelAnyThreadPart(model, transform);
 
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
@@ -356,7 +387,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		tinygltf::Model& model = loadResult.model.value();
 
-		LoadModelResult result = loadModelAnyThreadPart(model);
+		LoadModelResult result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0));
 
 		AsyncTask(ENamedThreads::GameThread, [this, result{ std::move(result) }]() mutable {
 			loadModelGameThreadPart(this, std::move(result));

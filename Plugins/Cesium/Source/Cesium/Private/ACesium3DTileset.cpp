@@ -15,6 +15,9 @@
 #include "Cesium3DTiles/Batched3DModelContent.h"
 #include "UnrealTaskProcessor.h"
 #include "Math/UnrealMathUtility.h"
+#include "Cesium3DTiles/Transforms.h"
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #pragma warning(push)
 #pragma warning(disable: 4946)
@@ -32,6 +35,32 @@ ACesium3DTileset::ACesium3DTileset() :
 	this->RootComponent->SetMobility(EComponentMobility::Static);
 }
 
+glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
+	if (!this->PlaceTilesetBoundingVolumeCenterAtWorldOrigin) {
+		return glm::dmat4x4(1.0);
+	}
+
+	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
+	if (!pRootTile) {
+		return glm::dmat4x4(1.0);
+	}
+
+	const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
+	glm::dvec3 bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
+
+	if (this->AlignTilesetUpWithZ) {
+		return Cesium3DTiles::Transforms::eastNorthUpToFixedFrame(bvCenter);
+	}
+	else {
+		return glm::translate(glm::dmat4x4(1.0), bvCenter);
+	}
+}
+
+glm::dmat4x4 ACesium3DTileset::GetTilesetToWorldTransform() const
+{
+	return glm::affineInverse(this->GetWorldToTilesetTransform());
+}
+
 // Called when the game starts or when spawned
 void ACesium3DTileset::BeginPlay()
 {
@@ -47,12 +76,13 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform)
 
 class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
 public:
-	UnrealResourcePreparer(AActor* pActor) : _pActor(pActor) {}
+	UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
 
 	virtual void prepare(Cesium3DTiles::Tile& tile) {
 		Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
 		if (pB3dm) {
-			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), [&tile](UCesiumGltfComponent* pGltf) {
+			glm::dmat4x4 transform = _pActor->GetTilesetToWorldTransform() * tile.getTransform();
+			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), transform, [&tile](UCesiumGltfComponent* pGltf) {
 				tile.finishPrepareRendererResources(pGltf);
 			});
 		}
@@ -68,7 +98,7 @@ public:
 	}
 
 private:
-	AActor* _pActor;
+	ACesium3DTileset* _pActor;
 };
 
 void ACesium3DTileset::LoadTileset()
@@ -122,6 +152,12 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
+	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
+	if (!pRootTile) {
+		return;
+	}
+
+
 	APlayerCameraManager* pCameraManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
 	UGameViewportClient* pViewport = GetWorld()->GetGameViewport();
@@ -145,10 +181,21 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return glm::dvec3(v.X, -v.Y, v.Z);
 	};
 
+	const FTransform& tilesetToWorld = this->RootComponent->GetComponentToWorld();
+	FVector locationRelativeToTileset = tilesetToWorld.InverseTransformPosition(location);
+	FVector directionRelativeToTileset = tilesetToWorld.InverseTransformVector(direction);
+	FVector upRelativeToTileset = tilesetToWorld.InverseTransformVector(up);
+
+	glm::dvec3 cesiumPosition = tryTransform(locationRelativeToTileset) / 100.0;
+	glm::dvec3 cesiumDirection = tryTransform(directionRelativeToTileset);
+	glm::dvec3 cesiumUp = tryTransform(upRelativeToTileset);
+
+	glm::dmat4x4 transform = this->GetWorldToTilesetTransform();
+
 	Cesium3DTiles::Camera camera(
-		tryTransform(location) / 100.0,
-		tryTransform(direction),
-		tryTransform(up),
+		transform * glm::dvec4(cesiumPosition, 1.0),
+		transform * glm::dvec4(cesiumDirection, 0.0),
+		transform * glm::dvec4(cesiumUp, 0.0),
 		glm::dvec2(size.X, size.Y),
 		horizontalFieldOfView,
 		verticalFieldOfView
@@ -178,7 +225,5 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		}
 
 		Gltf->SetVisibility(true, true);
-
-		// TODO: activate the gltf
 	}
 }

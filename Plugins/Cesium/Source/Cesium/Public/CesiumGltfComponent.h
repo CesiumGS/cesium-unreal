@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
 #include "Interfaces/IHttpRequest.h"
+#include <glm/mat4x4.hpp>
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterial;
@@ -19,11 +20,13 @@ class CESIUM_API UCesiumGltfComponent : public USceneComponent
 	GENERATED_BODY()
 
 public:
-	// Constructs a UCesiumGltfComponent from the provided glTF model. This method does as much of the
-	// work in the calling thread as possible, and the calling thread need not be the game thread.
-	// The final component creation is done in the game thread (as required by Unreal Engine) and
-	// the provided callback is raised in the game thread with the result.
-	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, TFunction<void (UCesiumGltfComponent*)>);
+	/// <summary>
+	/// Constructs a UCesiumGltfComponent from the provided glTF model. This method does as much of the
+	/// work in the calling thread as possible, and the calling thread need not be the game thread.
+	/// The final component creation is done in the game thread (as required by Unreal Engine) and
+	/// the provided callback is raised in the game thread with the result.
+	/// </summary>
+	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
 
 	UCesiumGltfComponent();
 
@@ -38,7 +41,6 @@ public:
 protected:
 	//virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
 
 	FString LoadedUrl;
 	class UStaticMeshComponent* Mesh;

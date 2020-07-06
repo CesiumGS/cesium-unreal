@@ -20,7 +20,6 @@ public class Cesium : ModuleRules
             new string[] {
 				// ... add other private include paths required here ...
                 "../ThirdParty/cesium-native/include",
-                "../ThirdParty/uriparser/include",
                 "../ThirdParty/cesium-native/extern/tinygltf",
                 "../ThirdParty/cesium-native/extern/glm",
                 "../ThirdParty/cesium-native/extern/GSL/include",
