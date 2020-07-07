@@ -53,200 +53,277 @@ glm::dmat4x4 unrealToOrFromCesium(
 	glm::dvec4(0.0, 0.0, 0.0, 1.0)
 );
 
-static LoadModelResult loadModelAnyThreadPart(const tinygltf::Model& model, const glm::dmat4x4& transform) {
-	LoadModelResult result;
+static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Primitive& primitive, const glm::dmat4x4& transform) {
+	TMap<int32, FVertexID> indexToVertexIdMap;
+
+	auto positionAccessorIt = primitive.attributes.find("POSITION");
+	if (positionAccessorIt == primitive.attributes.end()) {
+		// This primitive doesn't have a POSITION semantic, ignore it.
+		return;
+	}
 
 	FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
 	RenderData->AllocateLODResources(1);
 
 	FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-	//double centimetersPerMeter = 100.0;
+	int positionAccessorID = positionAccessorIt->second;
+	GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
 
-	for (auto meshIt = model.meshes.begin(); meshIt != model.meshes.end(); ++meshIt)
+	const std::vector<double>& min = positionAccessor.gltfAccessor().minValues;
+	const std::vector<double>& max = positionAccessor.gltfAccessor().maxValues;
+
+	glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
+	glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
+
+	FBox aaBox(
+		FVector(minPosition.x, minPosition.y, minPosition.z),
+		FVector(maxPosition.x, maxPosition.y, maxPosition.z)
+	);
+
+	FBoxSphereBounds BoundingBoxAndSphere;
+	aaBox.GetCenterAndExtents(BoundingBoxAndSphere.Origin, BoundingBoxAndSphere.BoxExtent);
+	BoundingBoxAndSphere.SphereRadius = 0.0f;
+
+	TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
+	StaticMeshBuildVertices.SetNum(positionAccessor.size());
+
+	for (size_t i = 0; i < positionAccessor.size(); ++i)
 	{
-		const tinygltf::Mesh& mesh = *meshIt;
+		FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+		vertex.Position = positionAccessor[i];
+		vertex.TangentZ = FVector(0.0f, 0.0f, 1.0f);
+		vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
 
-		for (auto primitiveIt = mesh.primitives.begin(); primitiveIt != mesh.primitives.end(); ++primitiveIt)
-		{
-			TMap<int32, FVertexID> indexToVertexIdMap;
+		float binormalSign =
+			GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
+				(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
+				vertex.TangentZ.GetSafeNormal());
 
-			const tinygltf::Primitive& primitive = *primitiveIt;
-			auto positionAccessorIt = primitive.attributes.find("POSITION");
-			if (positionAccessorIt == primitive.attributes.end()) {
-				// This primitive doesn't have a POSITION semantic, ignore it.
-				continue;
-			}
+		vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
 
-			int positionAccessorID = positionAccessorIt->second;
-			GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
-
-			const std::vector<double>& min = positionAccessor.gltfAccessor().minValues;
-			const std::vector<double>& max = positionAccessor.gltfAccessor().maxValues;
-
-			glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
-			glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
-
-			FBox aaBox(
-				FVector(minPosition.x, minPosition.y, minPosition.z),
-				FVector(maxPosition.x, maxPosition.y, maxPosition.z)
-			);
-
-			FBoxSphereBounds BoundingBoxAndSphere;
-			aaBox.GetCenterAndExtents(BoundingBoxAndSphere.Origin, BoundingBoxAndSphere.BoxExtent);
-			BoundingBoxAndSphere.SphereRadius = 0.0f;
-
-			TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-			StaticMeshBuildVertices.SetNum(positionAccessor.size());
-
-			for (size_t i = 0; i < positionAccessor.size(); ++i)
-			{
-				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-				vertex.Position = positionAccessor[i];
-				vertex.TangentZ = FVector(0.0f, 0.0f, 1.0f);
-				vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
-
-				float binormalSign =
-					GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
-						(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
-						vertex.TangentZ.GetSafeNormal());
-
-				vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
-
-				vertex.UVs[0] = FVector2D(0.0f, 0.0f);
-				BoundingBoxAndSphere.SphereRadius = FMath::Max((vertex.Position - BoundingBoxAndSphere.Origin).Size(), BoundingBoxAndSphere.SphereRadius);
-			}
-
-			auto normalAccessorIt = primitive.attributes.find("NORMAL");
-			if (normalAccessorIt != primitive.attributes.end())
-			{
-				int normalAccessorID = normalAccessorIt->second;
-				GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
-
-				for (size_t i = 0; i < normalAccessor.size(); ++i)
-				{
-					FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-					vertex.TangentZ = normalAccessor[i];
-					vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
-
-					float binormalSign =
-						GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
-							(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
-							vertex.TangentZ.GetSafeNormal());
-
-					vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
-				}
-			}
-			else
-			{
-
-			}
-
-			auto uvAccessorIt = primitive.attributes.find("TEXCOORD_0");
-			if (uvAccessorIt != primitive.attributes.end())
-			{
-				int uvAccessorID = uvAccessorIt->second;
-				GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
-
-				for (size_t i = 0; i < uvAccessor.size(); ++i)
-				{
-					FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-					vertex.UVs[0] = uvAccessor[i];
-				}
-			}
-
-			RenderData->Bounds = BoundingBoxAndSphere;
-
-			LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
-			LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, 1);
-
-			FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
-			if (false) //bHasVertexColors)
-			{
-				ColorVertexBuffer.Init(StaticMeshBuildVertices);
-			}
-			else
-			{
-				ColorVertexBuffer.InitFromSingleColor(FColor::White, positionAccessor.size());
-			}
-
-			FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
-			FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-
-			GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
-
-			// TODO: support primitive types other than TRIANGLES.
-			uint32 MinVertexIndex = TNumericLimits<uint32>::Max();
-			uint32 MaxVertexIndex = TNumericLimits<uint32>::Min();
-
-			TArray<uint32> IndexBuffer;
-			IndexBuffer.SetNumZeroed(indexAccessor.size());
-
-			for (size_t i = 0, outIndex = indexAccessor.size() - 1; i < indexAccessor.size(); ++i, --outIndex)
-			{
-				uint16_t index = indexAccessor[i];
-				MinVertexIndex = FMath::Min(MinVertexIndex, static_cast<const uint32_t>(index));
-				MaxVertexIndex = FMath::Max(MaxVertexIndex, static_cast<const uint32_t>(index));
-				IndexBuffer[outIndex] = index;
-			}
-
-			section.NumTriangles = indexAccessor.size() / 3;
-			section.FirstIndex = 0;
-			section.MinVertexIndex = MinVertexIndex;
-			section.MaxVertexIndex = MaxVertexIndex;
-			section.bEnableCollision = true;
-			section.bCastShadow = true;
-
-			LODResources.IndexBuffer.SetIndices(IndexBuffer, EIndexBufferStride::Force16Bit);
-			LODResources.bHasDepthOnlyIndices = false;
-			LODResources.bHasReversedIndices = false;
-			LODResources.bHasReversedDepthOnlyIndices = false;
-			LODResources.bHasAdjacencyInfo = false;
-
-			int materialID = primitive.material;
-			const tinygltf::Material& material = model.materials[materialID];
-
-			const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
-			const tinygltf::TextureInfo& texture = pbr.baseColorTexture;
-			const tinygltf::Image& image = model.images[texture.index];
-
-			result.image = image;
-			result.pbr = pbr;
-
-			if (model.nodes.size() > 0 && model.nodes[0].matrix.size() > 0)
-			{
-				const std::vector<double>& matrix = model.nodes[0].matrix;
-
-				glm::dmat4x4 nodeTransformGltf(
-					glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
-					glm::dvec4(matrix[4], matrix[5], matrix[6], matrix[7]),
-					glm::dvec4(matrix[8], matrix[9], matrix[10], matrix[11]),
-					glm::dvec4(matrix[12], matrix[13], matrix[14], matrix[15])
-				);
-
-				result.transform = transform * gltfAxesToCesiumAxes * nodeTransformGltf;
-			}
-			else
-			{
-				result.transform = transform * gltfAxesToCesiumAxes;
-			}
-
-			section.MaterialIndex = 0;
-
-			// TODO: handle more than one primitive
-			break;
-		}
-
-		// TODO: handle more than one mesh
-		break;
+		vertex.UVs[0] = FVector2D(0.0f, 0.0f);
+		BoundingBoxAndSphere.SphereRadius = FMath::Max((vertex.Position - BoundingBoxAndSphere.Origin).Size(), BoundingBoxAndSphere.SphereRadius);
 	}
 
-	result.RenderData = std::move(RenderData);
+	auto normalAccessorIt = primitive.attributes.find("NORMAL");
+	if (normalAccessorIt != primitive.attributes.end())
+	{
+		int normalAccessorID = normalAccessorIt->second;
+		GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
+
+		for (size_t i = 0; i < normalAccessor.size(); ++i)
+		{
+			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+			vertex.TangentZ = normalAccessor[i];
+			vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
+
+			float binormalSign =
+				GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
+					(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
+					vertex.TangentZ.GetSafeNormal());
+
+			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
+		}
+	}
+	else
+	{
+
+	}
+
+	auto uvAccessorIt = primitive.attributes.find("TEXCOORD_0");
+	if (uvAccessorIt != primitive.attributes.end())
+	{
+		int uvAccessorID = uvAccessorIt->second;
+		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+
+		for (size_t i = 0; i < uvAccessor.size(); ++i)
+		{
+			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+			vertex.UVs[0] = uvAccessor[i];
+		}
+	}
+
+	RenderData->Bounds = BoundingBoxAndSphere;
+
+	LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
+	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, 1);
+
+	FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
+	if (false) //bHasVertexColors)
+	{
+		ColorVertexBuffer.Init(StaticMeshBuildVertices);
+	}
+	else
+	{
+		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionAccessor.size());
+	}
+
+	FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
+	FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+
+	if (primitive.mode != TINYGLTF_MODE_TRIANGLES || primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
+		// TODO: add support for primitive types other than indexed triangles.
+		return;
+	}
+
+	uint32 MinVertexIndex = TNumericLimits<uint32>::Max();
+	uint32 MaxVertexIndex = TNumericLimits<uint32>::Min();
+
+	TArray<uint32> IndexBuffer;
+	EIndexBufferStride::Type indexBufferStride;
+
+	// Note that we're reversing the order of the indices, because the change from the glTF right-handed to
+	// the Unreal left-handed coordinate system reverses the winding order.
+
+	const tinygltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
+	if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+		GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
+
+		IndexBuffer.SetNum(indexAccessor.size());
+
+		for (size_t i = 0, outIndex = indexAccessor.size() - 1; i < indexAccessor.size(); ++i, --outIndex)
+		{
+			uint16_t index = indexAccessor[i];
+			MinVertexIndex = FMath::Min(MinVertexIndex, static_cast<const uint32_t>(index));
+			MaxVertexIndex = FMath::Max(MaxVertexIndex, static_cast<const uint32_t>(index));
+			IndexBuffer[outIndex] = index;
+		}
+
+		indexBufferStride = EIndexBufferStride::Force16Bit;
+	}
+	else if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+		GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
+
+		IndexBuffer.SetNum(indexAccessor.size());
+
+		for (size_t i = 0, outIndex = indexAccessor.size() - 1; i < indexAccessor.size(); ++i, --outIndex)
+		{
+			uint32_t index = indexAccessor[i];
+			MinVertexIndex = FMath::Min(MinVertexIndex, static_cast<const uint32_t>(index));
+			MaxVertexIndex = FMath::Max(MaxVertexIndex, static_cast<const uint32_t>(index));
+			IndexBuffer[outIndex] = index;
+		}
+
+		indexBufferStride = EIndexBufferStride::Force32Bit;
+	}
+
+	section.NumTriangles = IndexBuffer.Num() / 3;
+	section.FirstIndex = 0;
+	section.MinVertexIndex = MinVertexIndex;
+	section.MaxVertexIndex = MaxVertexIndex;
+	section.bEnableCollision = true;
+	section.bCastShadow = true;
+
+	LODResources.IndexBuffer.SetIndices(IndexBuffer, indexBufferStride);
+
+	LODResources.bHasDepthOnlyIndices = false;
+	LODResources.bHasReversedIndices = false;
+	LODResources.bHasReversedDepthOnlyIndices = false;
+	LODResources.bHasAdjacencyInfo = false;
+
+	LoadModelResult primitiveResult;
+	primitiveResult.RenderData = RenderData;
+	primitiveResult.transform = transform;
+
+	int materialID = primitive.material;
+	tinygltf::Material material =
+		materialID >= 0 && materialID < model.materials.size()
+			? model.materials[materialID]
+			: tinygltf::Material();
+
+	const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
+	const tinygltf::TextureInfo& texture = pbr.baseColorTexture;
+	primitiveResult.pbr = pbr;
+
+	if (texture.index >= 0 && texture.index < model.images.size()) {
+		const tinygltf::Image& image = model.images[texture.index];
+		primitiveResult.image = image;
+	} else {
+		primitiveResult.image = tinygltf::Image();
+		primitiveResult.image.width = 1;
+		primitiveResult.image.height = 1;
+		primitiveResult.image.bits = 8;
+		primitiveResult.image.component = 4;
+		primitiveResult.image.pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+		primitiveResult.image.image = { 255, 255, 255, 255 };
+	}
+
+	section.MaterialIndex = 0;
+
+	result.push_back(std::move(primitiveResult));
+}
+
+static void loadMesh(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Mesh& mesh, const glm::dmat4x4& transform) {
+	for (const tinygltf::Primitive& primitive : mesh.primitives) {
+		loadPrimitive(result, model, primitive, transform);
+	}
+}
+
+static void loadNode(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Node& node, const glm::dmat4x4& transform) {
+	glm::dmat4x4 nodeTransform = transform;
+
+	if (node.matrix.size() > 0) {
+		const std::vector<double>& matrix = model.nodes[0].matrix;
+
+		glm::dmat4x4 nodeTransformGltf(
+			glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
+			glm::dvec4(matrix[4], matrix[5], matrix[6], matrix[7]),
+			glm::dvec4(matrix[8], matrix[9], matrix[10], matrix[11]),
+			glm::dvec4(matrix[12], matrix[13], matrix[14], matrix[15])
+		);
+
+		nodeTransform = nodeTransform * nodeTransformGltf;
+	}
+	else if (node.translation.size() > 0 || node.rotation.size() > 0 || node.scale.size() > 0) {
+		// TODO: handle this type of transformation
+		UE_LOG(LogActor, Warning, TEXT("Unsupported transformation"));
+	}
+
+	int meshId = node.mesh;
+	if (meshId >= 0 && meshId < model.meshes.size()) {
+		const tinygltf::Mesh& mesh = model.meshes[meshId];
+		loadMesh(result, model, mesh, nodeTransform);
+	}
+
+	for (int childNodeId : node.children) {
+		if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
+			loadNode(result, model, model.nodes[childNodeId], nodeTransform);
+		}
+	}
+}
+
+static std::vector<LoadModelResult> loadModelAnyThreadPart(const tinygltf::Model& model, const glm::dmat4x4& transform) {
+	std::vector<LoadModelResult> result;
+
+	glm::dmat4x4 rootTransform = transform * gltfAxesToCesiumAxes;
+
+	if (model.defaultScene >= 0 && model.defaultScene < model.scenes.size()) {
+		// Show the default scene
+		const tinygltf::Scene& defaultScene = model.scenes[model.defaultScene];
+		for (int nodeId : defaultScene.nodes) {
+			loadNode(result, model, model.nodes[nodeId], rootTransform);
+		}
+	} else if (model.scenes.size() > 0) {
+		// There's no default, so show the first scene
+		const tinygltf::Scene& defaultScene = model.scenes[0];
+		for (int nodeId : defaultScene.nodes) {
+			loadNode(result, model, model.nodes[nodeId], rootTransform);
+		}
+	} else if (model.nodes.size() > 0) {
+		// No scenes at all, use the first node as the root node.
+		loadNode(result, model, model.nodes[0], rootTransform);
+	} else if (model.meshes.size() > 0) {
+		// No nodes either, show all the meshes.
+		for (const tinygltf::Mesh& mesh : model.meshes) {
+			loadMesh(result, model, mesh, rootTransform);
+		}
+	}
 
 	return result;
 }
 
-static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult&& loadResult) {
+static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult) {
 	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
 	pMesh->SetupAttachment(pGltf);
 	pMesh->RegisterComponent();
@@ -297,11 +374,13 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 }
 
 /*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
-	LoadModelResult result = loadModelAnyThreadPart(model, transform);
+	std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, transform);
 
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
-		loadModelGameThreadPart(Gltf, std::move(result));
+		for (LoadModelResult& model : result) {
+			loadModelGameThreadPart(Gltf, model);
+		}
 		Gltf->SetVisibility(false, true);
 		callback(Gltf);
 	});
@@ -387,10 +466,12 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		tinygltf::Model& model = loadResult.model.value();
 
-		LoadModelResult result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0));
+		std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0));
 
 		AsyncTask(ENamedThreads::GameThread, [this, result{ std::move(result) }]() mutable {
-			loadModelGameThreadPart(this, std::move(result));
+			for (LoadModelResult& model : result) {
+				loadModelGameThreadPart(this, model);
+			}
 		});
 	});
 }
