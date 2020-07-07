@@ -30,13 +30,11 @@ struct LoadModelResult
 };
 
 // https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
-// If we invert the X axis in a glTF to make the coordinate system left-handed,
-// then this same matrix also transforms glTF coordinates to Unreal Engine coordinates.
 glm::dmat4x4 gltfAxesToCesiumAxes(
-	glm::dvec4(1.0,  0.0,  0.0, 0.0),
+	glm::dvec4(1.0,  0.0, 0.0, 0.0),
 	glm::dvec4(0.0,  0.0, 1.0, 0.0),
-	glm::dvec4(0.0, -1.0,  0.0, 0.0),
-	glm::dvec4(0.0,  0.0,  0.0, 1.0)
+	glm::dvec4(0.0, -1.0, 0.0, 0.0),
+	glm::dvec4(0.0,  0.0, 0.0, 1.0)
 );
 
 double centimetersPerMeter = 100.0;
@@ -47,10 +45,10 @@ glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter)
 // Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
 // system by inverting the Y coordinate. This same transformation can also go the other way.
 glm::dmat4x4 unrealToOrFromCesium(
-	glm::dvec4(1.0, 0.0, 0.0, 0.0),
+	glm::dvec4(1.0,  0.0, 0.0, 0.0),
 	glm::dvec4(0.0, -1.0, 0.0, 0.0),
-	glm::dvec4(0.0, 0.0, 1.0, 0.0),
-	glm::dvec4(0.0, 0.0, 0.0, 1.0)
+	glm::dvec4(0.0,  0.0, 1.0, 0.0),
+	glm::dvec4(0.0,  0.0, 0.0, 1.0)
 );
 
 static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Primitive& primitive, const glm::dmat4x4& transform) {
