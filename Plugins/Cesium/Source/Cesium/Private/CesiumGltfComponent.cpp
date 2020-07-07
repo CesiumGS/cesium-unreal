@@ -277,6 +277,7 @@ static void loadNode(std::vector<LoadModelResult>& result, const tinygltf::Model
 	}
 	else if (node.translation.size() > 0 || node.rotation.size() > 0 || node.scale.size() > 0) {
 		// TODO: handle this type of transformation
+		UE_LOG(LogActor, Warning, TEXT("Unsupported transformation"));
 	}
 
 	int meshId = node.mesh;
