@@ -218,6 +218,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		}
 
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+		if (!Gltf) {
+			// TODO: Not-yet-renderable tiles shouldn't be here.
+			continue;
+		}
 
 		if (Gltf->GetAttachParent() == nullptr) {
 			Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);

@@ -102,8 +102,14 @@ namespace Cesium3DTiles {
 
         LoadState getState() const { return this->_state.load(std::memory_order::memory_order_acquire); }
 
-        TileSelectionState::Result getLastSelectionResult(uint32_t previousFrameNumber) const { return this->_lastSelectionState.getResult(previousFrameNumber); }
-        void setLastSelectionResult(uint32_t currentFrameNumber, TileSelectionState::Result result) { this->_lastSelectionState = TileSelectionState(currentFrameNumber, result); }
+        TileSelectionState& getLastSelectionState() { return this->_lastSelectionState; }
+        const TileSelectionState& getLastSelectionState() const { return this->_lastSelectionState; }
+        void setLastSelectionState(const TileSelectionState& newState) { this->_lastSelectionState = newState; }
+
+        /**
+         * Determines if this tile is currently renderable.
+         */
+        bool isRenderable() const { return this->getState() == LoadState::RendererResourcesPrepared; }
 
         void loadContent();
         void cancelLoadContent();
