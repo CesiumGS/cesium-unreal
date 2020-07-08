@@ -16,7 +16,8 @@ namespace Cesium3DTiles {
 		_ionAccessToken(),
 		_pTilesetRequest(),
 		_tiles(),
-		_pRootTile()
+		_pRootTile(),
+        _loadQueue()
 	{
 		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
 		this->_pTilesetRequest->bind(std::bind(&Tileset::tilesetJsonResponseReceived, this, std::placeholders::_1));
@@ -29,7 +30,8 @@ namespace Cesium3DTiles {
 		_ionAccessToken(ionAccessToken),
 		_pTilesetRequest(),
 		_tiles(),
-		_pRootTile()
+		_pRootTile(),
+        _loadQueue()
 	{
 		std::string url = "https://api.cesium.com/v1/assets/" + std::to_string(ionAssetID) + "/endpoint";
 		if (ionAccessToken.size() > 0)
@@ -61,7 +63,16 @@ namespace Cesium3DTiles {
             return result;
         }
 
-        this->_visitTile(previousFrameNumber, currentFrameNumber, camera, 16.0, *pRootTile, result);
+		this->_loadQueue.clear();
+
+        if (pRootTile->getState() == Tile::LoadState::RendererResourcesPrepared) {
+	        this->_visitTile(previousFrameNumber, currentFrameNumber, camera, 16.0, *pRootTile, result);
+		} else {
+			// Root tile is not loaded yet, so do that first.
+            pRootTile->loadContent();
+        }
+
+		this->_processLoadQueue();
 
         this->_previousFrameNumber = currentFrameNumber;
 		this->_currentFrameNumber.reset();
@@ -336,12 +347,6 @@ namespace Cesium3DTiles {
     }
 
     void Tileset::_visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, double maximumScreenSpaceError, Tile& tile, ViewUpdateResult& result) {
-        // Is this tile renderable?
-        if (tile.getState() != Tile::LoadState::RendererResourcesPrepared) {
-            tile.loadContent();
-            return;
-        }
-
         // Is this tile visible?
         const BoundingVolume& boundingVolume = tile.getBoundingVolume();
         if (!camera.isBoundingVolumeVisible(boundingVolume)) {
@@ -356,7 +361,6 @@ namespace Cesium3DTiles {
         VectorRange<Tile> children = tile.getChildren();
         if (children.size() == 0) {
             // Render this leaf tile.
-            markChildrenNonRendered(lastFrameNumber, tile, result);
 			tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Rendered);
             result.tilesToRenderThisFrame.push_back(&tile);
         }
@@ -374,8 +378,10 @@ namespace Cesium3DTiles {
 
         bool allChildrenAreReady = true;
         for (Tile& child : children) {
-            child.loadContent();
-            allChildrenAreReady &= child.getState() == Tile::LoadState::RendererResourcesPrepared;
+			if (child.getState() != Tile::LoadState::RendererResourcesPrepared) {
+				this->_loadQueue.push_back(&child);
+				allChildrenAreReady = false;
+			}
         }
 
         if (!allChildrenAreReady) {
@@ -390,9 +396,16 @@ namespace Cesium3DTiles {
         tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Refined);
 
         for (Tile& child : children) {
-            child.loadContent();
             this->_visitTile(lastFrameNumber, currentFrameNumber, camera, maximumScreenSpaceError, child, result);
         }
     }
+
+	void Tileset::_processLoadQueue() {
+		for (Tile* pTile : this->_loadQueue) {
+			if (pTile->getState() == Tile::LoadState::Unloaded) {
+				pTile->loadContent();
+			}
+		}
+	}
 
 }

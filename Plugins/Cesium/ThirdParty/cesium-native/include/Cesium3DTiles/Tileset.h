@@ -95,6 +95,7 @@ namespace Cesium3DTiles {
         void tilesetJsonResponseReceived(IAssetRequest* pRequest);
         void createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
         void _visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, double maximumScreenSpaceError, Tile& tile, ViewUpdateResult& result);
+        void _processLoadQueue();
 
     private:
         TilesetExternals _externals;
@@ -111,6 +112,8 @@ namespace Cesium3DTiles {
         std::optional<uint32_t> _currentFrameNumber;
         uint32_t _previousFrameNumber;
         ViewUpdateResult _updateResult;
+
+        std::vector<Tile*> _loadQueue;
 
         Tileset(const Tileset& rhs) = delete;
         Tileset& operator=(const Tileset& rhs) = delete;
