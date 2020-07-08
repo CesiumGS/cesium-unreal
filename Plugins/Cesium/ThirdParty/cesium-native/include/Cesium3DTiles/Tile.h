@@ -57,7 +57,7 @@ namespace Cesium3DTiles {
             Replace = 1
         };
 
-        Tile(const Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
+        Tile(Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
         ~Tile();
         Tile(Tile& rhs) noexcept = delete;
         Tile(Tile&& rhs) noexcept;
@@ -121,7 +121,7 @@ namespace Cesium3DTiles {
 
     private:
         // Position in bounding-volume hierarchy.
-        const Cesium3DTiles::Tileset* _pTileset;
+        Cesium3DTiles::Tileset* _pTileset;
         VectorReference<Tile> _pParent;
         VectorRange<Tile> _children;
 

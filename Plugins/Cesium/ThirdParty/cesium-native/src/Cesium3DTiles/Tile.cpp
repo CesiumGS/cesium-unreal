@@ -7,7 +7,7 @@
 
 namespace Cesium3DTiles {
 
-    Tile::Tile(const Tileset& tileset, VectorReference<Tile> pParent) :
+    Tile::Tile(Tileset& tileset, VectorReference<Tile> pParent) :
         _pTileset(&tileset),
         _pParent(pParent),
         _children(),
@@ -86,6 +86,9 @@ namespace Cesium3DTiles {
         }
 
         if (!this->getContentUri().has_value()) {
+            // TODO: should we let the renderer do some preparation even if there's no content?
+            this->setState(LoadState::RendererResourcesPrepared);
+            this->_pTileset->notifyTileDoneLoading(this);
             return;
         }
 
@@ -146,12 +149,13 @@ namespace Cesium3DTiles {
             else {
                 this->setState(LoadState::RendererResourcesPrepared);
             }
-            });
+        });
     }
 
     void Tile::finishPrepareRendererResources(void* pResource) {
         this->_pRendererResources = pResource;
         this->setState(LoadState::RendererResourcesPrepared);
+        this->_pTileset->notifyTileDoneLoading(this);
     }
 
 }

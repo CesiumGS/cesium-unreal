@@ -4,6 +4,7 @@
 #include <vector>
 #include <optional>
 #include <memory>
+#include <atomic>
 #include "TilesetExternals.h"
 #include "Tile.h"
 #include "IAssetRequest.h"
@@ -90,6 +91,12 @@ namespace Cesium3DTiles {
         /// </summary>
         uint32_t getPreviousFrameNumber() const { return this->_previousFrameNumber; }
 
+        /// <summary>
+        /// Notifies the tileset that the given tile has finished loading and is ready to render.
+        /// This method may be called from any thread.
+        /// </summary>
+        void notifyTileDoneLoading(Tile* pTile);
+
     protected:
         void ionResponseReceived(IAssetRequest* pRequest);
         void tilesetJsonResponseReceived(IAssetRequest* pRequest);
@@ -114,6 +121,7 @@ namespace Cesium3DTiles {
         ViewUpdateResult _updateResult;
 
         std::vector<Tile*> _loadQueue;
+        std::atomic<uint32_t> _loadsInProgress;
 
         Tileset(const Tileset& rhs) = delete;
         Tileset& operator=(const Tileset& rhs) = delete;
