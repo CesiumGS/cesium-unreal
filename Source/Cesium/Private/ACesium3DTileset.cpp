@@ -140,7 +140,6 @@ void ACesium3DTileset::LoadTileset()
 	}
 
 	this->_pTileset = pTileset;
-	this->_pTilesetView = &this->_pTileset->createView("default");
 }
 
 // Called every frame
@@ -201,7 +200,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		verticalFieldOfView
 	);
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTilesetView->update(camera);
+	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(camera);
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());

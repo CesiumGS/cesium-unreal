@@ -71,8 +71,12 @@ public:
 		return this->_pResponse;
 	}
 
-	void bind(std::function<void (IAssetRequest*)> callback) {
+	virtual void bind(std::function<void (IAssetRequest*)> callback) {
 		this->_callback = callback;
+	}
+
+	virtual void cancel() {
+		this->_pRequest->CancelRequest();
 	}
 
 protected:

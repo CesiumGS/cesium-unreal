@@ -29,7 +29,7 @@ namespace Cesium3DTiles {
         };
 
         TileSelectionState() :
-            _frameNumber(-1),
+            _frameNumber(0),
             _result(Result::None)
         {}
 
@@ -46,7 +46,7 @@ namespace Cesium3DTiles {
         }
 
     private:
-        int32_t _frameNumber = -1;
+        uint32_t _frameNumber;
         Result _result;
     };
 

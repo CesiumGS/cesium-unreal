@@ -19,6 +19,7 @@ namespace Cesium3DTiles {
         _contentUri(),
         _contentBoundingVolume(),
         _state(LoadState::Unloaded),
+        _lastSelectionState(),
         _pContentRequest(nullptr),
         _pContent(nullptr),
         _pRendererResources(nullptr)
@@ -91,6 +92,17 @@ namespace Cesium3DTiles {
         this->_pContentRequest->bind(std::bind(&Tile::contentResponseReceived, this, std::placeholders::_1));
 
         this->setState(LoadState::ContentLoading);
+    }
+
+    void Tile::cancelLoadContent() {
+        if (this->_pContentRequest) {
+            this->_pContentRequest->cancel();
+            this->_pContentRequest.release();
+
+            if (this->getState() == LoadState::ContentLoading) {
+                this->setState(LoadState::Unloaded);
+            }
+        }
     }
 
     void Tile::setState(LoadState value)
