@@ -82,5 +82,4 @@ public:
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
-	Cesium3DTiles::TilesetView* _pTilesetView;
 };

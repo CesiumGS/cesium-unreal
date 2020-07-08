@@ -11,7 +11,6 @@ namespace Cesium3DTiles {
 
 	Tileset::Tileset(const TilesetExternals& externals, const std::string& url) :
 		_externals(externals),
-		_views(),
 		_url(url),
 		_ionAssetID(),
 		_ionAccessToken(),
@@ -25,7 +24,6 @@ namespace Cesium3DTiles {
 
 	Tileset::Tileset(const TilesetExternals& externals, uint32_t ionAssetID, const std::string& ionAccessToken) :
 		_externals(externals),
-		_views(),
 		_url(),
 		_ionAssetID(ionAssetID),
 		_ionAccessToken(ionAccessToken),
@@ -43,26 +41,33 @@ namespace Cesium3DTiles {
 		this->_pTilesetRequest->bind(std::bind(&Tileset::ionResponseReceived, this, std::placeholders::_1));
 	}
 
-	TilesetView& Tileset::createView(const std::string& name)
-	{
-		TilesetView* p = new TilesetView(*this, name);
-		this->_views.push_back(std::move(std::unique_ptr<TilesetView>(p)));
-		return *p;
-	}
+    const ViewUpdateResult& Tileset::updateView(const Camera& camera) {
+		if (this->_currentFrameNumber.has_value()) {
+			throw std::runtime_error("Cannot update the view while an update is already in progress.");
+		}
 
-	void Tileset::destroyView(TilesetView& view)
-	{
-		this->_views.erase(
-			std::remove_if(
-				this->_views.begin(),
-				this->_views.end(),
-				[&view](const std::unique_ptr<TilesetView>& candidate) {
-					return candidate.get() == &view;
-				}
-			),
-			this->_views.end()
-					);
-	}
+		uint32_t previousFrameNumber = this->_previousFrameNumber; 
+		uint32_t currentFrameNumber = previousFrameNumber + 1;
+		this->_currentFrameNumber = currentFrameNumber;
+
+        ViewUpdateResult& result = this->_updateResult;
+        result.tilesLoading = 0;
+        result.tilesToRenderThisFrame.clear();
+        result.newTilesToRenderThisFrame.clear();
+        result.tilesToNoLongerRenderThisFrame.clear();
+
+        Tile* pRootTile = this->getRootTile();
+        if (!pRootTile) {
+            return result;
+        }
+
+        this->_visitTile(previousFrameNumber, currentFrameNumber, camera, 16.0, *pRootTile, result);
+
+        this->_previousFrameNumber = currentFrameNumber;
+		this->_currentFrameNumber.reset();
+
+        return result;
+    }
 
 	void Tileset::ionResponseReceived(IAssetRequest* pRequest) {
 		IAssetResponse* pResponse = pRequest->response();
@@ -292,5 +297,102 @@ namespace Cesium3DTiles {
 			tile->setChildren(childTiles);
 		}
 	}
+
+    static TileSelectionState::Result getTileLastSelectionResult(uint32_t lastFrameNumber, Tile& tile) {
+		return tile.getLastSelectionResult(lastFrameNumber);
+    }
+
+    static void markTileNonRendered(TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
+        if (lastResult == TileSelectionState::Result::Rendered) {
+            result.tilesToNoLongerRenderThisFrame.push_back(&tile);
+            //tile.cancelLoadContent();
+        }
+    }
+
+    static void markTileNonRendered(uint32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = getTileLastSelectionResult(lastFrameNumber, tile);
+        markTileNonRendered(lastResult, tile, result);
+    }
+
+    static void markChildrenNonRendered(int32_t lastFrameNumber, TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
+        if (lastResult == TileSelectionState::Result::Refined) {
+            for (Tile& child : tile.getChildren()) {
+                TileSelectionState::Result childLastResult = getTileLastSelectionResult(lastFrameNumber, child);
+                markTileNonRendered(childLastResult, child, result);
+                markChildrenNonRendered(lastFrameNumber, childLastResult, child, result);
+            }
+        }
+    }
+
+    static void markChildrenNonRendered(uint32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = getTileLastSelectionResult(lastFrameNumber, tile);
+        markChildrenNonRendered(lastFrameNumber, lastResult, tile, result);
+    }
+
+    static void markTileAndChildrenNonRendered(int32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = getTileLastSelectionResult(lastFrameNumber, tile);
+        markTileNonRendered(lastResult, tile, result);
+        markChildrenNonRendered(lastFrameNumber, lastResult, tile, result);
+    }
+
+    void Tileset::_visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, double maximumScreenSpaceError, Tile& tile, ViewUpdateResult& result) {
+        // Is this tile renderable?
+        if (tile.getState() != Tile::LoadState::RendererResourcesPrepared) {
+            tile.loadContent();
+            return;
+        }
+
+        // Is this tile visible?
+        const BoundingVolume& boundingVolume = tile.getBoundingVolume();
+        if (!camera.isBoundingVolumeVisible(boundingVolume)) {
+            markTileAndChildrenNonRendered(lastFrameNumber, tile, result);
+			tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Culled);
+            return;
+        }
+
+        double distanceSquared = camera.computeDistanceSquaredToBoundingVolume(boundingVolume);
+        double distance = sqrt(distanceSquared);
+
+        VectorRange<Tile> children = tile.getChildren();
+        if (children.size() == 0) {
+            // Render this leaf tile.
+            markChildrenNonRendered(lastFrameNumber, tile, result);
+			tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Rendered);
+            result.tilesToRenderThisFrame.push_back(&tile);
+        }
+
+        // Does this tile meet the screen-space error?
+        double sse = camera.computeScreenSpaceError(tile.getGeometricError(), distance);
+
+        if (sse <= maximumScreenSpaceError) {
+            // Tile meets SSE requirements, render it.
+            markChildrenNonRendered(lastFrameNumber, tile, result);
+            tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Rendered);
+            result.tilesToRenderThisFrame.push_back(&tile);
+            return;
+        }
+
+        bool allChildrenAreReady = true;
+        for (Tile& child : children) {
+            child.loadContent();
+            allChildrenAreReady &= child.getState() == Tile::LoadState::RendererResourcesPrepared;
+        }
+
+        if (!allChildrenAreReady) {
+            // Can't refine because all children aren't yet ready, so render this tile for now.
+            markChildrenNonRendered(lastFrameNumber, tile, result);
+            tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Rendered);
+            result.tilesToRenderThisFrame.push_back(&tile);
+            return;
+        }
+
+        markTileNonRendered(lastFrameNumber, tile, result);
+        tile.setLastSelectionResult(currentFrameNumber, TileSelectionState::Result::Refined);
+
+        for (Tile& child : children) {
+            child.loadContent();
+            this->_visitTile(lastFrameNumber, currentFrameNumber, camera, maximumScreenSpaceError, child, result);
+        }
+    }
 
 }

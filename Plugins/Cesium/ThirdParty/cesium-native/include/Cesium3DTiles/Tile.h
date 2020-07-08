@@ -11,6 +11,7 @@
 #include "VectorReference.h"
 #include "VectorRange.h"
 #include "BoundingVolume.h"
+#include "TileSelectionState.h"
 
 namespace Cesium3DTiles {
     class Tileset;
@@ -101,7 +102,11 @@ namespace Cesium3DTiles {
 
         LoadState getState() const { return this->_state.load(std::memory_order::memory_order_acquire); }
 
+        TileSelectionState::Result getLastSelectionResult(uint32_t previousFrameNumber) const { return this->_lastSelectionState.getResult(previousFrameNumber); }
+        void setLastSelectionResult(uint32_t currentFrameNumber, TileSelectionState::Result result) { this->_lastSelectionState = TileSelectionState(currentFrameNumber, result); }
+
         void loadContent();
+        void cancelLoadContent();
 
         /// <summary>
         /// Notifies the tile that its renderer resources have been prepared and optionally stores
@@ -133,6 +138,7 @@ namespace Cesium3DTiles {
 
         // Load state and data.
         std::atomic<LoadState> _state;
+        TileSelectionState _lastSelectionState;
         std::unique_ptr<IAssetRequest> _pContentRequest;
         std::unique_ptr<TileContent> _pContent;
         void* _pRendererResources;
