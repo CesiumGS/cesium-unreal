@@ -138,10 +138,12 @@ namespace Cesium3DTiles {
 
         // Load state and data.
         std::atomic<LoadState> _state;
-        TileSelectionState _lastSelectionState;
         std::unique_ptr<IAssetRequest> _pContentRequest;
         std::unique_ptr<TileContent> _pContent;
         void* _pRendererResources;
+
+        // Selection state
+        TileSelectionState _lastSelectionState;
     };
 
 }

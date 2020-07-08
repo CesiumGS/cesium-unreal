@@ -19,10 +19,10 @@ namespace Cesium3DTiles {
         _contentUri(),
         _contentBoundingVolume(),
         _state(LoadState::Unloaded),
-        _lastSelectionState(),
         _pContentRequest(nullptr),
         _pContent(nullptr),
-        _pRendererResources(nullptr)
+        _pRendererResources(nullptr),
+        _lastSelectionState()
     {
     }
 
@@ -43,7 +43,8 @@ namespace Cesium3DTiles {
         _state(rhs.getState()),
         _pContentRequest(std::move(rhs._pContentRequest)),
         _pContent(std::move(rhs._pContent)),
-        _pRendererResources(rhs._pRendererResources)
+        _pRendererResources(rhs._pRendererResources),
+        _lastSelectionState(rhs._lastSelectionState)
     {
     }
 
@@ -63,6 +64,7 @@ namespace Cesium3DTiles {
             this->_pContentRequest = std::move(rhs._pContentRequest);
             this->_pContent = std::move(rhs._pContent);
             this->_pRendererResources = rhs._pRendererResources;
+            this->_lastSelectionState = rhs._lastSelectionState;
         }
 
         return *this;
