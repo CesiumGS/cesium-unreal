@@ -80,6 +80,10 @@ namespace Cesium3DTiles {
         return result;
     }
 
+	void Tileset::notifyTileDoneLoading(Tile* pTile) {
+		--this->_loadsInProgress;
+	}
+
 	void Tileset::ionResponseReceived(IAssetRequest* pRequest) {
 		IAssetResponse* pResponse = pRequest->response();
 		if (!pResponse) {
@@ -400,10 +404,18 @@ namespace Cesium3DTiles {
         }
     }
 
+	// TODO: make this configurable
+	const uint32_t MAX_LOADS_IN_PROGRESS = 10;
+
 	void Tileset::_processLoadQueue() {
 		for (Tile* pTile : this->_loadQueue) {
 			if (pTile->getState() == Tile::LoadState::Unloaded) {
+				++this->_loadsInProgress;
 				pTile->loadContent();
+
+				if (this->_loadsInProgress >= MAX_LOADS_IN_PROGRESS) {
+					break;
+				}
 			}
 		}
 	}
