@@ -9,10 +9,10 @@ namespace Cesium3DTiles {
     public:
         std::vector<Tile*> tilesToRenderThisFrame;
 
-        std::vector<Tile*> newTilesToRenderThisFrame;
+        // std::vector<Tile*> newTilesToRenderThisFrame;
         std::vector<Tile*> tilesToNoLongerRenderThisFrame;
 
-        uint32_t tilesLoading;
+        // uint32_t tilesLoading;
     };
 
 }
