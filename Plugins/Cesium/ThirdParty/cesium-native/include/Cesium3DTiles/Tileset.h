@@ -42,7 +42,7 @@ struct TilesetOptions {
      * if they are culled. Setting this to true may provide a better panning experience at the
      * cost of loading more tiles.
      */
-    bool preloadSiblings = false;
+    bool preloadSiblings = true;
 
     /**
      * The number of loading descendant tiles that is considered "too many".
