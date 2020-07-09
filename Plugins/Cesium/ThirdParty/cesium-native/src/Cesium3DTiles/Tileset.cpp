@@ -352,7 +352,18 @@ namespace Cesium3DTiles {
         double sse = camera.computeScreenSpaceError(tile.getGeometricError(), distance);
 		bool meetsSse = sse < this->_options.maximumScreenSpaceError;
 
-		if (meetsSse || ancestorMeetsSse) {
+		// If we're forbidding holes, don't refine if any children are still loading.
+		bool waitingForChildren = false;
+		if (this->_options.forbidHoles) {
+			for (Tile& child : children) {
+				if (!child.isRenderable()) {
+					waitingForChildren = true;
+					this->_loadQueueMedium.push_back(&child);
+				}
+			}
+		}
+
+		if (meetsSse || ancestorMeetsSse || waitingForChildren) {
 			// This tile (or an ancestor) is the one we want to render this frame, but we'll do different things depending
 			// on the state of this tile and on what we did _last_ frame.
 
