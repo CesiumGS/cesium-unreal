@@ -7,7 +7,7 @@
 
 namespace Cesium3DTiles {
 
-    Tile::Tile(const Tileset& tileset, VectorReference<Tile> pParent) :
+    Tile::Tile(Tileset& tileset, VectorReference<Tile> pParent) :
         _pTileset(&tileset),
         _pParent(pParent),
         _children(),
@@ -21,7 +21,8 @@ namespace Cesium3DTiles {
         _state(LoadState::Unloaded),
         _pContentRequest(nullptr),
         _pContent(nullptr),
-        _pRendererResources(nullptr)
+        _pRendererResources(nullptr),
+        _lastSelectionState()
     {
     }
 
@@ -42,7 +43,8 @@ namespace Cesium3DTiles {
         _state(rhs.getState()),
         _pContentRequest(std::move(rhs._pContentRequest)),
         _pContent(std::move(rhs._pContent)),
-        _pRendererResources(rhs._pRendererResources)
+        _pRendererResources(rhs._pRendererResources),
+        _lastSelectionState(rhs._lastSelectionState)
     {
     }
 
@@ -62,6 +64,7 @@ namespace Cesium3DTiles {
             this->_pContentRequest = std::move(rhs._pContentRequest);
             this->_pContent = std::move(rhs._pContent);
             this->_pRendererResources = rhs._pRendererResources;
+            this->_lastSelectionState = rhs._lastSelectionState;
         }
 
         return *this;
@@ -83,6 +86,9 @@ namespace Cesium3DTiles {
         }
 
         if (!this->getContentUri().has_value()) {
+            // TODO: should we let the renderer do some preparation even if there's no content?
+            this->setState(LoadState::RendererResourcesPrepared);
+            this->_pTileset->notifyTileDoneLoading(this);
             return;
         }
 
@@ -91,6 +97,17 @@ namespace Cesium3DTiles {
         this->_pContentRequest->bind(std::bind(&Tile::contentResponseReceived, this, std::placeholders::_1));
 
         this->setState(LoadState::ContentLoading);
+    }
+
+    void Tile::cancelLoadContent() {
+        if (this->_pContentRequest) {
+            this->_pContentRequest->cancel();
+            this->_pContentRequest.release();
+
+            if (this->getState() == LoadState::ContentLoading) {
+                this->setState(LoadState::Unloaded);
+            }
+        }
     }
 
     void Tile::setState(LoadState value)
@@ -132,12 +149,13 @@ namespace Cesium3DTiles {
             else {
                 this->setState(LoadState::RendererResourcesPrepared);
             }
-            });
+        });
     }
 
     void Tile::finishPrepareRendererResources(void* pResource) {
         this->_pRendererResources = pResource;
         this->setState(LoadState::RendererResourcesPrepared);
+        this->_pTileset->notifyTileDoneLoading(this);
     }
 
 }

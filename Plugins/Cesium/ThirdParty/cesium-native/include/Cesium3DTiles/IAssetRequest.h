@@ -20,15 +20,20 @@ namespace Cesium3DTiles {
         virtual IAssetResponse* response() = 0;
 
         /// <summary>
-        /// Binds a function
+        /// Binds a callback function that will be invoked when the request's response is received.
         /// </summary>
-        /// <param name="callback"></param>
+        /// <param name="callback">The callback.</param>
         virtual void bind(std::function<void(IAssetRequest*)> callback) = 0;
 
         /// <summary>
         /// Gets the requested URL.
         /// </summary>
         virtual std::string url() const = 0;
+
+        /// <summary>
+        /// Cancels the request.
+        /// </summary>
+        virtual void cancel() = 0;
     };
 
 }
