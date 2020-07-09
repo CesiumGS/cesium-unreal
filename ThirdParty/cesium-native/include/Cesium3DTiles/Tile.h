@@ -11,6 +11,7 @@
 #include "VectorReference.h"
 #include "VectorRange.h"
 #include "BoundingVolume.h"
+#include "TileSelectionState.h"
 
 namespace Cesium3DTiles {
     class Tileset;
@@ -56,7 +57,7 @@ namespace Cesium3DTiles {
             Replace = 1
         };
 
-        Tile(const Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
+        Tile(Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
         ~Tile();
         Tile(Tile& rhs) noexcept = delete;
         Tile(Tile&& rhs) noexcept;
@@ -101,7 +102,17 @@ namespace Cesium3DTiles {
 
         LoadState getState() const { return this->_state.load(std::memory_order::memory_order_acquire); }
 
+        TileSelectionState& getLastSelectionState() { return this->_lastSelectionState; }
+        const TileSelectionState& getLastSelectionState() const { return this->_lastSelectionState; }
+        void setLastSelectionState(const TileSelectionState& newState) { this->_lastSelectionState = newState; }
+
+        /**
+         * Determines if this tile is currently renderable.
+         */
+        bool isRenderable() const { return this->getState() == LoadState::RendererResourcesPrepared; }
+
         void loadContent();
+        void cancelLoadContent();
 
         /// <summary>
         /// Notifies the tile that its renderer resources have been prepared and optionally stores
@@ -116,7 +127,7 @@ namespace Cesium3DTiles {
 
     private:
         // Position in bounding-volume hierarchy.
-        const Cesium3DTiles::Tileset* _pTileset;
+        Cesium3DTiles::Tileset* _pTileset;
         VectorReference<Tile> _pParent;
         VectorRange<Tile> _children;
 
@@ -136,6 +147,9 @@ namespace Cesium3DTiles {
         std::unique_ptr<IAssetRequest> _pContentRequest;
         std::unique_ptr<TileContent> _pContent;
         void* _pRendererResources;
+
+        // Selection state
+        TileSelectionState _lastSelectionState;
     };
 
 }

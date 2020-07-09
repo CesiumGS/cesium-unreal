@@ -2,36 +2,48 @@
 #include "Cesium3DTiles/IAssetAccessor.h"
 #include "Cesium3DTiles/IAssetResponse.h"
 #include "Uri.h"
-#pragma warning(push)
-#pragma warning(disable: 4946)
-#include "json.hpp"
-#pragma warning(pop)
+#include "TilesetJson.h"
 
 namespace Cesium3DTiles {
 
-	Tileset::Tileset(const TilesetExternals& externals, const std::string& url) :
+	Tileset::Tileset(
+		const TilesetExternals& externals,
+		const std::string& url,
+		const TilesetOptions& options
+	) :
 		_externals(externals),
-		_views(),
 		_url(url),
 		_ionAssetID(),
 		_ionAccessToken(),
+		_options(options),
 		_pTilesetRequest(),
 		_tiles(),
-		_pRootTile()
+		_pRootTile(),
+        _loadQueueHigh(),
+		_loadQueueMedium(),
+		_loadQueueLow()
 	{
 		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
-		this->_pTilesetRequest->bind(std::bind(&Tileset::tilesetJsonResponseReceived, this, std::placeholders::_1));
+		this->_pTilesetRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
 	}
 
-	Tileset::Tileset(const TilesetExternals& externals, uint32_t ionAssetID, const std::string& ionAccessToken) :
+	Tileset::Tileset(
+		const TilesetExternals& externals,
+		uint32_t ionAssetID,
+		const std::string& ionAccessToken,
+		const TilesetOptions& options
+	) :
 		_externals(externals),
-		_views(),
 		_url(),
 		_ionAssetID(ionAssetID),
 		_ionAccessToken(ionAccessToken),
+		_options(options),
 		_pTilesetRequest(),
 		_tiles(),
-		_pRootTile()
+		_pRootTile(),
+        _loadQueueHigh(),
+		_loadQueueMedium(),
+		_loadQueueLow()
 	{
 		std::string url = "https://api.cesium.com/v1/assets/" + std::to_string(ionAssetID) + "/endpoint";
 		if (ionAccessToken.size() > 0)
@@ -40,31 +52,41 @@ namespace Cesium3DTiles {
 		}
 
 		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
-		this->_pTilesetRequest->bind(std::bind(&Tileset::ionResponseReceived, this, std::placeholders::_1));
+		this->_pTilesetRequest->bind(std::bind(&Tileset::_ionResponseReceived, this, std::placeholders::_1));
 	}
 
-	TilesetView& Tileset::createView(const std::string& name)
-	{
-		TilesetView* p = new TilesetView(*this, name);
-		this->_views.push_back(std::move(std::unique_ptr<TilesetView>(p)));
-		return *p;
+    const ViewUpdateResult& Tileset::updateView(const Camera& camera) {
+		uint32_t previousFrameNumber = this->_previousFrameNumber; 
+		uint32_t currentFrameNumber = previousFrameNumber + 1;
+
+        ViewUpdateResult& result = this->_updateResult;
+        // result.tilesLoading = 0;
+        result.tilesToRenderThisFrame.clear();
+        // result.newTilesToRenderThisFrame.clear();
+        result.tilesToNoLongerRenderThisFrame.clear();
+
+        Tile* pRootTile = this->getRootTile();
+        if (!pRootTile) {
+            return result;
+        }
+
+		this->_loadQueueHigh.clear();
+		this->_loadQueueMedium.clear();
+		this->_loadQueueLow.clear();
+
+		this->_visitTileIfVisible(previousFrameNumber, currentFrameNumber, camera, false, *pRootTile, result);
+		this->_processLoadQueue();
+
+        this->_previousFrameNumber = currentFrameNumber;
+
+        return result;
+    }
+
+	void Tileset::notifyTileDoneLoading(Tile* pTile) {
+		--this->_loadsInProgress;
 	}
 
-	void Tileset::destroyView(TilesetView& view)
-	{
-		this->_views.erase(
-			std::remove_if(
-				this->_views.begin(),
-				this->_views.end(),
-				[&view](const std::unique_ptr<TilesetView>& candidate) {
-					return candidate.get() == &view;
-				}
-			),
-			this->_views.end()
-					);
-	}
-
-	void Tileset::ionResponseReceived(IAssetRequest* pRequest) {
+	void Tileset::_ionResponseReceived(IAssetRequest* pRequest) {
 		IAssetResponse* pResponse = pRequest->response();
 		if (!pResponse) {
 			// TODO: report the lack of response. Network error? Can this even happen?
@@ -90,10 +112,10 @@ namespace Cesium3DTiles {
 		pRequest = nullptr;
 		pResponse = nullptr;
 		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(urlWithToken);
-		this->_pTilesetRequest->bind(std::bind(&Tileset::tilesetJsonResponseReceived, this, std::placeholders::_1));
+		this->_pTilesetRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
 	}
 
-	void Tileset::tilesetJsonResponseReceived(IAssetRequest* pRequest) {
+	void Tileset::_tilesetJsonResponseReceived(IAssetRequest* pRequest) {
 		IAssetResponse* pResponse = pRequest->response();
 		if (!pResponse) {
 			// TODO: report the lack of response. Network error? Can this even happen?
@@ -121,71 +143,11 @@ namespace Cesium3DTiles {
 		this->_tiles.emplace_back(*this);
 		VectorReference<Tile> rootTile(this->_tiles, this->_tiles.size() - 1);
 
-		this->createTile(rootTile, rootJson, baseUrl);
+		this->_createTile(rootTile, rootJson, baseUrl);
 		this->_pRootTile = rootTile;
 	}
 
-	static std::optional<BoundingVolume> getBoundingVolumeProperty(const nlohmann::json& tileJson, const std::string& key) {
-		using nlohmann::json;
-
-		json::const_iterator bvIt = tileJson.find(key);
-		if (bvIt == tileJson.end()) {
-			return std::optional<BoundingVolume>();
-		}
-
-		json::const_iterator boxIt = bvIt->find("box");
-		if (boxIt != bvIt->end() && boxIt->is_array() && boxIt->size() >= 12) {
-			const json& a = *boxIt;
-			return BoundingBox(
-				glm::dvec3(a[0], a[1], a[2]),
-				glm::dmat3(a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11])
-			);
-		}
-
-		json::const_iterator regionIt = bvIt->find("region");
-		if (regionIt != bvIt->end() && regionIt->is_array() && boxIt->size() >= 6) {
-			const json& a = *boxIt;
-			return BoundingRegion(a[0], a[1], a[2], a[3], a[4], a[5]);
-		}
-
-		json::const_iterator sphereIt = bvIt->find("sphere");
-		if (sphereIt != bvIt->end() && sphereIt->is_array() && boxIt->size() >= 4) {
-			const json& a = *boxIt;
-			return BoundingSphere(glm::dvec3(a[0], a[1], a[2]), a[3]);
-		}
-
-		return std::optional<BoundingVolume>();
-	}
-
-	static std::optional<double> getScalarProperty(const nlohmann::json& tileJson, const std::string& key) {
-		using nlohmann::json;
-
-		json::const_iterator it = tileJson.find(key);
-		if (it == tileJson.end() || !it->is_number()) {
-			return std::optional<double>();
-		}
-
-		return it->get<double>();
-	}
-
-	static std::optional<glm::dmat4x4> getTransformProperty(const nlohmann::json& tileJson, const std::string& key) {
-		using nlohmann::json;
-
-		json::const_iterator it = tileJson.find(key);
-		if (it == tileJson.end() || !it->is_array() || it->size() < 16) {
-			return std::optional<glm::dmat4x4>();
-		}
-
-		const json& a = *it;
-		return glm::dmat4(
-			glm::dvec4(a[0], a[1], a[2], a[3]),
-			glm::dvec4(a[4], a[5], a[6], a[7]),
-			glm::dvec4(a[8], a[9], a[10], a[11]),
-			glm::dvec4(a[12], a[13], a[14], a[15])
-		);
-	}
-
-	void Tileset::createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
+	void Tileset::_createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
 		using nlohmann::json;
 
 		if (!tileJson.is_object())
@@ -195,7 +157,7 @@ namespace Cesium3DTiles {
 
 		Tile* pParent = tile->getParent();
 
-		std::optional<glm::dmat4x4> tileTransform = getTransformProperty(tileJson, "transform");
+		std::optional<glm::dmat4x4> tileTransform = TilesetJson::getTransformProperty(tileJson, "transform");
 		glm::dmat4x4 transform = tileTransform.value_or(glm::dmat4x4(1.0));
 
 		if (tileTransform && pParent) {
@@ -224,21 +186,19 @@ namespace Cesium3DTiles {
 				tile->finishPrepareRendererResources();
 			}
 
-			std::optional<BoundingVolume> contentBoundingVolume = getBoundingVolumeProperty(*contentIt, "boundingVolume");
+			std::optional<BoundingVolume> contentBoundingVolume = TilesetJson::getBoundingVolumeProperty(*contentIt, "boundingVolume");
 			if (contentBoundingVolume) {
 				tile->setContentBoundingVolume(transformBoundingVolume(transform, contentBoundingVolume.value()));
 			}
-		} else {
-			tile->finishPrepareRendererResources();
 		}
 
-		std::optional<BoundingVolume> boundingVolume = getBoundingVolumeProperty(tileJson, "boundingVolume");
+		std::optional<BoundingVolume> boundingVolume = TilesetJson::getBoundingVolumeProperty(tileJson, "boundingVolume");
 		if (!boundingVolume) {
 			// TODO: report missing required property
 			return;
 		}
 
-		std::optional<double> geometricError = getScalarProperty(tileJson, "geometricError");
+		std::optional<double> geometricError = TilesetJson::getScalarProperty(tileJson, "geometricError");
 		if (!geometricError) {
 			// TODO: report missing required property
 			return;
@@ -248,7 +208,7 @@ namespace Cesium3DTiles {
 		//tile->setBoundingVolume(boundingVolume.value());
 		tile->setGeometricError(geometricError.value());
 
-		std::optional<BoundingVolume> viewerRequestVolume = getBoundingVolumeProperty(tileJson, "viewerRequestVolume");
+		std::optional<BoundingVolume> viewerRequestVolume = TilesetJson::getBoundingVolumeProperty(tileJson, "viewerRequestVolume");
 		if (viewerRequestVolume) {
 			tile->setViewerRequestVolume(transformBoundingVolume(transform, viewerRequestVolume.value()));
 		}
@@ -285,12 +245,300 @@ namespace Cesium3DTiles {
 			for (size_t i = 0; i < childrenJson.size(); ++i) {
 				const json& childJson = childrenJson[i];
 				VectorReference<Tile> child(this->_tiles, firstChild + i);
-				this->createTile(child, childJson, baseUrl);
+				this->_createTile(child, childJson, baseUrl);
 			}
 
 			VectorRange<Tile> childTiles(this->_tiles, firstChild, afterLastChild);
 			tile->setChildren(childTiles);
 		}
+	}
+
+    static void markTileNonRendered(TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
+        if (lastResult == TileSelectionState::Result::Rendered) {
+            result.tilesToNoLongerRenderThisFrame.push_back(&tile);
+        }
+    }
+
+    static void markTileNonRendered(uint32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = tile.getLastSelectionState().getResult(lastFrameNumber);
+        markTileNonRendered(lastResult, tile, result);
+    }
+
+    static void markChildrenNonRendered(int32_t lastFrameNumber, TileSelectionState::Result lastResult, Tile& tile, ViewUpdateResult& result) {
+        if (lastResult == TileSelectionState::Result::Refined) {
+            for (Tile& child : tile.getChildren()) {
+                TileSelectionState::Result childLastResult = child.getLastSelectionState().getResult(lastFrameNumber);
+                markTileNonRendered(childLastResult, child, result);
+                markChildrenNonRendered(lastFrameNumber, childLastResult, child, result);
+            }
+        }
+    }
+
+    static void markChildrenNonRendered(uint32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = tile.getLastSelectionState().getResult(lastFrameNumber);
+        markChildrenNonRendered(lastFrameNumber, lastResult, tile, result);
+    }
+
+    static void markTileAndChildrenNonRendered(int32_t lastFrameNumber, Tile& tile, ViewUpdateResult& result) {
+        TileSelectionState::Result lastResult = tile.getLastSelectionState().getResult(lastFrameNumber);
+        markTileNonRendered(lastResult, tile, result);
+        markChildrenNonRendered(lastFrameNumber, lastResult, tile, result);
+    }
+
+	// Visits a tile for possible rendering. When we call this function with a tile:
+	//   * It is not yet known whether the tile is visible.
+	//   * Its parent tile does _not_ meet the SSE (unless ancestorMeetsSse=true, see comments below).
+	//   * The tile may or may not be renderable.
+	//   * The tile has not yet been added to a load queue.
+	Tileset::TraversalDetails Tileset::_visitTileIfVisible(
+		uint32_t lastFrameNumber,
+		uint32_t currentFrameNumber,
+		const Camera& camera,
+		bool ancestorMeetsSse,
+		Tile& tile,
+		ViewUpdateResult& result
+	) {
+        const BoundingVolume& boundingVolume = tile.getBoundingVolume();
+        if (!camera.isBoundingVolumeVisible(boundingVolume)) {
+            markTileAndChildrenNonRendered(lastFrameNumber, tile, result);
+			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Culled));
+
+			// Preload this culled sibling if requested.
+			if (this->_options.preloadSiblings) {
+				this->_loadQueueLow.push_back(&tile);
+			}
+
+            return TraversalDetails();
+        }
+
+		return this->_visitTile(lastFrameNumber, currentFrameNumber, camera, ancestorMeetsSse, tile, result);
+	}
+
+	// Visits a tile for possible rendering. When we call this function with a tile:
+	//   * The tile has previously been determined to be visible.
+	//   * Its parent tile does _not_ meet the SSE (unless ancestorMeetsSse=true, see comments below).
+	//   * The tile may or may not be renderable.
+	//   * The tile has not yet been added to a load queue.
+    Tileset::TraversalDetails Tileset::_visitTile(
+		uint32_t lastFrameNumber,
+		uint32_t currentFrameNumber,
+		const Camera& camera,
+		bool ancestorMeetsSse,
+		Tile& tile,
+		ViewUpdateResult& result
+	) {
+		TileSelectionState lastFrameSelectionState = tile.getLastSelectionState();
+
+		// If this is a leaf tile, just render it (it's already been deemed visible).
+        VectorRange<Tile> children = tile.getChildren();
+        if (children.size() == 0) {
+            // Render this leaf tile.
+			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Rendered));
+            result.tilesToRenderThisFrame.push_back(&tile);
+			this->_loadQueueMedium.push_back(&tile);
+
+			TraversalDetails result;
+			result.allAreRenderable = tile.isRenderable();
+			result.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
+			result.notYetRenderableCount = result.allAreRenderable ? 0 : 1;
+			return result;
+        }
+
+        const BoundingVolume& boundingVolume = tile.getBoundingVolume();
+        double distanceSquared = camera.computeDistanceSquaredToBoundingVolume(boundingVolume);
+        double distance = sqrt(distanceSquared);
+
+        // Does this tile meet the screen-space error?
+        double sse = camera.computeScreenSpaceError(tile.getGeometricError(), distance);
+		bool meetsSse = sse < this->_options.maximumScreenSpaceError;
+
+		// If we're forbidding holes, don't refine if any children are still loading.
+		bool waitingForChildren = false;
+		if (this->_options.forbidHoles) {
+			for (Tile& child : children) {
+				if (!child.isRenderable()) {
+					waitingForChildren = true;
+					this->_loadQueueMedium.push_back(&child);
+				}
+			}
+		}
+
+		if (meetsSse || ancestorMeetsSse || waitingForChildren) {
+			// This tile (or an ancestor) is the one we want to render this frame, but we'll do different things depending
+			// on the state of this tile and on what we did _last_ frame.
+
+			// We can render it if _any_ of the following are true:
+			// 1. We rendered it (or kicked it) last frame.
+			// 2. This tile was culled last frame, or it wasn't even visited because an ancestor was culled.
+			// 3. The tile is done loading and ready to render.
+			//
+			// Note that even if we decide to render a tile here, it may later get "kicked" in favor of an ancestor.
+			TileSelectionState::Result originalResult = lastFrameSelectionState.getOriginalResult(lastFrameNumber);
+			bool oneRenderedLastFrame = originalResult == TileSelectionState::Result::Rendered;
+			bool twoCulledOrNotVisited = originalResult == TileSelectionState::Result::Culled || originalResult == TileSelectionState::Result::None;
+			bool threeCompletelyLoaded = tile.isRenderable();
+
+			bool renderThisTile = oneRenderedLastFrame || twoCulledOrNotVisited || threeCompletelyLoaded;
+			if (renderThisTile) {
+				// Only load this tile if it (not just an ancestor) meets the SSE.
+				if (meetsSse) {
+					this->_loadQueueMedium.push_back(&tile);
+				}
+
+				markChildrenNonRendered(lastFrameNumber, tile, result);
+				tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Rendered));
+				result.tilesToRenderThisFrame.push_back(&tile);
+
+				TraversalDetails result;
+				result.allAreRenderable = tile.isRenderable();
+				result.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
+				result.notYetRenderableCount = result.allAreRenderable ? 0 : 1;
+
+				return result;
+			}
+
+			// Otherwise, we can't render this tile (or blank space where it would be) because doing so would cause detail to disappear
+			// that was visible last frame. Instead, keep rendering any still-visible descendants that were rendered
+			// last frame and render nothing for newly-visible descendants. E.g. if we were rendering level 15 last
+			// frame but this frame we want level 14 and the closest renderable level <= 14 is 0, rendering level
+			// zero would be pretty jarring so instead we keep rendering level 15 even though its SSE is better
+			// than required. So fall through to continue traversal...
+			ancestorMeetsSse = true;
+
+			// Load this blocker tile with high priority, but only if this tile (not just an ancestor) meets the SSE.
+			if (meetsSse) {
+				this->_loadQueueHigh.push_back(&tile);
+			}
+		}
+
+		// Refine!
+
+		size_t firstRenderedDescendantIndex = result.tilesToRenderThisFrame.size();
+		size_t loadIndexLow = this->_loadQueueLow.size();
+		size_t loadIndexMedium = this->_loadQueueMedium.size();
+		size_t loadIndexHigh = this->_loadQueueHigh.size();
+
+		TraversalDetails traversalDetails = this->_visitVisibleChildrenNearToFar(lastFrameNumber, currentFrameNumber, camera, ancestorMeetsSse, tile, result);
+
+		if (firstRenderedDescendantIndex == result.tilesToRenderThisFrame.size()) {
+			// No descendant tiles were added to the render list by the function above, meaning they were all
+			// culled even though this tile was deemed visible. That's pretty common.
+			// Nothing else to do except mark this tile refined and return.
+			markTileNonRendered(lastFrameNumber, tile, result);
+			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Refined));
+			return TraversalDetails();
+		}
+
+		bool queuedForLoad = false;
+
+		// At least one descendant tile was added to the render list.
+		// The traversalDetails tell us what happened while visiting the children.
+		if (!traversalDetails.allAreRenderable && !traversalDetails.anyWereRenderedLastFrame) {
+			// Some of our descendants aren't ready to render yet, and none were rendered last frame,
+			// so kick them all out of the render list and render this tile instead. Continue to load them though!
+
+			std::vector<Tile*>& renderList = result.tilesToRenderThisFrame;
+	        
+			// Mark the rendered descendants and their ancestors - up to this tile - as kicked.
+			for (size_t i = firstRenderedDescendantIndex; i < renderList.size(); ++i) {
+				Tile* pWorkTile = renderList[i];
+				while (
+					pWorkTile != nullptr &&
+					!pWorkTile->getLastSelectionState().wasKicked(currentFrameNumber) &&
+					pWorkTile != &tile
+				) {
+					pWorkTile->getLastSelectionState().kick();
+					pWorkTile = pWorkTile->getParent();
+				}
+			}
+
+			// Remove all descendants from the render list and add this tile.
+			renderList.erase(renderList.begin() + firstRenderedDescendantIndex, renderList.end());
+			renderList.push_back(&tile);
+			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Rendered));
+
+			// If we're waiting on heaps of descendants, the above will take too long. So in that case,
+			// load this tile INSTEAD of loading any of the descendants, and tell the up-level we're only waiting
+			// on this tile. Keep doing this until we actually manage to render this tile.
+			bool wasRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
+			bool wasReallyRenderedLastFrame = wasRenderedLastFrame && tile.isRenderable();
+
+			if (!wasReallyRenderedLastFrame && traversalDetails.notYetRenderableCount > this->_options.loadingDescendantLimit) {
+				// Remove all descendants from the load queues.
+				this->_loadQueueLow.erase(this->_loadQueueLow.begin() + loadIndexLow, this->_loadQueueLow.end());
+				this->_loadQueueMedium.erase(this->_loadQueueMedium.begin() + loadIndexMedium, this->_loadQueueMedium.end());
+				this->_loadQueueHigh.erase(this->_loadQueueHigh.begin() + loadIndexHigh, this->_loadQueueHigh.end());
+
+				this->_loadQueueMedium.push_back(&tile);
+				traversalDetails.notYetRenderableCount = tile.isRenderable() ? 0 : 1;
+				queuedForLoad = true;
+			}
+
+			traversalDetails.allAreRenderable = tile.isRenderable();
+			traversalDetails.anyWereRenderedLastFrame = wasRenderedLastFrame;
+		} else {
+			markTileNonRendered(lastFrameNumber, tile, result);
+			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Refined));
+		}
+
+		if (this->_options.preloadAncestors && !queuedForLoad) {
+			this->_loadQueueLow.push_back(&tile);
+		}
+
+		return traversalDetails;
+    }
+
+	Tileset::TraversalDetails Tileset::_visitVisibleChildrenNearToFar(
+		uint32_t lastFrameNumber,
+		uint32_t currentFrameNumber,
+		const Camera& camera,
+		bool ancestorMeetsSse,
+		Tile& tile,
+		ViewUpdateResult& result
+	) {
+		TraversalDetails traversalDetails;
+
+		// TODO: actually visit near-to-far, rather than in order of occurrence.
+		VectorRange<Tile> children = tile.getChildren();
+		for (Tile& child : children) {
+			TraversalDetails childTraversal = this->_visitTileIfVisible(
+				lastFrameNumber,
+				currentFrameNumber,
+				camera,
+				ancestorMeetsSse,
+				child,
+				result
+			);
+
+			traversalDetails.allAreRenderable &= childTraversal.allAreRenderable;
+			traversalDetails.anyWereRenderedLastFrame |= childTraversal.anyWereRenderedLastFrame;
+			traversalDetails.notYetRenderableCount += childTraversal.notYetRenderableCount;
+		}
+
+		return traversalDetails;
+	}
+
+	static void processQueue(const std::vector<Tile*>& queue, std::atomic<uint32_t>& loadsInProgress, uint32_t maximumLoadsInProgress) {
+		if (loadsInProgress >= maximumLoadsInProgress) {
+			return;
+		}
+
+		for (Tile* pTile : queue) {
+			if (pTile->getState() == Tile::LoadState::Unloaded) {
+				++loadsInProgress;
+				pTile->loadContent();
+
+				if (loadsInProgress >= maximumLoadsInProgress) {
+					break;
+				}
+			}
+		}
+	}
+
+	void Tileset::_processLoadQueue() {
+		processQueue(this->_loadQueueHigh, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
+		processQueue(this->_loadQueueMedium, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
+		processQueue(this->_loadQueueLow, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
 	}
 
 }
