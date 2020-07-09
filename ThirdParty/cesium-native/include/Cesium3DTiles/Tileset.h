@@ -54,6 +54,15 @@ struct TilesetOptions {
      * detail appear all at once after a long wait.
      */
     uint32_t loadingDescendantLimit = 20;
+
+    /**
+     * When true, the tileset will guarantee that the tileset will never be rendered with holes in place
+     * of tiles that are not yet loaded. It does this be refusing to refine a parent tile until all of its
+     * child tiles are ready to render. Thus, when the camera moves, we will always have something - even
+     * if it's low resolution - to render any part of the tileset that becomes visible. When false, overall
+     * loading will be faster, but newly-visible parts of the tileset may initially be blank.
+     */
+    bool forbidHoles = false;
 };
 
 namespace Cesium3DTiles {
