@@ -198,6 +198,8 @@ namespace Cesium3DTiles {
         std::vector<Tile*> _loadQueueLow;
         std::atomic<uint32_t> _loadsInProgress;
 
+        LoadedTilesList _loadedTiles;
+
         Tileset(const Tileset& rhs) = delete;
         Tileset& operator=(const Tileset& rhs) = delete;
     };

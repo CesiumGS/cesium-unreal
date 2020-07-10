@@ -78,7 +78,10 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xtree": "cpp",
-        "pointers": "cpp"
+        "pointers": "cpp",
+        "gsl_util": "cpp",
+        "span": "cpp",
+        "string_span": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cmake.configureOnOpen": true

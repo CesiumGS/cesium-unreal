@@ -10,11 +10,12 @@
 #include "TileContent.h"
 #include "BoundingVolume.h"
 #include "TileSelectionState.h"
+#include "DoublyLinkedList.h"
 
 namespace Cesium3DTiles {
     class Tileset;
     class TileContent;
-
+    
     class CESIUM3DTILES_API Tile {
     public:
         enum class LoadState {
@@ -150,8 +151,20 @@ namespace Cesium3DTiles {
         std::unique_ptr<TileContent> _pContent;
         void* _pRendererResources;
 
+        Tile* _pNextLoadedTile;
+        Tile* _pPreviousLoadedTile;
+
         // Selection state
         TileSelectionState _lastSelectionState;
+
+        friend class LoadedTilesList;
+    };
+
+    class LoadedTilesList : public DoublyLinkedList<Tile, &Tile::_pNextLoadedTile, &Tile::_pPreviousLoadedTile> {
+    public:
+        inline void touch(Tile& tile) {
+            this->insertAtTail(tile);
+        }
     };
 
 }
