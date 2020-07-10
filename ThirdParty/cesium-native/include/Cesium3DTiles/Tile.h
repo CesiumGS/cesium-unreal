@@ -8,8 +8,6 @@
 #include <glm/mat4x4.hpp>
 #include "IAssetRequest.h"
 #include "TileContent.h"
-#include "VectorReference.h"
-#include "VectorRange.h"
 #include "BoundingVolume.h"
 #include "TileSelectionState.h"
 
@@ -57,18 +55,22 @@ namespace Cesium3DTiles {
             Replace = 1
         };
 
-        Tile(Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
+        Tile();
         ~Tile();
         Tile(Tile& rhs) noexcept = delete;
         Tile(Tile&& rhs) noexcept;
         Tile& operator=(Tile&& rhs) noexcept;
 
-        Tile* getParent() { return &*this->_pParent.data(); }
-        const Tile* getParent() const { return this->_pParent.data(); }
+        Tileset* getTileset() { return this->_pTileset; }
+        const Tileset* getTileset() const { return this->_pTileset; }
+        void setTileset(Tileset* pTileset) { this->_pTileset = pTileset; }
 
-        VectorRange<Tile>& getChildren() { return this->_children; }
-        const VectorRange<Tile>& getChildren() const { return this->_children; }
-        void setChildren(const VectorRange<Tile>& children);
+        Tile* getParent() { return this->_pParent; }
+        const Tile* getParent() const { return this->_pParent; }
+        void setParent(Tile* pParent) { this->_pParent = pParent; }
+
+        std::vector<Tile>& getChildren() { return this->_children; }
+        const std::vector<Tile>& getChildren() const { return this->_children; }
 
         const BoundingVolume& getBoundingVolume() const { return this->_boundingVolume; }
         void setBoundingVolume(const BoundingVolume& value) { this->_boundingVolume = value; }
@@ -127,9 +129,9 @@ namespace Cesium3DTiles {
 
     private:
         // Position in bounding-volume hierarchy.
-        Cesium3DTiles::Tileset* _pTileset;
-        VectorReference<Tile> _pParent;
-        VectorRange<Tile> _children;
+        Tileset* _pTileset;
+        Tile* _pParent;
+        std::vector<Tile> _children;
 
         // Properties from tileset.json.
         // These are immutable after the tile leaves TileState::Unloaded.
