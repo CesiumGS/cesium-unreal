@@ -20,7 +20,9 @@ namespace Cesium3DTiles {
 		_pRootTile(),
         _loadQueueHigh(),
 		_loadQueueMedium(),
-		_loadQueueLow()
+		_loadQueueLow(),
+		_loadsInProgress(0),
+		_loadedTiles()
 	{
 		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
 		this->_pTilesetRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
@@ -41,7 +43,9 @@ namespace Cesium3DTiles {
 		_pRootTile(),
         _loadQueueHigh(),
 		_loadQueueMedium(),
-		_loadQueueLow()
+		_loadQueueLow(),
+		_loadsInProgress(0),
+		_loadedTiles()
 	{
 		std::string url = "https://api.cesium.com/v1/assets/" + std::to_string(ionAssetID) + "/endpoint";
 		if (ionAccessToken.size() > 0)
