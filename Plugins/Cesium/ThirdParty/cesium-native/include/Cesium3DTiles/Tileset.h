@@ -117,8 +117,8 @@ namespace Cesium3DTiles {
         /**
          * Gets the root tile of this tileset, or nullptr if there is currently no root tile.
          */
-        Tile* getRootTile() { return this->_pRootTile.data(); }
-        const Tile* getRootTile() const { return this->_pRootTile.data(); }
+        Tile* getRootTile() { return this->_pRootTile.get(); }
+        const Tile* getRootTile() const { return this->_pRootTile.get(); }
 
         /**
          * Updates this view, returning the set of tiles to render in this view.
@@ -172,7 +172,7 @@ namespace Cesium3DTiles {
 
         void _ionResponseReceived(IAssetRequest* pRequest);
         void _tilesetJsonResponseReceived(IAssetRequest* pRequest);
-        void _createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
+        void _createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
         TraversalDetails _visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitTileIfVisible(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitVisibleChildrenNearToFar(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
@@ -188,8 +188,7 @@ namespace Cesium3DTiles {
 
         std::unique_ptr<IAssetRequest> _pTilesetRequest;
 
-        std::vector<Tile> _tiles;
-        VectorReference<Tile> _pRootTile;
+        std::unique_ptr<Tile> _pRootTile;
 
         uint32_t _previousFrameNumber;
         ViewUpdateResult _updateResult;

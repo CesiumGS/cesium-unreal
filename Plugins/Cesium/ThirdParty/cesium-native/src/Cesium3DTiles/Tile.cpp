@@ -7,9 +7,9 @@
 
 namespace Cesium3DTiles {
 
-    Tile::Tile(Tileset& tileset, VectorReference<Tile> pParent) :
-        _pTileset(&tileset),
-        _pParent(pParent),
+    Tile::Tile() :
+        _pTileset(nullptr),
+        _pParent(nullptr),
         _children(),
         _boundingVolume(BoundingBox(glm::dvec3(), glm::dmat4())),
         _viewerRequestVolume(),
@@ -32,7 +32,7 @@ namespace Cesium3DTiles {
     Tile::Tile(Tile&& rhs) noexcept :
         _pTileset(rhs._pTileset),
         _pParent(rhs._pParent),
-        _children(rhs._children),
+        _children(std::move(rhs._children)),
         _boundingVolume(rhs._boundingVolume),
         _viewerRequestVolume(rhs._viewerRequestVolume),
         _geometricError(rhs._geometricError),
@@ -52,7 +52,7 @@ namespace Cesium3DTiles {
         if (this != &rhs) {
             this->_pTileset = rhs._pTileset;
             this->_pParent = rhs._pParent;
-            this->_children = rhs._children;
+            this->_children = std::move(rhs._children);
             this->_boundingVolume = rhs._boundingVolume;
             this->_viewerRequestVolume = rhs._viewerRequestVolume;
             this->_geometricError = rhs._geometricError;
@@ -68,10 +68,6 @@ namespace Cesium3DTiles {
         }
 
         return *this;
-    }
-
-    void Tile::setChildren(const VectorRange<Tile>& children) {
-        this->_children = children;
     }
 
     void Tile::setContentUri(const std::optional<std::string>& value)
