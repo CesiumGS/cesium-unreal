@@ -8,6 +8,7 @@
 namespace Cesium3DTiles {
 
     Tile::Tile() :
+        _loadedTilesLinks(),
         _pTileset(nullptr),
         _pParent(nullptr),
         _children(),
@@ -30,6 +31,7 @@ namespace Cesium3DTiles {
     }
 
     Tile::Tile(Tile&& rhs) noexcept :
+        _loadedTilesLinks(std::move(rhs._loadedTilesLinks)),
         _pTileset(rhs._pTileset),
         _pParent(rhs._pParent),
         _children(std::move(rhs._children)),
@@ -50,6 +52,7 @@ namespace Cesium3DTiles {
 
     Tile& Tile::operator=(Tile&& rhs) noexcept {
         if (this != &rhs) {
+            this->_loadedTilesLinks = std::move(rhs._loadedTilesLinks);
             this->_pTileset = rhs._pTileset;
             this->_pParent = rhs._pParent;
             this->_children = std::move(rhs._children);
@@ -68,6 +71,13 @@ namespace Cesium3DTiles {
         }
 
         return *this;
+    }
+
+    void Tile::createChildTiles(size_t count) {
+        if (this->_children.size() > 0) {
+            throw std::runtime_error("Children already created.");
+        }
+        this->_children.resize(count);
     }
 
     void Tile::setContentUri(const std::optional<std::string>& value)

@@ -6,6 +6,7 @@
 #include <vector>
 #include <atomic>
 #include <glm/mat4x4.hpp>
+#include <gsl/span>
 #include "IAssetRequest.h"
 #include "TileContent.h"
 #include "BoundingVolume.h"
@@ -70,8 +71,9 @@ namespace Cesium3DTiles {
         const Tile* getParent() const { return this->_pParent; }
         void setParent(Tile* pParent) { this->_pParent = pParent; }
 
-        std::vector<Tile>& getChildren() { return this->_children; }
-        const std::vector<Tile>& getChildren() const { return this->_children; }
+        gsl::span<const Tile> getChildren() const { return gsl::span<const Tile>(this->_children); }
+        gsl::span<Tile> getChildren() { return gsl::span<Tile>(this->_children); }
+        void createChildTiles(size_t count);
 
         const BoundingVolume& getBoundingVolume() const { return this->_boundingVolume; }
         void setBoundingVolume(const BoundingVolume& value) { this->_boundingVolume = value; }
@@ -124,6 +126,8 @@ namespace Cesium3DTiles {
         /// <param name="pResource">The renderer resources as an opaque pointer.</param>
         void finishPrepareRendererResources(void* pResource = nullptr);
 
+        DoublyLinkedListPointers<Tile> _loadedTilesLinks;
+
     protected:
         void setState(LoadState value);
         void contentResponseReceived(IAssetRequest* pRequest);
@@ -151,20 +155,10 @@ namespace Cesium3DTiles {
         std::unique_ptr<TileContent> _pContent;
         void* _pRendererResources;
 
-        Tile* _pNextLoadedTile;
-        Tile* _pPreviousLoadedTile;
-
         // Selection state
         TileSelectionState _lastSelectionState;
 
         friend class LoadedTilesList;
-    };
-
-    class LoadedTilesList : public DoublyLinkedList<Tile, &Tile::_pNextLoadedTile, &Tile::_pPreviousLoadedTile> {
-    public:
-        inline void touch(Tile& tile) {
-            this->insertAtTail(tile);
-        }
     };
 
 }
