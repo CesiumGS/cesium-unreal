@@ -144,6 +144,7 @@ namespace Cesium3DTiles {
 
 		this->_pRootTile = std::make_unique<Tile>();
 		this->_pRootTile->setTileset(this);
+		this->_loadedTiles.insertBefore(*this->_pRootTile, *this->_pRootTile);
 
 		this->_createTile(*this->_pRootTile, rootJson, baseUrl);
 	}
@@ -234,8 +235,8 @@ namespace Cesium3DTiles {
 				return;
 			}
 
-			std::vector<Tile>& childTiles = tile.getChildren();
-			childTiles.resize(childrenJson.size());
+			tile.createChildTiles(childrenJson.size());
+			gsl::span<Tile> childTiles = tile.getChildren();
 
 			for (size_t i = 0; i < childrenJson.size(); ++i) {
 				const json& childJson = childrenJson[i];
@@ -324,7 +325,7 @@ namespace Cesium3DTiles {
 		TileSelectionState lastFrameSelectionState = tile.getLastSelectionState();
 
 		// If this is a leaf tile, just render it (it's already been deemed visible).
-        std::vector<Tile>& children = tile.getChildren();
+        gsl::span<Tile> children = tile.getChildren();
         if (children.size() == 0) {
             // Render this leaf tile.
 			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Rendered));
@@ -493,7 +494,7 @@ namespace Cesium3DTiles {
 		TraversalDetails traversalDetails;
 
 		// TODO: actually visit near-to-far, rather than in order of occurrence.
-		std::vector<Tile>& children = tile.getChildren();
+		gsl::span<Tile> children = tile.getChildren();
 		for (Tile& child : children) {
 			TraversalDetails childTraversal = this->_visitTileIfVisible(
 				lastFrameNumber,
