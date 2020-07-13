@@ -6,17 +6,17 @@
 #include <vector>
 #include <atomic>
 #include <glm/mat4x4.hpp>
+#include <gsl/span>
 #include "IAssetRequest.h"
 #include "TileContent.h"
-#include "VectorReference.h"
-#include "VectorRange.h"
 #include "BoundingVolume.h"
 #include "TileSelectionState.h"
+#include "DoublyLinkedList.h"
 
 namespace Cesium3DTiles {
     class Tileset;
     class TileContent;
-
+    
     class CESIUM3DTILES_API Tile {
     public:
         enum class LoadState {
@@ -57,18 +57,23 @@ namespace Cesium3DTiles {
             Replace = 1
         };
 
-        Tile(Cesium3DTiles::Tileset& tileset, VectorReference<Tile> pParent = VectorReference<Tile>());
+        Tile();
         ~Tile();
         Tile(Tile& rhs) noexcept = delete;
         Tile(Tile&& rhs) noexcept;
         Tile& operator=(Tile&& rhs) noexcept;
 
-        Tile* getParent() { return &*this->_pParent.data(); }
-        const Tile* getParent() const { return this->_pParent.data(); }
+        Tileset* getTileset() { return this->_pTileset; }
+        const Tileset* getTileset() const { return this->_pTileset; }
+        void setTileset(Tileset* pTileset) { this->_pTileset = pTileset; }
 
-        VectorRange<Tile>& getChildren() { return this->_children; }
-        const VectorRange<Tile>& getChildren() const { return this->_children; }
-        void setChildren(const VectorRange<Tile>& children);
+        Tile* getParent() { return this->_pParent; }
+        const Tile* getParent() const { return this->_pParent; }
+        void setParent(Tile* pParent) { this->_pParent = pParent; }
+
+        gsl::span<const Tile> getChildren() const { return gsl::span<const Tile>(this->_children); }
+        gsl::span<Tile> getChildren() { return gsl::span<Tile>(this->_children); }
+        void createChildTiles(size_t count);
 
         const BoundingVolume& getBoundingVolume() const { return this->_boundingVolume; }
         void setBoundingVolume(const BoundingVolume& value) { this->_boundingVolume = value; }
@@ -112,6 +117,7 @@ namespace Cesium3DTiles {
         bool isRenderable() const { return this->getState() == LoadState::RendererResourcesPrepared; }
 
         void loadContent();
+        void unloadContent();
         void cancelLoadContent();
 
         /// <summary>
@@ -121,15 +127,17 @@ namespace Cesium3DTiles {
         /// <param name="pResource">The renderer resources as an opaque pointer.</param>
         void finishPrepareRendererResources(void* pResource = nullptr);
 
+        DoublyLinkedListPointers<Tile> _loadedTilesLinks;
+
     protected:
         void setState(LoadState value);
         void contentResponseReceived(IAssetRequest* pRequest);
 
     private:
         // Position in bounding-volume hierarchy.
-        Cesium3DTiles::Tileset* _pTileset;
-        VectorReference<Tile> _pParent;
-        VectorRange<Tile> _children;
+        Tileset* _pTileset;
+        Tile* _pParent;
+        std::vector<Tile> _children;
 
         // Properties from tileset.json.
         // These are immutable after the tile leaves TileState::Unloaded.
@@ -150,6 +158,8 @@ namespace Cesium3DTiles {
 
         // Selection state
         TileSelectionState _lastSelectionState;
+
+        friend class LoadedTilesList;
     };
 
 }

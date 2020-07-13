@@ -2,13 +2,28 @@
 
 #include "Cesium.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"
+#include <sstream>
+#include <iostream>
 
 #define LOCTEXT_NAMESPACE "FCesiumModule"
+
+class LStream : public std::stringbuf {
+protected:
+	int sync() {
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *FString(str().c_str()));
+		str("");
+		return std::stringbuf::sync();
+	}
+};
+
+static LStream LogStream;
 
 void FCesiumModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	Cesium3DTiles::registerAllTileContentTypes();
+
+	std::cout.rdbuf(&LogStream);
 }
 
 void FCesiumModule::ShutdownModule()

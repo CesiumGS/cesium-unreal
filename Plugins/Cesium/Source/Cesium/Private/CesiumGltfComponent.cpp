@@ -204,6 +204,9 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 		}
 
 		indexBufferStride = EIndexBufferStride::Force32Bit;
+	} else {
+		// TODO: report unsupported index type.
+		return;
 	}
 
 	section.NumTriangles = IndexBuffer.Num() / 3;

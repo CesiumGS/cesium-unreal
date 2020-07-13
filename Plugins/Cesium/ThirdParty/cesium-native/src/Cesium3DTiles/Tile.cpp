@@ -3,13 +3,13 @@
 #include "Cesium3DTiles/IAssetAccessor.h"
 #include "Cesium3DTiles/IAssetResponse.h"
 #include "Cesium3DTiles/TileContentFactory.h"
-#include <fstream>
 
 namespace Cesium3DTiles {
 
-    Tile::Tile(Tileset& tileset, VectorReference<Tile> pParent) :
-        _pTileset(&tileset),
-        _pParent(pParent),
+    Tile::Tile() :
+        _loadedTilesLinks(),
+        _pTileset(nullptr),
+        _pParent(nullptr),
         _children(),
         _boundingVolume(BoundingBox(glm::dvec3(), glm::dmat4())),
         _viewerRequestVolume(),
@@ -30,9 +30,10 @@ namespace Cesium3DTiles {
     }
 
     Tile::Tile(Tile&& rhs) noexcept :
+        _loadedTilesLinks(std::move(rhs._loadedTilesLinks)),
         _pTileset(rhs._pTileset),
         _pParent(rhs._pParent),
-        _children(rhs._children),
+        _children(std::move(rhs._children)),
         _boundingVolume(rhs._boundingVolume),
         _viewerRequestVolume(rhs._viewerRequestVolume),
         _geometricError(rhs._geometricError),
@@ -50,9 +51,10 @@ namespace Cesium3DTiles {
 
     Tile& Tile::operator=(Tile&& rhs) noexcept {
         if (this != &rhs) {
+            this->_loadedTilesLinks = std::move(rhs._loadedTilesLinks);
             this->_pTileset = rhs._pTileset;
             this->_pParent = rhs._pParent;
-            this->_children = rhs._children;
+            this->_children = std::move(rhs._children);
             this->_boundingVolume = rhs._boundingVolume;
             this->_viewerRequestVolume = rhs._viewerRequestVolume;
             this->_geometricError = rhs._geometricError;
@@ -70,8 +72,11 @@ namespace Cesium3DTiles {
         return *this;
     }
 
-    void Tile::setChildren(const VectorRange<Tile>& children) {
-        this->_children = children;
+    void Tile::createChildTiles(size_t count) {
+        if (this->_children.size() > 0) {
+            throw std::runtime_error("Children already created.");
+        }
+        this->_children.resize(count);
     }
 
     void Tile::setContentUri(const std::optional<std::string>& value)
@@ -99,6 +104,17 @@ namespace Cesium3DTiles {
         this->setState(LoadState::ContentLoading);
     }
 
+    void Tile::unloadContent() {
+        const TilesetExternals& externals = this->_pTileset->getExternals();
+        if (externals.pPrepareRendererResources) {
+            externals.pPrepareRendererResources->free(*this, this->_pRendererResources);
+        }
+
+        this->_pRendererResources = nullptr;
+        this->_pContent.reset();
+        this->setState(LoadState::Unloaded);
+    }
+
     void Tile::cancelLoadContent() {
         if (this->_pContentRequest) {
             this->_pContentRequest->cancel();
@@ -110,8 +126,7 @@ namespace Cesium3DTiles {
         }
     }
 
-    void Tile::setState(LoadState value)
-    {
+    void Tile::setState(LoadState value) {
         this->_state.store(value, std::memory_order::memory_order_release);
     }
 
@@ -133,6 +148,8 @@ namespace Cesium3DTiles {
 
         externals.pTaskProcessor->startTask([data, this]() {
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data);
+
+            // TODO: release _pContentRequest.
 
             if (!pContent) {
                 // Try loading this content as an external tileset (JSON).

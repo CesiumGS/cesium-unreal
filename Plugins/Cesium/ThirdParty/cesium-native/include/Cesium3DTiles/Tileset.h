@@ -63,6 +63,14 @@ struct TilesetOptions {
      * loading will be faster, but newly-visible parts of the tileset may initially be blank.
      */
     bool forbidHoles = false;
+
+    /**
+     * The maximum number of tiles that may be cached. Note that this value, even if 0, will never
+     * cause tiles that are needed for rendering to be unloaded. However, if the total number of
+     * loaded tiles is greater than this value, tiles will be unloaded until the total is under
+     * this number or until only required tiles remain, whichever comes first.
+     */
+    uint32_t maximumCachedTiles = 200;
 };
 
 namespace Cesium3DTiles {
@@ -117,8 +125,8 @@ namespace Cesium3DTiles {
         /**
          * Gets the root tile of this tileset, or nullptr if there is currently no root tile.
          */
-        Tile* getRootTile() { return this->_pRootTile.data(); }
-        const Tile* getRootTile() const { return this->_pRootTile.data(); }
+        Tile* getRootTile() { return this->_pRootTile.get(); }
+        const Tile* getRootTile() const { return this->_pRootTile.get(); }
 
         /**
          * Updates this view, returning the set of tiles to render in this view.
@@ -172,11 +180,13 @@ namespace Cesium3DTiles {
 
         void _ionResponseReceived(IAssetRequest* pRequest);
         void _tilesetJsonResponseReceived(IAssetRequest* pRequest);
-        void _createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
+        void _createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
         TraversalDetails _visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitTileIfVisible(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitVisibleChildrenNearToFar(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         void _processLoadQueue();
+        void _unloadCachedTiles();
+        void _markTileVisited(Tile& tile);
 
         TilesetExternals _externals;
 
@@ -188,8 +198,7 @@ namespace Cesium3DTiles {
 
         std::unique_ptr<IAssetRequest> _pTilesetRequest;
 
-        std::vector<Tile> _tiles;
-        VectorReference<Tile> _pRootTile;
+        std::unique_ptr<Tile> _pRootTile;
 
         uint32_t _previousFrameNumber;
         ViewUpdateResult _updateResult;
@@ -198,6 +207,8 @@ namespace Cesium3DTiles {
         std::vector<Tile*> _loadQueueMedium;
         std::vector<Tile*> _loadQueueLow;
         std::atomic<uint32_t> _loadsInProgress;
+
+        DoublyLinkedList<Tile, &Tile::_loadedTilesLinks> _loadedTiles;
 
         Tileset(const Tileset& rhs) = delete;
         Tileset& operator=(const Tileset& rhs) = delete;

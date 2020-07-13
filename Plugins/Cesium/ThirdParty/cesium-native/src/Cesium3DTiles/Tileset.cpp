@@ -17,11 +17,12 @@ namespace Cesium3DTiles {
 		_ionAccessToken(),
 		_options(options),
 		_pTilesetRequest(),
-		_tiles(),
 		_pRootTile(),
         _loadQueueHigh(),
 		_loadQueueMedium(),
-		_loadQueueLow()
+		_loadQueueLow(),
+		_loadsInProgress(0),
+		_loadedTiles()
 	{
 		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
 		this->_pTilesetRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
@@ -39,11 +40,12 @@ namespace Cesium3DTiles {
 		_ionAccessToken(ionAccessToken),
 		_options(options),
 		_pTilesetRequest(),
-		_tiles(),
 		_pRootTile(),
         _loadQueueHigh(),
 		_loadQueueMedium(),
-		_loadQueueLow()
+		_loadQueueLow(),
+		_loadsInProgress(0),
+		_loadedTiles()
 	{
 		std::string url = "https://api.cesium.com/v1/assets/" + std::to_string(ionAssetID) + "/endpoint";
 		if (ionAccessToken.size() > 0)
@@ -75,6 +77,7 @@ namespace Cesium3DTiles {
 		this->_loadQueueLow.clear();
 
 		this->_visitTileIfVisible(previousFrameNumber, currentFrameNumber, camera, false, *pRootTile, result);
+		this->_unloadCachedTiles();
 		this->_processLoadQueue();
 
         this->_previousFrameNumber = currentFrameNumber;
@@ -140,14 +143,13 @@ namespace Cesium3DTiles {
 
 		json& rootJson = tileset["root"];
 
-		this->_tiles.emplace_back(*this);
-		VectorReference<Tile> rootTile(this->_tiles, this->_tiles.size() - 1);
+		this->_pRootTile = std::make_unique<Tile>();
+		this->_pRootTile->setTileset(this);
 
-		this->_createTile(rootTile, rootJson, baseUrl);
-		this->_pRootTile = rootTile;
+		this->_createTile(*this->_pRootTile, rootJson, baseUrl);
 	}
 
-	void Tileset::_createTile(VectorReference<Tile>& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
+	void Tileset::_createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
 		using nlohmann::json;
 
 		if (!tileJson.is_object())
@@ -155,7 +157,7 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		Tile* pParent = tile->getParent();
+		Tile* pParent = tile.getParent();
 
 		std::optional<glm::dmat4x4> tileTransform = TilesetJson::getTransformProperty(tileJson, "transform");
 		glm::dmat4x4 transform = tileTransform.value_or(glm::dmat4x4(1.0));
@@ -166,7 +168,7 @@ namespace Cesium3DTiles {
 			transform = pParent->getTransform();
 		}
 
-		tile->setTransform(transform);
+		tile.setTransform(transform);
 
 		json::const_iterator contentIt = tileJson.find("content");
 		json::const_iterator childrenIt = tileJson.find("children");
@@ -181,14 +183,14 @@ namespace Cesium3DTiles {
 			if (uriIt != contentIt->end()) {
 				const std::string& uri = *uriIt;
 				const std::string fullUri = Uri::resolve(baseUrl, uri, true);
-				tile->setContentUri(fullUri);
+				tile.setContentUri(fullUri);
 			} else {
-				tile->finishPrepareRendererResources();
+				tile.finishPrepareRendererResources();
 			}
 
 			std::optional<BoundingVolume> contentBoundingVolume = TilesetJson::getBoundingVolumeProperty(*contentIt, "boundingVolume");
 			if (contentBoundingVolume) {
-				tile->setContentBoundingVolume(transformBoundingVolume(transform, contentBoundingVolume.value()));
+				tile.setContentBoundingVolume(transformBoundingVolume(transform, contentBoundingVolume.value()));
 			}
 		}
 
@@ -204,22 +206,22 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		tile->setBoundingVolume(transformBoundingVolume(transform, boundingVolume.value()));
+		tile.setBoundingVolume(transformBoundingVolume(transform, boundingVolume.value()));
 		//tile->setBoundingVolume(boundingVolume.value());
-		tile->setGeometricError(geometricError.value());
+		tile.setGeometricError(geometricError.value());
 
 		std::optional<BoundingVolume> viewerRequestVolume = TilesetJson::getBoundingVolumeProperty(tileJson, "viewerRequestVolume");
 		if (viewerRequestVolume) {
-			tile->setViewerRequestVolume(transformBoundingVolume(transform, viewerRequestVolume.value()));
+			tile.setViewerRequestVolume(transformBoundingVolume(transform, viewerRequestVolume.value()));
 		}
 		
 		json::const_iterator refineIt = tileJson.find("refine");
 		if (refineIt != tileJson.end()) {
 			const std::string& refine = *refineIt;
 			if (refine == "REPLACE") {
-				tile->setRefine(Tile::Refine::Replace);
+				tile.setRefine(Tile::Refine::Replace);
 			} else if (refine == "ADD") {
-				tile->setRefine(Tile::Refine::Add);
+				tile.setRefine(Tile::Refine::Add);
 			} else {
 				// TODO: report invalid value
 			}
@@ -233,23 +235,16 @@ namespace Cesium3DTiles {
 				return;
 			}
 
-			// Allocate children contiguously and efficiently from a vector.
-			size_t firstChild = this->_tiles.size();
-
-			for (size_t i = 0; i < childrenJson.size(); ++i) {
-				this->_tiles.emplace_back(*this, tile);
-			}
-
-			size_t afterLastChild = this->_tiles.size();
+			tile.createChildTiles(childrenJson.size());
+			gsl::span<Tile> childTiles = tile.getChildren();
 
 			for (size_t i = 0; i < childrenJson.size(); ++i) {
 				const json& childJson = childrenJson[i];
-				VectorReference<Tile> child(this->_tiles, firstChild + i);
+				Tile& child = childTiles[i];
+				child.setTileset(this);
+				child.setParent(&tile);
 				this->_createTile(child, childJson, baseUrl);
 			}
-
-			VectorRange<Tile> childTiles(this->_tiles, firstChild, afterLastChild);
-			tile->setChildren(childTiles);
 		}
 	}
 
@@ -298,6 +293,8 @@ namespace Cesium3DTiles {
 		Tile& tile,
 		ViewUpdateResult& result
 	) {
+		this->_markTileVisited(tile);
+
         const BoundingVolume& boundingVolume = tile.getBoundingVolume();
         if (!camera.isBoundingVolumeVisible(boundingVolume)) {
             markTileAndChildrenNonRendered(lastFrameNumber, tile, result);
@@ -330,7 +327,7 @@ namespace Cesium3DTiles {
 		TileSelectionState lastFrameSelectionState = tile.getLastSelectionState();
 
 		// If this is a leaf tile, just render it (it's already been deemed visible).
-        VectorRange<Tile> children = tile.getChildren();
+        gsl::span<Tile> children = tile.getChildren();
         if (children.size() == 0) {
             // Render this leaf tile.
 			tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Rendered));
@@ -499,7 +496,7 @@ namespace Cesium3DTiles {
 		TraversalDetails traversalDetails;
 
 		// TODO: actually visit near-to-far, rather than in order of occurrence.
-		VectorRange<Tile> children = tile.getChildren();
+		gsl::span<Tile> children = tile.getChildren();
 		for (Tile& child : children) {
 			TraversalDetails childTraversal = this->_visitTileIfVisible(
 				lastFrameNumber,
@@ -539,6 +536,35 @@ namespace Cesium3DTiles {
 		processQueue(this->_loadQueueHigh, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
 		processQueue(this->_loadQueueMedium, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
 		processQueue(this->_loadQueueLow, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
+	}
+
+	void Tileset::_unloadCachedTiles() {
+		Tile* pTile = this->_loadedTiles.head();
+
+		while (this->_loadedTiles.size() > this->_options.maximumCachedTiles) {
+			if (pTile == nullptr || pTile == this->_pRootTile.get()) {
+				// We've either removed all tiles or the next tile is the root.
+				// The root tile marks the beginning of the tiles that were used
+				// for rendering last frame.
+				break;
+			}
+
+			// Cannot unload while an async operation is in progress.
+			if (
+				pTile->getState() != Tile::LoadState::ContentLoading &&
+				pTile->getState() != Tile::LoadState::RendererResourcesPreparing
+			) {
+				pTile->unloadContent();
+			}
+
+			Tile* pNext = this->_loadedTiles.next(*pTile);
+			this->_loadedTiles.remove(*pTile);
+			pTile = pNext;
+		}
+	}
+
+	void Tileset::_markTileVisited(Tile& tile) {
+		this->_loadedTiles.insertAtTail(tile);
 	}
 
 }
