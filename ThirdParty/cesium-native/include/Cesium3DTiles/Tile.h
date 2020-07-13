@@ -117,6 +117,7 @@ namespace Cesium3DTiles {
         bool isRenderable() const { return this->getState() == LoadState::RendererResourcesPrepared; }
 
         void loadContent();
+        void unloadContent();
         void cancelLoadContent();
 
         /// <summary>

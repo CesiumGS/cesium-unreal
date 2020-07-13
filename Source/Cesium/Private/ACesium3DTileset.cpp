@@ -94,10 +94,24 @@ public:
 	}
 
 	virtual void free(Cesium3DTiles::Tile& tile, void* pRendererResources) {
-
+		UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(pRendererResources);
+		if (pGltf) {
+			this->destroyRecursively(pGltf);
+		}
 	}
 
 private:
+	void destroyRecursively(USceneComponent* pComponent) {
+		pComponent->UnregisterComponent();
+
+		TArray<USceneComponent*> children = pComponent->GetAttachChildren();
+		for (USceneComponent* pChild : children) {
+			this->destroyRecursively(pChild);
+		}
+
+		pComponent->DestroyComponent();
+	}
+
 	ACesium3DTileset* _pActor;
 };
 
