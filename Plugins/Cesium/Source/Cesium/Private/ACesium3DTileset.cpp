@@ -102,7 +102,9 @@ public:
 
 private:
 	void destroyRecursively(USceneComponent* pComponent) {
-		pComponent->UnregisterComponent();
+		if (pComponent->IsRegistered()) {
+			pComponent->UnregisterComponent();
+		}
 
 		TArray<USceneComponent*> children = pComponent->GetAttachChildren();
 		for (USceneComponent* pChild : children) {
