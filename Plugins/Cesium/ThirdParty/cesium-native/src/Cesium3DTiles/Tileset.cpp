@@ -77,6 +77,7 @@ namespace Cesium3DTiles {
 		this->_loadQueueLow.clear();
 
 		this->_visitTileIfVisible(previousFrameNumber, currentFrameNumber, camera, false, *pRootTile, result);
+		this->_unloadCachedTiles();
 		this->_processLoadQueue();
 
         this->_previousFrameNumber = currentFrameNumber;
@@ -144,7 +145,6 @@ namespace Cesium3DTiles {
 
 		this->_pRootTile = std::make_unique<Tile>();
 		this->_pRootTile->setTileset(this);
-		this->_loadedTiles.insertBefore(*this->_pRootTile, *this->_pRootTile);
 
 		this->_createTile(*this->_pRootTile, rootJson, baseUrl);
 	}
@@ -293,6 +293,8 @@ namespace Cesium3DTiles {
 		Tile& tile,
 		ViewUpdateResult& result
 	) {
+		this->_markTileVisited(tile);
+
         const BoundingVolume& boundingVolume = tile.getBoundingVolume();
         if (!camera.isBoundingVolumeVisible(boundingVolume)) {
             markTileAndChildrenNonRendered(lastFrameNumber, tile, result);
@@ -534,6 +536,35 @@ namespace Cesium3DTiles {
 		processQueue(this->_loadQueueHigh, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
 		processQueue(this->_loadQueueMedium, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
 		processQueue(this->_loadQueueLow, this->_loadsInProgress, this->_options.maximumSimultaneousTileLoads);
+	}
+
+	void Tileset::_unloadCachedTiles() {
+		Tile* pTile = this->_loadedTiles.head();
+
+		while (this->_loadedTiles.size() > this->_options.maximumCachedTiles) {
+			if (pTile == nullptr || pTile == this->_pRootTile.get()) {
+				// We've either removed all tiles or the next tile is the root.
+				// The root tile marks the beginning of the tiles that were used
+				// for rendering last frame.
+				break;
+			}
+
+			// Cannot unload while an async operation is in progress.
+			if (
+				pTile->getState() != Tile::LoadState::ContentLoading &&
+				pTile->getState() != Tile::LoadState::RendererResourcesPreparing
+			) {
+				pTile->unloadContent();
+			}
+
+			Tile* pNext = this->_loadedTiles.next(*pTile);
+			this->_loadedTiles.remove(*pTile);
+			pTile = pNext;
+		}
+	}
+
+	void Tileset::_markTileVisited(Tile& tile) {
+		this->_loadedTiles.insertAtTail(tile);
 	}
 
 }

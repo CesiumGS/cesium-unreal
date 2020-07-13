@@ -3,7 +3,6 @@
 #include "Cesium3DTiles/IAssetAccessor.h"
 #include "Cesium3DTiles/IAssetResponse.h"
 #include "Cesium3DTiles/TileContentFactory.h"
-#include <fstream>
 
 namespace Cesium3DTiles {
 
@@ -105,6 +104,17 @@ namespace Cesium3DTiles {
         this->setState(LoadState::ContentLoading);
     }
 
+    void Tile::unloadContent() {
+        const TilesetExternals& externals = this->_pTileset->getExternals();
+        if (externals.pPrepareRendererResources) {
+            externals.pPrepareRendererResources->free(*this, this->_pRendererResources);
+        }
+
+        this->_pRendererResources = nullptr;
+        this->_pContent.reset();
+        this->setState(LoadState::Unloaded);
+    }
+
     void Tile::cancelLoadContent() {
         if (this->_pContentRequest) {
             this->_pContentRequest->cancel();
@@ -116,8 +126,7 @@ namespace Cesium3DTiles {
         }
     }
 
-    void Tile::setState(LoadState value)
-    {
+    void Tile::setState(LoadState value) {
         this->_state.store(value, std::memory_order::memory_order_release);
     }
 
@@ -139,6 +148,8 @@ namespace Cesium3DTiles {
 
         externals.pTaskProcessor->startTask([data, this]() {
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data);
+
+            // TODO: release _pContentRequest.
 
             if (!pContent) {
                 // Try loading this content as an external tileset (JSON).

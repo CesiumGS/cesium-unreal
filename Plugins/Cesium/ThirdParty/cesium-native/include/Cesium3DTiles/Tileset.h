@@ -63,6 +63,14 @@ struct TilesetOptions {
      * loading will be faster, but newly-visible parts of the tileset may initially be blank.
      */
     bool forbidHoles = false;
+
+    /**
+     * The maximum number of tiles that may be cached. Note that this value, even if 0, will never
+     * cause tiles that are needed for rendering to be unloaded. However, if the total number of
+     * loaded tiles is greater than this value, tiles will be unloaded until the total is under
+     * this number or until only required tiles remain, whichever comes first.
+     */
+    uint32_t maximumCachedTiles = 200;
 };
 
 namespace Cesium3DTiles {
@@ -177,6 +185,8 @@ namespace Cesium3DTiles {
         TraversalDetails _visitTileIfVisible(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitVisibleChildrenNearToFar(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         void _processLoadQueue();
+        void _unloadCachedTiles();
+        void _markTileVisited(Tile& tile);
 
         TilesetExternals _externals;
 

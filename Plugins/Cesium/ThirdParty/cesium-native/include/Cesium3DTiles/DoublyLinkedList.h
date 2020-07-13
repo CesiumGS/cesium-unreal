@@ -34,8 +34,7 @@ namespace Cesium3DTiles {
      * the data object.
      * 
      * @tparam T The data object type.
-     * @tparam (T::*Next) A member pointer to the field that holds a pointer to the next node.
-     * @tparam (T::*Previous) A member pointer to the field that holds a pointer to the previous node.
+     * @tparam (T::*Pointers) A member pointer to the field that holds the links to the previous and next nodes.
      */
     template <class T, DoublyLinkedListPointers<T> (T::*Pointers)>
     class DoublyLinkedList {
@@ -46,18 +45,21 @@ namespace Cesium3DTiles {
             if (nodePointers.pPrevious) {
                 DoublyLinkedListPointers<T>& previousPointers = nodePointers.pPrevious->*Pointers;
                 previousPointers.pNext = nodePointers.pNext;
-                nodePointers.pPrevious = nullptr;
+                --this->_size;
             } else if (this->_pHead == &node) {
                 this->_pHead = nodePointers.pNext;
+                --this->_size;
             }
 
             if (nodePointers.pNext) {
                 DoublyLinkedListPointers<T>& nextPointers = nodePointers.pNext->*Pointers;
                 nextPointers.pPrevious = nodePointers.pPrevious;
-                nodePointers.pNext = nullptr;
             } else if (this->_pTail == &node) {
                 this->_pTail = nodePointers.pPrevious;
             }
+
+            nodePointers.pPrevious = nullptr;
+            nodePointers.pNext = nullptr;
         }
 
         void insertAfter(T& after, T& node) {
@@ -78,6 +80,8 @@ namespace Cesium3DTiles {
             if (this->_pTail == &after) {
                 this->_pTail = &node;
             }
+
+            ++this->_size;
         }
 
         void insertBefore(T& before, T& node) {
@@ -98,6 +102,8 @@ namespace Cesium3DTiles {
             if (this->_pHead == &before) {
                 this->_pHead = &node;
             }
+
+            ++this->_size;
         }
 
         void insertAtHead(T& node) {
@@ -105,10 +111,13 @@ namespace Cesium3DTiles {
 
             if (this->_pHead) {
                 (this->_pHead->*Pointers).pPrevious = &node;
+                (node.*Pointers).pNext = this->_pHead;
             } else {
                 this->_pTail = &node;
             }
             this->_pHead = &node;
+
+            ++this->_size;
         }
 
         void insertAtTail(T& node) {
@@ -116,23 +125,47 @@ namespace Cesium3DTiles {
 
             if (this->_pTail) {
                 (this->_pTail->*Pointers).pNext = &node;
+                (node.*Pointers).pPrevious = this->_pTail;
             } else {
                 this->_pHead = &node;
             }
             this->_pTail = &node;
+
+            ++this->_size;
+        }
+
+        size_t size() {
+            return this->_size;
+        }
+
+        T* head() {
+            return this->_pHead;
+        }
+
+        T* tail() {
+            return this->_pTail;
         }
 
         T* next(T& node) {
             return (node.*Pointers).pNext;
         }
 
+        T* next(T* pNode) {
+            return pNode ? this->next(*pNode) : this->_pHead;
+        }
+
         T* previous(T& node) {
             return (node.*Pointers).pPrevious;
         }
 
+        T* previous(T* pNode) {
+            return pNode ? this->previous(*pNode) : this->_pTail;
+        }
+
     private:
-        T* _pHead;
-        T* _pTail;
+        size_t _size = 0;
+        T* _pHead = nullptr;
+        T* _pTail = nullptr;
     };
 
 }

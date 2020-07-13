@@ -16,14 +16,14 @@ protected:
 	}
 };
 
-static LStream Stream;
+static LStream LogStream;
 
 void FCesiumModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	Cesium3DTiles::registerAllTileContentTypes();
 
-	std::cout.rdbuf(&Stream);
+	std::cout.rdbuf(&LogStream);
 }
 
 void FCesiumModule::ShutdownModule()
