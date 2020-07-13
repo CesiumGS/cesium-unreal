@@ -20,14 +20,14 @@ namespace Cesium3DTiles {
 		}
 
 		json::const_iterator regionIt = bvIt->find("region");
-		if (regionIt != bvIt->end() && regionIt->is_array() && boxIt->size() >= 6) {
-			const json& a = *boxIt;
+		if (regionIt != bvIt->end() && regionIt->is_array() && regionIt->size() >= 6) {
+			const json& a = *regionIt;
 			return BoundingRegion(a[0], a[1], a[2], a[3], a[4], a[5]);
 		}
 
 		json::const_iterator sphereIt = bvIt->find("sphere");
-		if (sphereIt != bvIt->end() && sphereIt->is_array() && boxIt->size() >= 4) {
-			const json& a = *boxIt;
+		if (sphereIt != bvIt->end() && sphereIt->is_array() && sphereIt->size() >= 4) {
+			const json& a = *sphereIt;
 			return BoundingSphere(glm::dvec3(a[0], a[1], a[2]), a[3]);
 		}
 
