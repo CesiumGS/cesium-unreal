@@ -51,6 +51,28 @@ glm::dmat4x4 unrealToOrFromCesium(
 	glm::dvec4(0.0,  0.0, 0.0, 1.0)
 );
 
+template <class T>
+static void updateTextureCoordinates(
+	const tinygltf::Model& model,
+	const tinygltf::Primitive& primitive,
+	TArray<FStaticMeshBuildVertex>& vertices,
+	const T& texture,
+	int textureCoordinateIndex
+) {
+	std::string attributeName = "TEXCOORD_" + std::to_string(texture.texCoord);
+	auto uvAccessorIt = primitive.attributes.find(attributeName);
+	if (uvAccessorIt != primitive.attributes.end()) {
+		int uvAccessorID = uvAccessorIt->second;
+		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+
+		for (size_t i = 0; i < uvAccessor.size(); ++i)
+		{
+			FStaticMeshBuildVertex& vertex = vertices[i];
+			vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
+		}
+	}
+}
+
 static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Primitive& primitive, const glm::dmat4x4& transform) {
 	TMap<int32, FVertexID> indexToVertexIdMap;
 
@@ -129,17 +151,26 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 
 	}
 
-	auto uvAccessorIt = primitive.attributes.find("TEXCOORD_0");
-	if (uvAccessorIt != primitive.attributes.end())
-	{
-		int uvAccessorID = uvAccessorIt->second;
-		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+	// In the GltfMaterial defined in the Unreal Editor, each texture has its own set of
+	// texture coordinates, and these cannot be changed at runtime:
+	// 0 - baseColorTexture
+	// 1 - metallicRoughnessTexture
+	// 2 - normalTexture
+	// 3 - occlusionTexture
+	// 4 - emissiveTexture
 
-		for (size_t i = 0; i < uvAccessor.size(); ++i)
-		{
-			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			vertex.UVs[0] = uvAccessor[i];
-		}
+	// We need to copy the texture coordinates associated with each texture (if any) into the
+	// the appropriate UVs slot in FStaticMeshBuildVertex.
+
+	int materialID = primitive.material;
+	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : nullptr;
+
+	if (pMaterial) {
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.baseColorTexture, 0);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, 1);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->normalTexture, 2);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->occlusionTexture, 3);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->emissiveTexture, 4);
 	}
 
 	RenderData->Bounds = BoundingBoxAndSphere;
@@ -228,8 +259,7 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
 
-	int materialID = primitive.material;
-	primitiveResult.pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : nullptr;
+	primitiveResult.pMaterial = pMaterial;
 
 	section.MaterialIndex = 0;
 
