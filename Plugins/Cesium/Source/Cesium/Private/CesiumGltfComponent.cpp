@@ -337,12 +337,18 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(const tinygltf::Model
 
 template <class T>
 bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const tinygltf::Model& model, const T& gltfTexture) {
-	if (gltfTexture.index < 0 || gltfTexture.index >= model.images.size()) {
+	if (gltfTexture.index < 0 || gltfTexture.index >= model.textures.size()) {
 		// TODO: report invalid texture if the index isn't -1
 		return false;
 	}
 
-	const tinygltf::Image& image = model.images[gltfTexture.index];
+	const tinygltf::Texture& texture = model.textures[gltfTexture.index];
+	if (texture.source < 0 || texture.source >= model.images.size()) {
+		// TODO: report invalid texture
+		return false;
+	}
+
+	const tinygltf::Image& image = model.images[texture.source];
 
 	UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
 
@@ -386,7 +392,9 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
 
-	pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
+	if (pbr.baseColorFactor.size() >= 3) {
+		pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
+	}
 	pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
 	pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
 
@@ -494,26 +502,26 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 	TFuture<void> future = Async(EAsyncExecution::ThreadPool, [this, content]
 	{
 		gsl::span<const uint8_t> data(static_cast<const uint8_t*>(content.GetData()), content.Num());
-		Cesium3DTiles::Gltf::LoadResult loadResult = Cesium3DTiles::Gltf::load(data);
+		std::unique_ptr<Cesium3DTiles::Gltf::LoadResult> pLoadResult = std::make_unique<Cesium3DTiles::Gltf::LoadResult>(std::move(Cesium3DTiles::Gltf::load(data)));
 
-		if (loadResult.warnings.length() > 0) {
-			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(loadResult.warnings));
+		if (pLoadResult->warnings.length() > 0) {
+			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(pLoadResult->warnings));
 		}
 
-		if (loadResult.errors.length() > 0) {
-			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(loadResult.errors));
+		if (pLoadResult->errors.length() > 0) {
+			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(pLoadResult->errors));
 		}
 
-		if (loadResult.model) {
+		if (!pLoadResult->model) {
 			UE_LOG(LogActor, Error, TEXT("glTF model could not be loaded."));
 			return;
 		}
 
-		tinygltf::Model& model = loadResult.model.value();
+		tinygltf::Model& model = pLoadResult->model.value();
 
 		std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0));
 
-		AsyncTask(ENamedThreads::GameThread, [this, result{ std::move(result) }]() mutable {
+		AsyncTask(ENamedThreads::GameThread, [this, pLoadResult{ std::move(pLoadResult) }, result{ std::move(result) }]() mutable {
 			for (LoadModelResult& model : result) {
 				loadModelGameThreadPart(this, model);
 			}
@@ -523,6 +531,6 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 void UCesiumGltfComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	this->Mesh->DestroyComponent();
-	this->Mesh = nullptr;
+	//this->Mesh->DestroyComponent();
+	//this->Mesh = nullptr;
 }
