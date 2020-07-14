@@ -1,6 +1,7 @@
 #pragma once
 
-#include "CullingResult.h"
+#include "Cesium3DTiles/CullingResult.h"
+#include "Cesium3DTiles/BoundingBox.h"
 
 namespace Cesium3DTiles {
 
@@ -8,7 +9,6 @@ namespace Cesium3DTiles {
 
     class BoundingRegion {
     public:
-        BoundingRegion() = default;
         BoundingRegion(
             double west,
             double south,
@@ -16,24 +16,25 @@ namespace Cesium3DTiles {
             double north,
             double minimumHeight,
             double maximumHeight
-        ) :
-            west(west),
-            south(south),
-            east(east),
-            north(north),
-            minimumHeight(minimumHeight),
-            maximumHeight(maximumHeight)
-        {
-        }
+        );
+
+        double getWest() const { return this->_west; }
+        double getSouth() const { return this->_south; }
+        double getEast() const { return this->_east; }
+        double getNorth() const { return this->_north; }
+        double getMinimumHeight() const { return this->_minimumHeight; }
+        double getMaximumHeight() const { return this->_maximumHeight; }
 
         CullingResult intersectPlane(const Plane& plane) const;
         
-        double west;
-        double south;
-        double east;
-        double north;
-        double minimumHeight;
-        double maximumHeight;
+private:
+        double _west;
+        double _south;
+        double _east;
+        double _north;
+        double _minimumHeight;
+        double _maximumHeight;
+        BoundingBox _boundingBox;
     };
 
 }

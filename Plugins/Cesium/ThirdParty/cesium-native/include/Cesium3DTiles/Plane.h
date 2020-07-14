@@ -6,14 +6,18 @@ namespace Cesium3DTiles {
 
     class Plane {
     public:
-        Plane() {}
+        Plane(const glm::dvec3& normal, double distance);
+        Plane(const glm::dvec3& point, const glm::dvec3& normal);
 
-        Plane(const glm::dvec3& normal, double distance) :
-            normal(normal),
-            distance(distance)
-        {}
-        
-        glm::dvec3 normal;
-        double distance;
+        const glm::dvec3& getNormal() const { return this->_normal; }
+        const double getDistance() const { return this->_distance; }
+
+        double getPointDistance(const glm::dvec3& point) const;
+
+        glm::dvec3 projectPointOntoPlane(const glm::dvec3& point) const;
+
+    private:
+        glm::dvec3 _normal;
+        double _distance;
     };
 }
