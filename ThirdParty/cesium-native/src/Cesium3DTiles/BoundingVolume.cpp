@@ -8,8 +8,8 @@ namespace Cesium3DTiles {
         case 0:
         {
             const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
-            glm::dvec3 center = transform * glm::dvec4(boundingBox.center, 1.0);
-            glm::dmat3 halfAxes = glm::dmat3(transform) * boundingBox.halfAxes;
+            glm::dvec3 center = transform * glm::dvec4(boundingBox.getCenter(), 1.0);
+            glm::dmat3 halfAxes = glm::dmat3(transform) * boundingBox.getHalfAxes();
             return BoundingBox(center, halfAxes);
         }
         case 1:
@@ -42,7 +42,7 @@ namespace Cesium3DTiles {
         case 0:
         {
             const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
-            return boundingBox.center;
+            return boundingBox.getCenter();
         }
         case 1:
         {

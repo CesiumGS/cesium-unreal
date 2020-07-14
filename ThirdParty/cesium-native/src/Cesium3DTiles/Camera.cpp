@@ -16,7 +16,12 @@ namespace Cesium3DTiles {
         _up(up),
         _viewportSize(viewportSize),
         _horizontalFieldOfView(horizontalFieldOfView),
-        _verticalFieldOfView(verticalFieldOfView)
+        _verticalFieldOfView(verticalFieldOfView),
+        _sseDenominator(0.0),
+        _leftPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0),
+        _rightPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0),
+        _topPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0),
+        _bottomPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0)
     {
         this->updatePositionAndOrientation(position, direction, up);
         this->updateViewParameters(viewportSize, horizontalFieldOfView, verticalFieldOfView);

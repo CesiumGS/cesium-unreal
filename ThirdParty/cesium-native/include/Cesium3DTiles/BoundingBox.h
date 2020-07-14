@@ -2,7 +2,9 @@
 
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
-#include "CullingResult.h"
+#include "Cesium3DTiles/CullingResult.h"
+#include "Cesium3DTiles/Ellipsoid.h"
+#include "Cesium3DTiles/Rectangle.h"
 
 namespace Cesium3DTiles {
 
@@ -10,15 +12,23 @@ namespace Cesium3DTiles {
 
     class BoundingBox {
     public:
-        BoundingBox() = default;
-
         BoundingBox(
             const glm::dvec3& center,
             const glm::dmat3& halfAxes
         ) :
-            center(center),
-            halfAxes(halfAxes)
+            _center(center),
+            _halfAxes(halfAxes)
         {}
+
+        static BoundingBox fromRectangle(
+            const Rectangle& rectangle,
+            double minimumHeight = 0.0,
+            double maximumHeight = 0.0,
+            const Ellipsoid& ellipsoid = Ellipsoid::WGS84
+        );
+
+        const glm::dvec3& getCenter() const { return this->_center; }
+        const glm::dmat3& getHalfAxes() const { return this->_halfAxes; }
 
         /// <summary>
         /// Determines on which side of a plane the bounding box is located.
@@ -41,8 +51,9 @@ namespace Cesium3DTiles {
         /// <returns>The squared distance.</returns>
         double computeDistanceSquaredToPosition(const glm::dvec3& position) const;
 
-        glm::dvec3 center;
-        glm::dmat3 halfAxes;
+    private:
+        glm::dvec3 _center;
+        glm::dmat3 _halfAxes;
     };
 
 }
