@@ -24,8 +24,8 @@ static uint32_t nextMaterialId = 0;
 struct LoadModelResult
 {
 	FStaticMeshRenderData* RenderData;
-	tinygltf::Image image;
-	tinygltf::PbrMetallicRoughness pbr;
+	const tinygltf::Model* pModel;
+	const tinygltf::Material* pMaterial;
 	glm::dmat4x4 transform;
 };
 
@@ -50,6 +50,28 @@ glm::dmat4x4 unrealToOrFromCesium(
 	glm::dvec4(0.0,  0.0, 1.0, 0.0),
 	glm::dvec4(0.0,  0.0, 0.0, 1.0)
 );
+
+template <class T>
+static void updateTextureCoordinates(
+	const tinygltf::Model& model,
+	const tinygltf::Primitive& primitive,
+	TArray<FStaticMeshBuildVertex>& vertices,
+	const T& texture,
+	int textureCoordinateIndex
+) {
+	std::string attributeName = "TEXCOORD_" + std::to_string(texture.texCoord);
+	auto uvAccessorIt = primitive.attributes.find(attributeName);
+	if (uvAccessorIt != primitive.attributes.end()) {
+		int uvAccessorID = uvAccessorIt->second;
+		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+
+		for (size_t i = 0; i < uvAccessor.size(); ++i)
+		{
+			FStaticMeshBuildVertex& vertex = vertices[i];
+			vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
+		}
+	}
+}
 
 static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Primitive& primitive, const glm::dmat4x4& transform) {
 	TMap<int32, FVertexID> indexToVertexIdMap;
@@ -129,17 +151,26 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 
 	}
 
-	auto uvAccessorIt = primitive.attributes.find("TEXCOORD_0");
-	if (uvAccessorIt != primitive.attributes.end())
-	{
-		int uvAccessorID = uvAccessorIt->second;
-		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+	// In the GltfMaterial defined in the Unreal Editor, each texture has its own set of
+	// texture coordinates, and these cannot be changed at runtime:
+	// 0 - baseColorTexture
+	// 1 - metallicRoughnessTexture
+	// 2 - normalTexture
+	// 3 - occlusionTexture
+	// 4 - emissiveTexture
 
-		for (size_t i = 0; i < uvAccessor.size(); ++i)
-		{
-			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			vertex.UVs[0] = uvAccessor[i];
-		}
+	// We need to copy the texture coordinates associated with each texture (if any) into the
+	// the appropriate UVs slot in FStaticMeshBuildVertex.
+
+	int materialID = primitive.material;
+	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : nullptr;
+
+	if (pMaterial) {
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.baseColorTexture, 0);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, 1);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->normalTexture, 2);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->occlusionTexture, 3);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->emissiveTexture, 4);
 	}
 
 	RenderData->Bounds = BoundingBoxAndSphere;
@@ -224,31 +255,11 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 	LODResources.bHasAdjacencyInfo = false;
 
 	LoadModelResult primitiveResult;
+	primitiveResult.pModel = &model;
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
 
-	int materialID = primitive.material;
-	tinygltf::Material material =
-		materialID >= 0 && materialID < model.materials.size()
-			? model.materials[materialID]
-			: tinygltf::Material();
-
-	const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
-	const tinygltf::TextureInfo& texture = pbr.baseColorTexture;
-	primitiveResult.pbr = pbr;
-
-	if (texture.index >= 0 && texture.index < model.images.size()) {
-		const tinygltf::Image& image = model.images[texture.index];
-		primitiveResult.image = image;
-	} else {
-		primitiveResult.image = tinygltf::Image();
-		primitiveResult.image.width = 1;
-		primitiveResult.image.height = 1;
-		primitiveResult.image.bits = 8;
-		primitiveResult.image.component = 4;
-		primitiveResult.image.pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
-		primitiveResult.image.image = { 255, 255, 255, 255 };
-	}
+	primitiveResult.pMaterial = pMaterial;
 
 	section.MaterialIndex = 0;
 
@@ -324,6 +335,34 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(const tinygltf::Model
 	return result;
 }
 
+template <class T>
+bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const tinygltf::Model& model, const T& gltfTexture) {
+	if (gltfTexture.index < 0 || gltfTexture.index >= model.textures.size()) {
+		// TODO: report invalid texture if the index isn't -1
+		return false;
+	}
+
+	const tinygltf::Texture& texture = model.textures[gltfTexture.index];
+	if (texture.source < 0 || texture.source >= model.images.size()) {
+		// TODO: report invalid texture
+		return false;
+	}
+
+	const tinygltf::Image& image = model.images[texture.source];
+
+	UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+
+	unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
+	pTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+	pTexture->UpdateResource();
+
+	pMaterial->SetTextureParameterValue(parameterName, pTexture);
+
+	return true;
+}
+
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult) {
 	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
 	pMesh->SetupAttachment(pGltf);
@@ -344,22 +383,35 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pStaticMesh->NeverStream = true;
 	pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
 
-	UTexture2D* pTexture = UTexture2D::CreateTransient(loadResult.image.width, loadResult.image.height, PF_R8G8B8A8);
-
-	unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-
-	FMemory::Memcpy(pTextureData, &loadResult.image.image[0], loadResult.image.image.size());
-	pTexture->PlatformData->Mips[0].BulkData.Unlock();
-
-	//Update!
-	pTexture->UpdateResource();
+	const tinygltf::Model& model = *loadResult.pModel;
+	tinygltf::Material defaultMaterial;
+	const tinygltf::Material& material = loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
+	
+	const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
 
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
-	pMaterial->SetVectorParameterValue("baseColorFactor", FVector(loadResult.pbr.baseColorFactor[0], loadResult.pbr.baseColorFactor[1], loadResult.pbr.baseColorFactor[2]));
-	pMaterial->SetScalarParameterValue("metallicFactor", loadResult.pbr.metallicFactor);
-	pMaterial->SetScalarParameterValue("roughnessFactor", loadResult.pbr.roughnessFactor);
-	pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
+
+	if (pbr.baseColorFactor.size() >= 3) {
+		pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
+	}
+	pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
+	pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
+
+	applyTexture(pMaterial, "baseColorTexture", model, pbr.baseColorTexture);
+	applyTexture(pMaterial, "metallicRoughnessTexture", model, pbr.metallicRoughnessTexture);
+	applyTexture(pMaterial, "normalTexture", model, material.normalTexture);
+	bool hasEmissiveTexture = applyTexture(pMaterial, "emissiveTexture", model, material.emissiveTexture);
+	applyTexture(pMaterial, "occlusionTexture", model, material.occlusionTexture);
+
+	if (material.emissiveFactor.size() >= 3) {
+		pMaterial->SetVectorParameterValue("emissiveFactor", FVector(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]));
+	} else if (hasEmissiveTexture) {
+		// When we have an emissive texture but not a factor, we need to use a factor of vec3(1.0). The default,
+		// vec3(0.0), would disable the emission from the texture.
+		pMaterial->SetVectorParameterValue("emissiveFactor", FVector(1.0f, 1.0f, 1.0f));
+	}
+
 	pMaterial->TwoSided = true;
 
 	pStaticMesh->AddMaterial(pMaterial);
@@ -450,26 +502,26 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 	TFuture<void> future = Async(EAsyncExecution::ThreadPool, [this, content]
 	{
 		gsl::span<const uint8_t> data(static_cast<const uint8_t*>(content.GetData()), content.Num());
-		Cesium3DTiles::Gltf::LoadResult loadResult = Cesium3DTiles::Gltf::load(data);
+		std::unique_ptr<Cesium3DTiles::Gltf::LoadResult> pLoadResult = std::make_unique<Cesium3DTiles::Gltf::LoadResult>(std::move(Cesium3DTiles::Gltf::load(data)));
 
-		if (loadResult.warnings.length() > 0) {
-			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(loadResult.warnings));
+		if (pLoadResult->warnings.length() > 0) {
+			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(pLoadResult->warnings));
 		}
 
-		if (loadResult.errors.length() > 0) {
-			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(loadResult.errors));
+		if (pLoadResult->errors.length() > 0) {
+			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(pLoadResult->errors));
 		}
 
-		if (loadResult.model) {
+		if (!pLoadResult->model) {
 			UE_LOG(LogActor, Error, TEXT("glTF model could not be loaded."));
 			return;
 		}
 
-		tinygltf::Model& model = loadResult.model.value();
+		tinygltf::Model& model = pLoadResult->model.value();
 
 		std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0));
 
-		AsyncTask(ENamedThreads::GameThread, [this, result{ std::move(result) }]() mutable {
+		AsyncTask(ENamedThreads::GameThread, [this, pLoadResult{ std::move(pLoadResult) }, result{ std::move(result) }]() mutable {
 			for (LoadModelResult& model : result) {
 				loadModelGameThreadPart(this, model);
 			}
@@ -479,6 +531,6 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 void UCesiumGltfComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	this->Mesh->DestroyComponent();
-	this->Mesh = nullptr;
+	//this->Mesh->DestroyComponent();
+	//this->Mesh = nullptr;
 }
