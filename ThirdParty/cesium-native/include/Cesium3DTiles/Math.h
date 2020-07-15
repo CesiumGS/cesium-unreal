@@ -29,6 +29,10 @@ namespace Cesium3DTiles {
         static const double EPSILON20;
         static const double EPSILON21;
 
+        static const double PI;
+        static const double TWO_PI;
+        static const double PI_OVER_TWO;
+
         template<glm::length_t L, typename T, glm::qualifier Q>
         static inline glm::vec<L, T, Q> relativeEpsilonToAbsolute(const glm::vec<L, T, Q>& a, const glm::vec<L, T, Q>& b, double relativeEpsilon) {
             return relativeEpsilon * glm::max(glm::abs(a), glm::abs(b));
@@ -68,6 +72,25 @@ namespace Cesium3DTiles {
                 return value;
             }
             return value > 0 ? 1 : -1;
+        }
+
+        static inline double negativePiToPi(double angle) {
+            return Math::zeroToTwoPi(angle + Math::PI) - Math::PI;
+        }
+
+        static inline double zeroToTwoPi(double angle) {
+            double mod = Math::mod(angle, Math::TWO_PI);
+            if (
+                abs(mod) < Math::EPSILON14 &&
+                abs(angle) > Math::EPSILON14
+            ) {
+                return Math::TWO_PI;
+            }
+            return mod;
+        }
+
+        static inline double mod(double m, double n) {
+            return fmod(fmod(m, n) + n, n);
         }
     };
 
