@@ -45,6 +45,23 @@ namespace Cesium3DTiles {
         return k + n;
     }
 
+    std::optional<Cartographic> Ellipsoid::cartesianToCartographic(const glm::dvec3& cartesian) const {
+        std::optional<glm::dvec3> p = this->scaleToGeodeticSurface(cartesian);
+
+        if (!p) {
+            return std::optional<Cartographic>();
+        }
+
+        glm::dvec3 n = this->geodeticSurfaceNormal(p.value());
+        glm::dvec3 h = cartesian - p.value();
+
+        double longitude = atan2(n.y, n.x);
+        double latitude = asin(n.z);
+        double height = Math::sign(glm::dot(h, cartesian)) * glm::length(h);
+
+        return Cartographic(longitude, latitude, height);
+    }
+
     std::optional<glm::dvec3> Ellipsoid::scaleToGeodeticSurface(const glm::dvec3& cartesian) const {
         double positionX = cartesian.x;
         double positionY = cartesian.y;

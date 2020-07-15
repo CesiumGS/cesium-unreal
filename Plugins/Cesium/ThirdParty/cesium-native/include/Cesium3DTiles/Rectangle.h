@@ -17,10 +17,16 @@ namespace Cesium3DTiles {
         double getSouth() const { return this->_south; }
         double getEast() const { return this->_east; }
         double getNorth() const { return this->_north; }
+        Cartographic getSouthwest() const { return Cartographic(this->_west, this->_south); }
+        Cartographic getSoutheast() const { return Cartographic(this->_east, this->_south); }
+        Cartographic getNorthwest() const { return Cartographic(this->_west, this->_north); }
+        Cartographic getNortheast() const { return Cartographic(this->_east, this->_north); }
 
         double computeWidth() const;
         double computeHeight() const;
         Cartographic computeCenter() const;
+
+        bool contains(const Cartographic& cartographic) const;
 
     private:
         double _west;

@@ -9,18 +9,17 @@ namespace Cesium3DTiles {
 
     class BoundingSphere {
     public:
-        BoundingSphere() = default;
+        BoundingSphere(const glm::dvec3& center, double radius);
 
-        BoundingSphere(const glm::dvec3& center, double radius) :
-            center(center),
-            radius(radius)
-        {
-        }
+        const glm::dvec3& getCenter() const { return this-> _center; }
+        double getRadius() const { return this->_radius; }
         
         CullingResult intersectPlane(const Plane& plane) const;
+        double computeDistanceSquaredToPosition(const glm::dvec3& position) const;
 
-        glm::dvec3 center;
-        double radius;
+    private:
+        glm::dvec3 _center;
+        double _radius;
     };
 
 }

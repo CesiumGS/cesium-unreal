@@ -175,7 +175,16 @@ namespace Cesium3DTiles {
             const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
             return boundingBox.computeDistanceSquaredToPosition(this->_position);
         }
-        // TODO: handle other bounding volume types
+        case 1:
+        {
+            const BoundingRegion& boundingRegion = std::get<BoundingRegion>(boundingVolume);
+            return boundingRegion.computeDistanceSquaredToPosition(this->_position);
+        }
+        case 2:
+        {
+            const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
+            return boundingSphere.computeDistanceSquaredToPosition(this->_position);
+        }
         default:
             return 0.0;
         }
