@@ -148,24 +148,31 @@ namespace Cesium3DTiles {
 
         externals.pTaskProcessor->startTask([data, this]() {
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data);
-
-            // TODO: release _pContentRequest.
-
             if (!pContent) {
-                // Try loading this content as an external tileset (JSON).
+                // Try to load this content as an external tileset.json.
+                using nlohmann::json;
+                json tilesetJson = json::parse(data.begin(), data.end());
+                std::vector<Tile> externalRoot(1);
+                externalRoot[0].setParent(this);
+                this->getTileset()->loadTilesFromJson(externalRoot[0], tilesetJson, this->_pContentRequest->url());
+                this->_children = std::move(externalRoot);
+                this->finishPrepareRendererResources(nullptr);
+            } else {
+                this->_pContent = std::move(pContent);
+                this->setState(LoadState::ContentLoaded);
+
+                const TilesetExternals& externals = this->_pTileset->getExternals();
+                if (externals.pPrepareRendererResources) {
+                    this->setState(LoadState::RendererResourcesPreparing);
+                    externals.pPrepareRendererResources->prepare(*this);
+                }
+                else {
+                    this->finishPrepareRendererResources(nullptr);
+                }
             }
 
-            this->_pContent = std::move(pContent);
-            this->setState(LoadState::ContentLoaded);
-
-            const TilesetExternals& externals = this->_pTileset->getExternals();
-            if (externals.pPrepareRendererResources) {
-                this->setState(LoadState::RendererResourcesPreparing);
-                externals.pPrepareRendererResources->prepare(*this);
-            }
-            else {
-                this->setState(LoadState::RendererResourcesPrepared);
-            }
+            // TODO
+            //this->_pContentRequest.reset();
         });
     }
 

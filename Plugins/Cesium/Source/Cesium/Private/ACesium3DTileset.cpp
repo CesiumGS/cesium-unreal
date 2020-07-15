@@ -79,14 +79,18 @@ public:
 	UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
 
 	virtual void prepare(Cesium3DTiles::Tile& tile) {
-		Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
-		if (pB3dm) {
+		Cesium3DTiles::TileContent* pContent = tile.getContent();
+		if (!pContent) {
+			return;
+		}
+
+		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
+			Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
 			glm::dmat4x4 transform = _pActor->GetTilesetToWorldTransform() * tile.getTransform();
 			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), transform, [&tile](UCesiumGltfComponent* pGltf) {
 				tile.finishPrepareRendererResources(pGltf);
 			});
 		}
-
 	}
 
 	virtual void cancel(Cesium3DTiles::Tile& tile) {
