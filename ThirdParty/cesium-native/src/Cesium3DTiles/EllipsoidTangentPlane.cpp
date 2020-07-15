@@ -24,6 +24,7 @@ namespace Cesium3DTiles {
         const Ellipsoid& ellipsoid
     ) :
         _ellipsoid(ellipsoid),
+        _origin(eastNorthUpToFixedFrame[3]),
         _xAxis(eastNorthUpToFixedFrame[0]),
         _yAxis(eastNorthUpToFixedFrame[1]),
         _plane(eastNorthUpToFixedFrame[3], eastNorthUpToFixedFrame[2])
