@@ -8,8 +8,8 @@ namespace Cesium3DTiles {
         case 0:
         {
             const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
-            glm::dvec3 center = transform * glm::dvec4(boundingBox.center, 1.0);
-            glm::dmat3 halfAxes = glm::dmat3(transform) * boundingBox.halfAxes;
+            glm::dvec3 center = transform * glm::dvec4(boundingBox.getCenter(), 1.0);
+            glm::dmat3 halfAxes = glm::dmat3(transform) * boundingBox.getHalfAxes();
             return BoundingBox(center, halfAxes);
         }
         case 1:
@@ -20,7 +20,7 @@ namespace Cesium3DTiles {
         case 2:
         {
             const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
-            glm::dvec3 center = transform * glm::dvec4(boundingSphere.center, 1.0);
+            glm::dvec3 center = transform * glm::dvec4(boundingSphere.getCenter(), 1.0);
 
             double uniformScale = std::max(
                 std::max(
@@ -30,7 +30,7 @@ namespace Cesium3DTiles {
                 glm::length(glm::dvec3(transform[2]))
             );
 
-            return BoundingSphere(center, boundingSphere.radius * uniformScale);
+            return BoundingSphere(center, boundingSphere.getRadius() * uniformScale);
         }
         default:
             return boundingVolume;
@@ -42,16 +42,17 @@ namespace Cesium3DTiles {
         case 0:
         {
             const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
-            return boundingBox.center;
+            return boundingBox.getCenter();
         }
         case 1:
         {
-            throw std::exception("TODO: Computing center of bounding region is not yet supported.");
+            const BoundingRegion& region = std::get<BoundingRegion>(boundingVolume);
+            return region.getBoundingBox().getCenter();
         }
         case 2:
         {
             const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
-            return boundingSphere.center;
+            return boundingSphere.getCenter();
         }
         default:
             return glm::dvec3(0.0);

@@ -44,7 +44,7 @@ TEST_CASE("BoundingBox::intersectPlane") {
 
         auto box = Cesium3DTiles::BoundingBox(testCase.center, testCase.axes * 0.5);
         
-        std::string s = glm::to_string(box.halfAxes);
+        std::string s = glm::to_string(box.getHalfAxes());
 
         auto planeNormXform = [&testCase](double nx, double ny, double nz, double dist) {
             auto n = glm::dvec3(nx, ny, nz);

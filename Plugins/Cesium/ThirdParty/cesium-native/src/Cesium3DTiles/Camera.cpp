@@ -16,7 +16,12 @@ namespace Cesium3DTiles {
         _up(up),
         _viewportSize(viewportSize),
         _horizontalFieldOfView(horizontalFieldOfView),
-        _verticalFieldOfView(verticalFieldOfView)
+        _verticalFieldOfView(verticalFieldOfView),
+        _sseDenominator(0.0),
+        _leftPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0),
+        _rightPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0),
+        _topPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0),
+        _bottomPlane(glm::dvec3(0.0, 0.0, 1.0), 0.0)
     {
         this->updatePositionAndOrientation(position, direction, up);
         this->updateViewParameters(viewportSize, horizontalFieldOfView, verticalFieldOfView);
@@ -170,7 +175,16 @@ namespace Cesium3DTiles {
             const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
             return boundingBox.computeDistanceSquaredToPosition(this->_position);
         }
-        // TODO: handle other bounding volume types
+        case 1:
+        {
+            const BoundingRegion& boundingRegion = std::get<BoundingRegion>(boundingVolume);
+            return boundingRegion.computeDistanceSquaredToPosition(this->_position);
+        }
+        case 2:
+        {
+            const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
+            return boundingSphere.computeDistanceSquaredToPosition(this->_position);
+        }
         default:
             return 0.0;
         }
