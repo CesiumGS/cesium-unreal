@@ -18,6 +18,7 @@ namespace Cesium3DTiles {
         glm::dvec3 geodeticSurfaceNormal(const glm::dvec3& position) const;
         glm::dvec3 geodeticSurfaceNormal(const Cartographic& cartographic) const;
         glm::dvec3 cartographicToCartesian(const Cartographic& cartographic) const;
+        std::optional<Cartographic> cartesianToCartographic(const glm::dvec3& cartesian) const;
         std::optional<glm::dvec3> scaleToGeodeticSurface(const glm::dvec3& cartesian) const;
 
     private:

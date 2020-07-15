@@ -20,7 +20,7 @@ namespace Cesium3DTiles {
         case 2:
         {
             const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
-            glm::dvec3 center = transform * glm::dvec4(boundingSphere.center, 1.0);
+            glm::dvec3 center = transform * glm::dvec4(boundingSphere.getCenter(), 1.0);
 
             double uniformScale = std::max(
                 std::max(
@@ -30,7 +30,7 @@ namespace Cesium3DTiles {
                 glm::length(glm::dvec3(transform[2]))
             );
 
-            return BoundingSphere(center, boundingSphere.radius * uniformScale);
+            return BoundingSphere(center, boundingSphere.getRadius() * uniformScale);
         }
         default:
             return boundingVolume;
@@ -52,7 +52,7 @@ namespace Cesium3DTiles {
         case 2:
         {
             const BoundingSphere& boundingSphere = std::get<BoundingSphere>(boundingVolume);
-            return boundingSphere.center;
+            return boundingSphere.getCenter();
         }
         default:
             return glm::dvec3(0.0);

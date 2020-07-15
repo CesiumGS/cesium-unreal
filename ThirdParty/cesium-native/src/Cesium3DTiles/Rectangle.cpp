@@ -42,4 +42,25 @@ namespace Cesium3DTiles {
 
         return Cartographic(longitude, latitude, 0.0);
     }
+
+    bool Rectangle::contains(const Cartographic& cartographic) const {
+        double longitude = cartographic.longitude;
+        double latitude = cartographic.latitude;
+
+        double west = this->_west;
+        double east = this->_east;
+
+        if (east < west) {
+            east += Math::TWO_PI;
+            if (longitude < 0.0) {
+                longitude += Math::TWO_PI;
+            }
+        }
+        return (
+            (longitude > west || Math::equalsEpsilon(longitude, west, Math::EPSILON14)) &&
+            (longitude < east || Math::equalsEpsilon(longitude, east, Math::EPSILON14)) &&
+            latitude >= this->_south &&
+            latitude <= this->_north
+        );
+    }
 }
