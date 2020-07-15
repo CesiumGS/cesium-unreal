@@ -24,6 +24,7 @@ namespace Cesium3DTiles {
         double getNorth() const { return this->_north; }
         double getMinimumHeight() const { return this->_minimumHeight; }
         double getMaximumHeight() const { return this->_maximumHeight; }
+        const BoundingBox& getBoundingBox() const { return this->_boundingBox; }
 
         CullingResult intersectPlane(const Plane& plane) const;
         

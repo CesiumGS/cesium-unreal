@@ -46,7 +46,8 @@ namespace Cesium3DTiles {
         }
         case 1:
         {
-            throw std::exception("TODO: Computing center of bounding region is not yet supported.");
+            const BoundingRegion& region = std::get<BoundingRegion>(boundingVolume);
+            return region.getBoundingBox().getCenter();
         }
         case 2:
         {
