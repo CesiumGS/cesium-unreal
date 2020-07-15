@@ -12,68 +12,68 @@
 #include "Camera.h"
 #include "Json.h"
 
-/**
- * Additional options for configuring a \ref Tileset.
- * 
- */
-struct TilesetOptions {
-    /**
-     * The maximum number of pixels of error when rendering this tileset.
-     * This is used to select an appropriate level-of-detail.
-     */
-    double maximumScreenSpaceError = 16.0;
-
-    /**
-     * The maximum number of tiles that may simultaneously be in the process
-     * of loading.
-     */
-    uint32_t maximumSimultaneousTileLoads = 10;
-
-    /**
-     * Indicates whether the ancestors of rendered tiles should be preloaded.
-     * Setting this to true optimizes the zoom-out experience and provides more detail in
-     * newly-exposed areas when panning. The down side is that it requires loading more tiles.
-     */
-    bool preloadAncestors = true;
-
-    /**
-     * Indicates whether the siblings of rendered tiles should be preloaded.
-     * Setting this to true causes tiles with the same parent as a rendered tile to be loaded, even
-     * if they are culled. Setting this to true may provide a better panning experience at the
-     * cost of loading more tiles.
-     */
-    bool preloadSiblings = true;
-
-    /**
-     * The number of loading descendant tiles that is considered "too many".
-     * If a tile has too many loading descendants, that tile will be loaded and rendered before any of
-     * its descendants are loaded and rendered. This means more feedback for the user that something
-     * is happening at the cost of a longer overall load time. Setting this to 0 will cause each
-     * tile level to be loaded successively, significantly increasing load time. Setting it to a large
-     * number (e.g. 1000) will minimize the number of tiles that are loaded but tend to make
-     * detail appear all at once after a long wait.
-     */
-    uint32_t loadingDescendantLimit = 20;
-
-    /**
-     * When true, the tileset will guarantee that the tileset will never be rendered with holes in place
-     * of tiles that are not yet loaded. It does this be refusing to refine a parent tile until all of its
-     * child tiles are ready to render. Thus, when the camera moves, we will always have something - even
-     * if it's low resolution - to render any part of the tileset that becomes visible. When false, overall
-     * loading will be faster, but newly-visible parts of the tileset may initially be blank.
-     */
-    bool forbidHoles = false;
-
-    /**
-     * The maximum number of tiles that may be cached. Note that this value, even if 0, will never
-     * cause tiles that are needed for rendering to be unloaded. However, if the total number of
-     * loaded tiles is greater than this value, tiles will be unloaded until the total is under
-     * this number or until only required tiles remain, whichever comes first.
-     */
-    uint32_t maximumCachedTiles = 200;
-};
-
 namespace Cesium3DTiles {
+
+    /**
+     * Additional options for configuring a \ref Tileset.
+     * 
+     */
+    struct TilesetOptions {
+        /**
+         * The maximum number of pixels of error when rendering this tileset.
+         * This is used to select an appropriate level-of-detail.
+         */
+        double maximumScreenSpaceError = 16.0;
+
+        /**
+         * The maximum number of tiles that may simultaneously be in the process
+         * of loading.
+         */
+        uint32_t maximumSimultaneousTileLoads = 10;
+
+        /**
+         * Indicates whether the ancestors of rendered tiles should be preloaded.
+         * Setting this to true optimizes the zoom-out experience and provides more detail in
+         * newly-exposed areas when panning. The down side is that it requires loading more tiles.
+         */
+        bool preloadAncestors = true;
+
+        /**
+         * Indicates whether the siblings of rendered tiles should be preloaded.
+         * Setting this to true causes tiles with the same parent as a rendered tile to be loaded, even
+         * if they are culled. Setting this to true may provide a better panning experience at the
+         * cost of loading more tiles.
+         */
+        bool preloadSiblings = true;
+
+        /**
+         * The number of loading descendant tiles that is considered "too many".
+         * If a tile has too many loading descendants, that tile will be loaded and rendered before any of
+         * its descendants are loaded and rendered. This means more feedback for the user that something
+         * is happening at the cost of a longer overall load time. Setting this to 0 will cause each
+         * tile level to be loaded successively, significantly increasing load time. Setting it to a large
+         * number (e.g. 1000) will minimize the number of tiles that are loaded but tend to make
+         * detail appear all at once after a long wait.
+         */
+        uint32_t loadingDescendantLimit = 20;
+
+        /**
+         * When true, the tileset will guarantee that the tileset will never be rendered with holes in place
+         * of tiles that are not yet loaded. It does this be refusing to refine a parent tile until all of its
+         * child tiles are ready to render. Thus, when the camera moves, we will always have something - even
+         * if it's low resolution - to render any part of the tileset that becomes visible. When false, overall
+         * loading will be faster, but newly-visible parts of the tileset may initially be blank.
+         */
+        bool forbidHoles = false;
+
+        /**
+         * The maximum number of tiles that may be cached. Note that this value, even if 0, will never
+         * cause tiles that are needed for rendering to be unloaded. However, if the total number of
+         * loaded tiles is greater than this value, tiles will be unloaded until the total is under
+         * this number or until only required tiles remain, whichever comes first.
+         */
+        uint32_t maximumCachedTiles = 200;
+    };
 
     /**
      * A {@link https://github.com/CesiumGS/3d-tiles/tree/master/specification|3D Tiles tileset},
@@ -97,6 +97,16 @@ namespace Cesium3DTiles {
          * @param options Additional options for the tileset.
          */
         Tileset(const TilesetExternals& externals, uint32_t ionAssetID, const std::string& ionAccessToken, const TilesetOptions& options = TilesetOptions());
+
+        /**
+         * Constructs a new instance from the provided raw JSON data
+         * @param externals The external interfaces to use.
+         * @param data The raw tileset.json data.
+         * @param url The URL of the `tileset.json`. This is not requested directly, but it is used as a base URL for resolving relative
+         *            URLs found in `data`.
+         * @param options Additional options for the tileset.
+         */
+        Tileset(const TilesetExternals& externals, const gsl::span<const uint8_t>& data, const std::string& url, const TilesetOptions& options = TilesetOptions());
 
         /**
          * Gets the URL that was used to construct this tileset. If the tileset references a Cesium ion asset,
@@ -123,6 +133,11 @@ namespace Cesium3DTiles {
         const TilesetExternals& getExternals() const { return this->_externals; }
 
         /**
+         * Gets this tileset's options.
+         */
+        const TilesetOptions& getOptions() const { return this->_options; }
+
+        /**
          * Gets the root tile of this tileset, or nullptr if there is currently no root tile.
          */
         Tile* getRootTile() { return this->_pRootTile.get(); }
@@ -142,6 +157,14 @@ namespace Cesium3DTiles {
          * This method may be called from any thread.
          */
         void notifyTileDoneLoading(Tile* pTile);
+
+        /**
+         * Loads a tile tree from a tileset.json file. This method is safe to call from any thread.
+         * @param rootTile A blank tile into which to load the root.
+         * @param tileJson The parsed tileset.json.
+         * @param baseUrl The base URL of the tileset.json.
+         */
+        void loadTilesFromJson(Tile& rootTile, const nlohmann::json& tilesetJson, const std::string& baseUrl);
 
     private:
         struct TraversalDetails {
@@ -180,6 +203,7 @@ namespace Cesium3DTiles {
 
         void _ionResponseReceived(IAssetRequest* pRequest);
         void _tilesetJsonResponseReceived(IAssetRequest* pRequest);
+        void _loadTilesetJsonData(const gsl::span<const uint8_t>& data, const std::string& baseUrl);
         void _createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
         TraversalDetails _visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitTileIfVisible(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);

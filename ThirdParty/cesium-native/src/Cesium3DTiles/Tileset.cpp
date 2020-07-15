@@ -57,6 +57,28 @@ namespace Cesium3DTiles {
 		this->_pTilesetRequest->bind(std::bind(&Tileset::_ionResponseReceived, this, std::placeholders::_1));
 	}
 
+	Tileset::Tileset(
+		const TilesetExternals& externals,
+		const gsl::span<const uint8_t>& data,
+		const std::string& url,
+		const TilesetOptions& options
+	) :
+		_externals(externals),
+		_url(url),
+		_ionAssetID(),
+		_ionAccessToken(),
+		_options(options),
+		_pTilesetRequest(),
+		_pRootTile(),
+        _loadQueueHigh(),
+		_loadQueueMedium(),
+		_loadQueueLow(),
+		_loadsInProgress(0),
+		_loadedTiles()
+	{
+		this->_loadTilesetJsonData(data, url);
+	}
+
     const ViewUpdateResult& Tileset::updateView(const Camera& camera) {
 		uint32_t previousFrameNumber = this->_previousFrameNumber; 
 		uint32_t currentFrameNumber = previousFrameNumber + 1;
@@ -87,6 +109,10 @@ namespace Cesium3DTiles {
 
 	void Tileset::notifyTileDoneLoading(Tile* pTile) {
 		--this->_loadsInProgress;
+	}
+
+	void Tileset::loadTilesFromJson(Tile& rootTile, const nlohmann::json& tilesetJson, const std::string& baseUrl) {
+		this->_createTile(rootTile, tilesetJson["root"], baseUrl);
 	}
 
 	void Tileset::_ionResponseReceived(IAssetRequest* pRequest) {
@@ -130,16 +156,16 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		gsl::span<const uint8_t> data = pResponse->data();
-
-		using nlohmann::json;
-		json tileset = json::parse(data.begin(), data.end());
-
-		std::string baseUrl = pRequest->url();
+		this->_loadTilesetJsonData(pResponse->data(), pRequest->url());
 
 		pRequest = nullptr;
 		pResponse = nullptr;
 		this->_pTilesetRequest.reset();
+	}
+
+	void Tileset::_loadTilesetJsonData(const gsl::span<const uint8_t>& data, const std::string& baseUrl) {
+		using nlohmann::json;
+		json tileset = json::parse(data.begin(), data.end());
 
 		json& rootJson = tileset["root"];
 
@@ -157,6 +183,7 @@ namespace Cesium3DTiles {
 			return;
 		}
 
+		tile.setTileset(this);
 		Tile* pParent = tile.getParent();
 
 		std::optional<glm::dmat4x4> tileTransform = TilesetJson::getTransformProperty(tileJson, "transform");
@@ -241,7 +268,6 @@ namespace Cesium3DTiles {
 			for (size_t i = 0; i < childrenJson.size(); ++i) {
 				const json& childJson = childrenJson[i];
 				Tile& child = childTiles[i];
-				child.setTileset(this);
 				child.setParent(&tile);
 				this->_createTile(child, childJson, baseUrl);
 			}
