@@ -5,7 +5,7 @@
 namespace Cesium3DTiles {
 
     void registerAllTileContentTypes() {
-        TileContentFactory::registerContentType("b3dm", [](const Tile& tile, const gsl::span<const uint8_t>& data) {
+        TileContentFactory::registerContentType(Batched3DModelContent::TYPE, [](const Tile& tile, const gsl::span<const uint8_t>& data) {
             return std::make_unique<Batched3DModelContent>(tile, data);
         });
     }

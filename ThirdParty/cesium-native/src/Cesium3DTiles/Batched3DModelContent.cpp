@@ -4,6 +4,8 @@
 
 namespace Cesium3DTiles {
 
+	std::string Batched3DModelContent::TYPE = "b3dm";
+
 	struct B3dmHeader
 	{
 		unsigned char magic[4];
