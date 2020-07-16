@@ -1,6 +1,7 @@
 #include "Cesium3DTiles/Tileset.h"
 #include "Cesium3DTiles/IAssetAccessor.h"
 #include "Cesium3DTiles/IAssetResponse.h"
+#include "Cesium3DTiles/ExternalTilesetContent.h"
 #include "Uri.h"
 #include "TilesetJson.h"
 
@@ -111,7 +112,7 @@ namespace Cesium3DTiles {
 		--this->_loadsInProgress;
 	}
 
-	void Tileset::loadTilesFromJson(Tile& rootTile, const nlohmann::json& tilesetJson, const std::string& baseUrl) {
+	void Tileset::loadTilesFromJson(Tile& rootTile, const nlohmann::json& tilesetJson, const std::string& baseUrl) const {
 		this->_createTile(rootTile, tilesetJson["root"], baseUrl);
 	}
 
@@ -175,7 +176,7 @@ namespace Cesium3DTiles {
 		this->_createTile(*this->_pRootTile, rootJson, baseUrl);
 	}
 
-	void Tileset::_createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl) {
+	void Tileset::_createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl) const {
 		using nlohmann::json;
 
 		if (!tileJson.is_object())
@@ -183,7 +184,7 @@ namespace Cesium3DTiles {
 			return;
 		}
 
-		tile.setTileset(this);
+		tile.setTileset(const_cast<Tileset*>(this));
 		Tile* pParent = tile.getParent();
 
 		std::optional<glm::dmat4x4> tileTransform = TilesetJson::getTransformProperty(tileJson, "transform");
@@ -319,6 +320,7 @@ namespace Cesium3DTiles {
 		Tile& tile,
 		ViewUpdateResult& result
 	) {
+		tile.update(lastFrameNumber, currentFrameNumber);
 		this->_markTileVisited(tile);
 
         const BoundingVolume& boundingVolume = tile.getBoundingVolume();
@@ -576,9 +578,13 @@ namespace Cesium3DTiles {
 			}
 
 			// Cannot unload while an async operation is in progress.
+			// Don't unload tiles with external tileset content at all, because reloading
+			// currently won't work correctly.
+			// TODO: this is hacky, fix it.
 			if (
 				pTile->getState() != Tile::LoadState::ContentLoading &&
-				pTile->getState() != Tile::LoadState::RendererResourcesPreparing
+				pTile->getState() != Tile::LoadState::RendererResourcesPreparing &&
+				(pTile->getContent() == nullptr || pTile->getContent()->getType() != ExternalTilesetContent::TYPE)
 			) {
 				pTile->unloadContent();
 			}

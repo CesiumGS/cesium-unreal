@@ -13,11 +13,11 @@ namespace Cesium3DTiles {
     public:
         TileContentFactory() = delete;
 
-        typedef std::unique_ptr<TileContent> FactoryFunctionSignature(const Tile& tile, const gsl::span<const uint8_t>& data);
+        typedef std::unique_ptr<TileContent> FactoryFunctionSignature(const Tile& tile, const gsl::span<const uint8_t>& data, const std::string& url);
         typedef std::function<FactoryFunctionSignature> FactoryFunction;
 
         static void registerContentType(const std::string& magic, FactoryFunction factoryFunction);
-        static std::unique_ptr<TileContent> createContent(const Tile& tile, const gsl::span<const uint8_t>& data);
+        static std::unique_ptr<TileContent> createContent(const Tile& tile, const gsl::span<const uint8_t>& data, const std::string& url);
 
     private:
         static std::optional<std::string> getMagic(const gsl::span<const uint8_t>& data);
