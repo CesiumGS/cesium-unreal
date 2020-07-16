@@ -155,7 +155,13 @@ namespace Cesium3DTiles {
                 std::vector<Tile> externalRoot(1);
                 externalRoot[0].setParent(this);
                 this->getTileset()->loadTilesFromJson(externalRoot[0], tilesetJson, this->_pContentRequest->url());
+
+                // TODO: this is a race condition, because there is no guarantee that a move of a vector is atomic.
                 this->_children = std::move(externalRoot);
+
+                // Bump up the geometric error so we always refine past this no-content tile.
+                this->setGeometricError(9999999999.0);
+    
                 this->finishPrepareRendererResources(nullptr);
             } else {
                 this->_pContent = std::move(pContent);
