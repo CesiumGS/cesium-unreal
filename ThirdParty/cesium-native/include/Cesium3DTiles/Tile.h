@@ -7,11 +7,12 @@
 #include <atomic>
 #include <glm/mat4x4.hpp>
 #include <gsl/span>
-#include "IAssetRequest.h"
-#include "TileContent.h"
-#include "BoundingVolume.h"
-#include "TileSelectionState.h"
-#include "DoublyLinkedList.h"
+#include "Cesium3DTiles/IAssetRequest.h"
+#include "Cesium3DTiles/TileContent.h"
+#include "Cesium3DTiles/BoundingVolume.h"
+#include "Cesium3DTiles/TileSelectionState.h"
+#include "Cesium3DTiles/DoublyLinkedList.h"
+#include "Cesium3DTiles/ExternalTilesetContent.h"
 
 namespace Cesium3DTiles {
     class Tileset;
@@ -120,7 +121,7 @@ namespace Cesium3DTiles {
         /**
          * Determines if this tile is currently renderable.
          */
-        bool isRenderable() const { return this->getState() >= LoadState::RendererResourcesPrepared; }
+        bool isRenderable() const { return this->getState() >= LoadState::RendererResourcesPrepared && this->_pContent && this->_pContent->getType() != ExternalTilesetContent::TYPE; }
 
         void loadContent();
         void unloadContent();
