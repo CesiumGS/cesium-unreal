@@ -36,7 +36,7 @@ namespace Cesium3DTiles {
 		uint32_t batchLength;
 	};
 
-	Batched3DModelContent::Batched3DModelContent(const Tile& tile, const gsl::span<const uint8_t>& data) :
+	Batched3DModelContent::Batched3DModelContent(const Tile& tile, const gsl::span<const uint8_t>& data, const std::string& url) :
 		TileContent(tile)
 	{
 		// TODO: actually use the b3dm payload

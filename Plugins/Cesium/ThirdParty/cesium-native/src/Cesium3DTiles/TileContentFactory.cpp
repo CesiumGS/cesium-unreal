@@ -7,7 +7,7 @@ namespace Cesium3DTiles {
         TileContentFactory::_factoryFunctions[magic] = factoryFunction;
     }
 
-    std::unique_ptr<TileContent> TileContentFactory::createContent(const Cesium3DTiles::Tile& tile, const gsl::span<const uint8_t>& data) {
+    std::unique_ptr<TileContent> TileContentFactory::createContent(const Cesium3DTiles::Tile& tile, const gsl::span<const uint8_t>& data, const std::string& url) {
         std::string magic = TileContentFactory::getMagic(data).value_or("json");
 
         auto it = TileContentFactory::_factoryFunctions.find(magic);
@@ -20,7 +20,7 @@ namespace Cesium3DTiles {
             return std::unique_ptr<TileContent>();
         }
 
-        return it->second(tile, data);
+        return it->second(tile, data, url);
     }
 
     std::optional<std::string> TileContentFactory::getMagic(const gsl::span<const uint8_t>& data) {
