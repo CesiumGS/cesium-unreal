@@ -72,7 +72,7 @@ namespace Cesium3DTiles {
          * loaded tiles is greater than this value, tiles will be unloaded until the total is under
          * this number or until only required tiles remain, whichever comes first.
          */
-        uint32_t maximumCachedTiles = 200;
+        uint32_t maximumCachedTiles = 400;
     };
 
     /**
