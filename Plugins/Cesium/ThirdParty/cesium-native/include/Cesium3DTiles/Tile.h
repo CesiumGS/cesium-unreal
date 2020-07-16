@@ -20,36 +20,41 @@ namespace Cesium3DTiles {
     class CESIUM3DTILES_API Tile {
     public:
         enum class LoadState {
-            /// <summary>
-            /// Something went wrong while loading this tile.
-            /// </summary>
+            /**
+             * Something went wrong while loading this tile.
+             */
             Failed = -1,
 
-            /// <summary>
-            /// The tile is not yet loaded at all, beyond the metadata in tileset.json.
-            /// </summary>
+            /**
+             * The tile is not yet loaded at all, beyond the metadata in tileset.json.
+             */
             Unloaded = 0,
 
-            /// <summary>
-            /// The tile content is currently being loaded.
-            /// </summary>
+            /**
+             * The tile content is currently being loaded.
+             */
             ContentLoading = 1,
 
-            /// <summary>
-            /// The tile content has finished loading.
-            /// </summary>
+            /**
+             * The tile content has finished loading.
+             */
             ContentLoaded = 2,
 
-            /// <summary>
-            /// The tile's renderer resources are currently being prepared.
-            /// </summary>
+            /**
+             * The tile's renderer resources are currently being prepared.
+             */
             RendererResourcesPreparing = 3,
 
-            /// <summary>
-            /// The tile's renderer resources are done being prepared and this
-            /// tile is ready to render.
-            /// </summary>
-            RendererResourcesPrepared = 4
+            /**
+             * The tile's renderer resources are done being prepared and this
+             * tile is ready to render.
+             */
+            RendererResourcesPrepared = 4,
+
+            /**
+             * The tile is completely done loading.
+             */
+            Done = 5
         };
 
         enum class Refine {
@@ -74,6 +79,7 @@ namespace Cesium3DTiles {
         gsl::span<const Tile> getChildren() const { return gsl::span<const Tile>(this->_children); }
         gsl::span<Tile> getChildren() { return gsl::span<Tile>(this->_children); }
         void createChildTiles(size_t count);
+        void createChildTiles(std::vector<Tile>&& children);
 
         const BoundingVolume& getBoundingVolume() const { return this->_boundingVolume; }
         void setBoundingVolume(const BoundingVolume& value) { this->_boundingVolume = value; }
@@ -114,7 +120,7 @@ namespace Cesium3DTiles {
         /**
          * Determines if this tile is currently renderable.
          */
-        bool isRenderable() const { return this->getState() == LoadState::RendererResourcesPrepared; }
+        bool isRenderable() const { return this->getState() >= LoadState::RendererResourcesPrepared; }
 
         void loadContent();
         void unloadContent();
@@ -126,6 +132,13 @@ namespace Cesium3DTiles {
         /// </summary>
         /// <param name="pResource">The renderer resources as an opaque pointer.</param>
         void finishPrepareRendererResources(void* pResource = nullptr);
+
+        /**
+         * Gives this tile a chance to update itself each render frame.
+         * @param previousFrameNumber The number of the previous render frame.
+         * @param currentFrameNumber The number of the current render frame.
+         */
+        void update(uint32_t previousFrameNumber, uint32_t currentFrameNumber);
 
         DoublyLinkedListPointers<Tile> _loadedTilesLinks;
 

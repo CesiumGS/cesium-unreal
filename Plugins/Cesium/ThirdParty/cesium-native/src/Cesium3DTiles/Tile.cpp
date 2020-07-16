@@ -79,13 +79,18 @@ namespace Cesium3DTiles {
         this->_children.resize(count);
     }
 
-    void Tile::setContentUri(const std::optional<std::string>& value)
-    {
+    void Tile::createChildTiles(std::vector<Tile>&& children) {
+        if (this->_children.size() > 0) {
+            throw std::runtime_error("Children already created.");
+        }
+        this->_children = std::move(children);
+    }
+
+    void Tile::setContentUri(const std::optional<std::string>& value) {
         this->_contentUri = value;
     }
 
-    void Tile::loadContent()
-    {
+    void Tile::loadContent() {
         if (this->getState() != LoadState::Unloaded) {
             return;
         }
@@ -126,6 +131,16 @@ namespace Cesium3DTiles {
         }
     }
 
+    void Tile::update(uint32_t previousFrameNumber, uint32_t currentFrameNumber) {
+        if (this->getState() == LoadState::RendererResourcesPrepared) {
+            TileContent* pContent = this->getContent();
+            if (pContent) {
+                pContent->finalizeLoad(*this);
+            }
+            this->setState(LoadState::Done);
+        }
+    }
+
     void Tile::setState(LoadState value) {
         this->_state.store(value, std::memory_order::memory_order_release);
     }
@@ -147,23 +162,8 @@ namespace Cesium3DTiles {
         const TilesetExternals& externals = this->_pTileset->getExternals();
 
         externals.pTaskProcessor->startTask([data, this]() {
-            std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data);
-            if (!pContent) {
-                // Try to load this content as an external tileset.json.
-                using nlohmann::json;
-                json tilesetJson = json::parse(data.begin(), data.end());
-                std::vector<Tile> externalRoot(1);
-                externalRoot[0].setParent(this);
-                this->getTileset()->loadTilesFromJson(externalRoot[0], tilesetJson, this->_pContentRequest->url());
-
-                // TODO: this is a race condition, because there is no guarantee that a move of a vector is atomic.
-                this->_children = std::move(externalRoot);
-
-                // Bump up the geometric error so we always refine past this no-content tile.
-                this->setGeometricError(9999999999.0);
-    
-                this->finishPrepareRendererResources(nullptr);
-            } else {
+            std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data, this->_pContentRequest->url());
+            if (pContent) {
                 this->_pContent = std::move(pContent);
                 this->setState(LoadState::ContentLoaded);
 
