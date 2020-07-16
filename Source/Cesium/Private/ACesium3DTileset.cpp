@@ -81,6 +81,7 @@ public:
 	virtual void prepare(Cesium3DTiles::Tile& tile) {
 		Cesium3DTiles::TileContent* pContent = tile.getContent();
 		if (!pContent) {
+			tile.finishPrepareRendererResources(nullptr);
 			return;
 		}
 
@@ -90,6 +91,8 @@ public:
 			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), transform, [&tile](UCesiumGltfComponent* pGltf) {
 				tile.finishPrepareRendererResources(pGltf);
 			});
+		} else {
+			tile.finishPrepareRendererResources(nullptr);
 		}
 	}
 
@@ -224,7 +227,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
-		if (Gltf) {
+		if (Gltf && Gltf->IsVisible()) {
 			Gltf->SetVisibility(false, true);
 		} else {
 			// TODO: why is this happening?
@@ -247,6 +250,8 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			Gltf->AttachToComponent(this->RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 		}
 
-		Gltf->SetVisibility(true, true);
+		if (!Gltf->IsVisible()) {
+			Gltf->SetVisibility(true, true);
+		}
 	}
 }

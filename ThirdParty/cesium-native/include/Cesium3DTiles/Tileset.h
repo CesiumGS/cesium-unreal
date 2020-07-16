@@ -164,7 +164,7 @@ namespace Cesium3DTiles {
          * @param tileJson The parsed tileset.json.
          * @param baseUrl The base URL of the tileset.json.
          */
-        void loadTilesFromJson(Tile& rootTile, const nlohmann::json& tilesetJson, const std::string& baseUrl);
+        void loadTilesFromJson(Tile& rootTile, const nlohmann::json& tilesetJson, const std::string& baseUrl) const;
 
     private:
         struct TraversalDetails {
@@ -204,7 +204,7 @@ namespace Cesium3DTiles {
         void _ionResponseReceived(IAssetRequest* pRequest);
         void _tilesetJsonResponseReceived(IAssetRequest* pRequest);
         void _loadTilesetJsonData(const gsl::span<const uint8_t>& data, const std::string& baseUrl);
-        void _createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl);
+        void _createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl) const;
         TraversalDetails _visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitTileIfVisible(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitVisibleChildrenNearToFar(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
