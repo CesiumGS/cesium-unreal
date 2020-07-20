@@ -439,6 +439,39 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	});
 }
 
+namespace {
+	class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
+	public:
+		virtual ~HalfConstructedReal() = default;
+		std::vector<LoadModelResult> loadModelResult;
+	};
+}
+
+/*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
+UCesiumGltfComponent::CreateOffGameThread(
+	const tinygltf::Model& model,
+	const glm::dmat4x4& transform
+) {
+	auto pResult = std::make_unique<HalfConstructedReal>();
+	pResult->loadModelResult = std::move(loadModelAnyThreadPart(model, transform));
+	return pResult;
+}
+
+/*static*/ UCesiumGltfComponent*
+UCesiumGltfComponent::CreateOnGameThread(
+	AActor* pParentActor,
+	std::unique_ptr<HalfConstructed> pHalfConstructed
+) {
+	UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
+	HalfConstructedReal* pReal = static_cast<HalfConstructedReal*>(pHalfConstructed.get());
+	std::vector<LoadModelResult>& result = pReal->loadModelResult;
+	for (LoadModelResult& model : result) {
+		loadModelGameThreadPart(Gltf, model);
+	}
+	Gltf->SetVisibility(false, true);
+	return Gltf;
+}
+
 UCesiumGltfComponent::UCesiumGltfComponent() 
 	: USceneComponent()
 {

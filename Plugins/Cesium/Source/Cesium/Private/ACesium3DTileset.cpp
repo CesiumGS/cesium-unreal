@@ -78,32 +78,45 @@ class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
 public:
 	UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
 
-	virtual void prepare(Cesium3DTiles::Tile& tile) {
-		Cesium3DTiles::TileContent* pContent = tile.getContent();
+	virtual void* prepareInLoadThread(const Cesium3DTiles::Tile& tile) {
+		const Cesium3DTiles::TileContent* pContent = tile.getContent();
 		if (!pContent) {
-			tile.finishPrepareRendererResources(nullptr);
-			return;
+			return nullptr;
 		}
 
 		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
-			Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
+			const Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<const Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
 			glm::dmat4x4 transform = _pActor->GetTilesetToWorldTransform() * tile.getTransform();
-			UCesiumGltfComponent::CreateOffGameThread(this->_pActor, pB3dm->gltf(), transform, [&tile](UCesiumGltfComponent* pGltf) {
-				tile.finishPrepareRendererResources(pGltf);
-			});
-		} else {
-			tile.finishPrepareRendererResources(nullptr);
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), transform);
+			return pHalf.release();
 		}
+
+		return nullptr;
 	}
 
-	virtual void cancel(Cesium3DTiles::Tile& tile) {
+	virtual void* prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
+		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		if (!pContent) {
+			return nullptr;
+		}
 
+		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
+			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf));
+		}
+
+		return nullptr;
 	}
 
-	virtual void free(Cesium3DTiles::Tile& tile, void* pRendererResources) {
-		UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(pRendererResources);
-		if (pGltf) {
-			this->destroyRecursively(pGltf);
+	virtual void free(Cesium3DTiles::Tile& tile, void* pLoadThreadResult, void* pMainThreadResult) {
+		if (pLoadThreadResult) {
+			UCesiumGltfComponent::HalfConstructed* pHalf = reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult);
+			delete pHalf;
+		} else if (pMainThreadResult) {
+			UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
+			if (pGltf) {
+				this->destroyRecursively(pGltf);
+			}
 		}
 	}
 
@@ -226,6 +239,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(camera);
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
+		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
+			continue;
+		}
+
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
 		if (Gltf && Gltf->IsVisible()) {
 			Gltf->SetVisibility(false, true);
@@ -235,6 +252,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
+		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
+			continue;
+		}
+
 		Cesium3DTiles::TileContent* pContent = pTile->getContent();
 		if (!pContent) {
 			continue;

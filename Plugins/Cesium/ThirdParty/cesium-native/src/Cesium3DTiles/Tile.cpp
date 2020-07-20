@@ -97,7 +97,7 @@ namespace Cesium3DTiles {
 
         if (!this->getContentUri().has_value()) {
             // TODO: should we let the renderer do some preparation even if there's no content?
-            this->setState(LoadState::RendererResourcesPrepared);
+            this->setState(LoadState::ContentLoaded);
             this->_pTileset->notifyTileDoneLoading(this);
             return;
         }
@@ -109,15 +109,31 @@ namespace Cesium3DTiles {
         this->setState(LoadState::ContentLoading);
     }
 
-    void Tile::unloadContent() {
+    bool Tile::unloadContent() {
+        // Cannot unload while an async operation is in progress.
+        // Also, don't unload tiles with external tileset content at all, because reloading
+        // currently won't work correctly.
+        if (
+            this->getState() == Tile::LoadState::ContentLoading ||
+            (this->getContent() != nullptr && this->getContent()->getType() == ExternalTilesetContent::TYPE)
+        ) {
+            return false;
+        }
+
         const TilesetExternals& externals = this->_pTileset->getExternals();
         if (externals.pPrepareRendererResources) {
-            externals.pPrepareRendererResources->free(*this, this->_pRendererResources);
+            if (this->getState() == LoadState::ContentLoaded) {
+                externals.pPrepareRendererResources->free(*this, this->_pRendererResources, nullptr);
+            } else {
+                externals.pPrepareRendererResources->free(*this, nullptr, this->_pRendererResources);
+            }
         }
 
         this->_pRendererResources = nullptr;
         this->_pContent.reset();
         this->setState(LoadState::Unloaded);
+
+        return true;
     }
 
     void Tile::cancelLoadContent() {
@@ -132,11 +148,17 @@ namespace Cesium3DTiles {
     }
 
     void Tile::update(uint32_t previousFrameNumber, uint32_t currentFrameNumber) {
-        if (this->getState() == LoadState::RendererResourcesPrepared) {
+        if (this->getState() == LoadState::ContentLoaded) {
+            const TilesetExternals& externals = this->_pTileset->getExternals();
+            if (externals.pPrepareRendererResources) {
+                this->_pRendererResources = externals.pPrepareRendererResources->prepareInMainThread(*this, this->getRendererResources());
+            }
+
             TileContent* pContent = this->getContent();
             if (pContent) {
                 pContent->finalizeLoad(*this);
             }
+
             this->setState(LoadState::Done);
         }
     }
@@ -149,11 +171,15 @@ namespace Cesium3DTiles {
         IAssetResponse* pResponse = pRequest->response();
         if (!pResponse) {
             // TODO: report the lack of response. Network error? Can this even happen?
+            this->setState(LoadState::Failed);
+            this->_pTileset->notifyTileDoneLoading(this);
             return;
         }
 
         if (pResponse->statusCode() < 200 || pResponse->statusCode() >= 300) {
             // TODO: report error response.
+            this->setState(LoadState::Failed);
+            this->_pTileset->notifyTileDoneLoading(this);
             return;
         }
 
@@ -165,27 +191,19 @@ namespace Cesium3DTiles {
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data, this->_pContentRequest->url());
             if (pContent) {
                 this->_pContent = std::move(pContent);
-                this->setState(LoadState::ContentLoaded);
 
                 const TilesetExternals& externals = this->_pTileset->getExternals();
                 if (externals.pPrepareRendererResources) {
-                    this->setState(LoadState::RendererResourcesPreparing);
-                    externals.pPrepareRendererResources->prepare(*this);
+                    this->_pRendererResources = externals.pPrepareRendererResources->prepareInLoadThread(*this);
                 }
                 else {
-                    this->finishPrepareRendererResources(nullptr);
+                    this->_pRendererResources = nullptr;
                 }
             }
 
-            // TODO
-            //this->_pContentRequest.reset();
+            this->setState(LoadState::ContentLoaded);
+            this->_pTileset->notifyTileDoneLoading(this);
         });
-    }
-
-    void Tile::finishPrepareRendererResources(void* pResource) {
-        this->_pRendererResources = pResource;
-        this->setState(LoadState::RendererResourcesPrepared);
-        this->_pTileset->notifyTileDoneLoading(this);
     }
 
 }
