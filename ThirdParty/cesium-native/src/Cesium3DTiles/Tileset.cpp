@@ -212,8 +212,6 @@ namespace Cesium3DTiles {
 				const std::string& uri = *uriIt;
 				const std::string fullUri = Uri::resolve(baseUrl, uri, true);
 				tile.setContentUri(fullUri);
-			} else {
-				tile.finishPrepareRendererResources();
 			}
 
 			std::optional<BoundingVolume> contentBoundingVolume = TilesetJson::getBoundingVolumeProperty(*contentIt, "boundingVolume");
@@ -577,20 +575,13 @@ namespace Cesium3DTiles {
 				break;
 			}
 
-			// Cannot unload while an async operation is in progress.
-			// Don't unload tiles with external tileset content at all, because reloading
-			// currently won't work correctly.
-			// TODO: this is hacky, fix it.
-			if (
-				pTile->getState() != Tile::LoadState::ContentLoading &&
-				pTile->getState() != Tile::LoadState::RendererResourcesPreparing &&
-				(pTile->getContent() == nullptr || pTile->getContent()->getType() != ExternalTilesetContent::TYPE)
-			) {
-				pTile->unloadContent();
+			Tile* pNext = this->_loadedTiles.next(*pTile);
+
+			bool removed = pTile->unloadContent();
+			if (removed) {
+				this->_loadedTiles.remove(*pTile);
 			}
 
-			Tile* pNext = this->_loadedTiles.next(*pTile);
-			this->_loadedTiles.remove(*pTile);
 			pTile = pNext;
 		}
 	}
