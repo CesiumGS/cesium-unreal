@@ -80,6 +80,16 @@ namespace Cesium3DTiles {
 		this->_loadTilesetJsonData(data, url);
 	}
 
+	Tileset::~Tileset() {
+		// Tell any ContentLoading tiles that we're destroying.
+		Tile* pCurrent = this->_loadedTiles.head();
+		while (pCurrent) {
+			Tile* pNext = this->_loadedTiles.next(pCurrent);
+			pCurrent->prepareToDestroy();
+			pCurrent = pNext;
+		}
+	}
+
     const ViewUpdateResult& Tileset::updateView(const Camera& camera) {
 		uint32_t previousFrameNumber = this->_previousFrameNumber; 
 		uint32_t currentFrameNumber = previousFrameNumber + 1;
