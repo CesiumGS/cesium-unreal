@@ -20,6 +20,7 @@ class CESIUM_API ACesium3DTileset : public AActor
 	
 public:	
 	ACesium3DTileset();
+	virtual ~ACesium3DTileset();
 	
 	/**
 	 * The URL of this tileset's "tileset.json" file. If this property is specified, the ion asset ID

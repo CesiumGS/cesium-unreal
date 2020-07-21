@@ -109,6 +109,12 @@ namespace Cesium3DTiles {
         Tileset(const TilesetExternals& externals, const gsl::span<const uint8_t>& data, const std::string& url, const TilesetOptions& options = TilesetOptions());
 
         /**
+         * Destroys this tileset. This may block the calling thread while waiting for pending asynchronous
+         * tile loads to terminate.
+         */
+        ~Tileset();
+
+        /**
          * Gets the URL that was used to construct this tileset. If the tileset references a Cesium ion asset,
          * this property will not have a value.
          */

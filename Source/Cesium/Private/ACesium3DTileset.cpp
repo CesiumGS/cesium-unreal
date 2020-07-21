@@ -35,6 +35,11 @@ ACesium3DTileset::ACesium3DTileset() :
 	this->RootComponent->SetMobility(EComponentMobility::Static);
 }
 
+ACesium3DTileset::~ACesium3DTileset() {
+	delete this->_pTileset;
+	this->_pTileset = nullptr;
+}
+
 glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
 	if (!this->PlaceTilesetBoundingVolumeCenterAtWorldOrigin) {
 		return glm::dmat4x4(1.0);
@@ -71,7 +76,7 @@ void ACesium3DTileset::BeginPlay()
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform)
 {
-	//this->LoadTileset();
+	this->LoadTileset();
 }
 
 class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
@@ -158,6 +163,9 @@ void ACesium3DTileset::LoadTileset()
 				return;
 			}
 		}
+
+		delete this->_pTileset;
+		this->_pTileset = nullptr;		
 	}
 
 	Cesium3DTiles::TilesetExternals externals{

@@ -2,6 +2,7 @@
 #include "Cesium3DTiles/IAssetRequest.h"
 #include "Cesium3DTiles/IAssetResponse.h"
 #include "HttpModule.h"
+#include "HttpManager.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "UnrealConversions.h"
@@ -49,7 +50,7 @@ public:
 
 	virtual ~UnrealAssetRequest() {
 		this->_pRequest->OnProcessRequestComplete().Unbind();
-		this->_pRequest->CancelRequest();
+		this->cancel();
 	}
 
 	virtual std::string url() const {
@@ -76,7 +77,14 @@ public:
 	}
 
 	virtual void cancel() {
-		this->_pRequest->CancelRequest();
+		// Only cancel the request if the HttpManager still has it.
+		// If not, it means the request already completed or canceled, and Unreal
+		// will (for some reason!) re-invoke OnProcessRequestComplete if we
+		// cancel now.
+		FHttpManager& manager = FHttpModule::Get().GetHttpManager();
+		if (manager.IsValidRequest(this->_pRequest.Get())) {
+			this->_pRequest->CancelRequest();
+		}
 	}
 
 protected:
@@ -95,4 +103,9 @@ private:
 
 std::unique_ptr<Cesium3DTiles::IAssetRequest> UnrealAssetAccessor::requestAsset(const std::string& url) {
 	return std::make_unique<UnrealAssetRequest>(url);
+}
+
+void UnrealAssetAccessor::tick() {
+	FHttpManager& manager = FHttpModule::Get().GetHttpManager();
+	manager.Tick(0.0f);
 }

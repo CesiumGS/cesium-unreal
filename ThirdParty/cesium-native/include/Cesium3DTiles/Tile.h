@@ -66,6 +66,8 @@ namespace Cesium3DTiles {
         Tile(Tile&& rhs) noexcept;
         Tile& operator=(Tile&& rhs) noexcept;
 
+        void prepareToDestroy();
+
         Tileset* getTileset() { return this->_pTileset; }
         const Tileset* getTileset() const { return this->_pTileset; }
         void setTileset(Tileset* pTileset) { this->_pTileset = pTileset; }
