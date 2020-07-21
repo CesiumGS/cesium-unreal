@@ -22,6 +22,12 @@ namespace Cesium3DTiles {
     public:
         enum class LoadState {
             /**
+             * This tile is in the process of being destroyed. Any pointers to it
+             * will soon be invalid.
+             */
+            Destroying = -2,
+
+            /**
              * Something went wrong while loading this tile.
              */
             Failed = -1,
@@ -32,7 +38,9 @@ namespace Cesium3DTiles {
             Unloaded = 0,
 
             /**
-             * The tile content is currently being loaded.
+             * The tile content is currently being loaded. Note that while a tile is in this state, its
+             * \ref Tile::getContent, \ref Tile::setContent, \ref Tile::getState, and \ref Tile::setState
+             * methods may be called from the load thread.
              */
             ContentLoading = 1,
 
@@ -42,20 +50,9 @@ namespace Cesium3DTiles {
             ContentLoaded = 2,
 
             /**
-             * The tile's renderer resources are currently being prepared.
-             */
-            RendererResourcesPreparing = 3,
-
-            /**
-             * The tile's renderer resources are done being prepared and this
-             * tile is ready to render.
-             */
-            RendererResourcesPrepared = 4,
-
-            /**
              * The tile is completely done loading.
              */
-            Done = 5
+            Done = 3
         };
 
         enum class Refine {
@@ -68,6 +65,8 @@ namespace Cesium3DTiles {
         Tile(Tile& rhs) noexcept = delete;
         Tile(Tile&& rhs) noexcept;
         Tile& operator=(Tile&& rhs) noexcept;
+
+        void prepareToDestroy();
 
         Tileset* getTileset() { return this->_pTileset; }
         const Tileset* getTileset() const { return this->_pTileset; }
@@ -121,18 +120,11 @@ namespace Cesium3DTiles {
         /**
          * Determines if this tile is currently renderable.
          */
-        bool isRenderable() const { return this->getState() >= LoadState::RendererResourcesPrepared && this->_pContent && this->_pContent->getType() != ExternalTilesetContent::TYPE; }
+        bool isRenderable() const { return this->getState() >= LoadState::ContentLoaded && this->_pContent && this->_pContent->getType() != ExternalTilesetContent::TYPE; }
 
         void loadContent();
-        void unloadContent();
+        bool unloadContent();
         void cancelLoadContent();
-
-        /// <summary>
-        /// Notifies the tile that its renderer resources have been prepared and optionally stores
-        /// a pointer to those resources. This method is safe to call from any thread.
-        /// </summary>
-        /// <param name="pResource">The renderer resources as an opaque pointer.</param>
-        void finishPrepareRendererResources(void* pResource = nullptr);
 
         /**
          * Gives this tile a chance to update itself each render frame.
@@ -172,8 +164,6 @@ namespace Cesium3DTiles {
 
         // Selection state
         TileSelectionState _lastSelectionState;
-
-        friend class LoadedTilesList;
     };
 
 }

@@ -3,6 +3,7 @@
 #include "Cesium3DTiles/IAssetAccessor.h"
 #include "Cesium3DTiles/IAssetResponse.h"
 #include "Cesium3DTiles/TileContentFactory.h"
+#include <chrono>
 
 namespace Cesium3DTiles {
 
@@ -27,6 +28,23 @@ namespace Cesium3DTiles {
     }
 
     Tile::~Tile() {
+        this->prepareToDestroy();
+
+        // Wait for this tile to exit the "Destroying" state, indicating that
+        // work happening in the loading thread has concluded.
+        if (this->getState() == LoadState::Destroying) {
+            const auto timeoutSeconds = std::chrono::seconds(5LL);
+
+            auto start = std::chrono::steady_clock::now();
+            while (this->getState() == LoadState::Destroying) {
+                auto duration = std::chrono::steady_clock::now() - start;
+                if (duration > timeoutSeconds) {
+                    // TODO: report timeout, because it may be followed by a crash.
+                    return;
+                }
+                this->_pTileset->externals().pAssetAccessor->tick();
+            }
+        }
     }
 
     Tile::Tile(Tile&& rhs) noexcept :
@@ -72,6 +90,17 @@ namespace Cesium3DTiles {
         return *this;
     }
 
+    void Tile::prepareToDestroy() {
+        if (this->_pContentRequest) {
+            this->_pContentRequest->cancel();
+        }
+
+        // Atomically change any tile in the ContentLoading state to the Destroying state.
+        // Tiles in other states remain in those states.
+        LoadState stateToChange = LoadState::ContentLoading;
+        this->_state.compare_exchange_strong(stateToChange, LoadState::Destroying);
+    }
+
     void Tile::createChildTiles(size_t count) {
         if (this->_children.size() > 0) {
             throw std::runtime_error("Children already created.");
@@ -97,27 +126,43 @@ namespace Cesium3DTiles {
 
         if (!this->getContentUri().has_value()) {
             // TODO: should we let the renderer do some preparation even if there's no content?
-            this->setState(LoadState::RendererResourcesPrepared);
+            this->setState(LoadState::ContentLoaded);
             this->_pTileset->notifyTileDoneLoading(this);
             return;
         }
 
+        this->setState(LoadState::ContentLoading);
+
         IAssetAccessor* pAssetAccessor = this->_pTileset->getExternals().pAssetAccessor;
         this->_pContentRequest = pAssetAccessor->requestAsset(*this->_contentUri);
         this->_pContentRequest->bind(std::bind(&Tile::contentResponseReceived, this, std::placeholders::_1));
-
-        this->setState(LoadState::ContentLoading);
     }
 
-    void Tile::unloadContent() {
+    bool Tile::unloadContent() {
+        // Cannot unload while an async operation is in progress.
+        // Also, don't unload tiles with external tileset content at all, because reloading
+        // currently won't work correctly.
+        if (
+            this->getState() == Tile::LoadState::ContentLoading ||
+            (this->getContent() != nullptr && this->getContent()->getType() == ExternalTilesetContent::TYPE)
+        ) {
+            return false;
+        }
+
         const TilesetExternals& externals = this->_pTileset->getExternals();
         if (externals.pPrepareRendererResources) {
-            externals.pPrepareRendererResources->free(*this, this->_pRendererResources);
+            if (this->getState() == LoadState::ContentLoaded) {
+                externals.pPrepareRendererResources->free(*this, this->_pRendererResources, nullptr);
+            } else {
+                externals.pPrepareRendererResources->free(*this, nullptr, this->_pRendererResources);
+            }
         }
 
         this->_pRendererResources = nullptr;
         this->_pContent.reset();
         this->setState(LoadState::Unloaded);
+
+        return true;
     }
 
     void Tile::cancelLoadContent() {
@@ -132,11 +177,17 @@ namespace Cesium3DTiles {
     }
 
     void Tile::update(uint32_t previousFrameNumber, uint32_t currentFrameNumber) {
-        if (this->getState() == LoadState::RendererResourcesPrepared) {
+        if (this->getState() == LoadState::ContentLoaded) {
+            const TilesetExternals& externals = this->_pTileset->getExternals();
+            if (externals.pPrepareRendererResources) {
+                this->_pRendererResources = externals.pPrepareRendererResources->prepareInMainThread(*this, this->getRendererResources());
+            }
+
             TileContent* pContent = this->getContent();
             if (pContent) {
                 pContent->finalizeLoad(*this);
             }
+
             this->setState(LoadState::Done);
         }
     }
@@ -146,14 +197,29 @@ namespace Cesium3DTiles {
     }
 
     void Tile::contentResponseReceived(IAssetRequest* pRequest) {
+        if (this->getState() == LoadState::Destroying) {
+            this->_pTileset->notifyTileDoneLoading(this);
+            this->setState(LoadState::Failed);
+            return;
+        }
+
+        if (this->getState() > LoadState::ContentLoading) {
+            // This is a duplicate response, ignore it.
+            return;
+        }
+
         IAssetResponse* pResponse = pRequest->response();
         if (!pResponse) {
             // TODO: report the lack of response. Network error? Can this even happen?
+            this->_pTileset->notifyTileDoneLoading(this);
+            this->setState(LoadState::Failed);
             return;
         }
 
         if (pResponse->statusCode() < 200 || pResponse->statusCode() >= 300) {
             // TODO: report error response.
+            this->_pTileset->notifyTileDoneLoading(this);
+            this->setState(LoadState::Failed);
             return;
         }
 
@@ -162,30 +228,34 @@ namespace Cesium3DTiles {
         const TilesetExternals& externals = this->_pTileset->getExternals();
 
         externals.pTaskProcessor->startTask([data, this]() {
+            if (this->getState() == LoadState::Destroying) {
+                this->_pTileset->notifyTileDoneLoading(this);
+                this->setState(LoadState::Failed);
+                return;
+            }
+
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data, this->_pContentRequest->url());
             if (pContent) {
+                if (this->getState() == LoadState::Destroying) {
+                    this->_pTileset->notifyTileDoneLoading(this);
+                    this->setState(LoadState::Failed);
+                    return;
+                }
+
                 this->_pContent = std::move(pContent);
-                this->setState(LoadState::ContentLoaded);
 
                 const TilesetExternals& externals = this->_pTileset->getExternals();
                 if (externals.pPrepareRendererResources) {
-                    this->setState(LoadState::RendererResourcesPreparing);
-                    externals.pPrepareRendererResources->prepare(*this);
+                    this->_pRendererResources = externals.pPrepareRendererResources->prepareInLoadThread(*this);
                 }
                 else {
-                    this->finishPrepareRendererResources(nullptr);
+                    this->_pRendererResources = nullptr;
                 }
             }
 
-            // TODO
-            //this->_pContentRequest.reset();
+            this->_pTileset->notifyTileDoneLoading(this);
+            this->setState(LoadState::ContentLoaded);
         });
-    }
-
-    void Tile::finishPrepareRendererResources(void* pResource) {
-        this->_pRendererResources = pResource;
-        this->setState(LoadState::RendererResourcesPrepared);
-        this->_pTileset->notifyTileDoneLoading(this);
     }
 
 }

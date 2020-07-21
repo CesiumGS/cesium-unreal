@@ -5,5 +5,5 @@
 
 class UnrealTaskProcessor : public Cesium3DTiles::ITaskProcessor {
 public:
-    virtual void startTask(std::function<void()> f);
+    virtual void startTask(std::function<void()> f) override;
 };

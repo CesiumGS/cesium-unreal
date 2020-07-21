@@ -19,6 +19,13 @@ namespace Cesium3DTiles {
         /// <param name="url">The URL of the asset.</param>
         /// <returns>The in-progress asset request.</returns>
         virtual std::unique_ptr<IAssetRequest> requestAsset(const std::string& url) = 0;
+
+        /**
+         * Ticks the asset accessor system while the main thread is blocked.
+         * If the asset accessor is not dependent on the main thread to
+         * dispatch requests, this method does not need to do anything.
+         */
+        virtual void tick() = 0;
     };
 
 }
