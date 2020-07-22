@@ -10,9 +10,16 @@ namespace Cesium3DTiles {
 
     class Plane;
 
-    class BoundingBox {
+    class OrientedBoundingBox {
     public:
-        BoundingBox(
+        static OrientedBoundingBox fromRectangle(
+            const Rectangle& rectangle,
+            double minimumHeight = 0.0,
+            double maximumHeight = 0.0,
+            const Ellipsoid& ellipsoid = Ellipsoid::WGS84
+        );
+
+        OrientedBoundingBox(
             const glm::dvec3& center,
             const glm::dmat3& halfAxes
         ) :
@@ -20,13 +27,11 @@ namespace Cesium3DTiles {
             _halfAxes(halfAxes)
         {}
 
-        static BoundingBox fromRectangle(
-            const Rectangle& rectangle,
-            double minimumHeight = 0.0,
-            double maximumHeight = 0.0,
-            const Ellipsoid& ellipsoid = Ellipsoid::WGS84
-        );
-
+        /**
+         * @brief Get the Center object
+         * 
+         * @return const glm::dvec3& 
+         */
         const glm::dvec3& getCenter() const { return this->_center; }
         const glm::dmat3& getHalfAxes() const { return this->_halfAxes; }
 

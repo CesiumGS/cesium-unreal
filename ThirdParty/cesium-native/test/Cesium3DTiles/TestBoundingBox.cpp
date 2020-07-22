@@ -4,10 +4,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/BoundingBox.h"
+#include "Cesium3DTiles/OrientedBoundingBox.h"
 #include "Cesium3DTiles/Camera.h"
 
-TEST_CASE("BoundingBox::intersectPlane") {
+TEST_CASE("OrientedBoundingBox::intersectPlane") {
     struct TestCase {
         glm::dvec3 center;
         glm::dmat3 axes;
@@ -42,7 +42,7 @@ TEST_CASE("BoundingBox::intersectPlane") {
         const double SQRT1_2 = pow(1.0 / 2.0, 1 / 2.0);
         const double SQRT3_4 = pow(3.0 / 4.0, 1 / 2.0);
 
-        auto box = Cesium3DTiles::BoundingBox(testCase.center, testCase.axes * 0.5);
+        auto box = Cesium3DTiles::OrientedBoundingBox(testCase.center, testCase.axes * 0.5);
         
         std::string s = glm::to_string(box.getHalfAxes());
 

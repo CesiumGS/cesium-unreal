@@ -27,7 +27,7 @@ namespace Cesium3DTiles {
         _rectangle(rectangle),
         _minimumHeight(minimumHeight),
         _maximumHeight(maximumHeight),
-        _boundingBox(BoundingBox::fromRectangle(rectangle, minimumHeight, maximumHeight)),
+        _boundingBox(OrientedBoundingBox::fromRectangle(rectangle, minimumHeight, maximumHeight)),
         _southwestCornerCartesian(ellipsoid.cartographicToCartesian(rectangle.getSouthwest())),
         _northeastCornerCartesian(ellipsoid.cartographicToCartesian(rectangle.getNortheast())),
         _westNormal(),

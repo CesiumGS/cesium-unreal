@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Cesium3DTiles/CullingResult.h"
-#include "Cesium3DTiles/BoundingBox.h"
+#include "Cesium3DTiles/OrientedBoundingBox.h"
 #include "Cesium3DTiles/Rectangle.h"
 #include "Cesium3DTiles/Ellipsoid.h"
 
@@ -36,7 +36,7 @@ namespace Cesium3DTiles {
         double getNorth() const { return this->_rectangle.getNorth(); }
         double getMinimumHeight() const { return this->_minimumHeight; }
         double getMaximumHeight() const { return this->_maximumHeight; }
-        const BoundingBox& getBoundingBox() const { return this->_boundingBox; }
+        const OrientedBoundingBox& getBoundingBox() const { return this->_boundingBox; }
 
         CullingResult intersectPlane(const Plane& plane) const;
         double computeDistanceSquaredToPosition(const glm::dvec3& position, const Ellipsoid& ellipsoid = Ellipsoid::WGS84) const;
@@ -47,7 +47,7 @@ private:
         Rectangle _rectangle;
         double _minimumHeight;
         double _maximumHeight;
-        BoundingBox _boundingBox;
+        OrientedBoundingBox _boundingBox;
         glm::dvec3 _southwestCornerCartesian;
         glm::dvec3 _northeastCornerCartesian;
         glm::dvec3 _westNormal;

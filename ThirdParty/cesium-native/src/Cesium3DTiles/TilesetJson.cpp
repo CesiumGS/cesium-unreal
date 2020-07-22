@@ -13,7 +13,7 @@ namespace Cesium3DTiles {
 		json::const_iterator boxIt = bvIt->find("box");
 		if (boxIt != bvIt->end() && boxIt->is_array() && boxIt->size() >= 12) {
 			const json& a = *boxIt;
-			return BoundingBox(
+			return OrientedBoundingBox(
 				glm::dvec3(a[0], a[1], a[2]),
 				glm::dmat3(a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11])
 			);

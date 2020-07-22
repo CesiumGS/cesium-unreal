@@ -195,7 +195,7 @@ void ACesium3DTileset::DestroyTileset() {
 		return;
 	}
 
-	Cesium3DTiles::TilesetExternals externals = this->_pTileset->externals();
+	Cesium3DTiles::TilesetExternals externals = this->_pTileset->getExternals();
 	delete this->_pTileset;
 	delete externals.pAssetAccessor;
 	delete externals.pPrepareRendererResources;
