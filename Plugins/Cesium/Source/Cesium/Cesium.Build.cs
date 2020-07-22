@@ -53,7 +53,8 @@ public class Cesium : ModuleRules
 				"SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
-                "HTTP"
+                "HTTP",
+                "UnrealEd" // TODO: only include this in editor builds?
 				// ... add private dependencies that you statically link with here ...	
 			}
             );
