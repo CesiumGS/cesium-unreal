@@ -366,3 +366,8 @@ void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	this->DestroyTileset();
 	AActor::EndPlay(EndPlayReason);
 }
+
+void ACesium3DTileset::BeginDestroy() {
+	this->DestroyTileset();
+	AActor::BeginDestroy();
+}
