@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
+#include "Cesium3DTiles/Camera.h"
 #include "ACesium3DTileset.generated.h"
 
 namespace Cesium3DTiles {
@@ -68,6 +69,13 @@ public:
 	UPROPERTY(EditAnywhere, Category="Cesium|Debug")
 	bool SuspendUpdate;
 
+	/**
+	 * If true, this tileset is loaded and shown in the editor. If false, is only shown while
+	 * playing (including Play-in-Editor).
+	 */
+	UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+	bool ShowInEditor = true;
+
 	glm::dmat4x4 GetWorldToTilesetTransform() const;
 	glm::dmat4x4 GetTilesetToWorldTransform() const;
 
@@ -76,9 +84,22 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	void LoadTileset();
+	void DestroyTileset();
+	Cesium3DTiles::Camera CreateCameraFromViewParameters(
+		const FVector2D& viewportSize,
+		const FVector& location,
+		const FRotator& rotation,
+		double fieldOfViewDegrees
+	) const;
+	std::optional<Cesium3DTiles::Camera> GetPlayerCamera() const;
+
+#ifdef WITH_EDITOR
+	std::optional<Cesium3DTiles::Camera> GetEditorCamera() const;
+#endif
 
 public:	
 	// Called every frame
+	virtual bool ShouldTickIfViewportsOnly() const override;
 	virtual void Tick(float DeltaTime) override;
 
 private:

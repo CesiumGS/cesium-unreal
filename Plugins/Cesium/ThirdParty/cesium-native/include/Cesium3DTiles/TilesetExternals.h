@@ -8,6 +8,8 @@ namespace Cesium3DTiles {
 
     class IPrepareRendererResources {
     public:
+        virtual ~IPrepareRendererResources() = default;
+
         /**
          * Prepares renderer resources for the given tile. This method is invoked in the load
          * thread, and it may not modify the tile.
@@ -43,6 +45,7 @@ namespace Cesium3DTiles {
 
     class ITaskProcessor {
     public:
+        virtual ~ITaskProcessor() = default;
         virtual void startTask(std::function<void()> f) = 0;
     };
 

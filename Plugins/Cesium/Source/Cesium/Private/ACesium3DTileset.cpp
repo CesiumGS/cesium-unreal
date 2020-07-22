@@ -19,6 +19,12 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
+#ifdef WITH_EDITOR
+#include "Slate/SceneViewport.h"
+#include "EditorViewportClient.h"
+#include "Editor.h"
+#endif
+
 #pragma warning(push)
 #pragma warning(disable: 4946)
 #include "json.hpp"
@@ -36,8 +42,7 @@ ACesium3DTileset::ACesium3DTileset() :
 }
 
 ACesium3DTileset::~ACesium3DTileset() {
-	delete this->_pTileset;
-	this->_pTileset = nullptr;
+	this->DestroyTileset();
 }
 
 glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
@@ -164,8 +169,7 @@ void ACesium3DTileset::LoadTileset()
 			}
 		}
 
-		delete this->_pTileset;
-		this->_pTileset = nullptr;		
+		this->DestroyTileset();
 	}
 
 	Cesium3DTiles::TilesetExternals externals{
@@ -186,39 +190,70 @@ void ACesium3DTileset::LoadTileset()
 	this->_pTileset = pTileset;
 }
 
-// Called every frame
-void ACesium3DTileset::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (this->SuspendUpdate) {
+void ACesium3DTileset::DestroyTileset() {
+	if (!this->_pTileset) {
 		return;
+	}
+
+	Cesium3DTiles::TilesetExternals externals = this->_pTileset->externals();
+	delete this->_pTileset;
+	delete externals.pAssetAccessor;
+	delete externals.pPrepareRendererResources;
+	delete externals.pTaskProcessor;
+	this->_pTileset = nullptr;
+}
+
+std::optional<Cesium3DTiles::Camera> ACesium3DTileset::GetPlayerCamera() const
+{
+	UWorld* pWorld = this->GetWorld();
+	if (!pWorld) {
+		return std::optional<Cesium3DTiles::Camera>();
+	}
+
+	APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
+	if (!pPlayerController) {
+		return std::optional<Cesium3DTiles::Camera>();
+	}
+
+	APlayerCameraManager* pCameraManager = pPlayerController->PlayerCameraManager;
+	if (!pCameraManager) {
+		return std::optional<Cesium3DTiles::Camera>();
+	}
+
+	UGameViewportClient* pViewport = pWorld->GetGameViewport();
+	if (!pViewport) {
+		return std::optional<Cesium3DTiles::Camera>();
 	}
 
 	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
 	if (!pRootTile) {
-		return;
+		return std::optional<Cesium3DTiles::Camera>();
 	}
 
-
-	APlayerCameraManager* pCameraManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
-
-	UGameViewportClient* pViewport = GetWorld()->GetGameViewport();
+	const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
+	const FVector& location = pov.Location;
+	const FRotator& rotation = pCameraManager->ViewTarget.POV.Rotation;
+	double fov = pov.FOV;
 
 	FVector2D size;
 	pViewport->GetViewportSize(size);
 
-	const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
-	const FVector& location = pov.Location;
+	return this->CreateCameraFromViewParameters(size, location, rotation, fov);
+}
 
-	double horizontalFieldOfView = FMath::DegreesToRadians(pov.FOV);
+Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
+	const FVector2D& viewportSize,
+	const FVector& location,
+	const FRotator& rotation,
+	double fieldOfViewDegrees
+) const {
+	double horizontalFieldOfView = FMath::DegreesToRadians(fieldOfViewDegrees);
 
-	double aspectRatio = size.X / size.Y;
+	double aspectRatio = viewportSize.X / viewportSize.Y;
 	double verticalFieldOfView = atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
 
-	FVector direction = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-		
-	FVector up = pCameraManager->ViewTarget.POV.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+	FVector direction = rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+	FVector up = rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
 	auto tryTransform = [](const FVector& v) {
 		return glm::dvec3(v.X, -v.Y, v.Z);
@@ -235,16 +270,57 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 	glm::dmat4x4 transform = this->GetWorldToTilesetTransform();
 
-	Cesium3DTiles::Camera camera(
+	return Cesium3DTiles::Camera(
 		transform * glm::dvec4(cesiumPosition, 1.0),
 		transform * glm::dvec4(cesiumDirection, 0.0),
 		transform * glm::dvec4(cesiumUp, 0.0),
-		glm::dvec2(size.X, size.Y),
+		glm::dvec2(viewportSize.X, viewportSize.Y),
 		horizontalFieldOfView,
 		verticalFieldOfView
 	);
+}
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(camera);
+#ifdef WITH_EDITOR
+std::optional<Cesium3DTiles::Camera> ACesium3DTileset::GetEditorCamera() const
+{
+	FViewport* pViewport = GEditor->GetActiveViewport();
+	FViewportClient* pViewportClient = pViewport->GetClient();
+	FEditorViewportClient* pEditorViewportClient = (FEditorViewportClient*)pViewportClient;
+	const FVector& location = pEditorViewportClient->GetViewLocation();
+	const FRotator& rotation = pEditorViewportClient->GetViewRotation();
+	double fov = pEditorViewportClient->FOVAngle;
+	FVector2D size = pViewport->GetSizeXY();
+
+	return this->CreateCameraFromViewParameters(size, location, rotation, fov);
+}
+#endif
+
+bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
+	return this->ShowInEditor;
+}
+
+// Called every frame
+void ACesium3DTileset::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (this->SuspendUpdate) {
+		return;
+	}
+
+	std::optional<Cesium3DTiles::Camera> camera = this->GetPlayerCamera();
+
+#ifdef WITH_EDITOR
+	if (!camera) {
+		camera = this->GetEditorCamera();
+	}
+#endif
+
+	if (!camera) {
+		return;
+	}
+
+	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(camera.value());
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
