@@ -150,7 +150,7 @@ namespace Cesium3DTiles {
         switch (boundingVolume.index()) {
         case 0:
         {
-            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            const OrientedBoundingBox& boundingBox = std::get<OrientedBoundingBox>(boundingVolume);
             return Cesium3DTiles::isBoundingVolumeVisible(boundingBox, this->_leftPlane, this->_rightPlane, this->_bottomPlane, this->_topPlane);
         }
         case 1:
@@ -172,7 +172,7 @@ namespace Cesium3DTiles {
         switch (boundingVolume.index()) {
         case 0:
         {
-            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            const OrientedBoundingBox& boundingBox = std::get<OrientedBoundingBox>(boundingVolume);
             return boundingBox.computeDistanceSquaredToPosition(this->_position);
         }
         case 1:

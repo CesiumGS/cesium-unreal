@@ -135,7 +135,7 @@ namespace Cesium3DTiles {
         /**
          * Gets the external interfaces used by this tileset.
          */
-        TilesetExternals& externals() { return this->_externals; }
+        TilesetExternals& getExternals() { return this->_externals; }
         const TilesetExternals& getExternals() const { return this->_externals; }
 
         /**
@@ -244,4 +244,4 @@ namespace Cesium3DTiles {
         Tileset& operator=(const Tileset& rhs) = delete;
     };
 
-} // namespace Cesium::ThreeDTiles
+} // namespace Cesium3DTiles

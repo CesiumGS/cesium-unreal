@@ -12,7 +12,7 @@ namespace Cesium3DTiles {
         _pTileset(nullptr),
         _pParent(nullptr),
         _children(),
-        _boundingVolume(BoundingBox(glm::dvec3(), glm::dmat4())),
+        _boundingVolume(OrientedBoundingBox(glm::dvec3(), glm::dmat4())),
         _viewerRequestVolume(),
         _geometricError(0.0),
         _refine(),
@@ -42,7 +42,7 @@ namespace Cesium3DTiles {
                     // TODO: report timeout, because it may be followed by a crash.
                     return;
                 }
-                this->_pTileset->externals().pAssetAccessor->tick();
+                this->_pTileset->getExternals().pAssetAccessor->tick();
             }
         }
 

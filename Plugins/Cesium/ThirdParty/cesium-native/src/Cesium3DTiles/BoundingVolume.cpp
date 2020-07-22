@@ -7,10 +7,10 @@ namespace Cesium3DTiles {
         switch (boundingVolume.index()) {
         case 0:
         {
-            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            const OrientedBoundingBox& boundingBox = std::get<OrientedBoundingBox>(boundingVolume);
             glm::dvec3 center = transform * glm::dvec4(boundingBox.getCenter(), 1.0);
             glm::dmat3 halfAxes = glm::dmat3(transform) * boundingBox.getHalfAxes();
-            return BoundingBox(center, halfAxes);
+            return OrientedBoundingBox(center, halfAxes);
         }
         case 1:
         {
@@ -41,7 +41,7 @@ namespace Cesium3DTiles {
         switch (boundingVolume.index()) {
         case 0:
         {
-            const BoundingBox& boundingBox = std::get<BoundingBox>(boundingVolume);
+            const OrientedBoundingBox& boundingBox = std::get<OrientedBoundingBox>(boundingVolume);
             return boundingBox.getCenter();
         }
         case 1:

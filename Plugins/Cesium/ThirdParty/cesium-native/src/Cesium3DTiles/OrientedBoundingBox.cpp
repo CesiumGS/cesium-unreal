@@ -1,4 +1,4 @@
-#include "Cesium3DTiles/BoundingBox.h"
+#include "Cesium3DTiles/OrientedBoundingBox.h"
 #include <glm/geometric.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <stdexcept>
@@ -8,7 +8,7 @@
 #include "Cesium3DTiles/EllipsoidTangentPlane.h"
 
 namespace Cesium3DTiles {
-    static BoundingBox fromPlaneExtents(
+    static OrientedBoundingBox fromPlaneExtents(
         const glm::dvec3& planeOrigin,
         const glm::dvec3& planeXAxis,
         const glm::dvec3& planeYAxis,
@@ -40,13 +40,13 @@ namespace Cesium3DTiles {
             halfAxes[2] * scale.z
         );
 
-        return BoundingBox(
+        return OrientedBoundingBox(
             planeOrigin + (halfAxes * centerOffset),
             scaledHalfAxes
         );
     }
 
-    /*static*/ BoundingBox BoundingBox::fromRectangle(
+    /*static*/ OrientedBoundingBox OrientedBoundingBox::fromRectangle(
         const Rectangle& rectangle,
         double minimumHeight,
         double maximumHeight,
@@ -190,7 +190,7 @@ namespace Cesium3DTiles {
         );
     }
 
-    CullingResult BoundingBox::intersectPlane(const Plane& plane) const {
+    CullingResult OrientedBoundingBox::intersectPlane(const Plane& plane) const {
         glm::dvec3 normal = plane.getNormal();
 
         const glm::dmat3& halfAxes = this->getHalfAxes();
@@ -228,7 +228,7 @@ namespace Cesium3DTiles {
         return CullingResult::Intersecting;
     }
 
-    double BoundingBox::computeDistanceSquaredToPosition(const glm::dvec3& position) const {
+    double OrientedBoundingBox::computeDistanceSquaredToPosition(const glm::dvec3& position) const {
         glm::dvec3 offset = position - this->getCenter();
 
         const glm::dmat3& halfAxes = this->getHalfAxes();
