@@ -360,3 +360,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		}
 	}
 }
+
+void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	this->DestroyTileset();
+	AActor::EndPlay(EndPlayReason);
+}

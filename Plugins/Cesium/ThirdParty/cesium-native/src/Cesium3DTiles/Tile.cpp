@@ -238,13 +238,13 @@ namespace Cesium3DTiles {
 
             std::unique_ptr<TileContent> pContent = TileContentFactory::createContent(*this, data, this->_pContentRequest->url());
             if (pContent) {
+                this->_pContent = std::move(pContent);
+
                 if (this->getState() == LoadState::Destroying) {
                     this->_pTileset->notifyTileDoneLoading(this);
                     this->setState(LoadState::Failed);
                     return;
                 }
-
-                this->_pContent = std::move(pContent);
 
                 const TilesetExternals& externals = this->_pTileset->getExternals();
                 if (externals.pPrepareRendererResources) {

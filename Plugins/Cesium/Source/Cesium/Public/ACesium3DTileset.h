@@ -101,6 +101,7 @@ public:
 	// Called every frame
 	virtual bool ShouldTickIfViewportsOnly() const override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
