@@ -1,3 +1,4 @@
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
@@ -365,6 +366,7 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult) {
 	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
+	pMesh->SetFlags(RF_Transient);
 	pMesh->SetupAttachment(pGltf);
 	pMesh->RegisterComponent();
 
@@ -463,6 +465,7 @@ UCesiumGltfComponent::CreateOnGameThread(
 	std::unique_ptr<HalfConstructed> pHalfConstructed
 ) {
 	UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
+	Gltf->SetFlags(RF_Transient);
 	HalfConstructedReal* pReal = static_cast<HalfConstructedReal*>(pHalfConstructed.get());
 	std::vector<LoadModelResult>& result = pReal->loadModelResult;
 	for (LoadModelResult& model : result) {
