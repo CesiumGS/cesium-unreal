@@ -45,6 +45,8 @@ namespace Cesium3DTiles {
                 this->_pTileset->externals().pAssetAccessor->tick();
             }
         }
+
+        this->unloadContent();
     }
 
     Tile::Tile(Tile&& rhs) noexcept :
