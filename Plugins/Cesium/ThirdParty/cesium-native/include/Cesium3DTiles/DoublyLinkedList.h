@@ -17,12 +17,12 @@ namespace Cesium3DTiles {
             DoublyLinkedListPointers()
         {}
 
-        DoublyLinkedListPointers& operator=(const DoublyLinkedListPointers& rhs) {
+        DoublyLinkedListPointers& operator=(const DoublyLinkedListPointers& /*rhs*/) {
             return *this;
         }
 
     private:
-        template <class T, DoublyLinkedListPointers<T> (T::*Pointers)>
+        template <class TElement, DoublyLinkedListPointers<TElement> (TElement::*Pointers)>
         friend class DoublyLinkedList;
 
         T* pNext;

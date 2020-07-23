@@ -50,7 +50,7 @@ namespace Cesium3DTiles {
     }
 
     Tile::Tile(Tile&& rhs) noexcept :
-        _loadedTilesLinks(std::move(rhs._loadedTilesLinks)),
+        _loadedTilesLinks(),
         _pTileset(rhs._pTileset),
         _pParent(rhs._pParent),
         _children(std::move(rhs._children)),
@@ -121,6 +121,13 @@ namespace Cesium3DTiles {
         this->_contentUri = value;
     }
 
+    bool Tile::isRenderable() const {
+        return
+            this->getState() >= LoadState::ContentLoaded &&
+            this->_pContent &&
+            this->_pContent->getType() != ExternalTilesetContent::TYPE;
+    }
+
     void Tile::loadContent() {
         if (this->getState() != LoadState::Unloaded) {
             return;
@@ -178,7 +185,7 @@ namespace Cesium3DTiles {
         }
     }
 
-    void Tile::update(uint32_t previousFrameNumber, uint32_t currentFrameNumber) {
+    void Tile::update(uint32_t /*previousFrameNumber*/, uint32_t /*currentFrameNumber*/) {
         if (this->getState() == LoadState::ContentLoaded) {
             const TilesetExternals& externals = this->_pTileset->getExternals();
             if (externals.pPrepareRendererResources) {
@@ -229,7 +236,7 @@ namespace Cesium3DTiles {
 
         const TilesetExternals& externals = this->_pTileset->getExternals();
 
-        externals.pTaskProcessor->startTask([data, this]() {
+        externals.pTaskProcessor->startTask([data, &externals, this]() {
             if (this->getState() == LoadState::Destroying) {
                 this->_pTileset->notifyTileDoneLoading(this);
                 this->setState(LoadState::Failed);
@@ -246,7 +253,6 @@ namespace Cesium3DTiles {
                     return;
                 }
 
-                const TilesetExternals& externals = this->_pTileset->getExternals();
                 if (externals.pPrepareRendererResources) {
                     this->_pRendererResources = externals.pPrepareRendererResources->prepareInLoadThread(*this);
                 }

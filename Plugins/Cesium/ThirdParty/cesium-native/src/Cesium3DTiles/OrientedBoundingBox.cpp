@@ -149,8 +149,8 @@ namespace Cesium3DTiles {
         );
         planeOrigin.z = 0.0; // center the plane on the equator to simpify plane normal calculation
         bool isPole =
-            abs(planeOrigin.x) < Math::EPSILON10 &&
-            abs(planeOrigin.y) < Math::EPSILON10;
+            std::abs(planeOrigin.x) < Math::EPSILON10 &&
+            std::abs(planeOrigin.y) < Math::EPSILON10;
         glm::dvec3 planeNormal = !isPole
             ? glm::normalize(planeOrigin)
             : glm::dvec3(1.0, 0.0, 0.0);
@@ -200,17 +200,17 @@ namespace Cesium3DTiles {
 
         // plane is used as if it is its normal; the first three components are assumed to be normalized
         double radEffective =
-            abs(
+            std::abs(
                 normal.x * xAxisDirectionAndHalfLength.x +
                 normal.y * xAxisDirectionAndHalfLength.y +
                 normal.z * xAxisDirectionAndHalfLength.z
             ) +
-            abs(
+            std::abs(
                 normal.x * yAxisDirectionAndHalfLength.x +
                 normal.y * yAxisDirectionAndHalfLength.y +
                 normal.z * yAxisDirectionAndHalfLength.z
             ) +
-            abs(
+            std::abs(
                 normal.x * zAxisDirectionAndHalfLength.x +
                 normal.y * zAxisDirectionAndHalfLength.y +
                 normal.z * zAxisDirectionAndHalfLength.z

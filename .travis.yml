@@ -1,0 +1,19 @@
+language: cpp
+matrix:
+  include:
+    - os: windows
+      install: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+    - os: linux
+      dist: bionic
+
+script:
+  - cd Plugins/Cesium/ThirdParty/cesium-native
+  - cd extern
+  - ./build.sh
+  - cd ..
+  - mkdir -p build
+  - cd build
+  - cmake ..
+  - cmake --build . --config Debug
+  - cd test
+  - ctest -V

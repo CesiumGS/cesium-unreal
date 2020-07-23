@@ -46,13 +46,12 @@ namespace Cesium3DTiles {
     }
 
     void Camera::_updateCullingVolume() {
-        double aspectRatio = this->_viewportSize.x / this->_viewportSize.y;
-        double fov = this->_horizontalFieldOfView;
+        double fovx = this->_horizontalFieldOfView;
         double fovy = this->_verticalFieldOfView;
 
         double t = tan(0.5 * fovy);
         double b = -t;
-        double r = aspectRatio * t;
+        double r = tan(0.5 * fovx);
         double l = -r;
 
         double n = 1.0;

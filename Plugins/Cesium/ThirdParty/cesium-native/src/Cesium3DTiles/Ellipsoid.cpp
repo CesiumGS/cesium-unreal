@@ -84,7 +84,7 @@ namespace Cesium3DTiles {
 
         // If the position is near the center, the iteration will not converge.
         if (squaredNorm < this->_centerToleranceSquared) {
-            return !isfinite(ratio)
+            return !std::isfinite(ratio)
                 ? std::optional<glm::dvec3>()
                 : intersection;
         }
@@ -146,7 +146,7 @@ namespace Cesium3DTiles {
             double derivative = -2.0 * denominator;
 
             correction = func / derivative;
-        } while (abs(func) > Math::EPSILON12);
+        } while (std::abs(func) > Math::EPSILON12);
 
         return glm::dvec3(
             positionX * xMultiplier,

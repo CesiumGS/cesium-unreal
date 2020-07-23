@@ -20,6 +20,9 @@ namespace Cesium3DTiles {
     
     class CESIUM3DTILES_API Tile {
     public:
+        /**
+         * The current state of this tile in the loading process.
+         */
         enum class LoadState {
             /**
              * This tile is in the process of being destroyed. Any pointers to it
@@ -120,7 +123,7 @@ namespace Cesium3DTiles {
         /**
          * Determines if this tile is currently renderable.
          */
-        bool isRenderable() const { return this->getState() >= LoadState::ContentLoaded && this->_pContent && this->_pContent->getType() != ExternalTilesetContent::TYPE; }
+        bool isRenderable() const;
 
         void loadContent();
         bool unloadContent();

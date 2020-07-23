@@ -85,7 +85,14 @@
         "gsl_algorithm": "cpp",
         "gsl_byte": "cpp",
         "span_ext": "cpp",
-        "multi_span": "cpp"
+        "multi_span": "cpp",
+        "bit": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "cwctype": "cpp",
+        "memory_resource": "cpp",
+        "string_view": "cpp",
+        "shared_mutex": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cmake.configureOnOpen": true

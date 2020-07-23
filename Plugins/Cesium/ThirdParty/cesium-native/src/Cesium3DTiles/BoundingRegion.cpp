@@ -14,7 +14,7 @@ namespace Cesium3DTiles {
         double maximumHeight,
         const Ellipsoid& ellipsoid
     ) :
-        BoundingRegion(Rectangle(west, south, east, north), minimumHeight, maximumHeight)
+        BoundingRegion(Rectangle(west, south, east, north), minimumHeight, maximumHeight, ellipsoid)
     {
     }
 
