@@ -118,7 +118,7 @@ namespace Cesium3DTiles {
         return result;
     }
 
-	void Tileset::notifyTileDoneLoading(Tile* pTile) {
+	void Tileset::notifyTileDoneLoading(Tile* /*pTile*/) {
 		--this->_loadsInProgress;
 	}
 
@@ -370,11 +370,11 @@ namespace Cesium3DTiles {
             result.tilesToRenderThisFrame.push_back(&tile);
 			this->_loadQueueMedium.push_back(&tile);
 
-			TraversalDetails result;
-			result.allAreRenderable = tile.isRenderable();
-			result.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
-			result.notYetRenderableCount = result.allAreRenderable ? 0 : 1;
-			return result;
+			TraversalDetails traversalDetails;
+			traversalDetails.allAreRenderable = tile.isRenderable();
+			traversalDetails.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
+			traversalDetails.notYetRenderableCount = traversalDetails.allAreRenderable ? 0 : 1;
+			return traversalDetails;
         }
 
         const BoundingVolume& boundingVolume = tile.getBoundingVolume();
@@ -422,12 +422,12 @@ namespace Cesium3DTiles {
 				tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Rendered));
 				result.tilesToRenderThisFrame.push_back(&tile);
 
-				TraversalDetails result;
-				result.allAreRenderable = tile.isRenderable();
-				result.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
-				result.notYetRenderableCount = result.allAreRenderable ? 0 : 1;
+				TraversalDetails traversalDetails;
+				traversalDetails.allAreRenderable = tile.isRenderable();
+				traversalDetails.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
+				traversalDetails.notYetRenderableCount = traversalDetails.allAreRenderable ? 0 : 1;
 
-				return result;
+				return traversalDetails;
 			}
 
 			// Otherwise, we can't render this tile (or blank space where it would be) because doing so would cause detail to disappear

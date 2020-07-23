@@ -8,7 +8,7 @@ namespace Cesium3DTiles {
         std::string errors;
         std::string warnings;
 
-        bool loadSucceeded = loader.LoadBinaryFromMemory(&model, &errors, &warnings, data.data(), data.size());
+        loader.LoadBinaryFromMemory(&model, &errors, &warnings, data.data(), static_cast<unsigned int>(data.size()));
 
         return LoadResult{
             model,

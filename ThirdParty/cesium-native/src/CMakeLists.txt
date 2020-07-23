@@ -2,7 +2,7 @@ add_library(cesium-native "")
 
 target_include_directories(
     cesium-native
-    PUBLIC
+    SYSTEM PUBLIC
         ${PROJECT_SOURCE_DIR}/extern/tinygltf
         ${PROJECT_SOURCE_DIR}/extern/glm
         ${PROJECT_SOURCE_DIR}/extern/draco/src
@@ -13,6 +13,12 @@ target_include_directories(
 )
 
 target_link_libraries(cesium-native GSL)
+
+if (MSVC)
+    target_compile_options(cesium-native PRIVATE /W4 /WX)
+else()
+    target_compile_options(cesium-native PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic -Wshadow)
+endif()
 
 set_target_properties(cesium-native PROPERTIES
     CXX_STANDARD 17

@@ -2,10 +2,10 @@
 
 namespace Cesium3DTiles {
 
-    Cartographic::Cartographic(double longitude, double latitude, double height) :
-        longitude(longitude),
-        latitude(latitude),
-        height(height)
+    Cartographic::Cartographic(double longitudeParam, double latitudeParam, double heightParam) :
+        longitude(longitudeParam),
+        latitude(latitudeParam),
+        height(heightParam)
     {
     }
 

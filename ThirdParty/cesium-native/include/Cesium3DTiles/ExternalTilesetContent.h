@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cesium3DTiles/TileContent.h"
+#include "Cesium3DTiles/Tile.h"
 #include <gsl/span>
 #include <vector>
 
