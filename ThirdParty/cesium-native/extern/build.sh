@@ -1,16 +1,18 @@
 #!/bin/sh
 
 ORIGINALDIR=$PWD
-EXTERNDIR=$(dirname "$0")
+SCRIPT=$(readlink -f "$0")
+EXTERNDIR=$(dirname "$SCRIPT")
+echo $EXTERNDIR
 cd $EXTERNDIR
 mkdir build
 cd build
 
-
 # Draco
 cd $EXTERNDIR
 cd build
-mkdir draco; cd draco
+mkdir draco
+cd draco
 cmake ../../draco/
 cmake --build . --config Release
 
