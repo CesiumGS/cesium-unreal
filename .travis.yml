@@ -10,3 +10,7 @@ script:
   - cd Plugins/Cesium/ThirdParty/cesium-native
   - cd extern
   - ./build.sh
+  - cd ..
+  - mkdir build
+  - cmake -B build -S .
+  - cmake --build build --config Debug
