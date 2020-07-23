@@ -17,7 +17,7 @@ target_link_libraries(cesium-native GSL)
 if (MSVC)
     target_compile_options(cesium-native PRIVATE /W4 /WX)
 else()
-    target_compile_options(cesium-native PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic)
+    target_compile_options(cesium-native PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic -Wshadow)
 endif()
 
 set_target_properties(cesium-native PROPERTIES
