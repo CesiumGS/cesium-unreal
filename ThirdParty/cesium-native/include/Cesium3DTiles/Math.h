@@ -52,7 +52,7 @@ namespace Cesium3DTiles {
         }
 
         static inline bool equalsEpsilon(double left, double right, double relativeEpsilon, double absoluteEpsilon) {
-            double diff = abs(left - right);
+            double diff = std::abs(left - right);
             return
                 diff <= absoluteEpsilon ||
                 diff <= relativeEpsilonToAbsolute(left, right, relativeEpsilon);
@@ -81,8 +81,8 @@ namespace Cesium3DTiles {
         static inline double zeroToTwoPi(double angle) {
             double mod = Math::mod(angle, Math::TWO_PI);
             if (
-                abs(mod) < Math::EPSILON14 &&
-                abs(angle) > Math::EPSILON14
+                std::abs(mod) < Math::EPSILON14 &&
+                std::abs(angle) > Math::EPSILON14
             ) {
                 return Math::TWO_PI;
             }

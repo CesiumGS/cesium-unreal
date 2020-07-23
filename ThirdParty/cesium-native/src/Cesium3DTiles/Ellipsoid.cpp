@@ -146,7 +146,7 @@ namespace Cesium3DTiles {
             double derivative = -2.0 * denominator;
 
             correction = func / derivative;
-        } while (abs(func) > Math::EPSILON12);
+        } while (std::abs(func) > Math::EPSILON12);
 
         return glm::dvec3(
             positionX * xMultiplier,

@@ -37,6 +37,9 @@ namespace Cesium3DTiles {
         std::optional<glm::dvec3> intersectionPoint = IntersectionTests::rayPlane(ray, this->_plane);
         if (!intersectionPoint) {
             intersectionPoint = IntersectionTests::rayPlane(-ray, this->_plane);
+            if (!intersectionPoint) {
+                intersectionPoint = cartesian;
+            }
         }
 
         glm::dvec3 v = intersectionPoint.value() - this->_origin;
