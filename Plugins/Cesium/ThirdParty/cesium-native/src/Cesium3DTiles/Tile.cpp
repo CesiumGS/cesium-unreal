@@ -236,7 +236,7 @@ namespace Cesium3DTiles {
 
         const TilesetExternals& externals = this->_pTileset->getExternals();
 
-        externals.pTaskProcessor->startTask([data, this]() {
+        externals.pTaskProcessor->startTask([data, &externals, this]() {
             if (this->getState() == LoadState::Destroying) {
                 this->_pTileset->notifyTileDoneLoading(this);
                 this->setState(LoadState::Failed);
@@ -253,7 +253,6 @@ namespace Cesium3DTiles {
                     return;
                 }
 
-                const TilesetExternals& externals = this->_pTileset->getExternals();
                 if (externals.pPrepareRendererResources) {
                     this->_pRendererResources = externals.pPrepareRendererResources->prepareInLoadThread(*this);
                 }
