@@ -118,7 +118,7 @@ namespace Cesium3DTiles {
         return result;
     }
 
-	void Tileset::notifyTileDoneLoading(Tile* pTile) {
+	void Tileset::notifyTileDoneLoading(Tile* /*pTile*/) {
 		--this->_loadsInProgress;
 	}
 

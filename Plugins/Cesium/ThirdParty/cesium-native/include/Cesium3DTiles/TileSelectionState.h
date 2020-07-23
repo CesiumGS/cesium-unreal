@@ -115,6 +115,8 @@ namespace Cesium3DTiles {
             case Result::Refined:
                 this->_result = Result::RefinedAndKicked;
                 break;
+            default:
+                break;
             }
         }
 

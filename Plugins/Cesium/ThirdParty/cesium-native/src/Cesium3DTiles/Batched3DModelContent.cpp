@@ -36,7 +36,7 @@ namespace Cesium3DTiles {
 		uint32_t batchLength;
 	};
 
-	Batched3DModelContent::Batched3DModelContent(const Tile& tile, const gsl::span<const uint8_t>& data, const std::string& url) :
+	Batched3DModelContent::Batched3DModelContent(const Tile& tile, const gsl::span<const uint8_t>& data, const std::string& /*url*/) :
 		TileContent(tile)
 	{
 		// TODO: actually use the b3dm payload
@@ -48,7 +48,7 @@ namespace Cesium3DTiles {
 
 		B3dmHeader header = *pHeader;
 		uint32_t headerLength = sizeof(B3dmHeader);
-		uint32_t batchLength;
+		// uint32_t batchLength;
 
 		// Legacy header #1: [batchLength] [batchTableByteLength]
 		// Legacy header #2: [batchTableJsonByteLength] [batchTableBinaryByteLength] [batchLength]
@@ -60,7 +60,7 @@ namespace Cesium3DTiles {
 			// First legacy check
 			headerLength = sizeof(B3dmHeaderLegacy1);
 			const B3dmHeaderLegacy1* pLegacy1 = reinterpret_cast<const B3dmHeaderLegacy1*>(data.data());
-			batchLength = pLegacy1->batchLength;
+			// batchLength = pLegacy1->batchLength;
 			header.batchTableJsonByteLength = pLegacy1->batchTableByteLength;
 			header.batchTableBinaryByteLength = 0;
 			header.featureTableJsonByteLength = 0;
@@ -76,7 +76,7 @@ namespace Cesium3DTiles {
 			// Second legacy check
 			headerLength = sizeof(B3dmHeaderLegacy2);
 			const B3dmHeaderLegacy2* pLegacy2 = reinterpret_cast<const B3dmHeaderLegacy2*>(data.data());
-			batchLength = pLegacy2->batchLength;
+			// batchLength = pLegacy2->batchLength;
 			header.batchTableJsonByteLength = pLegacy2->batchTableJsonByteLength;
 			header.batchTableBinaryByteLength = pLegacy2->batchTableBinaryByteLength;
 			header.featureTableJsonByteLength = 0;
@@ -111,7 +111,7 @@ namespace Cesium3DTiles {
 		std::string errors;
 		std::string warnings;
 
-		bool loadSucceeded = loader.LoadBinaryFromMemory(&this->_gltf, &errors, &warnings, glbData.data(), glbData.size());
+		bool loadSucceeded = loader.LoadBinaryFromMemory(&this->_gltf, &errors, &warnings, glbData.data(), static_cast<unsigned int>(glbData.size()));
 		if (!loadSucceeded) {
 			throw std::runtime_error("Failed to load glTF model from B3DM.");
 		}

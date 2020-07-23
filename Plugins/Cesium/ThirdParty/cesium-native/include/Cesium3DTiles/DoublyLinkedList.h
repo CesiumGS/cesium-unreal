@@ -17,7 +17,7 @@ namespace Cesium3DTiles {
             DoublyLinkedListPointers()
         {}
 
-        DoublyLinkedListPointers& operator=(const DoublyLinkedListPointers& rhs) {
+        DoublyLinkedListPointers& operator=(const DoublyLinkedListPointers& /*rhs*/) {
             return *this;
         }
 
