@@ -22,7 +22,7 @@ namespace Cesium3DTiles {
         }
 
     private:
-        template <class T, DoublyLinkedListPointers<T> (T::*Pointers)>
+        template <class TElement, DoublyLinkedListPointers<TElement> (TElement::*Pointers)>
         friend class DoublyLinkedList;
 
         T* pNext;

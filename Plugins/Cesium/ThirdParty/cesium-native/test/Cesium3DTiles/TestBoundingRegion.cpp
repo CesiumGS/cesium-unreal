@@ -18,7 +18,7 @@ TEST_CASE("BoundingRegion") {
 
         const double offset = 0.0001;
 
-        auto updateDistance = [](TestCase& testCase, double longitude, double latitude, double height) -> TestCase {
+        auto updateDistance = [](TestCase testCase, double longitude, double latitude, double height) -> TestCase {
             glm::dvec3 boxPosition = Ellipsoid::WGS84.cartographicToCartesian(Cartographic(longitude, latitude, height));
             glm::dvec3 position = Ellipsoid::WGS84.cartographicToCartesian(Cartographic(testCase.longitude, testCase.latitude, testCase.height));
             testCase.expectedDistance = glm::distance(boxPosition, position);

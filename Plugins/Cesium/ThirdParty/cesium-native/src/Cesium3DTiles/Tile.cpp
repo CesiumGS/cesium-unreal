@@ -50,7 +50,7 @@ namespace Cesium3DTiles {
     }
 
     Tile::Tile(Tile&& rhs) noexcept :
-        _loadedTilesLinks(std::move(rhs._loadedTilesLinks)),
+        _loadedTilesLinks(),
         _pTileset(rhs._pTileset),
         _pParent(rhs._pParent),
         _children(std::move(rhs._children)),
@@ -119,6 +119,13 @@ namespace Cesium3DTiles {
 
     void Tile::setContentUri(const std::optional<std::string>& value) {
         this->_contentUri = value;
+    }
+
+    bool Tile::isRenderable() const {
+        return
+            this->getState() >= LoadState::ContentLoaded &&
+            this->_pContent &&
+            this->_pContent->getType() != ExternalTilesetContent::TYPE;
     }
 
     void Tile::loadContent() {

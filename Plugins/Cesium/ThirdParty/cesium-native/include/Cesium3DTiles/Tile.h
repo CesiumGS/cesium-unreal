@@ -123,7 +123,7 @@ namespace Cesium3DTiles {
         /**
          * Determines if this tile is currently renderable.
          */
-        bool isRenderable() const { return this->getState() >= LoadState::ContentLoaded && this->_pContent && this->_pContent->getType() != ExternalTilesetContent::TYPE; }
+        bool isRenderable() const;
 
         void loadContent();
         bool unloadContent();
