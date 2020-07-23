@@ -20,6 +20,9 @@ namespace Cesium3DTiles {
     
     class CESIUM3DTILES_API Tile {
     public:
+        /**
+         * The current state of this tile in the loading process.
+         */
         enum class LoadState {
             /**
              * This tile is in the process of being destroyed. Any pointers to it

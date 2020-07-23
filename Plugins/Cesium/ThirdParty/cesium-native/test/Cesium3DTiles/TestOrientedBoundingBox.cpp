@@ -301,3 +301,43 @@ TEST_CASE("OrientedBoundingBox::intersectPlane") {
         CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
     }
 }
+
+TEST_CASE("OrientedBoundingBox examples") {
+    {
+    //! [Constructor]
+    // Create an OrientedBoundingBox using a transformation matrix, a position where the box will be translated, and a scale.
+    glm::dvec3 center = glm::dvec3(1.0, 0.0, 0.0);
+    glm::dmat3 halfAxes = glm::dmat3(
+        glm::dvec3(1.0, 0.0, 0.0),
+        glm::dvec3(0.0, 3.0, 0.0),
+        glm::dvec3(0.0, 0.0, 2.0)
+    );
+
+    auto obb = Cesium3DTiles::OrientedBoundingBox(center, halfAxes);
+    //! [Constructor]
+    }
+
+    {
+    auto anyOldBoxArray = []() {
+        return std::vector<Cesium3DTiles::OrientedBoundingBox> {
+            { glm::dvec3(1.0, 0.0, 0.0), glm::dmat3(1.0) },
+            { glm::dvec3(2.0, 0.0, 0.0), glm::dmat3(1.0) }
+        };
+    };
+    auto anyOldCameraPosition = []() {
+        return glm::dvec3(0.0, 0.0, 0.0);
+    };
+
+    //! [distanceSquaredTo]
+    // Sort bounding boxes from back to front
+    glm::dvec3 cameraPosition = anyOldCameraPosition();
+    std::vector<Cesium3DTiles::OrientedBoundingBox> boxes = anyOldBoxArray();
+    std::sort(boxes.begin(), boxes.end(), [&cameraPosition](auto& a, auto& b) {
+        return a.computeDistanceSquaredToPosition(cameraPosition) > b.computeDistanceSquaredToPosition(cameraPosition);
+    });
+    //! [distanceSquaredTo]
+
+    CHECK(boxes[0].getCenter().x == 2.0);
+    CHECK(boxes[1].getCenter().x == 1.0);
+    }
+}
