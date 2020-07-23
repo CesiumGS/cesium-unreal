@@ -16,5 +16,4 @@ script:
   - cmake ..
   - cmake --build . --config Debug
   - cd test
-  - ctest
-
+  - ctest -V
