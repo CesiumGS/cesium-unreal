@@ -185,7 +185,7 @@ namespace Cesium3DTiles {
         }
     }
 
-    void Tile::update(uint32_t previousFrameNumber, uint32_t currentFrameNumber) {
+    void Tile::update(uint32_t /*previousFrameNumber*/, uint32_t /*currentFrameNumber*/) {
         if (this->getState() == LoadState::ContentLoaded) {
             const TilesetExternals& externals = this->_pTileset->getExternals();
             if (externals.pPrepareRendererResources) {

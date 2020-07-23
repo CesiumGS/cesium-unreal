@@ -7,5 +7,8 @@
 #define TINYGLTF_LITTLE_ENDIAN
 #define TINYGLTF_ENABLE_DRACO
 
+#ifdef _MSC_VER
 #pragma warning(disable:4996 4946)
+#endif
+
 #include "tiny_gltf.h"

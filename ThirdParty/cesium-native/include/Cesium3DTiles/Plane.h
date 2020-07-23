@@ -10,7 +10,7 @@ namespace Cesium3DTiles {
         Plane(const glm::dvec3& point, const glm::dvec3& normal);
 
         const glm::dvec3& getNormal() const { return this->_normal; }
-        const double getDistance() const { return this->_distance; }
+        double getDistance() const { return this->_distance; }
 
         double getPointDistance(const glm::dvec3& point) const;
 
