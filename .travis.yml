@@ -4,10 +4,9 @@ matrix:
     - os: windows
       install: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
     - os: linux
+      dist: bionic
 
 script:
   - cd Plugins/Cesium/ThirdParty/cesium-native
-  - pushd extern; mkdir build; cd build; mkdir draco; cd draco
-  - cmake ../../draco/
-  - cmake --build . --config Release
-  - popd
+  - cd extern
+  - ./build.sh
