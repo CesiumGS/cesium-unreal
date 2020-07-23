@@ -12,5 +12,6 @@ script:
   - ./build.sh
   - cd ..
   - mkdir build
-  - cmake -B build -S .
-  - cmake --build build --config Debug
+  - cd build
+  - cmake ..
+  - cmake --build . --config Debug
