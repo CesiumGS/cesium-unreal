@@ -11,7 +11,10 @@ script:
   - cd extern
   - ./build.sh
   - cd ..
-  - mkdir build
+  - mkdir -p build
   - cd build
   - cmake ..
   - cmake --build . --config Debug
+  - cd test
+  - ctest
+
