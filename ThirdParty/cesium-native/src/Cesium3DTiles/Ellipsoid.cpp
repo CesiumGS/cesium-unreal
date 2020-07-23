@@ -84,7 +84,7 @@ namespace Cesium3DTiles {
 
         // If the position is near the center, the iteration will not converge.
         if (squaredNorm < this->_centerToleranceSquared) {
-            return !isfinite(ratio)
+            return !std::isfinite(ratio)
                 ? std::optional<glm::dvec3>()
                 : intersection;
         }
