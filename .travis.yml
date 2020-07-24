@@ -5,6 +5,11 @@ matrix:
       install: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
     - os: linux
       dist: bionic
+      install:
+        - wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+        - sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+        - sudo apt-get update
+        - sudo apt-get install cmake
 
 script:
   - cd Plugins/Cesium/ThirdParty/cesium-native
