@@ -10,6 +10,7 @@ matrix:
         - sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
         - sudo apt-get update
         - sudo apt-get install cmake
+        - export PATH=/usr/bin:$PATH
 
 script:
   - cd Plugins/Cesium/ThirdParty/cesium-native
