@@ -5,7 +5,7 @@
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 #include "BoundingVolume.h"
-#include "Plane.h"
+#include "CesiumGeometry/Plane.h"
 
 namespace Cesium3DTiles {
 

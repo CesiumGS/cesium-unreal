@@ -3,7 +3,7 @@
 #include "Cesium3DTiles/Rectangle.h"
 #include "Cesium3DTiles/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
-#include "Cesium3DTiles/Plane.h"
+#include "CesiumGeometry/Plane.h"
 
 TEST_CASE("BoundingRegion") {
     using namespace Cesium3DTiles;

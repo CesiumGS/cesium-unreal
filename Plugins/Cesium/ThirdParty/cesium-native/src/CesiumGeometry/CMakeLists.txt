@@ -1,12 +1,12 @@
-add_library(Cesium3DTiles "")
+add_library(CesiumGeometry "")
 
 if (MSVC)
-    target_compile_options(Cesium3DTiles PRIVATE /W4 /WX)
+    target_compile_options(CesiumGeometry PRIVATE /W4 /WX)
 else()
-    target_compile_options(Cesium3DTiles PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic -Wshadow)
+    target_compile_options(CesiumGeometry PRIVATE -Werror -Wall -Wextra -Wconversion -Wpedantic -Wshadow)
 endif()
 
-set_target_properties(Cesium3DTiles PROPERTIES
+set_target_properties(CesiumGeometry PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
@@ -16,10 +16,10 @@ set_target_properties(Cesium3DTiles PROPERTIES
 )
 
 file(GLOB SOURCES *.cpp *.h)
-file(GLOB PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include/Cesium3DTiles/*.h)
+file(GLOB PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include/CesiumGeometry/*.h)
 
 target_sources(
-    Cesium3DTiles
+    CesiumGeometry
     PRIVATE
         ${SOURCES}
     PUBLIC
@@ -27,13 +27,9 @@ target_sources(
 )
 
 target_include_directories(
-    Cesium3DTiles
+    CesiumGeometry
     SYSTEM PUBLIC
-        ${PROJECT_SOURCE_DIR}/extern/tinygltf
         ${PROJECT_SOURCE_DIR}/extern/glm
-        ${PROJECT_SOURCE_DIR}/extern/draco/src
-        ${PROJECT_SOURCE_DIR}/extern/uriparser/include
-        ${PROJECT_SOURCE_DIR}/extern/build/draco
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
     PRIVATE
@@ -41,10 +37,10 @@ target_include_directories(
         private
 )
 
-target_link_libraries(Cesium3DTiles CesiumGeometry CesiumUtility GSL)
+target_link_libraries(CesiumGeometry CesiumUtility GSL)
 
 target_compile_definitions(
-    Cesium3DTiles
+    CesiumGeometry
     PUBLIC
         CESIUM3DTILES_API=
 )

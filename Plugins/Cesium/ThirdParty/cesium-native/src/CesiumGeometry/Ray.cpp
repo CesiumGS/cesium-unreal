@@ -1,4 +1,4 @@
-#include "Cesium3DTiles/Ray.h"
+#include "CesiumGeometry/Ray.h"
 
 namespace Cesium3DTiles {
 

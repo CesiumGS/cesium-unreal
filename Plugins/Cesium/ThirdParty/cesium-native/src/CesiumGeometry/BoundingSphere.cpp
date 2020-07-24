@@ -1,6 +1,6 @@
-#include "Cesium3DTiles/BoundingSphere.h"
+#include "CesiumGeometry/BoundingSphere.h"
 #include <glm/geometric.hpp>
-#include "Cesium3DTiles/Plane.h"
+#include "CesiumGeometry/Plane.h"
 
 namespace Cesium3DTiles {
 

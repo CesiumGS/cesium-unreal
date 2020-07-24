@@ -1,7 +1,7 @@
 #include "Cesium3DTiles/BoundingRegion.h"
-#include "Cesium3DTiles/IntersectionTests.h"
-#include "Cesium3DTiles/Ray.h"
-#include "Cesium3DTiles/Plane.h"
+#include "CesiumGeometry/IntersectionTests.h"
+#include "CesiumGeometry/Ray.h"
+#include "CesiumGeometry/Plane.h"
 
 namespace Cesium3DTiles {
 

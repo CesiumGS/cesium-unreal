@@ -1,8 +1,8 @@
-#include "Cesium3DTiles/OrientedBoundingBox.h"
+#include "CesiumGeometry/OrientedBoundingBox.h"
 #include <glm/geometric.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <stdexcept>
-#include "Cesium3DTiles/Plane.h"
+#include "CesiumGeometry/Plane.h"
 #include "Cesium3DTiles/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
 #include "Cesium3DTiles/EllipsoidTangentPlane.h"
