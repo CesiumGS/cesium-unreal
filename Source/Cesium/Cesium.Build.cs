@@ -30,6 +30,7 @@ public class Cesium : ModuleRules
             new string[]
             {
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/CesiumGeometry/Debug/CesiumGeometry.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/CesiumUtility/Debug/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/uriparser/Release/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/draco/Release/draco.lib"),
