@@ -42,8 +42,14 @@ namespace Cesium3DTiles {
         double computeDistanceSquaredToPosition(const glm::dvec3& position, const Ellipsoid& ellipsoid = Ellipsoid::WGS84) const;
         double computeDistanceSquaredToPosition(const Cartographic& position, const Ellipsoid& ellipsoid = Ellipsoid::WGS84) const;
         double computeDistanceSquaredToPosition(const Cartographic& cartographicPosition, const glm::dvec3& cartesianPosition) const;
-        
+
 private:
+        static OrientedBoundingBox _computeBoundingBox(
+            const Rectangle& rectangle,
+            double minimumHeight,
+            double maximumHeight,
+            const Ellipsoid& ellipsoid);
+
         Rectangle _rectangle;
         double _minimumHeight;
         double _maximumHeight;

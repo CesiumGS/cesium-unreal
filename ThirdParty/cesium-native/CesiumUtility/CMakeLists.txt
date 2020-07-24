@@ -2,8 +2,8 @@ add_library(CesiumUtility "")
 
 configure_cesium_library(CesiumUtility)
 
-file(GLOB SOURCES *.cpp *.h)
-file(GLOB PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include/CesiumUtility/*.h)
+file(GLOB SOURCES include/CesiumUtility*.h src/*.cpp src/*.h)
+file(GLOB PUBLIC_INCLUDES include/CesiumUtility/*.h)
 
 target_sources(
     CesiumUtility
@@ -18,7 +18,7 @@ target_include_directories(
     SYSTEM PUBLIC
         ${PROJECT_SOURCE_DIR}/extern/glm
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        include
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        src
 )

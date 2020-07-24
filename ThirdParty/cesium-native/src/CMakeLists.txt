@@ -1,4 +1,0 @@
-add_subdirectory(CesiumUtility)
-add_subdirectory(CesiumGeometry)
-add_subdirectory(CesiumGeospatial)
-add_subdirectory(Cesium3DTiles)

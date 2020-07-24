@@ -2,8 +2,8 @@ add_library(CesiumGeometry "")
 
 configure_cesium_library(CesiumGeometry)
 
-file(GLOB SOURCES *.cpp *.h)
-file(GLOB PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include/CesiumGeometry/*.h)
+file(GLOB SOURCES include/CesiumGeometry/*.h src/*.cpp src/*.h)
+file(GLOB PUBLIC_INCLUDES include/CesiumGeometry/*.h)
 
 target_sources(
     CesiumGeometry
@@ -18,10 +18,9 @@ target_include_directories(
     SYSTEM PUBLIC
         ${PROJECT_SOURCE_DIR}/extern/glm
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        include
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        private
+        src
 )
 
 target_link_libraries(CesiumGeometry PUBLIC CesiumUtility GSL)
