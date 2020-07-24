@@ -1,9 +1,9 @@
 #pragma once
 
 #include <variant>
-#include "OrientedBoundingBox.h"
-#include "BoundingRegion.h"
-#include "BoundingSphere.h"
+#include "CesiumGeometry/OrientedBoundingBox.h"
+#include "Cesium3DTiles/BoundingRegion.h"
+#include "CesiumGeometry/BoundingSphere.h"
 
 namespace Cesium3DTiles {
     typedef std::variant<OrientedBoundingBox, BoundingRegion, BoundingSphere> BoundingVolume;

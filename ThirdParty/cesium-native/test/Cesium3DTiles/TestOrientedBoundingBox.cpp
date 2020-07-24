@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/OrientedBoundingBox.h"
+#include "CesiumGeometry/OrientedBoundingBox.h"
 #include "Cesium3DTiles/Camera.h"
 
 TEST_CASE("OrientedBoundingBox::intersectPlane") {

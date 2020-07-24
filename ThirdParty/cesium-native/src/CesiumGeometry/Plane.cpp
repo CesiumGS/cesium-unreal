@@ -1,4 +1,4 @@
-#include "Cesium3DTiles/Plane.h"
+#include "CesiumGeometry/Plane.h"
 #include <glm/geometric.hpp>
 
 namespace Cesium3DTiles {

@@ -1,8 +1,8 @@
-#include "Cesium3DTiles/IntersectionTests.h"
+#include "CesiumGeometry/IntersectionTests.h"
 #include <glm/geometric.hpp>
 #include "CesiumUtility/Math.h"
-#include "Cesium3DTiles/Plane.h"
-#include "Cesium3DTiles/Ray.h"
+#include "CesiumGeometry/Plane.h"
+#include "CesiumGeometry/Ray.h"
 
 namespace Cesium3DTiles {
 

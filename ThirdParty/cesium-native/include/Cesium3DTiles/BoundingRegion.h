@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Cesium3DTiles/CullingResult.h"
-#include "Cesium3DTiles/OrientedBoundingBox.h"
+#include "CesiumGeometry/CullingResult.h"
+#include "CesiumGeometry/OrientedBoundingBox.h"
 #include "Cesium3DTiles/Rectangle.h"
 #include "Cesium3DTiles/Ellipsoid.h"
 

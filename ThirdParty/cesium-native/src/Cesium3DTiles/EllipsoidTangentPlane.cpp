@@ -1,8 +1,8 @@
 #include "Cesium3DTiles/EllipsoidTangentPlane.h"
 #include "Cesium3DTiles/Transforms.h"
-#include "Cesium3DTiles/Plane.h"
-#include "Cesium3DTiles/Ray.h"
-#include "Cesium3DTiles/IntersectionTests.h"
+#include "CesiumGeometry/Plane.h"
+#include "CesiumGeometry/Ray.h"
+#include "CesiumGeometry/IntersectionTests.h"
 
 namespace Cesium3DTiles {
 
