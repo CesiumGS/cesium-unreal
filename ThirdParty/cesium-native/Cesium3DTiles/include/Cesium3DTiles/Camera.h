@@ -4,7 +4,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
-#include "BoundingVolume.h"
+#include "Cesium3DTiles/Library.h"
+#include "Cesium3DTiles/BoundingVolume.h"
 #include "CesiumGeometry/Plane.h"
 
 namespace Cesium3DTiles {
@@ -90,10 +91,10 @@ namespace Cesium3DTiles {
         double _verticalFieldOfView;
         double _sseDenominator;
 
-        Plane _leftPlane;
-        Plane _rightPlane;
-        Plane _topPlane;
-        Plane _bottomPlane;
+        CesiumGeometry::Plane _leftPlane;
+        CesiumGeometry::Plane _rightPlane;
+        CesiumGeometry::Plane _topPlane;
+        CesiumGeometry::Plane _bottomPlane;
     };
 
 }

@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Cesium3DTiles/TileContent.h"
-#include "Cesium3DTiles/Tile.h"
 #include <gsl/span>
 #include <vector>
+#include "Cesium3DTiles/Library.h"
+#include "Cesium3DTiles/TileContent.h"
+#include "Cesium3DTiles/Tile.h"
 
 namespace Cesium3DTiles {
 
-    class ExternalTilesetContent : public TileContent {
+    class CESIUM3DTILES_API ExternalTilesetContent : public TileContent {
     public:
         static std::string TYPE;
 

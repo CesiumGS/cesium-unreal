@@ -5,6 +5,8 @@
 #include "Cesium3DTiles/TileContentFactory.h"
 #include <chrono>
 
+using namespace CesiumGeometry;
+
 namespace Cesium3DTiles {
 
     Tile::Tile() :

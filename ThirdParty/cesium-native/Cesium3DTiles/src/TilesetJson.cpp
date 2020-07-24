@@ -1,5 +1,8 @@
 #include "TilesetJson.h"
 
+using namespace CesiumGeometry;
+using namespace CesiumGeospatial;
+
 namespace Cesium3DTiles {
 
 	std::optional<BoundingVolume> TilesetJson::getBoundingVolumeProperty(const nlohmann::json& tileJson, const std::string& key) {

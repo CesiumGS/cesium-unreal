@@ -1,7 +1,9 @@
 #include "CesiumGeospatial/Rectangle.h"
 #include "CesiumUtility/Math.h"
 
-namespace Cesium3DTiles {
+using namespace CesiumUtility;
+
+namespace CesiumGeospatial {
 
     Rectangle::Rectangle(
         double west,

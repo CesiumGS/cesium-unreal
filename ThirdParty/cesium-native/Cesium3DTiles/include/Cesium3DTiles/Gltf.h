@@ -3,6 +3,7 @@
 #include <optional>
 #include <gsl/span>
 #include <tiny_gltf.h>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
 

@@ -1,14 +1,15 @@
 #pragma once
 
+#include "CesiumGeospatial/Library.h"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeometry/Plane.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeospatial {
 
-    class EllipsoidTangentPlane {
+    class CESIUMGEOSPATIAL_API EllipsoidTangentPlane {
     public:
         EllipsoidTangentPlane(
             const glm::dvec3& origin,
@@ -25,7 +26,7 @@ namespace Cesium3DTiles {
         const glm::dvec3& getXAxis() const { return this->_xAxis; }
         const glm::dvec3& getYAxis() const { return this->_yAxis; }
         const glm::dvec3& getZAxis() const { return this->_plane.getNormal(); }
-        const Plane& getPlane() const { return this->_plane; }
+        const CesiumGeometry::Plane& getPlane() const { return this->_plane; }
 
         glm::dvec2 projectPointToNearestOnPlane(const glm::dvec3& cartesian);
 
@@ -34,7 +35,7 @@ namespace Cesium3DTiles {
         glm::dvec3 _origin;
         glm::dvec3 _xAxis;
         glm::dvec3 _yAxis;
-        Plane _plane;
+        CesiumGeometry::Plane _plane;
     };
 
 }

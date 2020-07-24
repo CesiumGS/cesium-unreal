@@ -5,11 +5,12 @@
 #include <optional>
 #include <memory>
 #include <atomic>
-#include "TilesetExternals.h"
-#include "Tile.h"
-#include "IAssetRequest.h"
-#include "ViewUpdateResult.h"
-#include "Camera.h"
+#include "Cesium3DTiles/Library.h"
+#include "Cesium3DTiles/TilesetExternals.h"
+#include "Cesium3DTiles/Tile.h"
+#include "Cesium3DTiles/IAssetRequest.h"
+#include "Cesium3DTiles/ViewUpdateResult.h"
+#include "Cesium3DTiles/Camera.h"
 #include "CesiumUtility/Json.h"
 
 namespace Cesium3DTiles {
@@ -18,7 +19,7 @@ namespace Cesium3DTiles {
      * Additional options for configuring a \ref Tileset.
      * 
      */
-    struct TilesetOptions {
+    struct CESIUM3DTILES_API TilesetOptions {
         /**
          * The maximum number of pixels of error when rendering this tileset.
          * This is used to select an appropriate level-of-detail.
@@ -238,7 +239,7 @@ namespace Cesium3DTiles {
         std::vector<Tile*> _loadQueueLow;
         std::atomic<uint32_t> _loadsInProgress;
 
-        DoublyLinkedList<Tile, &Tile::_loadedTilesLinks> _loadedTiles;
+        CesiumUtility::DoublyLinkedList<Tile, &Tile::_loadedTilesLinks> _loadedTiles;
 
         Tileset(const Tileset& rhs) = delete;
         Tileset& operator=(const Tileset& rhs) = delete;

@@ -1,16 +1,19 @@
 #pragma once
 
+#include "CesiumGeospatial/Library.h"
 #include "CesiumGeometry/CullingResult.h"
 #include "CesiumGeometry/OrientedBoundingBox.h"
 #include "CesiumGeospatial/Rectangle.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 
-namespace Cesium3DTiles {
-
+namespace CesiumGeometry {
     class Plane;
+}
+
+namespace CesiumGeospatial {
     class Cartographic;
 
-    class BoundingRegion {
+    class CESIUMGEOSPATIAL_API BoundingRegion {
     public:
         BoundingRegion(
             double west,
@@ -36,15 +39,15 @@ namespace Cesium3DTiles {
         double getNorth() const { return this->_rectangle.getNorth(); }
         double getMinimumHeight() const { return this->_minimumHeight; }
         double getMaximumHeight() const { return this->_maximumHeight; }
-        const OrientedBoundingBox& getBoundingBox() const { return this->_boundingBox; }
+        const CesiumGeometry::OrientedBoundingBox& getBoundingBox() const { return this->_boundingBox; }
 
-        CullingResult intersectPlane(const Plane& plane) const;
+        CesiumGeometry::CullingResult intersectPlane(const CesiumGeometry::Plane& plane) const;
         double computeDistanceSquaredToPosition(const glm::dvec3& position, const Ellipsoid& ellipsoid = Ellipsoid::WGS84) const;
         double computeDistanceSquaredToPosition(const Cartographic& position, const Ellipsoid& ellipsoid = Ellipsoid::WGS84) const;
         double computeDistanceSquaredToPosition(const Cartographic& cartographicPosition, const glm::dvec3& cartesianPosition) const;
 
 private:
-        static OrientedBoundingBox _computeBoundingBox(
+        static CesiumGeometry::OrientedBoundingBox _computeBoundingBox(
             const Rectangle& rectangle,
             double minimumHeight,
             double maximumHeight,
@@ -53,7 +56,7 @@ private:
         Rectangle _rectangle;
         double _minimumHeight;
         double _maximumHeight;
-        OrientedBoundingBox _boundingBox;
+        CesiumGeometry::OrientedBoundingBox _boundingBox;
         glm::dvec3 _southwestCornerCartesian;
         glm::dvec3 _northeastCornerCartesian;
         glm::dvec3 _westNormal;

@@ -2,7 +2,9 @@
 #include <glm/gtc/epsilon.hpp>
 #include "CesiumUtility/Math.h"
 
-namespace Cesium3DTiles {
+using namespace CesiumUtility;
+
+namespace CesiumGeospatial {
 
 /*static*/ glm::dmat4x4 Transforms::eastNorthUpToFixedFrame(const glm::dvec3& origin, const Ellipsoid& ellipsoid /*= Ellipsoid::WGS84*/) {
     if (Math::equalsEpsilon(origin, glm::dvec3(0.0), Math::EPSILON14)) {

@@ -1,12 +1,13 @@
 #pragma once
 
 #include <string>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
     
     class Tile;
 
-    class TileContent {
+    class CESIUM3DTILES_API TileContent {
     public:
         TileContent(const Tile& tile);
         virtual ~TileContent();

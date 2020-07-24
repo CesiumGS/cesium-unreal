@@ -5,7 +5,7 @@
 #include "CesiumGeometry/Plane.h"
 #include "CesiumUtility/Math.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
     /*static*/ OrientedBoundingBox OrientedBoundingBox::fromPlaneExtents(
         const glm::dvec3& planeOrigin,
         const glm::dvec3& planeXAxis,

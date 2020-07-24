@@ -1,6 +1,6 @@
 #include "CesiumUtility/Math.h"
 
-namespace Cesium3DTiles {
+namespace CesiumUtility {
 
     /*static*/ const double Math::EPSILON1 = 1e-1;
     /*static*/ const double Math::EPSILON2 = 1e-2;

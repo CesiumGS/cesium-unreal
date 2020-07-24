@@ -1,11 +1,13 @@
 #pragma once
 
-namespace Cesium3DTiles {
+#include "CesiumGeometry/Library.h"
+
+namespace CesiumGeometry {
 
     /**
      * The result of culling an object.
      */
-    enum class CullingResult {
+    enum class CESIUMGEOMETRY_API CullingResult {
         /**
          * Indicates that an object lies completely outside the culling volume.
          */

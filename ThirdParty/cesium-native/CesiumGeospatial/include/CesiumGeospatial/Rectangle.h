@@ -1,10 +1,11 @@
 #pragma once
 
+#include "CesiumGeospatial/Library.h"
 #include "CesiumGeospatial/Cartographic.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeospatial {
 
-    class Rectangle {
+    class CESIUMGEOSPATIAL_API Rectangle {
     public:
         Rectangle(
             double west,

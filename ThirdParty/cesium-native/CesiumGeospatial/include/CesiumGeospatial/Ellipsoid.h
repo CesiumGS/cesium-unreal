@@ -1,12 +1,13 @@
 #pragma once
 
+#include "CesiumGeospatial/Library.h"
 #include <glm/vec3.hpp>
 #include <optional>
 #include "CesiumGeospatial/Cartographic.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeospatial {
 
-    class CESIUM3DTILES_API Ellipsoid {
+    class CESIUMGEOSPATIAL_API  Ellipsoid {
     public:
         static const Ellipsoid WGS84;
 

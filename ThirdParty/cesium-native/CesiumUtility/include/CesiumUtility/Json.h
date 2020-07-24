@@ -7,6 +7,6 @@
 
 #include "json.hpp"
 
-#ifdef _MSC_VER 
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif

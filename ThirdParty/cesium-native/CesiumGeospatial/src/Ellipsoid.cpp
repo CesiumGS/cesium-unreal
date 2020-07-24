@@ -2,7 +2,9 @@
 #include <glm/geometric.hpp>
 #include "CesiumUtility/Math.h"
 
-namespace Cesium3DTiles {
+using namespace CesiumUtility;
+
+namespace CesiumGeospatial {
 
     /*static*/ const Ellipsoid Ellipsoid::WGS84 = Ellipsoid(6378137.0, 6378137.0, 6356752.3142451793);
 

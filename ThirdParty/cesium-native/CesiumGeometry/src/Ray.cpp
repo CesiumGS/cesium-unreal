@@ -1,6 +1,6 @@
 #include "CesiumGeometry/Ray.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
     Ray::Ray(const glm::dvec3& origin, const glm::dvec3& direction) :
         _origin(origin),

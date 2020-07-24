@@ -5,9 +5,11 @@
 #include "CesiumUtility/Math.h"
 #include "CesiumGeometry/Plane.h"
 
-TEST_CASE("BoundingRegion") {
-    using namespace Cesium3DTiles;
+using namespace CesiumUtility;
+using namespace CesiumGeometry;
+using namespace CesiumGeospatial;
 
+TEST_CASE("BoundingRegion") {
     SECTION("computeDistanceSquaredToPosition") {
         struct TestCase {
             double longitude;

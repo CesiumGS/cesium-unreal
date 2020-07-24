@@ -2,10 +2,11 @@
 
 #include <glm/gtc/epsilon.hpp>
 #include <algorithm>
+#include "CesiumUtility/Library.h"
 
-namespace Cesium3DTiles {
+namespace CesiumUtility {
 
-    class CESIUM3DTILES_API Math {
+    class CESIUMUTILITY_API Math {
     public:
         static const double EPSILON1;
         static const double EPSILON2;

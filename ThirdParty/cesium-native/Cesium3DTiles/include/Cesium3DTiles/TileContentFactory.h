@@ -4,12 +4,13 @@
 #include <functional>
 #include <optional>
 #include <gsl/span>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
     class Tile;
     class TileContent;
 
-    class TileContentFactory {
+    class CESIUM3DTILES_API TileContentFactory {
     public:
         TileContentFactory() = delete;
 

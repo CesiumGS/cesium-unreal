@@ -2,12 +2,13 @@
 
 #include <optional>
 #include <glm/vec3.hpp>
+#include "CesiumGeometry/Library.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
     class Ray;
     class Plane;
 
-    class IntersectionTests {
+    class CESIUMGEOMETRY_API IntersectionTests {
     public:
         static std::optional<glm::dvec3> rayPlane(const Ray& ray, const Plane& plane);
     };

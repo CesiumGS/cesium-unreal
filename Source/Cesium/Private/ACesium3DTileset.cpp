@@ -59,7 +59,7 @@ glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
 	glm::dvec3 bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
 
 	if (this->AlignTilesetUpWithZ) {
-		return Cesium3DTiles::Transforms::eastNorthUpToFixedFrame(bvCenter);
+		return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(bvCenter);
 	}
 	else {
 		return glm::translate(glm::dmat4x4(1.0), bvCenter);

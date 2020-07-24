@@ -1,13 +1,14 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include "CesiumGeometry/Library.h"
 #include "CullingResult.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
     class Plane;
 
-    class BoundingSphere {
+    class CESIUMGEOMETRY_API BoundingSphere {
     public:
         BoundingSphere(const glm::dvec3& center, double radius);
 
