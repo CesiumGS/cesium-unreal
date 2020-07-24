@@ -28,4 +28,4 @@ target_include_directories(
         private
 )
 
-target_link_libraries(Cesium3DTiles CesiumGeospatial CesiumGeometry CesiumUtility GSL)
+target_link_libraries(Cesium3DTiles PUBLIC CesiumGeospatial CesiumGeometry CesiumUtility GSL)
