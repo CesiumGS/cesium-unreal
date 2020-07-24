@@ -1,6 +1,6 @@
 #include "Cesium3DTiles/Ellipsoid.h"
 #include <glm/geometric.hpp>
-#include "Cesium3DTiles/Math.h"
+#include "CesiumUtility/Math.h"
 
 namespace Cesium3DTiles {
 

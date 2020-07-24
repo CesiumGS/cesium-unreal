@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/DoublyLinkedList.h"
+#include "CesiumUtility/DoublyLinkedList.h"
 
 namespace {
 

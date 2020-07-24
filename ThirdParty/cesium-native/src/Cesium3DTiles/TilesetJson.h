@@ -2,7 +2,7 @@
 
 #include <optional>
 #include "Cesium3DTiles/BoundingVolume.h"
-#include "Cesium3DTiles/Json.h"
+#include "CesiumUtility/Json.h"
 
 namespace Cesium3DTiles {
 

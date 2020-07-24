@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include "Cesium3DTiles/Plane.h"
 #include "Cesium3DTiles/Ellipsoid.h"
-#include "Cesium3DTiles/Math.h"
+#include "CesiumUtility/Math.h"
 #include "Cesium3DTiles/EllipsoidTangentPlane.h"
 
 namespace Cesium3DTiles {

@@ -1,5 +1,5 @@
 #include "Cesium3DTiles/ExternalTilesetContent.h"
-#include "Cesium3DTiles/Json.h"
+#include "CesiumUtility/Json.h"
 #include "Cesium3DTiles/Tile.h"
 #include "Cesium3DTiles/Tileset.h"
 

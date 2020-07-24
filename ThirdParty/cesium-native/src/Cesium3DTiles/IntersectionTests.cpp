@@ -1,6 +1,6 @@
 #include "Cesium3DTiles/IntersectionTests.h"
 #include <glm/geometric.hpp>
-#include "Cesium3DTiles/Math.h"
+#include "CesiumUtility/Math.h"
 #include "Cesium3DTiles/Plane.h"
 #include "Cesium3DTiles/Ray.h"
 
