@@ -24,4 +24,4 @@ target_include_directories(
         private
 )
 
-target_link_libraries(CesiumGeometry CesiumUtility GSL)
+target_link_libraries(CesiumGeometry PUBLIC CesiumUtility GSL)
