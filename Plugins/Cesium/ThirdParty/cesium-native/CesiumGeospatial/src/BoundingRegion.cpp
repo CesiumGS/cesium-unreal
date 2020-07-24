@@ -6,8 +6,10 @@
 #include "CesiumGeospatial/EllipsoidTangentPlane.h"
 #include <stdexcept>
 
-namespace Cesium3DTiles {
+using namespace CesiumUtility;
+using namespace CesiumGeometry;
 
+namespace CesiumGeospatial {
     BoundingRegion::BoundingRegion(
         double west,
         double south,

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include "CesiumGeometry/Library.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
-    class Ray {
+    class CESIUMGEOMETRY_API Ray {
     public:
         Ray(const glm::dvec3& origin, const glm::dvec3& direction);
 

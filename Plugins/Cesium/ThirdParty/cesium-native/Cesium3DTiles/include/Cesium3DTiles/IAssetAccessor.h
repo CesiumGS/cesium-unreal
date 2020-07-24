@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "Cesium3DTiles/Library.h"
 #include "IAssetRequest.h"
 
 namespace Cesium3DTiles {
@@ -8,7 +9,7 @@ namespace Cesium3DTiles {
     /// <summary>
     /// Provides asynchronous access to 3D Tiles assets like tileset.json and tile content.
     /// </summary>
-    class IAssetAccessor {
+    class CESIUM3DTILES_API IAssetAccessor {
     public:
         virtual ~IAssetAccessor() = default;
 

@@ -2,7 +2,7 @@
 #include <glm/geometric.hpp>
 #include "CesiumGeometry/Plane.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
     BoundingSphere::BoundingSphere(const glm::dvec3& center, double radius) :
         _center(center),

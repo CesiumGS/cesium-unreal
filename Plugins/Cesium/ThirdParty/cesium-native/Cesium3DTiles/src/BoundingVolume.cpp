@@ -1,6 +1,9 @@
 #include "Cesium3DTiles/BoundingVolume.h"
 #include <algorithm>
 
+using namespace CesiumGeometry;
+using namespace CesiumGeospatial;
+
 namespace Cesium3DTiles {
 
     BoundingVolume transformBoundingVolume(const glm::dmat4x4& transform, const BoundingVolume& boundingVolume) {

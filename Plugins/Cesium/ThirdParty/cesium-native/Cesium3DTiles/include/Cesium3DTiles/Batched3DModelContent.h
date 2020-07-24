@@ -1,12 +1,13 @@
 #pragma once
 
 #include <gsl/span>
-#include "TileContent.h"
-#include "tiny_gltf.h"
+#include <tiny_gltf.h>
+#include "Cesium3DTiles/Library.h"
+#include "Cesium3DTiles/TileContent.h"
 
 namespace Cesium3DTiles {
 
-    class Batched3DModelContent : public TileContent {
+    class CESIUM3DTILES_API Batched3DModelContent : public TileContent {
     public:
         static std::string TYPE;
 

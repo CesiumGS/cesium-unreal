@@ -4,7 +4,9 @@
 #include "CesiumGeometry/Plane.h"
 #include "CesiumGeometry/Ray.h"
 
-namespace Cesium3DTiles {
+using namespace CesiumUtility;
+
+namespace CesiumGeometry {
 
     /*static*/ std::optional<glm::dvec3> IntersectionTests::rayPlane(const Ray& ray, const Plane& plane) {
         double denominator = glm::dot(plane.getNormal(), ray.getDirection());

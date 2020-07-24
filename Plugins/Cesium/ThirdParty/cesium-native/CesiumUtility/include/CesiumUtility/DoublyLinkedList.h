@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Cesium3DTiles {
+namespace CesiumUtility {
 
     template <class T>
     class DoublyLinkedListPointers {

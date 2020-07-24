@@ -1,12 +1,13 @@
 #pragma once
 
 #include <functional>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
     class IAssetAccessor;
     class Tile;
 
-    class IPrepareRendererResources {
+    class CESIUM3DTILES_API IPrepareRendererResources {
     public:
         virtual ~IPrepareRendererResources() = default;
 

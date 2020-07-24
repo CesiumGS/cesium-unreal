@@ -7,6 +7,7 @@
 #include <atomic>
 #include <glm/mat4x4.hpp>
 #include <gsl/span>
+#include "Cesium3DTiles/Library.h"
 #include "Cesium3DTiles/IAssetRequest.h"
 #include "Cesium3DTiles/TileContent.h"
 #include "Cesium3DTiles/BoundingVolume.h"
@@ -136,7 +137,7 @@ namespace Cesium3DTiles {
          */
         void update(uint32_t previousFrameNumber, uint32_t currentFrameNumber);
 
-        DoublyLinkedListPointers<Tile> _loadedTilesLinks;
+        CesiumUtility::DoublyLinkedListPointers<Tile> _loadedTilesLinks;
 
     protected:
         void setState(LoadState value);

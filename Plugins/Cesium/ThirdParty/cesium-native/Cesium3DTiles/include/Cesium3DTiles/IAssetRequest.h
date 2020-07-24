@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
 
@@ -9,7 +10,7 @@ namespace Cesium3DTiles {
     /// <summary>
     /// An asynchronous request for a 3D Tiles asset.
     /// </summary>
-    class IAssetRequest {
+    class CESIUM3DTILES_API IAssetRequest {
     public:
         virtual ~IAssetRequest() = default;
 

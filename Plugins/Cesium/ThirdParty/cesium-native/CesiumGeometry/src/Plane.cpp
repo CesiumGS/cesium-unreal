@@ -1,7 +1,7 @@
 #include "CesiumGeometry/Plane.h"
 #include <glm/geometric.hpp>
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
     Plane::Plane(const glm::dvec3& normal, double distance) :
         _normal(normal),

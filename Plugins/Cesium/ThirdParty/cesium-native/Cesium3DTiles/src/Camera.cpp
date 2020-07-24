@@ -1,6 +1,9 @@
 #include "Cesium3DTiles/Camera.h"
 #include <algorithm>
 
+using namespace CesiumGeometry;
+using namespace CesiumGeospatial;
+
 namespace Cesium3DTiles {
 
     Camera::Camera(

@@ -2,9 +2,10 @@
 
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
+#include "CesiumGeometry/Library.h"
 #include "CesiumGeometry/CullingResult.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
     class Plane;
 
@@ -14,7 +15,7 @@ namespace Cesium3DTiles {
      * @see BoundingSphere
      * @see BoundingRegion
      */
-    class OrientedBoundingBox {
+    class CESIUMGEOMETRY_API OrientedBoundingBox {
     public:
         static OrientedBoundingBox fromPlaneExtents(
             const glm::dvec3& planeOrigin,

@@ -1,12 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
 
     class TileSelectionState {
     public:
-        enum class Result {
+        enum class CESIUM3DTILES_API Result {
             /**
              * There was no selection result, perhaps because the tile wasn't visited last frame.
              */

@@ -5,13 +5,14 @@
 #include <vector>
 #include <gsl/span>
 #include <gsl/string_span>
+#include "Cesium3DTiles/Library.h"
 
 namespace Cesium3DTiles {
 
     /// <summary>
     /// A completed response for a 3D Tiles asset.
     /// </summary>
-    class IAssetResponse {
+    class CESIUM3DTILES_API IAssetResponse {
     public:
         virtual ~IAssetResponse() = default;
 

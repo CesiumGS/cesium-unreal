@@ -4,7 +4,9 @@
 #include "CesiumGeometry/Ray.h"
 #include "CesiumGeometry/IntersectionTests.h"
 
-namespace Cesium3DTiles {
+using namespace CesiumGeometry;
+
+namespace CesiumGeospatial {
 
     EllipsoidTangentPlane::EllipsoidTangentPlane(
         const glm::dvec3& origin,

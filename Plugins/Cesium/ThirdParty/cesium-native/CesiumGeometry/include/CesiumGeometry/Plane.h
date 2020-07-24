@@ -1,10 +1,11 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include "CesiumGeometry/Library.h"
 
-namespace Cesium3DTiles {
+namespace CesiumGeometry {
 
-    class Plane {
+    class CESIUMGEOMETRY_API Plane {
     public:
         Plane(const glm::dvec3& normal, double distance);
         Plane(const glm::dvec3& point, const glm::dvec3& normal);

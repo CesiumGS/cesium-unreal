@@ -5,6 +5,7 @@ project(
     LANGUAGES CXX
 )
 
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/extern/Catch2/contrib")
 
 include(CTest)
@@ -29,11 +30,21 @@ function(configure_cesium_library targetName)
         MSVC_RUNTIME_LIBRARY MultiThreadedDLL
     )
 
+    string(TOUPPER ${targetName} capitalizedTargetName)
+
     target_compile_definitions(
         ${targetName}
-        PUBLIC
-            CESIUM3DTILES_API=
-    )   
+        PRIVATE
+            ${capitalizedTargetName}_BUILDING
+    )
+
+    if (BUILD_SHARED_LIBS)
+        target_compile_definitions(
+            ${targetName}
+            PUBLIC
+                CESIUM_SHARED=${BUILD_SHARED_LIBS}
+        )
+    endif()
 endfunction()
 
 add_subdirectory(CesiumUtility)
