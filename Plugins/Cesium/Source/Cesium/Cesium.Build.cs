@@ -19,7 +19,10 @@ public class Cesium : ModuleRules
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
-                "../ThirdParty/cesium-native/include",
+                "../ThirdParty/cesium-native/Cesium3DTiles/include",
+                "../ThirdParty/cesium-native/CesiumGeospatial/include",
+                "../ThirdParty/cesium-native/CesiumGeometry/include",
+                "../ThirdParty/cesium-native/CesiumUtility/include",
                 "../ThirdParty/cesium-native/extern/tinygltf",
                 "../ThirdParty/cesium-native/extern/glm",
                 "../ThirdParty/cesium-native/extern/GSL/include",
@@ -29,10 +32,10 @@ public class Cesium : ModuleRules
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
-                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/CesiumGeospatial/Debug/CesiumGeospatial.lib"),
-                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/CesiumGeometry/Debug/CesiumGeometry.lib"),
-                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/CesiumUtility/Debug/CesiumUtility.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/CesiumGeospatial/Debug/CesiumGeospatial.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/CesiumGeometry/Debug/CesiumGeometry.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/CesiumUtility/Debug/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/uriparser/Release/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/draco/Release/draco.lib"),
             }

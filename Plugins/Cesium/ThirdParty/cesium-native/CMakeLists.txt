@@ -36,5 +36,9 @@ function(configure_cesium_library targetName)
     )   
 endfunction()
 
-add_subdirectory(src)
+add_subdirectory(CesiumUtility)
+add_subdirectory(CesiumGeometry)
+add_subdirectory(CesiumGeospatial)
+add_subdirectory(Cesium3DTiles)
+
 add_subdirectory(test)

@@ -2,8 +2,8 @@ add_library(CesiumGeospatial "")
 
 configure_cesium_library(CesiumGeospatial)
 
-file(GLOB SOURCES *.cpp *.h)
-file(GLOB PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include/CesiumGeospatial/*.h)
+file(GLOB SOURCES include/CesiumGeospatial/*.h src/*.cpp src/*.h)
+file(GLOB PUBLIC_INCLUDES include/CesiumGeospatial/*.h)
 
 target_sources(
     CesiumGeospatial
@@ -18,10 +18,9 @@ target_include_directories(
     SYSTEM PUBLIC
         ${PROJECT_SOURCE_DIR}/extern/glm
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        include
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        private
+        src
 )
 
 target_link_libraries(CesiumGeospatial PUBLIC CesiumGeometry CesiumUtility GSL)

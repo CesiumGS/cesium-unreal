@@ -2,8 +2,8 @@ add_library(Cesium3DTiles "")
 
 configure_cesium_library(Cesium3DTiles)
 
-file(GLOB SOURCES *.cpp *.h)
-file(GLOB PUBLIC_INCLUDES ${PROJECT_SOURCE_DIR}/include/Cesium3DTiles/*.h)
+file(GLOB SOURCES include/Cesium3DTiles/*.h src/*.cpp src/*.h)
+file(GLOB PUBLIC_INCLUDES include/Cesium3DTiles/*.h)
 
 target_sources(
     Cesium3DTiles
@@ -22,10 +22,9 @@ target_include_directories(
         ${PROJECT_SOURCE_DIR}/extern/uriparser/include
         ${PROJECT_SOURCE_DIR}/extern/build/draco
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        include
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        private
+        src
 )
 
 target_link_libraries(Cesium3DTiles PUBLIC CesiumGeospatial CesiumGeometry CesiumUtility GSL)

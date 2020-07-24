@@ -3,8 +3,6 @@
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 #include "CesiumGeometry/CullingResult.h"
-#include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/Rectangle.h"
 
 namespace Cesium3DTiles {
 
@@ -18,21 +16,17 @@ namespace Cesium3DTiles {
      */
     class OrientedBoundingBox {
     public:
-        /**
-         * Computes an {@link OrientedBoundingBox} that bounds a {@link Rectangle} near the surface
-         * of an {@link Ellipsoid}. There are no guarantees about the orientation of the bounding box.
-         * 
-         * @param rectangle The cartographic rectangle on the surface of the ellipsoid.
-         * @param minimumHeight The minimum height (elevation) within the rectangle, in meters above the ellipsoid surface.
-         * @param maximumHeight The maximum height (elevation) within the rectangle, in meters above the ellipsoid surface.
-         * @param ellipsoid The ellipsoid on which the rectangle is defined.
-         * @return The computed bounding box.
-         */
-        static OrientedBoundingBox fromRectangle(
-            const Rectangle& rectangle,
-            double minimumHeight = 0.0,
-            double maximumHeight = 0.0,
-            const Ellipsoid& ellipsoid = Ellipsoid::WGS84
+        static OrientedBoundingBox fromPlaneExtents(
+            const glm::dvec3& planeOrigin,
+            const glm::dvec3& planeXAxis,
+            const glm::dvec3& planeYAxis,
+            const glm::dvec3& planeZAxis,
+            double minimumX,
+            double maximumX,
+            double minimumY,
+            double maximumY,
+            double minimumZ,
+            double maximumZ
         );
 
         /**
