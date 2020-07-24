@@ -15,7 +15,7 @@
 #include "Cesium3DTiles/Batched3DModelContent.h"
 #include "UnrealTaskProcessor.h"
 #include "Math/UnrealMathUtility.h"
-#include "Cesium3DTiles/Transforms.h"
+#include "CesiumGeospatial/Transforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
