@@ -3,8 +3,8 @@
 #include <glm/vec3.hpp>
 #include <glm/mat3x3.hpp>
 #include "CesiumGeometry/CullingResult.h"
-#include "Cesium3DTiles/Ellipsoid.h"
-#include "Cesium3DTiles/Rectangle.h"
+#include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/Rectangle.h"
 
 namespace Cesium3DTiles {
 

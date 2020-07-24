@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Cesium3DTiles/Cartographic.h"
+#include "CesiumGeospatial/Cartographic.h"
 
 namespace Cesium3DTiles {
 

@@ -2,7 +2,7 @@
 
 #include <variant>
 #include "CesiumGeometry/OrientedBoundingBox.h"
-#include "Cesium3DTiles/BoundingRegion.h"
+#include "CesiumGeospatial/BoundingRegion.h"
 #include "CesiumGeometry/BoundingSphere.h"
 
 namespace Cesium3DTiles {

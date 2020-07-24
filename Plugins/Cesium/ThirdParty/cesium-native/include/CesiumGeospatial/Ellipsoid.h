@@ -2,7 +2,7 @@
 
 #include <glm/vec3.hpp>
 #include <optional>
-#include "Cesium3DTiles/Cartographic.h"
+#include "CesiumGeospatial/Cartographic.h"
 
 namespace Cesium3DTiles {
 

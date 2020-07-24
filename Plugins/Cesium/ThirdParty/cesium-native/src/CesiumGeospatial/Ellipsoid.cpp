@@ -1,4 +1,4 @@
-#include "Cesium3DTiles/Ellipsoid.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 #include <glm/geometric.hpp>
 #include "CesiumUtility/Math.h"
 
