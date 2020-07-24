@@ -3,7 +3,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
-#include "Cesium3DTiles/Ellipsoid.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeometry/Plane.h"
 
 namespace Cesium3DTiles {

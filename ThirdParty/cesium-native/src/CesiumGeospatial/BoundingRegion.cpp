@@ -1,4 +1,4 @@
-#include "Cesium3DTiles/BoundingRegion.h"
+#include "CesiumGeospatial/BoundingRegion.h"
 #include "CesiumGeometry/IntersectionTests.h"
 #include "CesiumGeometry/Ray.h"
 #include "CesiumGeometry/Plane.h"

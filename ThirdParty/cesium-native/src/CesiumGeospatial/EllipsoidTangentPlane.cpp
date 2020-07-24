@@ -1,5 +1,5 @@
-#include "Cesium3DTiles/EllipsoidTangentPlane.h"
-#include "Cesium3DTiles/Transforms.h"
+#include "CesiumGeospatial/EllipsoidTangentPlane.h"
+#include "CesiumGeospatial/Transforms.h"
 #include "CesiumGeometry/Plane.h"
 #include "CesiumGeometry/Ray.h"
 #include "CesiumGeometry/IntersectionTests.h"

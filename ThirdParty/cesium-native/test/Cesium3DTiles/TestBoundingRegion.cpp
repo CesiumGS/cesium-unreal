@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/BoundingRegion.h"
-#include "Cesium3DTiles/Rectangle.h"
-#include "Cesium3DTiles/Ellipsoid.h"
+#include "CesiumGeospatial/BoundingRegion.h"
+#include "CesiumGeospatial/Rectangle.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
 #include "CesiumGeometry/Plane.h"
 

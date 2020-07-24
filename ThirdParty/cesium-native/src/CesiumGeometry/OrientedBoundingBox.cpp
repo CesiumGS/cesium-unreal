@@ -3,9 +3,9 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <stdexcept>
 #include "CesiumGeometry/Plane.h"
-#include "Cesium3DTiles/Ellipsoid.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
-#include "Cesium3DTiles/EllipsoidTangentPlane.h"
+#include "CesiumGeospatial/EllipsoidTangentPlane.h"
 
 namespace Cesium3DTiles {
     static OrientedBoundingBox fromPlaneExtents(

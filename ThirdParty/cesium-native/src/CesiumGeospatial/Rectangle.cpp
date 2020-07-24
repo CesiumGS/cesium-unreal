@@ -1,4 +1,4 @@
-#include "Cesium3DTiles/Rectangle.h"
+#include "CesiumGeospatial/Rectangle.h"
 #include "CesiumUtility/Math.h"
 
 namespace Cesium3DTiles {

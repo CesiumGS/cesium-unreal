@@ -2,8 +2,8 @@
 
 #include "CesiumGeometry/CullingResult.h"
 #include "CesiumGeometry/OrientedBoundingBox.h"
-#include "Cesium3DTiles/Rectangle.h"
-#include "Cesium3DTiles/Ellipsoid.h"
+#include "CesiumGeospatial/Rectangle.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 
 namespace Cesium3DTiles {
 
