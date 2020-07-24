@@ -6,8 +6,8 @@ target_sources(
         test-main.cpp
 )
 
-target_include_directories(cesium-native-tests PUBLIC cesium-native)
-target_link_libraries(cesium-native-tests PUBLIC cesium-native Catch2::Catch2)
+target_include_directories(cesium-native-tests PUBLIC Cesium3DTiles)
+target_link_libraries(cesium-native-tests PUBLIC Cesium3DTiles CesiumUtility Catch2::Catch2)
 
 set_target_properties(cesium-native-tests PROPERTIES
     CXX_STANDARD 17

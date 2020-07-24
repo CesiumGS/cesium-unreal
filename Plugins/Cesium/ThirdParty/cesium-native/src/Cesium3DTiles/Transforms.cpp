@@ -1,6 +1,6 @@
 #include "Cesium3DTiles/Transforms.h"
 #include <glm/gtc/epsilon.hpp>
-#include "Cesium3DTiles/Math.h"
+#include "CesiumUtility/Math.h"
 
 namespace Cesium3DTiles {
 

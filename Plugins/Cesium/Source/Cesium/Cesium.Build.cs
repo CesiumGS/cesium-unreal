@@ -29,7 +29,8 @@ public class Cesium : ModuleRules
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/Debug/cesium-native.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/build/src/CesiumUtility/Debug/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/uriparser/Release/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../ThirdParty/cesium-native/extern/build/draco/Release/draco.lib"),
             }

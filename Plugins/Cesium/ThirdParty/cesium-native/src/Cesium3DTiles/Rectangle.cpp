@@ -1,5 +1,5 @@
 #include "Cesium3DTiles/Rectangle.h"
-#include "Cesium3DTiles/Math.h"
+#include "CesiumUtility/Math.h"
 
 namespace Cesium3DTiles {
 

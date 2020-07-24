@@ -2,7 +2,7 @@
 #include "Cesium3DTiles/BoundingRegion.h"
 #include "Cesium3DTiles/Rectangle.h"
 #include "Cesium3DTiles/Ellipsoid.h"
-#include "Cesium3DTiles/Math.h"
+#include "CesiumUtility/Math.h"
 #include "Cesium3DTiles/Plane.h"
 
 TEST_CASE("BoundingRegion") {

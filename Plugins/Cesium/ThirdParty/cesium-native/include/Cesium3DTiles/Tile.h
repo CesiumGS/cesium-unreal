@@ -11,7 +11,7 @@
 #include "Cesium3DTiles/TileContent.h"
 #include "Cesium3DTiles/BoundingVolume.h"
 #include "Cesium3DTiles/TileSelectionState.h"
-#include "Cesium3DTiles/DoublyLinkedList.h"
+#include "CesiumUtility/DoublyLinkedList.h"
 #include "Cesium3DTiles/ExternalTilesetContent.h"
 
 namespace Cesium3DTiles {

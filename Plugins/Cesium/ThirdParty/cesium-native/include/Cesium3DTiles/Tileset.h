@@ -10,7 +10,7 @@
 #include "IAssetRequest.h"
 #include "ViewUpdateResult.h"
 #include "Camera.h"
-#include "Json.h"
+#include "CesiumUtility/Json.h"
 
 namespace Cesium3DTiles {
 
