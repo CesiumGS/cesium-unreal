@@ -1,13 +1,15 @@
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/BoundingRegion.h"
-#include "Cesium3DTiles/Rectangle.h"
-#include "Cesium3DTiles/Ellipsoid.h"
-#include "Cesium3DTiles/Math.h"
-#include "Cesium3DTiles/Plane.h"
+#include "CesiumGeospatial/BoundingRegion.h"
+#include "CesiumGeospatial/Rectangle.h"
+#include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumUtility/Math.h"
+#include "CesiumGeometry/Plane.h"
+
+using namespace CesiumUtility;
+using namespace CesiumGeometry;
+using namespace CesiumGeospatial;
 
 TEST_CASE("BoundingRegion") {
-    using namespace Cesium3DTiles;
-
     SECTION("computeDistanceSquaredToPosition") {
         struct TestCase {
             double longitude;

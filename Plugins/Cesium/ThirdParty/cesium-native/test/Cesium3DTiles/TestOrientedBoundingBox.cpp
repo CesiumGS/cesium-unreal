@@ -4,8 +4,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/OrientedBoundingBox.h"
+#include "CesiumGeometry/OrientedBoundingBox.h"
 #include "Cesium3DTiles/Camera.h"
+
+using namespace CesiumGeometry;
+using namespace Cesium3DTiles;
 
 TEST_CASE("OrientedBoundingBox::intersectPlane") {
     struct TestCase {
@@ -42,7 +45,7 @@ TEST_CASE("OrientedBoundingBox::intersectPlane") {
         const double SQRT1_2 = pow(1.0 / 2.0, 1 / 2.0);
         const double SQRT3_4 = pow(3.0 / 4.0, 1 / 2.0);
 
-        auto box = Cesium3DTiles::OrientedBoundingBox(testCase.center, testCase.axes * 0.5);
+        auto box = OrientedBoundingBox(testCase.center, testCase.axes * 0.5);
         
         std::string s = glm::to_string(box.getHalfAxes());
 
@@ -59,246 +62,246 @@ TEST_CASE("OrientedBoundingBox::intersectPlane") {
 
             n = glm::cross(tang, binorm);
             if (glm::length(n) == 0.0) {
-                return std::optional<Cesium3DTiles::Plane>();
+                return std::optional<Plane>();
             }
             n = glm::normalize(n);
 
             p0 += testCase.center;
             double d = -glm::dot(p0, n);
             if (abs(d) > 0.0001 && glm::dot(n, n) > 0.0001) {
-                return std::optional(Cesium3DTiles::Plane(n, d));
+                return std::optional(Plane(n, d));
             }
 
-            return std::optional<Cesium3DTiles::Plane>();
+            return std::optional<Plane>();
         };
 
-        std::optional<Cesium3DTiles::Plane> pl;
+        std::optional<Plane> pl;
 
         // Tests against faces
 
         pl = planeNormXform(+1.0, +0.0, +0.0, 0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, +0.0, +0.0, 0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, +1.0, +0.0, 0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, -1.0, +0.0, 0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, +0.0, +1.0, 0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, +0.0, -1.0, 0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
 
         pl = planeNormXform(+1.0, +0.0, +0.0, 0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +0.0, +0.0, 0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +1.0, +0.0, 0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, -1.0, +0.0, 0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +0.0, +1.0, 0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +0.0, -1.0, 0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
 
         pl = planeNormXform(+1.0, +0.0, +0.0, -0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +0.0, +0.0, -0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +1.0, +0.0, -0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, -1.0, +0.0, -0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +0.0, +1.0, -0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +0.0, -1.0, -0.49999);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
 
         pl = planeNormXform(+1.0, +0.0, +0.0, -0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, +0.0, +0.0, -0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, +1.0, +0.0, -0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, -1.0, +0.0, -0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, +0.0, +1.0, -0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, +0.0, -1.0, -0.50001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
 
         // Tests against edges
 
         pl = planeNormXform(+1.0, +1.0, +0.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+1.0, -1.0, +0.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, +1.0, +0.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, -1.0, +0.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+1.0, +0.0, +1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+1.0, +0.0, -1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, +0.0, +1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, +0.0, -1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, +1.0, +1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, +1.0, -1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, -1.0, +1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+0.0, -1.0, -1.0, SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
 
         pl = planeNormXform(+1.0, +1.0, +0.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, -1.0, +0.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +1.0, +0.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, -1.0, +0.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, +0.0, +1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, +0.0, -1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +0.0, +1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +0.0, -1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +1.0, +1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +1.0, -1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, -1.0, +1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, -1.0, -1.0, SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
 
         pl = planeNormXform(+1.0, +1.0, +0.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, -1.0, +0.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +1.0, +0.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, -1.0, +0.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, +0.0, +1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, +0.0, -1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +0.0, +1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +0.0, -1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +1.0, +1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, +1.0, -1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, -1.0, +1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+0.0, -1.0, -1.0, -SQRT1_2 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
 
         pl = planeNormXform(+1.0, +1.0, +0.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+1.0, -1.0, +0.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, +1.0, +0.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, -1.0, +0.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+1.0, +0.0, +1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+1.0, +0.0, -1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, +0.0, +1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, +0.0, -1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, +1.0, +1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, +1.0, -1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, -1.0, +1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+0.0, -1.0, -1.0, -SQRT1_2 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
 
         // Tests against corners
 
         pl = planeNormXform(+1.0, +1.0, +1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+1.0, +1.0, -1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+1.0, -1.0, +1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(+1.0, -1.0, -1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, +1.0, +1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, +1.0, -1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, -1.0, +1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
         pl = planeNormXform(-1.0, -1.0, -1.0, SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Inside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Inside));
 
         pl = planeNormXform(+1.0, +1.0, +1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, +1.0, -1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, -1.0, +1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, -1.0, -1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +1.0, +1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +1.0, -1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, -1.0, +1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, -1.0, -1.0, SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
 
         pl = planeNormXform(+1.0, +1.0, +1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, +1.0, -1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, -1.0, +1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(+1.0, -1.0, -1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +1.0, +1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, +1.0, -1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, -1.0, +1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
         pl = planeNormXform(-1.0, -1.0, -1.0, -SQRT3_4 + 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Intersecting));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Intersecting));
 
         pl = planeNormXform(+1.0, +1.0, +1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+1.0, +1.0, -1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+1.0, -1.0, +1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(+1.0, -1.0, -1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, +1.0, +1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, +1.0, -1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, -1.0, +1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
         pl = planeNormXform(-1.0, -1.0, -1.0, -SQRT3_4 - 0.00001);
-        CHECK((!pl || box.intersectPlane(*pl) == Cesium3DTiles::CullingResult::Outside));
+        CHECK((!pl || box.intersectPlane(*pl) == CullingResult::Outside));
     }
 }
 
@@ -313,13 +316,13 @@ TEST_CASE("OrientedBoundingBox examples") {
         glm::dvec3(0.0, 0.0, 2.0)
     );
 
-    auto obb = Cesium3DTiles::OrientedBoundingBox(center, halfAxes);
+    auto obb = OrientedBoundingBox(center, halfAxes);
     //! [Constructor]
     }
 
     {
     auto anyOldBoxArray = []() {
-        return std::vector<Cesium3DTiles::OrientedBoundingBox> {
+        return std::vector<OrientedBoundingBox> {
             { glm::dvec3(1.0, 0.0, 0.0), glm::dmat3(1.0) },
             { glm::dvec3(2.0, 0.0, 0.0), glm::dmat3(1.0) }
         };
@@ -331,7 +334,7 @@ TEST_CASE("OrientedBoundingBox examples") {
     //! [distanceSquaredTo]
     // Sort bounding boxes from back to front
     glm::dvec3 cameraPosition = anyOldCameraPosition();
-    std::vector<Cesium3DTiles::OrientedBoundingBox> boxes = anyOldBoxArray();
+    std::vector<OrientedBoundingBox> boxes = anyOldBoxArray();
     std::sort(boxes.begin(), boxes.end(), [&cameraPosition](auto& a, auto& b) {
         return a.computeDistanceSquaredToPosition(cameraPosition) > b.computeDistanceSquaredToPosition(cameraPosition);
     });
