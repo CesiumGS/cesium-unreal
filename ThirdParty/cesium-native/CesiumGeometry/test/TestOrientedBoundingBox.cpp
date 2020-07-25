@@ -68,7 +68,7 @@ TEST_CASE("OrientedBoundingBox::intersectPlane") {
 
             p0 += testCase.center;
             double d = -glm::dot(p0, n);
-            if (abs(d) > 0.0001 && glm::dot(n, n) > 0.0001) {
+            if (std::abs(d) > 0.0001 && glm::dot(n, n) > 0.0001) {
                 return std::optional(Plane(n, d));
             }
 
@@ -318,6 +318,7 @@ TEST_CASE("OrientedBoundingBox examples") {
 
     auto obb = OrientedBoundingBox(center, halfAxes);
     //! [Constructor]
+    (void)obb;
     }
 
     {
