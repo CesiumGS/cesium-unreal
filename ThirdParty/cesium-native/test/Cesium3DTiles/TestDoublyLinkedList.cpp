@@ -1,5 +1,7 @@
 #include "catch2/catch.hpp"
-#include "Cesium3DTiles/DoublyLinkedList.h"
+#include "CesiumUtility/DoublyLinkedList.h"
+
+using namespace CesiumUtility;
 
 namespace {
 
@@ -11,11 +13,11 @@ namespace {
         {}
 
         uint32_t value;
-        Cesium3DTiles::DoublyLinkedListPointers<TestNode> links;
+        DoublyLinkedListPointers<TestNode> links;
     };
 
 
-    void assertOrder(Cesium3DTiles::DoublyLinkedList<TestNode, &TestNode::links>& linkedList, const std::vector<uint32_t>& expectedOrder) {
+    void assertOrder(DoublyLinkedList<TestNode, &TestNode::links>& linkedList, const std::vector<uint32_t>& expectedOrder) {
         CHECK(linkedList.size() == expectedOrder.size());
         if (expectedOrder.size() > 0) {
             REQUIRE(linkedList.head() != nullptr);
@@ -63,7 +65,6 @@ namespace {
 }
 
 TEST_CASE("DoublyLinkedList") {
-    using namespace Cesium3DTiles;
     DoublyLinkedList<TestNode, &TestNode::links> linkedList;
 
     TestNode one(1);
