@@ -30,14 +30,6 @@ function(configure_cesium_library targetName)
         MSVC_RUNTIME_LIBRARY MultiThreadedDLL
     )
 
-    string(TOUPPER ${targetName} capitalizedTargetName)
-
-    target_compile_definitions(
-        ${targetName}
-        PRIVATE
-            ${capitalizedTargetName}_BUILDING
-    )
-
     if (BUILD_SHARED_LIBS)
         target_compile_definitions(
             ${targetName}
@@ -46,17 +38,27 @@ function(configure_cesium_library targetName)
         )
     endif()
 
-    if ((TARGET cesium-native-tests) AND (NOT ${targetName} MATCHES "cesium-native-tests"))
-        target_link_libraries(cesium-native-tests PUBLIC ${targetName})
+    if (NOT ${targetName} MATCHES "cesium-native-tests")
+        if (TARGET cesium-native-tests)
+            target_link_libraries(cesium-native-tests PUBLIC ${targetName})
 
-        file(GLOB TEST_SOURCES test/*.cpp test/*.h)
-        
-        target_sources(
-            cesium-native-tests
+            file(GLOB TEST_SOURCES test/*.cpp test/*.h)
+            
+            target_sources(
+                cesium-native-tests
+                PRIVATE
+                    ${TEST_SOURCES}
+            )
+        endif()
+
+        string(TOUPPER ${targetName} capitalizedTargetName)
+
+        target_compile_definitions(
+            ${targetName}
             PRIVATE
-                ${TEST_SOURCES}
-        )
-    endif()   
+                ${capitalizedTargetName}_BUILDING
+        )   
+    endif()
 endfunction()
 
 add_executable(cesium-native-tests "")
