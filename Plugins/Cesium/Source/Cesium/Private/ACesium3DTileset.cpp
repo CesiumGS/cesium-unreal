@@ -37,6 +37,8 @@ ACesium3DTileset::ACesium3DTileset() :
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	this->SetActorEnableCollision(true);
+
 	this->RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Tileset"));
 	this->RootComponent->SetMobility(EComponentMobility::Static);
 }
