@@ -15,8 +15,10 @@
 #include "Async/Async.h"
 #include "MeshTypes.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/CollisionProfile.h"
 #include <iostream>
 #include "Cesium3DTiles/Gltf.h"
+#include "PhysicsEngine/BodySetup.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 
@@ -191,6 +193,7 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 
 	FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
 	FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+	section.bEnableCollision = true;
 
 	if (primitive.mode != TINYGLTF_MODE_TRIANGLES || primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
 		// TODO: add support for primitive types other than indexed triangles.
@@ -366,9 +369,10 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult) {
 	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
+	pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	pMesh->bUseDefaultCollision = true;
+	pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	pMesh->SetFlags(RF_Transient);
-	pMesh->SetupAttachment(pGltf);
-	pMesh->RegisterComponent();
 
 	const glm::dmat4x4& transform = unrealToOrFromCesium * scaleToUnrealWorld * loadResult.transform;
 	pMesh->SetRelativeTransform(FTransform(FMatrix(
@@ -424,8 +428,17 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pStaticMesh->CalculateExtendedBounds();
 
 	pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
+	pStaticMesh->CreateBodySetup();
+
+	pMesh->UpdateCollisionFromStaticMesh();
+	pMesh->GetBodySetup()->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
+
 	pMesh->SetMobility(EComponentMobility::Movable);
 
+	pMesh->bDrawMeshCollisionIfComplex = true;
+	pMesh->bDrawMeshCollisionIfSimple = false;
+	pMesh->SetupAttachment(pGltf);
+	pMesh->RegisterComponent();
 }
 
 /*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
