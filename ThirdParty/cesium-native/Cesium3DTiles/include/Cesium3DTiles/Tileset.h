@@ -100,16 +100,6 @@ namespace Cesium3DTiles {
         Tileset(const TilesetExternals& externals, uint32_t ionAssetID, const std::string& ionAccessToken, const TilesetOptions& options = TilesetOptions());
 
         /**
-         * Constructs a new instance from the provided raw JSON data
-         * @param externals The external interfaces to use.
-         * @param data The raw tileset.json data.
-         * @param url The URL of the `tileset.json`. This is not requested directly, but it is used as a base URL for resolving relative
-         *            URLs found in `data`.
-         * @param options Additional options for the tileset.
-         */
-        Tileset(const TilesetExternals& externals, const gsl::span<const uint8_t>& data, const std::string& url, const TilesetOptions& options = TilesetOptions());
-
-        /**
          * Destroys this tileset. This may block the calling thread while waiting for pending asynchronous
          * tile loads to terminate.
          */
@@ -210,7 +200,6 @@ namespace Cesium3DTiles {
 
         void _ionResponseReceived(IAssetRequest* pRequest);
         void _tilesetJsonResponseReceived(IAssetRequest* pRequest);
-        void _loadTilesetJsonData(const gsl::span<const uint8_t>& data, const std::string& baseUrl);
         void _createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl) const;
         TraversalDetails _visitTile(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
         TraversalDetails _visitTileIfVisible(uint32_t lastFrameNumber, uint32_t currentFrameNumber, const Camera& camera, bool ancestorMeetsSse, Tile& tile, ViewUpdateResult& result);
@@ -218,6 +207,9 @@ namespace Cesium3DTiles {
         void _processLoadQueue();
         void _unloadCachedTiles();
         void _markTileVisited(Tile& tile);
+
+        bool isDoingInitialLoad() const;
+        void markInitialLoadComplete();
 
         TilesetExternals _externals;
 
@@ -227,7 +219,9 @@ namespace Cesium3DTiles {
 
         TilesetOptions _options;
 
-        std::unique_ptr<IAssetRequest> _pTilesetRequest;
+        std::unique_ptr<IAssetRequest> _pIonRequest;
+        std::unique_ptr<IAssetRequest> _pTilesetJsonRequest;
+        std::atomic<bool> _isDoingInitialLoad;
 
         std::unique_ptr<Tile> _pRootTile;
 
