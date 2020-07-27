@@ -23,6 +23,5 @@ script:
   - cd build
   - cmake ..
   - cmake --build . --config Debug
-  - cd test
   - ctest -V
   - cmake --build . --config Debug --target cesium-native-docs
