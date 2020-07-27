@@ -4,6 +4,7 @@
 #include "Cesium3DTiles/ExternalTilesetContent.h"
 #include "Uri.h"
 #include "TilesetJson.h"
+#include <chrono>
 
 namespace Cesium3DTiles {
 
@@ -17,7 +18,9 @@ namespace Cesium3DTiles {
 		_ionAssetID(),
 		_ionAccessToken(),
 		_options(options),
-		_pTilesetRequest(),
+		_pIonRequest(),
+		_pTilesetJsonRequest(),
+		_isDoingInitialLoad(true),
 		_pRootTile(),
         _loadQueueHigh(),
 		_loadQueueMedium(),
@@ -25,8 +28,8 @@ namespace Cesium3DTiles {
 		_loadsInProgress(0),
 		_loadedTiles()
 	{
-		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
-		this->_pTilesetRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
+		this->_pTilesetJsonRequest = this->_externals.pAssetAccessor->requestAsset(url);
+		this->_pTilesetJsonRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
 	}
 
 	Tileset::Tileset(
@@ -40,7 +43,9 @@ namespace Cesium3DTiles {
 		_ionAssetID(ionAssetID),
 		_ionAccessToken(ionAccessToken),
 		_options(options),
-		_pTilesetRequest(),
+		_pIonRequest(),
+		_pTilesetJsonRequest(),
+		_isDoingInitialLoad(true),
 		_pRootTile(),
         _loadQueueHigh(),
 		_loadQueueMedium(),
@@ -54,33 +59,35 @@ namespace Cesium3DTiles {
 			url += "?access_token=" + ionAccessToken;
 		}
 
-		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(url);
-		this->_pTilesetRequest->bind(std::bind(&Tileset::_ionResponseReceived, this, std::placeholders::_1));
-	}
-
-	Tileset::Tileset(
-		const TilesetExternals& externals,
-		const gsl::span<const uint8_t>& data,
-		const std::string& url,
-		const TilesetOptions& options
-	) :
-		_externals(externals),
-		_url(url),
-		_ionAssetID(),
-		_ionAccessToken(),
-		_options(options),
-		_pTilesetRequest(),
-		_pRootTile(),
-        _loadQueueHigh(),
-		_loadQueueMedium(),
-		_loadQueueLow(),
-		_loadsInProgress(0),
-		_loadedTiles()
-	{
-		this->_loadTilesetJsonData(data, url);
+		this->_pIonRequest = this->_externals.pAssetAccessor->requestAsset(url);
+		this->_pIonRequest->bind(std::bind(&Tileset::_ionResponseReceived, this, std::placeholders::_1));
 	}
 
 	Tileset::~Tileset() {
+		if (this->_pIonRequest) {
+			this->_pIonRequest->cancel();
+		}
+
+		if (this->_pTilesetJsonRequest) {
+			this->_pTilesetJsonRequest->cancel();
+		}
+
+        // Wait for this tileset to finish its initial load. Until then, work may be happening
+		// in a background thread and allowing the tileset to be destroyed may cause a crash.
+        if (this->isDoingInitialLoad()) {
+            const auto timeoutSeconds = std::chrono::seconds(10LL);
+
+            auto start = std::chrono::steady_clock::now();
+            while (this->isDoingInitialLoad()) {
+                auto duration = std::chrono::steady_clock::now() - start;
+                if (duration > timeoutSeconds) {
+                    // TODO: report timeout, because it may be followed by a crash.
+                    return;
+                }
+                this->getExternals().pAssetAccessor->tick();
+            }
+        }
+
 		// Tell any ContentLoading tiles that we're destroying.
 		Tile* pCurrent = this->_loadedTiles.head();
 		while (pCurrent) {
@@ -99,6 +106,14 @@ namespace Cesium3DTiles {
         result.tilesToRenderThisFrame.clear();
         // result.newTilesToRenderThisFrame.clear();
         result.tilesToNoLongerRenderThisFrame.clear();
+
+		if (this->isDoingInitialLoad()) {
+			return result;
+		}
+
+		// Now that loading is finished, free the requests.
+		this->_pTilesetJsonRequest.reset();
+		this->_pIonRequest.reset();
 
         Tile* pRootTile = this->getRootTile();
         if (!pRootTile) {
@@ -130,11 +145,13 @@ namespace Cesium3DTiles {
 		IAssetResponse* pResponse = pRequest->response();
 		if (!pResponse) {
 			// TODO: report the lack of response. Network error? Can this even happen?
+			this->markInitialLoadComplete();
 			return;
 		}
 
 		if (pResponse->statusCode() < 200 || pResponse->statusCode() >= 300) {
 			// TODO: report error response.
+			this->markInitialLoadComplete();
 			return;
 		}
 
@@ -151,39 +168,42 @@ namespace Cesium3DTiles {
 		// that we're currently handling may immediately be deleted.
 		pRequest = nullptr;
 		pResponse = nullptr;
-		this->_pTilesetRequest = this->_externals.pAssetAccessor->requestAsset(urlWithToken);
-		this->_pTilesetRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
+		this->_pTilesetJsonRequest = this->_externals.pAssetAccessor->requestAsset(urlWithToken);
+		this->_pTilesetJsonRequest->bind(std::bind(&Tileset::_tilesetJsonResponseReceived, this, std::placeholders::_1));
 	}
 
 	void Tileset::_tilesetJsonResponseReceived(IAssetRequest* pRequest) {
 		IAssetResponse* pResponse = pRequest->response();
 		if (!pResponse) {
 			// TODO: report the lack of response. Network error? Can this even happen?
+			this->markInitialLoadComplete();
 			return;
 		}
 
 		if (pResponse->statusCode() < 200 || pResponse->statusCode() >= 300) {
 			// TODO: report error response.
+			this->markInitialLoadComplete();
 			return;
 		}
 
-		this->_loadTilesetJsonData(pResponse->data(), pRequest->url());
+        gsl::span<const uint8_t> data = pResponse->data();
 
-		pRequest = nullptr;
-		pResponse = nullptr;
-		this->_pTilesetRequest.reset();
-	}
+        const TilesetExternals& externals = this->getExternals();
+        externals.pTaskProcessor->startTask([data, &externals, this]() {
+			using nlohmann::json;
+			json tileset = json::parse(data.begin(), data.end());
 
-	void Tileset::_loadTilesetJsonData(const gsl::span<const uint8_t>& data, const std::string& baseUrl) {
-		using nlohmann::json;
-		json tileset = json::parse(data.begin(), data.end());
+			json& rootJson = tileset["root"];
 
-		json& rootJson = tileset["root"];
+			std::unique_ptr<Tile> pRootTile = std::make_unique<Tile>();
+			pRootTile->setTileset(this);
 
-		this->_pRootTile = std::make_unique<Tile>();
-		this->_pRootTile->setTileset(this);
+			this->_createTile(*pRootTile, rootJson, this->_pTilesetJsonRequest->url());
 
-		this->_createTile(*this->_pRootTile, rootJson, baseUrl);
+			this->_pRootTile = std::move(pRootTile);
+
+			this->markInitialLoadComplete();
+        });
 	}
 
 	void Tileset::_createTile(Tile& tile, const nlohmann::json& tileJson, const std::string& baseUrl) const {
@@ -598,6 +618,14 @@ namespace Cesium3DTiles {
 
 	void Tileset::_markTileVisited(Tile& tile) {
 		this->_loadedTiles.insertAtTail(tile);
+	}
+
+	bool Tileset::isDoingInitialLoad() const {
+		return this->_isDoingInitialLoad.load(std::memory_order::memory_order_acquire);
+	}
+
+	void Tileset::markInitialLoadComplete() {
+		this->_isDoingInitialLoad.store(false, std::memory_order::memory_order_release);
 	}
 
 }
