@@ -79,3 +79,5 @@ add_subdirectory(Cesium3DTiles)
 
 include(Catch)
 catch_discover_tests(cesium-native-tests)
+
+add_subdirectory(doc)
