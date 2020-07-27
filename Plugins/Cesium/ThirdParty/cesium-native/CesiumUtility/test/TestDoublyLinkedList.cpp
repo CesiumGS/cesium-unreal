@@ -7,8 +7,8 @@ namespace {
 
     class TestNode {
     public:
-        TestNode(uint32_t value) :
-            value(value),
+        TestNode(uint32_t valueParam) :
+            value(valueParam),
             links()
         {}
 
