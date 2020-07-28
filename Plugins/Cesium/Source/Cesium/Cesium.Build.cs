@@ -60,7 +60,9 @@ public class Cesium : ModuleRules
                 "MeshDescription",
                 "StaticMeshDescription",
                 "HTTP",
-                "UnrealEd" // TODO: only include this in editor builds?
+                "UnrealEd", // TODO: only include this in editor builds?
+                "PhysXCooking",
+                "PhysicsCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
             );

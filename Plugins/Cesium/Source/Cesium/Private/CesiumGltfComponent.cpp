@@ -19,6 +19,7 @@
 #include <iostream>
 #include "Cesium3DTiles/Gltf.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "IPhysXCooking.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 
@@ -30,6 +31,7 @@ struct LoadModelResult
 	const tinygltf::Model* pModel;
 	const tinygltf::Material* pMaterial;
 	glm::dmat4x4 transform;
+	PxTriangleMesh* pCollisionMesh;
 };
 
 // https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
@@ -76,7 +78,13 @@ static void updateTextureCoordinates(
 	}
 }
 
-static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Primitive& primitive, const glm::dmat4x4& transform) {
+static void loadPrimitive(
+	std::vector<LoadModelResult>& result,
+	const tinygltf::Model& model,
+	const tinygltf::Primitive& primitive,
+	const glm::dmat4x4& transform,
+	IPhysXCooking* pPhysXCooking
+) {
 	TMap<int32, FVertexID> indexToVertexIdMap;
 
 	auto positionAccessorIt = primitive.attributes.find("POSITION");
@@ -267,16 +275,51 @@ static void loadPrimitive(std::vector<LoadModelResult>& result, const tinygltf::
 
 	section.MaterialIndex = 0;
 
+	primitiveResult.pCollisionMesh = nullptr;
+
+	if (pPhysXCooking) {
+		// TODO: use PhysX interface directly so we don't need to copy the vertices (it takes a stride parameter).
+		TArray<FVector> vertices;
+		vertices.SetNum(StaticMeshBuildVertices.Num());
+
+		for (size_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+			vertices[i] = StaticMeshBuildVertices[i].Position;
+		}
+
+		TArray<FTriIndices> indices;
+		indices.SetNum(IndexBuffer.Num());
+
+		for (size_t i = 0; i < IndexBuffer.Num() / 3; ++i) {
+			indices[i].v0 = IndexBuffer[i * 3];
+			indices[i].v1 = IndexBuffer[i * 3 + 1];
+			indices[i].v2 = IndexBuffer[i * 3 + 2];
+		}
+
+		pPhysXCooking->CreateTriMesh("PhysXGeneric", EPhysXMeshCookFlags::Default, vertices, indices, TArray<uint16>(), true, primitiveResult.pCollisionMesh);
+	}
+
 	result.push_back(std::move(primitiveResult));
 }
 
-static void loadMesh(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Mesh& mesh, const glm::dmat4x4& transform) {
+static void loadMesh(
+	std::vector<LoadModelResult>& result,
+	const tinygltf::Model& model,
+	const tinygltf::Mesh& mesh,
+	const glm::dmat4x4& transform,
+	IPhysXCooking* pPhysXCooking
+) {
 	for (const tinygltf::Primitive& primitive : mesh.primitives) {
-		loadPrimitive(result, model, primitive, transform);
+		loadPrimitive(result, model, primitive, transform, pPhysXCooking);
 	}
 }
 
-static void loadNode(std::vector<LoadModelResult>& result, const tinygltf::Model& model, const tinygltf::Node& node, const glm::dmat4x4& transform) {
+static void loadNode(
+	std::vector<LoadModelResult>& result,
+	const tinygltf::Model& model,
+	const tinygltf::Node& node,
+	const glm::dmat4x4& transform,
+	IPhysXCooking* pPhysXCooking
+) {
 	glm::dmat4x4 nodeTransform = transform;
 
 	if (node.matrix.size() > 0) {
@@ -299,17 +342,21 @@ static void loadNode(std::vector<LoadModelResult>& result, const tinygltf::Model
 	int meshId = node.mesh;
 	if (meshId >= 0 && meshId < model.meshes.size()) {
 		const tinygltf::Mesh& mesh = model.meshes[meshId];
-		loadMesh(result, model, mesh, nodeTransform);
+		loadMesh(result, model, mesh, nodeTransform, pPhysXCooking);
 	}
 
 	for (int childNodeId : node.children) {
 		if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
-			loadNode(result, model, model.nodes[childNodeId], nodeTransform);
+			loadNode(result, model, model.nodes[childNodeId], nodeTransform, pPhysXCooking);
 		}
 	}
 }
 
-static std::vector<LoadModelResult> loadModelAnyThreadPart(const tinygltf::Model& model, const glm::dmat4x4& transform) {
+static std::vector<LoadModelResult> loadModelAnyThreadPart(
+	const tinygltf::Model& model,
+	const glm::dmat4x4& transform,
+	IPhysXCooking* pPhysXCooking
+) {
 	std::vector<LoadModelResult> result;
 
 	glm::dmat4x4 rootTransform = transform * gltfAxesToCesiumAxes;
@@ -318,21 +365,21 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(const tinygltf::Model
 		// Show the default scene
 		const tinygltf::Scene& defaultScene = model.scenes[model.defaultScene];
 		for (int nodeId : defaultScene.nodes) {
-			loadNode(result, model, model.nodes[nodeId], rootTransform);
+			loadNode(result, model, model.nodes[nodeId], rootTransform, pPhysXCooking);
 		}
 	} else if (model.scenes.size() > 0) {
 		// There's no default, so show the first scene
 		const tinygltf::Scene& defaultScene = model.scenes[0];
 		for (int nodeId : defaultScene.nodes) {
-			loadNode(result, model, model.nodes[nodeId], rootTransform);
+			loadNode(result, model, model.nodes[nodeId], rootTransform, pPhysXCooking);
 		}
 	} else if (model.nodes.size() > 0) {
 		// No scenes at all, use the first node as the root node.
-		loadNode(result, model, model.nodes[0], rootTransform);
+		loadNode(result, model, model.nodes[0], rootTransform, pPhysXCooking);
 	} else if (model.meshes.size() > 0) {
 		// No nodes either, show all the meshes.
 		for (const tinygltf::Mesh& mesh : model.meshes) {
-			loadMesh(result, model, mesh, rootTransform);
+			loadMesh(result, model, mesh, rootTransform, pPhysXCooking);
 		}
 	}
 
@@ -371,7 +418,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
 	pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	pMesh->bUseDefaultCollision = true;
-	pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+	//pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	pMesh->SetFlags(RF_Transient);
 
 	const glm::dmat4x4& transform = unrealToOrFromCesium * scaleToUnrealWorld * loadResult.transform;
@@ -430,19 +477,24 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
 	pStaticMesh->CreateBodySetup();
 
-	pMesh->UpdateCollisionFromStaticMesh();
+	//pMesh->UpdateCollisionFromStaticMesh();
 	pMesh->GetBodySetup()->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
+
+	if (loadResult.pCollisionMesh) {
+		pMesh->GetBodySetup()->TriMeshes.Add(loadResult.pCollisionMesh);
+		pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
+	}
 
 	pMesh->SetMobility(EComponentMobility::Movable);
 
-	pMesh->bDrawMeshCollisionIfComplex = true;
-	pMesh->bDrawMeshCollisionIfSimple = false;
+	//pMesh->bDrawMeshCollisionIfComplex = true;
+	//pMesh->bDrawMeshCollisionIfSimple = true;
 	pMesh->SetupAttachment(pGltf);
 	pMesh->RegisterComponent();
 }
 
 /*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
-	std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, transform);
+	std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, transform, nullptr);
 
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
@@ -465,10 +517,11 @@ namespace {
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
 	const tinygltf::Model& model,
-	const glm::dmat4x4& transform
+	const glm::dmat4x4& transform,
+	IPhysXCooking* pPhysXCooking
 ) {
 	auto pResult = std::make_unique<HalfConstructedReal>();
-	pResult->loadModelResult = std::move(loadModelAnyThreadPart(model, transform));
+	pResult->loadModelResult = std::move(loadModelAnyThreadPart(model, transform, pPhysXCooking));
 	return pResult;
 }
 
@@ -568,7 +621,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		tinygltf::Model& model = pLoadResult->model.value();
 
-		std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0));
+		std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0), nullptr);
 
 		AsyncTask(ENamedThreads::GameThread, [this, pLoadResult{ std::move(pLoadResult) }, result{ std::move(result) }]() mutable {
 			for (LoadModelResult& model : result) {
