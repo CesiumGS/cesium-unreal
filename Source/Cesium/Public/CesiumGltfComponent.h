@@ -10,6 +10,7 @@
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterial;
+class IPhysXCooking;
 
 namespace tinygltf{
 	class Model;
@@ -33,7 +34,7 @@ public:
 	/// the provided callback is raised in the game thread with the result.
 	/// </summary>
 	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
-	static std::unique_ptr<HalfConstructed> CreateOffGameThread(const tinygltf::Model& model, const glm::dmat4x4& transform);
+	static std::unique_ptr<HalfConstructed> CreateOffGameThread(const tinygltf::Model& model, const glm::dmat4x4& transform, IPhysXCooking* pPhysXCooking = nullptr);
 	static UCesiumGltfComponent* CreateOnGameThread(AActor* pParentActor, std::unique_ptr<HalfConstructed> pHalfConstructed);
 
 	UCesiumGltfComponent();
