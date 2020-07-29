@@ -170,6 +170,7 @@ namespace Cesium3DTiles {
         }
 
         this->_pRendererResources = nullptr;
+        this->_pContentRequest.reset();
         this->_pContent.reset();
         this->setState(LoadState::Unloaded);
 
@@ -198,6 +199,9 @@ namespace Cesium3DTiles {
             if (pContent) {
                 pContent->finalizeLoad(*this);
             }
+
+            // Free the request now that it is complete.
+            this->_pContentRequest.reset();
 
             this->setState(LoadState::Done);
         }
