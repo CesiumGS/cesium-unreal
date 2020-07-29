@@ -6,7 +6,9 @@ namespace CesiumGeospatial {
 
     class CESIUMGEOSPATIAL_API Cartographic {
     public:
-        Cartographic(double longitude, double latitude, double height = 0.0);
+        Cartographic(double longitudeRadians, double latitudeRadians, double heightMeters = 0.0);
+
+        static Cartographic fromDegrees(double longitudeDegrees, double latitudeDegrees, double heightMeters = 0.0);
 
         double longitude;
         double latitude;

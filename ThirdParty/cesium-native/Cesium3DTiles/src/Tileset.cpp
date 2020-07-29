@@ -281,6 +281,8 @@ namespace Cesium3DTiles {
             } else {
                 // TODO: report invalid value
             }
+        } else if (pParent) {
+            tile.setRefine(pParent->getRefine());
         }
 
         if (childrenIt != tileJson.end())
@@ -465,6 +467,11 @@ namespace Cesium3DTiles {
         }
 
         // Refine!
+
+        // If this tile uses additive refinement, we need to render this tile in addition to its children.
+        if (tile.getRefine() == Tile::Refine::Add) {
+            result.tilesToRenderThisFrame.push_back(&tile);
+        }
 
         size_t firstRenderedDescendantIndex = result.tilesToRenderThisFrame.size();
         size_t loadIndexLow = this->_loadQueueLow.size();
