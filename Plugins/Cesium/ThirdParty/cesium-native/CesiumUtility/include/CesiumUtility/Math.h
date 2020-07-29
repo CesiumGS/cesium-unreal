@@ -93,6 +93,14 @@ namespace CesiumUtility {
         static inline double mod(double m, double n) {
             return fmod(fmod(m, n) + n, n);
         }
+
+        static inline double degreesToRadians(double angleDegrees) {
+            return angleDegrees * Math::PI / 180.0;
+        }
+
+        static inline double radiansToDegrees(double angleRadians) {
+            return angleRadians * 180.0 / Math::PI;
+        }
     };
 
 }
