@@ -16,6 +16,7 @@
 #include "UnrealTaskProcessor.h"
 #include "Math/UnrealMathUtility.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "IPhysXCookingModule.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -36,6 +37,8 @@ ACesium3DTileset::ACesium3DTileset() :
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	this->SetActorEnableCollision(true);
 
 	this->RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Tileset"));
 	this->RootComponent->SetMobility(EComponentMobility::Static);
@@ -86,7 +89,10 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform)
 
 class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
 public:
-	UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
+	UnrealResourcePreparer(ACesium3DTileset* pActor) :
+		_pActor(pActor),
+		_pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+	{}
 
 	virtual void* prepareInLoadThread(const Cesium3DTiles::Tile& tile) {
 		const Cesium3DTiles::TileContent* pContent = tile.getContent();
@@ -97,7 +103,7 @@ public:
 		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
 			const Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<const Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
 			glm::dmat4x4 transform = _pActor->GetTilesetToWorldTransform() * tile.getTransform();
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), transform);
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), transform, this->_pPhysXCooking);
 			return pHalf.release();
 		}
 
@@ -145,6 +151,7 @@ private:
 	}
 
 	ACesium3DTileset* _pActor;
+	IPhysXCooking* _pPhysXCooking;
 };
 
 void ACesium3DTileset::LoadTileset()
