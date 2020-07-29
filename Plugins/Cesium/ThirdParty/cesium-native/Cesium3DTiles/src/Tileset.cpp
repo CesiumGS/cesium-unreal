@@ -468,9 +468,13 @@ namespace Cesium3DTiles {
 
         // Refine!
 
+        bool queuedForLoad = false;
+
         // If this tile uses additive refinement, we need to render this tile in addition to its children.
         if (tile.getRefine() == Tile::Refine::Add) {
             result.tilesToRenderThisFrame.push_back(&tile);
+            this->_loadQueueMedium.push_back(&tile);
+            queuedForLoad = true;
         }
 
         size_t firstRenderedDescendantIndex = result.tilesToRenderThisFrame.size();
@@ -484,12 +488,19 @@ namespace Cesium3DTiles {
             // No descendant tiles were added to the render list by the function above, meaning they were all
             // culled even though this tile was deemed visible. That's pretty common.
             // Nothing else to do except mark this tile refined and return.
-            markTileNonRendered(lastFrameNumber, tile, result);
-            tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Refined));
-            return TraversalDetails();
-        }
+            TraversalDetails noChildrenTraversalDetails;
 
-        bool queuedForLoad = false;
+            if (tile.getRefine() == Tile::Refine::Add) {
+                noChildrenTraversalDetails.allAreRenderable = tile.isRenderable();
+                noChildrenTraversalDetails.anyWereRenderedLastFrame = lastFrameSelectionState.getResult(lastFrameNumber) == TileSelectionState::Result::Rendered;
+                noChildrenTraversalDetails.notYetRenderableCount = traversalDetails.allAreRenderable ? 0 : 1;
+            } else {
+                markTileNonRendered(lastFrameNumber, tile, result);
+            }
+
+            tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Refined));
+            return noChildrenTraversalDetails;
+        }
 
         // At least one descendant tile was added to the render list.
         // The traversalDetails tell us what happened while visiting the children.
@@ -529,7 +540,10 @@ namespace Cesium3DTiles {
                 this->_loadQueueMedium.erase(this->_loadQueueMedium.begin() + loadIndexMedium, this->_loadQueueMedium.end());
                 this->_loadQueueHigh.erase(this->_loadQueueHigh.begin() + loadIndexHigh, this->_loadQueueHigh.end());
 
-                this->_loadQueueMedium.push_back(&tile);
+                if (!queuedForLoad) {
+                    this->_loadQueueMedium.push_back(&tile);
+                }
+
                 traversalDetails.notYetRenderableCount = tile.isRenderable() ? 0 : 1;
                 queuedForLoad = true;
             }
@@ -537,7 +551,9 @@ namespace Cesium3DTiles {
             traversalDetails.allAreRenderable = tile.isRenderable();
             traversalDetails.anyWereRenderedLastFrame = wasRenderedLastFrame;
         } else {
-            markTileNonRendered(lastFrameNumber, tile, result);
+            if (tile.getRefine() != Tile::Refine::Add) {
+                markTileNonRendered(lastFrameNumber, tile, result);
+            }
             tile.setLastSelectionState(TileSelectionState(currentFrameNumber, TileSelectionState::Result::Refined));
         }
 
