@@ -14,6 +14,30 @@ namespace Cesium3DTiles {
 	class TilesetView;
 }
 
+UENUM(BlueprintType)
+enum class EOriginPlacement : uint8 {
+	/**
+	 * Use the tileset's true origin as the Actor's origin. For georeferenced
+	 * tilesets, this usually means the Actor's origin will be at the center
+	 * of the Earth.
+	 */
+	TrueOrigin UMETA(DisplayName = "True origin"),
+
+	/*
+	 * Use the center of the tileset's bounding volume as the Actor's origin. This option
+	 * preserves precision by keeping all tileset vertices as close to the Actor's origin
+	 * as possible.
+	 */
+	BoundingVolumeOrigin UMETA(DisplayName = "Bounding volume center"),
+
+	/**
+	 * Use a custom position within the tileset as the Actor's origin. The position is
+	 * expressed as a longitude, latitude, and height, and that position within the tileset
+	 * will be at coordinate (0,0,0) in the Actor's coordinate system.
+	 */
+	CartographicOrigin UMETA(DisplayName = "Longitude / latitude / height")
+};
+
 UCLASS()
 class CESIUM_API ACesium3DTileset : public AActor
 {
@@ -44,14 +68,33 @@ public:
 	FString IonAccessToken;
 
 	/**
-	 * If true, the center of this tileset's bounding volume will be placed at the Unreal world origin,
-	 * even if that is not the tileset's origin. This is useful because 3D Tiles tilesets often use
-	 * Earth-centered, Earth-fixed coordinates, such that tileset content is in a small bounding
+	 * The placement of this Actor's origin (coordinate 0,0,0) within the tileset. 3D Tiles tilesets often
+	 * use Earth-centered, Earth-fixed coordinates, such that the tileset content is in a small bounding
 	 * volume 6-7 million meters (the radius of the Earth) away from the coordinate system origin.
-	 * If false, the tileset's true coordinates are used.
+	 * This property allows an alternative position, other then the tileset's true origin, to be treated
+	 * as the origin for the purpose of this Actor. Using this property will preserve vertex precision
+	 * (and thus avoid jittering) much better precision than setting the Actor's Transform property.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium")
-	bool PlaceTilesetBoundingVolumeCenterAtWorldOrigin = true;
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	EOriginPlacement OriginPlacement = EOriginPlacement::BoundingVolumeOrigin;
+
+	/**
+	 * The longitude of the custom origin placement in degrees.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin"))
+	double OriginLongitude = 0.0;
+
+	/**
+	 * The latitude of the custom origin placement in degrees.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Cesium", meta = (EditCondition = "OriginPlacement==EOriginPlacement::CartographicOrigin"))
+	double OriginLatitude= 0.0;
+
+	/**
+	 * The height of the custom origin placement in meters above the WGS84 ellipsoid.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Cesium", meta = (EditCondition = "OriginPlacement==EOriginPlacement::CartographicOrigin"))
+	double OriginHeight = 0.0;
 
 	/**
 	 * If true, the tileset is rotated so that the local up at the center of the tileset's bounding
