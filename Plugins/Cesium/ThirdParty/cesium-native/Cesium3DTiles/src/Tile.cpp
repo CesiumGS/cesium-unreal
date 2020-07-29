@@ -124,10 +124,16 @@ namespace Cesium3DTiles {
     }
 
     bool Tile::isRenderable() const {
+        // A tile whose content is an external tileset has no renderable content. If
+        // we select such a tile for rendering, we'll end up rendering nothing even though
+        // the tile's parent and its children may both have content. End result: when the
+        // tile's parent refines, we get a hole in the content until the children load.
+        
+        // So, we explicitly treat external tilesets as non-renderable.
+
         return
             this->getState() >= LoadState::ContentLoaded &&
-            this->_pContent &&
-            this->_pContent->getType() != ExternalTilesetContent::TYPE;
+            (!this->_pContent || this->_pContent->getType() != ExternalTilesetContent::TYPE);
     }
 
     void Tile::loadContent() {
