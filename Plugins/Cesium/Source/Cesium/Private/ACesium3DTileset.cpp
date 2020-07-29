@@ -17,6 +17,8 @@
 #include "Math/UnrealMathUtility.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "IPhysXCookingModule.h"
+#include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/Cartographic.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -49,7 +51,7 @@ ACesium3DTileset::~ACesium3DTileset() {
 }
 
 glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
-	if (!this->PlaceTilesetBoundingVolumeCenterAtWorldOrigin) {
+	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
 		return glm::dmat4x4(1.0);
 	}
 
@@ -58,8 +60,15 @@ glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
 		return glm::dmat4x4(1.0);
 	}
 
-	const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
-	glm::dvec3 bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
+	glm::dvec3 bvCenter;
+
+	if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
+		const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
+		bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
+	} else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+		const CesiumGeospatial::Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
+		bvCenter = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->OriginLongitude, this->OriginLatitude, this->OriginHeight));
+	}
 
 	if (this->AlignTilesetUpWithZ) {
 		return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(bvCenter);
