@@ -323,7 +323,7 @@ static void loadNode(
 	glm::dmat4x4 nodeTransform = transform;
 
 	if (node.matrix.size() > 0) {
-		const std::vector<double>& matrix = model.nodes[0].matrix;
+		const std::vector<double>& matrix = node.matrix;
 
 		glm::dmat4x4 nodeTransformGltf(
 			glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
