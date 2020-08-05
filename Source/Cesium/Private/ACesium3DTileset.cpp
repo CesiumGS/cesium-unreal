@@ -19,6 +19,7 @@
 #include "IPhysXCookingModule.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <iostream>
@@ -33,20 +34,6 @@
 #pragma warning(disable: 4946)
 #include "json.hpp"
 #pragma warning(pop)
-
-static double centimetersPerMeter = 100.0;
-
-// Scale Cesium's meters up to Unreal's centimeters.
-static glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
-
-// Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
-// system by inverting the Y coordinate. This same transformation can also go the other way.
-static glm::dmat4x4 unrealToOrFromCesium(
-	glm::dvec4(1.0, 0.0, 0.0, 0.0),
-	glm::dvec4(0.0, -1.0, 0.0, 0.0),
-	glm::dvec4(0.0, 0.0, 1.0, 0.0),
-	glm::dvec4(0.0, 0.0, 0.0, 1.0)
-);
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
@@ -119,7 +106,7 @@ void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShif
 
 	glm::dmat4 globalToLocal = this->GetGlobalWorldToLocalWorldTransform();
 	glm::dmat4 tilesetToWorld = this->GetTilesetToWorldTransform();
-	glm::dmat4 tilesetToUnrealTransform = unrealToOrFromCesium * scaleToUnrealWorld * globalToLocal * tilesetToWorld;
+	glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
 
 	TArray<UCesiumGltfComponent*> gltfComponents;
 	this->GetComponents<UCesiumGltfComponent>(gltfComponents);
@@ -187,7 +174,7 @@ public:
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
 			glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
 			glm::dmat4 tilesetToWorld = _pActor->GetTilesetToWorldTransform();
-			glm::dmat4 tilesetToUnrealTransform = unrealToOrFromCesium * scaleToUnrealWorld * globalToLocal * tilesetToWorld;
+			glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
 			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf), tilesetToUnrealTransform);
 		}
 
