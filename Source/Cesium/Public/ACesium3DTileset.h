@@ -146,6 +146,8 @@ public:
 	 */
 	glm::dmat4x4 GetLocalWorldToGlobalWorldTransform() const;
 
+	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
