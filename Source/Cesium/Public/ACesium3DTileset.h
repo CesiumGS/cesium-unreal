@@ -119,13 +119,50 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
 	bool ShowInEditor = true;
 
+	/**
+	 * Gets a 4x4 matrix that transforms coordinates in the global Unreal world coordinate system
+	 * (that is, accounting for the world's OriginLocation) and transforms them to the tileset's
+	 * coordinate system.
+	 */
 	glm::dmat4x4 GetWorldToTilesetTransform() const;
+	
+	/**
+	 * Gets a 4x4 matrix that transforms coordinates in the tileset's coordinate system to the
+	 * global Unreal coordinate system (that is, accounting for the world's OriginLocation).
+	 */
 	glm::dmat4x4 GetTilesetToWorldTransform() const;
+
+	/**
+	 * Gets a 4x4 matrix that transforms coordinates in the global world coordinate system (that is,
+	 * the one that accounts for the world's OriginLocation) and transforms them to the local world
+	 * coordinate system (that is, relative to the floating OriginLocation).
+	 */
+	glm::dmat4x4 GetGlobalWorldToLocalWorldTransform() const;
+
+	/**
+	 * Gets a 4x4 matrix that transforms coordinate in the local world coordinate system (that is,
+	 * relative to the floating OriginLocation) and transforms them to the global world coordinate
+	 * system (that is, account for the world's OriginLocation).
+	 */
+	glm::dmat4x4 GetLocalWorldToGlobalWorldTransform() const;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+
+	virtual void NotifyHit
+	(
+		class UPrimitiveComponent* MyComp,
+		AActor* Other,
+		class UPrimitiveComponent* OtherComp,
+		bool bSelfMoved,
+		FVector HitLocation,
+		FVector HitNormal,
+		FVector NormalImpulse,
+		const FHitResult& Hit
+	) override;
+
 	void LoadTileset();
 	void DestroyTileset();
 	Cesium3DTiles::Camera CreateCameraFromViewParameters(
@@ -134,10 +171,19 @@ protected:
 		const FRotator& rotation,
 		double fieldOfViewDegrees
 	) const;
-	std::optional<Cesium3DTiles::Camera> GetPlayerCamera() const;
+
+	struct UnrealCameraParameters {
+		FVector2D viewportSize;
+		FVector location;
+		FRotator rotation;
+		double fieldOfViewDegrees;
+	};
+
+	std::optional<UnrealCameraParameters> GetCamera() const;
+	std::optional<UnrealCameraParameters> GetPlayerCamera() const;
 
 #ifdef WITH_EDITOR
-	std::optional<Cesium3DTiles::Camera> GetEditorCamera() const;
+	std::optional<UnrealCameraParameters> GetEditorCamera() const;
 #endif
 
 public:	

@@ -414,14 +414,15 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 	return true;
 }
 
-static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult) {
+static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult, const glm::dmat4x4& cesiumToUnrealTransform) {
 	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
+	pMesh->SetUsingAbsoluteLocation(true);
 	pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	pMesh->bUseDefaultCollision = true;
 	//pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	pMesh->SetFlags(RF_Transient);
 
-	const glm::dmat4x4& transform = unrealToOrFromCesium * scaleToUnrealWorld * loadResult.transform;
+	const glm::dmat4x4& transform = cesiumToUnrealTransform * loadResult.transform;
 	pMesh->SetRelativeTransform(FTransform(FMatrix(
 		FVector(transform[0].x, transform[0].y, transform[0].z),
 		FVector(transform[1].x, transform[1].y, transform[1].z),
@@ -499,7 +500,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
 		for (LoadModelResult& model : result) {
-			loadModelGameThreadPart(Gltf, model);
+			loadModelGameThreadPart(Gltf, model, unrealToOrFromCesium * scaleToUnrealWorld);
 		}
 		Gltf->SetVisibility(false, true);
 		callback(Gltf);
@@ -528,14 +529,16 @@ UCesiumGltfComponent::CreateOffGameThread(
 /*static*/ UCesiumGltfComponent*
 UCesiumGltfComponent::CreateOnGameThread(
 	AActor* pParentActor,
-	std::unique_ptr<HalfConstructed> pHalfConstructed
+	std::unique_ptr<HalfConstructed> pHalfConstructed,
+	const glm::dmat4x4& cesiumToUnrealTransform
 ) {
 	UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
+	Gltf->SetUsingAbsoluteLocation(true);
 	Gltf->SetFlags(RF_Transient);
 	HalfConstructedReal* pReal = static_cast<HalfConstructedReal*>(pHalfConstructed.get());
 	std::vector<LoadModelResult>& result = pReal->loadModelResult;
 	for (LoadModelResult& model : result) {
-		loadModelGameThreadPart(Gltf, model);
+		loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
 	}
 	Gltf->SetVisibility(false, true);
 	return Gltf;
@@ -592,6 +595,17 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 	request->ProcessRequest();
 }
 
+void UCesiumGltfComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
+	USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
+
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	glm::dvec3 offset = glm::dvec3(InOffset.X, InOffset.Y, InOffset.Z);
+	glm::dvec3 newOrigin = glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
+	newOrigin -= offset;
+
+
+}
+
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
 {
 	const TArray<uint8>& content = response->GetContent();
@@ -625,7 +639,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		AsyncTask(ENamedThreads::GameThread, [this, pLoadResult{ std::move(pLoadResult) }, result{ std::move(result) }]() mutable {
 			for (LoadModelResult& model : result) {
-				loadModelGameThreadPart(this, model);
+				loadModelGameThreadPart(this, model, unrealToOrFromCesium * scaleToUnrealWorld);
 			}
 		});
 	});
