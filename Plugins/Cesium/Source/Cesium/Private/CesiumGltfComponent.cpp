@@ -21,6 +21,7 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "IPhysXCooking.h"
 #include "UCesiumGltfPrimitiveComponent.h"
+#include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 
@@ -40,20 +41,6 @@ glm::dmat4x4 gltfAxesToCesiumAxes(
 	glm::dvec4(1.0,  0.0, 0.0, 0.0),
 	glm::dvec4(0.0,  0.0, 1.0, 0.0),
 	glm::dvec4(0.0, -1.0, 0.0, 0.0),
-	glm::dvec4(0.0,  0.0, 0.0, 1.0)
-);
-
-static double centimetersPerMeter = 100.0;
-
-// Scale Cesium's meters up to Unreal's centimeters.
-static glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
-
-// Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
-// system by inverting the Y coordinate. This same transformation can also go the other way.
-static glm::dmat4x4 unrealToOrFromCesium(
-	glm::dvec4(1.0,  0.0, 0.0, 0.0),
-	glm::dvec4(0.0, -1.0, 0.0, 0.0),
-	glm::dvec4(0.0,  0.0, 1.0, 0.0),
 	glm::dvec4(0.0,  0.0, 0.0, 1.0)
 );
 
@@ -495,7 +482,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
 		for (LoadModelResult& model : result) {
-			loadModelGameThreadPart(Gltf, model, unrealToOrFromCesium * scaleToUnrealWorld);
+			loadModelGameThreadPart(Gltf, model, CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld);
 		}
 		Gltf->SetVisibility(false, true);
 		callback(Gltf);
@@ -644,7 +631,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		AsyncTask(ENamedThreads::GameThread, [this, pLoadResult{ std::move(pLoadResult) }, result{ std::move(result) }]() mutable {
 			for (LoadModelResult& model : result) {
-				loadModelGameThreadPart(this, model, unrealToOrFromCesium * scaleToUnrealWorld);
+				loadModelGameThreadPart(this, model, CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld);
 			}
 		});
 	});
