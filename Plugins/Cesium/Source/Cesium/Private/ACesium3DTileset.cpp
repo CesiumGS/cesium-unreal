@@ -34,6 +34,20 @@
 #include "json.hpp"
 #pragma warning(pop)
 
+static double centimetersPerMeter = 100.0;
+
+// Scale Cesium's meters up to Unreal's centimeters.
+static glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
+
+// Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
+// system by inverting the Y coordinate. This same transformation can also go the other way.
+static glm::dmat4x4 unrealToOrFromCesium(
+	glm::dvec4(1.0, 0.0, 0.0, 0.0),
+	glm::dvec4(0.0, -1.0, 0.0, 0.0),
+	glm::dvec4(0.0, 0.0, 1.0, 0.0),
+	glm::dvec4(0.0, 0.0, 0.0, 1.0)
+);
+
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
 	_pTileset(nullptr)
@@ -100,6 +114,21 @@ glm::dmat4x4 ACesium3DTileset::GetLocalWorldToGlobalWorldTransform() const {
 	);
 }
 
+void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
+	AActor::ApplyWorldOffset(InOffset, bWorldShift);
+
+	glm::dmat4 globalToLocal = this->GetGlobalWorldToLocalWorldTransform();
+	glm::dmat4 tilesetToWorld = this->GetTilesetToWorldTransform();
+	glm::dmat4 tilesetToUnrealTransform = unrealToOrFromCesium * scaleToUnrealWorld * globalToLocal * tilesetToWorld;
+
+	TArray<UCesiumGltfComponent*> gltfComponents;
+	this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+	for (UCesiumGltfComponent* pGltf : gltfComponents) {
+		pGltf->UpdateTransformCesium(tilesetToUnrealTransform);
+	}
+}
+
 // Called when the game starts or when spawned
 void ACesium3DTileset::BeginPlay()
 {
@@ -125,20 +154,6 @@ void ACesium3DTileset::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPr
 
 	//std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
-
-static double centimetersPerMeter = 100.0;
-
-// Scale Cesium's meters up to Unreal's centimeters.
-static glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
-
-// Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
-// system by inverting the Y coordinate. This same transformation can also go the other way.
-static glm::dmat4x4 unrealToOrFromCesium(
-	glm::dvec4(1.0, 0.0, 0.0, 0.0),
-	glm::dvec4(0.0, -1.0, 0.0, 0.0),
-	glm::dvec4(0.0, 0.0, 1.0, 0.0),
-	glm::dvec4(0.0, 0.0, 0.0, 1.0)
-);
 
 class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
 public:

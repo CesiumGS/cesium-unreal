@@ -20,6 +20,7 @@
 #include "Cesium3DTiles/Gltf.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "IPhysXCooking.h"
+#include "UCesiumGltfPrimitiveComponent.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 
@@ -42,14 +43,14 @@ glm::dmat4x4 gltfAxesToCesiumAxes(
 	glm::dvec4(0.0,  0.0, 0.0, 1.0)
 );
 
-double centimetersPerMeter = 100.0;
+static double centimetersPerMeter = 100.0;
 
 // Scale Cesium's meters up to Unreal's centimeters.
-glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
+static glm::dmat4x4 scaleToUnrealWorld = glm::dmat4x4(glm::dmat3x3(centimetersPerMeter));
 
 // Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
 // system by inverting the Y coordinate. This same transformation can also go the other way.
-glm::dmat4x4 unrealToOrFromCesium(
+static glm::dmat4x4 unrealToOrFromCesium(
 	glm::dvec4(1.0,  0.0, 0.0, 0.0),
 	glm::dvec4(0.0, -1.0, 0.0, 0.0),
 	glm::dvec4(0.0,  0.0, 1.0, 0.0),
@@ -415,20 +416,14 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 }
 
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult, const glm::dmat4x4& cesiumToUnrealTransform) {
-	UStaticMeshComponent* pMesh = NewObject<UStaticMeshComponent>(pGltf);
-	pMesh->SetUsingAbsoluteLocation(true);
+	UCesiumGltfPrimitiveComponent* pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf);
+	pMesh->HighPrecisionNodeTransform = loadResult.transform;
+	pMesh->UpdateTransformCesium(cesiumToUnrealTransform);
+
 	pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	pMesh->bUseDefaultCollision = true;
 	//pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	pMesh->SetFlags(RF_Transient);
-
-	const glm::dmat4x4& transform = cesiumToUnrealTransform * loadResult.transform;
-	pMesh->SetRelativeTransform(FTransform(FMatrix(
-		FVector(transform[0].x, transform[0].y, transform[0].z),
-		FVector(transform[1].x, transform[1].y, transform[1].z),
-		FVector(transform[2].x, transform[2].y, transform[2].z),
-		FVector(transform[3].x, transform[3].y, transform[3].z)
-	)));
 
 	UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
 	pMesh->SetStaticMesh(pStaticMesh);
@@ -603,6 +598,16 @@ void UCesiumGltfComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorld
 	glm::dvec3 newOrigin = glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
 	newOrigin -= offset;
 
+
+}
+
+void UCesiumGltfComponent::UpdateTransformCesium(const glm::dmat4& cesiumToUnrealTransform) {
+	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+		if (pPrimitive) {
+			pPrimitive->UpdateTransformCesium(cesiumToUnrealTransform);
+		}
+	}
 
 }
 

@@ -46,6 +46,7 @@ public:
 	void LoadModel(const FString& Url);
 
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+	void UpdateTransformCesium(const glm::dmat4& cesiumToUnrealTransform);
 
 protected:
 	//virtual void BeginPlay() override;
@@ -53,6 +54,8 @@ protected:
 
 	FString LoadedUrl;
 	class UStaticMeshComponent* Mesh;
+
+	glm::dmat4x4 _cesiumTransformation;
 
 private:
 	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
