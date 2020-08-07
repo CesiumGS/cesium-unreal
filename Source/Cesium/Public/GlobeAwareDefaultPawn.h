@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
+#include <glm/mat3x3.hpp>
 #include "GlobeAwareDefaultPawn.generated.h"
 
 /**
@@ -51,4 +52,12 @@ class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 	virtual void AddControllerYawInput(float Val) override;
 	virtual void AddControllerRollInput(float Val) override;
 	virtual FRotator GetViewRotation() const override;
+
+private:
+	/**
+	 * Computes the local East-North-Up to Fixed frame transformation based on the current
+	 * {@see GetPawnViewLocation}. The returned transformation works in Unreal's left-handed
+	 * coordinate system.
+	 */
+	glm::dmat3 computeEastNorthUpToFixedFrame() const;
 };
