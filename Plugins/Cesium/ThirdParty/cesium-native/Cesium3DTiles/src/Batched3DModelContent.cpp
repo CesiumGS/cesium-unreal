@@ -111,10 +111,10 @@ namespace Cesium3DTiles {
 		std::string errors;
 		std::string warnings;
 
-		bool loadSucceeded = loader.LoadBinaryFromMemory(&this->_gltf, &errors, &warnings, glbData.data(), static_cast<unsigned int>(glbData.size()));
-		if (!loadSucceeded) {
-			throw std::runtime_error("Failed to load glTF model from B3DM.");
-		}
+		/*bool loadSucceeded =*/ loader.LoadBinaryFromMemory(&this->_gltf, &errors, &warnings, glbData.data(), static_cast<unsigned int>(glbData.size()));
+		//if (!loadSucceeded) {
+		//	throw std::runtime_error("Failed to load glTF model from B3DM.");
+		//}
 	}
 
 }
