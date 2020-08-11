@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
+#include "CesiumGeoreference.h"
 #include <glm/mat3x3.hpp>
 #include "GlobeAwareDefaultPawn.generated.h"
 
@@ -14,7 +15,12 @@ UCLASS()
 class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 {
 	GENERATED_BODY()
+
+	AGlobeAwareDefaultPawn();
 	
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	ACesiumGeoreference* Georeference;
+
 	/**
 		* Input callback to move forward in local space (or backward if Val is negative).
 		* @param Val Amount of movement in the forward direction (or backward if negative).

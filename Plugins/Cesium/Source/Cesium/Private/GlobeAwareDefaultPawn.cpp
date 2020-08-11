@@ -9,9 +9,12 @@
 #include "CesiumTransforms.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/ext/matrix_transform.hpp>
-
-#undef PI
 #include "CesiumUtility/Math.h"
+
+AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() :
+	ADefaultPawn()
+{
+}
 
 void AGlobeAwareDefaultPawn::MoveRight(float Val)
 {
