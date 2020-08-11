@@ -4,6 +4,8 @@
 #include "CesiumGeoreference.h"
 #include "Engine/World.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "Camera/PlayerCameraManager.h"
+#include "GameFramework/PlayerController.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -68,6 +70,12 @@ glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToAbsoluteUnrealWorldTrans
 void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object)
 {
 	this->_georeferencedObjects.Add(*Object);
+
+	// If this object is an Actor, make sure it ticks _after_ the CesiumGeoreference.
+	AActor* pActor = Cast<AActor>(Object);
+	if (pActor) {
+		pActor->AddTickPrerequisiteActor(this);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -75,11 +83,34 @@ void ACesiumGeoreference::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (this->KeepWorldOriginNearCamera && !this->WorldOriginCamera) {
+		// Find the first player's camera manager
+		APlayerController* pPlayerController = GetWorld()->GetFirstPlayerController();
+		if (pPlayerController) {
+			this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
+		}
+	}
 }
 
 // Called every frame
 void ACesiumGeoreference::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (this->KeepWorldOriginNearCamera && this->WorldOriginCamera) {
+		const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
+		const FVector& cameraLocation = pov.Location;
+
+		if (!cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
+			// Camera has moved too far from the origin, move the origin.
+			const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+
+			this->GetWorld()->SetNewWorldOrigin(FIntVector(
+				static_cast<int32>(cameraLocation.X) + static_cast<int32>(originLocation.X),
+				static_cast<int32>(cameraLocation.Y) + static_cast<int32>(originLocation.Y),
+				static_cast<int32>(cameraLocation.Z) + static_cast<int32>(originLocation.Z)
+			));
+		}
+	}
 }
 

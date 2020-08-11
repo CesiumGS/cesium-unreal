@@ -105,7 +105,7 @@ public:
 	 * world origin is moved closer to the camera.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="KeepWorldOriginNearCamera"))
-	double MaximumWorldOriginDistanceFromCamera = 1000.0;
+	double MaximumWorldOriginDistanceFromCamera = 10000.0;
 
 	/**
 	 * The camera to use for setting the world origin.

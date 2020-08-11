@@ -401,17 +401,6 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
-	// Adjust the world origin to be near the camera.
-	const FVector& ueCameraPosition = camera.value().location;
-	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-	GetWorld()->SetNewWorldOrigin(FIntVector(
-		static_cast<int32>(ueCameraPosition.X) + static_cast<int32>(originLocation.X),
-		static_cast<int32>(ueCameraPosition.Y) + static_cast<int32>(originLocation.Y),
-		static_cast<int32>(ueCameraPosition.Z) + static_cast<int32>(originLocation.Z)
-	));
-
-	camera = this->GetCamera();
-	
 	Cesium3DTiles::Camera tilesetCamera = this->CreateCameraFromViewParameters(
 		camera.value().viewportSize,
 		camera.value().location,
