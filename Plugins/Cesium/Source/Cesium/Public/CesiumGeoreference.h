@@ -32,6 +32,8 @@ enum class EOriginPlacement : uint8 {
 	CartographicOrigin UMETA(DisplayName = "Longitude / latitude / height")
 };
 
+class APlayerCameraManager;
+
 /**
  * Controls how global geospatial coordinates are mapped to coordinates in the Unreal Engine level.
  * Internally, Cesium uses a global Earth-centered, Earth-fixed (ECEF) ellipsoid-centered coordinate system,
@@ -89,6 +91,27 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin || OriginPlacement==EOriginPlacement::BoundingVolumeOrigin"))
 	bool AlignTilesetUpWithZ = true;
+
+	/**
+	 * If true, the world origin is periodically rebased to keep it near the camera. This is important for maintaining vertex
+	 * precision in large worlds. Setting it to false can lead to jiterring artifacts when the camera gets far away from
+	 * the origin.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	bool KeepWorldOriginNearCamera = true;
+
+	/**
+	 * The maximum distance that the camera may move from the world's OriginLocation before the
+	 * world origin is moved closer to the camera.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="KeepWorldOriginNearCamera"))
+	double MaximumWorldOriginDistanceFromCamera = 1000.0;
+
+	/**
+	 * The camera to use for setting the world origin.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="KeepWorldOriginNearCamera"))
+	APlayerCameraManager* WorldOriginCamera;
 
 	// TODO: Allow user to select/configure the ellipsoid.
 
