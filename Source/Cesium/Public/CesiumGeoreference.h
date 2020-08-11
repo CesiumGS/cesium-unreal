@@ -34,6 +34,12 @@ enum class EOriginPlacement : uint8 {
 
 /**
  * Controls how global geospatial coordinates are mapped to coordinates in the Unreal Engine level.
+ * Internally, Cesium uses a global Earth-centered, Earth-fixed (ECEF) ellipsoid-centered coordinate system,
+ * where the ellipsoid is usually the World Geodetic System 1984 (WGS84) ellipsoid.
+ * This is a right-handed system centered at the Earth's center of mass, where +X is in the direction of the
+ * intersection of the Equator and the Prime Meridian (zero degrees longitude), +Y is in the direction of the
+ * intersection of the Equator and +90 degrees longitude, and +Z is through the North Pole. This Actor is used
+ * by other Cesium Actors to control how this coordinate system is mapped into an Unreal Engine world and level.
  */
 UCLASS()
 class CESIUM_API ACesiumGeoreference : public AActor
@@ -84,6 +90,20 @@ public:
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin || OriginPlacement==EOriginPlacement::BoundingVolumeOrigin"))
 	bool AlignTilesetUpWithZ = true;
 
+	// TODO: Allow user to select/configure the ellipsoid.
+
+	/**
+	 * Gets a 4x4 matrix to transform coordinates from the Unreal Engine absolute world coordinates (i.e. the world
+	 * coordinates accounting for the {@see UWorld::OriginLocation}) to the Cesium ellipsoid-centered coordinate system.
+	 */
+	glm::dmat4x4 GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() const;
+
+	/**
+	 * Gets a 4x4 matrix to transform coordinates from the Cesium ellipsoid-centered coordinate system to the Unreal Engine
+	 * absolute world coordinates (i.e. the world coordinates accounting for the {@see UWorld::OriginLocation}.
+	 */
+	glm::dmat4x4 GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() const;
+
 	void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
 protected:
@@ -96,4 +116,4 @@ public:
 
 private:
 	TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
-};
+};                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
