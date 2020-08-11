@@ -24,7 +24,7 @@ namespace CesiumUtility {
     /*static*/ const double Math::EPSILON20 = 1e-20;
     /*static*/ const double Math::EPSILON21 = 1e-21;
 
-    /*static*/ const double Math::PI = 3.14159265358979323846;
-    /*static*/ const double Math::TWO_PI = Math::PI * 2.0;
-    /*static*/ const double Math::PI_OVER_TWO = Math::PI / 2.0;
+    /*static*/ const double Math::ONE_PI = 3.14159265358979323846;
+    /*static*/ const double Math::TWO_PI = Math::ONE_PI * 2.0;
+    /*static*/ const double Math::PI_OVER_TWO = Math::ONE_PI / 2.0;
 }

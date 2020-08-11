@@ -36,13 +36,19 @@ struct LoadModelResult
 	PxTriangleMesh* pCollisionMesh;
 };
 
-// https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
-glm::dmat4x4 gltfAxesToCesiumAxes(
-	glm::dvec4(1.0,  0.0, 0.0, 0.0),
-	glm::dvec4(0.0,  0.0, 1.0, 0.0),
-	glm::dvec4(0.0, -1.0, 0.0, 0.0),
-	glm::dvec4(0.0,  0.0, 0.0, 1.0)
-);
+// Initialize with a static function instead of inline to avoid an
+// internal compiler error in MSVC v14.27.29110.
+static glm::dmat4 createGltfAxesToCesiumAxes() {
+	// https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
+	return glm::dmat4(
+		glm::dvec4(1.0,  0.0, 0.0, 0.0),
+		glm::dvec4(0.0,  0.0, 1.0, 0.0),
+		glm::dvec4(0.0, -1.0, 0.0, 0.0),
+		glm::dvec4(0.0,  0.0, 0.0, 1.0)
+	);
+}
+
+glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
 template <class T>
 static void updateTextureCoordinates(

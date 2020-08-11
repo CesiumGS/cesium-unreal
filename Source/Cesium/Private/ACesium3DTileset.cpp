@@ -37,6 +37,7 @@
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
+	Georeference(nullptr),
 	_pTileset(nullptr)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -53,7 +54,7 @@ ACesium3DTileset::~ACesium3DTileset() {
 }
 
 glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
-	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
+	if (this->Georeference->OriginPlacement == EOriginPlacement::TrueOrigin) {
 		return glm::dmat4(1.0);
 	}
 
@@ -64,15 +65,15 @@ glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
 
 	glm::dvec3 bvCenter;
 
-	if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
+	if (this->Georeference->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
 		const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
 		bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
-	} else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+	} else if (this->Georeference->OriginPlacement == EOriginPlacement::CartographicOrigin) {
 		const CesiumGeospatial::Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
-		bvCenter = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->OriginLongitude, this->OriginLatitude, this->OriginHeight));
+		bvCenter = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->Georeference->OriginLongitude, this->Georeference->OriginLatitude, this->Georeference->OriginHeight));
 	}
 
-	if (this->AlignTilesetUpWithZ) {
+	if (this->Georeference->AlignTilesetUpWithZ) {
 		return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(bvCenter);
 	}
 	else {
@@ -114,6 +115,22 @@ void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShif
 	for (UCesiumGltfComponent* pGltf : gltfComponents) {
 		pGltf->UpdateTransformCesium(tilesetToUnrealTransform);
 	}
+}
+
+bool ACesium3DTileset::IsBoundingVolumeReady() const
+{
+	// TODO: detect failures that will cause the root tile to never exist.
+	// That counts as "ready" too.
+	return this->_pTileset && this->_pTileset->getRootTile();
+}
+
+std::optional<Cesium3DTiles::BoundingVolume> ACesium3DTileset::GetBoundingVolume() const
+{
+	if (!this->IsBoundingVolumeReady()) {
+		return std::nullopt;
+	}
+
+	return this->_pTileset->getRootTile()->getBoundingVolume();
 }
 
 // Called when the game starts or when spawned
@@ -213,6 +230,10 @@ private:
 
 void ACesium3DTileset::LoadTileset()
 {
+	if (!this->Georeference) {
+		this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+	}
+
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 	if (pTileset)
 	{
