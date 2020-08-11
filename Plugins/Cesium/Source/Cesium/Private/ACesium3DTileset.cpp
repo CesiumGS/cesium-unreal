@@ -54,36 +54,12 @@ ACesium3DTileset::~ACesium3DTileset() {
 }
 
 glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
-	if (this->Georeference->OriginPlacement == EOriginPlacement::TrueOrigin) {
-		return glm::dmat4(1.0);
-	}
-
-	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
-	if (!pRootTile) {
-		return glm::dmat4(1.0);
-	}
-
-	glm::dvec3 bvCenter;
-
-	if (this->Georeference->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-		const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
-		bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
-	} else if (this->Georeference->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-		const CesiumGeospatial::Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
-		bvCenter = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->Georeference->OriginLongitude, this->Georeference->OriginLatitude, this->Georeference->OriginHeight));
-	}
-
-	if (this->Georeference->AlignTilesetUpWithZ) {
-		return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(bvCenter);
-	}
-	else {
-		return glm::translate(glm::dmat4(1.0), bvCenter);
-	}
+	return this->Georeference->GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
 }
 
 glm::dmat4x4 ACesium3DTileset::GetTilesetToWorldTransform() const
 {
-	return glm::affineInverse(this->GetWorldToTilesetTransform());
+	return this->Georeference->GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
 }
 
 glm::dmat4x4 ACesium3DTileset::GetGlobalWorldToLocalWorldTransform() const {
@@ -230,10 +206,6 @@ private:
 
 void ACesium3DTileset::LoadTileset()
 {
-	if (!this->Georeference) {
-		this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-	}
-
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 	if (pTileset)
 	{
@@ -256,6 +228,12 @@ void ACesium3DTileset::LoadTileset()
 
 		this->DestroyTileset();
 	}
+
+	if (!this->Georeference) {
+		this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+	}
+
+	this->Georeference->AddGeoreferencedObject(this);
 
 	Cesium3DTiles::TilesetExternals externals{
 		new UnrealAssetAccessor(),
