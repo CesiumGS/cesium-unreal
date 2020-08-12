@@ -81,7 +81,18 @@ glm::dmat4x4 ACesium3DTileset::GetLocalWorldToGlobalWorldTransform() const {
 void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
 	AActor::ApplyWorldOffset(InOffset, bWorldShift);
 
-	glm::dmat4 globalToLocal = this->GetGlobalWorldToLocalWorldTransform();
+	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
+	glm::dvec3 originLocation = glm::dvec3(
+		static_cast<double>(oldOrigin.X) - static_cast<double>(InOffset.X),
+		static_cast<double>(oldOrigin.Y) - static_cast<double>(InOffset.Y),
+		static_cast<double>(oldOrigin.Z) - static_cast<double>(InOffset.Z)
+	);
+
+	glm::dmat4 globalToLocal = glm::translate(
+		glm::dmat4x4(1.0),
+		glm::dvec3(-originLocation.x, originLocation.y, -originLocation.z) / 100.0
+	);
+
 	glm::dmat4 tilesetToWorld = this->GetTilesetToWorldTransform();
 	glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
 
