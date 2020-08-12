@@ -47,7 +47,11 @@ public:
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="IonAssetID"))
 	FString IonAccessToken;
 
-	UPROPERTY(EditAnywhere, Category = "Cesium")
+	/**
+	 * The actor controlling how this tileset's coordinate system relates to the coordinate system in
+	 * this Unreal Engine level.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
 	ACesiumGeoreference* Georeference;
 
 	/**
