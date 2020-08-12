@@ -22,7 +22,6 @@
 #include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <iostream>
 
 #ifdef WITH_EDITOR
 #include "Slate/SceneViewport.h"
