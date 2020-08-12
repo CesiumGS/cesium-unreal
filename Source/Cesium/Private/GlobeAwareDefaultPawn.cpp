@@ -104,7 +104,20 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const
 	return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
 }
 
+void AGlobeAwareDefaultPawn::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!this->Georeference) {
+		this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+	}
+}
+
 glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
+	if (!this->Georeference) {
+		return glm::dmat3(1.0);
+	}
+
 	FVector ueLocation = this->GetPawnViewLocation();
 	FIntVector ueOrigin = this->GetWorld()->OriginLocation;
 	glm::dvec3 location = glm::dvec3(
@@ -112,9 +125,22 @@ glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
 		-(static_cast<double>(ueLocation.Y) + static_cast<double>(ueOrigin.Y)),
 		static_cast<double>(ueLocation.Z) + static_cast<double>(ueOrigin.Z)
 	) / 100.0;
-	glm::dmat3 enuToFixed =
+
+	glm::dmat4 unrealToEcef = this->Georeference->GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+	glm::dvec3 cameraEcef = unrealToEcef * glm::dvec4(location, 1.0);
+	glm::dmat4 enuToEcefAtCamera = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(cameraEcef);
+	glm::dmat4 ecefToUnreal = glm::affineInverse(unrealToEcef);
+
+	// Camera Axes = ENU
+	// Unreal Axes = controlled by Georeference
+	glm::dmat3 rotationCesium =
+		glm::dmat3(ecefToUnreal) *
+		glm::dmat3(enuToEcefAtCamera);
+
+	glm::dmat3 cameraToUnreal =
 		glm::dmat3(CesiumTransforms::unrealToOrFromCesium) *
-		glm::dmat3(CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(location)) *
+		rotationCesium *
 		glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
-	return enuToFixed;
+
+	return cameraToUnreal;
 }

@@ -18,6 +18,10 @@ class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 
 	AGlobeAwareDefaultPawn();
 	
+	/**
+	 * The actor controlling how this camera's location in the Cesium world relates to the coordinate system in
+	 * this Unreal Engine level.
+	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	ACesiumGeoreference* Georeference;
 
@@ -58,6 +62,9 @@ class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 	virtual void AddControllerYawInput(float Val) override;
 	virtual void AddControllerRollInput(float Val) override;
 	virtual FRotator GetViewRotation() const override;
+
+protected:
+	virtual void BeginPlay() override;
 
 private:
 	/**
