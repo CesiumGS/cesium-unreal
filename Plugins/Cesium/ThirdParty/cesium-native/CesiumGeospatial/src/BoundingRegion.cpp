@@ -200,7 +200,7 @@ namespace CesiumGeospatial {
         double minX, maxX, minY, maxY, minZ, maxZ;
         Plane plane(glm::dvec3(0.0, 0.0, 1.0), 0.0);
 
-        if (rectangle.computeWidth() <= Math::PI) {
+        if (rectangle.computeWidth() <= Math::ONE_PI) {
             // The bounding box will be aligned with the tangent plane at the center of the rectangle.
             Cartographic tangentPointCartographic = rectangle.computeCenter();
             glm::dvec3 tangentPoint = ellipsoid.cartographicToCartesian(tangentPointCartographic);

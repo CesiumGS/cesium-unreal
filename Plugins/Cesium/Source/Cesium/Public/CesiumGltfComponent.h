@@ -35,7 +35,7 @@ public:
 	/// </summary>
 	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
 	static std::unique_ptr<HalfConstructed> CreateOffGameThread(const tinygltf::Model& model, const glm::dmat4x4& transform, IPhysXCooking* pPhysXCooking = nullptr);
-	static UCesiumGltfComponent* CreateOnGameThread(AActor* pParentActor, std::unique_ptr<HalfConstructed> pHalfConstructed);
+	static UCesiumGltfComponent* CreateOnGameThread(AActor* pParentActor, std::unique_ptr<HalfConstructed> pHalfConstructed, const glm::dmat4x4& cesiumToUnrealTransform);
 
 	UCesiumGltfComponent();
 
@@ -45,12 +45,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadModel(const FString& Url);
 
+	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+	void UpdateTransformCesium(const glm::dmat4& cesiumToUnrealTransform);
+
 protected:
 	//virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	FString LoadedUrl;
 	class UStaticMeshComponent* Mesh;
+
+	glm::dmat4x4 _cesiumTransformation;
 
 private:
 	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
