@@ -98,6 +98,7 @@ public:
 
 	virtual bool IsBoundingVolumeReady() const override;
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
+	virtual void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal) override;
 
 protected:
 	// Called when the game starts or when spawned

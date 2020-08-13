@@ -411,7 +411,7 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult, const glm::dmat4x4& cesiumToUnrealTransform) {
 	UCesiumGltfPrimitiveComponent* pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf);
 	pMesh->HighPrecisionNodeTransform = loadResult.transform;
-	pMesh->UpdateTransformCesium(cesiumToUnrealTransform);
+	pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
 	pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	pMesh->bUseDefaultCollision = true;
@@ -594,11 +594,11 @@ void UCesiumGltfComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorld
 
 }
 
-void UCesiumGltfComponent::UpdateTransformCesium(const glm::dmat4& cesiumToUnrealTransform) {
+void UCesiumGltfComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform) {
 	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
 		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
 		if (pPrimitive) {
-			pPrimitive->UpdateTransformCesium(cesiumToUnrealTransform);
+			pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
 		}
 	}
 
