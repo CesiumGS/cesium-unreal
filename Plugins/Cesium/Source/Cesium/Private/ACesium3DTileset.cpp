@@ -95,12 +95,7 @@ void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShif
 	glm::dmat4 tilesetToWorld = this->GetTilesetToWorldTransform();
 	glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
 
-	TArray<UCesiumGltfComponent*> gltfComponents;
-	this->GetComponents<UCesiumGltfComponent>(gltfComponents);
-
-	for (UCesiumGltfComponent* pGltf : gltfComponents) {
-		pGltf->UpdateTransformCesium(tilesetToUnrealTransform);
-	}
+	this->UpdateTransformFromCesium(tilesetToUnrealTransform);
 }
 
 bool ACesium3DTileset::IsBoundingVolumeReady() const
@@ -117,6 +112,16 @@ std::optional<Cesium3DTiles::BoundingVolume> ACesium3DTileset::GetBoundingVolume
 	}
 
 	return this->_pTileset->getRootTile()->getBoundingVolume();
+}
+
+void ACesium3DTileset::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal)
+{
+	TArray<UCesiumGltfComponent*> gltfComponents;
+	this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+	for (UCesiumGltfComponent* pGltf : gltfComponents) {
+		pGltf->UpdateTransformFromCesium(cesiumToUnreal);
+	}
 }
 
 // Called when the game starts or when spawned

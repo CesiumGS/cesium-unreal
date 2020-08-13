@@ -116,6 +116,22 @@ public:
 	// TODO: Allow user to select/configure the ellipsoid.
 
 	/**
+	 * Gets the current transformation from the Cesium coordinate system (ECEF / WGS84) to
+	 * the Unreal level's local coordinate system, accounting for the properties of this
+	 * instance as well as {@see UWorld::OriginLocation}.
+	 */
+	glm::dmat4x4 GetCurrentCesiumToUnrealLocalTransform() const;
+
+	/**
+	 * Gets the transformation from the Cesium coordinate system (ECEF / WGS84) to
+	 * the Unreal level's local coordinate system, just like {@see GetCurrentCesiumToUnrealLocalTransform}.
+	 * The difference is that this method can be used to get the transformation while a world origin
+	 * rebase is in progress by accounting for an origin offset that has not yet been applied to
+	 * {@see UWorld::OriginLocation}.
+	 */
+	glm::dmat4x4 GetNextCesiumToUnrealLocalTransform(const FIntVector& WorldOriginOffset) const;
+
+	/**
 	 * Gets a 4x4 matrix to transform coordinates from the Unreal Engine absolute world coordinates (i.e. the world
 	 * coordinates accounting for the {@see UWorld::OriginLocation}) to the Cesium ellipsoid-centered coordinate system.
 	 */
@@ -132,6 +148,12 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
+	void UpdateGeoreference();
+
+#ifdef WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 public:	
 	// Called every frame
