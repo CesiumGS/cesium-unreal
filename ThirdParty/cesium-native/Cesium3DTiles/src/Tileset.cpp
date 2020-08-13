@@ -7,7 +7,6 @@
 #include <chrono>
 
 namespace Cesium3DTiles {
-
     Tileset::Tileset(
         const TilesetExternals& externals,
         const std::string& url,

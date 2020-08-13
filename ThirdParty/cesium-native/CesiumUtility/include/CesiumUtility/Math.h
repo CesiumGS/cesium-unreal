@@ -30,7 +30,7 @@ namespace CesiumUtility {
         static const double EPSILON20;
         static const double EPSILON21;
 
-        static const double PI;
+        static const double ONE_PI;
         static const double TWO_PI;
         static const double PI_OVER_TWO;
 
@@ -76,7 +76,7 @@ namespace CesiumUtility {
         }
 
         static inline double negativePiToPi(double angle) {
-            return Math::zeroToTwoPi(angle + Math::PI) - Math::PI;
+            return Math::zeroToTwoPi(angle + Math::ONE_PI) - Math::ONE_PI;
         }
 
         static inline double zeroToTwoPi(double angle) {
@@ -95,11 +95,11 @@ namespace CesiumUtility {
         }
 
         static inline double degreesToRadians(double angleDegrees) {
-            return angleDegrees * Math::PI / 180.0;
+            return angleDegrees * Math::ONE_PI / 180.0;
         }
 
         static inline double radiansToDegrees(double angleRadians) {
-            return angleRadians * 180.0 / Math::PI;
+            return angleRadians * 180.0 / Math::ONE_PI;
         }
     };
 

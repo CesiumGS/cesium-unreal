@@ -19,6 +19,7 @@
 #include "IPhysXCookingModule.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -35,6 +36,7 @@
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
+	Georeference(nullptr),
 	_pTileset(nullptr)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -51,36 +53,70 @@ ACesium3DTileset::~ACesium3DTileset() {
 }
 
 glm::dmat4x4 ACesium3DTileset::GetWorldToTilesetTransform() const {
-	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
-		return glm::dmat4x4(1.0);
-	}
-
-	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
-	if (!pRootTile) {
-		return glm::dmat4x4(1.0);
-	}
-
-	glm::dvec3 bvCenter;
-
-	if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-		const Cesium3DTiles::BoundingVolume& tilesetBoundingVolume = pRootTile->getBoundingVolume();
-		bvCenter = Cesium3DTiles::getBoundingVolumeCenter(tilesetBoundingVolume);
-	} else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-		const CesiumGeospatial::Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
-		bvCenter = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->OriginLongitude, this->OriginLatitude, this->OriginHeight));
-	}
-
-	if (this->AlignTilesetUpWithZ) {
-		return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(bvCenter);
-	}
-	else {
-		return glm::translate(glm::dmat4x4(1.0), bvCenter);
-	}
+	return this->Georeference->GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
 }
 
 glm::dmat4x4 ACesium3DTileset::GetTilesetToWorldTransform() const
 {
-	return glm::affineInverse(this->GetWorldToTilesetTransform());
+	return this->Georeference->GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+}
+
+glm::dmat4x4 ACesium3DTileset::GetGlobalWorldToLocalWorldTransform() const {
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	return glm::translate(
+		glm::dmat4x4(1.0),
+		glm::dvec3(-originLocation.X, originLocation.Y, -originLocation.Z) / 100.0
+	);
+}
+
+glm::dmat4x4 ACesium3DTileset::GetLocalWorldToGlobalWorldTransform() const {
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	return glm::translate(
+		glm::dmat4x4(1.0),
+		glm::dvec3(originLocation.X, -originLocation.Y, originLocation.Z) / 100.0
+	);
+}
+
+void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
+	AActor::ApplyWorldOffset(InOffset, bWorldShift);
+
+	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
+	glm::dvec3 originLocation = glm::dvec3(
+		static_cast<double>(oldOrigin.X) - static_cast<double>(InOffset.X),
+		static_cast<double>(oldOrigin.Y) - static_cast<double>(InOffset.Y),
+		static_cast<double>(oldOrigin.Z) - static_cast<double>(InOffset.Z)
+	);
+
+	glm::dmat4 globalToLocal = glm::translate(
+		glm::dmat4x4(1.0),
+		glm::dvec3(-originLocation.x, originLocation.y, -originLocation.z) / 100.0
+	);
+
+	glm::dmat4 tilesetToWorld = this->GetTilesetToWorldTransform();
+	glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
+
+	TArray<UCesiumGltfComponent*> gltfComponents;
+	this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+	for (UCesiumGltfComponent* pGltf : gltfComponents) {
+		pGltf->UpdateTransformCesium(tilesetToUnrealTransform);
+	}
+}
+
+bool ACesium3DTileset::IsBoundingVolumeReady() const
+{
+	// TODO: detect failures that will cause the root tile to never exist.
+	// That counts as "ready" too.
+	return this->_pTileset && this->_pTileset->getRootTile();
+}
+
+std::optional<Cesium3DTiles::BoundingVolume> ACesium3DTileset::GetBoundingVolume() const
+{
+	if (!this->IsBoundingVolumeReady()) {
+		return std::nullopt;
+	}
+
+	return this->_pTileset->getRootTile()->getBoundingVolume();
 }
 
 // Called when the game starts or when spawned
@@ -94,6 +130,19 @@ void ACesium3DTileset::BeginPlay()
 void ACesium3DTileset::OnConstruction(const FTransform& Transform)
 {
 	this->LoadTileset();
+}
+
+void ACesium3DTileset::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPrimitiveComponent* OtherComp, bool bSelfMoved, FVector HitLocation, FVector HitNormal, FVector NormalImpulse, const FHitResult& Hit)
+{
+	//std::cout << "Hit face index: " << Hit.FaceIndex << std::endl;
+
+	//FHitResult detailedHit;
+	//FCollisionQueryParams params;
+	//params.bReturnFaceIndex = true;
+	//params.bTraceComplex = true;
+	//MyComp->LineTraceComponent(detailedHit, Hit.TraceStart, Hit.TraceEnd, params);
+
+	//std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
 
 class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
@@ -111,8 +160,7 @@ public:
 
 		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
 			const Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<const Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
-			glm::dmat4x4 transform = _pActor->GetTilesetToWorldTransform() * tile.getTransform();
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), transform, this->_pPhysXCooking);
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), tile.getTransform(), this->_pPhysXCooking);
 			return pHalf.release();
 		}
 
@@ -127,7 +175,10 @@ public:
 
 		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
-			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf));
+			glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
+			glm::dmat4 tilesetToWorld = _pActor->GetTilesetToWorldTransform();
+			glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
+			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf), tilesetToUnrealTransform);
 		}
 
 		return nullptr;
@@ -188,6 +239,12 @@ void ACesium3DTileset::LoadTileset()
 		this->DestroyTileset();
 	}
 
+	if (!this->Georeference) {
+		this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+	}
+
+	this->Georeference->AddGeoreferencedObject(this);
+
 	Cesium3DTiles::TilesetExternals externals{
 		new UnrealAssetAccessor(),
 		new UnrealResourcePreparer(this),
@@ -219,31 +276,43 @@ void ACesium3DTileset::DestroyTileset() {
 	this->_pTileset = nullptr;
 }
 
-std::optional<Cesium3DTiles::Camera> ACesium3DTileset::GetPlayerCamera() const
+std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetCamera() const {
+	std::optional<UnrealCameraParameters> camera = this->GetPlayerCamera();
+
+#ifdef WITH_EDITOR
+	//if (!camera) {
+	//	camera = this->GetEditorCamera();
+	//}
+#endif
+
+	return camera;
+}
+
+std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetPlayerCamera() const
 {
 	UWorld* pWorld = this->GetWorld();
 	if (!pWorld) {
-		return std::optional<Cesium3DTiles::Camera>();
+		return std::optional<UnrealCameraParameters>();
 	}
 
 	APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
 	if (!pPlayerController) {
-		return std::optional<Cesium3DTiles::Camera>();
+		return std::optional<UnrealCameraParameters>();
 	}
 
 	APlayerCameraManager* pCameraManager = pPlayerController->PlayerCameraManager;
 	if (!pCameraManager) {
-		return std::optional<Cesium3DTiles::Camera>();
+		return std::optional<UnrealCameraParameters>();
 	}
 
 	UGameViewportClient* pViewport = pWorld->GetGameViewport();
 	if (!pViewport) {
-		return std::optional<Cesium3DTiles::Camera>();
+		return std::optional<UnrealCameraParameters>();
 	}
 
 	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
 	if (!pRootTile) {
-		return std::optional<Cesium3DTiles::Camera>();
+		return std::optional<UnrealCameraParameters>();
 	}
 
 	const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
@@ -254,7 +323,12 @@ std::optional<Cesium3DTiles::Camera> ACesium3DTileset::GetPlayerCamera() const
 	FVector2D size;
 	pViewport->GetViewportSize(size);
 
-	return this->CreateCameraFromViewParameters(size, location, rotation, fov);
+	return UnrealCameraParameters {
+		size,
+		location,
+		rotation,
+		fov
+	};
 }
 
 Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
@@ -284,9 +358,12 @@ Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
 	glm::dvec3 cesiumDirection = tryTransform(directionRelativeToTileset);
 	glm::dvec3 cesiumUp = tryTransform(upRelativeToTileset);
 
-	glm::dmat4x4 transform = this->GetWorldToTilesetTransform();
+	glm::dmat4x4 transform = this->GetWorldToTilesetTransform(); /* * this->GetLocalWorldToGlobalWorldTransform();*/
+	//glm::dvec3 first = this->GetLocalWorldToGlobalWorldTransform() * glm::dvec4(cesiumPosition, 1.0);
+	//glm::dvec3 second = this->GetWorldToTilesetTransform() * glm::dvec4(first, 1.0);
 
 	return Cesium3DTiles::Camera(
+		//second,
 		transform * glm::dvec4(cesiumPosition, 1.0),
 		transform * glm::dvec4(cesiumDirection, 0.0),
 		transform * glm::dvec4(cesiumUp, 0.0),
@@ -297,7 +374,7 @@ Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
 }
 
 #ifdef WITH_EDITOR
-std::optional<Cesium3DTiles::Camera> ACesium3DTileset::GetEditorCamera() const
+std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetEditorCamera() const
 {
 	FViewport* pViewport = GEditor->GetActiveViewport();
 	FViewportClient* pViewportClient = pViewport->GetClient();
@@ -307,7 +384,12 @@ std::optional<Cesium3DTiles::Camera> ACesium3DTileset::GetEditorCamera() const
 	double fov = pEditorViewportClient->FOVAngle;
 	FVector2D size = pViewport->GetSizeXY();
 
-	return this->CreateCameraFromViewParameters(size, location, rotation, fov);
+	return UnrealCameraParameters{
+		size,
+		location,
+		rotation,
+		fov
+	};
 }
 #endif
 
@@ -324,19 +406,19 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
-	std::optional<Cesium3DTiles::Camera> camera = this->GetPlayerCamera();
-
-#ifdef WITH_EDITOR
-	if (!camera) {
-		camera = this->GetEditorCamera();
-	}
-#endif
-
+	std::optional<UnrealCameraParameters> camera = this->GetCamera();
 	if (!camera) {
 		return;
 	}
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(camera.value());
+	Cesium3DTiles::Camera tilesetCamera = this->CreateCameraFromViewParameters(
+		camera.value().viewportSize,
+		camera.value().location,
+		camera.value().rotation,
+		camera.value().fieldOfViewDegrees
+	);
+
+	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetCamera);
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
