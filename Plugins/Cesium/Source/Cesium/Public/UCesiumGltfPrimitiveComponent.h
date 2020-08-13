@@ -18,7 +18,7 @@ public:
 
 	glm::dmat4x4 HighPrecisionNodeTransform;
 
-	void UpdateTransformCesium(const glm::dmat4& cesiumToUnrealTransform);
+	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
 
 protected:
 	// Called when the game starts

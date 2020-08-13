@@ -34,4 +34,10 @@ public:
 	 * {@see IsBoundingVolumeReady} to determine which of these is the case.
 	 */
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const = 0;
+
+	/**
+	 * Updates this object with a new transformation from the Cesium world
+	 * to the local coordinates of the Unreal Engine level.
+	 */
+	virtual void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal) = 0;
 };
