@@ -6,6 +6,7 @@
 #include "CesiumGeospatial/Transforms.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
+#include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -23,6 +24,31 @@
 ACesiumGeoreference::ACesiumGeoreference()
 {
 	PrimaryActorTick.bCanEverTick = true;
+}
+
+glm::dmat4x4 ACesiumGeoreference::GetCurrentCesiumToUnrealLocalTransform() const
+{
+	// TODO: cache this
+	return this->GetNextCesiumToUnrealLocalTransform(FIntVector(0, 0, 0));
+}
+
+glm::dmat4x4 ACesiumGeoreference::GetNextCesiumToUnrealLocalTransform(const FIntVector& WorldOriginOffset) const
+{
+	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
+	glm::dvec3 originLocation = glm::dvec3(
+		static_cast<double>(oldOrigin.X) - static_cast<double>(WorldOriginOffset.X),
+		static_cast<double>(oldOrigin.Y) - static_cast<double>(WorldOriginOffset.Y),
+		static_cast<double>(oldOrigin.Z) - static_cast<double>(WorldOriginOffset.Z)
+	);
+
+	glm::dmat4 globalToLocal = glm::translate(
+		glm::dmat4x4(1.0),
+		glm::dvec3(-originLocation.x, originLocation.y, -originLocation.z) / 100.0
+	);
+
+	glm::dmat4 tilesetToWorld = this->GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+	glm::dmat4 cesiumToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
+	return cesiumToUnrealTransform;
 }
 
 glm::dmat4x4 ACesiumGeoreference::GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() const {
@@ -90,6 +116,26 @@ void ACesiumGeoreference::BeginPlay()
 			this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
 		}
 	}
+}
+
+void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
+{
+	this->UpdateGeoreference();
+}
+
+void ACesiumGeoreference::UpdateGeoreference()
+{
+	glm::dmat4 cesiumToUnreal = this->GetCurrentCesiumToUnrealLocalTransform();
+	for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
+		if (pObject.IsValid()) {
+			pObject->UpdateTransformFromCesium(cesiumToUnreal);
+		}
+	}
+}
+
+void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	this->UpdateGeoreference();
 }
 
 // Called every frame
