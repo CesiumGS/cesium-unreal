@@ -62,6 +62,7 @@ class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 	virtual void AddControllerYawInput(float Val) override;
 	virtual void AddControllerRollInput(float Val) override;
 	virtual FRotator GetViewRotation() const override;
+	virtual FRotator GetBaseAimRotation() const override;
 
 protected:
 	virtual void BeginPlay() override;
