@@ -104,6 +104,11 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const
 	return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
 }
 
+FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const
+{
+	return this->GetViewRotation();
+}
+
 void AGlobeAwareDefaultPawn::BeginPlay()
 {
 	Super::BeginPlay();
