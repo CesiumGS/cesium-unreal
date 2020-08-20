@@ -12,7 +12,7 @@
 #include "Engine/GameViewportClient.h"
 #include "UnrealAssetAccessor.h"
 #include "Cesium3DTiles/Tileset.h"
-#include "Cesium3DTiles/Batched3DModelContent.h"
+#include "Cesium3DTiles/GltfContent.h"
 #include "UnrealTaskProcessor.h"
 #include "Math/UnrealMathUtility.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -163,9 +163,9 @@ public:
 			return nullptr;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
-			const Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<const Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), tile.getTransform(), this->_pPhysXCooking);
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+			const Cesium3DTiles::GltfContent* pGltfContent = static_cast<const Cesium3DTiles::GltfContent*>(tile.getContent());
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pGltfContent->gltf(), tile.getTransform(), this->_pPhysXCooking);
 			return pHalf.release();
 		}
 
@@ -178,7 +178,7 @@ public:
 			return nullptr;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
 			glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
 			glm::dmat4 tilesetToWorld = _pActor->GetTilesetToWorldTransform();
