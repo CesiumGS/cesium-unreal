@@ -15,7 +15,7 @@ matrix:
         - export PATH=/usr/bin:$PATH
 
 script:
-  - cd Plugins/Cesium/ThirdParty/cesium-native
+  - cd Plugins/Cesium/extern/cesium-native
   - cd extern
   - ./build.sh
   - cd ..

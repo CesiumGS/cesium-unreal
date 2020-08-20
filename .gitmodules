@@ -1,18 +1,3 @@
-[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/tinygltf"]
-	path = Plugins/Cesium/ThirdParty/cesium-native/extern/tinygltf
-	url = https://github.com/syoyo/tinygltf
-[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/glm"]
-	path = Plugins/Cesium/ThirdParty/cesium-native/extern/glm
-	url = https://github.com/g-truc/glm.git
-[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/uriparser"]
-	path = Plugins/Cesium/ThirdParty/cesium-native/extern/uriparser
-	url = https://github.com/uriparser/uriparser.git
-[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/draco"]
-	path = Plugins/Cesium/ThirdParty/cesium-native/extern/draco
-	url = https://github.com/google/draco.git
-[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/Catch2"]
-	path = Plugins/Cesium/ThirdParty/cesium-native/extern/Catch2
-	url = https://github.com/catchorg/Catch2.git
-[submodule "Plugins/Cesium/ThirdParty/cesium-native/extern/GSL"]
-	path = Plugins/Cesium/ThirdParty/cesium-native/extern/GSL
-	url = https://github.com/microsoft/GSL.git
+[submodule "Plugins/Cesium/extern/cesium-native"]
+	path = Plugins/Cesium/extern/cesium-native
+	url = ../cesium-native.git
