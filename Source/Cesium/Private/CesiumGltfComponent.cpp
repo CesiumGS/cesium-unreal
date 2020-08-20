@@ -520,11 +520,15 @@ UCesiumGltfComponent::CreateOnGameThread(
 	std::unique_ptr<HalfConstructed> pHalfConstructed,
 	const glm::dmat4x4& cesiumToUnrealTransform
 ) {
+	HalfConstructedReal* pReal = static_cast<HalfConstructedReal*>(pHalfConstructed.get());
+	std::vector<LoadModelResult>& result = pReal->loadModelResult;
+	if (result.size() == 0) {
+		return nullptr;
+	}
+
 	UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
 	Gltf->SetUsingAbsoluteLocation(true);
 	Gltf->SetFlags(RF_Transient);
-	HalfConstructedReal* pReal = static_cast<HalfConstructedReal*>(pHalfConstructed.get());
-	std::vector<LoadModelResult>& result = pReal->loadModelResult;
 	for (LoadModelResult& model : result) {
 		loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
 	}

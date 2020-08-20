@@ -15,8 +15,12 @@ public:
 	{
 	}
 
-	virtual uint16_t statusCode() override {
+	virtual uint16_t statusCode() const override {
 		return this->_pResponse->GetResponseCode();
+	}
+
+	virtual std::string contentType() const override {
+		return wstr_to_utf8(this->_pResponse->GetContentType());
 	}
 
 	//virtual const std::map<std::string, std::string>& headers() override {
@@ -24,7 +28,7 @@ public:
 	//	return this->_headers;
 	//}
 
-	virtual gsl::span<const uint8_t> data() override	{
+	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
 		return gsl::span(static_cast<const uint8_t*>(&content[0]), content.Num());
 	}
