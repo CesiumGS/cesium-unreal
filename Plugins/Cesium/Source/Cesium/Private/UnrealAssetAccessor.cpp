@@ -1,3 +1,6 @@
+#pragma warning(disable:4583)
+#pragma warning(disable:4582)
+
 #include "UnrealAssetAccessor.h"
 #include "Cesium3DTiles/IAssetRequest.h"
 #include "Cesium3DTiles/IAssetResponse.h"

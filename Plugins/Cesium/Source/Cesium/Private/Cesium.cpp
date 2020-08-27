@@ -1,4 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
+#pragma warning(disable:4583)
+#pragma warning(disable:4582)
 
 #include "Cesium.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"

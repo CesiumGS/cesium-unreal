@@ -1,3 +1,6 @@
+#pragma warning(disable:4583)
+#pragma warning(disable:4582)
+
 #include "CesiumTransforms.h"
 
 const double CesiumTransforms::centimetersPerMeter = 100.0;
