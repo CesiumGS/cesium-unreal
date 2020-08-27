@@ -435,24 +435,24 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
 
 	if (pbr.baseColorFactor.size() >= 3) {
-		pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
+		//pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
 	}
-	pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
-	pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
+	//pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
+	//pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
 
-	applyTexture(pMaterial, "baseColorTexture", model, pbr.baseColorTexture);
-	applyTexture(pMaterial, "metallicRoughnessTexture", model, pbr.metallicRoughnessTexture);
-	applyTexture(pMaterial, "normalTexture", model, material.normalTexture);
-	bool hasEmissiveTexture = applyTexture(pMaterial, "emissiveTexture", model, material.emissiveTexture);
-	applyTexture(pMaterial, "occlusionTexture", model, material.occlusionTexture);
+	//applyTexture(pMaterial, "baseColorTexture", model, pbr.baseColorTexture);
+	//applyTexture(pMaterial, "metallicRoughnessTexture", model, pbr.metallicRoughnessTexture);
+	//applyTexture(pMaterial, "normalTexture", model, material.normalTexture);
+	bool hasEmissiveTexture = applyTexture(pMaterial, "emissiveTexture", model, pbr.baseColorTexture);
+	//applyTexture(pMaterial, "occlusionTexture", model, material.occlusionTexture);
 
-	if (material.emissiveFactor.size() >= 3) {
-		pMaterial->SetVectorParameterValue("emissiveFactor", FVector(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]));
-	} else if (hasEmissiveTexture) {
+	//if (material.emissiveFactor.size() >= 3) {
+		//pMaterial->SetVectorParameterValue("emissiveFactor", FVector(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]));
+	//} else if (hasEmissiveTexture) {
 		// When we have an emissive texture but not a factor, we need to use a factor of vec3(1.0). The default,
 		// vec3(0.0), would disable the emission from the texture.
-		pMaterial->SetVectorParameterValue("emissiveFactor", FVector(1.0f, 1.0f, 1.0f));
-	}
+		//pMaterial->SetVectorParameterValue("emissiveFactor", FVector(1.0f, 1.0f, 1.0f));
+	//}
 
 	pMaterial->TwoSided = true;
 
