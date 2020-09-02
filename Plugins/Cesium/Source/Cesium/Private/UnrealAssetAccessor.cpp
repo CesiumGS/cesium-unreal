@@ -30,7 +30,7 @@ public:
 
 	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
-		return gsl::span(static_cast<const uint8_t*>(&content[0]), content.Num());
+		return gsl::span(static_cast<const uint8_t*>(content.GetData()), content.Num());
 	}
 
 private:

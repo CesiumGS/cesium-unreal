@@ -16,6 +16,15 @@ namespace tinygltf{
 	class Model;
 }
 
+namespace Cesium3DTiles {
+	class Tile;
+	class RasterOverlayTile;
+}
+
+namespace CesiumGeometry {
+	class Rectangle;
+}
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
 {
@@ -47,6 +56,12 @@ public:
 
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
+
+	void attachRasterTile(
+		const Cesium3DTiles::Tile& tile,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle
+	);
 
 protected:
 	//virtual void BeginPlay() override;
