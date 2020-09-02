@@ -22,6 +22,7 @@
 #include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include "Cesium3DTiles/BingMapsRasterOverlay.h"
 
 #ifdef WITH_EDITOR
 #include "Slate/SceneViewport.h"
@@ -201,6 +202,49 @@ public:
 		}
 	}
 
+	virtual void* prepareRasterInLoadThread(const Cesium3DTiles::RasterOverlayTile& rasterTile) {
+		return nullptr;
+	}
+
+	virtual void* prepareRasterInMainThread(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult) {
+		const tinygltf::Image& image = rasterTile.getImage();
+		if (image.width <= 0 || image.height <= 0) {
+			return nullptr;
+		}
+
+		UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+		pTexture->AddToRoot();
+
+		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
+		pTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+		pTexture->UpdateResource();
+
+		return pTexture;
+	}
+
+	virtual void* attachRasterInMainThread(
+		const Cesium3DTiles::Tile& tile,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle
+	) {
+		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		if (!pContent) {
+			return nullptr;
+		}
+
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
+			pGltfContent->attachRasterTile(tile, rasterTile, textureCoordinateRectangle);
+		}
+
+		return nullptr;
+	}
+
+	// TODO: we need a raster free
+
+
 private:
 	void destroyRecursively(USceneComponent* pComponent) {
 		if (pComponent->IsRegistered()) {
@@ -264,6 +308,8 @@ void ACesium3DTileset::LoadTileset()
 	{
 		pTileset = new Cesium3DTiles::Tileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
 	}
+
+	pTileset->getOverlays().push_back(std::make_unique<Cesium3DTiles::BingMapsRasterOverlay>("https://dev.virtualearth.net", "AmXdbd8UeUJtaRSn7yVwyXgQlBBUqliLbHpgn2c76DfuHwAXfRrgS5qwfHU6Rhm8"));
 
 	this->_pTileset = pTileset;
 }

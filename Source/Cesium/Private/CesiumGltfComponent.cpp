@@ -608,6 +608,10 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToU
 
 }
 
+void UCesiumGltfComponent::attachRasterTile(const Cesium3DTiles::Tile& tile, const Cesium3DTiles::RasterOverlayTile& rasterTile, const CesiumGeometry::Rectangle& textureCoordinateRectangle)
+{
+}
+
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
 {
 	const TArray<uint8>& content = response->GetContent();
