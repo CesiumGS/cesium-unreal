@@ -216,7 +216,18 @@ public:
 		pTexture->AddToRoot();
 
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+
 		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
+
+		//uint32_t* pPixels = reinterpret_cast<uint32_t*>(pTextureData);
+		//for (size_t i = 0; i < image.width * image.height; ++i) {
+		//	pPixels[i] = 0xFF0000FF;
+		//}
+
+		//for (size_t i = 0; i < image.image.size(); i += 4) {
+		//	std::swap(pTextureData[i], pTextureData[i + 3]);
+		//}
+
 		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 		pTexture->UpdateResource();
@@ -227,7 +238,9 @@ public:
 	virtual void* attachRasterInMainThread(
 		const Cesium3DTiles::Tile& tile,
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
-		const CesiumGeometry::Rectangle& textureCoordinateRectangle
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
+		const glm::dvec2& translation,
+		const glm::dvec2& scale
 	) {
 		const Cesium3DTiles::TileContent* pContent = tile.getContent();
 		if (!pContent) {
@@ -236,7 +249,9 @@ public:
 
 		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
 			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
-			pGltfContent->attachRasterTile(tile, rasterTile, textureCoordinateRectangle);
+			if (pGltfContent) {
+				pGltfContent->attachRasterTile(tile, rasterTile, textureCoordinateRectangle, translation, scale);
+			}
 		}
 
 		return nullptr;
@@ -488,6 +503,12 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
 			continue;
 		}
+
+		//const Cesium3DTiles::TileID& id = pTile->getTileID();
+		//const CesiumGeometry::QuadtreeTileID* pQuadtreeID = std::get_if<CesiumGeometry::QuadtreeTileID>(&id);
+		//if (!pQuadtreeID || pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y != 11627) {
+		//	continue;
+		//}
 
 		Cesium3DTiles::TileContent* pContent = pTile->getContent();
 		if (!pContent) {

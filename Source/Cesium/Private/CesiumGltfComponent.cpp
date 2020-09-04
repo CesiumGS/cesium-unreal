@@ -24,6 +24,8 @@
 #include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
+#include "Cesium3DTiles/RasterOverlayTile.h"
+#include "CesiumGeometry/Rectangle.h"
 
 static uint32_t nextMaterialId = 0;
 
@@ -34,6 +36,7 @@ struct LoadModelResult
 	const tinygltf::Material* pMaterial;
 	glm::dmat4x4 transform;
 	PxTriangleMesh* pCollisionMesh;
+	std::string name;
 };
 
 // Initialize with a static function instead of inline to avoid an
@@ -71,6 +74,8 @@ static void updateTextureCoordinates(
 		}
 	}
 }
+
+static tinygltf::Material defaultMaterial;
 
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
@@ -168,7 +173,7 @@ static void loadPrimitive(
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
 
 	int materialID = primitive.material;
-	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : nullptr;
+	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : &defaultMaterial;
 
 	if (pMaterial) {
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.baseColorTexture, 0);
@@ -176,6 +181,8 @@ static void loadPrimitive(
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->normalTexture, 2);
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->occlusionTexture, 3);
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->emissiveTexture, 4);
+		// TODO: hack
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.baseColorTexture, 5);
 	}
 
 	RenderData->Bounds = BoundingBoxAndSphere;
@@ -409,7 +416,7 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 }
 
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult, const glm::dmat4x4& cesiumToUnrealTransform) {
-	UCesiumGltfPrimitiveComponent* pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf);
+	UCesiumGltfPrimitiveComponent* pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, FName(loadResult.name.c_str()));
 	pMesh->HighPrecisionNodeTransform = loadResult.transform;
 	pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
@@ -426,7 +433,6 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
 
 	const tinygltf::Model& model = *loadResult.pModel;
-	tinygltf::Material defaultMaterial;
 	const tinygltf::Material& material = loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
 	
 	const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
@@ -544,7 +550,7 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 	{
 		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
 		FConstructorStatics() :
-			BaseMaterial(TEXT("/Cesium/GltfMaterial.GltfMaterial"))
+			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays"))
 		{
 		}
 	};
@@ -605,11 +611,53 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToU
 			pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
 		}
 	}
-
 }
 
-void UCesiumGltfComponent::attachRasterTile(const Cesium3DTiles::Tile& tile, const Cesium3DTiles::RasterOverlayTile& rasterTile, const CesiumGeometry::Rectangle& textureCoordinateRectangle)
-{
+void UCesiumGltfComponent::attachRasterTile(
+	const Cesium3DTiles::Tile& tile,
+	const Cesium3DTiles::RasterOverlayTile& rasterTile,
+	const CesiumGeometry::Rectangle& textureCoordinateRectangle,
+	const glm::dvec2& translation,
+	const glm::dvec2& scale
+) {
+	if (this->_overlayTiles.Num() == 0) {
+		// First overlay tile, generate texture coordinates
+		// TODO
+	}
+
+	UTexture2D* pTexture = static_cast<UTexture2D*>(rasterTile.getRendererResources());
+
+	this->_overlayTiles.Add(FRasterOverlayTile{
+		pTexture,
+		FLinearColor(textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY),
+		FLinearColor(translation.x, translation.y, scale.x, scale.y)
+	});
+
+	if (this->_overlayTiles.Num() > 3) {
+		UE_LOG(LogActor, Warning, TEXT("Too many raster overlays"));
+	}
+
+	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+		if (pPrimitive) {
+			UMaterialInstanceDynamic* pMaterial = Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
+
+			for (size_t i = 0; i < this->_overlayTiles.Num(); ++i) {
+				FRasterOverlayTile& overlayTile = this->_overlayTiles[i];
+				std::string is = std::to_string(i + 1);
+				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), overlayTile.pTexture);
+				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), overlayTile.textureCoordinateRectangle);
+				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), overlayTile.translationAndScale);
+			}
+
+			for (size_t i = this->_overlayTiles.Num(); i < 3; ++i) {
+				std::string is = std::to_string(i + 1);
+				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), nullptr);
+				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
+				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
+			}
+		}
+	}
 }
 
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)

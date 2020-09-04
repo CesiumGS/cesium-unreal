@@ -11,6 +11,7 @@
 
 class UMaterial;
 class IPhysXCooking;
+class UTexture;
 
 namespace tinygltf{
 	class Model;
@@ -24,6 +25,14 @@ namespace Cesium3DTiles {
 namespace CesiumGeometry {
 	class Rectangle;
 }
+
+USTRUCT()
+struct FRasterOverlayTile {
+	GENERATED_BODY()
+	UTexture* pTexture;
+	FLinearColor textureCoordinateRectangle;
+	FLinearColor translationAndScale;
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
@@ -60,7 +69,9 @@ public:
 	void attachRasterTile(
 		const Cesium3DTiles::Tile& tile,
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
-		const CesiumGeometry::Rectangle& textureCoordinateRectangle
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
+		const glm::dvec2& translation,
+		const glm::dvec2& scale
 	);
 
 protected:
@@ -71,6 +82,8 @@ protected:
 	class UStaticMeshComponent* Mesh;
 
 	glm::dmat4x4 _cesiumTransformation;
+
+	TArray<FRasterOverlayTile> _overlayTiles;
 
 private:
 	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
