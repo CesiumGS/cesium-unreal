@@ -613,9 +613,10 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToU
 	}
 }
 
-void UCesiumGltfComponent::attachRasterTile(
+void UCesiumGltfComponent::AttachRasterTile(
 	const Cesium3DTiles::Tile& tile,
 	const Cesium3DTiles::RasterOverlayTile& rasterTile,
+	UTexture2D* pTexture,
 	const CesiumGeometry::Rectangle& textureCoordinateRectangle,
 	const glm::dvec2& translation,
 	const glm::dvec2& scale
@@ -624,8 +625,6 @@ void UCesiumGltfComponent::attachRasterTile(
 		// First overlay tile, generate texture coordinates
 		// TODO
 	}
-
-	UTexture2D* pTexture = static_cast<UTexture2D*>(rasterTile.getRendererResources());
 
 	this->_overlayTiles.Add(FRasterOverlayTile{
 		pTexture,
@@ -658,6 +657,10 @@ void UCesiumGltfComponent::attachRasterTile(
 			}
 		}
 	}
+}
+
+void UCesiumGltfComponent::DetachRasterTile(const Cesium3DTiles::Tile& tile, const Cesium3DTiles::RasterOverlayTile& rasterTile, UTexture2D* pTexture)
+{
 }
 
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
