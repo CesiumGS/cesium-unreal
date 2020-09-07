@@ -1,39 +1,33 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "ACesium3DTileset.h"
-#include "tiny_gltf.h"
-#include "UnrealConversions.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTiles/BingMapsRasterOverlay.h"
+#include "Cesium3DTiles/GltfContent.h"
+#include "Cesium3DTiles/IPrepareRendererResources.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
-#include "HttpModule.h"
+#include "CesiumTransforms.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
-#include "Camera/PlayerCameraManager.h"
-#include "Engine/GameViewportClient.h"
-#include "UnrealAssetAccessor.h"
-#include "Cesium3DTiles/Tileset.h"
-#include "Cesium3DTiles/GltfContent.h"
-#include "UnrealTaskProcessor.h"
-#include "Math/UnrealMathUtility.h"
-#include "CesiumGeospatial/Transforms.h"
+#include "HttpModule.h"
 #include "IPhysXCookingModule.h"
-#include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/Cartographic.h"
-#include "CesiumTransforms.h"
+#include "Math/UnrealMathUtility.h"
+#include "UnrealAssetAccessor.h"
+#include "UnrealConversions.h"
+#include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include "Cesium3DTiles/BingMapsRasterOverlay.h"
 
 #ifdef WITH_EDITOR
-#include "Slate/SceneViewport.h"
-#include "EditorViewportClient.h"
 #include "Editor.h"
+#include "EditorViewportClient.h"
+#include "Slate/SceneViewport.h"
 #endif
-
-#pragma warning(push)
-#pragma warning(disable: 4946)
-#include "json.hpp"
-#pragma warning(pop)
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
@@ -218,6 +212,8 @@ public:
 
 		UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
 		pTexture->AddToRoot();
+		pTexture->AddressX = TextureAddress::TA_Clamp;
+		pTexture->AddressY = TextureAddress::TA_Clamp;
 
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
@@ -524,7 +520,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 		//const Cesium3DTiles::TileID& id = pTile->getTileID();
 		//const CesiumGeometry::QuadtreeTileID* pQuadtreeID = std::get_if<CesiumGeometry::QuadtreeTileID>(&id);
-		//if (!pQuadtreeID || pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y != 11627) {
+		//if (!pQuadtreeID || pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y != 11626) {
 		//	continue;
 		//}
 
