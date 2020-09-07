@@ -11,7 +11,7 @@
 
 class UMaterial;
 class IPhysXCooking;
-class UTexture;
+class UTexture2D;
 
 namespace tinygltf{
 	class Model;
@@ -29,7 +29,7 @@ namespace CesiumGeometry {
 USTRUCT()
 struct FRasterOverlayTile {
 	GENERATED_BODY()
-	UTexture* pTexture;
+	UTexture2D* pTexture;
 	FLinearColor textureCoordinateRectangle;
 	FLinearColor translationAndScale;
 };
@@ -66,12 +66,19 @@ public:
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
 
-	void attachRasterTile(
+	void AttachRasterTile(
 		const Cesium3DTiles::Tile& tile,
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		UTexture2D* pTexture,
 		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
 		const glm::dvec2& translation,
 		const glm::dvec2& scale
+	);
+
+	void DetachRasterTile(
+		const Cesium3DTiles::Tile& tile,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		UTexture2D* pTexture
 	);
 
 protected:

@@ -202,6 +202,10 @@ public:
 		}
 	}
 
+	virtual void addRasterOverlayTextureCoordinates(Cesium3DTiles::Tile& tile, uint32_t overlayTextureCoordinateID, const gsl::span<const float>& textureCoordinates) override {
+
+	}
+
 	virtual void* prepareRasterInLoadThread(const Cesium3DTiles::RasterOverlayTile& rasterTile) {
 		return nullptr;
 	}
@@ -216,18 +220,7 @@ public:
 		pTexture->AddToRoot();
 
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-
 		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
-
-		//uint32_t* pPixels = reinterpret_cast<uint32_t*>(pTextureData);
-		//for (size_t i = 0; i < image.width * image.height; ++i) {
-		//	pPixels[i] = 0xFF0000FF;
-		//}
-
-		//for (size_t i = 0; i < image.image.size(); i += 4) {
-		//	std::swap(pTextureData[i], pTextureData[i + 3]);
-		//}
-
 		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 		pTexture->UpdateResource();
@@ -235,30 +228,55 @@ public:
 		return pTexture;
 	}
 
-	virtual void* attachRasterInMainThread(
+	virtual void freeRaster(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult, void* pMainThreadResult) override {
+		UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+		if (!pTexture) {
+			return;
+		}
+
+		pTexture->RemoveFromRoot();
+	}
+
+	virtual void attachRasterInMainThread(
 		const Cesium3DTiles::Tile& tile,
+		uint32_t overlayTextureCoordinateID,
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		void* pMainThreadRendererResources,
 		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
 		const glm::dvec2& translation,
 		const glm::dvec2& scale
 	) {
 		const Cesium3DTiles::TileContent* pContent = tile.getContent();
 		if (!pContent) {
-			return nullptr;
+			return;
 		}
 
 		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
 			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
 			if (pGltfContent) {
-				pGltfContent->attachRasterTile(tile, rasterTile, textureCoordinateRectangle, translation, scale);
+				pGltfContent->AttachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources), textureCoordinateRectangle, translation, scale);
 			}
 		}
-
-		return nullptr;
 	}
 
-	// TODO: we need a raster free
+	virtual void detachRasterInMainThread(
+		const Cesium3DTiles::Tile& tile,
+		uint32_t overlayTextureCoordinateID,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		void* pMainThreadRendererResources
+	) override {
+		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		if (!pContent) {
+			return;
+		}
 
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadRendererResources);
+			if (pGltfContent) {
+				pGltfContent->DetachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources));
+			}
+		}
+	}
 
 private:
 	void destroyRecursively(USceneComponent* pComponent) {
