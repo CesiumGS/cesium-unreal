@@ -196,10 +196,6 @@ public:
 		}
 	}
 
-	virtual void addRasterOverlayTextureCoordinates(Cesium3DTiles::Tile& tile, uint32_t overlayTextureCoordinateID, const gsl::span<const float>& textureCoordinates) override {
-
-	}
-
 	virtual void* prepareRasterInLoadThread(const Cesium3DTiles::RasterOverlayTile& rasterTile) {
 		return nullptr;
 	}
