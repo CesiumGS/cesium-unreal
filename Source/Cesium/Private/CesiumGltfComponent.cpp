@@ -53,6 +53,8 @@ static glm::dmat4 createGltfAxesToCesiumAxes() {
 
 glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
+static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
+
 template <class T>
 static void updateTextureCoordinates(
 	const tinygltf::Model& model,
@@ -61,7 +63,23 @@ static void updateTextureCoordinates(
 	const T& texture,
 	int textureCoordinateIndex
 ) {
-	std::string attributeName = "TEXCOORD_" + std::to_string(texture.texCoord);
+	updateTextureCoordinates(
+		model,
+		primitive,
+		vertices,
+		"TEXCOORD_" + std::to_string(texture.texCoord),
+		textureCoordinateIndex
+	);
+}
+
+template <>
+void updateTextureCoordinates(
+	const tinygltf::Model& model,
+	const tinygltf::Primitive& primitive,
+	TArray<FStaticMeshBuildVertex>& vertices,
+	const std::string& attributeName,
+	int textureCoordinateIndex
+) {
 	auto uvAccessorIt = primitive.attributes.find(attributeName);
 	if (uvAccessorIt != primitive.attributes.end()) {
 		int uvAccessorID = uvAccessorIt->second;
@@ -181,14 +199,16 @@ static void loadPrimitive(
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->normalTexture, 2);
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->occlusionTexture, 3);
 		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->emissiveTexture, 4);
-		// TODO: hack
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.baseColorTexture, 5);
 	}
+
+	// Currently only one set of raster overlay texture coordinates is supported, and it is at UVs[5].
+	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
+	updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, rasterOverlay0, 5);
 
 	RenderData->Bounds = BoundingBoxAndSphere;
 
 	LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
-	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, 1);
+	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, 6);
 
 	FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
 	if (false) //bHasVertexColors)
