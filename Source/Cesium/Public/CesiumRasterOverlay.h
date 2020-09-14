@@ -6,8 +6,11 @@
 #include "Components/ActorComponent.h"
 #include "CesiumRasterOverlay.generated.h"
 
+namespace Cesium3DTiles {
+	class Tileset;
+}
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(Abstract)
 class CESIUM_API UCesiumRasterOverlay : public UActorComponent
 {
 	GENERATED_BODY()
@@ -24,5 +27,6 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	virtual void AddToTileset(Cesium3DTiles::Tileset& tileset) PURE_VIRTUAL(UCesiumRasterOverlay::AddToTilset, return;);
 		
 };

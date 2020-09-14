@@ -20,6 +20,7 @@
 #include "UnrealAssetAccessor.h"
 #include "UnrealConversions.h"
 #include "UnrealTaskProcessor.h"
+#include "CesiumRasterOverlay.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
@@ -334,7 +335,12 @@ void ACesium3DTileset::LoadTileset()
 		pTileset = new Cesium3DTiles::Tileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
 	}
 
-	pTileset->getOverlays().push_back(std::make_unique<Cesium3DTiles::BingMapsRasterOverlay>("https://dev.virtualearth.net", "AmXdbd8UeUJtaRSn7yVwyXgQlBBUqliLbHpgn2c76DfuHwAXfRrgS5qwfHU6Rhm8"));
+	TArray<UCesiumRasterOverlay*> rasterOverlays;
+	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+		pOverlay->AddToTileset(*pTileset);
+	}
 
 	this->_pTileset = pTileset;
 }
