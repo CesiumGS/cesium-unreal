@@ -59,7 +59,7 @@ public:
 	 * volume 6-7 million meters (the radius of the Earth) away from the coordinate system origin.
 	 * This property allows an alternative position, other then the tileset's true origin, to be treated
 	 * as the origin for the purpose of this Actor. Using this property will preserve vertex precision
-	 * (and thus avoid jittering) much better precision than setting the Actor's Transform property.
+	 * (and thus avoid jittering) much better than setting the Actor's Transform property.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	EOriginPlacement OriginPlacement = EOriginPlacement::BoundingVolumeOrigin;
