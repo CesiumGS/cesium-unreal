@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-* Visual Studio 2019
-* CMake (add it to your path during install!)
+* Visual Studio 2019 with `Desktop Development with C++ workload`
+* CMake CMake 3.15 or higher (add it to your path during install!)
 
 ## Getting Started
 
