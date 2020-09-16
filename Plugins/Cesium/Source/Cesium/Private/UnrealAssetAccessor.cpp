@@ -15,8 +15,12 @@ public:
 	{
 	}
 
-	virtual uint16_t statusCode() override {
+	virtual uint16_t statusCode() const override {
 		return this->_pResponse->GetResponseCode();
+	}
+
+	virtual std::string contentType() const override {
+		return wstr_to_utf8(this->_pResponse->GetContentType());
 	}
 
 	//virtual const std::map<std::string, std::string>& headers() override {
@@ -24,9 +28,9 @@ public:
 	//	return this->_headers;
 	//}
 
-	virtual gsl::span<const uint8_t> data() override	{
+	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
-		return gsl::span(static_cast<const uint8_t*>(&content[0]), content.Num());
+		return gsl::span(static_cast<const uint8_t*>(content.GetData()), content.Num());
 	}
 
 private:
@@ -36,7 +40,7 @@ private:
 
 class UnrealAssetRequest : public Cesium3DTiles::IAssetRequest {
 public:
-	UnrealAssetRequest(const std::string& url) :
+	UnrealAssetRequest(const std::string& url, const std::vector<Cesium3DTiles::IAssetAccessor::THeader>& headers) :
 		_pRequest(nullptr),
 		_pResponse(nullptr),
 		_callback()
@@ -44,6 +48,13 @@ public:
 		FHttpModule& httpModule = FHttpModule::Get();
 		this->_pRequest = httpModule.CreateRequest();
 		this->_pRequest->SetURL(utf8_to_wstr(url));
+		
+		for (const Cesium3DTiles::IAssetAccessor::THeader& header : headers) {
+			this->_pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
+		}
+
+		this->_pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
+
 		this->_pRequest->OnProcessRequestComplete().BindRaw(this, &UnrealAssetRequest::responseReceived);
 		this->_pRequest->ProcessRequest();
 	}
@@ -101,8 +112,11 @@ private:
 	std::function<void (Cesium3DTiles::IAssetRequest*)> _callback;
 };
 
-std::unique_ptr<Cesium3DTiles::IAssetRequest> UnrealAssetAccessor::requestAsset(const std::string& url) {
-	return std::make_unique<UnrealAssetRequest>(url);
+std::unique_ptr<Cesium3DTiles::IAssetRequest> UnrealAssetAccessor::requestAsset(
+	const std::string& url,
+	const std::vector<Cesium3DTiles::IAssetAccessor::THeader>& headers
+) {
+	return std::make_unique<UnrealAssetRequest>(url, headers);
 }
 
 void UnrealAssetAccessor::tick() {

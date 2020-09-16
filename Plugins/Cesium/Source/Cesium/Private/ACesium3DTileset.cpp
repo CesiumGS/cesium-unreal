@@ -1,38 +1,34 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "ACesium3DTileset.h"
-#include "tiny_gltf.h"
-#include "UnrealConversions.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Cesium3DTiles/BingMapsRasterOverlay.h"
+#include "Cesium3DTiles/GltfContent.h"
+#include "Cesium3DTiles/IPrepareRendererResources.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
-#include "HttpModule.h"
+#include "CesiumTransforms.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
-#include "Camera/PlayerCameraManager.h"
-#include "Engine/GameViewportClient.h"
-#include "UnrealAssetAccessor.h"
-#include "Cesium3DTiles/Tileset.h"
-#include "Cesium3DTiles/Batched3DModelContent.h"
-#include "UnrealTaskProcessor.h"
-#include "Math/UnrealMathUtility.h"
-#include "CesiumGeospatial/Transforms.h"
+#include "HttpModule.h"
 #include "IPhysXCookingModule.h"
-#include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/Cartographic.h"
-#include "CesiumTransforms.h"
+#include "Math/UnrealMathUtility.h"
+#include "UnrealAssetAccessor.h"
+#include "UnrealConversions.h"
+#include "UnrealTaskProcessor.h"
+#include "CesiumRasterOverlay.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
 #ifdef WITH_EDITOR
-#include "Slate/SceneViewport.h"
-#include "EditorViewportClient.h"
 #include "Editor.h"
+#include "EditorViewportClient.h"
+#include "Slate/SceneViewport.h"
 #endif
-
-#pragma warning(push)
-#pragma warning(disable: 4946)
-#include "json.hpp"
-#pragma warning(pop)
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
@@ -163,9 +159,9 @@ public:
 			return nullptr;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
-			const Cesium3DTiles::Batched3DModelContent* pB3dm = static_cast<const Cesium3DTiles::Batched3DModelContent*>(tile.getContent());
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pB3dm->gltf(), tile.getTransform(), this->_pPhysXCooking);
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+			const Cesium3DTiles::GltfContent* pGltfContent = static_cast<const Cesium3DTiles::GltfContent*>(tile.getContent());
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pGltfContent->gltf(), tile.getTransform(), this->_pPhysXCooking);
 			return pHalf.release();
 		}
 
@@ -178,7 +174,7 @@ public:
 			return nullptr;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::Batched3DModelContent::TYPE) {
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
 			glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
 			glm::dmat4 tilesetToWorld = _pActor->GetTilesetToWorldTransform();
@@ -197,6 +193,80 @@ public:
 			UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
 			if (pGltf) {
 				this->destroyRecursively(pGltf);
+			}
+		}
+	}
+
+	virtual void* prepareRasterInLoadThread(const Cesium3DTiles::RasterOverlayTile& rasterTile) {
+		return nullptr;
+	}
+
+	virtual void* prepareRasterInMainThread(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult) {
+		const tinygltf::Image& image = rasterTile.getImage();
+		if (image.width <= 0 || image.height <= 0) {
+			return nullptr;
+		}
+
+		UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+		pTexture->AddToRoot();
+		pTexture->AddressX = TextureAddress::TA_Clamp;
+		pTexture->AddressY = TextureAddress::TA_Clamp;
+
+		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
+		pTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+		pTexture->UpdateResource();
+
+		return pTexture;
+	}
+
+	virtual void freeRaster(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult, void* pMainThreadResult) override {
+		UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+		if (!pTexture) {
+			return;
+		}
+
+		pTexture->RemoveFromRoot();
+	}
+
+	virtual void attachRasterInMainThread(
+		const Cesium3DTiles::Tile& tile,
+		uint32_t overlayTextureCoordinateID,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		void* pMainThreadRendererResources,
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
+		const glm::dvec2& translation,
+		const glm::dvec2& scale
+	) {
+		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		if (!pContent) {
+			return;
+		}
+
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
+			if (pGltfContent) {
+				pGltfContent->AttachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources), textureCoordinateRectangle, translation, scale);
+			}
+		}
+	}
+
+	virtual void detachRasterInMainThread(
+		const Cesium3DTiles::Tile& tile,
+		uint32_t overlayTextureCoordinateID,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		void* pMainThreadRendererResources
+	) override {
+		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		if (!pContent) {
+			return;
+		}
+
+		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadRendererResources);
+			if (pGltfContent) {
+				pGltfContent->DetachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources));
 			}
 		}
 	}
@@ -263,6 +333,13 @@ void ACesium3DTileset::LoadTileset()
 	else
 	{
 		pTileset = new Cesium3DTiles::Tileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
+	}
+
+	TArray<UCesiumRasterOverlay*> rasterOverlays;
+	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+		pOverlay->AddToTileset(*pTileset);
 	}
 
 	this->_pTileset = pTileset;
@@ -442,6 +519,12 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
 			continue;
 		}
+
+		//const Cesium3DTiles::TileID& id = pTile->getTileID();
+		//const CesiumGeometry::QuadtreeTileID* pQuadtreeID = std::get_if<CesiumGeometry::QuadtreeTileID>(&id);
+		//if (!pQuadtreeID || pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y != 11626) {
+		//	continue;
+		//}
 
 		Cesium3DTiles::TileContent* pContent = pTile->getContent();
 		if (!pContent) {

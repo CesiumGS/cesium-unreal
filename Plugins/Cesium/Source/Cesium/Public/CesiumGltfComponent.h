@@ -11,10 +11,28 @@
 
 class UMaterial;
 class IPhysXCooking;
+class UTexture2D;
 
 namespace tinygltf{
 	class Model;
 }
+
+namespace Cesium3DTiles {
+	class Tile;
+	class RasterOverlayTile;
+}
+
+namespace CesiumGeometry {
+	class Rectangle;
+}
+
+USTRUCT()
+struct FRasterOverlayTile {
+	GENERATED_BODY()
+	UTexture2D* pTexture;
+	FLinearColor textureCoordinateRectangle;
+	FLinearColor translationAndScale;
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
@@ -48,6 +66,21 @@ public:
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
 
+	void AttachRasterTile(
+		const Cesium3DTiles::Tile& tile,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		UTexture2D* pTexture,
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
+		const glm::dvec2& translation,
+		const glm::dvec2& scale
+	);
+
+	void DetachRasterTile(
+		const Cesium3DTiles::Tile& tile,
+		const Cesium3DTiles::RasterOverlayTile& rasterTile,
+		UTexture2D* pTexture
+	);
+
 protected:
 	//virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -56,6 +89,8 @@ protected:
 	class UStaticMeshComponent* Mesh;
 
 	glm::dmat4x4 _cesiumTransformation;
+
+	TArray<FRasterOverlayTile> _overlayTiles;
 
 private:
 	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
