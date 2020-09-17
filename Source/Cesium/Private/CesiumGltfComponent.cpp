@@ -380,7 +380,29 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 ) {
 	std::vector<LoadModelResult> result;
 
-	glm::dmat4x4 rootTransform = transform * gltfAxesToCesiumAxes;
+	glm::dmat4x4 rootTransform;
+	if (model.extras.IsObject() && model.extras.Has("RTC_CENTER")) {
+		const tinygltf::Value& rtcCenterValue = model.extras.Get("RTC_CENTER");
+		const tinygltf::Value::Array& rtcCenterArray = rtcCenterValue.Get<tinygltf::Value::Array>();
+		if (rtcCenterArray.size() == 3) {
+			glm::dmat4x4 rtcTransform(
+				glm::dvec4(1.0, 0.0, 0.0, 0.0),
+				glm::dvec4(0.0, 1.0, 0.0, 0.0),
+				glm::dvec4(0.0, 0.0, 1.0, 0.0),
+				glm::dvec4(
+					rtcCenterArray[0].GetNumberAsDouble(),
+					rtcCenterArray[1].GetNumberAsDouble(),
+					rtcCenterArray[2].GetNumberAsDouble(),
+					1.0
+				)
+			);
+			rootTransform = transform * rtcTransform * gltfAxesToCesiumAxes;
+		} else {
+			rootTransform = transform * gltfAxesToCesiumAxes;
+		}
+	} else {
+		rootTransform = transform * gltfAxesToCesiumAxes;
+	}
 
 	if (model.defaultScene >= 0 && model.defaultScene < model.scenes.size()) {
 		// Show the default scene
