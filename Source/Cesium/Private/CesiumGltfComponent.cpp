@@ -26,6 +26,7 @@
 #include <glm/mat3x3.hpp>
 #include "Cesium3DTiles/RasterOverlayTile.h"
 #include "CesiumGeometry/Rectangle.h"
+#include <glm/gtc/quaternion.hpp>
 
 static uint32_t nextMaterialId = 0;
 
@@ -356,8 +357,28 @@ static void loadNode(
 		nodeTransform = nodeTransform * nodeTransformGltf;
 	}
 	else if (node.translation.size() > 0 || node.rotation.size() > 0 || node.scale.size() > 0) {
-		// TODO: handle this type of transformation
-		UE_LOG(LogActor, Warning, TEXT("Unsupported transformation"));
+		glm::dmat4 translation(1.0);
+		if (node.translation.size() == 3) {
+			translation[3] = glm::dvec4(node.translation[0], node.translation[1], node.translation[2], 1.0);
+		}
+
+		glm::dquat rotationQuat(1.0, 0.0, 0.0, 0.0);
+		if (node.rotation.size() == 4) {
+			rotationQuat[0] = node.rotation[0];
+			rotationQuat[1] = node.rotation[1];
+			rotationQuat[2] = node.rotation[2];
+			rotationQuat[3] = node.rotation[3];
+		}
+
+		glm::dmat4 scale(1.0);
+		
+		if (node.scale.size() == 3) {
+			scale[0].x = node.scale[0];
+			scale[1].y = node.scale[1];
+			scale[2].z = node.scale[2];
+		}
+
+		nodeTransform = nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
 	}
 
 	int meshId = node.mesh;
