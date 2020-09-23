@@ -154,14 +154,13 @@ public:
 	{}
 
 	virtual void* prepareInLoadThread(const Cesium3DTiles::Tile& tile) {
-		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
 			return nullptr;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
-			const Cesium3DTiles::GltfContent* pGltfContent = static_cast<const Cesium3DTiles::GltfContent*>(tile.getContent());
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pGltfContent->gltf(), tile.getTransform(), this->_pPhysXCooking);
+		if (pContent->model) {
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pContent->model.value(), tile.getTransform(), this->_pPhysXCooking);
 			return pHalf.release();
 		}
 
@@ -169,12 +168,12 @@ public:
 	}
 
 	virtual void* prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
-		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
 			return nullptr;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+		if (pContent->model) {
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
 			glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
 			glm::dmat4 tilesetToWorld = _pActor->GetTilesetToWorldTransform();
@@ -239,12 +238,12 @@ public:
 		const glm::dvec2& translation,
 		const glm::dvec2& scale
 	) {
-		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
 			return;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+		if (pContent->model) {
 			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
 			if (pGltfContent) {
 				pGltfContent->AttachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources), textureCoordinateRectangle, translation, scale);
@@ -258,12 +257,12 @@ public:
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
 		void* pMainThreadRendererResources
 	) override {
-		const Cesium3DTiles::TileContent* pContent = tile.getContent();
+		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
 			return;
 		}
 
-		if (pContent->getType() == Cesium3DTiles::GltfContent::TYPE) {
+		if (pContent->model) {
 			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadRendererResources);
 			if (pGltfContent) {
 				pGltfContent->DetachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources));
@@ -525,11 +524,6 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		//if (!pQuadtreeID || pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y != 11626) {
 		//	continue;
 		//}
-
-		Cesium3DTiles::TileContent* pContent = pTile->getContent();
-		if (!pContent) {
-			continue;
-		}
 
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
 		if (!Gltf) {
