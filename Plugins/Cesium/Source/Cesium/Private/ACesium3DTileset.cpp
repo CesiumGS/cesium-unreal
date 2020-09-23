@@ -361,9 +361,9 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetCam
 	std::optional<UnrealCameraParameters> camera = this->GetPlayerCamera();
 
 #ifdef WITH_EDITOR
-	//if (!camera) {
-	//	camera = this->GetEditorCamera();
-	//}
+	if (!camera) {
+		camera = this->GetEditorCamera();
+	}
 #endif
 
 	return camera;
@@ -483,9 +483,12 @@ void ACesium3DTileset::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->SuspendUpdate) {
+	if (this->SuspendUpdate || !this->_pTileset->getRootTile()) {
 		return;
 	}
+
+	Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
+	options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 
 	std::optional<UnrealCameraParameters> camera = this->GetCamera();
 	if (!camera) {

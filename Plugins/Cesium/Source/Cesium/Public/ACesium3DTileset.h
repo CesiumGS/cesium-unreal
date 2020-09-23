@@ -55,6 +55,13 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
+	 * The maximum number of pixels of error when rendering this tileset.
+     * This is used to select an appropriate level-of-detail.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
+	double MaximumScreenSpaceError = 16.0;
+
+	/**
 	 * Pauses level-of-detail and culling updates of this tileset.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Debug")
