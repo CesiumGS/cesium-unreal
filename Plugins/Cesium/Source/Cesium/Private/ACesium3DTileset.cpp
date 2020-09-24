@@ -404,6 +404,10 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetPla
 	FVector2D size;
 	pViewport->GetViewportSize(size);
 
+	if (size.X < 1.0 || size.Y < 1.0) {
+		return std::nullopt;
+	}
+
 	return UnrealCameraParameters {
 		size,
 		location,
@@ -464,6 +468,10 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetEdi
 	const FRotator& rotation = pEditorViewportClient->GetViewRotation();
 	double fov = pEditorViewportClient->FOVAngle;
 	FVector2D size = pViewport->GetSizeXY();
+
+	if (size.X < 1.0 || size.Y < 1.0) {
+		return std::nullopt;
+	}
 
 	return UnrealCameraParameters{
 		size,
