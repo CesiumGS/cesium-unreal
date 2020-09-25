@@ -13,9 +13,11 @@
 #include "CesiumTransforms.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/PlayerController.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
+#include "PhysicsPublicCore.h"
 #include "Math/UnrealMathUtility.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealConversions.h"
@@ -24,7 +26,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
@@ -360,7 +362,7 @@ void ACesium3DTileset::DestroyTileset() {
 std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetCamera() const {
 	std::optional<UnrealCameraParameters> camera = this->GetPlayerCamera();
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	if (!camera) {
 		camera = this->GetEditorCamera();
 	}
@@ -458,7 +460,7 @@ Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
 	);
 }
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetEditorCamera() const
 {
 	FViewport* pViewport = GEditor->GetActiveViewport();
