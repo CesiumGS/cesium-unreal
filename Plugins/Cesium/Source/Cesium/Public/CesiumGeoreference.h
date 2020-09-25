@@ -151,7 +151,7 @@ protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	void UpdateGeoreference();
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 

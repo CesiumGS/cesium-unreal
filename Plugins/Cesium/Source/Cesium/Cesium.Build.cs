@@ -48,24 +48,32 @@ public class Cesium : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-			
-		
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
+
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
                 "HTTP",
-                "UnrealEd", // TODO: only include this in editor builds?
                 "PhysXCooking",
                 "PhysicsCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
+        );
+
+        if (Target.bBuildEditor == true)
+        {
+            PublicDependencyModuleNames.AddRange(
+                new string[] {
+                    "UnrealEd",
+                }
             );
+        }
 
         DynamicallyLoadedModuleNames.AddRange(
 			new string[]

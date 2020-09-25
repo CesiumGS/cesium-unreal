@@ -143,7 +143,7 @@ protected:
 	std::optional<UnrealCameraParameters> GetCamera() const;
 	std::optional<UnrealCameraParameters> GetPlayerCamera() const;
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	std::optional<UnrealCameraParameters> GetEditorCamera() const;
 #endif
 
