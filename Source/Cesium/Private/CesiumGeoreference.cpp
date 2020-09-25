@@ -133,10 +133,12 @@ void ACesiumGeoreference::UpdateGeoreference()
 	}
 }
 
+#if WITH_EDITOR
 void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	this->UpdateGeoreference();
 }
+#endif
 
 // Called every frame
 void ACesiumGeoreference::Tick(float DeltaTime)
