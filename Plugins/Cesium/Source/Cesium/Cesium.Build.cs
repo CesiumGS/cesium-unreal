@@ -67,6 +67,7 @@ public class Cesium : ModuleRules
         if (Target.bCompilePhysX && !Target.bUseChaos)
         {
             PrivateDependencyModuleNames.Add("PhysXCooking");
+            PrivateDependencyModuleNames.Add("PhysicsCore");
         }
 
         if (Target.bBuildEditor == true)
