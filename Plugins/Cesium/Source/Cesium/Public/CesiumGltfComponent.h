@@ -10,7 +10,9 @@
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterial;
+#if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;
+#endif
 class UTexture2D;
 
 namespace tinygltf{
@@ -52,7 +54,13 @@ public:
 	/// the provided callback is raised in the game thread with the result.
 	/// </summary>
 	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
-	static std::unique_ptr<HalfConstructed> CreateOffGameThread(const tinygltf::Model& model, const glm::dmat4x4& transform, IPhysXCooking* pPhysXCooking = nullptr);
+	static std::unique_ptr<HalfConstructed> CreateOffGameThread(
+		const tinygltf::Model& model,
+		const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+		,IPhysXCooking* pPhysXCooking = nullptr
+#endif
+	);
 	static UCesiumGltfComponent* CreateOnGameThread(AActor* pParentActor, std::unique_ptr<HalfConstructed> pHalfConstructed, const glm::dmat4x4& cesiumToUnrealTransform);
 
 	UCesiumGltfComponent();
