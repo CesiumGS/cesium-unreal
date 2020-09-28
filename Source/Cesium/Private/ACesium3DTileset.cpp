@@ -151,8 +151,10 @@ void ACesium3DTileset::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, UPr
 class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
 public:
 	UnrealResourcePreparer(ACesium3DTileset* pActor) :
-		_pActor(pActor),
-		_pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+		_pActor(pActor)
+#if PHYSICS_INTERFACE_PHYSX
+		,_pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+#endif
 	{}
 
 	virtual void* prepareInLoadThread(const Cesium3DTiles::Tile& tile) {
@@ -162,7 +164,13 @@ public:
 		}
 
 		if (pContent->model) {
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(pContent->model.value(), tile.getTransform(), this->_pPhysXCooking);
+			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
+				pContent->model.value(),
+				tile.getTransform()
+#if PHYSICS_INTERFACE_PHYSX
+				,this->_pPhysXCooking
+#endif
+			);
 			return pHalf.release();
 		}
 
@@ -287,7 +295,9 @@ private:
 	}
 
 	ACesium3DTileset* _pActor;
+#if PHYSICS_INTERFACE_PHYSX
 	IPhysXCooking* _pPhysXCooking;
+#endif
 };
 
 void ACesium3DTileset::LoadTileset()
