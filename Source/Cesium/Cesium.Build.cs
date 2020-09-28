@@ -59,12 +59,16 @@ public class Cesium : ModuleRules
                 "SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
-                "HTTP",
-                "PhysXCooking",
-                "PhysicsCore"
+                "HTTP"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );
+
+        if (Target.bCompilePhysX && !Target.bUseChaos)
+        {
+            PrivateDependencyModuleNames.Add("PhysXCooking");
+            PrivateDependencyModuleNames.Add("PhysicsCore");
+        }
 
         if (Target.bBuildEditor == true)
         {

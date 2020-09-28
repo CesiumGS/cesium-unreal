@@ -19,7 +19,9 @@
 #include <iostream>
 #include "Cesium3DTiles/Gltf.h"
 #include "PhysicsEngine/BodySetup.h"
+#if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
+#endif
 #include "UCesiumGltfPrimitiveComponent.h"
 #include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
@@ -36,7 +38,9 @@ struct LoadModelResult
 	const tinygltf::Model* pModel;
 	const tinygltf::Material* pMaterial;
 	glm::dmat4x4 transform;
+#if PHYSICS_INTERFACE_PHYSX
 	PxTriangleMesh* pCollisionMesh;
+#endif
 	std::string name;
 };
 
@@ -100,8 +104,10 @@ static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
 	const tinygltf::Model& model,
 	const tinygltf::Primitive& primitive,
-	const glm::dmat4x4& transform,
-	IPhysXCooking* pPhysXCooking
+	const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+	,IPhysXCooking* pPhysXCooking
+#endif
 ) {
 	TMap<int32, FVertexID> indexToVertexIdMap;
 
@@ -297,6 +303,7 @@ static void loadPrimitive(
 
 	section.MaterialIndex = 0;
 
+#if PHYSICS_INTERFACE_PHYSX
 	primitiveResult.pCollisionMesh = nullptr;
 
 	if (pPhysXCooking) {
@@ -319,6 +326,7 @@ static void loadPrimitive(
 
 		pPhysXCooking->CreateTriMesh("PhysXGeneric", EPhysXMeshCookFlags::Default, vertices, indices, TArray<uint16>(), true, primitiveResult.pCollisionMesh);
 	}
+#endif
 
 	result.push_back(std::move(primitiveResult));
 }
@@ -327,11 +335,20 @@ static void loadMesh(
 	std::vector<LoadModelResult>& result,
 	const tinygltf::Model& model,
 	const tinygltf::Mesh& mesh,
-	const glm::dmat4x4& transform,
-	IPhysXCooking* pPhysXCooking
+	const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+	,IPhysXCooking* pPhysXCooking
+#endif
 ) {
 	for (const tinygltf::Primitive& primitive : mesh.primitives) {
-		loadPrimitive(result, model, primitive, transform, pPhysXCooking);
+		loadPrimitive(
+			result, model,
+			primitive,
+			transform
+#if PHYSICS_INTERFACE_PHYSX
+			,pPhysXCooking
+#endif
+		);
 	}
 }
 
@@ -339,8 +356,10 @@ static void loadNode(
 	std::vector<LoadModelResult>& result,
 	const tinygltf::Model& model,
 	const tinygltf::Node& node,
-	const glm::dmat4x4& transform,
-	IPhysXCooking* pPhysXCooking
+	const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+	,IPhysXCooking* pPhysXCooking
+#endif
 ) {
 	glm::dmat4x4 nodeTransform = transform;
 
@@ -384,20 +403,38 @@ static void loadNode(
 	int meshId = node.mesh;
 	if (meshId >= 0 && meshId < model.meshes.size()) {
 		const tinygltf::Mesh& mesh = model.meshes[meshId];
-		loadMesh(result, model, mesh, nodeTransform, pPhysXCooking);
+		loadMesh(
+			result,
+			model,
+			mesh,
+			nodeTransform
+#if PHYSICS_INTERFACE_PHYSX
+			,pPhysXCooking
+#endif
+		);
 	}
 
 	for (int childNodeId : node.children) {
 		if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
-			loadNode(result, model, model.nodes[childNodeId], nodeTransform, pPhysXCooking);
+			loadNode(
+				result,
+				model,
+				model.nodes[childNodeId],
+				nodeTransform
+#if PHYSICS_INTERFACE_PHYSX
+				,pPhysXCooking
+#endif
+			);
 		}
 	}
 }
 
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
 	const tinygltf::Model& model,
-	const glm::dmat4x4& transform,
-	IPhysXCooking* pPhysXCooking
+	const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+	,IPhysXCooking* pPhysXCooking
+#endif
 ) {
 	std::vector<LoadModelResult> result;
 
@@ -429,21 +466,53 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 		// Show the default scene
 		const tinygltf::Scene& defaultScene = model.scenes[model.defaultScene];
 		for (int nodeId : defaultScene.nodes) {
-			loadNode(result, model, model.nodes[nodeId], rootTransform, pPhysXCooking);
+			loadNode(
+				result,
+				model,
+				model.nodes[nodeId],
+				rootTransform
+#if PHYSICS_INTERFACE_PHYSX
+				,pPhysXCooking
+#endif
+			);
 		}
 	} else if (model.scenes.size() > 0) {
 		// There's no default, so show the first scene
 		const tinygltf::Scene& defaultScene = model.scenes[0];
 		for (int nodeId : defaultScene.nodes) {
-			loadNode(result, model, model.nodes[nodeId], rootTransform, pPhysXCooking);
+			loadNode(
+				result,
+				model,
+				model.nodes[nodeId],
+				rootTransform
+#if PHYSICS_INTERFACE_PHYSX
+				,pPhysXCooking
+#endif
+			);
 		}
 	} else if (model.nodes.size() > 0) {
 		// No scenes at all, use the first node as the root node.
-		loadNode(result, model, model.nodes[0], rootTransform, pPhysXCooking);
+		loadNode(
+			result,
+			model,
+			model.nodes[0],
+			rootTransform
+#if PHYSICS_INTERFACE_PHYSX
+			,pPhysXCooking
+#endif
+		);
 	} else if (model.meshes.size() > 0) {
 		// No nodes either, show all the meshes.
 		for (const tinygltf::Mesh& mesh : model.meshes) {
-			loadMesh(result, model, mesh, rootTransform, pPhysXCooking);
+			loadMesh(
+				result,
+				model,
+				mesh,
+				rootTransform
+#if PHYSICS_INTERFACE_PHYSX
+				,pPhysXCooking
+#endif
+			);
 		}
 	}
 
@@ -538,10 +607,12 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	//pMesh->UpdateCollisionFromStaticMesh();
 	pMesh->GetBodySetup()->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
+#if PHYSICS_INTERFACE_PHYSX
 	if (loadResult.pCollisionMesh) {
 		pMesh->GetBodySetup()->TriMeshes.Add(loadResult.pCollisionMesh);
 		pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
 	}
+#endif
 
 	pMesh->SetMobility(EComponentMobility::Movable);
 
@@ -552,7 +623,13 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 }
 
 /*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
-	std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, transform, nullptr);
+	std::vector<LoadModelResult> result = loadModelAnyThreadPart(
+		model,
+		transform
+#if PHYSICS_INTERFACE_PHYSX
+		,nullptr
+#endif
+	);
 
 	AsyncTask(ENamedThreads::GameThread, [pActor, callback, result{ std::move(result) }]() mutable {
 		UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
@@ -575,11 +652,19 @@ namespace {
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
 	const tinygltf::Model& model,
-	const glm::dmat4x4& transform,
-	IPhysXCooking* pPhysXCooking
+	const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+	,IPhysXCooking* pPhysXCooking
+#endif
 ) {
 	auto pResult = std::make_unique<HalfConstructedReal>();
-	pResult->loadModelResult = std::move(loadModelAnyThreadPart(model, transform, pPhysXCooking));
+	pResult->loadModelResult = std::move(loadModelAnyThreadPart(
+		model,
+		transform
+#if PHYSICS_INTERFACE_PHYSX
+		,pPhysXCooking
+#endif
+	));
 	return pResult;
 }
 
@@ -755,7 +840,13 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 
 		tinygltf::Model& model = pLoadResult->model.value();
 
-		std::vector<LoadModelResult> result = loadModelAnyThreadPart(model, glm::dmat4x4(1.0), nullptr);
+		std::vector<LoadModelResult> result = loadModelAnyThreadPart(
+			model,
+			glm::dmat4x4(1.0)
+#if PHYSICS_INTERFACE_PHYSX
+			,nullptr
+#endif
+		);
 
 		AsyncTask(ENamedThreads::GameThread, [this, pLoadResult{ std::move(pLoadResult) }, result{ std::move(result) }]() mutable {
 			for (LoadModelResult& model : result) {
