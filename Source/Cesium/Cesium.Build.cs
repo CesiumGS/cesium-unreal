@@ -32,12 +32,12 @@ public class Cesium : ModuleRules
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/build/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/build/CesiumGeospatial/Debug/CesiumGeospatial.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/build/CesiumGeometry/Debug/CesiumGeometry.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/build/CesiumUtility/Debug/CesiumUtility.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/build/uriparser/Release/uriparser.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/build/draco/Release/draco.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/Debug/CesiumGeospatial.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/Debug/CesiumGeometry.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/Debug/CesiumUtility.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/Debug/uriparser.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/Debug/draco.lib"),
             }
             );
 
