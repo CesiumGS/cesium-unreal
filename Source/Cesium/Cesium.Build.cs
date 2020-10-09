@@ -59,7 +59,8 @@ public class Cesium : ModuleRules
                 "SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
-                "HTTP"
+                "HTTP",
+                "MikkTSpace"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );

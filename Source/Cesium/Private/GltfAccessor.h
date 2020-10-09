@@ -14,6 +14,8 @@ private:
 	size_t _size;
 
 public:
+	typedef T value_type;
+
 	GltfAccessor(const tinygltf::Model& model, size_t accessorID)
 	{
 		const tinygltf::Accessor& accessor = model.accessors[accessorID];
@@ -61,7 +63,7 @@ public:
 		this->_pBufferViewData = pBufferViewData;
 	}
 
-	const T& operator[](size_t i)
+	const T& operator[](size_t i) const
 	{
 		if (i < 0 || i >= this->_size)
 		{
@@ -71,22 +73,22 @@ public:
 		return *reinterpret_cast<const T*>(this->_pBufferViewData + i * this->_stride + this->_offset);
 	}
 
-	size_t size()
+	size_t size() const
 	{
 		return this->_size;
 	}
 
-	const tinygltf::Accessor& gltfBuffer()
+	const tinygltf::Accessor& gltfBuffer() const
 	{
 		return *this->_pGltfBuffer;
 	}
 
-	const tinygltf::Accessor& gltfBufferView()
+	const tinygltf::Accessor& gltfBufferView() const
 	{
 		return *this->_pGltfBufferView;
 	}
 
-	const tinygltf::Accessor& gltfAccessor()
+	const tinygltf::Accessor& gltfAccessor() const
 	{
 		return *this->_pGltfAccessor;
 	}

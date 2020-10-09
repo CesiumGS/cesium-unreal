@@ -29,6 +29,8 @@
 #include "Cesium3DTiles/RasterOverlayTile.h"
 #include "CesiumGeometry/Rectangle.h"
 #include <glm/gtc/quaternion.hpp>
+#include "StaticMeshOperations.h"
+#include "mikktspace.h"
 
 static uint32_t nextMaterialId = 0;
 
@@ -60,11 +62,12 @@ glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
-template <class T>
+template <class T, class TIndexAccessor>
 static void updateTextureCoordinates(
 	const tinygltf::Model& model,
 	const tinygltf::Primitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
+	const TIndexAccessor& indicesAccessor,
 	const T& texture,
 	int textureCoordinateIndex
 ) {
@@ -72,16 +75,18 @@ static void updateTextureCoordinates(
 		model,
 		primitive,
 		vertices,
+		indicesAccessor,
 		"TEXCOORD_" + std::to_string(texture.texCoord),
 		textureCoordinateIndex
 	);
 }
 
-template <>
+template <class TIndexAccessor>
 void updateTextureCoordinates(
 	const tinygltf::Model& model,
 	const tinygltf::Primitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
+	const TIndexAccessor& indicesAccessor,
 	const std::string& attributeName,
 	int textureCoordinateIndex
 ) {
@@ -90,30 +95,87 @@ void updateTextureCoordinates(
 		int uvAccessorID = uvAccessorIt->second;
 		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
 
-		for (size_t i = 0; i < uvAccessor.size(); ++i)
-		{
+		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 			FStaticMeshBuildVertex& vertex = vertices[i];
-			vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
+			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
 		}
 	}
 }
 
+static int mikkGetNumFaces(const SMikkTSpaceContext* Context) {
+	TArray<FStaticMeshBuildVertex>& vertices = *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
+	return vertices.Num() / 3;
+}
+
+static int mikkGetNumVertsOfFace(const SMikkTSpaceContext* Context, const int FaceIdx) {
+	TArray<FStaticMeshBuildVertex>& vertices = *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
+	return FaceIdx < (vertices.Num() / 3) ? 3 : 0;
+}
+
+static void mikkGetPosition(const SMikkTSpaceContext* Context, float Position[3], const int FaceIdx, const int VertIdx) {
+	TArray<FStaticMeshBuildVertex>& vertices = *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
+	FVector& position = vertices[FaceIdx * 3 + VertIdx].Position;
+	Position[0] = position.X;
+	Position[1] = position.Y;
+	Position[2] = position.Z;
+}
+
+static void mikkGetNormal(const SMikkTSpaceContext* Context, float Normal[3], const int FaceIdx, const int VertIdx) {
+	TArray<FStaticMeshBuildVertex>& vertices = *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
+	FVector& normal = vertices[FaceIdx * 3 + VertIdx].TangentZ;
+	Normal[0] = normal.X;
+	Normal[1] = normal.Y;
+	Normal[2] = normal.Z;
+}
+
+static void mikkGetTexCoord(const SMikkTSpaceContext* Context, float UV[2], const int FaceIdx, const int VertIdx) {
+	TArray<FStaticMeshBuildVertex>& vertices = *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
+	FVector2D& uv = vertices[FaceIdx * 3 + VertIdx].UVs[0];
+	UV[0] = uv.X;
+	UV[1] = uv.Y;
+}
+
+static void mikkSetTSpaceBasic(const SMikkTSpaceContext* Context, const float Tangent[3], const float BitangentSign, const int FaceIdx, const int VertIdx) {
+	TArray<FStaticMeshBuildVertex>& vertices = *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
+	FStaticMeshBuildVertex& vertex = vertices[FaceIdx * 3 + VertIdx];
+	vertex.TangentX = FVector(Tangent[0], Tangent[1], Tangent[2]);
+	vertex.TangentY = BitangentSign * FVector::CrossProduct(vertex.TangentZ, vertex.TangentX);
+}
+
+static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
+	SMikkTSpaceInterface MikkTInterface;
+	MikkTInterface.m_getNormal = mikkGetNormal;
+	MikkTInterface.m_getNumFaces = mikkGetNumFaces;
+	MikkTInterface.m_getNumVerticesOfFace = mikkGetNumVertsOfFace;
+	MikkTInterface.m_getPosition = mikkGetPosition;
+	MikkTInterface.m_getTexCoord = mikkGetTexCoord;
+	MikkTInterface.m_setTSpaceBasic = mikkSetTSpaceBasic;
+	MikkTInterface.m_setTSpace = nullptr;
+
+	SMikkTSpaceContext MikkTContext;
+	MikkTContext.m_pInterface = &MikkTInterface;
+	MikkTContext.m_pUserData = (void*)(&vertices);
+	MikkTContext.m_bIgnoreDegenerates = false;
+	genTangSpaceDefault(&MikkTContext);
+}
+
 static tinygltf::Material defaultMaterial;
 
+template <class TIndexAccessor>
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
 	const tinygltf::Model& model,
 	const tinygltf::Primitive& primitive,
-	const glm::dmat4x4& transform
+	const glm::dmat4x4& transform,
 #if PHYSICS_INTERFACE_PHYSX
-	,IPhysXCooking* pPhysXCooking
+	IPhysXCooking* pPhysXCooking,
 #endif
+	const GltfAccessor<FVector>& positionAccessor,
+	const TIndexAccessor& indicesAccessor
 ) {
-	TMap<int32, FVertexID> indexToVertexIdMap;
-
-	auto positionAccessorIt = primitive.attributes.find("POSITION");
-	if (positionAccessorIt == primitive.attributes.end()) {
-		// This primitive doesn't have a POSITION semantic, ignore it.
+	if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
+		// TODO: add support for primitive types other than triangles.
 		return;
 	}
 
@@ -121,9 +183,6 @@ static void loadPrimitive(
 	RenderData->AllocateLODResources(1);
 
 	FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
-
-	int positionAccessorID = positionAccessorIt->second;
-	GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
 
 	const std::vector<double>& min = positionAccessor.gltfAccessor().minValues;
 	const std::vector<double>& max = positionAccessor.gltfAccessor().maxValues;
@@ -141,49 +200,69 @@ static void loadPrimitive(
 	BoundingBoxAndSphere.SphereRadius = 0.0f;
 
 	TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-	StaticMeshBuildVertices.SetNum(positionAccessor.size());
+	StaticMeshBuildVertices.SetNum(indicesAccessor.size());
 
-	for (size_t i = 0; i < positionAccessor.size(); ++i)
+	// The static mesh we construct will _not_ be indexed, even if the incoming glTF is.
+	// This allows us to compute flat normals if the glTF doesn't include them already, and it
+	// allows us to compute a correct tangent space basis according to the MikkTSpace algorithm
+	// when tangents are not included in the glTF.
+
+	for (size_t i = 0; i < indicesAccessor.size(); ++i)
 	{
 		FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-		vertex.Position = positionAccessor[i];
-		vertex.TangentZ = FVector(0.0f, 0.0f, 1.0f);
-		vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
-
-		float binormalSign =
-			GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
-				(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
-				vertex.TangentZ.GetSafeNormal());
-
-		vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
-
+		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+		vertex.Position = positionAccessor[vertexIndex];
 		vertex.UVs[0] = FVector2D(0.0f, 0.0f);
+		vertex.UVs[2] = FVector2D(0.0f, 0.0f);
 		BoundingBoxAndSphere.SphereRadius = FMath::Max((vertex.Position - BoundingBoxAndSphere.Origin).Size(), BoundingBoxAndSphere.SphereRadius);
 	}
 
+	// TangentX: Tangent
+	// TangentY: Bi-tangent
+	// TangentZ: Normal
+
 	auto normalAccessorIt = primitive.attributes.find("NORMAL");
-	if (normalAccessorIt != primitive.attributes.end())
-	{
+	if (normalAccessorIt != primitive.attributes.end()) {
 		int normalAccessorID = normalAccessorIt->second;
 		GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
 
-		for (size_t i = 0; i < normalAccessor.size(); ++i)
-		{
+		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			vertex.TangentZ = normalAccessor[i];
-			vertex.TangentX = FVector(0.0f, 0.0f, 1.0f);
+			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			vertex.TangentZ = normalAccessor[vertexIndex];
+		}
+	} else {
+		// Compute flat normals
+		for (size_t i = 0; i < indicesAccessor.size(); i += 3) {
+			FStaticMeshBuildVertex& v0 = StaticMeshBuildVertices[i];
+			FStaticMeshBuildVertex& v1 = StaticMeshBuildVertices[i + 1];
+			FStaticMeshBuildVertex& v2 = StaticMeshBuildVertices[i + 2];
 
-			float binormalSign =
-				GetBasisDeterminantSign(vertex.TangentX.GetSafeNormal(),
-					(vertex.TangentZ ^ vertex.TangentX).GetSafeNormal(),
-					vertex.TangentZ.GetSafeNormal());
-
-			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX).GetSafeNormal() * binormalSign;
+			FVector v01 = v1.Position - v0.Position;
+			FVector v02 = v2.Position - v0.Position;
+			FVector normal = FVector::CrossProduct(v01, v02);
+			
+			v0.TangentZ = normal.GetSafeNormal();
+			v1.TangentZ = v0.TangentZ;
+			v2.TangentZ = v0.TangentZ;
 		}
 	}
-	else
-	{
 
+	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
+	if (tangentAccessorIt != primitive.attributes.end()) {
+		int tangentAccessorID = normalAccessorIt->second;
+		GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
+
+		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			const FVector4& tangent = tangentAccessor[vertexIndex];
+			vertex.TangentX = tangent;
+			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+		}
+	} else {
+		// Use mikktspace to calculate the tangents
+		computeTangentSpace(StaticMeshBuildVertices);
 	}
 
 	// In the GltfMaterial defined in the Unreal Editor, each texture has its own set of
@@ -201,16 +280,16 @@ static void loadPrimitive(
 	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : &defaultMaterial;
 
 	if (pMaterial) {
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.baseColorTexture, 0);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, 1);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->normalTexture, 2);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->occlusionTexture, 3);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, pMaterial->emissiveTexture, 4);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.baseColorTexture, 0);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, 1);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->normalTexture, 2);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->occlusionTexture, 3);
+		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->emissiveTexture, 4);
 	}
 
 	// Currently only one set of raster overlay texture coordinates is supported, and it is at UVs[5].
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
-	updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, rasterOverlay0, 5);
+	updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, rasterOverlay0, 5);
 
 	RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -231,63 +310,23 @@ static void loadPrimitive(
 	FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
 	section.bEnableCollision = true;
 
-	if (primitive.mode != TINYGLTF_MODE_TRIANGLES || primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
-		// TODO: add support for primitive types other than indexed triangles.
-		return;
-	}
-
-	uint32 MinVertexIndex = TNumericLimits<uint32>::Max();
-	uint32 MaxVertexIndex = TNumericLimits<uint32>::Min();
-
-	TArray<uint32> IndexBuffer;
-	EIndexBufferStride::Type indexBufferStride;
-
-	// Note that we're reversing the order of the indices, because the change from the glTF right-handed to
-	// the Unreal left-handed coordinate system reverses the winding order.
-
-	const tinygltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
-	if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-		GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
-
-		IndexBuffer.SetNum(indexAccessor.size());
-
-		for (size_t i = 0, outIndex = indexAccessor.size() - 1; i < indexAccessor.size(); ++i, --outIndex)
-		{
-			uint16_t index = indexAccessor[i];
-			MinVertexIndex = FMath::Min(MinVertexIndex, static_cast<const uint32_t>(index));
-			MaxVertexIndex = FMath::Max(MaxVertexIndex, static_cast<const uint32_t>(index));
-			IndexBuffer[outIndex] = index;
-		}
-
-		indexBufferStride = EIndexBufferStride::Force16Bit;
-	}
-	else if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-		GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
-
-		IndexBuffer.SetNum(indexAccessor.size());
-
-		for (size_t i = 0, outIndex = indexAccessor.size() - 1; i < indexAccessor.size(); ++i, --outIndex)
-		{
-			uint32_t index = indexAccessor[i];
-			MinVertexIndex = FMath::Min(MinVertexIndex, static_cast<const uint32_t>(index));
-			MaxVertexIndex = FMath::Max(MaxVertexIndex, static_cast<const uint32_t>(index));
-			IndexBuffer[outIndex] = index;
-		}
-
-		indexBufferStride = EIndexBufferStride::Force32Bit;
-	} else {
-		// TODO: report unsupported index type.
-		return;
-	}
-
-	section.NumTriangles = IndexBuffer.Num() / 3;
+	section.NumTriangles = StaticMeshBuildVertices.Num() / 3;
 	section.FirstIndex = 0;
-	section.MinVertexIndex = MinVertexIndex;
-	section.MaxVertexIndex = MaxVertexIndex;
+	section.MinVertexIndex = 0;
+	section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
 	section.bEnableCollision = true;
 	section.bCastShadow = true;
 
-	LODResources.IndexBuffer.SetIndices(IndexBuffer, indexBufferStride);
+	TArray<uint32> indices;
+	indices.SetNum(StaticMeshBuildVertices.Num());
+
+	// Note that we're reversing the order of the indices, because the change from the glTF right-handed to
+	// the Unreal left-handed coordinate system reverses the winding order.
+	for (int32 i = 0; i < indices.Num(); ++i) {
+		indices[i] = indices.Num() - i - 1;
+	}
+
+	LODResources.IndexBuffer.SetIndices(indices, indices.Num() > std::numeric_limits<uint16>::max() ? EIndexBufferStride::Type::Force32Bit : EIndexBufferStride::Type::Force16Bit);
 
 	LODResources.bHasDepthOnlyIndices = false;
 	LODResources.bHasReversedIndices = false;
@@ -315,20 +354,91 @@ static void loadPrimitive(
 			vertices[i] = StaticMeshBuildVertices[i].Position;
 		}
 
-		TArray<FTriIndices> indices;
-		indices.SetNum(IndexBuffer.Num());
+		TArray<FTriIndices> physicsIndices;
+		physicsIndices.SetNum(StaticMeshBuildVertices.Num() / 3);
 
-		for (size_t i = 0; i < IndexBuffer.Num() / 3; ++i) {
-			indices[i].v0 = IndexBuffer[i * 3];
-			indices[i].v1 = IndexBuffer[i * 3 + 1];
-			indices[i].v2 = IndexBuffer[i * 3 + 2];
+		// Reversing triangle winding order here, too.
+		for (size_t i = 0; i < StaticMeshBuildVertices.Num() / 3; ++i) {
+			physicsIndices[i].v0 = i * 3 + 2;
+			physicsIndices[i].v1 = i * 3 + 1;
+			physicsIndices[i].v2 = i * 3;
 		}
 
-		pPhysXCooking->CreateTriMesh("PhysXGeneric", EPhysXMeshCookFlags::Default, vertices, indices, TArray<uint16>(), true, primitiveResult.pCollisionMesh);
+		pPhysXCooking->CreateTriMesh("PhysXGeneric", EPhysXMeshCookFlags::Default, vertices, physicsIndices, TArray<uint16>(), true, primitiveResult.pCollisionMesh);
 	}
 #endif
 
 	result.push_back(std::move(primitiveResult));
+}
+
+static void loadPrimitive(
+	std::vector<LoadModelResult>& result,
+	const tinygltf::Model& model,
+	const tinygltf::Primitive& primitive,
+	const glm::dmat4x4& transform
+#if PHYSICS_INTERFACE_PHYSX
+	,IPhysXCooking* pPhysXCooking
+#endif
+) {
+	auto positionAccessorIt = primitive.attributes.find("POSITION");
+	if (positionAccessorIt == primitive.attributes.end()) {
+		// This primitive doesn't have a POSITION semantic, ignore it.
+		return;
+	}
+
+	int positionAccessorID = positionAccessorIt->second;
+	GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
+
+	if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
+		std::vector<uint32_t> syntheticIndexBuffer(positionAccessor.size());
+		syntheticIndexBuffer.resize(positionAccessor.size());
+		for (uint32_t i = 0; i < positionAccessor.size(); ++i) {
+			syntheticIndexBuffer[i] = i;
+		}
+		loadPrimitive(
+			result,
+			model,
+			primitive,
+			transform,
+			pPhysXCooking,
+#if PHYSICS_INTERFACE_PHYSX
+			positionAccessor,
+#endif
+			syntheticIndexBuffer
+		);
+	} else {
+		const tinygltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
+		if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+			GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
+			loadPrimitive(
+				result,
+				model,
+				primitive,
+				transform,
+				pPhysXCooking,
+#if PHYSICS_INTERFACE_PHYSX
+				positionAccessor,
+#endif
+				indexAccessor
+			);
+		} else if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+			GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
+			loadPrimitive(
+				result,
+				model,
+				primitive,
+				transform,
+				pPhysXCooking,
+#if PHYSICS_INTERFACE_PHYSX
+				positionAccessor,
+#endif
+				indexAccessor
+			);
+		} else {
+			// TODO: report unsupported index type.
+			return;
+		}
+	}
 }
 
 static void loadMesh(
