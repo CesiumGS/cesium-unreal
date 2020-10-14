@@ -86,7 +86,8 @@ public:
 	void DetachRasterTile(
 		const Cesium3DTiles::Tile& tile,
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
-		UTexture2D* pTexture
+		UTexture2D* pTexture,
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle
 	);
 
 protected:
@@ -102,4 +103,5 @@ protected:
 
 private:
 	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
+	void updateRasterOverlays();
 };

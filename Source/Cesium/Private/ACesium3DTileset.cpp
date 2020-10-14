@@ -265,7 +265,8 @@ public:
 		const Cesium3DTiles::Tile& tile,
 		uint32_t overlayTextureCoordinateID,
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
-		void* pMainThreadRendererResources
+		void* pMainThreadRendererResources,
+		const CesiumGeometry::Rectangle& textureCoordinateRectangle
 	) override {
 		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
@@ -273,9 +274,9 @@ public:
 		}
 
 		if (pContent->model) {
-			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadRendererResources);
+			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
 			if (pGltfContent) {
-				pGltfContent->DetachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources));
+				pGltfContent->DetachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources), textureCoordinateRectangle);
 			}
 		}
 	}
