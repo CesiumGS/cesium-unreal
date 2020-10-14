@@ -894,31 +894,22 @@ void UCesiumGltfComponent::AttachRasterTile(
 		UE_LOG(LogActor, Warning, TEXT("Too many raster overlays"));
 	}
 
-	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
-		if (pPrimitive) {
-			UMaterialInstanceDynamic* pMaterial = Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
-
-			for (size_t i = 0; i < this->_overlayTiles.Num(); ++i) {
-				FRasterOverlayTile& overlayTile = this->_overlayTiles[i];
-				std::string is = std::to_string(i + 1);
-				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), overlayTile.pTexture);
-				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), overlayTile.textureCoordinateRectangle);
-				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), overlayTile.translationAndScale);
-			}
-
-			for (size_t i = this->_overlayTiles.Num(); i < 3; ++i) {
-				std::string is = std::to_string(i + 1);
-				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), nullptr);
-				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-			}
-		}
-	}
+	this->updateRasterOverlays();
 }
 
-void UCesiumGltfComponent::DetachRasterTile(const Cesium3DTiles::Tile& tile, const Cesium3DTiles::RasterOverlayTile& rasterTile, UTexture2D* pTexture)
-{
+void UCesiumGltfComponent::DetachRasterTile(
+	const Cesium3DTiles::Tile& tile,
+	const Cesium3DTiles::RasterOverlayTile& rasterTile,
+	UTexture2D* pTexture,
+	const CesiumGeometry::Rectangle& textureCoordinateRectangle
+) {
+	this->_overlayTiles.RemoveAll([pTexture, &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
+		return
+			tile.pTexture == pTexture &&
+			tile.textureCoordinateRectangle.Equals(FLinearColor(textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY));
+	});
+
+	this->updateRasterOverlays();
 }
 
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
@@ -970,4 +961,28 @@ void UCesiumGltfComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	//this->Mesh->DestroyComponent();
 	//this->Mesh = nullptr;
+}
+
+void UCesiumGltfComponent::updateRasterOverlays() {
+	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+		if (pPrimitive) {
+			UMaterialInstanceDynamic* pMaterial = Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
+
+			for (size_t i = 0; i < this->_overlayTiles.Num(); ++i) {
+				FRasterOverlayTile& overlayTile = this->_overlayTiles[i];
+				std::string is = std::to_string(i + 1);
+				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), overlayTile.pTexture);
+				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), overlayTile.textureCoordinateRectangle);
+				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), overlayTile.translationAndScale);
+			}
+
+			for (size_t i = this->_overlayTiles.Num(); i < 3; ++i) {
+				std::string is = std::to_string(i + 1);
+				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), nullptr);
+				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
+				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
+			}
+		}
+	}
 }
