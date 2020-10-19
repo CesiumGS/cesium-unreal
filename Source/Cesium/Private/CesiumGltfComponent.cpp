@@ -400,10 +400,10 @@ static void loadPrimitive(
 			model,
 			primitive,
 			transform,
-			pPhysXCooking,
 #if PHYSICS_INTERFACE_PHYSX
-			positionAccessor,
+			pPhysXCooking,
 #endif
+			positionAccessor,
 			syntheticIndexBuffer
 		);
 	} else {
@@ -415,10 +415,10 @@ static void loadPrimitive(
 				model,
 				primitive,
 				transform,
-				pPhysXCooking,
 #if PHYSICS_INTERFACE_PHYSX
-				positionAccessor,
+				pPhysXCooking,
 #endif
+				positionAccessor,
 				indexAccessor
 			);
 		} else if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
@@ -428,10 +428,10 @@ static void loadPrimitive(
 				model,
 				primitive,
 				transform,
-				pPhysXCooking,
 #if PHYSICS_INTERFACE_PHYSX
-				positionAccessor,
+				pPhysXCooking,
 #endif
+				positionAccessor,
 				indexAccessor
 			);
 		} else {
