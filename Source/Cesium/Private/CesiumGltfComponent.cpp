@@ -21,6 +21,10 @@
 #include "PhysicsEngine/BodySetup.h"
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
+#else
+#include "Chaos/TriangleMeshImplicitObject.h"
+#include "Chaos/CollisionConvexMesh.h"
+#include "ChaosDerivedDataUtil.h"
 #endif
 #include "UCesiumGltfPrimitiveComponent.h"
 #include "CesiumTransforms.h"
@@ -42,6 +46,8 @@ struct LoadModelResult
 	glm::dmat4x4 transform;
 #if PHYSICS_INTERFACE_PHYSX
 	PxTriangleMesh* pCollisionMesh;
+#else
+	TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> pCollisionMesh;
 #endif
 	std::string name;
 };
@@ -159,6 +165,10 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
 	MikkTContext.m_bIgnoreDegenerates = false;
 	genTangSpaceDefault(&MikkTContext);
 }
+
+#if !PHYSICS_INTERFACE_PHYSX
+static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> BuildChaosTriangleMeshes(const TArray<FStaticMeshBuildVertex>& vertices, const TArray<uint32>& indices);
+#endif
 
 static tinygltf::Material defaultMaterial;
 
@@ -366,6 +376,8 @@ static void loadPrimitive(
 
 		pPhysXCooking->CreateTriMesh("PhysXGeneric", EPhysXMeshCookFlags::Default, vertices, physicsIndices, TArray<uint16>(), true, primitiveResult.pCollisionMesh);
 	}
+#else
+	primitiveResult.pCollisionMesh = BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
 
 	result.push_back(std::move(primitiveResult));
@@ -717,12 +729,14 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	//pMesh->UpdateCollisionFromStaticMesh();
 	pMesh->GetBodySetup()->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
-#if PHYSICS_INTERFACE_PHYSX
 	if (loadResult.pCollisionMesh) {
+#if PHYSICS_INTERFACE_PHYSX
 		pMesh->GetBodySetup()->TriMeshes.Add(loadResult.pCollisionMesh);
+#else
+		pMesh->GetBodySetup()->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
+#endif
 		pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
 	}
-#endif
 
 	pMesh->SetMobility(EComponentMobility::Movable);
 
@@ -993,3 +1007,128 @@ void UCesiumGltfComponent::updateRasterOverlays() {
 		}
 	}
 }
+
+#if !PHYSICS_INTERFACE_PHYSX
+// This is copied from FChaosDerivedDataCooker::BuildTriangleMeshes in C:\Program Files\Epic Games\UE_4.26\Engine\Source\Runtime\Engine\Private\PhysicsEngine\Experimental\ChaosDerivedData.cpp.
+// We can't use that method directly because it is private. Since we've copied it anyway, we've also modified it to be more efficient for our particular input data.
+static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> BuildChaosTriangleMeshes(const TArray<FStaticMeshBuildVertex>& vertices, const TArray<uint32>& indices) {
+	TArray<FVector> FinalVerts;
+	FinalVerts.Reserve(vertices.Num());
+
+	for (const FStaticMeshBuildVertex& vertex : vertices) {
+		FinalVerts.Add(vertex.Position);
+	}
+
+	// Push indices into one flat array
+	TArray<int32> FinalIndices;
+	FinalIndices.Reserve(indices.Num());
+	for (int32 i = 0; i < indices.Num(); i += 3) {
+		//question: It seems like unreal triangles are CW, but couldn't find confirmation for this
+		FinalIndices.Add(indices[i + 1]);
+		FinalIndices.Add(indices[i]);
+		FinalIndices.Add(indices[i + 2]);
+	}
+
+	TArray<int32> OutFaceRemap;
+
+	//if (EnableMeshClean)
+	{
+		Chaos::CleanTrimesh(FinalVerts, FinalIndices, &OutFaceRemap);
+	}
+
+	// Build particle list #BG Maybe allow TParticles to copy vectors?
+	Chaos::TParticles<Chaos::FReal, 3> TriMeshParticles;
+	TriMeshParticles.AddParticles(FinalVerts.Num());
+
+	const int32 NumVerts = FinalVerts.Num();
+	for (int32 VertIndex = 0; VertIndex < NumVerts; ++VertIndex)
+	{
+		TriMeshParticles.X(VertIndex) = FinalVerts[VertIndex];
+	}
+
+	// Build chaos triangle list. #BGTODO Just make the clean function take these types instead of double copying
+	const int32 NumTriangles = FinalIndices.Num() / 3;
+	bool bHasMaterials = true; //InParams.TriangleMeshDesc.MaterialIndices.Num() > 0;
+	TArray<uint16> MaterialIndices;
+
+	auto LambdaHelper = [&](auto& Triangles)
+	{
+		if (bHasMaterials)
+		{
+			MaterialIndices.Reserve(NumTriangles);
+		}
+
+		Triangles.Reserve(NumTriangles);
+		for (int32 TriangleIndex = 0; TriangleIndex < NumTriangles; ++TriangleIndex)
+		{
+			// Only add this triangle if it is valid
+			const int32 BaseIndex = TriangleIndex * 3;
+			const bool bIsValidTriangle = Chaos::FConvexBuilder::IsValidTriangle(
+				FinalVerts[FinalIndices[BaseIndex]],
+				FinalVerts[FinalIndices[BaseIndex + 1]],
+				FinalVerts[FinalIndices[BaseIndex + 2]]);
+
+			// TODO: Figure out a proper way to handle this. Could these edges get sewn together? Is this important?
+			//if (ensureMsgf(bIsValidTriangle, TEXT("FChaosDerivedDataCooker::BuildTriangleMeshes(): Trimesh attempted cooked with invalid triangle!")));
+			if (bIsValidTriangle)
+			{
+				Triangles.Add(Chaos::TVector<int32, 3>(FinalIndices[BaseIndex], FinalIndices[BaseIndex + 1], FinalIndices[BaseIndex + 2]));
+
+				if (bHasMaterials)
+				{
+					//if (EnableMeshClean)
+					{
+						if (!ensure(OutFaceRemap.IsValidIndex(TriangleIndex)))
+						{
+							MaterialIndices.Empty();
+							bHasMaterials = false;
+						}
+						else
+						{
+							MaterialIndices.Add(0);
+							//const int32 OriginalIndex = OutFaceRemap[TriangleIndex];
+
+							//if (ensure(InParams.TriangleMeshDesc.MaterialIndices.IsValidIndex(OriginalIndex)))
+							//{
+							//	MaterialIndices.Add(InParams.TriangleMeshDesc.MaterialIndices[OriginalIndex]);
+							//}
+							//else
+							//{
+							//	MaterialIndices.Empty();
+							//	bHasMaterials = false;
+							//}
+						}
+					}
+					//else
+					//{
+					//	if (ensure(InParams.TriangleMeshDesc.MaterialIndices.IsValidIndex(TriangleIndex)))
+					//	{
+					//		MaterialIndices.Add(InParams.TriangleMeshDesc.MaterialIndices[TriangleIndex]);
+					//	}
+					//	else
+					//	{
+					//		MaterialIndices.Empty();
+					//		bHasMaterials = false;
+					//	}
+					//}
+
+				}
+			}
+		}
+
+		TUniquePtr<TArray<int32>> OutFaceRemapPtr = MakeUnique<TArray<int32>>(OutFaceRemap);
+		return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(MoveTemp(TriMeshParticles), MoveTemp(Triangles), MoveTemp(MaterialIndices), MoveTemp(OutFaceRemapPtr));
+	};
+
+	if (FinalVerts.Num() < TNumericLimits<uint16>::Max())
+	{
+		TArray<Chaos::TVector<uint16, 3>> TrianglesSmallIdx;
+		return LambdaHelper(TrianglesSmallIdx);
+	}
+	else
+	{
+		TArray<Chaos::TVector<int32, 3>> TrianglesLargeIdx;
+		return LambdaHelper(TrianglesLargeIdx);
+	}
+}
+#endif
