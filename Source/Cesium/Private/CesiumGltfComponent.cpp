@@ -738,7 +738,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 
 	pMesh->SetMobility(EComponentMobility::Movable);
 
-	pMesh->bDrawMeshCollisionIfComplex = true;
+	//pMesh->bDrawMeshCollisionIfComplex = true;
 	//pMesh->bDrawMeshCollisionIfSimple = true;
 	pMesh->SetupAttachment(pGltf);
 	pMesh->RegisterComponent();
