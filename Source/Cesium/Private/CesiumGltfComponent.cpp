@@ -166,7 +166,9 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
 	genTangSpaceDefault(&MikkTContext);
 }
 
+#if !PHYSICS_INTERFACE_PHYSX
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> BuildChaosTriangleMeshes(const TArray<FStaticMeshBuildVertex>& vertices, const TArray<uint32>& indices);
+#endif
 
 static tinygltf::Material defaultMaterial;
 
@@ -1006,6 +1008,7 @@ void UCesiumGltfComponent::updateRasterOverlays() {
 	}
 }
 
+#if !PHYSICS_INTERFACE_PHYSX
 // This is copied from FChaosDerivedDataCooker::BuildTriangleMeshes in C:\Program Files\Epic Games\UE_4.26\Engine\Source\Runtime\Engine\Private\PhysicsEngine\Experimental\ChaosDerivedData.cpp.
 // We can't use that method directly because it is private. Since we've copied it anyway, we've also modified it to be more efficient for our particular input data.
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> BuildChaosTriangleMeshes(const TArray<FStaticMeshBuildVertex>& vertices, const TArray<uint32>& indices) {
@@ -1128,3 +1131,4 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 		return LambdaHelper(TrianglesLargeIdx);
 	}
 }
+#endif
