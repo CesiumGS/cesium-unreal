@@ -90,6 +90,9 @@ public:
 		const CesiumGeometry::Rectangle& textureCoordinateRectangle
 	);
 
+	UFUNCTION(BlueprintCallable, Category = "Collision")
+	virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
+
 protected:
 	//virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

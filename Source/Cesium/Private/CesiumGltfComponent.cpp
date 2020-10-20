@@ -811,6 +811,7 @@ UCesiumGltfComponent::CreateOnGameThread(
 		loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
 	}
 	Gltf->SetVisibility(false, true);
+	Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	return Gltf;
 }
 
@@ -924,6 +925,16 @@ void UCesiumGltfComponent::DetachRasterTile(
 	});
 
 	this->updateRasterOverlays();
+}
+
+void UCesiumGltfComponent::SetCollisionEnabled(ECollisionEnabled::Type NewType)
+{
+	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+		if (pPrimitive) {
+			pPrimitive->SetCollisionEnabled(NewType);
+		}
+	}
 }
 
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
