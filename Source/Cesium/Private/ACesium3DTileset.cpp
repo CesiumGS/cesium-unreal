@@ -533,6 +533,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
 		if (Gltf && Gltf->IsVisible()) {
 			Gltf->SetVisibility(false, true);
+			Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		} else {
 			// TODO: why is this happening?
 		}
@@ -561,6 +562,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 		if (!Gltf->IsVisible()) {
 			Gltf->SetVisibility(true, true);
+			Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		}
 	}
 }
