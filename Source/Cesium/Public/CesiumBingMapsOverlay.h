@@ -27,18 +27,6 @@ class CESIUM_API UCesiumBingMapsOverlay : public UCesiumRasterOverlay
 	GENERATED_BODY()
 
 	/**
-	 * The ID of the Cesium ion asset to use. If this property is non-zero, the Bing Maps Key and Map Style properties are ignored
-	 */
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	uint32 IonAssetID;
-
-	/**
-	 * The access token to use to access the Cesium ion resource.
-	 */
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	FString IonAccessToken;
-
-	/**
 	 * The Bing Maps API key to use. This property is ignored if the Ion Asset ID is non-zero.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium")

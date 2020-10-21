@@ -38,6 +38,7 @@ public class Cesium : ModuleRules
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/Debug/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/Debug/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/Debug/draco.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/Debug/tinyxml2d.lib"),
             }
             );
 
