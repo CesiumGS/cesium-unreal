@@ -311,7 +311,7 @@ static void loadPrimitive(
 	{
 		ColorVertexBuffer.Init(StaticMeshBuildVertices);
 	}
-	else
+	else if (positionAccessor.size() > 0)
 	{
 		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionAccessor.size());
 	}
@@ -699,6 +699,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	}
 	pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
 	pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
+	pMaterial->SetScalarParameterValue("opacityMask", 1.0);
 
 	applyTexture(pMaterial, "baseColorTexture", model, pbr.baseColorTexture);
 	applyTexture(pMaterial, "metallicRoughnessTexture", model, pbr.metallicRoughnessTexture);
@@ -1015,6 +1016,9 @@ void UCesiumGltfComponent::updateRasterOverlays() {
 				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
 				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
 			}
+		
+			pMaterial->SetScalarParameterValue("opacityMask", this->_overlayTiles.Num() > 0 ? 0.0 : 1.0);
+		
 		}
 	}
 }
