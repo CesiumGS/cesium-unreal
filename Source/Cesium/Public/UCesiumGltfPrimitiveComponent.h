@@ -15,6 +15,7 @@ class CESIUM_API UCesiumGltfPrimitiveComponent : public UStaticMeshComponent
 public:	
 	// Sets default values for this component's properties
 	UCesiumGltfPrimitiveComponent();
+	virtual ~UCesiumGltfPrimitiveComponent();
 
 	glm::dmat4x4 HighPrecisionNodeTransform;
 

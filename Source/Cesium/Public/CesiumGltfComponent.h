@@ -64,6 +64,7 @@ public:
 	static UCesiumGltfComponent* CreateOnGameThread(AActor* pParentActor, std::unique_ptr<HalfConstructed> pHalfConstructed, const glm::dmat4x4& cesiumToUnrealTransform);
 
 	UCesiumGltfComponent();
+	virtual ~UCesiumGltfComponent();
 
 	UPROPERTY(EditAnywhere)
 	UMaterial* BaseMaterial;
@@ -92,6 +93,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Collision")
 	virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
+
+	virtual void FinishDestroy() override;
 
 protected:
 	//virtual void BeginPlay() override;

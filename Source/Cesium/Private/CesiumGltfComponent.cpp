@@ -835,6 +835,10 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+UCesiumGltfComponent::~UCesiumGltfComponent() {
+	UE_LOG(LogActor, Warning, TEXT("~UCesiumGltfComponent"));
+}
+
 void UCesiumGltfComponent::LoadModel(const FString& Url)
 {
 	if (this->LoadedUrl == Url)
@@ -936,6 +940,11 @@ void UCesiumGltfComponent::SetCollisionEnabled(ECollisionEnabled::Type NewType)
 			pPrimitive->SetCollisionEnabled(NewType);
 		}
 	}
+}
+
+void UCesiumGltfComponent::FinishDestroy()
+{
+	UE_LOG(LogActor, Warning, TEXT("UCesiumGltfComponent::FinishDestroy"));
 }
 
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)

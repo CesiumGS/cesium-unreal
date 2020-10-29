@@ -283,6 +283,9 @@ public:
 
 private:
 	void destroyRecursively(USceneComponent* pComponent) {
+		// FString newName = TEXT("Destroyed_") + pComponent->GetName();
+		// pComponent->Rename(*newName);
+
 		if (pComponent->IsRegistered()) {
 			pComponent->UnregisterComponent();
 		}
@@ -292,6 +295,8 @@ private:
 			this->destroyRecursively(pChild);
 		}
 
+		pComponent->DetachFromParent(false);
+		pComponent->DestroyPhysicsState();
 		pComponent->DestroyComponent();
 	}
 
