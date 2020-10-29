@@ -25,7 +25,7 @@ namespace Cesium3DTiles {
 }
 
 namespace CesiumGeometry {
-	class Rectangle;
+	struct Rectangle;
 }
 
 USTRUCT()

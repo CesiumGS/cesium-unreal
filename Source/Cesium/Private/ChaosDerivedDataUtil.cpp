@@ -21,7 +21,7 @@ namespace Chaos
 		TAABB<FReal, 3> BoundingBox() const { return TAABB<FReal, 3>(Vert, Vert); }
 	};
 
-	void CleanTrimesh(TArray<FVector>& InOutVertices, TArray<int32>& InOutIndices, TArray<int32>* OutOptFaceRemap)
+	void CesiumCleanTriMeshes(TArray<FVector>& InOutVertices, TArray<int32>& InOutIndices, TArray<int32>* OutOptFaceRemap)
 	{
 		TArray<FVector> LocalSourceVerts = InOutVertices;
 		TArray<int32> LocalSourceIndices = InOutIndices;
