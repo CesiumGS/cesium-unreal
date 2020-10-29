@@ -13,6 +13,9 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent()
 	// ...
 }
 
+UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {
+}
+
 void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform) {
 	this->SetUsingAbsoluteLocation(true);
 	this->SetUsingAbsoluteRotation(true);
