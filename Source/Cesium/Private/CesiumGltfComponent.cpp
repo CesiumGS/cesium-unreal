@@ -945,6 +945,7 @@ void UCesiumGltfComponent::SetCollisionEnabled(ECollisionEnabled::Type NewType)
 void UCesiumGltfComponent::FinishDestroy()
 {
 	UE_LOG(LogActor, Warning, TEXT("UCesiumGltfComponent::FinishDestroy"));
+	Super::FinishDestroy();
 }
 
 void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x)
