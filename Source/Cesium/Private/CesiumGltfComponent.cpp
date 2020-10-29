@@ -1048,7 +1048,7 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 
 	//if (EnableMeshClean)
 	{
-		Chaos::CleanTrimesh(FinalVerts, FinalIndices, &OutFaceRemap);
+		Chaos::CesiumCleanTriMeshes(FinalVerts, FinalIndices, &OutFaceRemap);
 	}
 
 	// Build particle list #BG Maybe allow TParticles to copy vectors?

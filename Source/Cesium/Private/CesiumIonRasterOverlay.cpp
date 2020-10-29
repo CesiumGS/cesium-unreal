@@ -13,7 +13,7 @@ void UCesiumIonRasterOverlay::AddToTileset(Cesium3DTiles::Tileset& tileset) {
     );
 
     for (const FRectangularCutout& cutout : this->Cutouts) {
-        pOverlay->cutouts.push_back(CesiumGeospatial::GlobeRectangle::fromDegrees(cutout.west, cutout.south, cutout.east, cutout.north));
+        pOverlay->getCutouts().push_back(CesiumGeospatial::GlobeRectangle::fromDegrees(cutout.west, cutout.south, cutout.east, cutout.north));
     }
 
     tileset.getOverlays().push_back(std::move(pOverlay));

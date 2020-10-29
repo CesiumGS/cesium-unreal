@@ -29,16 +29,24 @@ public class Cesium : ModuleRules
             }
             );
 
+        string cesiumNativeConfiguration = "Debug";
+        string tinyxml2Name = "tinyxml2d.lib";
+        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        {
+            cesiumNativeConfiguration = "RelWithDebInfo";
+            tinyxml2Name = "tinyxml2.lib";
+        }
+
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/Debug/Cesium3DTiles.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/Debug/CesiumGeospatial.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/Debug/CesiumGeometry.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/Debug/CesiumUtility.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/Debug/uriparser.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/Debug/draco.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/Debug/tinyxml2d.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + cesiumNativeConfiguration + "/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + cesiumNativeConfiguration + "/CesiumGeospatial.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + cesiumNativeConfiguration + "/CesiumGeometry.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name)
             }
             );
 
