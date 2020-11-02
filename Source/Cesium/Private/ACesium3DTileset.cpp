@@ -35,7 +35,15 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
 	Georeference(nullptr),
-	_pTileset(nullptr)
+	_pTileset(nullptr),
+	_lastTilesRendered(0),
+	_lastTilesLoadingLowPriority(0),
+	_lastTilesLoadingMediumPriority(0),
+	_lastTilesLoadingHighPriority(0),
+
+	_lastTilesVisited(0),
+	_lastTilesCulled(0),
+	_lastMaxDepthVisited(0)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -282,9 +290,31 @@ public:
 	}
 
 private:
+	// static int32 GetObjReferenceCount(UObject* Obj, TArray<UObject*>* OutReferredToObjects = nullptr)
+	// {
+	// 	if (!Obj ||
+	// 		!Obj->IsValidLowLevelFast())
+	// 	{
+	// 		return -1;
+	// 	}
+
+	// 	TArray<UObject*> ReferredToObjects;             //req outer, ignore archetype, recursive, ignore transient
+	// 	FReferenceFinder ObjectReferenceCollector(ReferredToObjects, nullptr, false, true, true, false);
+	// 	ObjectReferenceCollector.FindReferences(Obj);
+
+	// 	if (OutReferredToObjects)
+	// 	{
+	// 		OutReferredToObjects->Append(ReferredToObjects);
+	// 	}
+	// 	return ReferredToObjects.Num();
+	// }
+
 	void destroyRecursively(USceneComponent* pComponent) {
 		// FString newName = TEXT("Destroyed_") + pComponent->GetName();
 		// pComponent->Rename(*newName);
+
+		// TArray<UObject*> before;
+		// GetObjReferenceCount(pComponent, &before);
 
 		if (pComponent->IsRegistered()) {
 			pComponent->UnregisterComponent();
@@ -298,6 +328,11 @@ private:
 		pComponent->DetachFromParent(false);
 		pComponent->DestroyPhysicsState();
 		pComponent->DestroyComponent();
+
+		// TArray<UObject*> after;
+		// GetObjReferenceCount(pComponent, &after);
+
+		// UE_LOG(LogActor, Warning, TEXT("Before %d, After %d"), before.Num(), after.Num());
 	}
 
 	ACesium3DTileset* _pActor;
@@ -529,6 +564,39 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	);
 
 	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetCamera);
+
+	if (
+		result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
+		result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
+		result.tilesLoadingMediumPriority != this->_lastTilesLoadingMediumPriority ||
+		result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
+		result.tilesVisited != this->_lastTilesVisited ||
+		result.tilesCulled != this->_lastTilesCulled ||
+		result.maxDepthVisited != this->_lastMaxDepthVisited
+	) {
+		this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
+		this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
+		this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
+		this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
+
+		this->_lastTilesVisited = result.tilesVisited;
+		this->_lastTilesCulled = result.tilesCulled;
+		this->_lastMaxDepthVisited = result.maxDepthVisited;
+
+		UE_LOG(
+			LogActor,
+			Warning,
+			TEXT("%s: Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+			*this->GetName(),
+			result.tilesVisited,
+			result.tilesToRenderThisFrame.size(),
+			result.tilesCulled,
+			result.maxDepthVisited,
+			result.tilesLoadingLowPriority,
+			result.tilesLoadingMediumPriority,
+			result.tilesLoadingHighPriority
+		);
+	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {

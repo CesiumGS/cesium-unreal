@@ -156,4 +156,13 @@ public:
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
+	
+	uint32_t _lastTilesRendered;
+	uint32_t _lastTilesLoadingLowPriority;
+	uint32_t _lastTilesLoadingMediumPriority;
+	uint32_t _lastTilesLoadingHighPriority;
+
+	uint32_t _lastTilesVisited;
+	uint32_t _lastTilesCulled;
+	uint32_t _lastMaxDepthVisited;
 };
