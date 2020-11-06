@@ -61,7 +61,12 @@ public:
 		,IPhysXCooking* pPhysXCooking = nullptr
 #endif
 	);
-	static UCesiumGltfComponent* CreateOnGameThread(AActor* pParentActor, std::unique_ptr<HalfConstructed> pHalfConstructed, const glm::dmat4x4& cesiumToUnrealTransform);
+	static UCesiumGltfComponent* CreateOnGameThread(
+		AActor* pParentActor,
+		std::unique_ptr<HalfConstructed> pHalfConstructed,
+		const glm::dmat4x4& cesiumToUnrealTransform,
+		UMaterial* pBaseMaterial
+	);
 
 	UCesiumGltfComponent();
 	virtual ~UCesiumGltfComponent();
