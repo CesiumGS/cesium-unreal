@@ -797,7 +797,8 @@ UCesiumGltfComponent::CreateOffGameThread(
 UCesiumGltfComponent::CreateOnGameThread(
 	AActor* pParentActor,
 	std::unique_ptr<HalfConstructed> pHalfConstructed,
-	const glm::dmat4x4& cesiumToUnrealTransform
+	const glm::dmat4x4& cesiumToUnrealTransform,
+	UMaterial* pBaseMaterial
 ) {
 	HalfConstructedReal* pReal = static_cast<HalfConstructedReal*>(pHalfConstructed.get());
 	std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -808,6 +809,11 @@ UCesiumGltfComponent::CreateOnGameThread(
 	UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
 	Gltf->SetUsingAbsoluteLocation(true);
 	Gltf->SetFlags(RF_Transient);
+
+	if (pBaseMaterial) {
+		Gltf->BaseMaterial = pBaseMaterial;
+	}
+
 	for (LoadModelResult& model : result) {
 		loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
 	}

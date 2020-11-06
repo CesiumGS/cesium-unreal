@@ -11,6 +11,8 @@
 #include "CesiumGeoreference.h"
 #include "ACesium3DTileset.generated.h"
 
+class UMaterial;
+
 namespace Cesium3DTiles {
 	class Tileset;
 	class TilesetView;
@@ -60,6 +62,9 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
 	double MaximumScreenSpaceError = 16.0;
+
+	UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+	UMaterial* Material = nullptr;
 
 	/**
 	 * Pauses level-of-detail and culling updates of this tileset.

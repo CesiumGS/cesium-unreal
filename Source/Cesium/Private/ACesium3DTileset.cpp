@@ -196,7 +196,7 @@ public:
 			glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
 			glm::dmat4 tilesetToWorld = _pActor->GetTilesetToWorldTransform();
 			glm::dmat4 tilesetToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
-			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf), tilesetToUnrealTransform);
+			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf), tilesetToUnrealTransform, this->_pActor->Material);
 		}
 
 		return nullptr;
