@@ -377,7 +377,10 @@ static void loadPrimitive(
 		pPhysXCooking->CreateTriMesh("PhysXGeneric", EPhysXMeshCookFlags::Default, vertices, physicsIndices, TArray<uint16>(), true, primitiveResult.pCollisionMesh);
 	}
 #else
-	primitiveResult.pCollisionMesh = BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+	if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0)
+	{
+		primitiveResult.pCollisionMesh = BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+	}
 #endif
 
 	result.push_back(std::move(primitiveResult));

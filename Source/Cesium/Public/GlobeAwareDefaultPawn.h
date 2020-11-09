@@ -4,9 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
-#include "CesiumGeoreference.h"
+
 #include <glm/mat3x3.hpp>
 #include "GlobeAwareDefaultPawn.generated.h"
+
+class ACesiumGeoreference;
+class UCurveFloat;
 
 /**
  * 
@@ -64,8 +67,80 @@ class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 	virtual FRotator GetViewRotation() const override;
 	virtual FRotator GetBaseAimRotation() const override;
 
+public :
+
+	// Useful transformations
+
+	/**
+	 * Transforms a point expressed in ECEF coordinates to UE Coordinates.
+	 * WARNING - For debugging purpose only as computations are done in Floating point precision 
+	 */
+	FVector InaccurateTransformECEFToUE(FVector& Point);
+
+	/** 
+	* Transforms accurately (double precision) coordinates from ECEF to UE coordinates, taking into account the current World rebasing origin
+	*/
+	void AccurateTransformECEFToUE(double X, double Y, double Z, double& ResultX, double& ResultY, double& ResultZ );
+
+	/**
+	* Transforms accurately (double precision) coordinates from UE to ECEF coordinates, taking into account the current World rebasing origin
+	*/
+	void AccurateTransformUEToECEF(double X, double Y, double Z, double& ResultX, double& ResultY, double& ResultZ);
+
+	/**
+	* Transforms a rotator expressed in UE coordinates to one expressed in ENU coordinates. 
+	(Single precision, but this should not be an issue)
+	*/
+	FRotator TransformRotatorUEToENU(FRotator UERotator);
+
+	/**
+	* Transforms a rotator expressed in ENU coordinates to one expressed in UE coordinates.
+	(Single precision, but this should not be an issue)
+	*/
+	FRotator TransformRotatorENUToUE(FRotator UERotator);
+
+	/** 
+	* Get the pawn Camera location accurately in ECEF Coordinates
+	*/
+	void GetECEFCameraLocation(double& X, double& Y, double& Z);
+	/**
+	* Set the pawn Camera location accurately from ECEF Coordinates
+	*/
+	void SetECEFCameraLocation(double X, double Y, double Z);
+
+
+
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	UCurveFloat* FlyToAltitudeProfileCurve;
+	
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	UCurveFloat* FlyToProgressCurve;
+
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	UCurveFloat* FlyToMaximumAltitudeCurve;
+
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	float FlyToDuration = 5;
+
+	UPROPERTY(EditAnywhere, Category = "Cesium")
+	float FlyToGranulatiryDegrees = 0.01;
+
+	void FlyToLocation(double ECEFDestinationX, double ECEFDestinationY, double ECEFDestinationZ, float YawAtDestination, float PitchAtDestination);
+
+	
+
+	bool bFlyingToLocation = false;
+	float currentFlyTime = 0;
+	FRotator flyToSourceRotation;
+	FRotator flyToDestinationRotation;
+
+	virtual void Tick(float DeltaSeconds) override;
+	TArray<FVector> Keypoints;
+
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void RefreshMatricesCache();
 
 private:
 	/**
@@ -74,4 +149,6 @@ private:
 	 * coordinate system.
 	 */
 	glm::dmat3 computeEastNorthUpToFixedFrame() const;
+
+	glm::dmat4x4 ecefToUnreal;
 };

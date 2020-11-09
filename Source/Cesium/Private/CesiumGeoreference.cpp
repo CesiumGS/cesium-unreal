@@ -4,6 +4,7 @@
 #include "CesiumGeoreference.h"
 #include "Engine/World.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumGeoreferenceable.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "CesiumTransforms.h"
