@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "CesiumGeoreferenceable.h"
+#include <glm/mat3x3.hpp>
 #include "UObject/WeakInterfacePtr.h"
 #include "CesiumGeoreference.generated.h"
+
+class ICesiumGeoreferenceable;
 
 UENUM(BlueprintType)
 enum class EOriginPlacement : uint8 {
@@ -145,11 +147,15 @@ public:
 
 	void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
+	void UpdateGeoreference();
+
 protected:
+	
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
-	void UpdateGeoreference();
+	
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
