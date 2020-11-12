@@ -6,23 +6,6 @@
 #include "CesiumRasterOverlay.h"
 #include "CesiumIonRasterOverlay.generated.h"
 
-USTRUCT()
-struct FRectangularCutout {
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	double west;
-
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	double south;
-
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	double east;
-
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	double north;
-};
-
 /**
  * 
  */
@@ -31,6 +14,7 @@ class CESIUM_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay
 {
 	GENERATED_BODY()
 
+public:
 	/**
 	 * The ID of the Cesium ion asset to use. If this property is non-zero, the Bing Maps Key and Map Style properties are ignored
 	 */
@@ -43,11 +27,6 @@ class CESIUM_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	FString IonAccessToken;
 
-	/**
-	 * Rectangular cutouts where this tileset should not be drawn. Each cutout is specified as "west,south,east,north" in decimal degrees.
-	 */
-	UPROPERTY(EditAnywhere, Category = "Cesium|Experimental")
-	TArray<FRectangularCutout> Cutouts;
-
-	virtual void AddToTileset(Cesium3DTiles::Tileset& tileset) override;
+protected:
+	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay() override;
 };

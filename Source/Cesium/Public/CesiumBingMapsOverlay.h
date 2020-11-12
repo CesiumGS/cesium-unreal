@@ -26,6 +26,7 @@ class CESIUM_API UCesiumBingMapsOverlay : public UCesiumRasterOverlay
 {
 	GENERATED_BODY()
 
+public:
 	/**
 	 * The Bing Maps API key to use. This property is ignored if the Ion Asset ID is non-zero.
 	 */
@@ -38,5 +39,6 @@ class CESIUM_API UCesiumBingMapsOverlay : public UCesiumRasterOverlay
 	UPROPERTY(EditAnywhere, Category = "Cesium")
 	EBingMapsStyle MapStyle = EBingMapsStyle::Aerial;
 
-	virtual void AddToTileset(Cesium3DTiles::Tileset& tileset) override;
+protected:
+	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay() override;
 };
