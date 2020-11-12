@@ -106,6 +106,9 @@ public:
 	 */
 	glm::dmat4x4 GetLocalWorldToGlobalWorldTransform() const;
 
+	Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
+	const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
+
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 
 	virtual bool IsBoundingVolumeReady() const override;

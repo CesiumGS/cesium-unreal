@@ -390,11 +390,11 @@ void ACesium3DTileset::LoadTileset()
 	TArray<UCesiumRasterOverlay*> rasterOverlays;
 	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
-		pOverlay->AddToTileset(*pTileset);
-	}
-
 	this->_pTileset = pTileset;
+
+	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+		pOverlay->AddToTileset();
+	}
 }
 
 void ACesium3DTileset::DestroyTileset() {

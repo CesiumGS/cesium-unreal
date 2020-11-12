@@ -6,7 +6,7 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "UnrealConversions.h"
 
-void UCesiumBingMapsOverlay::AddToTileset(Cesium3DTiles::Tileset& tileset) {
+std::unique_ptr<Cesium3DTiles::RasterOverlay> UCesiumBingMapsOverlay::CreateOverlay() {
     std::string mapStyle;
 
     switch (this->MapStyle) {
@@ -36,11 +36,11 @@ void UCesiumBingMapsOverlay::AddToTileset(Cesium3DTiles::Tileset& tileset) {
         break;
     }
 
-    tileset.getOverlays().push_back(std::make_unique<Cesium3DTiles::BingMapsRasterOverlay>(
+    return std::make_unique<Cesium3DTiles::BingMapsRasterOverlay>(
         "https://dev.virtualearth.net",
         wstr_to_utf8(this->BingMapsKey),
         mapStyle,
         "",
         CesiumGeospatial::Ellipsoid::WGS84
-    ));
+    );
 }
