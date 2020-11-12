@@ -393,7 +393,9 @@ void ACesium3DTileset::LoadTileset()
 	this->_pTileset = pTileset;
 
 	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
-		pOverlay->AddToTileset();
+		if (pOverlay->IsActive()) {
+			pOverlay->AddToTileset();
+		}
 	}
 }
 
