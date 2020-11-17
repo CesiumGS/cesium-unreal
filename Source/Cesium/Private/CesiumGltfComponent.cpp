@@ -50,6 +50,7 @@ struct LoadModelResult
 	TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> pCollisionMesh;
 #endif
 	std::string name;
+	std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 };
 
 // Initialize with a static function instead of inline to avoid an
@@ -69,44 +70,57 @@ glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
 template <class T, class TIndexAccessor>
-static void updateTextureCoordinates(
+static uint32_t updateTextureCoordinates(
 	const tinygltf::Model& model,
 	const tinygltf::Primitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
 	const TIndexAccessor& indicesAccessor,
 	const T& texture,
-	int textureCoordinateIndex
+	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
-	updateTextureCoordinates(
+	return updateTextureCoordinates(
 		model,
 		primitive,
 		vertices,
 		indicesAccessor,
 		"TEXCOORD_" + std::to_string(texture.texCoord),
-		textureCoordinateIndex
+		textureCoordinateMap
 	);
 }
 
 template <class TIndexAccessor>
-void updateTextureCoordinates(
+uint32_t updateTextureCoordinates(
 	const tinygltf::Model& model,
 	const tinygltf::Primitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
 	const TIndexAccessor& indicesAccessor,
 	const std::string& attributeName,
-	int textureCoordinateIndex
+	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
 	auto uvAccessorIt = primitive.attributes.find(attributeName);
-	if (uvAccessorIt != primitive.attributes.end()) {
-		int uvAccessorID = uvAccessorIt->second;
-		GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
-
-		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
-			FStaticMeshBuildVertex& vertex = vertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
-			vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
-		}
+	if (uvAccessorIt == primitive.attributes.end()) {
+		// Texture not used, texture coordinates don't matter.
+		return 0;
 	}
+
+	int uvAccessorID = uvAccessorIt->second;
+	auto mapIt = textureCoordinateMap.find(uvAccessorID);
+	if (mapIt != textureCoordinateMap.end()) {
+		// Texture coordinates for this accessor are already populated.
+		return mapIt->second;
+	}
+
+	size_t textureCoordinateIndex = textureCoordinateMap.size();
+	textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
+
+	GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+	for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+		FStaticMeshBuildVertex& vertex = vertices[i];
+		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+		vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+	}
+
+	return textureCoordinateIndex;
 }
 
 static int mikkGetNumFaces(const SMikkTSpaceContext* Context) {
@@ -275,13 +289,7 @@ static void loadPrimitive(
 		computeTangentSpace(StaticMeshBuildVertices);
 	}
 
-	// In the GltfMaterial defined in the Unreal Editor, each texture has its own set of
-	// texture coordinates, and these cannot be changed at runtime:
-	// 0 - baseColorTexture
-	// 1 - metallicRoughnessTexture
-	// 2 - normalTexture
-	// 3 - occlusionTexture
-	// 4 - emissiveTexture
+	LoadModelResult primitiveResult;
 
 	// We need to copy the texture coordinates associated with each texture (if any) into the
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
@@ -289,22 +297,24 @@ static void loadPrimitive(
 	int materialID = primitive.material;
 	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : &defaultMaterial;
 
+	std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+
 	if (pMaterial) {
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.baseColorTexture, 0);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, 1);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->normalTexture, 2);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->occlusionTexture, 3);
-		updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->emissiveTexture, 4);
+		primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
+		primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
+		primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->normalTexture, textureCoordinateMap);
+		primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->occlusionTexture, textureCoordinateMap);
+		primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->emissiveTexture, textureCoordinateMap);
 	}
 
 	// Currently only one set of raster overlay texture coordinates is supported, and it is at UVs[5].
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
-	updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, rasterOverlay0, 5);
+	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, rasterOverlay0, textureCoordinateMap);
 
 	RenderData->Bounds = BoundingBoxAndSphere;
 
 	LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
-	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, 6);
+	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size());
 
 	FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
 	if (false) //bHasVertexColors)
@@ -343,7 +353,6 @@ static void loadPrimitive(
 	LODResources.bHasReversedDepthOnlyIndices = false;
 	LODResources.bHasAdjacencyInfo = false;
 
-	LoadModelResult primitiveResult;
 	primitiveResult.pModel = &model;
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
@@ -697,6 +706,10 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
 
+	for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
+		pMaterial->SetScalarParameterValue(textureCoordinateSet.first.c_str(), textureCoordinateSet.second);
+	}
+	
 	if (pbr.baseColorFactor.size() >= 3) {
 		pMaterial->SetVectorParameterValue("baseColorFactor", FVector(pbr.baseColorFactor[0], pbr.baseColorFactor[1], pbr.baseColorFactor[2]));
 	}
