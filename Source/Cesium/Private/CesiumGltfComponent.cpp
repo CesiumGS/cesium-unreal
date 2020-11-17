@@ -307,7 +307,7 @@ static void loadPrimitive(
 		primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->emissiveTexture, textureCoordinateMap);
 	}
 
-	// Currently only one set of raster overlay texture coordinates is supported, and it is at UVs[5].
+	// Currently only one set of raster overlay texture coordinates is supported.
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
 	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, rasterOverlay0, textureCoordinateMap);
 
