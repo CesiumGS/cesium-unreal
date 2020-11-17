@@ -202,7 +202,7 @@ public:
 		return nullptr;
 	}
 
-	virtual void free(Cesium3DTiles::Tile& tile, void* pLoadThreadResult, void* pMainThreadResult) {
+	virtual void free(Cesium3DTiles::Tile& tile, void* pLoadThreadResult, void* pMainThreadResult) noexcept {
 		if (pLoadThreadResult) {
 			UCesiumGltfComponent::HalfConstructed* pHalf = reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult);
 			delete pHalf;
