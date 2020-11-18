@@ -87,7 +87,7 @@ public:
 		this->_callback = callback;
 	}
 
-	virtual void cancel() {
+	virtual void cancel() noexcept {
 		// Only cancel the request if the HttpManager still has it.
 		// If not, it means the request already completed or canceled, and Unreal
 		// will (for some reason!) re-invoke OnProcessRequestComplete if we
@@ -119,7 +119,7 @@ std::unique_ptr<Cesium3DTiles::IAssetRequest> UnrealAssetAccessor::requestAsset(
 	return std::make_unique<UnrealAssetRequest>(url, headers);
 }
 
-void UnrealAssetAccessor::tick() {
+void UnrealAssetAccessor::tick() noexcept {
 	FHttpManager& manager = FHttpModule::Get().GetHttpManager();
 	manager.Tick(0.0f);
 }
