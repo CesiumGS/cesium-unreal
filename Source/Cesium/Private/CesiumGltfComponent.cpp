@@ -4,7 +4,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "tiny_gltf.h"
-#include "GltfAccessor.h"
+#include "Cesium3DTiles/GltfAccessor.h"
 #include "UnrealConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
@@ -113,7 +113,7 @@ uint32_t updateTextureCoordinates(
 	size_t textureCoordinateIndex = textureCoordinateMap.size();
 	textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
 
-	GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
+	Cesium3DTiles::GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
 	for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 		FStaticMeshBuildVertex& vertex = vertices[i];
 		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
@@ -195,7 +195,7 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 	IPhysXCooking* pPhysXCooking,
 #endif
-	const GltfAccessor<FVector>& positionAccessor,
+	const Cesium3DTiles::GltfAccessor<FVector>& positionAccessor,
 	const TIndexAccessor& indicesAccessor
 ) {
 	if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
@@ -248,7 +248,7 @@ static void loadPrimitive(
 	auto normalAccessorIt = primitive.attributes.find("NORMAL");
 	if (normalAccessorIt != primitive.attributes.end()) {
 		int normalAccessorID = normalAccessorIt->second;
-		GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
+		Cesium3DTiles::GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
 
 		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
@@ -275,7 +275,7 @@ static void loadPrimitive(
 	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
 	if (tangentAccessorIt != primitive.attributes.end()) {
 		int tangentAccessorID = normalAccessorIt->second;
-		GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
+		Cesium3DTiles::GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
 
 		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
@@ -411,7 +411,7 @@ static void loadPrimitive(
 	}
 
 	int positionAccessorID = positionAccessorIt->second;
-	GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
+	Cesium3DTiles::GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
 
 	if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
 		std::vector<uint32_t> syntheticIndexBuffer(positionAccessor.size());
@@ -433,7 +433,7 @@ static void loadPrimitive(
 	} else {
 		const tinygltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
 		if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-			GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
+			Cesium3DTiles::GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
 			loadPrimitive(
 				result,
 				model,
@@ -446,7 +446,7 @@ static void loadPrimitive(
 				indexAccessor
 			);
 		} else if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-			GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
+			Cesium3DTiles::GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
 			loadPrimitive(
 				result,
 				model,
