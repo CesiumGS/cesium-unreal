@@ -214,7 +214,7 @@ public:
 		}
 	}
 
-	virtual void* prepareRasterInLoadThread(const Cesium3DTiles::RasterOverlayTile& rasterTile) {
+	virtual void* prepareRasterInLoadThread(const tinygltf::Image& image) override {
 		return nullptr;
 	}
 
@@ -373,9 +373,9 @@ void ACesium3DTileset::LoadTileset()
 	this->Georeference->AddGeoreferencedObject(this);
 
 	Cesium3DTiles::TilesetExternals externals{
-		new UnrealAssetAccessor(),
-		new UnrealResourcePreparer(this),
-		new UnrealTaskProcessor()
+		std::make_shared<UnrealAssetAccessor>(),
+		std::make_shared<UnrealResourcePreparer>(this),
+		std::make_shared<UnrealTaskProcessor>()
 	};
 
 	if (this->Url.Len() > 0)
@@ -404,11 +404,7 @@ void ACesium3DTileset::DestroyTileset() {
 		return;
 	}
 
-	Cesium3DTiles::TilesetExternals externals = this->_pTileset->getExternals();
 	delete this->_pTileset;
-	delete externals.pAssetAccessor;
-	delete externals.pPrepareRendererResources;
-	delete externals.pTaskProcessor;
 	this->_pTileset = nullptr;
 }
 

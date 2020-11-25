@@ -26,6 +26,7 @@ public class Cesium : ModuleRules
                 "../extern/cesium-native/extern/tinygltf",
                 "../extern/cesium-native/extern/glm",
                 "../extern/cesium-native/extern/GSL/include",
+                "../extern/cesium-native/extern/asyncplusplus/include"
             }
             );
 
@@ -46,7 +47,8 @@ public class Cesium : ModuleRules
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name)
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib")
             }
             );
 
