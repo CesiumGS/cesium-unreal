@@ -6,6 +6,7 @@
 #include "UnrealCesiumLogger.h"
 #include <sstream>
 #include <iostream>
+#include <memory>
 
 #define LOCTEXT_NAMESPACE "FCesiumModule"
 
@@ -25,8 +26,8 @@ void FCesiumModule::StartupModule()
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	Cesium3DTiles::Logging::initializeLogging();
 
-	//Cesium3DTiles::ILogger* logger = new UnrealCesiumLogger();
-	//Cesium3DTiles::registerLogger(logger);
+	std::shared_ptr<Cesium3DTiles::ILogger> logger = std::make_shared<UnrealCesiumLogger>();
+	Cesium3DTiles::Logging::registerLogger(logger);
 
 	Cesium3DTiles::registerAllTileContentTypes();
 

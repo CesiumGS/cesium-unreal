@@ -32,10 +32,12 @@ public class Cesium : ModuleRules
 
         string cesiumNativeConfiguration = "Debug";
         string tinyxml2Name = "tinyxml2d.lib";
+        string spdlogLibName = "spdlogd.lib";
         if (Target.Configuration == UnrealTargetConfiguration.Shipping)
         {
             cesiumNativeConfiguration = "RelWithDebInfo";
             tinyxml2Name = "tinyxml2.lib";
+            spdlogLibName = "spdlog.lib";
         }
 
         PublicAdditionalLibraries.AddRange(
@@ -47,6 +49,7 @@ public class Cesium : ModuleRules
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/spdlog/" + cesiumNativeConfiguration + "/" + spdlogLibName),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name)
             }
             );
