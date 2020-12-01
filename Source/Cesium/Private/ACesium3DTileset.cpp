@@ -165,24 +165,15 @@ public:
 #endif
 	{}
 
-	virtual void* prepareInLoadThread(const Cesium3DTiles::Tile& tile) {
-		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
-		if (!pContent) {
-			return nullptr;
-		}
-
-		if (pContent->model) {
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
-				pContent->model.value(),
-				tile.getTransform()
+	virtual void* prepareInLoadThread(const tinygltf::Model& model, const glm::dmat4& transform) {
+		std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
+			model,
+			transform
 #if PHYSICS_INTERFACE_PHYSX
-				,this->_pPhysXCooking
+			,this->_pPhysXCooking
 #endif
-			);
-			return pHalf.release();
-		}
-
-		return nullptr;
+		);
+		return pHalf.release();
 	}
 
 	virtual void* prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
@@ -442,11 +433,6 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetPla
 		return std::optional<UnrealCameraParameters>();
 	}
 
-	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
-	if (!pRootTile) {
-		return std::optional<UnrealCameraParameters>();
-	}
-
 	const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
 	const FVector& location = pov.Location;
 	const FRotator& rotation = pCameraManager->ViewTarget.POV.Rotation;
@@ -514,7 +500,7 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetEdi
 {
 	FViewport* pViewport = GEditor->GetActiveViewport();
 	FViewportClient* pViewportClient = pViewport->GetClient();
-	FEditorViewportClient* pEditorViewportClient = (FEditorViewportClient*)pViewportClient;
+	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
 	const FVector& location = pEditorViewportClient->GetViewLocation();
 	const FRotator& rotation = pEditorViewportClient->GetViewRotation();
 	double fov = pEditorViewportClient->FOVAngle;
@@ -542,7 +528,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->SuspendUpdate || !this->_pTileset->getRootTile()) {
+	if (this->SuspendUpdate) {
 		return;
 	}
 
