@@ -82,6 +82,11 @@
         "valarray": "cpp",
         "xhash": "cpp",
         "xtree": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "string_span": "cpp",
+        "bitset": "cpp",
+        "scoped_allocator": "cpp",
+        "typeindex": "cpp",
+        "coroutine": "cpp"
     }
 }

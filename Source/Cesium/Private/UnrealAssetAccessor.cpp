@@ -1,6 +1,6 @@
 #include "UnrealAssetAccessor.h"
-#include "Cesium3DTiles/IAssetRequest.h"
-#include "Cesium3DTiles/IAssetResponse.h"
+#include "CesiumAsync/IAssetRequest.h"
+#include "CesiumAsync/IAssetResponse.h"
 #include "HttpModule.h"
 #include "HttpManager.h"
 #include "Interfaces/IHttpRequest.h"
@@ -8,7 +8,7 @@
 #include "UnrealConversions.h"
 #include <optional>
 
-class UnrealAssetResponse : public Cesium3DTiles::IAssetResponse {
+class UnrealAssetResponse : public CesiumAsync::IAssetResponse {
 public:
 	UnrealAssetResponse(FHttpResponsePtr pResponse) :
 		_pResponse(pResponse)
@@ -38,9 +38,9 @@ private:
 	//std::map<std::string, std::string> _headers;
 };
 
-class UnrealAssetRequest : public Cesium3DTiles::IAssetRequest {
+class UnrealAssetRequest : public CesiumAsync::IAssetRequest {
 public:
-	UnrealAssetRequest(const std::string& url, const std::vector<Cesium3DTiles::IAssetAccessor::THeader>& headers) :
+	UnrealAssetRequest(const std::string& url, const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) :
 		_pRequest(nullptr),
 		_pResponse(nullptr),
 		_callback()
@@ -49,7 +49,7 @@ public:
 		this->_pRequest = httpModule.CreateRequest();
 		this->_pRequest->SetURL(utf8_to_wstr(url));
 		
-		for (const Cesium3DTiles::IAssetAccessor::THeader& header : headers) {
+		for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
 			this->_pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
 		}
 
@@ -68,7 +68,7 @@ public:
 		return wstr_to_utf8(this->_pRequest->GetURL());
 	}
 
-	virtual Cesium3DTiles::IAssetResponse* response() override {
+	virtual CesiumAsync::IAssetResponse* response() override {
 		if (this->_pResponse) {
 			return this->_pResponse;
 		}
@@ -108,13 +108,13 @@ protected:
 
 private:
 	FHttpRequestPtr _pRequest;
-	Cesium3DTiles::IAssetResponse* _pResponse;
-	std::function<void (Cesium3DTiles::IAssetRequest*)> _callback;
+	CesiumAsync::IAssetResponse* _pResponse;
+	std::function<void (CesiumAsync::IAssetRequest*)> _callback;
 };
 
-std::unique_ptr<Cesium3DTiles::IAssetRequest> UnrealAssetAccessor::requestAsset(
+std::unique_ptr<CesiumAsync::IAssetRequest> UnrealAssetAccessor::requestAsset(
 	const std::string& url,
-	const std::vector<Cesium3DTiles::IAssetAccessor::THeader>& headers
+	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers
 ) {
 	return std::make_unique<UnrealAssetRequest>(url, headers);
 }

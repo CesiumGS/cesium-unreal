@@ -165,24 +165,15 @@ public:
 #endif
 	{}
 
-	virtual void* prepareInLoadThread(const Cesium3DTiles::Tile& tile) {
-		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
-		if (!pContent) {
-			return nullptr;
-		}
-
-		if (pContent->model) {
-			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
-				pContent->model.value(),
-				tile.getTransform()
+	virtual void* prepareInLoadThread(const tinygltf::Model& model, const glm::dmat4& transform) {
+		std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
+			model,
+			transform
 #if PHYSICS_INTERFACE_PHYSX
-				,this->_pPhysXCooking
+			,this->_pPhysXCooking
 #endif
-			);
-			return pHalf.release();
-		}
-
-		return nullptr;
+		);
+		return pHalf.release();
 	}
 
 	virtual void* prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
@@ -214,7 +205,7 @@ public:
 		}
 	}
 
-	virtual void* prepareRasterInLoadThread(const Cesium3DTiles::RasterOverlayTile& rasterTile) {
+	virtual void* prepareRasterInLoadThread(const tinygltf::Image& image) override {
 		return nullptr;
 	}
 
@@ -373,9 +364,9 @@ void ACesium3DTileset::LoadTileset()
 	this->Georeference->AddGeoreferencedObject(this);
 
 	Cesium3DTiles::TilesetExternals externals{
-		new UnrealAssetAccessor(),
-		new UnrealResourcePreparer(this),
-		new UnrealTaskProcessor()
+		std::make_shared<UnrealAssetAccessor>(),
+		std::make_shared<UnrealResourcePreparer>(this),
+		std::make_shared<UnrealTaskProcessor>()
 	};
 
 	if (this->Url.Len() > 0)
@@ -404,11 +395,7 @@ void ACesium3DTileset::DestroyTileset() {
 		return;
 	}
 
-	Cesium3DTiles::TilesetExternals externals = this->_pTileset->getExternals();
 	delete this->_pTileset;
-	delete externals.pAssetAccessor;
-	delete externals.pPrepareRendererResources;
-	delete externals.pTaskProcessor;
 	this->_pTileset = nullptr;
 }
 
@@ -443,11 +430,6 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetPla
 
 	UGameViewportClient* pViewport = pWorld->GetGameViewport();
 	if (!pViewport) {
-		return std::optional<UnrealCameraParameters>();
-	}
-
-	Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
-	if (!pRootTile) {
 		return std::optional<UnrealCameraParameters>();
 	}
 
@@ -518,7 +500,7 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetEdi
 {
 	FViewport* pViewport = GEditor->GetActiveViewport();
 	FViewportClient* pViewportClient = pViewport->GetClient();
-	FEditorViewportClient* pEditorViewportClient = (FEditorViewportClient*)pViewportClient;
+	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
 	const FVector& location = pEditorViewportClient->GetViewLocation();
 	const FRotator& rotation = pEditorViewportClient->GetViewRotation();
 	double fov = pEditorViewportClient->FOVAngle;
@@ -546,7 +528,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->SuspendUpdate || !this->_pTileset->getRootTile()) {
+	if (this->SuspendUpdate) {
 		return;
 	}
 

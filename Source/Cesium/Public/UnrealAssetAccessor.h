@@ -1,15 +1,13 @@
 #pragma once
 
-#include <list>
-#include <memory>
-#include "Cesium3DTiles/IAssetAccessor.h"
+#include "CesiumAsync/IAssetAccessor.h"
 
-class UnrealAssetAccessor : public Cesium3DTiles::IAssetAccessor
+class UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
 {
 public:
-    virtual std::unique_ptr<Cesium3DTiles::IAssetRequest> requestAsset(
+    virtual std::unique_ptr<CesiumAsync::IAssetRequest> requestAsset(
         const std::string& url,
-        const std::vector<Cesium3DTiles::IAssetAccessor::THeader>& headers
+        const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers
     ) override;
     virtual void tick() noexcept override;
 };
