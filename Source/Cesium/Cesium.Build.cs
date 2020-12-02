@@ -20,6 +20,7 @@ public class Cesium : ModuleRules
             new string[] {
 				// ... add other private include paths required here ...
                 "../extern/cesium-native/Cesium3DTiles/include",
+                "../extern/cesium-native/CesiumAsync/include",
                 "../extern/cesium-native/CesiumGeospatial/include",
                 "../extern/cesium-native/CesiumGeometry/include",
                 "../extern/cesium-native/CesiumUtility/include",
@@ -42,6 +43,7 @@ public class Cesium : ModuleRules
             new string[]
             {
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + cesiumNativeConfiguration + "/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumAsync/" + cesiumNativeConfiguration + "/CesiumAsync.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + cesiumNativeConfiguration + "/CesiumGeospatial.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + cesiumNativeConfiguration + "/CesiumGeometry.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),

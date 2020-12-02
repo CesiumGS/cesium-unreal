@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Cesium3DTiles/ITaskProcessor.h"
+#include "CesiumAsync/ITaskProcessor.h"
 
-class UnrealTaskProcessor : public Cesium3DTiles::ITaskProcessor {
+class UnrealTaskProcessor : public CesiumAsync::ITaskProcessor {
 public:
     virtual void startTask(std::function<void()> f) override;
 };
