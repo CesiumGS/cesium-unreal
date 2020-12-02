@@ -27,16 +27,19 @@ public class Cesium : ModuleRules
                 "../extern/cesium-native/extern/tinygltf",
                 "../extern/cesium-native/extern/glm",
                 "../extern/cesium-native/extern/GSL/include",
+                "../extern/cesium-native/extern/spdlog/include",
                 "../extern/cesium-native/extern/asyncplusplus/include"
             }
             );
 
         string cesiumNativeConfiguration = "Debug";
         string tinyxml2Name = "tinyxml2d.lib";
+        string spdlogLibName = "spdlogd.lib";
         if (Target.Configuration == UnrealTargetConfiguration.Shipping)
         {
             cesiumNativeConfiguration = "RelWithDebInfo";
             tinyxml2Name = "tinyxml2.lib";
+            spdlogLibName = "spdlog.lib";
         }
 
         PublicAdditionalLibraries.AddRange(
@@ -50,7 +53,8 @@ public class Cesium : ModuleRules
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib")
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/spdlog/" + cesiumNativeConfiguration + "/" + spdlogLibName),
             }
             );
 
