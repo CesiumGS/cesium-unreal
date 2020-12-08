@@ -229,7 +229,7 @@ public:
 		return pTexture;
 	}
 
-	virtual void freeRaster(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult, void* pMainThreadResult) override {
+	virtual void freeRaster(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult, void* pMainThreadResult) noexcept override {
 		UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
 		if (!pTexture) {
 			return;
@@ -266,7 +266,7 @@ public:
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
 		void* pMainThreadRendererResources,
 		const CesiumGeometry::Rectangle& textureCoordinateRectangle
-	) override {
+	) noexcept override {
 		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
 			return;
