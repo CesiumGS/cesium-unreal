@@ -25,6 +25,7 @@
 #include "CesiumRasterOverlay.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <string>
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -580,6 +581,15 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			result.tilesLoadingMediumPriority,
 			result.tilesLoadingHighPriority
 		);
+
+		// write credits to blue print UI 
+		std::string creditText = "";
+		for (std::string credit : results.creditsToShowThisFrame) {
+			creditText += credit + "\n";
+		}
+
+		AActor parent = (AActor)this->getOwner();
+		//parent.findComponentByClass<CreditsUI>
 	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
