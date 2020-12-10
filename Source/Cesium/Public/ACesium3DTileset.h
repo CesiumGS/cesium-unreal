@@ -89,6 +89,7 @@ public:
 	/**
 	 * Gets a 4x4 matrix that transforms coordinates in the tileset's coordinate system to the
 	 * global Unreal coordinate system (that is, accounting for the world's OriginLocation).
+	 * TODO: does it really? no
 	 */
 	glm::dmat4x4 GetTilesetToWorldTransform() const;
 
@@ -106,6 +107,8 @@ public:
 	 */
 	glm::dmat4x4 GetLocalWorldToGlobalWorldTransform() const;
 
+	glm::dmat4x4 GetTilesetToUnrealWorldTransform(const std::optional<glm::dvec3>& newOriginLocation = std::nullopt) const;
+
 	Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
 	const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
 
@@ -113,7 +116,8 @@ public:
 
 	virtual bool IsBoundingVolumeReady() const override;
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
-	virtual void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal) override;
+	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal);
+	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedOriginTransform);
 
 protected:
 	// Called when the game starts or when spawned
