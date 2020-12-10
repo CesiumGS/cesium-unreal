@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <string>
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
@@ -78,6 +79,13 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
 	bool ShowInEditor = true;
+	
+	/**
+	 * Credits text
+	 *
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FString Credits = "";
 
 	/**
 	 * Gets a 4x4 matrix that transforms coordinates in the global Unreal world coordinate system

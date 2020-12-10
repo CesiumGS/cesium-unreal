@@ -25,7 +25,6 @@
 #include "CesiumRasterOverlay.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <string>
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -230,7 +229,7 @@ public:
 		return pTexture;
 	}
 
-	virtual void freeRaster(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult, void* pMainThreadResult) override {
+	virtual void freeRaster(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult, void* pMainThreadResult) noexcept override {
 		UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
 		if (!pTexture) {
 			return;
@@ -267,7 +266,7 @@ public:
 		const Cesium3DTiles::RasterOverlayTile& rasterTile,
 		void* pMainThreadRendererResources,
 		const CesiumGeometry::Rectangle& textureCoordinateRectangle
-	) override {
+	) noexcept override {
 		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
 		if (!pContent) {
 			return;
@@ -582,14 +581,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			result.tilesLoadingHighPriority
 		);
 
-		// write credits to blue print UI 
-		std::string creditText = "";
-		for (std::string credit : results.creditsToShowThisFrame) {
-			creditText += credit + "\n";
-		}
-
-		AActor parent = (AActor)this->getOwner();
-		//parent.findComponentByClass<CreditsUI>
+		Credits = result.creditsToShowThisFrame.c_str();
 	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
