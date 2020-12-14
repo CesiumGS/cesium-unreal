@@ -79,41 +79,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
 	bool ShowInEditor = true;
 
-	/**
-	 * Gets a 4x4 matrix that transforms coordinates in the global Unreal world coordinate system
-	 * (that is, accounting for the world's OriginLocation) and transforms them to the tileset's
-	 * coordinate system.
-	 */
-	glm::dmat4x4 GetWorldToTilesetTransform() const;
-	
-	/**
-	 * Gets a 4x4 matrix that transforms coordinates in the tileset's coordinate system to the
-	 * global Unreal coordinate system (that is, accounting for the world's OriginLocation).
-	 */
-	glm::dmat4x4 GetTilesetToWorldTransform() const;
-
-	/**
-	 * Gets a 4x4 matrix that transforms coordinates in the global world coordinate system (that is,
-	 * the one that accounts for the world's OriginLocation) and transforms them to the local world
-	 * coordinate system (that is, relative to the floating OriginLocation).
-	 */
-	glm::dmat4x4 GetGlobalWorldToLocalWorldTransform() const;
-
-	/**
-	 * Gets a 4x4 matrix that transforms coordinate in the local world coordinate system (that is,
-	 * relative to the floating OriginLocation) and transforms them to the global world coordinate
-	 * system (that is, account for the world's OriginLocation).
-	 */
-	glm::dmat4x4 GetLocalWorldToGlobalWorldTransform() const;
+	const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
 	Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
 	const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
 
-	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
-
 	virtual bool IsBoundingVolumeReady() const override;
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
-	virtual void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal) override;
+	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal);
+	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 
 protected:
 	// Called when the game starts or when spawned

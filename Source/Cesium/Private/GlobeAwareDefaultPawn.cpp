@@ -147,7 +147,7 @@ void AGlobeAwareDefaultPawn::AccurateTransformUEToECEF(double X, double Y, doubl
 		-(Y + static_cast<double>(ueOrigin.Y)), // ? TBC
 		Z + static_cast<double>(ueOrigin.Z)
 	) / 100.0;
-	glm::dmat4 unrealToEcef = this->Georeference->GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+	glm::dmat4 unrealToEcef = this->Georeference->GetGeoreferencedToEllipsoidCenteredTransform();
 	glm::dvec3 locationEcef = unrealToEcef * glm::dvec4(location, 1.0);
 
 	ResultX = locationEcef.x;
@@ -348,7 +348,7 @@ void AGlobeAwareDefaultPawn::BeginPlay()
 void AGlobeAwareDefaultPawn::RefreshMatricesCache()
 {
 	// Optim - Refresh is needed only when CesiumGeoReference actor is changed...
-	ecefToUnreal = this->Georeference->GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+	ecefToUnreal = this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
 }
 
 glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
@@ -364,7 +364,7 @@ glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
 		static_cast<double>(ueLocation.Z) + static_cast<double>(ueOrigin.Z)
 	) / 100.0;
 
-	glm::dmat4 unrealToEcef = this->Georeference->GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+	glm::dmat4 unrealToEcef = this->Georeference->GetGeoreferencedToEllipsoidCenteredTransform();
 	glm::dvec3 cameraEcef = unrealToEcef * glm::dvec4(location, 1.0);
 	glm::dmat4 enuToEcefAtCamera = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(cameraEcef);
 	glm::dmat4 ecefToUnrealTmp = glm::affineInverse(unrealToEcef);

@@ -36,8 +36,8 @@ public:
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const = 0;
 
 	/**
-	 * Updates this object with a new transformation from the Cesium world
-	 * to the local coordinates of the Unreal Engine level.
+	 * Updates this object with a new transformation from the ellipsoid-centered coordinate system to
+	 * the local coordinates of the georeferenced origin.
 	 */
-	virtual void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal) = 0;
+	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) = 0;
 };
