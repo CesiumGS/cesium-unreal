@@ -39,5 +39,5 @@ public:
 	 * Updates this object with a new transformation from the ellipsoid-centered coordinate system to
 	 * the local coordinates of the georeferenced origin.
 	 */
-	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedOriginTransform) = 0;
+	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) = 0;
 };

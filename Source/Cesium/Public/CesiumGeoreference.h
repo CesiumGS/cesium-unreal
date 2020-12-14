@@ -85,8 +85,8 @@ public:
 	double OriginHeight = 0.0;
 
 	/**
-	 * If true, the tileset is rotated so that the local up at the center of the tileset's bounding
-	 * volume is aligned with the usual Unreal Engine up direction, +Z. This is useful because
+	 * If true, the tileset is rotated so that the local up at the origin position
+	 * is aligned with the usual Unreal Engine up direction, +Z. This is useful because
 	 * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates in which the local
 	 * up direction depends on where you are on the Earth. If false, the tileset's true rotation
 	 * is used.
@@ -118,20 +118,20 @@ public:
 	// TODO: Allow user to select/configure the ellipsoid.
 
 	/**
-	 * @brief Gets the transformation from the georeferenced origin coordinate system to the standard ellipsoid-centered coordinate system (i.e. ECEF).
+	 * @brief Gets the transformation from the "Georeferenced" reference frame defined by this instance to the "Ellipsoid-centered" reference frame (i.e. ECEF).
 	 * 
-	 * Gets a matrix that transforms coordinates from the local coordinate system defined by this instance to the ellipsoid-centered
-	 * coordinate system, which is usually Earth-centered, Earth-fixed.
+	 * Gets a matrix that transforms coordinates from the "Georeference" reference frame defined by this instance to the "Ellipsoid-centered"
+	 * reference frame, which is usually Earth-centered, Earth-fixed. See {@link reference-frames.md}.
 	 */
-	glm::dmat4x4 GetGeoreferencedOriginToEllipsoidCenteredTransform() const;
+	glm::dmat4x4 GetGeoreferencedToEllipsoidCenteredTransform() const;
 
 	/**
-	 * @brief Gets the transformation from the standard ellipsoid-centered coordinate system (i.e. ECEF) to georeferenced origin coordinate system.
+	 * @brief Gets the transformation from the "Ellipsoid-centered" reference frame (i.e. ECEF) to the georeferenced reference frame defined by this instance.
 	 *
-	 * Gets a matrix that transforms coordinates from the ellipsoid-centered coordinate system (which is usually Earth-centered, Earth-fixed) to
-	 * the local coordinate system defined by this instance.
+	 * Gets a matrix that transforms coordinates from the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed) to
+	 * the "Georeferenced" reference frame defined by this instance. See {@link reference-frames.md}.
 	 */
-	glm::dmat4x4 GetEllipsoidCenteredToGeoreferencedOriginTransform() const;
+	glm::dmat4x4 GetEllipsoidCenteredToGeoreferencedTransform() const;
 
 	void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 

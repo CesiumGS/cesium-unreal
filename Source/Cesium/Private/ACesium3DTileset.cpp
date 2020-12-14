@@ -59,98 +59,9 @@ ACesium3DTileset::~ACesium3DTileset() {
 	this->DestroyTileset();
 }
 
-glm::dmat4x4 ACesium3DTileset::GetGlobalWorldToLocalWorldTransform() const {
-	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-	return glm::translate(
-		glm::dmat4x4(1.0),
-		glm::dvec3(-originLocation.X, originLocation.Y, -originLocation.Z) / 100.0
-	);
-}
-
-glm::dmat4x4 ACesium3DTileset::GetLocalWorldToGlobalWorldTransform() const {
-	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-	return glm::translate(
-		glm::dmat4x4(1.0),
-		glm::dvec3(originLocation.X, -originLocation.Y, originLocation.Z) / 100.0
-	);
-}
-
-glm::dmat4x4 ACesium3DTileset::GetTilesetToUnrealWorldTransform(const std::optional<glm::dvec3>& newOriginLocation) const {
-	glm::dvec3 originLocation;
-	if (newOriginLocation) {
-		originLocation = newOriginLocation.value();
-	} else {
-		const FIntVector& originLocationUE = this->GetWorld()->OriginLocation;
-		originLocation = glm::dvec3(originLocationUE.X, originLocationUE.Y, originLocationUE.Z);
-	}
-
-	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-	glm::dvec3 absoluteLocation = pRoot->GetAbsoluteLocation();
-	glm::dvec3 relativeLocation = absoluteLocation - originLocation;
-	glm::dvec3 relativeLocationUe = relativeLocation; // glm::dvec3(relativeLocation.x, -relativeLocation.y, relativeLocation.z) * 100.0;
-
-	glm::dmat4 ellipsoidToGeoreferenced = Georeference->GetEllipsoidCenteredToGeoreferencedOriginTransform();
-
-	FMatrix tilesetActorToUeLocal = this->RootComponent->GetComponentToWorld().ToMatrixWithScale();
-	glm::dmat4 ueAbsoluteToUeLocal = glm::dmat4(
-		glm::dvec4(tilesetActorToUeLocal.M[0][0], tilesetActorToUeLocal.M[0][1], tilesetActorToUeLocal.M[0][2], tilesetActorToUeLocal.M[0][3]),
-		glm::dvec4(tilesetActorToUeLocal.M[1][0], tilesetActorToUeLocal.M[1][1], tilesetActorToUeLocal.M[1][2], tilesetActorToUeLocal.M[1][3]),
-		glm::dvec4(tilesetActorToUeLocal.M[2][0], tilesetActorToUeLocal.M[2][1], tilesetActorToUeLocal.M[2][2], tilesetActorToUeLocal.M[2][3]),
-		glm::dvec4(relativeLocationUe, 1.0)
-	);
-
-	return ueAbsoluteToUeLocal * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidToGeoreferenced;
-}
-
-void ACesium3DTileset::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
-	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-	pRoot->BeginOriginRebase();
-
-	AActor::ApplyWorldOffset(InOffset, bWorldShift);
-
-	// Use original actor -> world transform, ignore updated location due to changed offset.
-	// However, if the location changes for _other_ reasons, we need to compute an updated
-	// transform using double precision OriginLocation + Location
-
-	// Origin rebase changes the model matrix.
-	// Moving the tileset changes the model matrix, too.
-	// When camera is far from tileset, the tileset's Location may be very large, and therefore it may be very imprecise.
-	// We don't want to use that imprecise location, especially once the camera moves close to the tileset again.
-	
-	// The tileset's absolute location is Location + OriginLocation.
-	// The absolute location doesn't change on origin rebase.
-	// It does change when the tileset is moved.
-	// We can store the absolute location on move rather than computing it as Location + OriginLocation,
-	// because the latter is imprecise.
-	// Then to get the local position, we just need to subtract OriginLocation.
-	// 
-
-	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
-	glm::dvec3 originLocation = glm::dvec3(
-		static_cast<double>(oldOrigin.X) - static_cast<double>(InOffset.X),
-		static_cast<double>(oldOrigin.Y) - static_cast<double>(InOffset.Y),
-		static_cast<double>(oldOrigin.Z) - static_cast<double>(InOffset.Z)
-	);
-
-	////glm::dmat4 absoluteToLocal = glm::translate(
-	////	glm::dmat4x4(1.0),
-	////	glm::dvec3(-originLocation.x, originLocation.y, -originLocation.z) / 100.0
-	////);
-
-	//glm::dmat4 ellipsoidCenteredToAbsoluteUnrealWorld = this->GetTilesetToWorldTransform();
-	//FMatrix tilesetActorToWorldUE = this->RootComponent->GetComponentToWorld().ToMatrixWithScale();
-	//glm::dmat4 tilesetActorToWorld = glm::dmat4(
-	//	glm::dvec4(tilesetActorToWorldUE.M[0][0], tilesetActorToWorldUE.M[0][1], tilesetActorToWorldUE.M[0][2], tilesetActorToWorldUE.M[0][3]),
-	//	glm::dvec4(tilesetActorToWorldUE.M[1][0], tilesetActorToWorldUE.M[1][1], tilesetActorToWorldUE.M[1][2], tilesetActorToWorldUE.M[1][3]),
-	//	glm::dvec4(tilesetActorToWorldUE.M[2][0], tilesetActorToWorldUE.M[2][1], tilesetActorToWorldUE.M[2][2], tilesetActorToWorldUE.M[2][3]),
-	//	glm::dvec4(pRoot->GetAbsoluteLocation(), 1.0)
-	//	// tilesetActorToWorldUE.M[3][0], tilesetActorToWorldUE.M[3][1], tilesetActorToWorldUE.M[3][2], tilesetActorToWorldUE.M[3][3])
-	//);
-	//glm::dmat4 tilesetToUnrealTransform = tilesetActorToWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * /*absoluteToLocal **/ ellipsoidCenteredToAbsoluteUnrealWorld;
-
-	this->UpdateTransformFromCesium(this->GetTilesetToUnrealWorldTransform(originLocation));
-
-	pRoot->EndOriginRebase();
+const glm::dmat4& ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const
+{
+	return Cast<UCesium3DTilesetRoot>(this->RootComponent)->GetCesiumTilesetToUnrealRelativeWorldTransform();
 }
 
 bool ACesium3DTileset::IsBoundingVolumeReady() const
@@ -179,9 +90,10 @@ void ACesium3DTileset::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrea
 	}
 }
 
-void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedOriginTransform)
+void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform)
 {
-	this->UpdateTransformFromCesium(this->GetTilesetToUnrealWorldTransform());
+	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+	pRoot->RecalculateTransform();
 }
 
 // Called when the game starts or when spawned
@@ -238,21 +150,12 @@ public:
 
 		if (pContent->model) {
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
-			//UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(_pActor->RootComponent);
-			//glm::dmat4 globalToLocal = _pActor->GetGlobalWorldToLocalWorldTransform();
-			//glm::dmat4 ellipsoidCenteredToAbsoluteUnrealWorld = _pActor->GetTilesetToWorldTransform();
-			//FMatrix tilesetActorToWorldUE = _pActor->GetActorTransform().ToMatrixWithScale();
-			//glm::dmat4 tilesetActorToWorld = glm::dmat4(
-			//	glm::dvec4(tilesetActorToWorldUE.M[0][0], tilesetActorToWorldUE.M[0][1], tilesetActorToWorldUE.M[0][2], tilesetActorToWorldUE.M[0][3]),
-			//	glm::dvec4(tilesetActorToWorldUE.M[1][0], tilesetActorToWorldUE.M[1][1], tilesetActorToWorldUE.M[1][2], tilesetActorToWorldUE.M[1][3]),
-			//	glm::dvec4(tilesetActorToWorldUE.M[2][0], tilesetActorToWorldUE.M[2][1], tilesetActorToWorldUE.M[2][2], tilesetActorToWorldUE.M[2][3]),
-			//	glm::dvec4(pRoot->GetAbsoluteLocation(), 1.0)
-			//	// tilesetActorToWorldUE.M[3][0], tilesetActorToWorldUE.M[3][1], tilesetActorToWorldUE.M[3][2], tilesetActorToWorldUE.M[3][3])
-			//);
-			//glm::dmat4 tilesetToUnrealTransform = tilesetActorToWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * /*absoluteToLocal **/ ellipsoidCenteredToAbsoluteUnrealWorld;
-
-			glm::dmat4 tilesetToUnrealTransform = _pActor->GetTilesetToUnrealWorldTransform();
-			return UCesiumGltfComponent::CreateOnGameThread(this->_pActor, std::move(pHalf), tilesetToUnrealTransform, this->_pActor->Material);
+			return UCesiumGltfComponent::CreateOnGameThread(
+				this->_pActor,
+				std::move(pHalf),
+				_pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
+				this->_pActor->Material
+			);
 		}
 
 		return nullptr;
@@ -381,7 +284,6 @@ private:
 			this->destroyRecursively(pChild);
 		}
 
-		pComponent->DetachFromParent(false);
 		pComponent->DestroyPhysicsState();
 		pComponent->DestroyComponent();
 
@@ -532,26 +434,9 @@ Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
 	FVector direction = rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
 	FVector up = rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
-	//auto tryTransform = [](const FVector& v) {
-	//	return glm::dvec3(v.X, -v.Y, v.Z);
-	//};
-
-	//const FTransform& tilesetToWorld = this->RootComponent->GetComponentToWorld();
-	//FVector locationRelativeToTileset = tilesetToWorld.InverseTransformPosition(location);
-	//FVector directionRelativeToTileset = tilesetToWorld.InverseTransformVector(direction);
-	//FVector upRelativeToTileset = tilesetToWorld.InverseTransformVector(up);
-
-	//glm::dvec3 cesiumPosition = tryTransform(locationRelativeToTileset) / 100.0;
-	//glm::dvec3 cesiumDirection = tryTransform(directionRelativeToTileset);
-	//glm::dvec3 cesiumUp = tryTransform(upRelativeToTileset);
-
-	glm::dmat4 unrealWorldToTileset = glm::affineInverse(this->GetTilesetToUnrealWorldTransform());
-	//glm::dmat4x4 transform = this->GetWorldToTilesetTransform(); /* * this->GetLocalWorldToGlobalWorldTransform();*/
-	//glm::dvec3 first = this->GetLocalWorldToGlobalWorldTransform() * glm::dvec4(cesiumPosition, 1.0);
-	//glm::dvec3 second = this->GetWorldToTilesetTransform() * glm::dvec4(first, 1.0);
+	glm::dmat4 unrealWorldToTileset = glm::affineInverse(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
 	return Cesium3DTiles::Camera(
-		//second,
 		unrealWorldToTileset * glm::dvec4(location.X, location.Y, location.Z, 1.0),
 		glm::normalize(unrealWorldToTileset * glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)),
 		glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
@@ -595,9 +480,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-	if (pRoot->IsDirty()) {
-		this->UpdateTransformFromCesium(this->GetTilesetToUnrealWorldTransform());
-		pRoot->MarkClean();
+	if (pRoot->IsTransformChanged()) {
+		this->UpdateTransformFromCesium(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+		pRoot->MarkTransformUnchanged();
 	}
 
 	if (this->SuspendUpdate) {

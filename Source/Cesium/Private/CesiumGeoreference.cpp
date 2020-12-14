@@ -27,7 +27,7 @@ ACesiumGeoreference::ACesiumGeoreference()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedOriginToEllipsoidCenteredTransform() const {
+glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
 	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
 		return glm::dmat4(1.0);
 	}
@@ -65,8 +65,8 @@ glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedOriginToEllipsoidCenteredTrans
 	}
 }
 
-glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedOriginTransform() const {
-	return glm::affineInverse(this->GetGeoreferencedOriginToEllipsoidCenteredTransform());
+glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedTransform() const {
+	return glm::affineInverse(this->GetGeoreferencedToEllipsoidCenteredTransform());
 }
 
 void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object)
@@ -101,7 +101,7 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
 
 void ACesiumGeoreference::UpdateGeoreference()
 {
-	glm::dmat4 transform = this->GetEllipsoidCenteredToGeoreferencedOriginTransform();
+	glm::dmat4 transform = this->GetEllipsoidCenteredToGeoreferencedTransform();
 	for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
 		if (pObject.IsValid()) {
 			pObject->UpdateGeoreferenceTransform(transform);

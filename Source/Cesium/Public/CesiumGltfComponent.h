@@ -36,7 +36,7 @@ struct FRasterOverlayTile {
 	FLinearColor translationAndScale;
 };
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS()
 class CESIUM_API UCesiumGltfComponent : public USceneComponent
 {
 	GENERATED_BODY()
@@ -77,7 +77,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LoadModel(const FString& Url);
 
-	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
 
 	void AttachRasterTile(
