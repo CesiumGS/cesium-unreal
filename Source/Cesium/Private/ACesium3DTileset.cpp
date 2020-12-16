@@ -5,7 +5,6 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
-#include "Cesium3DTiles/Tileset.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -32,6 +31,8 @@
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
 #endif
+
+#include "Cesium3DTiles/Tileset.h"
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
@@ -192,6 +193,8 @@ public:
 		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
 		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
+// See https://answers.unrealengine.com/questions/671644/utextureupdateresource-compile-error.html
+#undef UpdateResource
 		pTexture->UpdateResource();
 
 		return pTexture;
