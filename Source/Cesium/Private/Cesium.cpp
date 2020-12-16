@@ -2,10 +2,9 @@
 
 #include "Cesium.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"
-//#include "SpdlogUnrealLoggerSink.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include <sstream>
 #include <iostream>
-//#include <memory>
 
 #define LOCTEXT_NAMESPACE "FCesiumModule"
 

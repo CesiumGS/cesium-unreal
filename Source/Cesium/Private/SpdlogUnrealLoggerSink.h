@@ -1,5 +1,5 @@
 #pragma once
-/*
+
 #include "CoreMinimal.h"
 
 #include <memory>
@@ -9,22 +9,13 @@
 #include <spdlog/details/null_mutex.h>
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesiumNative, Log, All);
-*/
 
 /**
  * @brief Internal implementation of a spdlog sink that forwards the messages
  * to Unreal log macros.
  */
-/*
 class spdlog_logger_sink : public spdlog::sinks::base_sink<std::mutex>
 {
-public:
-    spdlog_logger_sink(const base_sink&) {};
-    spdlog_logger_sink(spdlog_logger_sink&&) {};
-
-    spdlog_logger_sink& operator=(const spdlog_logger_sink&) {};
-    spdlog_logger_sink& operator=(spdlog_logger_sink&&) {};
-
 protected:
 	void sink_it_(const spdlog::details::log_msg& msg) override {
 
@@ -61,5 +52,4 @@ protected:
 
 };
 
-std::shared_ptr<spdlog::sinks::sink> createDefaultSink();
-*/
+std::shared_ptr<spdlog::sinks::base_sink<std::mutex>> createDefaultSink();

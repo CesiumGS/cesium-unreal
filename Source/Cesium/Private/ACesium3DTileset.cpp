@@ -33,6 +33,7 @@
 #endif
 
 #include "Cesium3DTiles/Tileset.h"
+#include "SpdlogUnrealLoggerSink.h"
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
@@ -336,7 +337,8 @@ void ACesium3DTileset::LoadTileset()
 	Cesium3DTiles::TilesetExternals externals{
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
-		std::make_shared<UnrealTaskProcessor>()
+		std::make_shared<UnrealTaskProcessor>(),
+		createDefaultSink()
 	};
 
 	if (this->Url.Len() > 0)
