@@ -27,32 +27,7 @@ ACesiumGeoreference::ACesiumGeoreference()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-glm::dmat4x4 ACesiumGeoreference::GetCurrentCesiumToUnrealLocalTransform() const
-{
-	// TODO: cache this
-	return this->GetNextCesiumToUnrealLocalTransform(FIntVector(0, 0, 0));
-}
-
-glm::dmat4x4 ACesiumGeoreference::GetNextCesiumToUnrealLocalTransform(const FIntVector& WorldOriginOffset) const
-{
-	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
-	glm::dvec3 originLocation = glm::dvec3(
-		static_cast<double>(oldOrigin.X) - static_cast<double>(WorldOriginOffset.X),
-		static_cast<double>(oldOrigin.Y) - static_cast<double>(WorldOriginOffset.Y),
-		static_cast<double>(oldOrigin.Z) - static_cast<double>(WorldOriginOffset.Z)
-	);
-
-	glm::dmat4 globalToLocal = glm::translate(
-		glm::dmat4x4(1.0),
-		glm::dvec3(-originLocation.x, originLocation.y, -originLocation.z) / 100.0
-	);
-
-	glm::dmat4 tilesetToWorld = this->GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
-	glm::dmat4 cesiumToUnrealTransform = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * globalToLocal * tilesetToWorld;
-	return cesiumToUnrealTransform;
-}
-
-glm::dmat4x4 ACesiumGeoreference::GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() const {
+glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
 	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
 		return glm::dmat4(1.0);
 	}
@@ -90,8 +65,8 @@ glm::dmat4x4 ACesiumGeoreference::GetAbsoluteUnrealWorldToEllipsoidCenteredTrans
 	}
 }
 
-glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() const {
-	return glm::affineInverse(this->GetAbsoluteUnrealWorldToEllipsoidCenteredTransform());
+glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedTransform() const {
+	return glm::affineInverse(this->GetGeoreferencedToEllipsoidCenteredTransform());
 }
 
 void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object)
@@ -126,10 +101,10 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
 
 void ACesiumGeoreference::UpdateGeoreference()
 {
-	glm::dmat4 cesiumToUnreal = this->GetCurrentCesiumToUnrealLocalTransform();
+	glm::dmat4 transform = this->GetEllipsoidCenteredToGeoreferencedTransform();
 	for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
 		if (pObject.IsValid()) {
-			pObject->UpdateTransformFromCesium(cesiumToUnreal);
+			pObject->UpdateGeoreferenceTransform(transform);
 		}
 	}
 }

@@ -20,13 +20,15 @@ public class Cesium : ModuleRules
             new string[] {
 				// ... add other private include paths required here ...
                 "../extern/cesium-native/Cesium3DTiles/include",
+                "../extern/cesium-native/CesiumAsync/include",
                 "../extern/cesium-native/CesiumGeospatial/include",
                 "../extern/cesium-native/CesiumGeometry/include",
                 "../extern/cesium-native/CesiumUtility/include",
                 "../extern/cesium-native/extern/tinygltf",
                 "../extern/cesium-native/extern/glm",
                 "../extern/cesium-native/extern/GSL/include",
-                "../extern/cesium-native/extern/spdlog/include",
+                "../extern/cesium-native/extern/asyncplusplus/include",
+                "../extern/cesium-native/extern/spdlog/include"
             }
             );
 
@@ -44,13 +46,14 @@ public class Cesium : ModuleRules
             new string[]
             {
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + cesiumNativeConfiguration + "/Cesium3DTiles.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumAsync/" + cesiumNativeConfiguration + "/CesiumAsync.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + cesiumNativeConfiguration + "/CesiumGeospatial.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + cesiumNativeConfiguration + "/CesiumGeometry.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib")
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/spdlog/" + cesiumNativeConfiguration + "/" + spdlogLibName),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name)
             }
             );
 

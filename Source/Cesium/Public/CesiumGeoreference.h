@@ -85,8 +85,8 @@ public:
 	double OriginHeight = 0.0;
 
 	/**
-	 * If true, the tileset is rotated so that the local up at the center of the tileset's bounding
-	 * volume is aligned with the usual Unreal Engine up direction, +Z. This is useful because
+	 * If true, the tileset is rotated so that the local up at the origin position
+	 * is aligned with the usual Unreal Engine up direction, +Z. This is useful because
 	 * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates in which the local
 	 * up direction depends on where you are on the Earth. If false, the tileset's true rotation
 	 * is used.
@@ -118,32 +118,20 @@ public:
 	// TODO: Allow user to select/configure the ellipsoid.
 
 	/**
-	 * Gets the current transformation from the Cesium coordinate system (ECEF / WGS84) to
-	 * the Unreal level's local coordinate system, accounting for the properties of this
-	 * instance as well as {@see UWorld::OriginLocation}.
+	 * @brief Gets the transformation from the "Georeferenced" reference frame defined by this instance to the "Ellipsoid-centered" reference frame (i.e. ECEF).
+	 * 
+	 * Gets a matrix that transforms coordinates from the "Georeference" reference frame defined by this instance to the "Ellipsoid-centered"
+	 * reference frame, which is usually Earth-centered, Earth-fixed. See {@link reference-frames.md}.
 	 */
-	glm::dmat4x4 GetCurrentCesiumToUnrealLocalTransform() const;
+	glm::dmat4x4 GetGeoreferencedToEllipsoidCenteredTransform() const;
 
 	/**
-	 * Gets the transformation from the Cesium coordinate system (ECEF / WGS84) to
-	 * the Unreal level's local coordinate system, just like {@see GetCurrentCesiumToUnrealLocalTransform}.
-	 * The difference is that this method can be used to get the transformation while a world origin
-	 * rebase is in progress by accounting for an origin offset that has not yet been applied to
-	 * {@see UWorld::OriginLocation}.
+	 * @brief Gets the transformation from the "Ellipsoid-centered" reference frame (i.e. ECEF) to the georeferenced reference frame defined by this instance.
+	 *
+	 * Gets a matrix that transforms coordinates from the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed) to
+	 * the "Georeferenced" reference frame defined by this instance. See {@link reference-frames.md}.
 	 */
-	glm::dmat4x4 GetNextCesiumToUnrealLocalTransform(const FIntVector& WorldOriginOffset) const;
-
-	/**
-	 * Gets a 4x4 matrix to transform coordinates from the Unreal Engine absolute world coordinates (i.e. the world
-	 * coordinates accounting for the {@see UWorld::OriginLocation}) to the Cesium ellipsoid-centered coordinate system.
-	 */
-	glm::dmat4x4 GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() const;
-
-	/**
-	 * Gets a 4x4 matrix to transform coordinates from the Cesium ellipsoid-centered coordinate system to the Unreal Engine
-	 * absolute world coordinates (i.e. the world coordinates accounting for the {@see UWorld::OriginLocation}.
-	 */
-	glm::dmat4x4 GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() const;
+	glm::dmat4x4 GetEllipsoidCenteredToGeoreferencedTransform() const;
 
 	void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 

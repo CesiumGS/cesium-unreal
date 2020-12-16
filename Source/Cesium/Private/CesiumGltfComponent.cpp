@@ -895,17 +895,6 @@ void UCesiumGltfComponent::LoadModel(const FString& Url)
 	request->ProcessRequest();
 }
 
-void UCesiumGltfComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
-	USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
-
-	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-	glm::dvec3 offset = glm::dvec3(InOffset.X, InOffset.Y, InOffset.Z);
-	glm::dvec3 newOrigin = glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
-	newOrigin -= offset;
-
-
-}
-
 void UCesiumGltfComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform) {
 	for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
 		UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);

@@ -7,7 +7,7 @@
 #include <glm/mat4x4.hpp>
 #include "UCesiumGltfPrimitiveComponent.generated.h"
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS()
 class CESIUM_API UCesiumGltfPrimitiveComponent : public UStaticMeshComponent
 {
 	GENERATED_BODY()
