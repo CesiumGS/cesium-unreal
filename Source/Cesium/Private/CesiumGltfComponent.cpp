@@ -674,8 +674,6 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 	FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
 	pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
-// See https://answers.unrealengine.com/questions/671644/utextureupdateresource-compile-error.html
-#undef UpdateResource
 	pTexture->UpdateResource();
 
 	pMaterial->SetTextureParameterValue(parameterName, pTexture);
