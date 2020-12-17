@@ -83,6 +83,13 @@ public class Cesium : ModuleRules
 			}
         );
 
+        PublicDefinitions.AddRange(
+            new string[]
+            {
+                "SPDLOG_COMPILED_LIB"
+            }
+            );
+
         if (Target.bCompilePhysX && !Target.bUseChaos)
         {
             PrivateDependencyModuleNames.Add("PhysXCooking");
