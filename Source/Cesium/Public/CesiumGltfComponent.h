@@ -44,7 +44,7 @@ class CESIUM_API UCesiumGltfComponent : public USceneComponent
 public:
 	class HalfConstructed {
 	public:
-		virtual ~HalfConstructed() = 0 {}
+		virtual ~HalfConstructed() = 0;
 	};
 
 	/// <summary>

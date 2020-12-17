@@ -31,26 +31,26 @@ public class Cesium : ModuleRules
             }
             );
 
-        string cesiumNativeConfiguration = "Debug";
-        string tinyxml2Name = "tinyxml2d.lib";
-        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
-        {
-            cesiumNativeConfiguration = "RelWithDebInfo";
-            tinyxml2Name = "tinyxml2.lib";
-        }
+        // string cesiumNativeConfiguration = "Debug";
+        // string tinyxml2Name = "tinyxml2d.lib";
+        // if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        // {
+        //     cesiumNativeConfiguration = "RelWithDebInfo";
+        //     tinyxml2Name = "tinyxml2.lib";
+        // }
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + cesiumNativeConfiguration + "/Cesium3DTiles.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumAsync/" + cesiumNativeConfiguration + "/CesiumAsync.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + cesiumNativeConfiguration + "/CesiumGeospatial.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + cesiumNativeConfiguration + "/CesiumGeometry.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib")
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + library("Cesium3DTiles", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumAsync/" + library("CesiumAsync", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + library("CesiumGeospatial", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + library("CesiumGeometry", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + library("CesiumUtility", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + library("uriparser", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + library("draco", false)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + library("tinyxml2", true)),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + library("async++", false))
             }
             );
 
@@ -104,5 +104,31 @@ public class Cesium : ModuleRules
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
+    }
+
+    private string library(string baseName, bool addDForDebug) {
+        if (addDForDebug)
+        {
+            baseName += "d";
+        }
+
+        if (Target.Platform == UnrealTargetPlatform.Win32 || Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+            {
+                baseName = "RelWithDebInfo" + "/" + baseName;
+            }
+            else
+            {
+                baseName = "Debug" + "/" + baseName;
+            }
+
+            return baseName + ".lib";
+        }
+        else
+        {
+            return "lib" + baseName + ".a";
+        }
+
     }
 }

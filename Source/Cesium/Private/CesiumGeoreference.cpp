@@ -39,7 +39,7 @@ glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform()
 		//       rather than averaging the centers.
 		size_t numberOfPositions = 0;
 
-		for (const TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
+		for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject : this->_georeferencedObjects) {
 			if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
 				std::optional<Cesium3DTiles::BoundingVolume> bv = pObject->GetBoundingVolume();
 				if (bv) {

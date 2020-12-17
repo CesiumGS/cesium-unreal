@@ -116,7 +116,7 @@ uint32_t updateTextureCoordinates(
 	Cesium3DTiles::GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
 	for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 		FStaticMeshBuildVertex& vertex = vertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+		typename TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
 		vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
 	}
 
@@ -234,7 +234,7 @@ static void loadPrimitive(
 	for (size_t i = 0; i < indicesAccessor.size(); ++i)
 	{
 		FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+		typename TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
 		vertex.Position = positionAccessor[vertexIndex];
 		vertex.UVs[0] = FVector2D(0.0f, 0.0f);
 		vertex.UVs[2] = FVector2D(0.0f, 0.0f);
@@ -252,7 +252,7 @@ static void loadPrimitive(
 
 		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			typename TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
 			vertex.TangentZ = normalAccessor[vertexIndex];
 		}
 	} else {
@@ -279,7 +279,7 @@ static void loadPrimitive(
 
 		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			typename TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
 			const FVector4& tangent = tangentAccessor[vertexIndex];
 			vertex.TangentX = tangent;
 			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
@@ -782,6 +782,9 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	});
 }
 
+UCesiumGltfComponent::HalfConstructed::~HalfConstructed() {
+}
+
 namespace {
 	class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 	public:
@@ -799,13 +802,13 @@ UCesiumGltfComponent::CreateOffGameThread(
 #endif
 ) {
 	auto pResult = std::make_unique<HalfConstructedReal>();
-	pResult->loadModelResult = std::move(loadModelAnyThreadPart(
+	pResult->loadModelResult = loadModelAnyThreadPart(
 		model,
 		transform
 #if PHYSICS_INTERFACE_PHYSX
 		,pPhysXCooking
 #endif
-	));
+	);
 	return pResult;
 }
 
@@ -971,7 +974,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 	TFuture<void> future = Async(EAsyncExecution::ThreadPool, [this, content]
 	{
 		gsl::span<const uint8_t> data(static_cast<const uint8_t*>(content.GetData()), content.Num());
-		std::unique_ptr<Cesium3DTiles::Gltf::LoadResult> pLoadResult = std::make_unique<Cesium3DTiles::Gltf::LoadResult>(std::move(Cesium3DTiles::Gltf::load(data)));
+		std::unique_ptr<Cesium3DTiles::Gltf::LoadResult> pLoadResult = std::make_unique<Cesium3DTiles::Gltf::LoadResult>(Cesium3DTiles::Gltf::load(data));
 
 		if (pLoadResult->warnings.length() > 0) {
 			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(pLoadResult->warnings));
