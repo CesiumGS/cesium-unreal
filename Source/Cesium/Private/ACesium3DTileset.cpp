@@ -6,6 +6,7 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/Credit.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -581,7 +582,11 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			result.tilesLoadingHighPriority
 		);
 
-		Credits = result.creditsToShowThisFrame.c_str();
+		std::string creditString;
+		for (Cesium3DTiles::Credit credit : result.creditsToShowThisFrame) {
+			creditString += credit.getHTML() + "\n";
+		}
+		Credits = creditString.c_str();
 	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
