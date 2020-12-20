@@ -40,5 +40,5 @@ public:
 	EBingMapsStyle MapStyle = EBingMapsStyle::Aerial;
 
 protected:
-	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay() override;
+	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay(const std::shared_ptr<Cesium3DTiles::CreditSystem>& pCreditSystem) override;
 };

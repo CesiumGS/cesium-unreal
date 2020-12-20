@@ -9,6 +9,7 @@
 #include "CesiumRasterOverlay.generated.h"
 
 namespace Cesium3DTiles {
+	class CreditSystem;
 	class Tileset;
 }
 
@@ -61,8 +62,10 @@ public:
 
 protected:
 	Cesium3DTiles::Tileset* FindTileset() const;
-	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay() PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
+	const std::shared_ptr<Cesium3DTiles::CreditSystem> FindCreditSystem() const;
+	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay(const std::shared_ptr<Cesium3DTiles::CreditSystem>& pCreditSystem) PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
 
 private:
 	Cesium3DTiles::RasterOverlay* _pOverlay;
+	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 };

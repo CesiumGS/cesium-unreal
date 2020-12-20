@@ -6,7 +6,8 @@
 #include "ACesium3DTileset.h"
 
 // Sets default values for this component's properties
-UCesiumRasterOverlay::UCesiumRasterOverlay()
+UCesiumRasterOverlay::UCesiumRasterOverlay() :
+	_pCreditSystem()
 {
 	this->bAutoActivate = true;
 
@@ -47,7 +48,13 @@ void UCesiumRasterOverlay::AddToTileset()
 		return;
 	}
 
-	std::unique_ptr<Cesium3DTiles::RasterOverlay> pOverlay = this->CreateOverlay();
+	const std::shared_ptr<Cesium3DTiles::CreditSystem> pCreditSystem = FindCreditSystem();
+	if (!pCreditSystem) {
+		return;
+	} 
+	this->_pCreditSystem = std::move(pCreditSystem);
+
+	std::unique_ptr<Cesium3DTiles::RasterOverlay> pOverlay = this->CreateOverlay(this->_pCreditSystem);
 	this->_pOverlay = pOverlay.get();
 
 	for (const FRectangularCutout& cutout : this->Cutouts) {
@@ -95,4 +102,14 @@ Cesium3DTiles::Tileset* UCesiumRasterOverlay::FindTileset() const
 	}
 
 	return pActor->GetTileset();
+}
+
+const std::shared_ptr<Cesium3DTiles::CreditSystem> UCesiumRasterOverlay::FindCreditSystem() const
+{
+	ACesium3DTileset* pActor = this->GetOwner<ACesium3DTileset>();
+	if (!pActor) {
+		return std::shared_ptr<Cesium3DTiles::CreditSystem>();
+	}
+
+	return pActor->GetCreditSystem();
 }

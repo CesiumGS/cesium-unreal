@@ -6,7 +6,7 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/Tileset.h"
-#include "Cesium3DTiles/Credit.h"
+#include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -37,6 +37,8 @@
 ACesium3DTileset::ACesium3DTileset() :
 	Georeference(nullptr),
 	_pTileset(nullptr),
+	_pCreditSystem(std::make_shared<Cesium3DTiles::CreditSystem>()),
+
 	_lastTilesRendered(0),
 	_lastTilesLoadingLowPriority(0),
 	_lastTilesLoadingMediumPriority(0),
@@ -367,7 +369,8 @@ void ACesium3DTileset::LoadTileset()
 	Cesium3DTiles::TilesetExternals externals{
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
-		std::make_shared<UnrealTaskProcessor>()
+		std::make_shared<UnrealTaskProcessor>(),
+		this->_pCreditSystem
 	};
 
 	if (this->Url.Len() > 0)
@@ -582,9 +585,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			result.tilesLoadingHighPriority
 		);
 
+		// placeholder until we can create screen html elements
 		std::string creditString;
 		for (Cesium3DTiles::Credit credit : result.creditsToShowThisFrame) {
-			creditString += credit.getHTML() + "\n";
+			creditString += credit.html + "\n";
 		}
 		Credits = creditString.c_str();
 	}

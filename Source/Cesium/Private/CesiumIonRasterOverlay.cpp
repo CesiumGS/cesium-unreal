@@ -6,9 +6,10 @@
 #include "Cesium3DTiles/IonRasterOverlay.h"
 #include "UnrealConversions.h"
 
-std::unique_ptr<Cesium3DTiles::RasterOverlay> UCesiumIonRasterOverlay::CreateOverlay() {
+std::unique_ptr<Cesium3DTiles::RasterOverlay> UCesiumIonRasterOverlay::CreateOverlay(const std::shared_ptr<Cesium3DTiles::CreditSystem>& pCreditSystem) {
     return std::make_unique<Cesium3DTiles::IonRasterOverlay>(
         this->IonAssetID,
-        wstr_to_utf8(this->IonAccessToken)
+        wstr_to_utf8(this->IonAccessToken),
+        pCreditSystem
     );
 }

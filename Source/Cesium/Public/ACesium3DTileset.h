@@ -3,11 +3,13 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include "Cesium3DTiles/Camera.h"
+#include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
 #include "ACesium3DTileset.generated.h"
@@ -117,6 +119,8 @@ public:
 	Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
 	const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
 
+	const std::shared_ptr<Cesium3DTiles::CreditSystem>& GetCreditSystem() { return this->_pCreditSystem; }
+
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 
 	virtual bool IsBoundingVolumeReady() const override;
@@ -172,6 +176,8 @@ public:
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
+
+	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 	
 	uint32_t _lastTilesRendered;
 	uint32_t _lastTilesLoadingLowPriority;
