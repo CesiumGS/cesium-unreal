@@ -87,6 +87,11 @@
         "bitset": "cpp",
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
-        "coroutine": "cpp"
+        "coroutine": "cpp",
+        "multi_span": "cpp",
+        "*.rh": "cpp",
+        "span_ext": "cpp",
+        "gsl_assert": "cpp",
+        "ranges": "cpp"
     }
 }

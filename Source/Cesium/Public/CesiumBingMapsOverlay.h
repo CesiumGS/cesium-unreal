@@ -21,7 +21,7 @@ enum class EBingMapsStyle : uint8 {
 /**
  * 
  */
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUM_API UCesiumBingMapsOverlay : public UCesiumRasterOverlay
 {
 	GENERATED_BODY()
