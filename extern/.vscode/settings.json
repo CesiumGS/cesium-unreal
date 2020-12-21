@@ -91,6 +91,7 @@
         "multi_span": "cpp",
         "*.rh": "cpp",
         "span_ext": "cpp",
-        "gsl_assert": "cpp"
+        "gsl_assert": "cpp",
+        "ranges": "cpp"
     }
 }

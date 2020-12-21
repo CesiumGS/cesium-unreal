@@ -28,7 +28,8 @@ public class Cesium : ModuleRules
                 "../extern/cesium-native/extern/glm",
                 "../extern/cesium-native/extern/GSL/include",
                 "../extern/cesium-native/extern/asyncplusplus/include",
-                "../extern/cesium-native/extern/spdlog/include"
+                "../extern/cesium-native/extern/spdlog/include",
+                "../extern/cesium-native/extern/rapidjson/include",
             }
             );
 
