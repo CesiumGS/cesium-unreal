@@ -37,6 +37,8 @@
 ACesium3DTileset::ACesium3DTileset() :
 	Georeference(nullptr),
 	_pTileset(nullptr),
+	// TODO: this pointer shouldn't be created here, it should be passed
+	// in on creation from a CesiumCreditActor  
 	_pCreditSystem(std::make_shared<Cesium3DTiles::CreditSystem>()),
 
 	_lastTilesRendered(0),
@@ -551,6 +553,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		camera.value().fieldOfViewDegrees
 	);
 
+	// TODO: this line should be moved to a CesiumCreditActor which can aggregate
+	// credits over multiple Tilesets 
+	this->_pCreditSystem->startNextFrame();
+	
 	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetCamera);
 
 	if (
@@ -587,7 +593,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 		// placeholder until we can create screen html elements
 		std::string creditString;
-		for (Cesium3DTiles::Credit credit : result.creditsToShowThisFrame) {
+		for (Cesium3DTiles::Credit credit : this->_pCreditSystem->getCreditsToShowThisFrame()) {
 			creditString += credit.html + "\n";
 		}
 		Credits = creditString.c_str();
