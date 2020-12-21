@@ -5,7 +5,6 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
-#include "Cesium3DTiles/Tileset.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -23,9 +22,12 @@
 #include "UnrealConversions.h"
 #include "UnrealTaskProcessor.h"
 #include "CesiumRasterOverlay.h"
+#include "Cesium3DTilesetRoot.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include "Cesium3DTilesetRoot.h"
+#include <spdlog/spdlog.h>
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -333,7 +335,8 @@ void ACesium3DTileset::LoadTileset()
 	Cesium3DTiles::TilesetExternals externals{
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
-		std::make_shared<UnrealTaskProcessor>()
+		std::make_shared<UnrealTaskProcessor>(),
+		spdlog::default_logger()
 	};
 
 	if (this->Url.Len() > 0)

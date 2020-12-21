@@ -2,8 +2,10 @@
 
 #include "Cesium.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include <sstream>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 #define LOCTEXT_NAMESPACE "FCesiumModule"
 
@@ -24,6 +26,12 @@ void FCesiumModule::StartupModule()
 	Cesium3DTiles::registerAllTileContentTypes();
 
 	std::cout.rdbuf(&LogStream);
+	std::cerr.rdbuf(&LogStream);
+
+	std::shared_ptr<spdlog::logger> pLogger = spdlog::default_logger();
+	pLogger->sinks() = {
+		std::make_shared<SpdlogUnrealLoggerSink>()
+	};
 }
 
 void FCesiumModule::ShutdownModule()
