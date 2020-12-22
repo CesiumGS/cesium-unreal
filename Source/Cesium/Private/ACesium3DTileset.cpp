@@ -555,7 +555,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		// placeholder until we can create screen html elements
 		std::string creditString;
 		for (Cesium3DTiles::Credit credit : this->_pCreditSystem->getCreditsToShowThisFrame()) {
-			creditString += credit.html + "\n";
+			creditString += this->_pCreditSystem->getHTML(credit) + "\n";
 		}
 		Credits = creditString.c_str();
 	}

@@ -6,9 +6,7 @@
 #include "ACesium3DTileset.h"
 
 // Sets default values for this component's properties
-UCesiumRasterOverlay::UCesiumRasterOverlay() :
-	_pCreditSystem()
-{
+UCesiumRasterOverlay::UCesiumRasterOverlay() {
 	this->bAutoActivate = true;
 
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
@@ -48,13 +46,7 @@ void UCesiumRasterOverlay::AddToTileset()
 		return;
 	}
 
-	const std::shared_ptr<Cesium3DTiles::CreditSystem> pCreditSystem = FindCreditSystem();
-	if (!pCreditSystem) {
-		return;
-	} 
-	this->_pCreditSystem = std::move(pCreditSystem);
-
-	std::unique_ptr<Cesium3DTiles::RasterOverlay> pOverlay = this->CreateOverlay(this->_pCreditSystem);
+	std::unique_ptr<Cesium3DTiles::RasterOverlay> pOverlay = this->CreateOverlay();
 	this->_pOverlay = pOverlay.get();
 
 	for (const FRectangularCutout& cutout : this->Cutouts) {
@@ -104,12 +96,3 @@ Cesium3DTiles::Tileset* UCesiumRasterOverlay::FindTileset() const
 	return pActor->GetTileset();
 }
 
-const std::shared_ptr<Cesium3DTiles::CreditSystem> UCesiumRasterOverlay::FindCreditSystem() const
-{
-	ACesium3DTileset* pActor = this->GetOwner<ACesium3DTileset>();
-	if (!pActor) {
-		return std::shared_ptr<Cesium3DTiles::CreditSystem>();
-	}
-
-	return pActor->GetCreditSystem();
-}

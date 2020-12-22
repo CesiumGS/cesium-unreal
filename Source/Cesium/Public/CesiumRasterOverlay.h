@@ -62,10 +62,8 @@ public:
 
 protected:
 	Cesium3DTiles::Tileset* FindTileset() const;
-	const std::shared_ptr<Cesium3DTiles::CreditSystem> FindCreditSystem() const;
-	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay(const std::shared_ptr<Cesium3DTiles::CreditSystem>& pCreditSystem) PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
+	virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay() PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
 
 private:
 	Cesium3DTiles::RasterOverlay* _pOverlay;
-	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 };
