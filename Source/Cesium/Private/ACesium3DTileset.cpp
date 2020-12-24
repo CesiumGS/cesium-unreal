@@ -5,6 +5,7 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
+#include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -336,6 +337,8 @@ void ACesium3DTileset::LoadTileset()
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
+		// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
+		std::make_shared<Cesium3DTiles::CreditSystem>(),
 		spdlog::default_logger()
 	};
 
