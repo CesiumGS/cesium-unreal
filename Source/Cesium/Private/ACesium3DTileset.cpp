@@ -503,9 +503,8 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	// If a georeference update is waiting on the bounding volume being ready, update when ready
 	if (this->_updateGeoreferenceOnBoundingVolumeReady && this->IsBoundingVolumeReady()) {
 		this->_updateGeoreferenceOnBoundingVolumeReady = false;
-		// TODO: since the parameter is unused anyways, is this the right way to do this?
-		glm::dmat4 tmp;
-		this->UpdateGeoreferenceTransform(tmp);
+		// Need to potentially recalculate the transform for all georeferenced objects, not just for this tileset
+		this->Georeference->UpdateGeoreference();
 	}
 
 	if (this->SuspendUpdate) {
