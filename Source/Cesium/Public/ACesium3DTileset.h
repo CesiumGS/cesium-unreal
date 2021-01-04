@@ -147,4 +147,6 @@ private:
 	uint32_t _lastTilesVisited;
 	uint32_t _lastTilesCulled;
 	uint32_t _lastMaxDepthVisited;
+	
+	bool _updateGeoreferenceOnBoundingVolumeReady;
 };

@@ -46,7 +46,9 @@ ACesium3DTileset::ACesium3DTileset() :
 
 	_lastTilesVisited(0),
 	_lastTilesCulled(0),
-	_lastMaxDepthVisited(0)
+	_lastMaxDepthVisited(0),
+
+	_updateGeoreferenceOnBoundingVolumeReady(false)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -92,10 +94,20 @@ void ACesium3DTileset::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrea
 	}
 }
 
+// TODO: This parameter is unused. 
+// I think pRoot->RecalculateTransform() is recalculating ellipsoidCenteredToGeoreferencedTransform,
+// should pRoot->RecalculateTransform() be changed to take ellipsoidCenteredToGeoreferencedTransform as a parameter?
+// If so, we will need to save it along with the boolean in the case that the bounding volume is not ready
 void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform)
 {
-	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-	pRoot->RecalculateTransform();
+	// If the bounding volume is ready, we can update the georeference transform as wanted
+	if (IsBoundingVolumeReady()) {
+		UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+		pRoot->RecalculateTransform();
+	} else {
+	// Otherwise, update the transform later in Tick when the bounding volume is ready 
+		this->_updateGeoreferenceOnBoundingVolumeReady = true;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -486,6 +498,14 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	if (pRoot->IsTransformChanged()) {
 		this->UpdateTransformFromCesium(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 		pRoot->MarkTransformUnchanged();
+	}
+
+	// If a georeference update is waiting on the bounding volume being ready, update when ready
+	if (this->_updateGeoreferenceOnBoundingVolumeReady && this->IsBoundingVolumeReady()) {
+		this->_updateGeoreferenceOnBoundingVolumeReady = false;
+		// TODO: since the parameter is unused anyways, is this the right way to do this?
+		glm::dmat4 tmp;
+		this->UpdateGeoreferenceTransform(tmp);
 	}
 
 	if (this->SuspendUpdate) {
