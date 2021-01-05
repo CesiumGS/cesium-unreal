@@ -94,11 +94,9 @@ void ACesium3DTileset::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrea
 	}
 }
 
-// TODO: This parameter is unused. 
-// I think pRoot->RecalculateTransform() is recalculating ellipsoidCenteredToGeoreferencedTransform,
-// should pRoot->RecalculateTransform() be changed to take ellipsoidCenteredToGeoreferencedTransform as a parameter?
-// If so, we will need to save it along with the boolean in the case that the bounding volume is not ready
-void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform)
+// TODO: pRoot->RecalculateTransform() recomputes ellipsoidCenteredToGeoreferencedTransform, it might make more 
+// sense for it to take ellipsoidCenteredToGeoreferencedTransform as a parameter since it is called from here
+void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& /*ellipsoidCenteredToGeoreferencedTransform*/)
 {
 	// If the bounding volume is ready, we can update the georeference transform as wanted
 	if (IsBoundingVolumeReady()) {

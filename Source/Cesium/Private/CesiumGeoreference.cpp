@@ -78,7 +78,7 @@ void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object
 	if (pActor) {
 		pActor->AddTickPrerequisiteActor(this);
 	}
-	// TODO: is this a better place to put this instead of OnConstruction 
+	
 	this->UpdateGeoreference();
 }
 
@@ -97,10 +97,7 @@ void ACesiumGeoreference::BeginPlay()
 }
 
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
-{
-	// TODO: is this needed, I think _georeferencedObjects will be empty here 
-	// this->UpdateGeoreference();
-}
+{}
 
 void ACesiumGeoreference::UpdateGeoreference()
 {
