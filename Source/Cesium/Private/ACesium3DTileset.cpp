@@ -334,27 +334,6 @@ void ACesium3DTileset::LoadTileset()
 		else 
 		{
 			_lastMaterial = this->Material;
-			// TODO: this commented out section should be enough to switch between materials and raster overlays, destroying and recreating the tileset shouldn't be needed
-			// I think there is an issue with RasterOverlayCollection::remove, it might not be properly unmapping all existing raster tiles 
-			/*
-			// The material has been changed, so we either need to remove or restore the raster overlays 
-			if (this->Material) {
-				for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
-					if (pOverlay->IsActive()) {
-						pOverlay->RemoveFromTileset();
-					}
-				}
-			}
-			else 
-			{
-				for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
-					if (pOverlay->IsActive()) {
-						pOverlay->AddToTileset();
-					}
-				}
-			}
-			return;
-			*/
 		}
 
 		this->DestroyTileset();
