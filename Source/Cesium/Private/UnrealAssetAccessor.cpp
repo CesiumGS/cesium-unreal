@@ -6,13 +6,27 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "UnrealConversions.h"
+#include <set>
 #include <optional>
 
 class UnrealAssetResponse : public CesiumAsync::IAssetResponse {
 public:
 	UnrealAssetResponse(FHttpResponsePtr pResponse) :
+		_cacheControl{},
 		_pResponse(pResponse)
 	{
+		TArray<FString> headers = this->_pResponse->GetAllHeaders();
+		for (const FString& header : headers) {
+			int32_t separator = -1;
+			if (header.FindChar(':', separator)) {
+				FString fstrKey = header.Left(separator);
+				FString fstrValue = header.Right(header.Len() - separator - 2);
+				std::string key = std::string(TCHAR_TO_UTF8(*fstrKey));
+				std::string value = std::string(TCHAR_TO_UTF8(*fstrValue));
+				parseHeaderForCacheControl(key, value);
+				_headers.insert({ std::move(key), std::move(value) });
+			}
+		}
 	}
 
 	virtual uint16_t statusCode() const override {
@@ -23,10 +37,13 @@ public:
 		return wstr_to_utf8(this->_pResponse->GetContentType());
 	}
 
-	//virtual const std::map<std::string, std::string>& headers() override {
-	//	// TODO: return the headers
-	//	return this->_headers;
-	//}
+	virtual const std::map<std::string, std::string> &headers() const override {
+		return _headers;
+	}
+
+	virtual const CacheControl &cacheControl() const override {
+		return _cacheControl;
+	}
 
 	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
@@ -34,8 +51,32 @@ public:
 	}
 
 private:
+	void parseHeaderForCacheControl(const std::string& headerKey, const std::string& headerValue) {
+		if (headerKey != "Cache-Control") {
+			return;
+		}
+
+		std::set<std::string> directives;
+		size_t last = 0;
+		size_t next = 0;
+		while ((next = headerValue.find(",", last)) != std::string::npos) {
+			directives.insert(headerValue.substr(last, next - last));
+			last = next + 1;
+		}
+		directives.insert(headerValue.substr(last));
+
+		_cacheControl.mustRevalidate = directives.find("must-revalidate") != directives.end();
+		_cacheControl.noCache = directives.find("no-cache") != directives.end();
+		_cacheControl.noStore = directives.find("no-store") != directives.end();
+		_cacheControl.noTransform = directives.find("no-transform") != directives.end();
+		_cacheControl.accessControlPublic = directives.find("public") != directives.end();
+		_cacheControl.accessControlPrivate = directives.find("private") != directives.end();
+		_cacheControl.proxyRevalidate = directives.find("proxyRevalidate") != directives.end();
+	}
+
+	CacheControl _cacheControl;
 	FHttpResponsePtr _pResponse;
-	//std::map<std::string, std::string> _headers;
+	std::map<std::string, std::string> _headers;
 };
 
 class UnrealAssetRequest : public CesiumAsync::IAssetRequest {
@@ -68,7 +109,7 @@ public:
 		return wstr_to_utf8(this->_pRequest->GetURL());
 	}
 
-	virtual CesiumAsync::IAssetResponse* response() override {
+	virtual const CesiumAsync::IAssetResponse* response() const override {
 		if (this->_pResponse) {
 			return this->_pResponse;
 		}
@@ -108,7 +149,7 @@ protected:
 
 private:
 	FHttpRequestPtr _pRequest;
-	CesiumAsync::IAssetResponse* _pResponse;
+	mutable CesiumAsync::IAssetResponse* _pResponse;
 	std::function<void (CesiumAsync::IAssetRequest*)> _callback;
 };
 
