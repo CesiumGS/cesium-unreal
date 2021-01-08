@@ -78,6 +78,8 @@ void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object
 	if (pActor) {
 		pActor->AddTickPrerequisiteActor(this);
 	}
+	
+	this->UpdateGeoreference();
 }
 
 // Called when the game starts or when spawned
@@ -95,9 +97,7 @@ void ACesiumGeoreference::BeginPlay()
 }
 
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
-{
-	this->UpdateGeoreference();
-}
+{}
 
 void ACesiumGeoreference::UpdateGeoreference()
 {

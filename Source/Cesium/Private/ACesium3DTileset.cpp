@@ -5,7 +5,6 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
-#include "Cesium3DTiles/Tileset.h"
 #include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -52,7 +51,9 @@ ACesium3DTileset::ACesium3DTileset() :
 
 	_lastTilesVisited(0),
 	_lastTilesCulled(0),
-	_lastMaxDepthVisited(0)
+	_lastMaxDepthVisited(0),
+
+	_updateGeoreferenceOnBoundingVolumeReady(false)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -100,8 +101,14 @@ void ACesium3DTileset::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrea
 
 void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform)
 {
-	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-	pRoot->RecalculateTransform();
+	// If the bounding volume is ready, we can update the georeference transform as wanted
+	if (IsBoundingVolumeReady()) {
+		UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+		pRoot->UpdateGeoreferenceTransform(ellipsoidCenteredToGeoreferencedTransform);
+	} else {
+	// Otherwise, update the transform later in Tick when the bounding volume is ready 
+		this->_updateGeoreferenceOnBoundingVolumeReady = true;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -493,6 +500,13 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	if (pRoot->IsTransformChanged()) {
 		this->UpdateTransformFromCesium(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 		pRoot->MarkTransformUnchanged();
+	}
+
+	// If a georeference update is waiting on the bounding volume being ready, update when ready
+	if (this->_updateGeoreferenceOnBoundingVolumeReady && this->IsBoundingVolumeReady()) {
+		this->_updateGeoreferenceOnBoundingVolumeReady = false;
+		// Need to potentially recalculate the transform for all georeferenced objects, not just for this tileset
+		this->Georeference->UpdateGeoreference();
 	}
 
 	if (this->SuspendUpdate) {
