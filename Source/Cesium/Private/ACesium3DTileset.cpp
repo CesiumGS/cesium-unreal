@@ -184,23 +184,23 @@ public:
 		}
 	}
 
-	virtual void* prepareRasterInLoadThread(const CesiumGltf::Image& image) override {
+	virtual void* prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
 		return nullptr;
 	}
 
 	virtual void* prepareRasterInMainThread(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult) {
-		const CesiumGltf::Image& image = rasterTile.getImage();
-		if (image.cesium.width <= 0 || image.cesium.height <= 0) {
+		const CesiumGltf::ImageCesium& image = rasterTile.getImage();
+		if (image.width <= 0 || image.height <= 0) {
 			return nullptr;
 		}
 
-		UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
+		UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
 		pTexture->AddToRoot();
 		pTexture->AddressX = TextureAddress::TA_Clamp;
 		pTexture->AddressY = TextureAddress::TA_Clamp;
 
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-		FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
+		FMemory::Memcpy(pTextureData, image.pixelData.data(), image.pixelData.size());
 		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 		pTexture->UpdateResource();
