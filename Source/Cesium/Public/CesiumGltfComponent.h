@@ -15,8 +15,8 @@ class IPhysXCooking;
 #endif
 class UTexture2D;
 
-namespace tinygltf{
-	class Model;
+namespace CesiumGltf {
+	struct Model;
 }
 
 namespace Cesium3DTiles {
@@ -53,9 +53,9 @@ public:
 	/// The final component creation is done in the game thread (as required by Unreal Engine) and
 	/// the provided callback is raised in the game thread with the result.
 	/// </summary>
-	static void CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
+	static void CreateOffGameThread(AActor* pActor, const CesiumGltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
 	static std::unique_ptr<HalfConstructed> CreateOffGameThread(
-		const tinygltf::Model& model,
+		const CesiumGltf::Model& model,
 		const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
 		,IPhysXCooking* pPhysXCooking = nullptr
