@@ -57,6 +57,12 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
+	 * Whether to load tiles that are outside the frustum.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Frustum Culling")
+	bool DisableFrustumCulling = false;
+
+	/**
 	 * The maximum number of pixels of error when rendering this tileset.
      * This is used to select an appropriate level-of-detail.
 	 */
