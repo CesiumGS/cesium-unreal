@@ -2,13 +2,16 @@
 
 #include <memory>
 #include "GameFramework/Actor.h"
+#include "CesiumCreditSystem.generated.h"
 
 namespace Cesium3DTiles {
     class CreditSystem;
 }
 
 UCLASS()
-class ACesiumCreditSystem : AActor {
+class CESIUM_API ACesiumCreditSystem : public AActor 
+{
+	GENERATED_BODY()
 
 public:
 	static ACesiumCreditSystem* GetDefaultForActor(AActor* Actor);

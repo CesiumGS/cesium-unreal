@@ -33,4 +33,4 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
 void ACesiumCreditSystem::BeginPlay() {}
 
-void ACesiumCreditSystem::OnConstruction() {}
+void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {}
