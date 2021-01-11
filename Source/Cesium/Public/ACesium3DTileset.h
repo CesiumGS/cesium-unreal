@@ -59,7 +59,7 @@ public:
 	/**
 	 * Whether to load tiles that are outside the frustum.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Frustum Culling")
+	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
 	bool DisableFrustumCulling = false;
 
 	/**
@@ -151,6 +151,7 @@ private:
 	uint32_t _lastTilesLoadingHighPriority;
 
 	uint32_t _lastTilesVisited;
+	uint32_t _lastTilesVisitedOutsideFrustum;
 	uint32_t _lastTilesCulled;
 	uint32_t _lastMaxDepthVisited;
 	
