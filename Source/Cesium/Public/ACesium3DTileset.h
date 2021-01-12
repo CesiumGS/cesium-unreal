@@ -63,6 +63,12 @@ public:
 	bool DisableFrustumCulling = false;
 
 	/**
+	 * Whether to load tiles that are outside the frustum.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
+	bool DisableFogCulling = false;
+
+	/**
 	 * The maximum number of pixels of error when rendering this tileset.
      * This is used to select an appropriate level-of-detail.
 	 */
@@ -151,7 +157,7 @@ private:
 	uint32_t _lastTilesLoadingHighPriority;
 
 	uint32_t _lastTilesVisited;
-	uint32_t _lastTilesVisitedOutsideFrustum;
+	uint32_t _lastTilesVisitedWithoutSse;
 	uint32_t _lastTilesCulled;
 	uint32_t _lastMaxDepthVisited;
 	
