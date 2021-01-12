@@ -670,11 +670,13 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 
 	UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
 
-	unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-	FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
-	pTexture->PlatformData->Mips[0].BulkData.Unlock();
+	if (pTexture) {
+		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
+		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
-	pTexture->UpdateResource();
+		pTexture->UpdateResource();
+	}
 
 	pMaterial->SetTextureParameterValue(parameterName, pTexture);
 
