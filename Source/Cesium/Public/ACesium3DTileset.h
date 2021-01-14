@@ -85,13 +85,13 @@ public:
 	 * The maximum number of tiles that may be loaded at once.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
-	uint32_t MaximumSimultaneousTileLoads = 20;
+	int MaximumSimultaneousTileLoads = 20;
 
 	/**
 	 * The number of loading descendents a tile should allow before deciding to render itself instead of waiting.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
-	uint32_t LoadingDescendantLimit = 20;
+	int LoadingDescendantLimit = 20;
 
 	/**
 	 * Whether to cull tiles that are outside the frustum.
