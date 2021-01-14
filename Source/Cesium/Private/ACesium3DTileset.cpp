@@ -6,6 +6,8 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/CreditSystem.h"
+#include "CesiumAsync/CacheAssetAccessor.h"
+#include "CesiumAsync/DiskCache.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -334,13 +336,35 @@ void ACesium3DTileset::LoadTileset()
 	this->Georeference->AddGeoreferencedObject(this);
 
 	Cesium3DTiles::TilesetExternals externals{
-		std::make_shared<UnrealAssetAccessor>(),
+		std::make_shared<CesiumAsync::CacheAssetAccessor>(
+			std::make_unique<UnrealAssetAccessor>(),
+			std::make_unique<CesiumAsync::DiskCache>("C:\\Users\\bao\\Documents\\test.db")),
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
 		// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
 		std::make_shared<Cesium3DTiles::CreditSystem>(),
 		spdlog::default_logger()
 	};
+
+	//Cesium3DTiles::TilesetExternals externals{
+	//	std::make_shared<CesiumAsync::CacheAssetAccessor>(
+	//		std::make_unique<UnrealAssetAccessor>(), 
+	//		std::make_unique<CesiumAsync::DiskCache>(":memory:")),
+	//	std::make_shared<UnrealResourcePreparer>(this),
+	//	std::make_shared<UnrealTaskProcessor>(),
+	//	// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
+	//	std::make_shared<Cesium3DTiles::CreditSystem>(),
+	//	spdlog::default_logger()
+	//};
+
+	//Cesium3DTiles::TilesetExternals externals{
+	//	std::make_shared<UnrealAssetAccessor>(), 
+	//	std::make_shared<UnrealResourcePreparer>(this),
+	//	std::make_shared<UnrealTaskProcessor>(),
+	//	// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
+	//	std::make_shared<Cesium3DTiles::CreditSystem>(),
+	//	spdlog::default_logger()
+	//};
 
 	if (this->Url.Len() > 0)
 	{
