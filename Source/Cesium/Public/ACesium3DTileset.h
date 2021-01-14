@@ -57,16 +57,16 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
-	 * Whether to load tiles that are outside the frustum.
+	 * Whether to cull tiles that are outside the frustum.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
-	bool DisableFrustumCulling = false;
+	bool EnableFrustumCulling = true;
 
 	/**
-	 * Whether to load tiles that are outside the frustum.
+	 * Whether to cull tiles that are occluded by fog.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
-	bool DisableFogCulling = false;
+	bool EnableFogCulling = true;
 
 	/**
 	 * Whether culled screen-space error should be enforced.

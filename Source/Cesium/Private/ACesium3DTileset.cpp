@@ -512,8 +512,8 @@ void ACesium3DTileset::Tick(float DeltaTime)
 
 	Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
 	options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
-	options.disableFrustumCulling = this->DisableFrustumCulling;
-	options.disableFogCulling = this->DisableFogCulling;
+	options.enableFrustumCulling = this->EnableFrustumCulling;
+	options.enableFogCulling = this->EnableFogCulling;
 	options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
 	options.culledScreenSpaceError = this->CulledScreenSpaceError;
 	options.preloadSiblings = this->PreloadSiblings;
