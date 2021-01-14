@@ -514,6 +514,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 	options.disableFrustumCulling = this->DisableFrustumCulling;
 	options.disableFogCulling = this->DisableFogCulling;
+	options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
+	options.culledScreenSpaceError = this->CulledScreenSpaceError;
+	options.preloadSiblings = this->PreloadSiblings;
 
 	std::optional<UnrealCameraParameters> camera = this->GetCamera();
 	if (!camera) {

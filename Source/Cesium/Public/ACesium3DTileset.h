@@ -69,6 +69,24 @@ public:
 	bool DisableFogCulling = false;
 
 	/**
+	 * Whether culled screen-space error should be enforced.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
+	bool EnforceCulledScreenSpaceError = false;
+
+	/**
+	 * The screen-space error to be used for culled tiles.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options", meta=(EditCondition="EnforceCulledScreenSpaceError"))
+	double CulledScreenSpaceError = 64.0;
+
+	/**
+	 * Whether to preload sibling tiles.
+	 */ 
+	 UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
+	 bool PreloadSiblings = true;
+
+	/**
 	 * The maximum number of pixels of error when rendering this tileset.
      * This is used to select an appropriate level-of-detail.
 	 */
