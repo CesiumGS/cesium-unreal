@@ -510,13 +510,21 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
+	// TODO: updating the options should probably happen in OnConstruction or PostEditChangeProperty,
+	// no need to have it happen every frame when the options haven't been changed
 	Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
 	options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+	
+	options.preloadAncestors = this->PreloadAncestors;
+	options.preloadSiblings = this->PreloadSiblings;
+	options.forbidHoles = this->ForbidHoles;
+	options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+	options.loadingDescendantLimit = this->LoadingDescendantLimit;
+
 	options.enableFrustumCulling = this->EnableFrustumCulling;
 	options.enableFogCulling = this->EnableFogCulling;
 	options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
 	options.culledScreenSpaceError = this->CulledScreenSpaceError;
-	options.preloadSiblings = this->PreloadSiblings;
 
 	std::optional<UnrealCameraParameters> camera = this->GetCamera();
 	if (!camera) {

@@ -57,41 +57,65 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
-	 * Whether to cull tiles that are outside the frustum.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
-	bool EnableFrustumCulling = true;
-
-	/**
-	 * Whether to cull tiles that are occluded by fog.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
-	bool EnableFogCulling = true;
-
-	/**
-	 * Whether culled screen-space error should be enforced.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
-	bool EnforceCulledScreenSpaceError = false;
-
-	/**
-	 * The screen-space error to be used for culled tiles.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options", meta=(EditCondition="EnforceCulledScreenSpaceError"))
-	double CulledScreenSpaceError = 64.0;
-
-	/**
-	 * Whether to preload sibling tiles.
-	 */ 
-	 UPROPERTY(EditAnywhere, Category="Cesium|Tileset Options")
-	 bool PreloadSiblings = true;
-
-	/**
 	 * The maximum number of pixels of error when rendering this tileset.
      * This is used to select an appropriate level-of-detail.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
 	double MaximumScreenSpaceError = 16.0;
+
+	/**
+	 * Whether to preload ancestor tiles.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	bool PreloadAncestors = true;
+
+	/**
+	 * Whether to preload sibling tiles.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	bool PreloadSiblings = true;
+
+	/**
+	 * Whether to unrefine back to a parent tile when a child isn't done loading.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	bool ForbidHoles = false;
+
+	/**
+	 * The maximum number of tiles that may be loaded at once.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	uint32_t MaximumSimultaneousTileLoads = 20;
+
+	/**
+	 * The number of loading descendents a tile should allow before deciding to render itself instead of waiting.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	uint32_t LoadingDescendantLimit = 20;
+
+	/**
+	 * Whether to cull tiles that are outside the frustum.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
+	bool EnableFrustumCulling = true;
+
+	/**
+	 * Whether to cull tiles that are occluded by fog.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
+	bool EnableFogCulling = true;
+
+	/**
+	 * Whether culled screen-space error should be enforced.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
+	bool EnforceCulledScreenSpaceError = false;
+
+	/**
+	 * The screen-space error to be used for culled tiles.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling", meta=(EditCondition="EnforceCulledScreenSpaceError"))
+	double CulledScreenSpaceError = 64.0;
 
 	UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
 	UMaterial* Material = nullptr;
