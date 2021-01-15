@@ -274,7 +274,7 @@ static void loadPrimitive(
 
 	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
 	if (tangentAccessorIt != primitive.attributes.end()) {
-		int tangentAccessorID = normalAccessorIt->second;
+		int tangentAccessorID = tangentAccessorIt->second;
 		Cesium3DTiles::GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
 
 		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
