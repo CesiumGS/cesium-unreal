@@ -75,15 +75,19 @@ static uint32_t updateTextureCoordinates(
 	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
 	const TIndexAccessor& indicesAccessor,
-	const T& texture,
+	const std::optional<T>& texture,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
+	if (!texture) {
+		return 0;
+	}
+
 	return updateTextureCoordinates(
 		model,
 		primitive,
 		vertices,
 		indicesAccessor,
-		"TEXCOORD_" + std::to_string(texture.texCoord),
+		"TEXCOORD_" + std::to_string(texture.value().texCoord),
 		textureCoordinateMap
 	);
 }
@@ -184,7 +188,9 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> BuildChaosTriangleMeshes(const TArray<FStaticMeshBuildVertex>& vertices, const TArray<uint32>& indices);
 #endif
 
-static CesiumGltf::Material defaultMaterial;
+static const CesiumGltf::Material defaultMaterial;
+static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
+
 
 template <class TIndexAccessor>
 static void loadPrimitive(
@@ -295,17 +301,16 @@ static void loadPrimitive(
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
 
 	int materialID = primitive.material;
-	const CesiumGltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : &defaultMaterial;
+	const CesiumGltf::Material& material = materialID >= 0 && materialID < model.materials.size() ? model.materials[materialID] : defaultMaterial;
+	const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness = material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value() : defaultPbrMetallicRoughness;
 
 	std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
-	if (pMaterial) {
-		primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->normalTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->occlusionTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->emissiveTexture, textureCoordinateMap);
-	}
+	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, material.normalTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, material.occlusionTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, material.emissiveTexture, textureCoordinateMap);
 
 	// Currently only one set of raster overlay texture coordinates is supported.
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
@@ -357,7 +362,7 @@ static void loadPrimitive(
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
 
-	primitiveResult.pMaterial = pMaterial;
+	primitiveResult.pMaterial = &material;
 
 	section.MaterialIndex = 0;
 
@@ -656,13 +661,13 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 }
 
 template <class T>
-bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const CesiumGltf::Model& model, const T& gltfTexture) {
-	if (gltfTexture.index < 0 || gltfTexture.index >= model.textures.size()) {
+bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const CesiumGltf::Model& model, const std::optional<T>& gltfTexture) {
+	if (!gltfTexture || gltfTexture.value().index < 0 || gltfTexture.value().index >= model.textures.size()) {
 		// TODO: report invalid texture if the index isn't -1
 		return false;
 	}
 
-	const CesiumGltf::Texture& texture = model.textures[gltfTexture.index];
+	const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
 	if (texture.source < 0 || texture.source >= model.images.size()) {
 		// TODO: report invalid texture
 		return false;
@@ -704,8 +709,8 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 
 	const CesiumGltf::Model& model = *loadResult.pModel;
 	const CesiumGltf::Material& material = loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
-	
-	const CesiumGltf::MaterialPBRMetallicRoughness& pbr = material.pbrMetallicRoughness;
+
+	const CesiumGltf::MaterialPBRMetallicRoughness& pbr = material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value() : defaultPbrMetallicRoughness;
 
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
