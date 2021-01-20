@@ -10,8 +10,8 @@
 #include <set>
 #include <optional>
 
-static std::map<std::string, std::string> parseHeaders(const TArray<FString>& unrealHeaders) {
-	std::map<std::string, std::string> result;
+static CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeaders) {
+	CesiumAsync::HttpHeaders result;
 	for (const FString& header : unrealHeaders) {
 		int32_t separator = -1;
 		if (header.FindChar(':', separator)) {
@@ -34,7 +34,7 @@ public:
 	{
 		this->_headers = parseHeaders(this->_pResponse->GetAllHeaders());
 		this->_contentType = wstr_to_utf8(this->_pResponse->GetContentType());
-		std::map<std::string, std::string>::const_iterator cacheControlIter = _headers.find("Cache-Control");
+		CesiumAsync::HttpHeaders::const_iterator cacheControlIter = _headers.find("Cache-Control");
 		if (cacheControlIter != _headers.end()) {
 			this->_cacheControl = CesiumAsync::ResponseCacheControl::parseFromResponseHeaders(_headers);
 		}
@@ -48,7 +48,7 @@ public:
 		return this->_contentType;
 	}
 
-	virtual const std::map<std::string, std::string> &headers() const override {
+	virtual const CesiumAsync::HttpHeaders& headers() const override {
 		return _headers;
 	}
 
@@ -64,7 +64,7 @@ public:
 private:
 	FHttpResponsePtr _pResponse;
 	std::string _contentType;
-	std::map<std::string, std::string> _headers;
+	CesiumAsync::HttpHeaders _headers;
 	std::optional<CesiumAsync::ResponseCacheControl> _cacheControl;
 };
 
@@ -87,7 +87,7 @@ public:
 		return this->_url;
 	}
 
-	virtual const std::map<std::string, std::string>& headers() const override {
+	virtual const CesiumAsync::HttpHeaders& headers() const override {
 		return _headers;
 	}
 
@@ -100,7 +100,7 @@ private:
 	std::unique_ptr<UnrealAssetResponse> _pResponse;
 	std::string _url;
 	std::string _method;
-	std::map<std::string, std::string> _headers;
+	CesiumAsync::HttpHeaders _headers;
 };
 
 void UnrealAssetAccessor::requestAsset(

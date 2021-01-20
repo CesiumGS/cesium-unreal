@@ -37,7 +37,7 @@ public class Cesium : ModuleRules
         string cesiumNativeConfiguration = "Debug";
         string tinyxml2Name = "tinyxml2d.lib";
         string spdlogLibName = "spdlogd.lib";
-        //if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
         {
             cesiumNativeConfiguration = "RelWithDebInfo";
             tinyxml2Name = "tinyxml2.lib";
