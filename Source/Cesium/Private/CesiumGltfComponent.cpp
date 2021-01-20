@@ -35,6 +35,7 @@
 #include "StaticMeshOperations.h"
 #include "mikktspace.h"
 #include "CesiumGltf/Reader.h"
+#include "CesiumUtility/joinToString.h"
 
 static uint32_t nextMaterialId = 0;
 
@@ -997,12 +998,12 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 		gsl::span<const uint8_t> data(static_cast<const uint8_t*>(content.GetData()), content.Num());
 		std::unique_ptr<CesiumGltf::ModelReaderResult> pLoadResult = std::make_unique<CesiumGltf::ModelReaderResult>(std::move(CesiumGltf::readModel(data)));
 
-		if (pLoadResult->warnings.length() > 0) {
-			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(pLoadResult->warnings));
+		if (!pLoadResult->warnings.empty()) {
+			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
 		}
 
-		if (pLoadResult->errors.length() > 0) {
-			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(pLoadResult->errors));
+		if (!pLoadResult->errors.empty()) {
+			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
 		}
 
 		if (!pLoadResult->model) {
