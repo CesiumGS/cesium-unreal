@@ -3,7 +3,7 @@
 
 
 #include "CesiumGltfComponent.h"
-#include "Cesium3DTiles/GltfAccessor.h"
+#include "CesiumGltf/AccessorView.h"
 #include "UnrealConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
@@ -74,7 +74,7 @@ static uint32_t updateTextureCoordinates(
 	const CesiumGltf::Model& model,
 	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
-	const TIndexAccessor& indicesAccessor,
+	const TIndexAccessor& indicesView,
 	const std::optional<T>& texture,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
@@ -86,7 +86,7 @@ static uint32_t updateTextureCoordinates(
 		model,
 		primitive,
 		vertices,
-		indicesAccessor,
+		indicesView,
 		"TEXCOORD_" + std::to_string(texture.value().texCoord),
 		textureCoordinateMap
 	);
@@ -97,7 +97,7 @@ uint32_t updateTextureCoordinates(
 	const CesiumGltf::Model& model,
 	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
-	const TIndexAccessor& indicesAccessor,
+	const TIndexAccessor& indicesView,
 	const std::string& attributeName,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
@@ -117,11 +117,16 @@ uint32_t updateTextureCoordinates(
 	size_t textureCoordinateIndex = textureCoordinateMap.size();
 	textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
 
-	Cesium3DTiles::GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
-	for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+	CesiumGltf::AccessorView<FVector2D> uvAccessor(model, uvAccessorID);
+
+	for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
 		FStaticMeshBuildVertex& vertex = vertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
-		vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+		TIndexAccessor::value_type vertexIndex = indicesView[i];
+		if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
+			vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+		} else {
+			vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+		}
 	}
 
 	return textureCoordinateIndex;
@@ -201,8 +206,9 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 	IPhysXCooking* pPhysXCooking,
 #endif
-	const Cesium3DTiles::GltfAccessor<FVector>& positionAccessor,
-	const TIndexAccessor& indicesAccessor
+	const CesiumGltf::Accessor& positionAccessor,
+	const CesiumGltf::AccessorView<FVector>& positionView,
+	const TIndexAccessor& indicesView
 ) {
 	if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
 		// TODO: add support for primitive types other than triangles.
@@ -214,8 +220,8 @@ static void loadPrimitive(
 
 	FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-	const std::vector<double>& min = positionAccessor.gltfAccessor().min;
-	const std::vector<double>& max = positionAccessor.gltfAccessor().max;
+	const std::vector<double>& min = positionAccessor.min;
+	const std::vector<double>& max = positionAccessor.max;
 
 	glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
 	glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
@@ -230,18 +236,18 @@ static void loadPrimitive(
 	BoundingBoxAndSphere.SphereRadius = 0.0f;
 
 	TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-	StaticMeshBuildVertices.SetNum(indicesAccessor.size());
+	StaticMeshBuildVertices.SetNum(indicesView.size());
 
 	// The static mesh we construct will _not_ be indexed, even if the incoming glTF is.
 	// This allows us to compute flat normals if the glTF doesn't include them already, and it
 	// allows us to compute a correct tangent space basis according to the MikkTSpace algorithm
 	// when tangents are not included in the glTF.
 
-	for (size_t i = 0; i < indicesAccessor.size(); ++i)
+	for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i)
 	{
 		FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
-		vertex.Position = positionAccessor[vertexIndex];
+		TIndexAccessor::value_type vertexIndex = indicesView[i];
+		vertex.Position = positionView[vertexIndex];
 		vertex.UVs[0] = FVector2D(0.0f, 0.0f);
 		vertex.UVs[2] = FVector2D(0.0f, 0.0f);
 		BoundingBoxAndSphere.SphereRadius = FMath::Max((vertex.Position - BoundingBoxAndSphere.Origin).Size(), BoundingBoxAndSphere.SphereRadius);
@@ -254,16 +260,16 @@ static void loadPrimitive(
 	auto normalAccessorIt = primitive.attributes.find("NORMAL");
 	if (normalAccessorIt != primitive.attributes.end()) {
 		int normalAccessorID = normalAccessorIt->second;
-		Cesium3DTiles::GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
+		CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
 
-		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			TIndexAccessor::value_type vertexIndex = indicesView[i];
 			vertex.TangentZ = normalAccessor[vertexIndex];
 		}
 	} else {
 		// Compute flat normals
-		for (size_t i = 0; i < indicesAccessor.size(); i += 3) {
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); i += 3) {
 			FStaticMeshBuildVertex& v0 = StaticMeshBuildVertices[i];
 			FStaticMeshBuildVertex& v1 = StaticMeshBuildVertices[i + 1];
 			FStaticMeshBuildVertex& v2 = StaticMeshBuildVertices[i + 2];
@@ -281,11 +287,11 @@ static void loadPrimitive(
 	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
 	if (tangentAccessorIt != primitive.attributes.end()) {
 		int tangentAccessorID = normalAccessorIt->second;
-		Cesium3DTiles::GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
+		CesiumGltf::AccessorView<FVector4> tangentAccessor(model, tangentAccessorID);
 
-		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			TIndexAccessor::value_type vertexIndex = indicesView[i];
 			const FVector4& tangent = tangentAccessor[vertexIndex];
 			vertex.TangentX = tangent;
 			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
@@ -306,15 +312,15 @@ static void loadPrimitive(
 
 	std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
-	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, material.normalTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, material.occlusionTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, material.emissiveTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.normalTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.occlusionTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.emissiveTexture, textureCoordinateMap);
 
 	// Currently only one set of raster overlay texture coordinates is supported.
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
-	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, rasterOverlay0, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, rasterOverlay0, textureCoordinateMap);
 
 	RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -326,9 +332,9 @@ static void loadPrimitive(
 	{
 		ColorVertexBuffer.Init(StaticMeshBuildVertices);
 	}
-	else if (positionAccessor.size() > 0)
+	else if (positionView.size() > 0)
 	{
-		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionAccessor.size());
+		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionView.size());
 	}
 
 	FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
@@ -416,12 +422,18 @@ static void loadPrimitive(
 	}
 
 	int positionAccessorID = positionAccessorIt->second;
-	Cesium3DTiles::GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
+	const CesiumGltf::Accessor* pPositionAccessor = CesiumGltf::Model::getSafe(&model.accessors, positionAccessorID);
+	if (!pPositionAccessor) {
+		// Position accessor does not exist, so ignore this primitive.
+		return;
+	}
+
+	CesiumGltf::AccessorView<FVector> positionView(model, *pPositionAccessor);
 
 	if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
-		std::vector<uint32_t> syntheticIndexBuffer(positionAccessor.size());
-		syntheticIndexBuffer.resize(positionAccessor.size());
-		for (uint32_t i = 0; i < positionAccessor.size(); ++i) {
+		std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
+		syntheticIndexBuffer.resize(positionView.size());
+		for (uint32_t i = 0; i < positionView.size(); ++i) {
 			syntheticIndexBuffer[i] = i;
 		}
 		loadPrimitive(
@@ -432,13 +444,14 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 			pPhysXCooking,
 #endif
-			positionAccessor,
+			*pPositionAccessor,
+			positionView,
 			syntheticIndexBuffer
 		);
 	} else {
 		const CesiumGltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
 		if (indexAccessorGltf.componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
-			Cesium3DTiles::GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
+			CesiumGltf::AccessorView<uint16_t> indexAccessor(model, primitive.indices);
 			loadPrimitive(
 				result,
 				model,
@@ -447,11 +460,12 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 				pPhysXCooking,
 #endif
-				positionAccessor,
+				*pPositionAccessor,
+				positionView,
 				indexAccessor
 			);
 		} else if (indexAccessorGltf.componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_INT) {
-			Cesium3DTiles::GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
+			CesiumGltf::AccessorView<uint32_t> indexAccessor(model, primitive.indices);
 			loadPrimitive(
 				result,
 				model,
@@ -460,7 +474,8 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 				pPhysXCooking,
 #endif
-				positionAccessor,
+				*pPositionAccessor,
+				positionView,
 				indexAccessor
 			);
 		} else {
