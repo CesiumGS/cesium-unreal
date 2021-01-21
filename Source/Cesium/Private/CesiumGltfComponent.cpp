@@ -1118,7 +1118,7 @@ void UCesiumGltfComponent::updateRasterOverlays() {
 				pMaterial->SetVectorParameterValue(("OverlayTranslationScale" + is).c_str(), overlayTile.translationAndScale);
 			}
 
-			for (size_t i = this->_overlayTiles.Num(); i < 3; ++i) {
+			for (size_t i = this->_overlayTiles.Num(); i < 8; ++i) {
 				std::string is = std::to_string(i + 1);
 				pMaterial->SetTextureParameterValue(("OverlayTexture" + is).c_str(), nullptr);
 				pMaterial->SetVectorParameterValue(("OverlayRect" + is).c_str(), FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
