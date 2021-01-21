@@ -202,6 +202,7 @@ template <class TIndexAccessor>
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
 	const CesiumGltf::Model& model,
+	const CesiumGltf::Mesh& mesh,
 	const CesiumGltf::MeshPrimitive& primitive,
 	const glm::dmat4x4& transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -215,6 +216,29 @@ static void loadPrimitive(
 		// TODO: add support for primitive types other than triangles.
 		return;
 	}
+
+	LoadModelResult primitiveResult;
+
+	std::string name = "glTF";
+
+	auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
+	if (urlIt != model.extras.end()) {
+		name = urlIt->second.getString("glTF");
+	}
+
+	auto meshIt = std::find_if(model.meshes.begin(), model.meshes.end(), [&mesh](const CesiumGltf::Mesh& candidate) { return &candidate == &mesh; });
+	if (meshIt != model.meshes.end()) {
+		int64_t meshIndex = meshIt - model.meshes.begin();
+		name += " mesh " + std::to_string(meshIndex);
+	}
+
+	auto primitiveIt = std::find_if(mesh.primitives.begin(), mesh.primitives.end(), [&primitive](const CesiumGltf::MeshPrimitive& candidate) { return &candidate == &primitive; });
+	if (primitiveIt != mesh.primitives.end()) {
+		int64_t primitiveIndex = primitiveIt - mesh.primitives.begin();
+		name += " primitive " + std::to_string(primitiveIndex);
+	}
+
+	primitiveResult.name = name;
 
 	FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
 	RenderData->AllocateLODResources(1);
@@ -302,8 +326,6 @@ static void loadPrimitive(
 		computeTangentSpace(StaticMeshBuildVertices);
 	}
 
-	LoadModelResult primitiveResult;
-
 	// We need to copy the texture coordinates associated with each texture (if any) into the
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
 
@@ -368,7 +390,6 @@ static void loadPrimitive(
 	primitiveResult.pModel = &model;
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
-
 	primitiveResult.pMaterial = &material;
 
 	section.MaterialIndex = 0;
@@ -410,6 +431,7 @@ static void loadPrimitive(
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
 	const CesiumGltf::Model& model,
+	const CesiumGltf::Mesh& mesh,
 	const CesiumGltf::MeshPrimitive& primitive,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
@@ -440,6 +462,7 @@ static void loadPrimitive(
 		loadPrimitive(
 			result,
 			model,
+			mesh,
 			primitive,
 			transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -456,6 +479,7 @@ static void loadPrimitive(
 			loadPrimitive(
 				result,
 				model,
+				mesh,
 				primitive,
 				transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -470,6 +494,7 @@ static void loadPrimitive(
 			loadPrimitive(
 				result,
 				model,
+				mesh,
 				primitive,
 				transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -497,7 +522,9 @@ static void loadMesh(
 ) {
 	for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
 		loadPrimitive(
-			result, model,
+			result,
+			model,
+			mesh,
 			primitive,
 			transform
 #if PHYSICS_INTERFACE_PHYSX
@@ -692,6 +719,41 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 	const CesiumGltf::Image& image = model.images[texture.source];
 
 	UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
+
+	const CesiumGltf::Sampler* pSampler = CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
+	if (pSampler) {
+		switch (pSampler->wrapS) {
+		case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
+			pTexture->AddressX = TextureAddress::TA_Clamp;
+			break;
+		case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
+			pTexture->AddressX = TextureAddress::TA_Mirror;
+			break;
+		case CesiumGltf::Sampler::WrapS::REPEAT:
+			pTexture->AddressX = TextureAddress::TA_Wrap;
+			break;
+		}
+
+		switch (pSampler->wrapT) {
+		case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
+			pTexture->AddressY = TextureAddress::TA_Clamp;
+			break;
+		case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
+			pTexture->AddressY = TextureAddress::TA_Mirror;
+			break;
+		case CesiumGltf::Sampler::WrapT::REPEAT:
+			pTexture->AddressY = TextureAddress::TA_Wrap;
+			break;
+		}
+
+		// TODO: set filtering
+	} else {
+		// glTF spec: "When undefined, a sampler with repeat wrapping and auto filtering should be used."
+		pTexture->AddressX = TextureAddress::TA_Wrap;
+		pTexture->AddressY = TextureAddress::TA_Wrap;
+		pTexture->Filter = TextureFilter::TF_Default;
+	}
+
 
 	if (pTexture) {
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
