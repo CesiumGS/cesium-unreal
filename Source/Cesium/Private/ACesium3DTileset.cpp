@@ -290,6 +290,7 @@ private:
 			pComponent->UnregisterComponent();
 		}
 
+		// TODO: occasional nullptr crashes seem to happen here, check if pChild == null ??
 		TArray<USceneComponent*> children = pComponent->GetAttachChildren();
 		for (USceneComponent* pChild : children) {
 			this->destroyRecursively(pChild);
