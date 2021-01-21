@@ -287,7 +287,7 @@ static void loadPrimitive(
 
 	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
 	if (tangentAccessorIt != primitive.attributes.end()) {
-		int tangentAccessorID = normalAccessorIt->second;
+		int tangentAccessorID = tangentAccessorIt->second;
 		CesiumGltf::AccessorView<FVector4> tangentAccessor(model, tangentAccessorID);
 
 		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
@@ -326,7 +326,7 @@ static void loadPrimitive(
 	RenderData->Bounds = BoundingBoxAndSphere;
 
 	LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
-	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size());
+	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
 
 	FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
 	if (false) //bHasVertexColors)
