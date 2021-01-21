@@ -199,7 +199,7 @@ private:
 	uint32_t _lastTilesLoadingHighPriority;
 
 	uint32_t _lastTilesVisited;
-	uint32_t _lastTilesVisitedWithoutSse;
+	uint32_t _lastCulledTilesVisited;
 	uint32_t _lastTilesCulled;
 	uint32_t _lastMaxDepthVisited;
 	

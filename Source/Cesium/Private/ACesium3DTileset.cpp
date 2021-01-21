@@ -546,7 +546,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		result.tilesLoadingMediumPriority != this->_lastTilesLoadingMediumPriority ||
 		result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
 		result.tilesVisited != this->_lastTilesVisited ||
-		result.tilesVisitedWithoutSse != this->_lastTilesVisitedWithoutSse ||
+		result.culledTilesVisited != this->_lastCulledTilesVisited ||
 		result.tilesCulled != this->_lastTilesCulled ||
 		result.maxDepthVisited != this->_lastMaxDepthVisited
 	) {
@@ -556,17 +556,17 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
 
 		this->_lastTilesVisited = result.tilesVisited;
-		this->_lastTilesVisitedWithoutSse = result.tilesVisitedWithoutSse;
+		this->_lastCulledTilesVisited = result.culledTilesVisited;
 		this->_lastTilesCulled = result.tilesCulled;
 		this->_lastMaxDepthVisited = result.maxDepthVisited;
 
 		UE_LOG(
 			LogActor,
 			Warning,
-			TEXT("%s: Visited %d, Without SSE %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+			TEXT("%s: Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
 			result.tilesVisited,
-			result.tilesVisitedWithoutSse,
+			result.culledTilesVisited,
 			result.tilesToRenderThisFrame.size(),
 			result.tilesCulled,
 			result.maxDepthVisited,
