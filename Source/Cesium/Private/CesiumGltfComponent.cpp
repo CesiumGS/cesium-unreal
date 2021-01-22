@@ -769,6 +769,14 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 }
 
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult, const glm::dmat4x4& cesiumToUnrealTransform) {
+	// auto urlIt = loadResult.pModel->extras.find("Cesium3DTiles_TileUrl");
+	// if (urlIt != loadResult.pModel->extras.end()) {
+	// 	std::string name = urlIt->second.getString("glTF");
+	// 	if (name == "https://assets.cesium.com/262899/0material64_0.b3dm?v=2") {
+	// 		name = name;
+	// 	}
+	// }
+
 	UCesiumGltfPrimitiveComponent* pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, FName(loadResult.name.c_str()));
 	pMesh->HighPrecisionNodeTransform = loadResult.transform;
 	pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
@@ -791,7 +799,23 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	const CesiumGltf::MaterialPBRMetallicRoughness& pbr = material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value() : defaultPbrMetallicRoughness;
 
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
+	UMaterialInstanceDynamic* pMaterial;
+
+	switch (material.alphaMode) {
+	case CesiumGltf::Material::AlphaMode::BLEND:
+		// TODO
+		pMaterial = UMaterialInstanceDynamic::Create(pGltf->OpacityMaskMaterial, nullptr, ImportedSlotName);
+		break;
+	case CesiumGltf::Material::AlphaMode::MASK:
+		pMaterial = UMaterialInstanceDynamic::Create(pGltf->OpacityMaskMaterial, nullptr, ImportedSlotName);
+		break;
+	case CesiumGltf::Material::AlphaMode::OPAQUE:
+	default:
+		pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
+		break;
+	}
+	
+	pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
 	for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
 		pMaterial->SetScalarParameterValue(textureCoordinateSet.first.c_str(), textureCoordinateSet.second);
@@ -932,14 +956,17 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 	struct FConstructorStatics
 	{
 		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
+		ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
 		FConstructorStatics() :
-			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays"))
+			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+			OpacityMaskMaterial(TEXT("/Cesium/GltfMaterialOpacityMask.GltfMaterialOpacityMask"))
 		{
 		}
 	};
 	static FConstructorStatics ConstructorStatics;
 
 	this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+	this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
 	PrimaryComponentTick.bCanEverTick = false;
 }
