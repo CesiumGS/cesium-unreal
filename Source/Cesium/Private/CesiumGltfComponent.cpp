@@ -197,6 +197,8 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 static const CesiumGltf::Material defaultMaterial;
 static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
 
+using UnsignedShortColor3 = unsigned short[3];
+using UnsignedShortColor4 = unsigned short[4];
 
 template <class TIndexAccessor>
 static void loadPrimitive(
@@ -326,6 +328,60 @@ static void loadPrimitive(
 		computeTangentSpace(StaticMeshBuildVertices);
 	}
 
+	bool hasVertexColors = false;
+
+	auto colorAccessorIt = primitive.attributes.find("COLOR_0");
+	if (colorAccessorIt != primitive.attributes.end()) {
+		int colorAccessorID = colorAccessorIt->second;
+		const CesiumGltf::Accessor* pColorAccessor = CesiumGltf::Model::getSafe(&model.accessors, colorAccessorID);
+
+		// TODO: support componentTypes other than unsigned short
+
+		if (pColorAccessor && pColorAccessor->type == CesiumGltf::Accessor::Type::VEC3) {
+			CesiumGltf::AccessorView<UnsignedShortColor3> colorAccessor(model, *pColorAccessor);
+			hasVertexColors = colorAccessor.size() > 0;
+
+			for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
+				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+				TIndexAccessor::value_type vertexIndex = indicesView[i];
+				if (vertexIndex >= colorAccessor.size()) {
+					vertex.Color.R = 255;
+					vertex.Color.G = 255;
+					vertex.Color.B = 255;
+					vertex.Color.A = 255;
+				} else {
+					const UnsignedShortColor3& color = colorAccessor[vertexIndex];
+					vertex.Color.R = color[0] / 256.0;
+					vertex.Color.G = color[1] / 256.0;
+					vertex.Color.B = color[2] / 256.0;
+					vertex.Color.A = 255;
+				}
+			}
+		} else if (pColorAccessor && pColorAccessor->type == CesiumGltf::Accessor::Type::VEC4) {
+			CesiumGltf::AccessorView<UnsignedShortColor4> colorAccessor(model, *pColorAccessor);
+			hasVertexColors = colorAccessor.size() > 0;
+
+			for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
+				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+				TIndexAccessor::value_type vertexIndex = indicesView[i];
+				if (vertexIndex >= colorAccessor.size()) {
+					vertex.Color.R = 255;
+					vertex.Color.G = 255;
+					vertex.Color.B = 255;
+					vertex.Color.A = 255;
+				} else {
+					const UnsignedShortColor4& color = colorAccessor[vertexIndex];
+					vertex.Color.R = color[0] / 256.0;
+					vertex.Color.G = color[1] / 256.0;
+					vertex.Color.B = color[2] / 256.0;
+					vertex.Color.A = color[3] / 256.0;
+				}
+			}
+		}
+	}
+
+	LODResources.bHasColorVertexData = hasVertexColors;
+
 	// We need to copy the texture coordinates associated with each texture (if any) into the
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
 
@@ -348,17 +404,18 @@ static void loadPrimitive(
 	RenderData->Bounds = BoundingBoxAndSphere;
 
 	LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
-	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
 
 	FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
-	if (false) //bHasVertexColors)
+	if (hasVertexColors)
 	{
 		ColorVertexBuffer.Init(StaticMeshBuildVertices);
 	}
-	else if (positionView.size() > 0)
+	else if (indicesView.size() > 0)
 	{
-		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionView.size());
+		ColorVertexBuffer.InitFromSingleColor(FColor::White, indicesView.size());
 	}
+
+	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
 
 	FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
 	FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
@@ -769,14 +826,6 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 }
 
 static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult& loadResult, const glm::dmat4x4& cesiumToUnrealTransform) {
-	// auto urlIt = loadResult.pModel->extras.find("Cesium3DTiles_TileUrl");
-	// if (urlIt != loadResult.pModel->extras.end()) {
-	// 	std::string name = urlIt->second.getString("glTF");
-	// 	if (name == "https://assets.cesium.com/262899/0material64_0.b3dm?v=2") {
-	// 		name = name;
-	// 	}
-	// }
-
 	UCesiumGltfPrimitiveComponent* pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, FName(loadResult.name.c_str()));
 	pMesh->HighPrecisionNodeTransform = loadResult.transform;
 	pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
