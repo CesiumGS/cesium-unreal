@@ -567,10 +567,11 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		);
 
 		// placeholder until we can create screen html elements
-		std::string creditString;
+		std::string creditString = "<body>";// style=\"background-color:powderblue\">";
 		for (Cesium3DTiles::Credit credit : this->_pCreditSystem->getCreditsToShowThisFrame()) {
 			creditString += this->_pCreditSystem->getHtml(credit) + "\n";
 		}
+		creditString += "</body>";
 		Credits = creditString.c_str();
 	}
 
