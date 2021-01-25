@@ -914,12 +914,6 @@ void UCesiumGltfComponent::AttachRasterTile(
 		// First overlay tile, generate texture coordinates
 		// TODO
 	}
-	/*
-	else if (this->_overlayTiles.Num() == 3) {
-		// Already have the max number of raster overlays for this tile
-		return;
-	}
-	*/
 
 	this->_overlayTiles.Add(FRasterOverlayTile{
 		pTexture,
