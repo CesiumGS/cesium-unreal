@@ -36,7 +36,8 @@
 #include "mikktspace.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumUtility/joinToString.h"
-#include "CesiumGltf/AccessorVisitor.h"
+
+using namespace CesiumGltf;
 
 static uint32_t nextMaterialId = 0;
 
@@ -198,66 +199,73 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 static const CesiumGltf::Material defaultMaterial;
 static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
 
+template <typename TIndexView>
 struct ColorVisitor {
 	TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
+	const TIndexView& indicesView;
 
-	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC3<uint8_t>& color) {
-		return FColor(
-			color.value[0],
-			color.value[1],
-			color.value[2],
-			255
-		);
+	bool operator()(AccessorView<nullptr_t>&& invalidView) {
+		return false;
 	}
 
-	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC4<uint8_t>& color) {
-		return FColor(
-			color.value[0],
-			color.value[1],
-			color.value[2],
-			color.value[3]
-		);
+	template <typename TColorView>
+	bool operator()(TColorView&& colorView) {
+		bool success = true;
+
+		for (int64_t i = 0; success && i < static_cast<int64_t>(this->indicesView.size()); ++i) {
+			FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
+			TIndexView::value_type vertexIndex = this->indicesView[i];
+			if (vertexIndex >= colorView.size()) {
+				success = false;
+			} else {
+				success = ColorVisitor::convertColor(colorView[vertexIndex], vertex.Color);
+			}
+		}
+
+		return success;
 	}
 
-	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC3<uint16_t>& color) {
-		return FColor(
-			uint8_t(color.value[0] / 256),
-			uint8_t(color.value[1] / 256),
-			uint8_t(color.value[2] / 256),
-			255
-		);
+	template <typename TElement>
+	static bool convertColor(const AccessorTypes::VEC3<TElement>& color, FColor& out) {
+		out.A = 255;
+		return
+			convertElement(color.value[0], out.R) &&
+			convertElement(color.value[1], out.G) &&
+			convertElement(color.value[2], out.B);
 	}
 
-	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC4<uint16_t>& color) {
-		return FColor(
-			uint8_t(color.value[0] / 256),
-			uint8_t(color.value[1] / 256),
-			uint8_t(color.value[2] / 256),
-			uint8_t(color.value[3] / 256)
-		);
+	template <typename TElement>
+	static bool convertColor(const AccessorTypes::VEC4<TElement>& color, FColor& out) {
+		return
+			convertElement(color.value[0], out.R) &&
+			convertElement(color.value[1], out.G) &&
+			convertElement(color.value[2], out.B) &&
+			convertElement(color.value[3], out.A);
 	}
 
-	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC3<float>& color) {
-		return FColor(
-			uint8_t(color.value[0] * 255.0f),
-			uint8_t(color.value[1] * 255.0f),
-			uint8_t(color.value[2] * 255.0f),
-			255
-		);
+	static bool convertElement(float value, uint8_t& out) {
+		out = uint8_t(value * 255.0f);
+		return true;
 	}
 
-	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC4<float>& color) {
-		return FColor(
-			uint8_t(color.value[0] * 255.0f),
-			uint8_t(color.value[1] * 255.0f),
-			uint8_t(color.value[2] * 255.0f),
-			uint8_t(color.value[3] * 255.0f)
-		);
+	static bool convertElement(uint8_t value, uint8_t& out) {
+		out = value;
+		return true;
+	}
+
+	static bool convertElement(uint16_t value, uint8_t& out) {
+		out = uint8_t(value / 256);
+		return true;
 	}
 
 	template <typename T>
-	FColor operator()(int64_t i, const T& color) {
-		return FColor::White;
+	static bool convertColor(const T& color, FColor& out) {
+		return false;
+	}
+
+	template <typename T>
+	static bool convertElement(const T& color, uint8_t& out) {
+		return false;
 	}
 };
 
@@ -394,19 +402,7 @@ static void loadPrimitive(
 	auto colorAccessorIt = primitive.attributes.find("COLOR_0");
 	if (colorAccessorIt != primitive.attributes.end()) {
 		int colorAccessorID = colorAccessorIt->second;
-
-		auto visitor = CesiumGltf::createAccessorVisitor(model, colorAccessorID, ColorVisitor{ StaticMeshBuildVertices });
-		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
-			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesView[i];
-			if (vertexIndex < visitor.size()) {
-				vertex.Color = visitor.visit(vertexIndex);
-			} else {
-				vertex.Color = FColor::White;
-			}
-		}
-
-		hasVertexColors = true;
+		hasVertexColors = CesiumGltf::createAccessorView(model, colorAccessorID, ColorVisitor<TIndexAccessor>{ StaticMeshBuildVertices, indicesView });
 	}
 
 	LODResources.bHasColorVertexData = hasVertexColors;
