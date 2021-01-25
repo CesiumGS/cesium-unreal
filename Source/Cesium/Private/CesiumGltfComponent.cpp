@@ -36,6 +36,7 @@
 #include "mikktspace.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumUtility/joinToString.h"
+#include "CesiumGltf/AccessorVisitor.h"
 
 static uint32_t nextMaterialId = 0;
 
@@ -197,8 +198,68 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 static const CesiumGltf::Material defaultMaterial;
 static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
 
-using UnsignedShortColor3 = unsigned short[3];
-using UnsignedShortColor4 = unsigned short[4];
+struct ColorVisitor {
+	TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
+
+	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC3<uint8_t>& color) {
+		return FColor(
+			color.value[0],
+			color.value[1],
+			color.value[2],
+			255
+		);
+	}
+
+	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC4<uint8_t>& color) {
+		return FColor(
+			color.value[0],
+			color.value[1],
+			color.value[2],
+			color.value[3]
+		);
+	}
+
+	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC3<uint16_t>& color) {
+		return FColor(
+			uint8_t(color.value[0] / 256),
+			uint8_t(color.value[1] / 256),
+			uint8_t(color.value[2] / 256),
+			255
+		);
+	}
+
+	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC4<uint16_t>& color) {
+		return FColor(
+			uint8_t(color.value[0] / 256),
+			uint8_t(color.value[1] / 256),
+			uint8_t(color.value[2] / 256),
+			uint8_t(color.value[3] / 256)
+		);
+	}
+
+	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC3<float>& color) {
+		return FColor(
+			uint8_t(color.value[0] * 255.0f),
+			uint8_t(color.value[1] * 255.0f),
+			uint8_t(color.value[2] * 255.0f),
+			255
+		);
+	}
+
+	FColor operator()(int64_t i, const CesiumGltf::AccessorTypes::VEC4<float>& color) {
+		return FColor(
+			uint8_t(color.value[0] * 255.0f),
+			uint8_t(color.value[1] * 255.0f),
+			uint8_t(color.value[2] * 255.0f),
+			uint8_t(color.value[3] * 255.0f)
+		);
+	}
+
+	template <typename T>
+	FColor operator()(int64_t i, const T& color) {
+		return FColor::White;
+	}
+};
 
 template <class TIndexAccessor>
 static void loadPrimitive(
@@ -333,51 +394,19 @@ static void loadPrimitive(
 	auto colorAccessorIt = primitive.attributes.find("COLOR_0");
 	if (colorAccessorIt != primitive.attributes.end()) {
 		int colorAccessorID = colorAccessorIt->second;
-		const CesiumGltf::Accessor* pColorAccessor = CesiumGltf::Model::getSafe(&model.accessors, colorAccessorID);
 
-		// TODO: support componentTypes other than unsigned short
-
-		if (pColorAccessor && pColorAccessor->type == CesiumGltf::Accessor::Type::VEC3) {
-			CesiumGltf::AccessorView<UnsignedShortColor3> colorAccessor(model, *pColorAccessor);
-			hasVertexColors = colorAccessor.size() > 0;
-
-			for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
-				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-				TIndexAccessor::value_type vertexIndex = indicesView[i];
-				if (vertexIndex >= colorAccessor.size()) {
-					vertex.Color.R = 255;
-					vertex.Color.G = 255;
-					vertex.Color.B = 255;
-					vertex.Color.A = 255;
-				} else {
-					const UnsignedShortColor3& color = colorAccessor[vertexIndex];
-					vertex.Color.R = color[0] / 256.0;
-					vertex.Color.G = color[1] / 256.0;
-					vertex.Color.B = color[2] / 256.0;
-					vertex.Color.A = 255;
-				}
-			}
-		} else if (pColorAccessor && pColorAccessor->type == CesiumGltf::Accessor::Type::VEC4) {
-			CesiumGltf::AccessorView<UnsignedShortColor4> colorAccessor(model, *pColorAccessor);
-			hasVertexColors = colorAccessor.size() > 0;
-
-			for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
-				FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-				TIndexAccessor::value_type vertexIndex = indicesView[i];
-				if (vertexIndex >= colorAccessor.size()) {
-					vertex.Color.R = 255;
-					vertex.Color.G = 255;
-					vertex.Color.B = 255;
-					vertex.Color.A = 255;
-				} else {
-					const UnsignedShortColor4& color = colorAccessor[vertexIndex];
-					vertex.Color.R = color[0] / 256.0;
-					vertex.Color.G = color[1] / 256.0;
-					vertex.Color.B = color[2] / 256.0;
-					vertex.Color.A = color[3] / 256.0;
-				}
+		auto visitor = CesiumGltf::createAccessorVisitor(model, colorAccessorID, ColorVisitor{ StaticMeshBuildVertices });
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
+			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+			TIndexAccessor::value_type vertexIndex = indicesView[i];
+			if (vertexIndex < visitor.size()) {
+				vertex.Color = visitor.visit(vertexIndex);
+			} else {
+				vertex.Color = FColor::White;
 			}
 		}
+
+		hasVertexColors = true;
 	}
 
 	LODResources.bHasColorVertexData = hasVertexColors;
