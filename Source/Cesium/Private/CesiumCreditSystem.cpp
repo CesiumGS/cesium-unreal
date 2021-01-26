@@ -5,13 +5,13 @@
 
 /*static*/ ACesiumCreditSystem* ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
     ACesiumCreditSystem* pACreditSystem = FindObject<ACesiumCreditSystem>(Actor->GetLevel(), TEXT("CesiumCreditSystemDefault"));
-	if (!pACreditSystem) {
-		FActorSpawnParameters spawnParameters;
-		spawnParameters.Name = TEXT("CesiumCreditSystemDefault");
-		spawnParameters.OverrideLevel = Actor->GetLevel();
-		pACreditSystem = Actor->GetWorld()->SpawnActor<ACesiumCreditSystem>(spawnParameters);
-	}
-	return pACreditSystem;
+    if (!pACreditSystem) {
+        FActorSpawnParameters spawnParameters;
+        spawnParameters.Name = TEXT("CesiumCreditSystemDefault");
+        spawnParameters.OverrideLevel = Actor->GetLevel();
+        pACreditSystem = Actor->GetWorld()->SpawnActor<ACesiumCreditSystem>(spawnParameters);
+    }
+    return pACreditSystem;
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem() {
