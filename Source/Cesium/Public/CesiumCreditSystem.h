@@ -5,7 +5,7 @@
 #include "CesiumCreditSystem.generated.h"
 
 namespace Cesium3DTiles {
-    class CreditSystem;
+	class CreditSystem;
 }
 
 UCLASS()
@@ -19,16 +19,16 @@ public:
 	ACesiumCreditSystem();
 	virtual ~ACesiumCreditSystem();
 
-    /**
+	/**
 	 * Credits text
 	 *
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString Credits = "";
 
-    // Called every frame
+	// Called every frame
 	virtual bool ShouldTickIfViewportsOnly() const override;
-    virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaTime) override;
 
 	const std::shared_ptr<Cesium3DTiles::CreditSystem>& GetExternalCreditSystem() const {
 		return _pCreditSystem;
@@ -39,5 +39,5 @@ protected:
 
 private:
 	// the underlying cesium-native credit system that is managed by this actor. 
-    std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
+	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 };

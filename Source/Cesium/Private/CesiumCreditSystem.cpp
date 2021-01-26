@@ -15,7 +15,7 @@
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem() {
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
     _pCreditSystem = std::make_shared<Cesium3DTiles::CreditSystem>();
 }
 
