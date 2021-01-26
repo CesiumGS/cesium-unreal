@@ -1,19 +1,21 @@
 
+#include <string>
 #include "CesiumCreditSystem.h"
 #include "Cesium3DTiles/CreditSystem.h"
 
 /*static*/ ACesiumCreditSystem* ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
-    ACesiumCreditSystem* pCreditSystem = FindObject<ACesiumCreditSystem>(Actor->GetLevel(), TEXT("CesiumCreditSystemDefault"));
-	if (!pCreditSystem) {
+    ACesiumCreditSystem* pACreditSystem = FindObject<ACesiumCreditSystem>(Actor->GetLevel(), TEXT("CesiumCreditSystemDefault"));
+	if (!pACreditSystem) {
 		FActorSpawnParameters spawnParameters;
 		spawnParameters.Name = TEXT("CesiumCreditSystemDefault");
 		spawnParameters.OverrideLevel = Actor->GetLevel();
-		pCreditSystem = Actor->GetWorld()->SpawnActor<ACesiumCreditSystem>(spawnParameters);
+		pACreditSystem = Actor->GetWorld()->SpawnActor<ACesiumCreditSystem>(spawnParameters);
 	}
-	return pCreditSystem;
+	return pACreditSystem;
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem() {
+	PrimaryActorTick.bCanEverTick = true;
     _pCreditSystem = std::make_shared<Cesium3DTiles::CreditSystem>();
 }
 
@@ -21,9 +23,14 @@ ACesiumCreditSystem::~ACesiumCreditSystem() {
     _pCreditSystem.reset();
 }
 
+bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const {
+    return true;
+}
+
 void ACesiumCreditSystem::Tick(float DeltaTime) {
-    // placeholder until we can create screen html elements
-    std::string creditString = "<body>";
+    Super::Tick(DeltaTime);
+
+    std::string creditString = "<body>\n";
     for (Cesium3DTiles::Credit credit : this->_pCreditSystem->getCreditsToShowThisFrame()) {
         creditString += this->_pCreditSystem->getHtml(credit) + "\n";
     }
@@ -31,7 +38,5 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     Credits = creditString.c_str();
     _pCreditSystem->startNextFrame();
 }
-
-void ACesiumCreditSystem::BeginPlay() {}
 
 void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {}

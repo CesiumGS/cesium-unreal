@@ -12,6 +12,7 @@
 #include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
+#include "CesiumCreditSystem.h"
 #include "ACesium3DTileset.generated.h"
 
 class UMaterial;
@@ -60,6 +61,13 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
+	 * The actor controlling how this tileset's coordinate system relates to the coordinate system in
+	 * this Unreal Engine level.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	ACesiumCreditSystem* CreditSystem;
+
+	/**
 	 * The maximum number of pixels of error when rendering this tileset.
      * This is used to select an appropriate level-of-detail.
 	 */
@@ -81,20 +89,11 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
 	bool ShowInEditor = true;
-	
-	/**
-	 * Credits text
-	 *
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString Credits = "";
 
 	const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
 	Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
 	const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
-
-	const std::shared_ptr<Cesium3DTiles::CreditSystem>& GetCreditSystem() { return this->_pCreditSystem; }
 
 	virtual bool IsBoundingVolumeReady() const override;
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
@@ -151,8 +150,6 @@ public:
 private:
 	Cesium3DTiles::Tileset* _pTileset;
 
-	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
-	
 	uint32_t _lastTilesRendered;
 	uint32_t _lastTilesLoadingLowPriority;
 	uint32_t _lastTilesLoadingMediumPriority;

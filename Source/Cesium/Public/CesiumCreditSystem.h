@@ -27,13 +27,17 @@ public:
 	FString Credits = "";
 
     // Called every frame
+	virtual bool ShouldTickIfViewportsOnly() const override;
     virtual void Tick(float DeltaTime) override;
 
+	const std::shared_ptr<Cesium3DTiles::CreditSystem>& GetExternalCreditSystem() const {
+		return _pCreditSystem;
+	}
+
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 private:
+	// the underlying cesium-native credit system that is managed by this actor. 
     std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 };

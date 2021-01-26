@@ -39,10 +39,9 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
 	Georeference(nullptr),
+	CreditSystem(nullptr),
+
 	_pTileset(nullptr),
-	// TODO: this pointer shouldn't be created here, it should be passed
-	// in on creation from a CesiumCreditActor  
-	_pCreditSystem(std::make_shared<Cesium3DTiles::CreditSystem>()),
 
 	_lastTilesRendered(0),
 	_lastTilesLoadingLowPriority(0),
@@ -345,11 +344,15 @@ void ACesium3DTileset::LoadTileset()
 
 	this->Georeference->AddGeoreferencedObject(this);
 
+	if (!this->CreditSystem) {
+		this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
+	}
+
 	Cesium3DTiles::TilesetExternals externals{
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
-		this->_pCreditSystem,
+		this->CreditSystem->GetExternalCreditSystem(),
 		spdlog::default_logger()
 	};
 
@@ -528,10 +531,6 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		camera.value().fieldOfViewDegrees
 	);
 
-	// TODO: this line should be moved to a CesiumCreditActor which can aggregate
-	// credits over multiple Tilesets 
-	this->_pCreditSystem->startNextFrame();
-	
 	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetCamera);
 
 	if (
@@ -565,14 +564,6 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			result.tilesLoadingMediumPriority,
 			result.tilesLoadingHighPriority
 		);
-
-		// placeholder until we can create screen html elements
-		std::string creditString = "<body>";// style=\"background-color:powderblue\">";
-		for (Cesium3DTiles::Credit credit : this->_pCreditSystem->getCreditsToShowThisFrame()) {
-			creditString += this->_pCreditSystem->getHtml(credit) + "\n";
-		}
-		creditString += "</body>";
-		Credits = creditString.c_str();
 	}
 
 	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
