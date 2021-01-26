@@ -192,6 +192,8 @@ public:
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
+
+	UMaterial* _lastMaterial = nullptr;
 	
 	uint32_t _lastTilesRendered;
 	uint32_t _lastTilesLoadingLowPriority;

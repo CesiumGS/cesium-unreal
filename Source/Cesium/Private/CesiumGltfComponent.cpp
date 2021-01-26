@@ -274,7 +274,7 @@ static void loadPrimitive(
 
 	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
 	if (tangentAccessorIt != primitive.attributes.end()) {
-		int tangentAccessorID = normalAccessorIt->second;
+		int tangentAccessorID = tangentAccessorIt->second;
 		Cesium3DTiles::GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
 
 		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
@@ -934,12 +934,18 @@ void UCesiumGltfComponent::DetachRasterTile(
 	UTexture2D* pTexture,
 	const CesiumGeometry::Rectangle& textureCoordinateRectangle
 ) {
+	size_t numBefore = this->_overlayTiles.Num();
 	this->_overlayTiles.RemoveAll([pTexture, &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
 		return
 			tile.pTexture == pTexture &&
 			tile.textureCoordinateRectangle.Equals(FLinearColor(textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY));
 	});
-
+	size_t numAfter = this->_overlayTiles.Num();
+	
+	if (numBefore - 1 != numAfter) {
+		UE_LOG(LogActor, Warning, TEXT("Raster tiles detached: %d, pTexture: %d, minX: %f, minY: %f, maxX: %f, maxY: %f"), numBefore - numAfter, pTexture, textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY);
+	}
+	
 	this->updateRasterOverlays();
 }
 

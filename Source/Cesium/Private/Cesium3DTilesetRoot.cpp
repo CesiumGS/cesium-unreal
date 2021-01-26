@@ -77,6 +77,9 @@ void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
 
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {	
 	ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
+	if (!pTileset->Georeference) {
+		return;
+	}
 	glm::dmat4 ellipsoidCenteredToGeoreferencedTransform = pTileset->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
 	_updateTilesetToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
 }
