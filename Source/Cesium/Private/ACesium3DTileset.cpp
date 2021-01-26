@@ -530,8 +530,21 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
+	// TODO: updating the options should probably happen in OnConstruction or PostEditChangeProperty,
+	// no need to have it happen every frame when the options haven't been changed
 	Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
 	options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+	
+	options.preloadAncestors = this->PreloadAncestors;
+	options.preloadSiblings = this->PreloadSiblings;
+	options.forbidHoles = this->ForbidHoles;
+	options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+	options.loadingDescendantLimit = this->LoadingDescendantLimit;
+
+	options.enableFrustumCulling = this->EnableFrustumCulling;
+	options.enableFogCulling = this->EnableFogCulling;
+	options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
+	options.culledScreenSpaceError = this->CulledScreenSpaceError;
 
 	std::optional<UnrealCameraParameters> camera = this->GetCamera();
 	if (!camera) {
@@ -553,6 +566,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		result.tilesLoadingMediumPriority != this->_lastTilesLoadingMediumPriority ||
 		result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
 		result.tilesVisited != this->_lastTilesVisited ||
+		result.culledTilesVisited != this->_lastCulledTilesVisited ||
 		result.tilesCulled != this->_lastTilesCulled ||
 		result.maxDepthVisited != this->_lastMaxDepthVisited
 	) {
@@ -562,15 +576,17 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
 
 		this->_lastTilesVisited = result.tilesVisited;
+		this->_lastCulledTilesVisited = result.culledTilesVisited;
 		this->_lastTilesCulled = result.tilesCulled;
 		this->_lastMaxDepthVisited = result.maxDepthVisited;
 
 		UE_LOG(
 			LogActor,
 			Warning,
-			TEXT("%s: Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+			TEXT("%s: Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
 			result.tilesVisited,
+			result.culledTilesVisited,
 			result.tilesToRenderThisFrame.size(),
 			result.tilesCulled,
 			result.maxDepthVisited,
