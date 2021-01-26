@@ -6,7 +6,7 @@
 #include "ACesium3DTileset.h"
 
 // Sets default values for this component's properties
-UCesiumRasterOverlay::UCesiumRasterOverlay() 
+UCesiumRasterOverlay::UCesiumRasterOverlay()
 {
 	this->bAutoActivate = true;
 
