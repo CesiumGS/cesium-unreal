@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include <string>
-#include <memory>
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include "Cesium3DTiles/Camera.h"
-#include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
 #include "CesiumCreditSystem.h"
@@ -61,8 +58,7 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
-	 * The actor controlling how this tileset's coordinate system relates to the coordinate system in
-	 * this Unreal Engine level.
+	 * The actor managing this tileset's content attributions.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	ACesiumCreditSystem* CreditSystem;

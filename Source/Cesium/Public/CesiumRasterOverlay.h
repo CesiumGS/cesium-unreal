@@ -9,7 +9,6 @@
 #include "CesiumRasterOverlay.generated.h"
 
 namespace Cesium3DTiles {
-	class CreditSystem;
 	class Tileset;
 }
 

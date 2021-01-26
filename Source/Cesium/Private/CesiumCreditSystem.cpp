@@ -1,7 +1,7 @@
 
-#include <string>
 #include "CesiumCreditSystem.h"
 #include "Cesium3DTiles/CreditSystem.h"
+#include <string>
 
 /*static*/ ACesiumCreditSystem* ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
     ACesiumCreditSystem* pACreditSystem = FindObject<ACesiumCreditSystem>(Actor->GetLevel(), TEXT("CesiumCreditSystemDefault"));
