@@ -290,6 +290,7 @@ private:
 			pComponent->UnregisterComponent();
 		}
 
+		// TODO: occasional nullptr crashes seem to happen here, check if pChild == null ??
 		TArray<USceneComponent*> children = pComponent->GetAttachChildren();
 		for (USceneComponent* pChild : children) {
 			this->destroyRecursively(pChild);
@@ -313,23 +314,35 @@ private:
 void ACesium3DTileset::LoadTileset()
 {
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
+
+	TArray<UCesiumRasterOverlay*> rasterOverlays;
+	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
 	if (pTileset)
 	{
-		if (this->Url.Len() > 0)
+		if (this->Material == _lastMaterial)
 		{
-			if (pTileset->getUrl() && wstr_to_utf8(this->Url) == pTileset->getUrl())
+			// The material hasn't been changed, check for changes in the url or Ion asset ID / access token
+			if (this->Url.Len() > 0)
 			{
-				// Already using this URL.
-				return;
+				if (pTileset->getUrl() && wstr_to_utf8(this->Url) == pTileset->getUrl())
+				{
+					// Already using this URL.
+					return;
+				}
+			}
+			else
+			{
+				if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() && this->IonAssetID == pTileset->getIonAssetID() && wstr_to_utf8(this->IonAccessToken) == pTileset->getIonAccessToken())
+				{
+					// Already using this asset ID and access token.
+					return;
+				}
 			}
 		}
-		else
+		else 
 		{
-			if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() && this->IonAssetID == pTileset->getIonAssetID() && wstr_to_utf8(this->IonAccessToken) == pTileset->getIonAccessToken())
-			{
-				// Already using this asset ID and access token.
-				return;
-			}
+			_lastMaterial = this->Material;
 		}
 
 		this->DestroyTileset();
@@ -359,9 +372,6 @@ void ACesium3DTileset::LoadTileset()
 		pTileset = new Cesium3DTiles::Tileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
 	}
 
-	TArray<UCesiumRasterOverlay*> rasterOverlays;
-	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
 	this->_pTileset = pTileset;
 
 	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
@@ -372,6 +382,16 @@ void ACesium3DTileset::LoadTileset()
 }
 
 void ACesium3DTileset::DestroyTileset() {
+	// The way CesiumRasterOverlay::add is currently implemented, destroying the tileset without removing overlays will make it 
+	// impossible to add it again once a new tileset is created (e.g. when switching between terrain assets)	
+	TArray<UCesiumRasterOverlay*> rasterOverlays;
+	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+		if (pOverlay->IsActive()) {
+			pOverlay->RemoveFromTileset();
+		}
+	}
+
 	if (!this->_pTileset) {
 		return;
 	}
