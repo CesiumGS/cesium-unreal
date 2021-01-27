@@ -31,11 +31,9 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const {
 void ACesiumCreditSystem::Tick(float DeltaTime) {
     Super::Tick(DeltaTime);
 
-    std::string creditString = "<body>\n";
-    for (Cesium3DTiles::Credit credit : this->_pCreditSystem->getCreditsToShowThisFrame()) {
-        creditString += this->_pCreditSystem->getHtml(credit) + "\n";
-    }
-    creditString += "</body>";
+    std::string creditString = 
+        "<head>\n<meta charset=\"utf-16\"/>\n</head>\n" + 
+        this->_pCreditSystem->getHtmlPageToShowThisFrame();
     Credits = utf8_to_wstr(creditString);
     _pCreditSystem->startNextFrame();
 }
