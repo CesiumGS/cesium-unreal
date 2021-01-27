@@ -37,6 +37,9 @@
 #include "CesiumGltf/Reader.h"
 #include "CesiumUtility/joinToString.h"
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb_image_resize.h>
+
 using namespace CesiumGltf;
 
 static uint32_t nextMaterialId = 0;
@@ -828,7 +831,30 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 			break;
 		}
 
-		// TODO: set filtering
+		// Unreal Engine's available filtering modes are only nearest, bilinear, and trilinear, and
+		// are not specified separately for minification and magnification. So we get as close as we can.
+		if (!pSampler->minFilter && !pSampler->magFilter) {
+			pTexture->Filter = TextureFilter::TF_Default;
+		} else if (
+			(!pSampler->minFilter || pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
+			(!pSampler->magFilter || pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)
+		) {
+			pTexture->Filter = TextureFilter::TF_Nearest;
+		} else if (pSampler->minFilter) {
+			switch (pSampler->minFilter.value()) {
+			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+				pTexture->Filter = TextureFilter::TF_Trilinear;
+				break;
+			default:
+				pTexture->Filter = TextureFilter::TF_Bilinear;
+				break;
+			}
+		} else if (pSampler->magFilter) {
+			pTexture->Filter = pSampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::LINEAR ? TextureFilter::TF_Bilinear : TextureFilter::TF_Nearest;
+		}
 	} else {
 		// glTF spec: "When undefined, a sampler with repeat wrapping and auto filtering should be used."
 		pTexture->AddressX = TextureAddress::TA_Wrap;
@@ -836,11 +862,48 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 		pTexture->Filter = TextureFilter::TF_Default;
 	}
 
-
 	if (pTexture) {
-		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		void* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 		FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
-		pTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+		if (pTexture->Filter == TextureFilter::TF_Trilinear) {
+			// Generate mip levels.
+			// TODO: do this on the GPU?
+			int32_t width = image.cesium.width;
+			int32_t height = image.cesium.height;
+
+			while (width > 1 || height > 1) {
+				FTexture2DMipMap* pLevel = new FTexture2DMipMap();
+				pTexture->PlatformData->Mips.Add(pLevel);
+
+				pLevel->SizeX = width >> 1;
+				if (pLevel->SizeX < 1)  pLevel->SizeX = 1;
+				pLevel->SizeY = height >> 1;
+				if (pLevel->SizeY < 1) pLevel->SizeY = 1;
+
+				pLevel->BulkData.Lock(LOCK_READ_WRITE);
+
+				void* pMipData = pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+				if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
+					// Failed to generate mip level, use bilinear filtering instead.
+					pTexture->Filter = TextureFilter::TF_Bilinear;
+					for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
+						pTexture->PlatformData->Mips[i].BulkData.Unlock();
+					}
+					pTexture->PlatformData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
+					break;
+				}
+
+				width = pLevel->SizeX;
+				height = pLevel->SizeY;
+				pTextureData = pMipData;
+			}
+		}
+
+		// Unlock all levels
+		for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
+			pTexture->PlatformData->Mips[i].BulkData.Unlock();
+		}
 
 		pTexture->UpdateResource();
 	}
