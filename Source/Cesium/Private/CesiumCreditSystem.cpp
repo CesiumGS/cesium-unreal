@@ -1,5 +1,6 @@
 
 #include "CesiumCreditSystem.h"
+#include "UnrealConversions.h"
 #include "Cesium3DTiles/CreditSystem.h"
 #include <string>
 
@@ -35,7 +36,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
         creditString += this->_pCreditSystem->getHtml(credit) + "\n";
     }
     creditString += "</body>";
-    Credits = creditString.c_str();
+    Credits = utf8_to_wstr(creditString);
     _pCreditSystem->startNextFrame();
 }
 
