@@ -1,7 +1,8 @@
 #pragma once 
 
-#include <memory>
 #include "GameFramework/Actor.h"
+#include <memory>
+
 #include "CesiumCreditSystem.generated.h"
 
 namespace Cesium3DTiles {
@@ -40,4 +41,6 @@ protected:
 private:
 	// the underlying cesium-native credit system that is managed by this actor. 
 	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
+
+	size_t _lastCreditsCount = 0;
 };
