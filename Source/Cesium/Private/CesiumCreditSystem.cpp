@@ -6,18 +6,21 @@
 #include <string>
 #include <vector>
 
-/*static*/ UClass* UCesiumCreditSystemBPLoader::CesiumCreditSystemBP = nullptr;
+/*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 
 UCesiumCreditSystemBPLoader::UCesiumCreditSystemBPLoader() {
-    static ConstructorHelpers::FObjectFinder<UBlueprint> blueprint(TEXT("Blueprint'/Cesium/CesiumCreditSystemBP.CesiumCreditSystemBP'"));
-    if (!CesiumCreditSystemBP) {
-        CesiumCreditSystemBP = blueprint.Object ? (UClass*) blueprint.Object->GeneratedClass : nullptr;
-    }
+    ConstructorHelpers::FObjectFinder<UBlueprint> blueprint(TEXT("Blueprint'/Cesium/CesiumCreditSystemBP.CesiumCreditSystemBP'"));
+    ACesiumCreditSystem::CesiumCreditSystemBP = blueprint.Object ? (UClass*) blueprint.Object->GeneratedClass : nullptr;
 }
 
 /*static*/ ACesiumCreditSystem* ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
-    static UCesiumCreditSystemBPLoader* bpLoader = NewObject<UCesiumCreditSystemBPLoader>();
-    static UClass* CesiumCreditSystemBP = UCesiumCreditSystemBPLoader::CesiumCreditSystemBP;
+    // Blueprint loading can only happen in a constructor, so we instantiate a loader object that initializes the static blueprint class 
+    // in its constructor. We can destroy the loader immediately once it's done since it will have already set CesiumCreditSystemBP. 
+    if (!CesiumCreditSystemBP) {
+        UCesiumCreditSystemBPLoader* bpLoader = NewObject<UCesiumCreditSystemBPLoader>();
+        bpLoader->ConditionalBeginDestroy();
+    }
+
     ACesiumCreditSystem* pACreditSystem = FindObject<ACesiumCreditSystem>(Actor->GetLevel(), TEXT("CesiumCreditSystemDefault"));
     if (!pACreditSystem) {
         if (!CesiumCreditSystemBP) {
@@ -30,6 +33,7 @@ UCesiumCreditSystemBPLoader::UCesiumCreditSystemBPLoader() {
         spawnParameters.OverrideLevel = Actor->GetLevel();
         pACreditSystem = Actor->GetWorld()->SpawnActor<ACesiumCreditSystem>(CesiumCreditSystemBP, spawnParameters);
     }
+
     return pACreditSystem;
 }
 
@@ -49,7 +53,7 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const {
 void ACesiumCreditSystem::Tick(float DeltaTime) {
     Super::Tick(DeltaTime);
 
-    std::vector<Cesium3DTiles::Credit> creditsToShowThisFrame = _pCreditSystem->getCreditsToShowThisFrame();
+    const std::vector<Cesium3DTiles::Credit>& creditsToShowThisFrame = _pCreditSystem->getCreditsToShowThisFrame();
 
     // if the credit list has changed, we want to reformat the credits
     CreditsUpdated = creditsToShowThisFrame.size() != _lastCreditsCount || _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;

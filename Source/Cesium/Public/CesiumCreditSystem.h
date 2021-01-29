@@ -17,11 +17,9 @@ class UCesiumCreditSystemBPLoader : public UObject {
 	GENERATED_BODY()
 	
 private:
-	static UClass* CesiumCreditSystemBP;
+	friend ACesiumCreditSystem;
 
 	UCesiumCreditSystemBPLoader();
-
-	friend ACesiumCreditSystem;
 };
 
 UCLASS()
@@ -61,6 +59,10 @@ protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 private:
+	friend UCesiumCreditSystemBPLoader;
+	
+	static UClass* CesiumCreditSystemBP;
+
 	// the underlying cesium-native credit system that is managed by this actor. 
 	std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 
