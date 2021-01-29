@@ -31,7 +31,10 @@ namespace CesiumGeometry {
 USTRUCT()
 struct FRasterOverlayTile {
 	GENERATED_BODY()
+
+	UPROPERTY()
 	UTexture2D* pTexture;
+
 	FLinearColor textureCoordinateRectangle;
 	FLinearColor translationAndScale;
 };
