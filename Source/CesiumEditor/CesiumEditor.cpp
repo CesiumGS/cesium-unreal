@@ -27,13 +27,16 @@ void FCesiumEditorModule::StartupModule()
     if (!StyleSet.IsValid())
     {
         const FVector2D Icon16x16(16.0f, 16.0f);
+        const FVector2D Icon64x64(64.0f, 64.0f);
 
         StyleSet = MakeShareable(new FSlateStyleSet("CesiumStyleSet"));
         StyleSet->Set("Cesium.MenuIcon", new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
 
         // Give Cesium Actors a Cesium icon in the editor
         StyleSet->Set("ClassIcon.Cesium3DTileset", new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
+        StyleSet->Set("ClassThumbnail.Cesium3DTileset", new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
         StyleSet->Set("ClassIcon.CesiumGeoreference", new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
+        StyleSet->Set("ClassThumbnail.CesiumGeoreference", new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
 
         FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
     }
