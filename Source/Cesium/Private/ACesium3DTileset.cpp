@@ -365,7 +365,7 @@ void ACesium3DTileset::LoadTileset()
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
-		this->CreditSystem->GetExternalCreditSystem(),
+		this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem() : nullptr,
 		spdlog::default_logger()
 	};
 

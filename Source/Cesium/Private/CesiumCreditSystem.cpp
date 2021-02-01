@@ -53,6 +53,10 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const {
 void ACesiumCreditSystem::Tick(float DeltaTime) {
     Super::Tick(DeltaTime);
 
+    if (!_pCreditSystem) {
+        return;
+    }
+
     const std::vector<Cesium3DTiles::Credit>& creditsToShowThisFrame = _pCreditSystem->getCreditsToShowThisFrame();
 
     // if the credit list has changed, we want to reformat the credits
