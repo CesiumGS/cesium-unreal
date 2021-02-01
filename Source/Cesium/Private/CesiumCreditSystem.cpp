@@ -9,8 +9,8 @@
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 
 UCesiumCreditSystemBPLoader::UCesiumCreditSystemBPLoader() {
-    ConstructorHelpers::FObjectFinder<UBlueprint> blueprint(TEXT("Blueprint'/Cesium/CesiumCreditSystemBP.CesiumCreditSystemBP'"));
-    ACesiumCreditSystem::CesiumCreditSystemBP = blueprint.Object ? (UClass*) blueprint.Object->GeneratedClass : nullptr;
+    ConstructorHelpers::FObjectFinder<UClass> blueprintClassReference(TEXT("Class'/Cesium/CesiumCreditSystemBP.CesiumCreditSystemBP_C'"));
+    ACesiumCreditSystem::CesiumCreditSystemBP = (UClass*) blueprintClassReference.Object;
 }
 
 /*static*/ ACesiumCreditSystem* ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
