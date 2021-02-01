@@ -76,6 +76,7 @@ public class Cesium : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                // TODO: remove Slate dependency? Anything else?
                 "CoreUObject",
                 "Engine",
                 "Slate",
