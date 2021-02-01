@@ -6,6 +6,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "ClassIconFinder.h"
+#include "CesiumPanel.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 
@@ -56,5 +57,11 @@ void FCesiumEditorModule::ShutdownModule()
 
 TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs)
 {
-    throw 1;
+    TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab)
+        .TabRole(ETabRole::NomadTab)
+        [
+            SNew(CesiumPanel)
+        ];
+
+    return SpawnedTab;
 }
