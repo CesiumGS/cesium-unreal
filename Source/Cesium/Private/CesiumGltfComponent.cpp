@@ -3,8 +3,7 @@
 
 
 #include "CesiumGltfComponent.h"
-#include "tiny_gltf.h"
-#include "Cesium3DTiles/GltfAccessor.h"
+#include "CesiumGltf/AccessorView.h"
 #include "UnrealConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
@@ -35,14 +34,16 @@
 #include <glm/gtc/quaternion.hpp>
 #include "StaticMeshOperations.h"
 #include "mikktspace.h"
+#include "CesiumGltf/Reader.h"
+#include "CesiumUtility/joinToString.h"
 
 static uint32_t nextMaterialId = 0;
 
 struct LoadModelResult
 {
 	FStaticMeshRenderData* RenderData;
-	const tinygltf::Model* pModel;
-	const tinygltf::Material* pMaterial;
+	const CesiumGltf::Model* pModel;
+	const CesiumGltf::Material* pMaterial;
 	glm::dmat4x4 transform;
 #if PHYSICS_INTERFACE_PHYSX
 	PxTriangleMesh* pCollisionMesh;
@@ -71,29 +72,33 @@ static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
 template <class T, class TIndexAccessor>
 static uint32_t updateTextureCoordinates(
-	const tinygltf::Model& model,
-	const tinygltf::Primitive& primitive,
+	const CesiumGltf::Model& model,
+	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
-	const TIndexAccessor& indicesAccessor,
-	const T& texture,
+	const TIndexAccessor& indicesView,
+	const std::optional<T>& texture,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
+	if (!texture) {
+		return 0;
+	}
+
 	return updateTextureCoordinates(
 		model,
 		primitive,
 		vertices,
-		indicesAccessor,
-		"TEXCOORD_" + std::to_string(texture.texCoord),
+		indicesView,
+		"TEXCOORD_" + std::to_string(texture.value().texCoord),
 		textureCoordinateMap
 	);
 }
 
 template <class TIndexAccessor>
 uint32_t updateTextureCoordinates(
-	const tinygltf::Model& model,
-	const tinygltf::Primitive& primitive,
+	const CesiumGltf::Model& model,
+	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
-	const TIndexAccessor& indicesAccessor,
+	const TIndexAccessor& indicesView,
 	const std::string& attributeName,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
@@ -113,11 +118,16 @@ uint32_t updateTextureCoordinates(
 	size_t textureCoordinateIndex = textureCoordinateMap.size();
 	textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
 
-	Cesium3DTiles::GltfAccessor<FVector2D> uvAccessor(model, uvAccessorID);
-	for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+	CesiumGltf::AccessorView<FVector2D> uvAccessor(model, uvAccessorID);
+
+	for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
 		FStaticMeshBuildVertex& vertex = vertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
-		vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+		TIndexAccessor::value_type vertexIndex = indicesView[i];
+		if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
+			vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+		} else {
+			vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+		}
 	}
 
 	return textureCoordinateIndex;
@@ -184,21 +194,24 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> BuildChaosTriangleMeshes(const TArray<FStaticMeshBuildVertex>& vertices, const TArray<uint32>& indices);
 #endif
 
-static tinygltf::Material defaultMaterial;
+static const CesiumGltf::Material defaultMaterial;
+static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
+
 
 template <class TIndexAccessor>
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
-	const tinygltf::Model& model,
-	const tinygltf::Primitive& primitive,
+	const CesiumGltf::Model& model,
+	const CesiumGltf::MeshPrimitive& primitive,
 	const glm::dmat4x4& transform,
 #if PHYSICS_INTERFACE_PHYSX
 	IPhysXCooking* pPhysXCooking,
 #endif
-	const Cesium3DTiles::GltfAccessor<FVector>& positionAccessor,
-	const TIndexAccessor& indicesAccessor
+	const CesiumGltf::Accessor& positionAccessor,
+	const CesiumGltf::AccessorView<FVector>& positionView,
+	const TIndexAccessor& indicesView
 ) {
-	if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
+	if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
 		// TODO: add support for primitive types other than triangles.
 		return;
 	}
@@ -208,8 +221,8 @@ static void loadPrimitive(
 
 	FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-	const std::vector<double>& min = positionAccessor.gltfAccessor().minValues;
-	const std::vector<double>& max = positionAccessor.gltfAccessor().maxValues;
+	const std::vector<double>& min = positionAccessor.min;
+	const std::vector<double>& max = positionAccessor.max;
 
 	glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
 	glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
@@ -224,18 +237,18 @@ static void loadPrimitive(
 	BoundingBoxAndSphere.SphereRadius = 0.0f;
 
 	TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-	StaticMeshBuildVertices.SetNum(indicesAccessor.size());
+	StaticMeshBuildVertices.SetNum(indicesView.size());
 
 	// The static mesh we construct will _not_ be indexed, even if the incoming glTF is.
 	// This allows us to compute flat normals if the glTF doesn't include them already, and it
 	// allows us to compute a correct tangent space basis according to the MikkTSpace algorithm
 	// when tangents are not included in the glTF.
 
-	for (size_t i = 0; i < indicesAccessor.size(); ++i)
+	for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i)
 	{
 		FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
-		vertex.Position = positionAccessor[vertexIndex];
+		TIndexAccessor::value_type vertexIndex = indicesView[i];
+		vertex.Position = positionView[vertexIndex];
 		vertex.UVs[0] = FVector2D(0.0f, 0.0f);
 		vertex.UVs[2] = FVector2D(0.0f, 0.0f);
 		BoundingBoxAndSphere.SphereRadius = FMath::Max((vertex.Position - BoundingBoxAndSphere.Origin).Size(), BoundingBoxAndSphere.SphereRadius);
@@ -248,16 +261,16 @@ static void loadPrimitive(
 	auto normalAccessorIt = primitive.attributes.find("NORMAL");
 	if (normalAccessorIt != primitive.attributes.end()) {
 		int normalAccessorID = normalAccessorIt->second;
-		Cesium3DTiles::GltfAccessor<FVector> normalAccessor(model, normalAccessorID);
+		CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
 
-		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			TIndexAccessor::value_type vertexIndex = indicesView[i];
 			vertex.TangentZ = normalAccessor[vertexIndex];
 		}
 	} else {
 		// Compute flat normals
-		for (size_t i = 0; i < indicesAccessor.size(); i += 3) {
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); i += 3) {
 			FStaticMeshBuildVertex& v0 = StaticMeshBuildVertices[i];
 			FStaticMeshBuildVertex& v1 = StaticMeshBuildVertices[i + 1];
 			FStaticMeshBuildVertex& v2 = StaticMeshBuildVertices[i + 2];
@@ -275,11 +288,11 @@ static void loadPrimitive(
 	auto tangentAccessorIt = primitive.attributes.find("TANGENT");
 	if (tangentAccessorIt != primitive.attributes.end()) {
 		int tangentAccessorID = tangentAccessorIt->second;
-		Cesium3DTiles::GltfAccessor<FVector4> tangentAccessor(model, tangentAccessorID);
+		CesiumGltf::AccessorView<FVector4> tangentAccessor(model, tangentAccessorID);
 
-		for (size_t i = 0; i < indicesAccessor.size(); ++i) {
+		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesAccessor[i];
+			TIndexAccessor::value_type vertexIndex = indicesView[i];
 			const FVector4& tangent = tangentAccessor[vertexIndex];
 			vertex.TangentX = tangent;
 			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
@@ -295,21 +308,20 @@ static void loadPrimitive(
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
 
 	int materialID = primitive.material;
-	const tinygltf::Material* pMaterial = materialID >= 0 && materialID < model.materials.size() ? &model.materials[materialID] : &defaultMaterial;
+	const CesiumGltf::Material& material = materialID >= 0 && materialID < model.materials.size() ? model.materials[materialID] : defaultMaterial;
+	const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness = material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value() : defaultPbrMetallicRoughness;
 
 	std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
-	if (pMaterial) {
-		primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->normalTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->occlusionTexture, textureCoordinateMap);
-		primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, pMaterial->emissiveTexture, textureCoordinateMap);
-	}
+	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.normalTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.occlusionTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.emissiveTexture, textureCoordinateMap);
 
 	// Currently only one set of raster overlay texture coordinates is supported.
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
-	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesAccessor, rasterOverlay0, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, rasterOverlay0, textureCoordinateMap);
 
 	RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -321,9 +333,9 @@ static void loadPrimitive(
 	{
 		ColorVertexBuffer.Init(StaticMeshBuildVertices);
 	}
-	else if (positionAccessor.size() > 0)
+	else if (positionView.size() > 0)
 	{
-		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionAccessor.size());
+		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionView.size());
 	}
 
 	FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
@@ -357,7 +369,7 @@ static void loadPrimitive(
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
 
-	primitiveResult.pMaterial = pMaterial;
+	primitiveResult.pMaterial = &material;
 
 	section.MaterialIndex = 0;
 
@@ -397,8 +409,8 @@ static void loadPrimitive(
 
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
-	const tinygltf::Model& model,
-	const tinygltf::Primitive& primitive,
+	const CesiumGltf::Model& model,
+	const CesiumGltf::MeshPrimitive& primitive,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
 	,IPhysXCooking* pPhysXCooking
@@ -411,12 +423,18 @@ static void loadPrimitive(
 	}
 
 	int positionAccessorID = positionAccessorIt->second;
-	Cesium3DTiles::GltfAccessor<FVector> positionAccessor(model, positionAccessorID);
+	const CesiumGltf::Accessor* pPositionAccessor = CesiumGltf::Model::getSafe(&model.accessors, positionAccessorID);
+	if (!pPositionAccessor) {
+		// Position accessor does not exist, so ignore this primitive.
+		return;
+	}
+
+	CesiumGltf::AccessorView<FVector> positionView(model, *pPositionAccessor);
 
 	if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
-		std::vector<uint32_t> syntheticIndexBuffer(positionAccessor.size());
-		syntheticIndexBuffer.resize(positionAccessor.size());
-		for (uint32_t i = 0; i < positionAccessor.size(); ++i) {
+		std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
+		syntheticIndexBuffer.resize(positionView.size());
+		for (uint32_t i = 0; i < positionView.size(); ++i) {
 			syntheticIndexBuffer[i] = i;
 		}
 		loadPrimitive(
@@ -427,13 +445,14 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 			pPhysXCooking,
 #endif
-			positionAccessor,
+			*pPositionAccessor,
+			positionView,
 			syntheticIndexBuffer
 		);
 	} else {
-		const tinygltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
-		if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-			Cesium3DTiles::GltfAccessor<uint16_t> indexAccessor(model, primitive.indices);
+		const CesiumGltf::Accessor& indexAccessorGltf = model.accessors[primitive.indices];
+		if (indexAccessorGltf.componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
+			CesiumGltf::AccessorView<uint16_t> indexAccessor(model, primitive.indices);
 			loadPrimitive(
 				result,
 				model,
@@ -442,11 +461,12 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 				pPhysXCooking,
 #endif
-				positionAccessor,
+				*pPositionAccessor,
+				positionView,
 				indexAccessor
 			);
-		} else if (indexAccessorGltf.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-			Cesium3DTiles::GltfAccessor<uint32_t> indexAccessor(model, primitive.indices);
+		} else if (indexAccessorGltf.componentType == CesiumGltf::Accessor::ComponentType::UNSIGNED_INT) {
+			CesiumGltf::AccessorView<uint32_t> indexAccessor(model, primitive.indices);
 			loadPrimitive(
 				result,
 				model,
@@ -455,7 +475,8 @@ static void loadPrimitive(
 #if PHYSICS_INTERFACE_PHYSX
 				pPhysXCooking,
 #endif
-				positionAccessor,
+				*pPositionAccessor,
+				positionView,
 				indexAccessor
 			);
 		} else {
@@ -467,14 +488,14 @@ static void loadPrimitive(
 
 static void loadMesh(
 	std::vector<LoadModelResult>& result,
-	const tinygltf::Model& model,
-	const tinygltf::Mesh& mesh,
+	const CesiumGltf::Model& model,
+	const CesiumGltf::Mesh& mesh,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
 	,IPhysXCooking* pPhysXCooking
 #endif
 ) {
-	for (const tinygltf::Primitive& primitive : mesh.primitives) {
+	for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
 		loadPrimitive(
 			result, model,
 			primitive,
@@ -488,8 +509,8 @@ static void loadMesh(
 
 static void loadNode(
 	std::vector<LoadModelResult>& result,
-	const tinygltf::Model& model,
-	const tinygltf::Node& node,
+	const CesiumGltf::Model& model,
+	const CesiumGltf::Node& node,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
 	,IPhysXCooking* pPhysXCooking
@@ -536,7 +557,7 @@ static void loadNode(
 
 	int meshId = node.mesh;
 	if (meshId >= 0 && meshId < model.meshes.size()) {
-		const tinygltf::Mesh& mesh = model.meshes[meshId];
+		const CesiumGltf::Mesh& mesh = model.meshes[meshId];
 		loadMesh(
 			result,
 			model,
@@ -564,7 +585,7 @@ static void loadNode(
 }
 
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
-	const tinygltf::Model& model,
+	const CesiumGltf::Model& model,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
 	,IPhysXCooking* pPhysXCooking
@@ -573,18 +594,20 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 	std::vector<LoadModelResult> result;
 
 	glm::dmat4x4 rootTransform;
-	if (model.extras.IsObject() && model.extras.Has("RTC_CENTER")) {
-		const tinygltf::Value& rtcCenterValue = model.extras.Get("RTC_CENTER");
-		const tinygltf::Value::Array& rtcCenterArray = rtcCenterValue.Get<tinygltf::Value::Array>();
-		if (rtcCenterArray.size() == 3) {
+
+	auto rtcCenterIt = model.extras.find("RTC_CENTER");
+	if (rtcCenterIt != model.extras.end()) {
+		const CesiumGltf::JsonValue& rtcCenter = rtcCenterIt->second;
+		const std::vector<CesiumGltf::JsonValue>* pArray = std::get_if<CesiumGltf::JsonValue::Array>(&rtcCenter.value);
+		if (pArray && pArray->size() == 3) {
 			glm::dmat4x4 rtcTransform(
 				glm::dvec4(1.0, 0.0, 0.0, 0.0),
 				glm::dvec4(0.0, 1.0, 0.0, 0.0),
 				glm::dvec4(0.0, 0.0, 1.0, 0.0),
 				glm::dvec4(
-					rtcCenterArray[0].GetNumberAsDouble(),
-					rtcCenterArray[1].GetNumberAsDouble(),
-					rtcCenterArray[2].GetNumberAsDouble(),
+					(*pArray)[0].getNumber(0.0),
+					(*pArray)[1].getNumber(0.0),
+					(*pArray)[2].getNumber(0.0),
 					1.0
 				)
 			);
@@ -596,9 +619,9 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 		rootTransform = transform * gltfAxesToCesiumAxes;
 	}
 
-	if (model.defaultScene >= 0 && model.defaultScene < model.scenes.size()) {
+	if (model.scene >= 0 && model.scene < model.scenes.size()) {
 		// Show the default scene
-		const tinygltf::Scene& defaultScene = model.scenes[model.defaultScene];
+		const CesiumGltf::Scene& defaultScene = model.scenes[model.scene];
 		for (int nodeId : defaultScene.nodes) {
 			loadNode(
 				result,
@@ -612,7 +635,7 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 		}
 	} else if (model.scenes.size() > 0) {
 		// There's no default, so show the first scene
-		const tinygltf::Scene& defaultScene = model.scenes[0];
+		const CesiumGltf::Scene& defaultScene = model.scenes[0];
 		for (int nodeId : defaultScene.nodes) {
 			loadNode(
 				result,
@@ -637,7 +660,7 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 		);
 	} else if (model.meshes.size() > 0) {
 		// No nodes either, show all the meshes.
-		for (const tinygltf::Mesh& mesh : model.meshes) {
+		for (const CesiumGltf::Mesh& mesh : model.meshes) {
 			loadMesh(
 				result,
 				model,
@@ -654,27 +677,29 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 }
 
 template <class T>
-bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const tinygltf::Model& model, const T& gltfTexture) {
-	if (gltfTexture.index < 0 || gltfTexture.index >= model.textures.size()) {
+bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const CesiumGltf::Model& model, const std::optional<T>& gltfTexture) {
+	if (!gltfTexture || gltfTexture.value().index < 0 || gltfTexture.value().index >= model.textures.size()) {
 		// TODO: report invalid texture if the index isn't -1
 		return false;
 	}
 
-	const tinygltf::Texture& texture = model.textures[gltfTexture.index];
+	const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
 	if (texture.source < 0 || texture.source >= model.images.size()) {
 		// TODO: report invalid texture
 		return false;
 	}
 
-	const tinygltf::Image& image = model.images[texture.source];
+	const CesiumGltf::Image& image = model.images[texture.source];
 
-	UTexture2D* pTexture = UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+	UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
 
-	unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-	FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
-	pTexture->PlatformData->Mips[0].BulkData.Unlock();
+	if (pTexture) {
+		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
+		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
-	pTexture->UpdateResource();
+		pTexture->UpdateResource();
+	}
 
 	pMaterial->SetTextureParameterValue(parameterName, pTexture);
 
@@ -698,10 +723,10 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pStaticMesh->NeverStream = true;
 	pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
 
-	const tinygltf::Model& model = *loadResult.pModel;
-	const tinygltf::Material& material = loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
-	
-	const tinygltf::PbrMetallicRoughness& pbr = material.pbrMetallicRoughness;
+	const CesiumGltf::Model& model = *loadResult.pModel;
+	const CesiumGltf::Material& material = loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
+
+	const CesiumGltf::MaterialPBRMetallicRoughness& pbr = material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value() : defaultPbrMetallicRoughness;
 
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
@@ -763,7 +788,7 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pMesh->RegisterComponent();
 }
 
-/*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const tinygltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
+/*static*/ void UCesiumGltfComponent::CreateOffGameThread(AActor* pActor, const CesiumGltf::Model& model, const glm::dmat4x4& transform, TFunction<void(UCesiumGltfComponent*)> callback) {
 	std::vector<LoadModelResult> result = loadModelAnyThreadPart(
 		model,
 		transform
@@ -792,7 +817,7 @@ namespace {
 
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
-	const tinygltf::Model& model,
+	const CesiumGltf::Model& model,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
 	,IPhysXCooking* pPhysXCooking
@@ -977,14 +1002,14 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 	TFuture<void> future = Async(EAsyncExecution::ThreadPool, [this, content]
 	{
 		gsl::span<const uint8_t> data(static_cast<const uint8_t*>(content.GetData()), content.Num());
-		std::unique_ptr<Cesium3DTiles::Gltf::LoadResult> pLoadResult = std::make_unique<Cesium3DTiles::Gltf::LoadResult>(std::move(Cesium3DTiles::Gltf::load(data)));
+		std::unique_ptr<CesiumGltf::ModelReaderResult> pLoadResult = std::make_unique<CesiumGltf::ModelReaderResult>(std::move(CesiumGltf::readModel(data)));
 
-		if (pLoadResult->warnings.length() > 0) {
-			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(pLoadResult->warnings));
+		if (!pLoadResult->warnings.empty()) {
+			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
 		}
 
-		if (pLoadResult->errors.length() > 0) {
-			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(pLoadResult->errors));
+		if (!pLoadResult->errors.empty()) {
+			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
 		}
 
 		if (!pLoadResult->model) {
@@ -992,7 +1017,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 			return;
 		}
 
-		tinygltf::Model& model = pLoadResult->model.value();
+		CesiumGltf::Model& model = pLoadResult->model.value();
 
 		std::vector<LoadModelResult> result = loadModelAnyThreadPart(
 			model,
