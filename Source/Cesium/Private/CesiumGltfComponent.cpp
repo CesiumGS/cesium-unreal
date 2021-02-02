@@ -37,6 +37,11 @@
 #include "CesiumGltf/Reader.h"
 #include "CesiumUtility/joinToString.h"
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb_image_resize.h>
+
+using namespace CesiumGltf;
+
 static uint32_t nextMaterialId = 0;
 
 struct LoadModelResult
@@ -197,11 +202,81 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 static const CesiumGltf::Material defaultMaterial;
 static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
 
+template <typename TIndexView>
+struct ColorVisitor {
+	TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
+	const TIndexView& indicesView;
+
+	bool operator()(AccessorView<nullptr_t>&& invalidView) {
+		return false;
+	}
+
+	template <typename TColorView>
+	bool operator()(TColorView&& colorView) {
+		bool success = true;
+
+		for (int64_t i = 0; success && i < static_cast<int64_t>(this->indicesView.size()); ++i) {
+			FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
+			TIndexView::value_type vertexIndex = this->indicesView[i];
+			if (vertexIndex >= colorView.size()) {
+				success = false;
+			} else {
+				success = ColorVisitor::convertColor(colorView[vertexIndex], vertex.Color);
+			}
+		}
+
+		return success;
+	}
+
+	template <typename TElement>
+	static bool convertColor(const AccessorTypes::VEC3<TElement>& color, FColor& out) {
+		out.A = 255;
+		return
+			convertElement(color.value[0], out.R) &&
+			convertElement(color.value[1], out.G) &&
+			convertElement(color.value[2], out.B);
+	}
+
+	template <typename TElement>
+	static bool convertColor(const AccessorTypes::VEC4<TElement>& color, FColor& out) {
+		return
+			convertElement(color.value[0], out.R) &&
+			convertElement(color.value[1], out.G) &&
+			convertElement(color.value[2], out.B) &&
+			convertElement(color.value[3], out.A);
+	}
+
+	static bool convertElement(float value, uint8_t& out) {
+		out = uint8_t(value * 255.0f);
+		return true;
+	}
+
+	static bool convertElement(uint8_t value, uint8_t& out) {
+		out = value;
+		return true;
+	}
+
+	static bool convertElement(uint16_t value, uint8_t& out) {
+		out = uint8_t(value / 256);
+		return true;
+	}
+
+	template <typename T>
+	static bool convertColor(const T& color, FColor& out) {
+		return false;
+	}
+
+	template <typename T>
+	static bool convertElement(const T& color, uint8_t& out) {
+		return false;
+	}
+};
 
 template <class TIndexAccessor>
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
 	const CesiumGltf::Model& model,
+	const CesiumGltf::Mesh& mesh,
 	const CesiumGltf::MeshPrimitive& primitive,
 	const glm::dmat4x4& transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -215,6 +290,29 @@ static void loadPrimitive(
 		// TODO: add support for primitive types other than triangles.
 		return;
 	}
+
+	LoadModelResult primitiveResult;
+
+	std::string name = "glTF";
+
+	auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
+	if (urlIt != model.extras.end()) {
+		name = urlIt->second.getString("glTF");
+	}
+
+	auto meshIt = std::find_if(model.meshes.begin(), model.meshes.end(), [&mesh](const CesiumGltf::Mesh& candidate) { return &candidate == &mesh; });
+	if (meshIt != model.meshes.end()) {
+		int64_t meshIndex = meshIt - model.meshes.begin();
+		name += " mesh " + std::to_string(meshIndex);
+	}
+
+	auto primitiveIt = std::find_if(mesh.primitives.begin(), mesh.primitives.end(), [&primitive](const CesiumGltf::MeshPrimitive& candidate) { return &candidate == &primitive; });
+	if (primitiveIt != mesh.primitives.end()) {
+		int64_t primitiveIndex = primitiveIt - mesh.primitives.begin();
+		name += " primitive " + std::to_string(primitiveIndex);
+	}
+
+	primitiveResult.name = name;
 
 	FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
 	RenderData->AllocateLODResources(1);
@@ -302,7 +400,15 @@ static void loadPrimitive(
 		computeTangentSpace(StaticMeshBuildVertices);
 	}
 
-	LoadModelResult primitiveResult;
+	bool hasVertexColors = false;
+
+	auto colorAccessorIt = primitive.attributes.find("COLOR_0");
+	if (colorAccessorIt != primitive.attributes.end()) {
+		int colorAccessorID = colorAccessorIt->second;
+		hasVertexColors = CesiumGltf::createAccessorView(model, colorAccessorID, ColorVisitor<TIndexAccessor>{ StaticMeshBuildVertices, indicesView });
+	}
+
+	LODResources.bHasColorVertexData = hasVertexColors;
 
 	// We need to copy the texture coordinates associated with each texture (if any) into the
 	// the appropriate UVs slot in FStaticMeshBuildVertex.
@@ -326,17 +432,18 @@ static void loadPrimitive(
 	RenderData->Bounds = BoundingBoxAndSphere;
 
 	LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
-	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size());
 
 	FColorVertexBuffer& ColorVertexBuffer = LODResources.VertexBuffers.ColorVertexBuffer;
-	if (false) //bHasVertexColors)
+	if (hasVertexColors)
 	{
 		ColorVertexBuffer.Init(StaticMeshBuildVertices);
 	}
-	else if (positionView.size() > 0)
+	else if (indicesView.size() > 0)
 	{
-		ColorVertexBuffer.InitFromSingleColor(FColor::White, positionView.size());
+		ColorVertexBuffer.InitFromSingleColor(FColor::White, indicesView.size());
 	}
+
+	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
 
 	FStaticMeshLODResources::FStaticMeshSectionArray& Sections = LODResources.Sections;
 	FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
@@ -368,7 +475,6 @@ static void loadPrimitive(
 	primitiveResult.pModel = &model;
 	primitiveResult.RenderData = RenderData;
 	primitiveResult.transform = transform;
-
 	primitiveResult.pMaterial = &material;
 
 	section.MaterialIndex = 0;
@@ -410,6 +516,7 @@ static void loadPrimitive(
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
 	const CesiumGltf::Model& model,
+	const CesiumGltf::Mesh& mesh,
 	const CesiumGltf::MeshPrimitive& primitive,
 	const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
@@ -440,6 +547,7 @@ static void loadPrimitive(
 		loadPrimitive(
 			result,
 			model,
+			mesh,
 			primitive,
 			transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -456,6 +564,7 @@ static void loadPrimitive(
 			loadPrimitive(
 				result,
 				model,
+				mesh,
 				primitive,
 				transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -470,6 +579,7 @@ static void loadPrimitive(
 			loadPrimitive(
 				result,
 				model,
+				mesh,
 				primitive,
 				transform,
 #if PHYSICS_INTERFACE_PHYSX
@@ -497,7 +607,9 @@ static void loadMesh(
 ) {
 	for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
 		loadPrimitive(
-			result, model,
+			result,
+			model,
+			mesh,
 			primitive,
 			transform
 #if PHYSICS_INTERFACE_PHYSX
@@ -693,10 +805,105 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 
 	UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
 
+	const CesiumGltf::Sampler* pSampler = CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
+	if (pSampler) {
+		switch (pSampler->wrapS) {
+		case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
+			pTexture->AddressX = TextureAddress::TA_Clamp;
+			break;
+		case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
+			pTexture->AddressX = TextureAddress::TA_Mirror;
+			break;
+		case CesiumGltf::Sampler::WrapS::REPEAT:
+			pTexture->AddressX = TextureAddress::TA_Wrap;
+			break;
+		}
+
+		switch (pSampler->wrapT) {
+		case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
+			pTexture->AddressY = TextureAddress::TA_Clamp;
+			break;
+		case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
+			pTexture->AddressY = TextureAddress::TA_Mirror;
+			break;
+		case CesiumGltf::Sampler::WrapT::REPEAT:
+			pTexture->AddressY = TextureAddress::TA_Wrap;
+			break;
+		}
+
+		// Unreal Engine's available filtering modes are only nearest, bilinear, and trilinear, and
+		// are not specified separately for minification and magnification. So we get as close as we can.
+		if (!pSampler->minFilter && !pSampler->magFilter) {
+			pTexture->Filter = TextureFilter::TF_Default;
+		} else if (
+			(!pSampler->minFilter || pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
+			(!pSampler->magFilter || pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)
+		) {
+			pTexture->Filter = TextureFilter::TF_Nearest;
+		} else if (pSampler->minFilter) {
+			switch (pSampler->minFilter.value()) {
+			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+				pTexture->Filter = TextureFilter::TF_Trilinear;
+				break;
+			default:
+				pTexture->Filter = TextureFilter::TF_Bilinear;
+				break;
+			}
+		} else if (pSampler->magFilter) {
+			pTexture->Filter = pSampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::LINEAR ? TextureFilter::TF_Bilinear : TextureFilter::TF_Nearest;
+		}
+	} else {
+		// glTF spec: "When undefined, a sampler with repeat wrapping and auto filtering should be used."
+		pTexture->AddressX = TextureAddress::TA_Wrap;
+		pTexture->AddressY = TextureAddress::TA_Wrap;
+		pTexture->Filter = TextureFilter::TF_Default;
+	}
+
 	if (pTexture) {
-		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		void* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 		FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
-		pTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+		if (pTexture->Filter == TextureFilter::TF_Trilinear) {
+			// Generate mip levels.
+			// TODO: do this on the GPU?
+			int32_t width = image.cesium.width;
+			int32_t height = image.cesium.height;
+
+			while (width > 1 || height > 1) {
+				FTexture2DMipMap* pLevel = new FTexture2DMipMap();
+				pTexture->PlatformData->Mips.Add(pLevel);
+
+				pLevel->SizeX = width >> 1;
+				if (pLevel->SizeX < 1)  pLevel->SizeX = 1;
+				pLevel->SizeY = height >> 1;
+				if (pLevel->SizeY < 1) pLevel->SizeY = 1;
+
+				pLevel->BulkData.Lock(LOCK_READ_WRITE);
+
+				void* pMipData = pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+				if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
+					// Failed to generate mip level, use bilinear filtering instead.
+					pTexture->Filter = TextureFilter::TF_Bilinear;
+					for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
+						pTexture->PlatformData->Mips[i].BulkData.Unlock();
+					}
+					pTexture->PlatformData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
+					break;
+				}
+
+				width = pLevel->SizeX;
+				height = pLevel->SizeY;
+				pTextureData = pMipData;
+			}
+		}
+
+		// Unlock all levels
+		for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
+			pTexture->PlatformData->Mips[i].BulkData.Unlock();
+		}
 
 		pTexture->UpdateResource();
 	}
@@ -729,7 +936,23 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	const CesiumGltf::MaterialPBRMetallicRoughness& pbr = material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value() : defaultPbrMetallicRoughness;
 
 	const FName ImportedSlotName(*(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-	UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
+	UMaterialInstanceDynamic* pMaterial;
+
+	switch (material.alphaMode) {
+	case CesiumGltf::Material::AlphaMode::BLEND:
+		// TODO
+		pMaterial = UMaterialInstanceDynamic::Create(pGltf->OpacityMaskMaterial, nullptr, ImportedSlotName);
+		break;
+	case CesiumGltf::Material::AlphaMode::MASK:
+		pMaterial = UMaterialInstanceDynamic::Create(pGltf->OpacityMaskMaterial, nullptr, ImportedSlotName);
+		break;
+	case CesiumGltf::Material::AlphaMode::OPAQUE:
+	default:
+		pMaterial = UMaterialInstanceDynamic::Create(pGltf->BaseMaterial, nullptr, ImportedSlotName);
+		break;
+	}
+	
+	pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
 	for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
 		pMaterial->SetScalarParameterValue(textureCoordinateSet.first.c_str(), textureCoordinateSet.second);
@@ -870,14 +1093,17 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 	struct FConstructorStatics
 	{
 		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
+		ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
 		FConstructorStatics() :
-			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays"))
+			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+			OpacityMaskMaterial(TEXT("/Cesium/GltfMaterialOpacityMask.GltfMaterialOpacityMask"))
 		{
 		}
 	};
 	static FConstructorStatics ConstructorStatics;
 
 	this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+	this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
 	PrimaryComponentTick.bCanEverTick = false;
 }
