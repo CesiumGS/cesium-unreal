@@ -29,8 +29,8 @@ static CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeader
 class UnrealAssetResponse : public CesiumAsync::IAssetResponse {
 public:
 	UnrealAssetResponse(FHttpResponsePtr pResponse) :
-		_cacheControl{},
-		_pResponse(pResponse)
+		_pResponse(pResponse),
+		_cacheControl{}
 	{
 		this->_headers = parseHeaders(this->_pResponse->GetAllHeaders());
 		this->_contentType = wstr_to_utf8(this->_pResponse->GetContentType());
