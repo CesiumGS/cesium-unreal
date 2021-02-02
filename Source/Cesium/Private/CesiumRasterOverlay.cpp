@@ -27,6 +27,16 @@ void UCesiumRasterOverlay::BeginPlay()
 	
 }
 
+#if WITH_EDITOR
+// Called when properties are changed in the editor
+void UCesiumRasterOverlay::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	this->RemoveFromTileset();
+	this->AddToTileset();
+}
+#endif
 
 // Called every frame
 void UCesiumRasterOverlay::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

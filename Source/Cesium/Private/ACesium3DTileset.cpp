@@ -31,6 +31,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <spdlog/spdlog.h>
+#include <memory>
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -41,7 +42,10 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
 	Georeference(nullptr),
+	CreditSystem(nullptr),
+
 	_pTileset(nullptr),
+
 	_lastTilesRendered(0),
 	_lastTilesLoadingLowPriority(0),
 	_lastTilesLoadingMediumPriority(0),
@@ -49,7 +53,9 @@ ACesium3DTileset::ACesium3DTileset() :
 
 	_lastTilesVisited(0),
 	_lastTilesCulled(0),
-	_lastMaxDepthVisited(0)
+	_lastMaxDepthVisited(0),
+
+	_updateGeoreferenceOnBoundingVolumeReady(false)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -97,8 +103,14 @@ void ACesium3DTileset::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrea
 
 void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform)
 {
-	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-	pRoot->RecalculateTransform();
+	// If the bounding volume is ready, we can update the georeference transform as wanted
+	if (IsBoundingVolumeReady()) {
+		UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+		pRoot->UpdateGeoreferenceTransform(ellipsoidCenteredToGeoreferencedTransform);
+	} else {
+	// Otherwise, update the transform later in Tick when the bounding volume is ready 
+		this->_updateGeoreferenceOnBoundingVolumeReady = true;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -136,7 +148,7 @@ public:
 #endif
 	{}
 
-	virtual void* prepareInLoadThread(const tinygltf::Model& model, const glm::dmat4& transform) {
+	virtual void* prepareInLoadThread(const CesiumGltf::Model& model, const glm::dmat4& transform) {
 		std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
 			model,
 			transform
@@ -178,12 +190,12 @@ public:
 		}
 	}
 
-	virtual void* prepareRasterInLoadThread(const tinygltf::Image& image) override {
+	virtual void* prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
 		return nullptr;
 	}
 
 	virtual void* prepareRasterInMainThread(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult) {
-		const tinygltf::Image& image = rasterTile.getImage();
+		const CesiumGltf::ImageCesium& image = rasterTile.getImage();
 		if (image.width <= 0 || image.height <= 0) {
 			return nullptr;
 		}
@@ -194,7 +206,7 @@ public:
 		pTexture->AddressY = TextureAddress::TA_Clamp;
 
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
+		FMemory::Memcpy(pTextureData, image.pixelData.data(), image.pixelData.size());
 		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 		pTexture->UpdateResource();
@@ -284,6 +296,7 @@ private:
 			pComponent->UnregisterComponent();
 		}
 
+		// TODO: occasional nullptr crashes seem to happen here, check if pChild == null ??
 		TArray<USceneComponent*> children = pComponent->GetAttachChildren();
 		for (USceneComponent* pChild : children) {
 			this->destroyRecursively(pChild);
@@ -307,23 +320,35 @@ private:
 void ACesium3DTileset::LoadTileset()
 {
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
+
+	TArray<UCesiumRasterOverlay*> rasterOverlays;
+	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
 	if (pTileset)
 	{
-		if (this->Url.Len() > 0)
+		if (this->Material == _lastMaterial)
 		{
-			if (pTileset->getUrl() && wstr_to_utf8(this->Url) == pTileset->getUrl())
+			// The material hasn't been changed, check for changes in the url or Ion asset ID / access token
+			if (this->Url.Len() > 0)
 			{
-				// Already using this URL.
-				return;
+				if (pTileset->getUrl() && wstr_to_utf8(this->Url) == pTileset->getUrl())
+				{
+					// Already using this URL.
+					return;
+				}
+			}
+			else
+			{
+				if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() && this->IonAssetID == pTileset->getIonAssetID() && wstr_to_utf8(this->IonAccessToken) == pTileset->getIonAccessToken())
+				{
+					// Already using this asset ID and access token.
+					return;
+				}
 			}
 		}
-		else
+		else 
 		{
-			if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() && this->IonAssetID == pTileset->getIonAssetID() && wstr_to_utf8(this->IonAccessToken) == pTileset->getIonAccessToken())
-			{
-				// Already using this asset ID and access token.
-				return;
-			}
+			_lastMaterial = this->Material;
 		}
 
 		this->DestroyTileset();
@@ -335,6 +360,10 @@ void ACesium3DTileset::LoadTileset()
 
 	this->Georeference->AddGeoreferencedObject(this);
 
+	if (!this->CreditSystem) {
+		this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
+	}
+
 	Cesium3DTiles::TilesetExternals externals{
 		std::make_shared<CesiumAsync::CacheAssetAccessor>(
 			spdlog::default_logger(),
@@ -342,8 +371,7 @@ void ACesium3DTileset::LoadTileset()
 			std::make_unique<CesiumAsync::DiskCache>(":memory:")),
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
-		// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
-		std::make_shared<Cesium3DTiles::CreditSystem>(),
+		this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem() : nullptr,
 		spdlog::default_logger()
 	};
 
@@ -365,9 +393,6 @@ void ACesium3DTileset::LoadTileset()
 		pTileset = new Cesium3DTiles::Tileset(externals, this->IonAssetID, wstr_to_utf8(this->IonAccessToken));
 	}
 
-	TArray<UCesiumRasterOverlay*> rasterOverlays;
-	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
 	this->_pTileset = pTileset;
 
 	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
@@ -378,6 +403,16 @@ void ACesium3DTileset::LoadTileset()
 }
 
 void ACesium3DTileset::DestroyTileset() {
+	// The way CesiumRasterOverlay::add is currently implemented, destroying the tileset without removing overlays will make it 
+	// impossible to add it again once a new tileset is created (e.g. when switching between terrain assets)	
+	TArray<UCesiumRasterOverlay*> rasterOverlays;
+	this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+	for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+		if (pOverlay->IsActive()) {
+			pOverlay->RemoveFromTileset();
+		}
+	}
+
 	if (!this->_pTileset) {
 		return;
 	}
@@ -505,12 +540,32 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		pRoot->MarkTransformUnchanged();
 	}
 
+	// If a georeference update is waiting on the bounding volume being ready, update when ready
+	if (this->_updateGeoreferenceOnBoundingVolumeReady && this->IsBoundingVolumeReady()) {
+		this->_updateGeoreferenceOnBoundingVolumeReady = false;
+		// Need to potentially recalculate the transform for all georeferenced objects, not just for this tileset
+		this->Georeference->UpdateGeoreference();
+	}
+
 	if (this->SuspendUpdate) {
 		return;
 	}
 
+	// TODO: updating the options should probably happen in OnConstruction or PostEditChangeProperty,
+	// no need to have it happen every frame when the options haven't been changed
 	Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
 	options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+	
+	options.preloadAncestors = this->PreloadAncestors;
+	options.preloadSiblings = this->PreloadSiblings;
+	options.forbidHoles = this->ForbidHoles;
+	options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+	options.loadingDescendantLimit = this->LoadingDescendantLimit;
+
+	options.enableFrustumCulling = this->EnableFrustumCulling;
+	options.enableFogCulling = this->EnableFogCulling;
+	options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
+	options.culledScreenSpaceError = this->CulledScreenSpaceError;
 
 	std::optional<UnrealCameraParameters> camera = this->GetCamera();
 	if (!camera) {
@@ -532,6 +587,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		result.tilesLoadingMediumPriority != this->_lastTilesLoadingMediumPriority ||
 		result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
 		result.tilesVisited != this->_lastTilesVisited ||
+		result.culledTilesVisited != this->_lastCulledTilesVisited ||
 		result.tilesCulled != this->_lastTilesCulled ||
 		result.maxDepthVisited != this->_lastMaxDepthVisited
 	) {
@@ -541,15 +597,17 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
 
 		this->_lastTilesVisited = result.tilesVisited;
+		this->_lastCulledTilesVisited = result.culledTilesVisited;
 		this->_lastTilesCulled = result.tilesCulled;
 		this->_lastMaxDepthVisited = result.maxDepthVisited;
 
 		UE_LOG(
 			LogActor,
 			Warning,
-			TEXT("%s: Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+			TEXT("%s: Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
 			result.tilesVisited,
+			result.culledTilesVisited,
 			result.tilesToRenderThisFrame.size(),
 			result.tilesCulled,
 			result.maxDepthVisited,

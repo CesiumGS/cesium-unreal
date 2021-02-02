@@ -9,6 +9,7 @@
 #include "Cesium3DTiles/Camera.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
+#include "CesiumCreditSystem.h"
 #include "ACesium3DTileset.generated.h"
 
 class UMaterial;
@@ -57,11 +58,71 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
+	 * The actor managing this tileset's content attributions.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	ACesiumCreditSystem* CreditSystem;
+
+	/**
 	 * The maximum number of pixels of error when rendering this tileset.
      * This is used to select an appropriate level-of-detail.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
 	double MaximumScreenSpaceError = 16.0;
+
+	/**
+	 * Whether to preload ancestor tiles.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	bool PreloadAncestors = true;
+
+	/**
+	 * Whether to preload sibling tiles.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	bool PreloadSiblings = true;
+
+	/**
+	 * Whether to unrefine back to a parent tile when a child isn't done loading.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	bool ForbidHoles = false;
+
+	/**
+	 * The maximum number of tiles that may be loaded at once.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	int MaximumSimultaneousTileLoads = 20;
+
+	/**
+	 * The number of loading descendents a tile should allow before deciding to render itself instead of waiting.
+	 */ 
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
+	int LoadingDescendantLimit = 20;
+
+	/**
+	 * Whether to cull tiles that are outside the frustum.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
+	bool EnableFrustumCulling = true;
+
+	/**
+	 * Whether to cull tiles that are occluded by fog.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
+	bool EnableFogCulling = true;
+
+	/**
+	 * Whether culled screen-space error should be enforced.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
+	bool EnforceCulledScreenSpaceError = false;
+
+	/**
+	 * The screen-space error to be used for culled tiles.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling", meta=(EditCondition="EnforceCulledScreenSpaceError"))
+	double CulledScreenSpaceError = 64.0;
 
 	UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
 	UMaterial* Material = nullptr;
@@ -138,6 +199,8 @@ public:
 
 private:
 	Cesium3DTiles::Tileset* _pTileset;
+
+	UMaterial* _lastMaterial = nullptr;
 	
 	uint32_t _lastTilesRendered;
 	uint32_t _lastTilesLoadingLowPriority;
@@ -145,6 +208,9 @@ private:
 	uint32_t _lastTilesLoadingHighPriority;
 
 	uint32_t _lastTilesVisited;
+	uint32_t _lastCulledTilesVisited;
 	uint32_t _lastTilesCulled;
 	uint32_t _lastMaxDepthVisited;
+	
+	bool _updateGeoreferenceOnBoundingVolumeReady;
 };
