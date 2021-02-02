@@ -9,6 +9,7 @@
 #include "Cesium3DTiles/Camera.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
+#include "CesiumCreditSystem.h"
 #include "ACesium3DTileset.generated.h"
 
 class UMaterial;
@@ -55,6 +56,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	ACesiumGeoreference* Georeference;
+
+	/**
+	 * The actor managing this tileset's content attributions.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	ACesiumCreditSystem* CreditSystem;
 
 	/**
 	 * The maximum number of pixels of error when rendering this tileset.
