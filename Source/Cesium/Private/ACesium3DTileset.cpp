@@ -142,7 +142,7 @@ public:
 #endif
 	{}
 
-	virtual void* prepareInLoadThread(const tinygltf::Model& model, const glm::dmat4& transform) {
+	virtual void* prepareInLoadThread(const CesiumGltf::Model& model, const glm::dmat4& transform) {
 		std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf = UCesiumGltfComponent::CreateOffGameThread(
 			model,
 			transform
@@ -184,12 +184,12 @@ public:
 		}
 	}
 
-	virtual void* prepareRasterInLoadThread(const tinygltf::Image& image) override {
+	virtual void* prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
 		return nullptr;
 	}
 
 	virtual void* prepareRasterInMainThread(const Cesium3DTiles::RasterOverlayTile& rasterTile, void* pLoadThreadResult) {
-		const tinygltf::Image& image = rasterTile.getImage();
+		const CesiumGltf::ImageCesium& image = rasterTile.getImage();
 		if (image.width <= 0 || image.height <= 0) {
 			return nullptr;
 		}
@@ -200,7 +200,7 @@ public:
 		pTexture->AddressY = TextureAddress::TA_Clamp;
 
 		unsigned char* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-		FMemory::Memcpy(pTextureData, image.image.data(), image.image.size());
+		FMemory::Memcpy(pTextureData, image.pixelData.data(), image.pixelData.size());
 		pTexture->PlatformData->Mips[0].BulkData.Unlock();
 
 		pTexture->UpdateResource();
