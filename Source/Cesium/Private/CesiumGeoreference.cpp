@@ -73,10 +73,13 @@ void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object
 {
 	this->_georeferencedObjects.Add(*Object);
 
-	// If this object is an Actor, make sure it ticks _after_ the CesiumGeoreference.
+	// If this object is an Actor or UActorComponent, make sure it ticks _after_ the CesiumGeoreference.
 	AActor* pActor = Cast<AActor>(Object);
+	UActorComponent* pActorComponent = Cast<UActorComponent>(Object);
 	if (pActor) {
 		pActor->AddTickPrerequisiteActor(this);
+	} else if (pActorComponent) {
+		pActorComponent->AddTickPrerequisiteActor(this);
 	}
 	
 	this->UpdateGeoreference();

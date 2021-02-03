@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include <glm/mat3x3.hpp>
 #include "UObject/WeakInterfacePtr.h"
 #include "CesiumGeoreference.generated.h"
