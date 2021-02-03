@@ -319,6 +319,11 @@ private:
 
 void ACesium3DTileset::LoadTileset()
 {
+	static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor = std::make_shared<CesiumAsync::CacheAssetAccessor>(
+		spdlog::default_logger(),
+		std::make_unique<UnrealAssetAccessor>(),
+		std::make_unique<CesiumAsync::DiskCache>("cesium-request-cache.sqlite"));
+
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
 	TArray<UCesiumRasterOverlay*> rasterOverlays;
@@ -365,10 +370,7 @@ void ACesium3DTileset::LoadTileset()
 	}
 
 	Cesium3DTiles::TilesetExternals externals{
-		std::make_shared<CesiumAsync::CacheAssetAccessor>(
-			spdlog::default_logger(),
-			std::make_unique<UnrealAssetAccessor>(),
-			std::make_unique<CesiumAsync::DiskCache>(":memory:")),
+		pAssetAccessor,
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
 		this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem() : nullptr,
