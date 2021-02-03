@@ -5,7 +5,6 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
-#include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -29,6 +28,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <spdlog/spdlog.h>
+#include <memory>
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -39,7 +39,10 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset() :
 	Georeference(nullptr),
+	CreditSystem(nullptr),
+
 	_pTileset(nullptr),
+
 	_lastTilesRendered(0),
 	_lastTilesLoadingLowPriority(0),
 	_lastTilesLoadingMediumPriority(0),
@@ -354,12 +357,15 @@ void ACesium3DTileset::LoadTileset()
 
 	this->Georeference->AddGeoreferencedObject(this);
 
+	if (!this->CreditSystem) {
+		this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
+	}
+
 	Cesium3DTiles::TilesetExternals externals{
 		std::make_shared<UnrealAssetAccessor>(),
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
-		// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
-		std::make_shared<Cesium3DTiles::CreditSystem>(),
+		this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem() : nullptr,
 		spdlog::default_logger()
 	};
 
@@ -454,7 +460,7 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetPla
 	};
 }
 
-Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
+Cesium3DTiles::ViewState ACesium3DTileset::CreateViewStateFromViewParameters(
 	const FVector2D& viewportSize,
 	const FVector& location,
 	const FRotator& rotation,
@@ -470,7 +476,7 @@ Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
 
 	glm::dmat4 unrealWorldToTileset = glm::affineInverse(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
-	return Cesium3DTiles::Camera(
+	return Cesium3DTiles::ViewState::create(
 		unrealWorldToTileset * glm::dvec4(location.X, location.Y, location.Z, 1.0),
 		glm::normalize(unrealWorldToTileset * glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)),
 		glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
@@ -551,14 +557,14 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
-	Cesium3DTiles::Camera tilesetCamera = this->CreateCameraFromViewParameters(
+	Cesium3DTiles::ViewState tilesetViewState = this->CreateViewStateFromViewParameters(
 		camera.value().viewportSize,
 		camera.value().location,
 		camera.value().rotation,
 		camera.value().fieldOfViewDegrees
 	);
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetCamera);
+	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetViewState);
 
 	if (
 		result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
