@@ -477,7 +477,7 @@ std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetPla
 	};
 }
 
-Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
+Cesium3DTiles::ViewState ACesium3DTileset::CreateViewStateFromViewParameters(
 	const FVector2D& viewportSize,
 	const FVector& location,
 	const FRotator& rotation,
@@ -493,7 +493,7 @@ Cesium3DTiles::Camera ACesium3DTileset::CreateCameraFromViewParameters(
 
 	glm::dmat4 unrealWorldToTileset = glm::affineInverse(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
-	return Cesium3DTiles::Camera(
+	return Cesium3DTiles::ViewState::create(
 		unrealWorldToTileset * glm::dvec4(location.X, location.Y, location.Z, 1.0),
 		glm::normalize(unrealWorldToTileset * glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)),
 		glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
@@ -574,14 +574,14 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		return;
 	}
 
-	Cesium3DTiles::Camera tilesetCamera = this->CreateCameraFromViewParameters(
+	Cesium3DTiles::ViewState tilesetViewState = this->CreateViewStateFromViewParameters(
 		camera.value().viewportSize,
 		camera.value().location,
 		camera.value().rotation,
 		camera.value().fieldOfViewDegrees
 	);
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetCamera);
+	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetViewState);
 
 	if (
 		result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
