@@ -74,6 +74,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	UMaterial* BaseMaterial;
 
+	UPROPERTY(EditAnywhere)
+	UMaterial* OpacityMaskMaterial;
+
 	UFUNCTION(BlueprintCallable)
 	void LoadModel(const FString& Url);
 

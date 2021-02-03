@@ -31,6 +31,7 @@ public class Cesium : ModuleRules
                 "../extern/cesium-native/extern/asyncplusplus/include",
                 "../extern/cesium-native/extern/spdlog/include",
                 "../extern/cesium-native/extern/rapidjson/include",
+                "../extern/cesium-native/extern/stb",
             }
             );
 
