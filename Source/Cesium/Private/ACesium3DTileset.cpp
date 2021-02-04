@@ -324,6 +324,8 @@ void ACesium3DTileset::LoadTileset()
 		std::make_unique<UnrealAssetAccessor>(),
 		std::make_unique<CesiumAsync::DiskCache>("cesium-request-cache.sqlite"));
 
+	this->_startTime = std::chrono::high_resolution_clock::now();
+
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
 	TArray<UCesiumRasterOverlay*> rasterOverlays;
@@ -606,8 +608,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		UE_LOG(
 			LogActor,
 			Warning,
-			TEXT("%s: Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+			TEXT("%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
+			(std::chrono::high_resolution_clock::now() - this->_startTime).count() / 1000000,
 			result.tilesVisited,
 			result.culledTilesVisited,
 			result.tilesToRenderThisFrame.size(),
