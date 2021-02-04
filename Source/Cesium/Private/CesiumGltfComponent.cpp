@@ -1273,6 +1273,13 @@ void UCesiumGltfComponent::updateRasterOverlays() {
 		if (pPrimitive) {
 			UMaterialInstanceDynamic* pMaterial = Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
 
+			if (pMaterial->IsPendingKillOrUnreachable()) {
+				// Don't try to update the material while it's in the process of being destroyed.
+				// This can lead to the render thread freaking out when it's asked to update a parameter for
+				// a material that has been marked for garbage collection.
+				continue;
+			}
+
 			for (size_t i = 0; i < this->_overlayTiles.Num(); ++i) {
 				FRasterOverlayTile& overlayTile = this->_overlayTiles[i];
 				std::string is = std::to_string(i + 1);
