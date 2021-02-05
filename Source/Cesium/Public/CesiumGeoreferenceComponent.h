@@ -4,17 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "CesiumGeoreference.h"
-#include "Components/ActorComponent.h"
+#include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 #include "Cesium3DTiles/BoundingVolume.h"
 #include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 #include <optional>
 
 #include "CesiumGeoreferenceComponent.generated.h"
 
 UCLASS()
 class CESIUM_API UCesiumGeoreferenceComponent : 
-    public UActorComponent,
+    public USceneComponent,
     public ICesiumGeoreferenceable
 {
 	GENERATED_BODY()
@@ -29,6 +30,8 @@ public:
      */
     UPROPERTY(EditAnywhere, Category="Cesium")
     ACesiumGeoreference* Georeference;
+
+    virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 
 protected:
 	// Called when the game starts
@@ -48,4 +51,9 @@ private:
     void SetGeoreferenceForOwner();
 
 	AActor* _owner;
+
+    glm::dvec3 _worldOriginLocation;
+	glm::dvec3 _absoluteLocation;
+	glm::dmat4 _actorToUnrealRelativeWorld;
+	bool _isDirty;
 };
