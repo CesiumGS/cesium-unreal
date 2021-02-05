@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CesiumGeoreference.h"
 #include "Components/ActorComponent.h"
 #include "GameFramework/Actor.h"
 #include "Cesium3DTiles/BoundingVolume.h"
@@ -22,6 +23,13 @@ public:
 	// Sets default values for this component's properties
 	UCesiumGeoreferenceComponent();
 
+    /**
+     * The georeference actor controlling how the owning actor's coordinate system relates to the 
+     * coordinate system in this Unreal Engine level.
+     */
+    UPROPERTY(EditAnywhere, Category="Cesium")
+    ACesiumGeoreference* Georeference;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -37,6 +45,7 @@ public:
     virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
 private:
-    void _
+    void SetGeoreferenceForOwner();
+
 	AActor* _owner;
 };
