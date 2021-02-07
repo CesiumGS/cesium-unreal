@@ -1,14 +1,14 @@
 #include "CesiumGeoreferenceComponent.h"
 
-UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() {
-    this->SetGeoreferenceForOwner();
+UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
+    _worldOriginLocation(0.0),
+    _absoluteLocation(0.0),
+    _actorToUnrealRelativeWorld(),
+    _isDirty(false)
+{
+    this->_setGeoreference();
     this->bAutoActivate = true;
-
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
 }
 
 void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
@@ -25,6 +25,15 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, boo
 	// an origin rebase, and we'll lose precision if we update the absolute location here.
 
 	this->_updateTilesetToUnrealRelativeWorldTransform();
+}
+
+bool UCesium3DTilesetRoot::MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) {
+	bool result = USceneComponent::MoveComponentImpl(Delta, NewRotation, bSweep, OutHit, MoveFlags, Teleport);
+
+	this->_updateAbsoluteLocation();
+	this->_updateTilesetToUnrealRelativeWorldTransform();
+
+	return result;
 }
 
 void UCesiumGeoreferenceComponent::BeginPlay() {
@@ -58,7 +67,7 @@ std::optional<Cesium3DTiles::BoundingVolume> UCesiumGeoreferenceComponent::GetBo
         return std::nullopt;
     }
 
-    // TODO: get bounding volume of unreal actor owner
+    // TODO: get bounding volume of unreal actor owner (must be in cesium coordinates)
     return std::nullopt;
 }
 
@@ -81,19 +90,8 @@ void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4&
 
 	this->_actorToUnrealRelativeWorld = transform;
 
+    // TODO: probably don't need this now
 	this->_isDirty = true;
-}
-
-void UCesiumGeoreferenceComponent::SetGeoreferenceForOwner() {
-    if (!_owner) {
-        _owner = this->GetOwner();
-    }
-
-    if (!_owner) {
-        return;
-    }
-
-    _georeference = ACesiumGeoreference::GetDefaultForActor(_owner);
 }
 
 void UCesiumGeoreferenceComponent::UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform) {
@@ -109,4 +107,18 @@ void UCesiumGeoreferenceComponent::UpdateTransformFromCesium(const glm::dmat4& c
 		FVector(transform[2].x, transform[2].y, transform[2].z),
 		FVector(transform[3].x, transform[3].y, transform[3].z)
 	)));
+}
+
+void UCesiumGeoreferenceComponent::_setGeoreference() {
+    _georeference = ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
+}
+
+void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
+	const FVector& newLocation = this->GetRelativeLocation();
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	this->_absoluteLocation = glm::dvec3(
+		static_cast<double>(originLocation.X) + static_cast<double>(newLocation.X),
+		static_cast<double>(originLocation.Y) + static_cast<double>(newLocation.Y),
+		static_cast<double>(originLocation.Z) + static_cast<double>(newLocation.Z)
+	);
 }

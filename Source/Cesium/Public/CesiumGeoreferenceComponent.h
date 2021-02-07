@@ -32,6 +32,7 @@ public:
     ACesiumGeoreference* Georeference;
 
     virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+    virtual bool MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) override;
 
 protected:
 	// Called when the game starts
@@ -48,9 +49,8 @@ public:
     virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
 private:
-    void SetGeoreferenceForOwner();
-
-	AActor* _owner;
+    void _setGeoreference();
+    void _updateAbsoluteLocation()
 
     glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;
