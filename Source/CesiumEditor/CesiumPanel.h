@@ -11,4 +11,8 @@ class CesiumPanel : public SCompoundWidget {
     SLATE_END_ARGS()
 
     void Construct(const FArguments& InArgs);
+
+private:
+    static void RegisterStyle();
+    static TSharedPtr<FSlateStyleSet> Style;
 };
