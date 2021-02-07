@@ -6,9 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
-#include "Cesium3DTiles/Camera.h"
+#include "Cesium3DTiles/ViewState.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
+#include "CesiumCreditSystem.h"
 #include "ACesium3DTileset.generated.h"
 
 class UMaterial;
@@ -55,6 +56,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	ACesiumGeoreference* Georeference;
+
+	/**
+	 * The actor managing this tileset's content attributions.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	ACesiumCreditSystem* CreditSystem;
 
 	/**
 	 * The maximum number of pixels of error when rendering this tileset.
@@ -162,7 +169,7 @@ protected:
 
 	void LoadTileset();
 	void DestroyTileset();
-	Cesium3DTiles::Camera CreateCameraFromViewParameters(
+	Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
 		const FVector2D& viewportSize,
 		const FVector& location,
 		const FRotator& rotation,
