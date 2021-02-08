@@ -8,6 +8,8 @@
 #include "ClassIconFinder.h"
 #include "CesiumPanel.h"
 #include "CesiumCommands.h"
+#include "UnrealAssetAccessor.h"
+#include "UnrealTaskProcessor.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 
@@ -20,10 +22,18 @@ FString FCesiumEditorModule::InContent(const FString& RelativePath, const ANSICH
 }
 
 TSharedPtr< FSlateStyleSet > FCesiumEditorModule::StyleSet = nullptr;
+FCesiumEditorModule* FCesiumEditorModule::_pModule = nullptr;
 
 void FCesiumEditorModule::StartupModule()
 {
+    _pModule = this;
+
     IModuleInterface::StartupModule();
+
+    this->_pAsyncSystem = std::make_unique<CesiumAsync::AsyncSystem>(
+        std::make_shared<UnrealAssetAccessor>(),
+        std::make_shared<UnrealTaskProcessor>()
+    );
 
     // Only register style once
     if (!StyleSet.IsValid())
@@ -66,9 +76,21 @@ void FCesiumEditorModule::StartupModule()
 
 void FCesiumEditorModule::ShutdownModule()
 {
+    this->_pAsyncSystem.reset();
+
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
     FCesiumCommands::Unregister();
     IModuleInterface::ShutdownModule();
+
+    _pModule = nullptr;
+}
+
+const std::optional<CesiumIonClient::CesiumIonConnection>& FCesiumEditorModule::getIonConnection() const {
+    return this->_ionConnection;
+}
+
+void FCesiumEditorModule::setIonConnection(const std::optional<CesiumIonClient::CesiumIonConnection>& newConnection) {
+    this->_ionConnection = newConnection;
 }
 
 TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs)

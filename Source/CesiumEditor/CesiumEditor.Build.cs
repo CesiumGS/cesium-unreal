@@ -18,12 +18,20 @@ public class CesiumEditor : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
+                "../extern/cesium-native/CesiumIonClient/include",
             }
             );
+
+        string cesiumNativeConfiguration = "Debug";
+        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        {
+            cesiumNativeConfiguration = "RelWithDebInfo";
+        }
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumIonClient/" + cesiumNativeConfiguration + "/CesiumIonClient.lib"),
             }
             );
 

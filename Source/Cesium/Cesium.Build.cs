@@ -12,26 +12,26 @@ public class Cesium : ModuleRules
         PublicIncludePaths.AddRange(
             new string[] {
 				// ... add public include paths required here ...
-			}
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/Cesium3DTiles/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumAsync/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGeospatial/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGeometry/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGltf/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGltfReader/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumUtility/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/glm"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/GSL/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/asyncplusplus/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/spdlog/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/rapidjson/include"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/stb"),
+            }
             );
 
 
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
-                "../extern/cesium-native/Cesium3DTiles/include",
-                "../extern/cesium-native/CesiumAsync/include",
-                "../extern/cesium-native/CesiumGeospatial/include",
-                "../extern/cesium-native/CesiumGeometry/include",
-                "../extern/cesium-native/CesiumGltf/include",
-                "../extern/cesium-native/CesiumGltfReader/include",
-                "../extern/cesium-native/CesiumUtility/include",
-                "../extern/cesium-native/extern/glm",
-                "../extern/cesium-native/extern/GSL/include",
-                "../extern/cesium-native/extern/asyncplusplus/include",
-                "../extern/cesium-native/extern/spdlog/include",
-                "../extern/cesium-native/extern/rapidjson/include",
-                "../extern/cesium-native/extern/stb",
             }
             );
 

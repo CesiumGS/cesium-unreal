@@ -12,10 +12,15 @@ class CesiumPanel : public SCompoundWidget {
 
     void Construct(const FArguments& InArgs);
 
+    virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
+
 private:
     TSharedRef<SWidget> Toolbar();
     TSharedRef<SWidget> LoginPanel();
 
+    void addBlankTileset();
+    void signOut();
+    
     static void RegisterStyle();
     static TSharedPtr<FSlateStyleSet> Style;
 };

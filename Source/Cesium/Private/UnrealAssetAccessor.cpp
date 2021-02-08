@@ -40,13 +40,14 @@ private:
 
 class UnrealAssetRequest : public CesiumAsync::IAssetRequest {
 public:
-	UnrealAssetRequest(const std::string& url, const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) :
+	UnrealAssetRequest(const FString& verb, const std::string& url, const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers, TArray<uint8>&& contentPayload) :
 		_pRequest(nullptr),
 		_pResponse(nullptr),
 		_callback()
 	{
 		FHttpModule& httpModule = FHttpModule::Get();
 		this->_pRequest = httpModule.CreateRequest();
+		this->_pRequest->SetVerb(verb);
 		this->_pRequest->SetURL(utf8_to_wstr(url));
 		
 		for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
@@ -54,6 +55,8 @@ public:
 		}
 
 		this->_pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
+
+		this->_pRequest->SetContent(contentPayload);
 
 		this->_pRequest->OnProcessRequestComplete().BindRaw(this, &UnrealAssetRequest::responseReceived);
 		this->_pRequest->ProcessRequest();
@@ -116,7 +119,17 @@ std::unique_ptr<CesiumAsync::IAssetRequest> UnrealAssetAccessor::requestAsset(
 	const std::string& url,
 	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers
 ) {
-	return std::make_unique<UnrealAssetRequest>(url, headers);
+	static const FString GET = TEXT("GET");
+	return std::make_unique<UnrealAssetRequest>(GET, url, headers, TArray<uint8>());
+}
+
+std::unique_ptr<CesiumAsync::IAssetRequest> UnrealAssetAccessor::post(
+	const std::string& url,
+	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
+	const gsl::span<const uint8_t>& contentPayload
+) {
+	static const FString POST = TEXT("POST");
+	return std::make_unique<UnrealAssetRequest>(POST, url, headers, TArray<uint8>(contentPayload.data(), contentPayload.size()));
 }
 
 void UnrealAssetAccessor::tick() noexcept {
