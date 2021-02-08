@@ -7,6 +7,7 @@
 #include "Styling/SlateStyleRegistry.h"
 #include "ClassIconFinder.h"
 #include "CesiumPanel.h"
+#include "CesiumCommands.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 
@@ -28,6 +29,7 @@ void FCesiumEditorModule::StartupModule()
     if (!StyleSet.IsValid())
     {
         const FVector2D Icon16x16(16.0f, 16.0f);
+        const FVector2D Icon40x40(40.0f, 40.0f);
         const FVector2D Icon64x64(64.0f, 64.0f);
 
         StyleSet = MakeShareable(new FSlateStyleSet("CesiumStyleSet"));
@@ -39,8 +41,21 @@ void FCesiumEditorModule::StartupModule()
         StyleSet->Set("ClassIcon.CesiumGeoreference", new IMAGE_BRUSH(TEXT("Cesium-icon-16x16"), Icon16x16));
         StyleSet->Set("ClassThumbnail.CesiumGeoreference", new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
 
+        StyleSet->Set("Cesium.Common.AddFromIon", new IMAGE_BRUSH("NounProject/noun_add_on_cloud_724752", Icon40x40));
+        StyleSet->Set("Cesium.Common.UploadToIon", new IMAGE_BRUSH("NounProject/noun_Cloud_Upload_827113", Icon40x40));
+        StyleSet->Set("Cesium.Common.AddBlankTileset", new IMAGE_BRUSH("NounProject/noun_edit_838988", Icon40x40));
+        StyleSet->Set("Cesium.Common.AccessToken", new IMAGE_BRUSH("NounProject/noun_Key_679682", Icon40x40));
+        StyleSet->Set("Cesium.Common.SignOut", new IMAGE_BRUSH("NounProject/noun_sign_out_538366", Icon40x40));
+
+        StyleSet->Set("WelcomeText", FTextBlockStyle()
+            .SetColorAndOpacity(FSlateColor::UseForeground())
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14))
+        );
+
         FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
     }
+
+    FCesiumCommands::Register();
 
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(TEXT("Cesium"), FOnSpawnTab::CreateRaw(this, &FCesiumEditorModule::SpawnCesiumTab))
         .SetGroup(WorkspaceMenu::GetMenuStructure().GetLevelEditorCategory())
@@ -52,6 +67,7 @@ void FCesiumEditorModule::StartupModule()
 void FCesiumEditorModule::ShutdownModule()
 {
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
+    FCesiumCommands::Unregister();
     IModuleInterface::ShutdownModule();
 }
 
@@ -64,4 +80,12 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumTab(const FSpawnTabArgs& Ta
         ];
 
     return SpawnedTab;
+}
+
+TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() {
+    return StyleSet;
+}
+
+const FName& FCesiumEditorModule::GetStyleSetName() {
+    return StyleSet->GetStyleSetName();
 }

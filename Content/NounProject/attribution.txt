@@ -1,0 +1,15 @@
+These icons are from the Noun Project: https://thenounproject.com/
+
+Icons are modified for colors, size, format, and occasionally content.
+These credits should go in the Cesium for Unreal about box, too, when we have one.
+
+noun_add_on_cloud_724752.svg, noun_add_on_cloud_724752.png: add on cloud by IconfactoryTeam from the Noun Project https://thenounproject.com/term/add-on-cloud/724752/
+
+noun_Cloud_Upload_827113.svg, noun_CloudUpload_827113.png: Cloud Upload by IconfactoryTeam from the Noun Project https://thenounproject.com/term/cloud-upload/827113/
+
+noun_edit_838988.svg, noun_edit_838988.png: edit by IconfactoryTeam from the Noun Project https://thenounproject.com/term/edit/838988/
+
+noun_Key_679682.svg, noun_Key_679682.png: Key by IconfactoryTeam from the Noun Project https://thenounproject.com/term/Key/679682/
+
+noun_sign_out_538366.svg, noun_sign_out_538366.png: sign out by IconfactoryTeam from the Noun Project https://thenounproject.com/term/signout/538366/
+

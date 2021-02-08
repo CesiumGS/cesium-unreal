@@ -14,9 +14,13 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
+	static FString InContent(const FString& RelativePath, const ANSICHAR* Extension);
+
+	static TSharedPtr<FSlateStyleSet> GetStyle();
+	static const FName& GetStyleSetName();
+
 private:
 	TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
 	
-	static FString InContent(const FString& RelativePath, const ANSICHAR* Extension);
 	static TSharedPtr<FSlateStyleSet> StyleSet;
 };

@@ -13,6 +13,9 @@ class CesiumPanel : public SCompoundWidget {
     void Construct(const FArguments& InArgs);
 
 private:
+    TSharedRef<SWidget> Toolbar();
+    TSharedRef<SWidget> LoginPanel();
+
     static void RegisterStyle();
     static TSharedPtr<FSlateStyleSet> Style;
 };
