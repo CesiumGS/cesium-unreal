@@ -30,7 +30,7 @@ void FCesiumEditorModule::StartupModule()
 
     IModuleInterface::StartupModule();
 
-    this->_pAsyncSystem = std::make_unique<CesiumAsync::AsyncSystem>(
+    this->ionDetails.pAsyncSystem = std::make_unique<CesiumAsync::AsyncSystem>(
         std::make_shared<UnrealAssetAccessor>(),
         std::make_shared<UnrealTaskProcessor>()
     );
@@ -76,21 +76,13 @@ void FCesiumEditorModule::StartupModule()
 
 void FCesiumEditorModule::ShutdownModule()
 {
-    this->_pAsyncSystem.reset();
+    this->ionDetails.pAsyncSystem.reset();
 
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
     FCesiumCommands::Unregister();
     IModuleInterface::ShutdownModule();
 
     _pModule = nullptr;
-}
-
-const std::optional<CesiumIonClient::CesiumIonConnection>& FCesiumEditorModule::getIonConnection() const {
-    return this->_ionConnection;
-}
-
-void FCesiumEditorModule::setIonConnection(const std::optional<CesiumIonClient::CesiumIonConnection>& newConnection) {
-    this->_ionConnection = newConnection;
 }
 
 TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs)

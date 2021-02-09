@@ -10,6 +10,8 @@
 #include "CesiumIonClient/CesiumIonConnection.h"
 #include "UnrealConversions.h"
 
+using namespace CesiumIonClient;
+
 void IonLoginPanel::Construct(const FArguments& InArgs)
 {
     ChildSlot [
@@ -122,23 +124,25 @@ void IonLoginPanel::setPassword(const FText& value, ETextCommit::Type commitInfo
 }
 
 FReply IonLoginPanel::SignIn() {
-    assert(FCesiumEditorModule::get());
-    assert(FCesiumEditorModule::get()->getAsyncSystem());
-
-    CesiumAsync::AsyncSystem& asyncSystem = *FCesiumEditorModule::get()->getAsyncSystem();
-
     this->_signInInProgress = true;
 
-    CesiumIonClient::CesiumIonConnection::connect(
-        asyncSystem,
+    CesiumIonConnection::connect(
+        *FCesiumEditorModule::ion().pAsyncSystem,
         wstr_to_utf8(this->_username.ToString()),
         wstr_to_utf8(this->_password.ToString())
-    ).thenInMainThread([this](std::optional<CesiumIonClient::CesiumIonConnection>&& maybeConnection) {
+    ).thenInMainThread([](CesiumIonConnection::Response<CesiumIonConnection>&& response) {
+        FCesiumEditorModule::ion().connection = std::move(response.value);
+        if (FCesiumEditorModule::ion().connection) {
+            return FCesiumEditorModule::ion().connection.value().me();
+        } else {
+            return FCesiumEditorModule::ion().pAsyncSystem->createResolvedFuture(CesiumIonConnection::Response<CesiumIonProfile>{});
+        }
+    }).thenInMainThread([this](CesiumIonConnection::Response<CesiumIonProfile>&& profile) {
+        FCesiumEditorModule::ion().profile = std::move(profile.value);
         this->_signInInProgress = false;
-        FCesiumEditorModule::get()->setIonConnection(maybeConnection);
     }).catchInMainThread([this](const std::exception& /*e*/) {
         this->_signInInProgress = false;
-    });;
+    });
 
     return FReply::Handled();
 }

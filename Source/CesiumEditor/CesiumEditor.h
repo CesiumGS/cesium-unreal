@@ -4,7 +4,7 @@
 #include "Modules/ModuleManager.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Styling/SlateStyle.h"
-#include "CesiumIonClient/CesiumIonConnection.h"
+#include "IonConnectionDetails.h"
 #include <optional>
 
 class FSpawnTabArgs;
@@ -21,20 +21,14 @@ public:
 	static TSharedPtr<FSlateStyleSet> GetStyle();
 	static const FName& GetStyleSetName();
 
-	const std::optional<CesiumIonClient::CesiumIonConnection>& getIonConnection() const;
-	void setIonConnection(const std::optional<CesiumIonClient::CesiumIonConnection>& newConnection);
-
-	CesiumAsync::AsyncSystem* getAsyncSystem() { return this->_pAsyncSystem.get(); }
-	const CesiumAsync::AsyncSystem* getAsyncSystem() const { return this->_pAsyncSystem.get(); }
-
 	static FCesiumEditorModule* get() { return _pModule; }
+	static IonConnectionDetails& ion() { assert(_pModule); return _pModule->ionDetails; }
+
+	IonConnectionDetails ionDetails = {};
 
 private:
 	TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
 
-	std::optional<CesiumIonClient::CesiumIonConnection> _ionConnection;
-	std::unique_ptr<CesiumAsync::AsyncSystem> _pAsyncSystem;
-	
 	static TSharedPtr<FSlateStyleSet> StyleSet;
 	static FCesiumEditorModule* _pModule;
 };

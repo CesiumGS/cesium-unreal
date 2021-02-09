@@ -4,8 +4,11 @@
 #include "CesiumCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Widgets/Layout/SHeader.h"
 #include "Editor.h"
 #include "ACesium3DTileset.h"
+#include "UnrealConversions.h"
+#include "IonQuickAddPanel.h"
 
 TSharedPtr<FSlateStyleSet> CesiumPanel::Style = nullptr;
 
@@ -16,23 +19,18 @@ void CesiumPanel::Construct(const FArguments& InArgs)
         SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight() [ Toolbar() ]
         + SVerticalBox::Slot() [ LoginPanel() ]
+        + SVerticalBox::Slot() [ MainPanel() ]
+        + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)[ ConnectionStatus() ]
     ];
 }
 
 void CesiumPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) {
-    FCesiumEditorModule* pModule = FCesiumEditorModule::get();
-    if (pModule) {
-        CesiumAsync::AsyncSystem* pAsync = pModule->getAsyncSystem();
-        if (pAsync) {
-            pAsync->dispatchMainThreadTasks();
-        }
-    }
-
+    FCesiumEditorModule::ion().pAsyncSystem->dispatchMainThreadTasks();
     SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
 static bool isSignedIn() {
-    return FCesiumEditorModule::get()->getIonConnection().has_value();
+    return FCesiumEditorModule::ion().connection.has_value();
 }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
@@ -60,6 +58,30 @@ TSharedRef<SWidget> CesiumPanel::LoginPanel() {
         .Visibility_Lambda([]() { return isSignedIn() ? EVisibility::Collapsed : EVisibility::Visible; });
 }
 
+TSharedRef<SWidget> CesiumPanel::MainPanel() {
+    return SNew(IonQuickAddPanel)
+        .Visibility_Lambda([]() { return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed; });
+}
+
+TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
+    return SNew(SHeader)
+        .Visibility_Lambda([]() { return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed; })
+        .HAlign(EHorizontalAlignment::HAlign_Right)
+        .Content()
+        [
+            SNew(STextBlock)
+                .Text_Lambda([]() {
+                    if (FCesiumEditorModule::ion().profile) {
+                        auto& profile = FCesiumEditorModule::ion().profile.value();
+                        std::string s = "Connected to Cesium ion as " + profile.username;
+                        return FText::FromString(utf8_to_wstr(s));
+                    } else {
+                        return FText::FromString(TEXT("Connected to Cesium ion as an unknown user"));
+                    }
+                })
+        ];
+}
+
 void CesiumPanel::addBlankTileset() {
     UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
     ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
@@ -68,7 +90,7 @@ void CesiumPanel::addBlankTileset() {
 }
 
 void CesiumPanel::signOut() {
-    FCesiumEditorModule::get()->setIonConnection(std::nullopt);
+    FCesiumEditorModule::ion().connection = std::nullopt;
 }
 
 void CesiumPanel::RegisterStyle()

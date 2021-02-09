@@ -57,7 +57,8 @@ public class CesiumEditor : ModuleRules
                 "HTTP",
                 "MikkTSpace",
                 "Chaos",
-                "Projects"
+                "Projects",
+                "InputCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );

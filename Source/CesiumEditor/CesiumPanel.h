@@ -17,6 +17,8 @@ class CesiumPanel : public SCompoundWidget {
 private:
     TSharedRef<SWidget> Toolbar();
     TSharedRef<SWidget> LoginPanel();
+    TSharedRef<SWidget> MainPanel();
+    TSharedRef<SWidget> ConnectionStatus();
 
     void addBlankTileset();
     void signOut();
