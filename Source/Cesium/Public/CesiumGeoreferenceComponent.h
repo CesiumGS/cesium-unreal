@@ -29,8 +29,14 @@ public:
      * The georeference actor controlling how the owning actor's coordinate system relates to the 
      * coordinate system in this Unreal Engine level.
      */
-    UPROPERTY(EditAnywhere, Category="Cesium")
+    UPROPERTY(EditAnywhere)
     ACesiumGeoreference* Georeference;
+
+    /**
+     * Aligns the local up direction with the ellipsoid normal at the current location. 
+     */
+    UFUNCTION(BlueprintCallable, CallInEditor)
+    void SnapLocalUpWithEllipsoidNormal();
 
     virtual void OnRegister() override;
 
@@ -65,7 +71,6 @@ private:
     glm::dvec3 _relativeLocation;
     glm::dmat4 _actorToECEF;
 	glm::dmat4 _actorToUnrealRelativeWorld;
-	bool _isDirty;
 
     USceneComponent* _ownerRoot;
 };

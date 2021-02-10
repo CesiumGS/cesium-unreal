@@ -4,7 +4,8 @@
 
 class CesiumTransforms {
 public:
-    static const double centimetersPerMeter;
+    static const double metersToCentimeters;
+    static const double centimetersToMeters;
 
     // Scale Cesium's meters up to Unreal's centimeters.
     static const glm::dmat4x4 scaleToUnrealWorld;
