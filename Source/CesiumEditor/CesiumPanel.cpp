@@ -10,8 +10,6 @@
 #include "UnrealConversions.h"
 #include "IonQuickAddPanel.h"
 
-TSharedPtr<FSlateStyleSet> CesiumPanel::Style = nullptr;
-
 void CesiumPanel::Construct(const FArguments& InArgs)
 {
     ChildSlot
@@ -84,10 +82,12 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
 
 void CesiumPanel::addFromIon()
 {
+    FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TEXT("CesiumIon")));
 }
 
 void CesiumPanel::uploadToIon()
 {
+    FPlatformProcess::LaunchURL(TEXT("https://cesium.com/ion/addasset"), NULL, NULL);
 }
 
 void CesiumPanel::addBlankTileset() {
@@ -104,20 +104,4 @@ void CesiumPanel::accessToken()
 void CesiumPanel::signOut() {
     FCesiumEditorModule::ion().connection = std::nullopt;
     FCesiumEditorModule::ion().profile = std::nullopt;
-}
-
-void CesiumPanel::RegisterStyle()
-{
-    if (Style.IsValid()) {
-        return;
-    }
-
-    Style = MakeShareable(new FSlateStyleSet("CesiumPanelStyleSet"));
-
-    Style->Set("WelcomeText", FTextBlockStyle()
-        .SetColorAndOpacity(FSlateColor::UseForeground())
-        .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14))
-    );
-
-    FSlateStyleRegistry::RegisterSlateStyle(*Style.Get());
 }

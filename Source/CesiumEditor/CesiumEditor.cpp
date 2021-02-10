@@ -7,6 +7,7 @@
 #include "Styling/SlateStyleRegistry.h"
 #include "ClassIconFinder.h"
 #include "CesiumPanel.h"
+#include "CesiumIonPanel.h"
 #include "CesiumCommands.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -75,7 +76,13 @@ void FCesiumEditorModule::StartupModule()
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(TEXT("Cesium"), FOnSpawnTab::CreateRaw(this, &FCesiumEditorModule::SpawnCesiumTab))
         .SetGroup(WorkspaceMenu::GetMenuStructure().GetLevelEditorCategory())
         .SetDisplayName(FText::FromString(TEXT("Cesium")))
-        .SetTooltipText(FText::FromString(TEXT("TODO Cesium tooltip")))
+        .SetTooltipText(FText::FromString(TEXT("Cesium")))
+        .SetIcon(FSlateIcon(TEXT("CesiumStyleSet"), TEXT("Cesium.MenuIcon")));
+
+    FGlobalTabmanager::Get()->RegisterNomadTabSpawner(TEXT("CesiumIon"), FOnSpawnTab::CreateRaw(this, &FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab))
+        .SetGroup(WorkspaceMenu::GetMenuStructure().GetLevelEditorCategory())
+        .SetDisplayName(FText::FromString(TEXT("Cesium ion Asset Browser")))
+        .SetTooltipText(FText::FromString(TEXT("Cesium ion Asset Browser")))
         .SetIcon(FSlateIcon(TEXT("CesiumStyleSet"), TEXT("Cesium.MenuIcon")));
 }
 
@@ -96,6 +103,17 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumTab(const FSpawnTabArgs& Ta
         .TabRole(ETabRole::NomadTab)
         [
             SNew(CesiumPanel)
+        ];
+
+    return SpawnedTab;
+}
+
+TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs)
+{
+    TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab)
+        .TabRole(ETabRole::NomadTab)
+        [
+            SNew(CesiumIonPanel)
         ];
 
     return SpawnedTab;

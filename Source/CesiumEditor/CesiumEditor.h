@@ -28,6 +28,7 @@ public:
 
 private:
 	TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
+	TSharedRef<SDockTab> SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
 
 	static TSharedPtr<FSlateStyleSet> StyleSet;
 	static FCesiumEditorModule* _pModule;
