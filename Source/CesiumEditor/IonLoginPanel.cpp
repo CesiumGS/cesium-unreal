@@ -121,6 +121,10 @@ void IonLoginPanel::setUsername(const FText& value, ETextCommit::Type commitInfo
 
 void IonLoginPanel::setPassword(const FText& value, ETextCommit::Type commitInfo) {
     this->_password = value;
+
+    if (commitInfo == ETextCommit::OnEnter) {
+        this->SignIn();
+    }
 }
 
 FReply IonLoginPanel::SignIn() {

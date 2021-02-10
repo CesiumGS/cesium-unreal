@@ -36,10 +36,10 @@ static bool isSignedIn() {
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
     TSharedRef<FUICommandList> commandList = MakeShared<FUICommandList>();
 
-    commandList->MapAction(FCesiumCommands::Get().AddFromIon, FExecuteAction::CreateSP(this, &CesiumPanel::signOut), FCanExecuteAction::CreateStatic(isSignedIn));
-    commandList->MapAction(FCesiumCommands::Get().UploadToIon, FExecuteAction::CreateSP(this, &CesiumPanel::signOut), FCanExecuteAction::CreateStatic(isSignedIn));
+    commandList->MapAction(FCesiumCommands::Get().AddFromIon, FExecuteAction::CreateSP(this, &CesiumPanel::addFromIon), FCanExecuteAction::CreateStatic(isSignedIn));
+    commandList->MapAction(FCesiumCommands::Get().UploadToIon, FExecuteAction::CreateSP(this, &CesiumPanel::uploadToIon), FCanExecuteAction::CreateStatic(isSignedIn));
     commandList->MapAction(FCesiumCommands::Get().AddBlankTileset, FExecuteAction::CreateSP(this, &CesiumPanel::addBlankTileset));
-    commandList->MapAction(FCesiumCommands::Get().AccessToken, FExecuteAction::CreateSP(this, &CesiumPanel::signOut), FCanExecuteAction::CreateStatic(isSignedIn));
+    commandList->MapAction(FCesiumCommands::Get().AccessToken, FExecuteAction::CreateSP(this, &CesiumPanel::accessToken), FCanExecuteAction::CreateStatic(isSignedIn));
     commandList->MapAction(FCesiumCommands::Get().SignOut, FExecuteAction::CreateSP(this, &CesiumPanel::signOut), FCanExecuteAction::CreateStatic(isSignedIn));
     
     FToolBarBuilder builder(commandList, FMultiBoxCustomization::None);
@@ -76,10 +76,18 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
                         std::string s = "Connected to Cesium ion as " + profile.username;
                         return FText::FromString(utf8_to_wstr(s));
                     } else {
-                        return FText::FromString(TEXT("Connected to Cesium ion as an unknown user"));
+                        return FText::FromString(TEXT("Loading user information..."));
                     }
                 })
         ];
+}
+
+void CesiumPanel::addFromIon()
+{
+}
+
+void CesiumPanel::uploadToIon()
+{
 }
 
 void CesiumPanel::addBlankTileset() {
@@ -89,8 +97,13 @@ void CesiumPanel::addBlankTileset() {
     GEditor->AddActor(pCurrentLevel, ACesium3DTileset::StaticClass(), FTransform(), false, RF_Public | RF_Standalone | RF_Transactional);
 }
 
+void CesiumPanel::accessToken()
+{
+}
+
 void CesiumPanel::signOut() {
     FCesiumEditorModule::ion().connection = std::nullopt;
+    FCesiumEditorModule::ion().profile = std::nullopt;
 }
 
 void CesiumPanel::RegisterStyle()

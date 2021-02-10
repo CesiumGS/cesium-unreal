@@ -20,7 +20,10 @@ private:
     TSharedRef<SWidget> MainPanel();
     TSharedRef<SWidget> ConnectionStatus();
 
+    void addFromIon();
+    void uploadToIon();
     void addBlankTileset();
+    void accessToken();
     void signOut();
     
     static void RegisterStyle();
