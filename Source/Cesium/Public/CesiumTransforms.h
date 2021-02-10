@@ -10,7 +10,7 @@ public:
     static const glm::dmat4x4 scaleToUnrealWorld;
 
     // Scale down Unreal's centimeters into Cesium's meters.
-    static const glm::dmat4x4 CesiumTransforms::scaleToCesium
+    static const glm::dmat4x4 scaleToCesium;
 
     // Transform Cesium's right-handed, Z-up coordinate system to Unreal's left-handed, Z-up coordinate
     // system by inverting the Y coordinate. This same transformation can also go the other way.

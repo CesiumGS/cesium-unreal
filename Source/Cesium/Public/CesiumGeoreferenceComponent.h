@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CesiumGeoreference.h"
+#include "CesiumGeoreferenceable.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 #include "Cesium3DTiles/BoundingVolume.h"
@@ -13,7 +14,7 @@
 
 #include "CesiumGeoreferenceComponent.generated.h"
 
-UCLASS()
+UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUM_API UCesiumGeoreferenceComponent : 
     public USceneComponent,
     public ICesiumGeoreferenceable
@@ -30,6 +31,8 @@ public:
      */
     UPROPERTY(EditAnywhere, Category="Cesium")
     ACesiumGeoreference* Georeference;
+
+    virtual void OnRegister() override;
 
     virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
     virtual bool MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) override;
@@ -49,11 +52,20 @@ public:
     virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
 private:
-    void _setGeoreference();
-    void _updateAbsoluteLocation()
+    void _updateAbsoluteLocation();
+    void _updateRelativeLocation();
+    void _initGeoreference();
+    void _updateActorToECEF();
+    void _updateActorToUnrealRelativeWorldTransform();
+    void _updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
+    void _setTransform(const glm::dmat4& transform);
 
     glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;
+    glm::dvec3 _relativeLocation;
+    glm::dmat4 _actorToECEF;
 	glm::dmat4 _actorToUnrealRelativeWorld;
 	bool _isDirty;
+
+    USceneComponent* _ownerRoot;
 };
