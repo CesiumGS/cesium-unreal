@@ -58,7 +58,8 @@ public class CesiumEditor : ModuleRules
                 "MikkTSpace",
                 "Chaos",
                 "Projects",
-                "InputCore"
+                "InputCore",
+                "PropertyEditor"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );

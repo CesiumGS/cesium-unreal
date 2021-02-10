@@ -13,6 +13,8 @@
 #include "ACesium3DTileset.h"
 #include "Editor.h"
 #include "CesiumIonRasterOverlay.h"
+#include "PropertyCustomizationHelpers.h"
+#include "Widgets/Layout/SHeader.h"
 
 using namespace CesiumIonClient;
 
@@ -22,17 +24,21 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs)
         SNew(SVerticalBox)
         + SVerticalBox::Slot()
             .VAlign(VAlign_Top)
-            .HAlign(HAlign_Left)
+            .HAlign(HAlign_Fill)
             .AutoHeight()
-            .Padding(FMargin(5.0f, 20.0f))
+            .Padding(FMargin(5.0f, 20.0f, 5.0f, 10.0f))
         [
-            SNew(STextBlock)
-                .Text(FText::FromString(TEXT("Quick Add:")))
+            SNew(SHeader).Content()
+            [
+                SNew(STextBlock)
+                    .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                    .Text(FText::FromString(TEXT("Quick Add")))
+            ]
         ]
         + SVerticalBox::Slot()
             .VAlign(VAlign_Top)
-            .HAlign(HAlign_Left)
-            .Padding(FMargin(5.0f, 20.0f))
+            .HAlign(HAlign_Fill)
+            .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))
         [
             this->QuickAddList()
         ]
@@ -68,8 +74,8 @@ TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
         })
     };
 
-
     return SNew(SListView<TSharedRef<QuickAddItem>>)
+        .SelectionMode(ESelectionMode::None)
         .ListItemsSource(&quickAddItems)
         .OnMouseButtonDoubleClick(this, &IonQuickAddPanel::AddItemToLevel)
         .OnGenerateRow(this, &IonQuickAddPanel::CreateQuickAddItemRow);
@@ -79,9 +85,33 @@ TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(TSharedRef<QuickAd
     return SNew(STableRow<TSharedRef<QuickAddItem>>, list)
         .Content()
         [
-            SNew(STextBlock)
-                .AutoWrapText(true)
-                .Text(FText::FromString(utf8_to_wstr(item->name)))
+            SNew(SBox)
+                .HAlign(EHorizontalAlignment::HAlign_Fill)
+                .HeightOverride(40.0f)
+                .Content()
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                    .FillWidth(1.0f)
+                    .Padding(5.0f)
+                    .VAlign(EVerticalAlignment::VAlign_Center)
+                [
+                    SNew(STextBlock)
+                        .AutoWrapText(true)
+                        .Text(FText::FromString(utf8_to_wstr(item->name)))
+                ]
+                + SHorizontalBox::Slot()
+                    .AutoWidth()
+                    .VAlign(EVerticalAlignment::VAlign_Center)
+                [
+                    PropertyCustomizationHelpers::MakeNewBlueprintButton(
+                        FSimpleDelegate::CreateLambda(
+                            [this, item]() { this->AddItemToLevel(item); }
+                        ),
+                        FText::FromString(TEXT("Add this dataset to the level"))
+                    )
+                ]
+            ]
         ];
 }
 
