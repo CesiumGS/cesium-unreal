@@ -18,7 +18,14 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
     this->_pListView = SNew(SListView<TSharedPtr<CesiumIonAsset>>)
         .ListItemsSource(&this->_assets)
         .OnMouseButtonDoubleClick(this, &CesiumIonPanel::AddAssetToLevel)
-        .OnGenerateRow(this, &CesiumIonPanel::CreateAssetRow);
+        .OnGenerateRow(this, &CesiumIonPanel::CreateAssetRow)
+        .HeaderRow(
+            SNew(SHeaderRow)
+            + SHeaderRow::Column("Name").DefaultLabel(FText::FromString(TEXT("Name")))
+            + SHeaderRow::Column("Type").DefaultLabel(FText::FromString(TEXT("Type")))
+            + SHeaderRow::Column("DateAdded").DefaultLabel(FText::FromString(TEXT("Date added")))
+            + SHeaderRow::Column("Size").DefaultLabel(FText::FromString(TEXT("Size")))
+        );
 
     ChildSlot
     [
@@ -88,11 +95,39 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset>
     pTileset->RerunConstructionScripts();
 }
 
+namespace {
+
+    class AssetsTableRow : public SMultiColumnTableRow<TSharedPtr<CesiumIonAsset>> {
+    public:
+        void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& InOwnerTableView, const TSharedPtr<CesiumIonAsset>& pItem) {
+            this->_pItem = pItem;
+            SMultiColumnTableRow<TSharedPtr<CesiumIonAsset>>::Construct(InArgs, InOwnerTableView);
+        }
+
+        virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& InColumnName) override {
+            if (InColumnName == "Name") {
+                return SNew(STextBlock)
+                    .Text(FText::FromString(utf8_to_wstr(_pItem->name)));
+            } else if (InColumnName == "Type") {
+                return SNew(STextBlock)
+                    .Text(FText::FromString(utf8_to_wstr(_pItem->type)));
+            } else if (InColumnName == "DateAdded") {
+                return SNew(STextBlock)
+                    .Text(FText::FromString(utf8_to_wstr(_pItem->dateAdded)));
+            } else if (InColumnName == "Size") {
+                return SNew(STextBlock)
+                    .Text(FText::FromString(utf8_to_wstr(_pItem->bytes > 0 ? std::to_string(_pItem->bytes) : "-")));
+            } else {
+                return SNew(STextBlock);
+            }
+        }
+
+    private:
+        TSharedPtr<CesiumIonAsset> _pItem;
+    };
+
+}
+
 TSharedRef<ITableRow> CesiumIonPanel::CreateAssetRow(TSharedPtr<CesiumIonAsset> item, const TSharedRef<STableViewBase>& list) {
-    return SNew(STableRow<TSharedPtr<CesiumIonAsset>>, list)
-        .Content()
-        [
-            SNew(STextBlock)
-                .Text(FText::FromString(utf8_to_wstr(item->name)))
-        ];
+    return SNew(AssetsTableRow, list, item);
 }
