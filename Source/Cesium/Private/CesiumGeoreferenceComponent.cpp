@@ -2,7 +2,6 @@
 #include "Engine/EngineTypes.h"
 #include "CesiumTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
-fix//#include "CesiumGeospatial/EllipsoidTangentPlane.h"
 #include <glm/gtc/matrix_inverse.hpp>
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
@@ -23,15 +22,47 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 		return;
 	}
 
+	// Note: This is an aggressively optimized implementation of Rodrigues' rotation formula to rotate the actor as to align local-up with the ellipsoid normal.
+
 	// local up in ECEF
-	glm::dvec3 actorUpECEF = this->_actorToECEF[2];
+	glm::dvec3 actorUpECEF = glm::normalize(this->_actorToECEF[2]);
 	// actor location in ECEF
 	glm::dvec3 actorLocationECEF = this->_actorToECEF[3];
 	
+	// the surface normal of the ellipsoid model of the globe at the ECEF location of the actor
 	glm::dvec3 ellipsoidNormal = CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(actorLocationECEF);
 	
+	// the axis of the shortest available rotation
 	glm::dvec3 axis = glm::cross(actorUpECEF, ellipsoidNormal);
-	glm::dvec3 
+	// cosine of the angle between the actor's up direction and the ellipsoid normal
+	double cos = glm::dot(actorUpECEF, ellipsoidNormal);
+
+	// TODO: use an appropriate Cesium epsilon
+	if (cos < -0.999) {
+		// The actor's current up direction is completely upside down with respect to the ellipsoid normal.
+		
+		// We want to do a 180 degree rotation around X. We can do this by flipping the Y and Z axes 
+		this->_actorToECEF[1] *= -1.0;
+		this->_actorToECEF[2] *= -1.0;
+	} else {
+		// We know the new Z direction should be the ellipsoid normal	
+		this->_actorToECEF[2] = glm::vec4(ellipsoidNormal, 0.0);
+
+		// Instead of constructing a rotation matrix, we can choose one basis vector in particular to rotate (X in this case) since we already know the new Z.
+		// This is Rodrigues' rotation formula for rotating a single vector by theta around an axis. Note that we can skip out on a lot of trigonometric
+		// calculations due to the fact we had vectors representing a before / after of the rotation and we were able to compute the axis and cosine from those.
+		// TODO: add reference link??
+		glm::dvec3 x = this->_actorToECEF[0];
+		glm::dvec3 axis_cross_x = glm::cross(axis, x);
+		x += axis_cross_x + glm::cross(axis, axis_cross_x) / (1.0 + cos);
+		this->_actorToECEF[0] = glm::vec4(x, 0.0);
+
+		// Now we can cross Z with X to get Y
+		this->_actorToECEF[1] = glm::vec4(glm::cross(ellipsoidNormal, x), 0.0);
+	}
+
+	this->_updateActorToUnrealRelativeWorldTransform();
+	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
 // TODO: is this really the best place to do this?
@@ -47,7 +78,7 @@ void UCesiumGeoreferenceComponent::OnRegister() {
 	this->_initGeoreference();
 }
 
-// TODO: this problem probably also exists in TilesetRoot, but if a origin rebase has happened before placing the actor (or tileset) the internal 
+// TODO: this problem probably also exists in TilesetRoot, but if an origin rebase has happened before placing the actor (or tileset) the internal 
 // world origin might be incorrect?
 
 // TODO: maybe this calculation can happen solely on the Georeference actor who can maintain a double precision consensus of the worldOrigin

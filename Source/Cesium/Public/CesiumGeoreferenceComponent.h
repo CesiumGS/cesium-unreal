@@ -36,7 +36,7 @@ public:
      * Aligns the local up direction with the ellipsoid normal at the current location. 
      */
     UFUNCTION(BlueprintCallable, CallInEditor)
-    void SnapLocalUpWithEllipsoidNormal();
+    void SnapLocalUpToEllipsoidNormal();
 
     virtual void OnRegister() override;
 
