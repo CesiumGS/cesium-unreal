@@ -81,8 +81,8 @@ void FCesiumEditorModule::StartupModule()
 
     FGlobalTabmanager::Get()->RegisterNomadTabSpawner(TEXT("CesiumIon"), FOnSpawnTab::CreateRaw(this, &FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab))
         .SetGroup(WorkspaceMenu::GetMenuStructure().GetLevelEditorCategory())
-        .SetDisplayName(FText::FromString(TEXT("Cesium ion Asset Browser")))
-        .SetTooltipText(FText::FromString(TEXT("Cesium ion Asset Browser")))
+        .SetDisplayName(FText::FromString(TEXT("Cesium ion Assets")))
+        .SetTooltipText(FText::FromString(TEXT("Cesium ion Assets")))
         .SetIcon(FSlateIcon(TEXT("CesiumStyleSet"), TEXT("Cesium.MenuIcon")));
 }
 
