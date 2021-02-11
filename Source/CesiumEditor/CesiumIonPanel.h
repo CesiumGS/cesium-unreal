@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 #include "CesiumIonClient/CesiumIonAssets.h"
 
@@ -18,13 +19,18 @@ class CesiumIonPanel : public SCompoundWidget {
     void Construct(const FArguments& InArgs);
     void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime);
 
-private:
     void Refresh();
+
+private:
+    TSharedRef<SWidget> AssetDetails();
     TSharedRef<ITableRow> CreateAssetRow(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, const TSharedRef<STableViewBase>& list);
     void AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
+    void AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, ESelectInfo::Type selectionType);
 
     TSharedPtr<SListView<TSharedPtr<CesiumIonClient::CesiumIonAsset>>> _pListView;
     TArray<TSharedPtr<CesiumIonClient::CesiumIonAsset>> _assets;
     bool _refreshInProgress = false;
     bool _refreshNeeded = false;
+    TSharedPtr<SWidget> _pDetails;
+    TSharedPtr<CesiumIonClient::CesiumIonAsset> _pSelection;
 };

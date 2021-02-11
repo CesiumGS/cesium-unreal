@@ -9,6 +9,7 @@
 #include "ACesium3DTileset.h"
 #include "UnrealConversions.h"
 #include "IonQuickAddPanel.h"
+#include "CesiumIonPanel.h"
 
 void CesiumPanel::Construct(const FArguments& InArgs)
 {
@@ -104,4 +105,17 @@ void CesiumPanel::accessToken()
 void CesiumPanel::signOut() {
     FCesiumEditorModule::ion().connection = std::nullopt;
     FCesiumEditorModule::ion().profile = std::nullopt;
+    
+    this->refreshIonTab();
+}
+
+void CesiumPanel::refreshIonTab() {
+    TSharedPtr<SDockTab> pIonTab = FGlobalTabmanager::Get()->FindExistingLiveTab(FTabId(TEXT("CesiumIon")));
+    if (!pIonTab) {
+        return;
+    }
+
+    TSharedRef<SWidget> pContent = pIonTab->GetContent();
+    TSharedRef<CesiumIonPanel> pIon = StaticCastSharedRef<CesiumIonPanel>(pContent);
+    pIon->Refresh();
 }

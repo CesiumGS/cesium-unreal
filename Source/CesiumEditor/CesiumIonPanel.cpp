@@ -5,7 +5,9 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Layout/SHeader.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Views/SListView.h"
+#include "Widgets/Input/SButton.h"
 #include "Editor.h"
 #include "ACesium3DTileset.h"
 #include "UnrealConversions.h"
@@ -19,6 +21,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
         .ListItemsSource(&this->_assets)
         .OnMouseButtonDoubleClick(this, &CesiumIonPanel::AddAssetToLevel)
         .OnGenerateRow(this, &CesiumIonPanel::CreateAssetRow)
+        .OnSelectionChanged(this, &CesiumIonPanel::AssetSelected)
         .HeaderRow(
             SNew(SHeaderRow)
             + SHeaderRow::Column("Name").DefaultLabel(FText::FromString(TEXT("Name")))
@@ -27,12 +30,119 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
             + SHeaderRow::Column("Size").DefaultLabel(FText::FromString(TEXT("Size")))
         );
 
+    this->_pDetails = this->AssetDetails();
+
     ChildSlot
     [
-        this->_pListView.ToSharedRef()
+        SNew(SSplitter)
+            .Orientation(EOrientation::Orient_Horizontal)
+        + SSplitter::Slot()
+            .Value(0.66f)
+        [
+            this->_pListView.ToSharedRef()
+        ]
+        + SSplitter::Slot()
+            .Value(0.34f)
+        [
+            SNew(SBorder).Padding(10)
+            [
+                SNew(SVerticalBox)
+                + SVerticalBox::Slot()
+                [
+                    this->_pDetails.ToSharedRef()
+                ]
+                + SVerticalBox::Slot()
+                [
+                    SNew(STextBlock).Visibility_Lambda([this]() { return this->_pSelection ? EVisibility::Collapsed : EVisibility::Visible; })
+                ]
+            ]
+        ]
     ];
 
     this->Refresh();
+}
+
+static bool isSupported(const TSharedPtr<CesiumIonAsset>& pAsset) {
+    return
+        pAsset &&
+        (
+            pAsset->type == "3DTILES" ||
+            pAsset->type == "IMAGERY" ||
+            pAsset->type == "TERRAIN"
+        );
+}
+
+TSharedRef<SWidget> CesiumIonPanel::AssetDetails()
+{
+    return SNew(SScrollBox)
+        .Visibility_Lambda([this]() { return this->_pSelection ? EVisibility::Visible : EVisibility::Collapsed; })
+        + SScrollBox::Slot()
+        .Padding(10, 10, 10, 0)
+        [
+            SNew(STextBlock)
+            .AutoWrapText(true)
+            .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+            .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(this->_pSelection->name)); })
+        ]
+        + SScrollBox::Slot()
+        .Padding(10, 5, 10, 10)
+        .HAlign(EHorizontalAlignment::HAlign_Fill)
+        [
+            SNew(STextBlock)
+            .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(std::string("(ID: ") + std::to_string(this->_pSelection->id) + ")")); })
+        ]
+        + SScrollBox::Slot()
+        .Padding(10)
+        .HAlign(EHorizontalAlignment::HAlign_Fill)
+        [
+            SNew(SButton)
+            .Visibility_Lambda([this]() { return isSupported(this->_pSelection) ? EVisibility::Visible : EVisibility::Collapsed; })
+            .HAlign(EHorizontalAlignment::HAlign_Center)
+            .Text(FText::FromString(TEXT("Add to Level")))
+            .OnClicked_Lambda([this]() { this->AddAssetToLevel(this->_pSelection); return FReply::Handled(); })
+        ]
+        + SScrollBox::Slot()
+        .Padding(10)
+        .HAlign(EHorizontalAlignment::HAlign_Fill)
+        [
+            SNew(SButton)
+            .Visibility_Lambda([this]() { return isSupported(this->_pSelection) ? EVisibility::Collapsed : EVisibility::Visible; })
+            .HAlign(EHorizontalAlignment::HAlign_Center)
+            .Text(FText::FromString(TEXT("This type of dataset is not currently supported")))
+            .IsEnabled(false)
+        ]
+        + SScrollBox::Slot()
+        .Padding(10)
+        .HAlign(EHorizontalAlignment::HAlign_Fill)
+        [
+            SNew(STextBlock)
+            .TextStyle(FCesiumEditorModule::GetStyle(), "AssetDetailsFieldHeader")
+            .Text(FText::FromString(TEXT("Description")))
+        ]
+        + SScrollBox::Slot()
+        .Padding(10, 0)
+        [
+            SNew(STextBlock)
+            .AutoWrapText(true)
+            .TextStyle(FCesiumEditorModule::GetStyle(), "AssetDetailsFieldValue")
+            .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(this->_pSelection->description)); })
+        ]
+        + SScrollBox::Slot()
+        .Padding(10)
+        .HAlign(EHorizontalAlignment::HAlign_Fill)
+        [
+            SNew(STextBlock)
+            .TextStyle(FCesiumEditorModule::GetStyle(), "AssetDetailsFieldHeader")
+            .Text(FText::FromString(TEXT("Attribution")))
+        ]
+        + SScrollBox::Slot()
+        .Padding(10, 0)
+        [
+            SNew(STextBlock)
+            .AutoWrapText(true)
+            .TextStyle(FCesiumEditorModule::GetStyle(), "AssetDetailsFieldValue")
+            .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(this->_pSelection->attribution)); })
+        ];
 }
 
 void CesiumIonPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) {
@@ -77,6 +187,11 @@ void CesiumIonPanel::Refresh() {
         UE_LOG(LogActor, Error, TEXT("Error getting list of assets from Cesium ion: %s"), e.what());
         this->_refreshInProgress = false;
     });
+}
+
+void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, ESelectInfo::Type selectionType)
+{
+    this->_pSelection = item;
 }
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item)

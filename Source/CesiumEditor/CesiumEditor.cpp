@@ -68,6 +68,16 @@ void FCesiumEditorModule::StartupModule()
             .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 12))
         );
 
+        StyleSet->Set("AssetDetailsFieldHeader", FTextBlockStyle()
+            .SetColorAndOpacity(FSlateColor::UseForeground())
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 11))
+        );
+
+        StyleSet->Set("AssetDetailsFieldValue", FTextBlockStyle()
+            .SetColorAndOpacity(FSlateColor::UseForeground())
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 9))
+        );
+
         FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
     }
 
