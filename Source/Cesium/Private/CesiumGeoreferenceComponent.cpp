@@ -6,15 +6,15 @@
 #include <glm/ext/matrix_transform.hpp>
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
-    _worldOriginLocation(0.0),
-    _absoluteLocation(0.0),
+	_worldOriginLocation(0.0),
+	_absoluteLocation(0.0),
 	_relativeLocation(0.0),
 	_actorToECEF(),
-    _actorToUnrealRelativeWorld(),
+	_actorToUnrealRelativeWorld(),
 	_ownerRoot(nullptr),
 	_ignoreOnUpdateTransform(false)
 {
-    this->bAutoActivate = true;
+	this->bAutoActivate = true;
 	this->bWantsOnUpdateTransform = true;
 	PrimaryComponentTick.bCanEverTick = false;
 	// TODO: double check if we can attach to ownerRoot here instead of OnRegister
@@ -123,7 +123,7 @@ void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags Updat
 }
 
 void UCesiumGeoreferenceComponent::BeginPlay() {
-    Super::BeginPlay();
+	Super::BeginPlay();
 }
 
 void UCesiumGeoreferenceComponent::Activate(bool bReset) {
@@ -140,11 +140,11 @@ void UCesiumGeoreferenceComponent::OnComponentDestroyed(bool bDestroyingHierarch
 }
 
 bool UCesiumGeoreferenceComponent::IsBoundingVolumeReady() const {
-    return false;
+	return false;
 }
 
 std::optional<Cesium3DTiles::BoundingVolume> UCesiumGeoreferenceComponent::GetBoundingVolume() const {
-    return std::nullopt;
+	return std::nullopt;
 }
 
 void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
@@ -169,7 +169,7 @@ void UCesiumGeoreferenceComponent::_updateRelativeLocation() {
 }
 
 void UCesiumGeoreferenceComponent::_initGeoreference() {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
+	this->Georeference = ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
 	if (this->Georeference) {
 		this->_updateActorToECEF(); 
 		this->Georeference->AddGeoreferencedObject(this);
