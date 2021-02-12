@@ -3,6 +3,7 @@
 #include "CesiumTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
     _worldOriginLocation(0.0),
@@ -10,30 +11,24 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 	_relativeLocation(0.0),
 	_actorToECEF(),
     _actorToUnrealRelativeWorld(),
-	_ownerRoot(nullptr)
+	_ownerRoot(nullptr),
+	_ignoreOnUpdateTransform(false)
 {
     this->bAutoActivate = true;
+	this->bWantsOnUpdateTransform = true;
 	PrimaryComponentTick.bCanEverTick = false;
-	// TODO: check if we can attach to ownerRoot here instead of OnRegister
+	// TODO: double check if we can attach to ownerRoot here instead of OnRegister
 }
 
 void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
-	if (!this->Georeference) {
-		return;
-	}
+	// TODO: do we need the double precision calculations here when talking about only rotation?
 
-	// Note: This is an aggressively optimized implementation of Rodrigues' rotation formula to rotate the actor as to align local-up with the ellipsoid normal.
-
-	// local up in ECEF
+	// local up in ECEF (the +Z axis)
 	glm::dvec3 actorUpECEF = glm::normalize(this->_actorToECEF[2]);
-	// actor location in ECEF
-	glm::dvec3 actorLocationECEF = this->_actorToECEF[3];
-	
+
 	// the surface normal of the ellipsoid model of the globe at the ECEF location of the actor
-	glm::dvec3 ellipsoidNormal = CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(actorLocationECEF);
+	glm::dvec3 ellipsoidNormal = CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(this->_actorToECEF[3]);
 	
-	// the axis of the shortest available rotation
-	glm::dvec3 axis = glm::cross(actorUpECEF, ellipsoidNormal);
 	// cosine of the angle between the actor's up direction and the ellipsoid normal
 	double cos = glm::dot(actorUpECEF, ellipsoidNormal);
 
@@ -44,28 +39,36 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 		// We want to do a 180 degree rotation around X. We can do this by flipping the Y and Z axes 
 		this->_actorToECEF[1] *= -1.0;
 		this->_actorToECEF[2] *= -1.0;
+
 	} else {
-		// We know the new Z direction should be the ellipsoid normal	
-		this->_actorToECEF[2] = glm::vec4(ellipsoidNormal, 0.0);
+		// the axis of the shortest available rotation with a magnitude that is sine of the angle
+		glm::dvec3 sin_axis = glm::cross(ellipsoidNormal, actorUpECEF);
+		
+		// We construct a rotation matrix using Rodrigues' rotation formula for rotating by theta around an axis. Note that we can skip out on all of the trigonometric
+		// calculations due to the fact we had vectors representing the before/after of the rotation; we were able to compute cos and sin * axis directly from those.		
+		
+		// K is the cross product matrix of the axis, i.e. K v = axis x v, where v is any vector.
+		// Here we have a factor of sine theta that we let through as well since it will simplify the calcuations in Rodrigues` formula.
+		glm::dmat3 sin_K(
+			0.0, -sin_axis.z, sin_axis.y,
+			sin_axis.z, 0.0, -sin_axis.x,
+			-sin_axis.y, sin_axis.x, 0.0 
+		);
+		// Rodrigues' rotation formula
+		glm::dmat4 R = glm::dmat3(1.0) + sin_K + sin_K * sin_K / (1.0 + cos);
 
-		// Instead of constructing a rotation matrix, we can choose one basis vector in particular to rotate (X in this case) since we already know the new Z.
-		// This is Rodrigues' rotation formula for rotating a single vector by theta around an axis. Note that we can skip out on a lot of trigonometric
-		// calculations due to the fact we had vectors representing a before / after of the rotation and we were able to compute the axis and cosine from those.
-		// TODO: add reference link??
-		glm::dvec3 x = this->_actorToECEF[0];
-		glm::dvec3 axis_cross_x = glm::cross(axis, x);
-		x += axis_cross_x + glm::cross(axis, axis_cross_x) / (1.0 + cos);
-		this->_actorToECEF[0] = glm::vec4(x, 0.0);
-
-		// Now we can cross Z with X to get Y
-		this->_actorToECEF[1] = glm::vec4(glm::cross(ellipsoidNormal, x), 0.0);
+		// we only want to apply the rotation to the local axes, not the translation
+		this->_actorToECEF[0] = R * this->_actorToECEF[0];
+		this->_actorToECEF[1] = R * this->_actorToECEF[1];
+		this->_actorToECEF[2] = R * this->_actorToECEF[2];
 	}
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-// TODO: is this really the best place to do this?
+// TODO: is this really the best place to do this? Maybe do this in the constructor?
+// TODO: should we account for the case where this component gets moved to another actor?
 void UCesiumGeoreferenceComponent::OnRegister() {
 	Super::OnRegister();
 
@@ -85,9 +88,6 @@ void UCesiumGeoreferenceComponent::OnRegister() {
 void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
 	USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
 
-	// TODO:
-	// UE_LOG here to check if this is getting called (pretty sure it is)
-
 	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
 	this->_worldOriginLocation = glm::dvec3(
 		static_cast<double>(oldOrigin.X) - static_cast<double>(InOffset.X),
@@ -103,16 +103,23 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, boo
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-// TODO: does this account for all movement, or only editor movement? maybe need to do the same thing in other overriden functions
-bool UCesiumGeoreferenceComponent::MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) {
-	bool result = USceneComponent::MoveComponentImpl(Delta, NewRotation, bSweep, OutHit, MoveFlags, Teleport);
+// TODO: maybe implement moveComponentImpl to tell transform to ignore, or to pass on to rootcomponent
 
+void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
+	USceneComponent::OnUpdateTransform(UpdateTransformFlags, Teleport);
+	
+	// TODO: is this safe / reliable? Will it skip the wrong transform callback?
+	// Should check if this is being called in the same thread sequentially after SetRelativeTransformation()
+	// if we generated this transform call internally, we should ignore it
+	if (_ignoreOnUpdateTransform) {
+		_ignoreOnUpdateTransform = false;
+		return;
+	}
+	
 	this->_updateAbsoluteLocation();
 	this->_updateRelativeLocation();
 	this->_updateActorToECEF();
 	this->_updateActorToUnrealRelativeWorldTransform();
-
-	return result;
 }
 
 void UCesiumGeoreferenceComponent::BeginPlay() {
@@ -133,16 +140,10 @@ void UCesiumGeoreferenceComponent::OnComponentDestroyed(bool bDestroyingHierarch
 }
 
 bool UCesiumGeoreferenceComponent::IsBoundingVolumeReady() const {
-    // TODO: get bounding volume of unreal actor owner
     return false;
 }
 
 std::optional<Cesium3DTiles::BoundingVolume> UCesiumGeoreferenceComponent::GetBoundingVolume() const {
-    if (!this->IsBoundingVolumeReady()) {
-        return std::nullopt;
-    }
-
-    // TODO: get bounding volume of unreal actor owner (must be in cesium coordinates)
     return std::nullopt;
 }
 
@@ -151,12 +152,8 @@ void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4&
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-
 void UCesiumGeoreferenceComponent::_updateAbsoluteLocation() {
-	// TODO: I think we should use GetComponentLocation() here, it is much more clear in the context of a root component 
-	// relative location happens to be world location here since this is a root component, but it does not mean relative world...
-	// it means relative to parent
-	const FVector& relativeLocation = this->_ownerRoot->GetComponentLocation();//GetRelativeLocation();
+	const FVector& relativeLocation = this->_ownerRoot->GetComponentLocation();
 	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
 	this->_absoluteLocation = glm::dvec3(
 		static_cast<double>(originLocation.X) + static_cast<double>(relativeLocation.X),
@@ -180,7 +177,6 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
 	// Note: when a georeferenced object is added, UpdateGeoreferenceTransform will automatically be called
 }
 
-// TODO: maybe change this to _updateActorToEllipsoidCentered
 void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 	if (!this->Georeference) {
 		return;
@@ -210,17 +206,6 @@ void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform() 
 }
 
 void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
-    // TODO: deprecated? GetComponentTransform() instead?
-	FMatrix actorToRelativeWorld = this->_ownerRoot->GetComponentToWorld().ToMatrixWithScale();
-
-	// Note: We are using single-precision rotation / scaling, but double-precision translation. This matrix is the same as actorToRelativeWorld except for the extra precision in translation.
-	glm::dmat4 preciseActorToRelativeWorld = glm::dmat4(
-		glm::dvec4(actorToRelativeWorld.M[0][0], actorToRelativeWorld.M[0][1], actorToRelativeWorld.M[0][2], actorToRelativeWorld.M[0][3]),
-		glm::dvec4(actorToRelativeWorld.M[1][0], actorToRelativeWorld.M[1][1], actorToRelativeWorld.M[1][2], actorToRelativeWorld.M[1][3]),
-		glm::dvec4(actorToRelativeWorld.M[2][0], actorToRelativeWorld.M[2][1], actorToRelativeWorld.M[2][2], actorToRelativeWorld.M[2][3]),
-		glm::dvec4(this->_relativeLocation, 1.0)
-	);
-
 	glm::dmat4 absoluteToRelativeWorld(
 		glm::dvec4(1.0, 0.0, 0.0, 0.0),
 		glm::dvec4(0.0, 1.0, 0.0, 0.0),
@@ -228,18 +213,13 @@ void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform(co
 		glm::dvec4(-this->_worldOriginLocation, 1.0)
 	);
 
-    // Note: ECEF --> Georeferenced is calculated in cesium coordinates 
-    // TODO: what we really need is, actor (ueAbs) -> ?? -> -> ECEF -> Georef -> ueAbsolute -> ueRelative
-	this->_actorToUnrealRelativeWorld = /*preciseActorToRelativeWorld */absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferencedTransform * this->_actorToECEF;
-										//CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium *
-										//ueRelativeToUeAbsolute;
-
-	// * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;
-	// TODO: is this->_actorToUnealRelativeWorld needed? 
-	//this->_setTransform(this->_actorToUnrealRelativeWorld);
+	this->_actorToUnrealRelativeWorld = absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferencedTransform * this->_actorToECEF;
 }
 
 void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
+	// we are about to get an OnUpdateTransform callback for this, so we preemptively mark down to ignore it
+	_ignoreOnUpdateTransform = true;
+
 	this->_ownerRoot->SetRelativeTransform(FTransform(FMatrix(
 		FVector(transform[0].x, transform[0].y, transform[0].z),
 		FVector(transform[1].x, transform[1].y, transform[1].z),

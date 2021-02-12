@@ -41,7 +41,7 @@ public:
     virtual void OnRegister() override;
 
     virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
-    virtual bool MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) override;
+    virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 
 protected:
 	// Called when the game starts
@@ -73,4 +73,6 @@ private:
 	glm::dmat4 _actorToUnrealRelativeWorld;
 
     USceneComponent* _ownerRoot;
+
+    bool _ignoreOnUpdateTransform;
 };
