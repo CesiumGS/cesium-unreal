@@ -2,6 +2,7 @@
 #include "Engine/EngineTypes.h"
 #include "CesiumTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/Cartographic.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
@@ -62,6 +63,25 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 		this->_actorToECEF[1] = R * this->_actorToECEF[1];
 		this->_actorToECEF[2] = R * this->_actorToECEF[2];
 	}
+
+	this->_updateActorToUnrealRelativeWorldTransform();
+	this->_setTransform(this->_actorToUnrealRelativeWorld);
+}
+
+// TODO: are single-precision long/lat/height as accurate as double-precision ECEF?
+void UCesiumGeoreferenceComponent::MoveToLongLatHeight() {
+	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+		CesiumGeospatial::Cartographic::fromDegrees(this->Longitude, this->Latitude, this->Height)
+	);
+	SetAccurateECEF(ecef.x, ecef.y, ecef.z);
+}
+
+void UCesiumGeoreferenceComponent::MoveToECEF() {
+	this->SetAccurateECEF(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
+}
+
+void UCesiumGeoreferenceComponent::SetAccurateECEF(double ecef_x, double ecef_y, double ecef_z) {
+	this->_actorToECEF[3] = glm::vec4(ecef_x, ecef_y, ecef_z, 1.0);
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
