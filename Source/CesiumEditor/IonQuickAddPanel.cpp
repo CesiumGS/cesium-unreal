@@ -119,7 +119,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
     ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-    AActor* pNewActor = GEditor->AddActor(pCurrentLevel, ACesium3DTileset::StaticClass(), FTransform(), false, RF_Public | RF_Standalone | RF_Transactional);
+    AActor* pNewActor = GEditor->AddActor(pCurrentLevel, ACesium3DTileset::StaticClass(), FTransform(), false, RF_Public | RF_Transactional);
     ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
     pTileset->SetActorLabel(utf8_to_wstr(item->name));
     pTileset->IonAssetID = item->tilesetID;
