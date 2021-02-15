@@ -69,28 +69,28 @@ public:
 
     /**
      * The Earth-Centered Earth-Fixed X-coordinate to move this actor to. Note that this will be cast down to a float regardless of the inputted precision.
-     * Use "void UCesiumGeoreferenceComponent::SetAccurateECEF(double, double, double)" from C++ code if double precision is needed.
+     * Use SetAccurateECEF from C++ code if double precision is needed.
      */
     UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
     double ECEF_X = 0.0;
     
     /**
      * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to. Note that this will be cast down to a float regardless of the inputted precision.
-     * Use "void UCesiumGeoreferenceComponent::SetAccurateECEF(double, double, double)" from C++ code if double precision is needed.
+     * Use SetAccurateECEF from C++ code if double precision is needed.
      */
     UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
     double ECEF_Y = 0.0;
     
     /**
      * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to. Note that this will be cast down to a float regardless of the inputted precision.
-     * Use "void UCesiumGeoreferenceComponent::SetAccurateECEF(double, double, double)" from C++ code if double precision is needed.
+     * Use SetAccurateECEF from C++ code if double precision is needed.
      */
     UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
     double ECEF_Z = 0.0;
 
     /**
      * Move the actor to the above Earth-Centered Earth-Fixed coordinate. Note that since Unreal currently does not support the double type, this might be slightly inaccurate.
-     * Use "void UCesiumGeoreferenceComponent::SetAccurateECEF(double, double, double)" from C++ code if double precision is needed.  
+     * Use SetAccurateECEF from C++ code if double precision is needed.
      */
     UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|ECEF")
     void MoveToECEF();

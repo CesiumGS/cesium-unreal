@@ -1,5 +1,6 @@
 #include "CesiumGeoreferenceComponent.h"
 #include "Engine/EngineTypes.h"
+#include "Engine/World.h"
 #include "CesiumTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Cartographic.h"
@@ -73,7 +74,7 @@ void UCesiumGeoreferenceComponent::MoveToLongLatHeight() {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
 		CesiumGeospatial::Cartographic::fromDegrees(this->Longitude, this->Latitude, this->Height)
 	);
-	SetAccurateECEF(ecef.x, ecef.y, ecef.z);
+	this->SetAccurateECEF(ecef.x, ecef.y, ecef.z);
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF() {
@@ -85,6 +86,9 @@ void UCesiumGeoreferenceComponent::SetAccurateECEF(double ecef_x, double ecef_y,
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
+
+	this->_relativeLocation = this->_actorToUnrealRelativeWorld[3];
+	this->_absoluteLocation = this->_relativeLocation + this->_worldOriginLocation;
 }
 
 // TODO: is this really the best place to do this? Maybe do this in the constructor?
