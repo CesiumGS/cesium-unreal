@@ -144,7 +144,7 @@ FReply IonLoginPanel::SignIn() {
     }).thenInMainThread([this](CesiumIonConnection::Response<CesiumIonProfile>&& profile) {
         FCesiumEditorModule::ion().profile = std::move(profile.value);
         this->_signInInProgress = false;
-        //this->refreshIonTab();
+        FCesiumEditorModule::ion().ionConnectionChanged.Broadcast();
     }).catchInMainThread([this](const std::exception& /*e*/) {
         this->_signInInProgress = false;
     });

@@ -24,5 +24,4 @@ private:
     void addBlankTileset();
     void accessToken();
     void signOut();
-    void refreshIonTab();
 };

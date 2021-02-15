@@ -15,6 +15,22 @@
 
 using namespace CesiumIonClient;
 
+CesiumIonPanel::CesiumIonPanel() :
+    _connectionChangedDelegateHandle(),
+    _pListView(nullptr),
+    _assets(),
+    _refreshInProgress(false),
+    _refreshNeeded(false),
+    _pDetails(nullptr),
+    _pSelection(nullptr)
+{
+    this->_connectionChangedDelegateHandle = FCesiumEditorModule::ion().ionConnectionChanged.AddRaw(this, &CesiumIonPanel::Refresh);
+}
+
+CesiumIonPanel::~CesiumIonPanel() {
+    FCesiumEditorModule::ion().ionConnectionChanged.Remove(this->_connectionChangedDelegateHandle);
+}
+
 void CesiumIonPanel::Construct(const FArguments& InArgs)
 {
     this->_pListView = SNew(SListView<TSharedPtr<CesiumIonAsset>>)
@@ -161,7 +177,9 @@ void CesiumIonPanel::Refresh() {
 
     auto& maybeConnection = FCesiumEditorModule::ion().connection;
     if (!maybeConnection) {
-        // Can't refresh while disconnected.
+        // Can't refresh while disconnected, but we can clear out previous results.
+        this->_assets.Empty();
+        this->_pListView->RequestListRefresh();
         return;
     }
 

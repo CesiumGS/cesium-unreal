@@ -16,6 +16,9 @@ class CesiumIonPanel : public SCompoundWidget {
     {}
     SLATE_END_ARGS()
 
+    CesiumIonPanel();
+    virtual ~CesiumIonPanel();
+
     void Construct(const FArguments& InArgs);
     void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime);
 
@@ -27,10 +30,11 @@ private:
     void AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
     void AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, ESelectInfo::Type selectionType);
 
+    FDelegateHandle _connectionChangedDelegateHandle;
     TSharedPtr<SListView<TSharedPtr<CesiumIonClient::CesiumIonAsset>>> _pListView;
     TArray<TSharedPtr<CesiumIonClient::CesiumIonAsset>> _assets;
-    bool _refreshInProgress = false;
-    bool _refreshNeeded = false;
+    bool _refreshInProgress;
+    bool _refreshNeeded;
     TSharedPtr<SWidget> _pDetails;
     TSharedPtr<CesiumIonClient::CesiumIonAsset> _pSelection;
 };
