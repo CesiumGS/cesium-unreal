@@ -28,6 +28,8 @@ private:
     TSharedRef<SWidget> AssetDetails();
     TSharedRef<ITableRow> CreateAssetRow(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, const TSharedRef<STableViewBase>& list);
     void AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
+    void AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
+    void AddAsset(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
     void AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, ESelectInfo::Type selectionType);
 
     FDelegateHandle _connectionChangedDelegateHandle;

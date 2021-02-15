@@ -9,9 +9,14 @@
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SButton.h"
 #include "Editor.h"
+#include "EditorModeManager.h"
+#include "EngineUtils.h"
 #include "ACesium3DTileset.h"
 #include "UnrealConversions.h"
 #include "IonQuickAddPanel.h"
+#include "Cesium3DTiles/Tile.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "CesiumIonRasterOverlay.h"
 
 using namespace CesiumIonClient;
 
@@ -35,7 +40,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
 {
     this->_pListView = SNew(SListView<TSharedPtr<CesiumIonAsset>>)
         .ListItemsSource(&this->_assets)
-        .OnMouseButtonDoubleClick(this, &CesiumIonPanel::AddAssetToLevel)
+        .OnMouseButtonDoubleClick(this, &CesiumIonPanel::AddAsset)
         .OnGenerateRow(this, &CesiumIonPanel::CreateAssetRow)
         .OnSelectionChanged(this, &CesiumIonPanel::AssetSelected)
         .HeaderRow(
@@ -78,14 +83,19 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
     this->Refresh();
 }
 
-static bool isSupported(const TSharedPtr<CesiumIonAsset>& pAsset) {
+static bool isSupportedTileset(const TSharedPtr<CesiumIonAsset>& pAsset) {
     return
         pAsset &&
         (
             pAsset->type == "3DTILES" ||
-            pAsset->type == "IMAGERY" ||
             pAsset->type == "TERRAIN"
         );
+}
+
+static bool isSupportedImagery(const TSharedPtr<CesiumIonAsset>& pAsset) {
+    return
+        pAsset &&
+        pAsset->type == "IMAGERY";
 }
 
 TSharedRef<SWidget> CesiumIonPanel::AssetDetails()
@@ -112,19 +122,29 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails()
         .HAlign(EHorizontalAlignment::HAlign_Fill)
         [
             SNew(SButton)
-            .Visibility_Lambda([this]() { return isSupported(this->_pSelection) ? EVisibility::Visible : EVisibility::Collapsed; })
+            .Visibility_Lambda([this]() { return isSupportedTileset(this->_pSelection) ? EVisibility::Visible : EVisibility::Collapsed; })
             .HAlign(EHorizontalAlignment::HAlign_Center)
             .Text(FText::FromString(TEXT("Add to Level")))
             .OnClicked_Lambda([this]() { this->AddAssetToLevel(this->_pSelection); return FReply::Handled(); })
+        ]
+        + SScrollBox::Slot()
+            .Padding(10)
+            .HAlign(EHorizontalAlignment::HAlign_Fill)
+        [
+            SNew(SButton)
+            .Visibility_Lambda([this]() { return isSupportedImagery(this->_pSelection) ? EVisibility::Visible : EVisibility::Collapsed; })
+            .HAlign(EHorizontalAlignment::HAlign_Center)
+            .Text(FText::FromString(TEXT("Drape Over Terrain Tileset")))
+            .OnClicked_Lambda([this]() { this->AddOverlayToTerrain(this->_pSelection); return FReply::Handled(); })
         ]
         + SScrollBox::Slot()
         .Padding(10)
         .HAlign(EHorizontalAlignment::HAlign_Fill)
         [
             SNew(SButton)
-            .Visibility_Lambda([this]() { return isSupported(this->_pSelection) ? EVisibility::Collapsed : EVisibility::Visible; })
+            .Visibility_Lambda([this]() { return !isSupportedTileset(this->_pSelection) && !isSupportedImagery(this->_pSelection) ? EVisibility::Visible : EVisibility::Collapsed; })
             .HAlign(EHorizontalAlignment::HAlign_Center)
-            .Text(FText::FromString(TEXT("This type of dataset is not currently supported")))
+            .Text(FText::FromString(TEXT("This type of asset is not currently supported")))
             .IsEnabled(false)
         ]
         + SScrollBox::Slot()
@@ -212,6 +232,14 @@ void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> i
     this->_pSelection = item;
 }
 
+void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::CesiumIonAsset> item) {
+    if (item->type == "IMAGERY") {
+        this->AddOverlayToTerrain(item);
+    } else {
+        this->AddAssetToLevel(item);
+    }
+}
+
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item)
 {
     UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
@@ -226,6 +254,56 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset>
     pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().connection.value().getAccessToken());
 
     pTileset->RerunConstructionScripts();
+}
+
+void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAsset> item) {
+    UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+    ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+    bool found = false;
+
+    for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !found && it; ++it) {
+        const Cesium3DTiles::Tileset* pTileset = it->GetTileset();
+        if (!pTileset) {
+            continue;
+        }
+
+        if (!pTileset->supportsRasterOverlays()) {
+            continue;
+        }
+
+        // Looks like something we can hang an overlay on!
+        // Remove any existing overlays and add the new one.
+        // TODO: ideally we wouldn't remove the old overlays but the number of overlay textures we can support
+        // is currently very limited.
+        TArray<UCesiumRasterOverlay*> rasterOverlays;
+        it->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+        for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+            pOverlay->DestroyComponent(false);
+        }
+
+        UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(*it, FName(utf8_to_wstr(item->name)), RF_Public | RF_Transactional);
+
+        pOverlay->IonAssetID = item->id;
+        pOverlay->IonAccessToken = it->IonAccessToken;
+        pOverlay->SetActive(true);
+        
+        it->AddInstanceComponent(pOverlay);
+        pOverlay->OnComponentCreated();
+
+        GEditor->SelectNone(true, false);
+        GEditor->SelectActor(*it, true, true, true, true);
+        GEditor->SelectComponent(pOverlay, true, true, true);
+
+        found = true;
+    }
+
+    if (!found) {
+        // Failed to find a tileset to attach to, report an error.
+        // TODO: might be better to automatically add Cesium World Terain instead.
+        UE_LOG(LogActor, Error, TEXT("The level does not contain a Terrain tileset. Please add one before attempting to add imagery."));
+    }
 }
 
 namespace {

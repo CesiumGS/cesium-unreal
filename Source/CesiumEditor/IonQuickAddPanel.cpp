@@ -132,6 +132,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
         pOverlay->IonAssetID = item->overlayID;
         pOverlay->IonAccessToken = pTileset->IonAccessToken;
         pOverlay->SetActive(true);
+        pTileset->AddInstanceComponent(pOverlay);
     }
 
     pTileset->RerunConstructionScripts();
