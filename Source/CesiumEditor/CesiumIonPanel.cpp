@@ -251,7 +251,7 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset>
     pTileset->IonAssetID = item->id;
 
     // TODO: use a configured token rather than the connection's token
-    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().connection.value().getAccessToken());
+    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
 
     pTileset->RerunConstructionScripts();
 }
@@ -286,7 +286,7 @@ void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAs
         UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(*it, FName(utf8_to_wstr(item->name)), RF_Public | RF_Transactional);
 
         pOverlay->IonAssetID = item->id;
-        pOverlay->IonAccessToken = it->IonAccessToken;
+        pOverlay->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
         pOverlay->SetActive(true);
         
         it->AddInstanceComponent(pOverlay);

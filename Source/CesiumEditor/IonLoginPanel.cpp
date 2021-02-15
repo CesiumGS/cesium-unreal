@@ -1,6 +1,7 @@
 #include "IonLoginPanel.h"
 #include "CesiumEditor.h"
 #include "Styling/SlateStyle.h"
+#include "Misc/App.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -8,6 +9,7 @@
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "CesiumIonClient/CesiumIonConnection.h"
+#include "CesiumIonClient/CesiumIonToken.h"
 #include "UnrealConversions.h"
 
 using namespace CesiumIonClient;
@@ -134,17 +136,52 @@ FReply IonLoginPanel::SignIn() {
         *FCesiumEditorModule::ion().pAsyncSystem,
         wstr_to_utf8(this->_username.ToString()),
         wstr_to_utf8(this->_password.ToString())
-    ).thenInMainThread([](CesiumIonConnection::Response<CesiumIonConnection>&& response) {
+    ).thenInMainThread([this](CesiumIonConnection::Response<CesiumIonConnection>&& response) -> CesiumAsync::Future<void> {
         FCesiumEditorModule::ion().connection = std::move(response.value);
-        if (FCesiumEditorModule::ion().connection) {
-            return FCesiumEditorModule::ion().connection.value().me();
-        } else {
-            return FCesiumEditorModule::ion().pAsyncSystem->createResolvedFuture(CesiumIonConnection::Response<CesiumIonProfile>{});
+        FCesiumEditorModule::ion().profile = {};
+        FCesiumEditorModule::ion().token = "";
+
+        if (!FCesiumEditorModule::ion().connection) {
+            return FCesiumEditorModule::ion().pAsyncSystem->createResolvedFuture();
         }
-    }).thenInMainThread([this](CesiumIonConnection::Response<CesiumIonProfile>&& profile) {
-        FCesiumEditorModule::ion().profile = std::move(profile.value);
-        this->_signInInProgress = false;
-        FCesiumEditorModule::ion().ionConnectionChanged.Broadcast();
+
+        return FCesiumEditorModule::ion().connection.value().me().thenInMainThread([this](CesiumIonConnection::Response<CesiumIonProfile>&& profile) {
+            this->_signInInProgress = false;
+            FCesiumEditorModule::ion().ionConnectionChanged.Broadcast();
+            return FCesiumEditorModule::ion().connection.value().tokens();
+        }).thenInMainThread([this](CesiumIonConnection::Response<std::vector<CesiumIonToken>>&& tokens) -> CesiumAsync::Future<void> {
+            if (!tokens.value) {
+                return FCesiumEditorModule::ion().pAsyncSystem->createResolvedFuture();
+            }
+
+            std::string tokenName = wstr_to_utf8(FApp::GetProjectName()) + " (Created by Cesium for Unreal)";
+
+            // TODO: rather than find a token by name, it would be better to store the token ID in the UE project somewhere.
+            const std::vector<CesiumIonToken>& tokenList = tokens.value.value();
+            const CesiumIonToken* pFound = nullptr;
+
+            for (auto& token : tokenList) {
+                if (token.name == tokenName) {
+                    pFound = &token;
+                }
+            }
+
+            if (pFound) {
+                FCesiumEditorModule::ion().token = pFound->token;
+                return FCesiumEditorModule::ion().pAsyncSystem->createResolvedFuture();
+            } else {
+                // TODO: grant access to individual assets.
+                return FCesiumEditorModule::ion().connection.value().createToken(
+                    tokenName,
+                    { "assets:read" },
+                    std::nullopt
+                ).thenInMainThread([this](CesiumIonConnection::Response<CesiumIonToken>&& token) {
+                    if (token.value) {
+                        FCesiumEditorModule::ion().token = token.value.value().token;
+                    }
+                });
+            }
+        });
     }).catchInMainThread([this](const std::exception& /*e*/) {
         this->_signInInProgress = false;
     });

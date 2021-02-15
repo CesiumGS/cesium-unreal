@@ -125,7 +125,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     pTileset->IonAssetID = item->tilesetID;
     
     // TODO: use a configured token rather than the connection's token
-    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().connection.value().getAccessToken());
+    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
 
     if (item->overlayID > 0) {
         UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(pTileset);
