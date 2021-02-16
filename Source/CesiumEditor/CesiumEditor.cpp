@@ -11,6 +11,12 @@
 #include "CesiumCommands.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
+#include "ACesium3DTileset.h"
+#include "Editor.h"
+#include "EngineUtils.h"
+#include "Cesium3DTiles/Tileset.h"
+#include "UnrealConversions.h"
+#include "CesiumIonRasterOverlay.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 
@@ -137,4 +143,69 @@ TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() {
 
 const FName& FCesiumEditorModule::GetStyleSetName() {
     return StyleSet->GetStyleSetName();
+}
+
+ACesium3DTileset* FCesiumEditorModule::FindFirstTilesetSupportingOverlays() {
+    UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+    ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+    for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); it; ++it) {
+        const Cesium3DTiles::Tileset* pTileset = it->GetTileset();
+        if (pTileset && pTileset->supportsRasterOverlays()) {
+            return *it;
+        }
+    }
+
+    return nullptr;
+}
+
+ACesium3DTileset* FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
+    UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+    ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+    ACesium3DTileset* pTilesetActor = nullptr;
+
+    for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !pTilesetActor && it; ++it) {
+        const Cesium3DTiles::Tileset* pTileset = it->GetTileset();
+        if (pTileset && pTileset->getIonAssetID() == assetID) {
+            return *it;
+        }
+    }
+
+    return nullptr;
+}
+
+ACesium3DTileset* FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
+    UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+    ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+    AActor* pNewActor = GEditor->AddActor(pCurrentLevel, ACesium3DTileset::StaticClass(), FTransform(), false, RF_Public | RF_Transactional);
+    ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
+    pTilesetActor->SetActorLabel(utf8_to_wstr(name));
+    pTilesetActor->IonAssetID = assetID;
+    pTilesetActor->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
+
+    return pTilesetActor;
+}
+
+UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(ACesium3DTileset* pTilesetActor, const std::string& name, int64_t assetID) {
+    // Remove any existing overlays and add the new one.
+    // TODO: ideally we wouldn't remove the old overlays but the number of overlay textures we can support
+    // is currently very limited.
+    TArray<UCesiumRasterOverlay*> rasterOverlays;
+    pTilesetActor->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+    for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+        pOverlay->DestroyComponent(false);
+    }
+
+    UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(pTilesetActor, FName(utf8_to_wstr(name)), RF_Public | RF_Transactional);
+    pOverlay->IonAssetID = assetID;
+    pOverlay->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
+    pOverlay->SetActive(true);
+    pOverlay->OnComponentCreated();
+
+    pTilesetActor->AddInstanceComponent(pOverlay);
+
+    return pOverlay;
 }

@@ -249,8 +249,6 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset>
     ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
     pTileset->SetActorLabel(utf8_to_wstr(item->name));
     pTileset->IonAssetID = item->id;
-
-    // TODO: use a configured token rather than the connection's token
     pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
 
     pTileset->RerunConstructionScripts();
@@ -260,50 +258,18 @@ void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAs
     UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
     ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-    bool found = false;
-
-    for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !found && it; ++it) {
-        const Cesium3DTiles::Tileset* pTileset = it->GetTileset();
-        if (!pTileset) {
-            continue;
-        }
-
-        if (!pTileset->supportsRasterOverlays()) {
-            continue;
-        }
-
-        // Looks like something we can hang an overlay on!
-        // Remove any existing overlays and add the new one.
-        // TODO: ideally we wouldn't remove the old overlays but the number of overlay textures we can support
-        // is currently very limited.
-        TArray<UCesiumRasterOverlay*> rasterOverlays;
-        it->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
-        for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
-            pOverlay->DestroyComponent(false);
-        }
-
-        UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(*it, FName(utf8_to_wstr(item->name)), RF_Public | RF_Transactional);
-
-        pOverlay->IonAssetID = item->id;
-        pOverlay->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
-        pOverlay->SetActive(true);
-        
-        it->AddInstanceComponent(pOverlay);
-        pOverlay->OnComponentCreated();
-
-        GEditor->SelectNone(true, false);
-        GEditor->SelectActor(*it, true, true, true, true);
-        GEditor->SelectComponent(pOverlay, true, true, true);
-
-        found = true;
+    ACesium3DTileset* pTilesetActor = FCesiumEditorModule::FindFirstTilesetSupportingOverlays();
+    if (!pTilesetActor) {
+        pTilesetActor = FCesiumEditorModule::CreateTileset("Cesium World Terrain", 1);
     }
 
-    if (!found) {
-        // Failed to find a tileset to attach to, report an error.
-        // TODO: might be better to automatically add Cesium World Terain instead.
-        UE_LOG(LogActor, Error, TEXT("The level does not contain a Terrain tileset. Please add one before attempting to add imagery."));
-    }
+    UCesiumRasterOverlay* pOverlay = FCesiumEditorModule::AddOverlay(pTilesetActor, item->name, item->id);
+    
+    pTilesetActor->RerunConstructionScripts();
+
+    GEditor->SelectNone(true, false);
+    GEditor->SelectActor(pTilesetActor, true, true, true, true);
+    GEditor->SelectComponent(pOverlay, true, true, true);
 }
 
 namespace {

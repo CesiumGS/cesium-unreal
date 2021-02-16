@@ -8,6 +8,8 @@
 #include <optional>
 
 class FSpawnTabArgs;
+class ACesium3DTileset;
+class UCesiumIonRasterOverlay;
 
 class FCesiumEditorModule : public IModuleInterface
 {
@@ -23,6 +25,11 @@ public:
 
 	static FCesiumEditorModule* get() { return _pModule; }
 	static IonConnectionDetails& ion() { assert(_pModule); return _pModule->ionDetails; }
+
+	static ACesium3DTileset* FindFirstTilesetSupportingOverlays();
+	static ACesium3DTileset* FindFirstTilesetWithAssetID(int64_t assetID);
+	static ACesium3DTileset* CreateTileset(const std::string& name, int64_t assetID);
+	static UCesiumIonRasterOverlay* AddOverlay(ACesium3DTileset* pTilesetActor, const std::string& name, int64_t assetID);
 
 	IonConnectionDetails ionDetails = {};
 

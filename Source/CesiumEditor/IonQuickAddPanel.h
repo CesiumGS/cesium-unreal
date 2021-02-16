@@ -14,7 +14,9 @@ class IonQuickAddPanel : public SCompoundWidget {
 private:
     struct QuickAddItem {
         std::string name{};
+        std::string tilesetName{};
         int64_t tilesetID = -1;
+        std::string overlayName{};
         int64_t overlayID = -1;
     };
 

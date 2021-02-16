@@ -49,27 +49,37 @@ TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
     static const TArray<TSharedRef<QuickAddItem>> quickAddItems = {
         MakeShared<QuickAddItem>(QuickAddItem {
             "Cesium World Terrain + Bing Maps Aerial imagery",
+            "Cesium World Terrain",
             1,
+            "Bing Maps Aerial",
             2
         }),
         MakeShared<QuickAddItem>(QuickAddItem {
             "Cesium World Terrain + Bing Maps Aerial with Labels imagery",
+            "Cesium World Terrain",
             1,
+            "Bing Maps Aerial with Labels",
             3
         }),
         MakeShared<QuickAddItem>(QuickAddItem {
             "Cesium World Terrain + Bing Maps Road imagery",
+            "Cesium World Terrain",
             1,
+            "Bing Maps Road",
             4
         }),
         MakeShared<QuickAddItem>(QuickAddItem {
             "Cesium World Terrain + Sentinel-2 imagery",
+            "Cesium World Terrain",
             1,
+            "Sentinel-2 imagery",
             3954
         }),
         MakeShared<QuickAddItem>(QuickAddItem {
             "Cesium OSM Buildings",
+            "Cesium OSM Buildings",
             96188,
+            "",
             -1
         })
     };
@@ -116,23 +126,17 @@ TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(TSharedRef<QuickAd
 }
 
 void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
-    UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-    ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-    AActor* pNewActor = GEditor->AddActor(pCurrentLevel, ACesium3DTileset::StaticClass(), FTransform(), false, RF_Public | RF_Transactional);
-    ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
-    pTileset->SetActorLabel(utf8_to_wstr(item->name));
-    pTileset->IonAssetID = item->tilesetID;
-    
-    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
+    ACesium3DTileset* pTileset = FCesiumEditorModule::FindFirstTilesetWithAssetID(item->tilesetID);
+    if (!pTileset) {
+        pTileset = FCesiumEditorModule::CreateTileset(item->tilesetName, item->tilesetID);
+    }
 
     if (item->overlayID > 0) {
-        UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(pTileset);
-        pOverlay->IonAssetID = item->overlayID;
-        pOverlay->IonAccessToken = pTileset->IonAccessToken;
-        pOverlay->SetActive(true);
-        pTileset->AddInstanceComponent(pOverlay);
+        FCesiumEditorModule::AddOverlay(pTileset, item->overlayName, item->overlayID);
     }
 
     pTileset->RerunConstructionScripts();
+
+    GEditor->SelectNone(true, false);
+    GEditor->SelectActor(pTileset, true, true, true, true);
 }
