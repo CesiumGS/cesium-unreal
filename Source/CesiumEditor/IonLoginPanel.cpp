@@ -3,9 +3,11 @@
 #include "Styling/SlateStyle.h"
 #include "Misc/App.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "CesiumIonClient/CesiumIonConnection.h"
@@ -23,18 +25,28 @@ void IonLoginPanel::Construct(const FArguments& InArgs)
             .HAlign(HAlign_Center)
             .Padding(20)
         [
-            SNew(STextBlock)
-                .TextStyle(FCesiumEditorModule::GetStyle(), TEXT("WelcomeText"))
-                .Text(FText::FromString(TEXT("Welcome to Cesium for Unreal")))
+            SNew(SBox)
+                .MinAspectRatio(1443.0f / 1300.0f)
+                .MaxAspectRatio(1443.0f / 1300.0f)
+                .MaxDesiredWidth(222.0f)
+                .MaxDesiredHeight(200.0f)
+                .HAlign(HAlign_Fill)
+                .VAlign(VAlign_Fill)
+                .Content()
+            [
+                SNew(SImage)
+                    .Image(FCesiumEditorModule::GetStyle()->GetBrush(TEXT("Cesium.Logo")))
+            ]
         ]
         + SScrollBox::Slot()
             .VAlign(VAlign_Top)
-            .HAlign(HAlign_Center)
-            .Padding(5)
+            .HAlign(HAlign_Fill)
+            .Padding(10)
         [
             SNew(STextBlock)
+                //.WrapTextAt(300.0f)
                 .AutoWrapText(true)
-                .Text(FText::FromString(TEXT("Cesium for Unreal is better with Cesium ion. Access global terrain, imagery, and buildings. Upload your own data for efficient streaming.")))
+                .Text(FText::FromString(TEXT("Sign in to Cesium ion to access global high-resolution 3D content, including photogrammetry, terrain, imagery, and buildings. Bring your own data for tiling, hosting, and streaming to Unreal Engine.")))
         ]
         + SScrollBox::Slot()
             .VAlign(VAlign_Top)
@@ -147,6 +159,7 @@ FReply IonLoginPanel::SignIn() {
 
         return FCesiumEditorModule::ion().connection.value().me().thenInMainThread([this](CesiumIonConnection::Response<CesiumIonProfile>&& profile) {
             this->_signInInProgress = false;
+            FCesiumEditorModule::ion().profile = std::move(profile.value);
             FCesiumEditorModule::ion().ionConnectionChanged.Broadcast();
             return FCesiumEditorModule::ion().connection.value().tokens();
         }).thenInMainThread([this](CesiumIonConnection::Response<std::vector<CesiumIonToken>>&& tokens) -> CesiumAsync::Future<void> {

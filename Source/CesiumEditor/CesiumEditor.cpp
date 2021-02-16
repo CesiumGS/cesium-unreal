@@ -58,6 +58,8 @@ void FCesiumEditorModule::StartupModule()
         StyleSet->Set("Cesium.Common.AccessToken", new IMAGE_BRUSH("NounProject/noun_Key_679682", Icon40x40));
         StyleSet->Set("Cesium.Common.SignOut", new IMAGE_BRUSH("NounProject/noun_sign_out_538366", Icon40x40));
 
+        StyleSet->Set("Cesium.Logo", new IMAGE_BRUSH("CESIUM-4-UNREAL-LOGOS_RGB_CESIUM-4-UNREAL-BlackV", FVector2D(1443.0f, 1300.0f)));
+
         StyleSet->Set("WelcomeText", FTextBlockStyle()
             .SetColorAndOpacity(FSlateColor::UseForeground())
             .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 14))

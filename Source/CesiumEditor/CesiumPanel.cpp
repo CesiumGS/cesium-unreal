@@ -17,8 +17,8 @@ void CesiumPanel::Construct(const FArguments& InArgs)
     [
         SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight() [ Toolbar() ]
-        + SVerticalBox::Slot() [ LoginPanel() ]
-        + SVerticalBox::Slot() [ MainPanel() ]
+        + SVerticalBox::Slot().HAlign(HAlign_Fill) [ LoginPanel() ]
+        + SVerticalBox::Slot().HAlign(HAlign_Fill) [ MainPanel() ]
         + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Right)[ ConnectionStatus() ]
     ];
 }
