@@ -27,6 +27,7 @@ public:
 
     // TODO: Probably should use custom details builder to make the UI a little more friendly,
     // it would be nice to have the same options reflected in the actor's details panel as well
+    // if that's even possible.
 
 	/**
 	 * The georeference actor controlling how the owning actor's coordinate system relates to the 
@@ -60,37 +61,31 @@ public:
     double Height = 0.0;
 
     /**
-     * Move the actor to the above longitude/latitude/height.
+     * Move the actor to the specified longitude/latitude/height.
      */
     UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|LongLatHeight")
     void MoveToLongLatHeight();
 
-    // TODO: can we make these accuracy warnings more clear? it would be cool if there was a way to write a warning note in the details panel above these.
-
     /**
-     * The Earth-Centered Earth-Fixed X-coordinate to move this actor to. Note that this will be cast down to a float regardless of the inputted precision.
-     * Use SetAccurateECEF from C++ code if double precision is needed.
+     * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
      */
     UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
     double ECEF_X = 0.0;
     
     /**
-     * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to. Note that this will be cast down to a float regardless of the inputted precision.
-     * Use SetAccurateECEF from C++ code if double precision is needed.
+     * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to.
      */
     UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
     double ECEF_Y = 0.0;
     
     /**
-     * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to. Note that this will be cast down to a float regardless of the inputted precision.
-     * Use SetAccurateECEF from C++ code if double precision is needed.
+     * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to.
      */
     UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
     double ECEF_Z = 0.0;
 
     /**
-     * Move the actor to the above Earth-Centered Earth-Fixed coordinate. Note that since Unreal currently does not support the double type, this might be slightly inaccurate.
-     * Use SetAccurateECEF from C++ code if double precision is needed.
+     * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
      */
     UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|ECEF")
     void MoveToECEF();
@@ -109,9 +104,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:	
-	virtual void Activate(bool bReset) override;
-	virtual void Deactivate() override;
+public:
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
 	// ICesiumGeoreferenceable virtual functions
@@ -120,6 +113,7 @@ public:
 	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
 private:
+    void _initWorldOriginLocation();
 	void _updateAbsoluteLocation();
 	void _updateRelativeLocation();
 	void _initGeoreference();
