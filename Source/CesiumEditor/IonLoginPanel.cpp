@@ -7,7 +7,7 @@
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
-#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "CesiumIonClient/CesiumIonConnection.h"
@@ -25,14 +25,10 @@ void IonLoginPanel::Construct(const FArguments& InArgs)
             .HAlign(HAlign_Center)
             .Padding(20)
         [
-            SNew(SBox)
-                .MinAspectRatio(1443.0f / 1300.0f)
-                .MaxAspectRatio(1443.0f / 1300.0f)
-                .MaxDesiredWidth(222.0f)
-                .MaxDesiredHeight(200.0f)
-                .HAlign(HAlign_Fill)
-                .VAlign(VAlign_Fill)
-                .Content()
+            SNew(SScaleBox)
+            .Stretch(EStretch::ScaleToFit)
+            .HAlign(HAlign_Center)
+            .VAlign(VAlign_Top)
             [
                 SNew(SImage)
                     .Image(FCesiumEditorModule::GetStyle()->GetBrush(TEXT("Cesium.Logo")))
