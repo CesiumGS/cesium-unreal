@@ -45,49 +45,49 @@ public:
     /**
      * The longitude to move this actor to.
      */
-    UPROPERTY(EditAnywhere, Category="Cesium|LongLatHeight")
+    UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
     double Longitude = 0.0;
     
     /**
      * The latitude to move this actor to.
      */
-    UPROPERTY(EditAnywhere, Category="Cesium|LongLatHeight")
+    UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
     double Latitude = 0.0;
     
     /**
      * The height to move this actor to (in meters above the WGS84 ellipsoid).
      */
-    UPROPERTY(EditAnywhere, Category="Cesium|LongLatHeight")
+    UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
     double Height = 0.0;
 
     /**
      * Move the actor to the specified longitude/latitude/height.
      */
-    UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|LongLatHeight")
+    UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Longitude Latitude Height")
     void MoveToLongLatHeight();
 
     /**
      * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
      */
-    UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
+    UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
     double ECEF_X = 0.0;
     
     /**
      * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to.
      */
-    UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
+    UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
     double ECEF_Y = 0.0;
     
     /**
      * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to.
      */
-    UPROPERTY(EditAnywhere, Category="Cesium|ECEF")
+    UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
     double ECEF_Z = 0.0;
 
     /**
      * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
      */
-    UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|ECEF")
+    UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Earth-Centered, Earth-Fixed")
     void MoveToECEF();
 
     /**
