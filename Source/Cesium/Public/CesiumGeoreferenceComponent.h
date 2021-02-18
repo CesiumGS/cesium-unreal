@@ -25,9 +25,9 @@ public:
 	// Sets default values for this component's properties
 	UCesiumGeoreferenceComponent();
 
-    // TODO: Probably should use custom details builder to make the UI a little more friendly,
-    // it would be nice to have the same options reflected in the actor's details panel as well
-    // if that's even possible.
+	// TODO: Probably should use custom details builder to make the UI a little more friendly,
+	// it would be nice to have the same options reflected in the actor's details panel as well
+	// if that's even possible.
 
 	/**
 	 * The georeference actor controlling how the owning actor's coordinate system relates to the 
@@ -42,58 +42,58 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
 	void SnapLocalUpToEllipsoidNormal();
 
-    /**
-     * The longitude to move this actor to.
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
-    double Longitude = 0.0;
-    
-    /**
-     * The latitude to move this actor to.
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
-    double Latitude = 0.0;
-    
-    /**
-     * The height to move this actor to (in meters above the WGS84 ellipsoid).
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
-    double Height = 0.0;
+	/**
+	 * The longitude to move this actor to.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
+	double Longitude = 0.0;
+	
+	/**
+	 * The latitude to move this actor to.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
+	double Latitude = 0.0;
+	
+	/**
+	 * The height to move this actor to (in meters above the WGS84 ellipsoid).
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
+	double Height = 0.0;
 
-    /**
-     * Move the actor to the specified longitude/latitude/height.
-     */
-    UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Longitude Latitude Height")
-    void MoveToLongLatHeight();
+	/**
+	 * Move the actor to the specified longitude/latitude/height.
+	 */
+	UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Longitude Latitude Height")
+	void MoveToLongLatHeight();
 
-    /**
-     * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
-    double ECEF_X = 0.0;
-    
-    /**
-     * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to.
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
-    double ECEF_Y = 0.0;
-    
-    /**
-     * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to.
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
-    double ECEF_Z = 0.0;
+	/**
+	 * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
+	double ECEF_X = 0.0;
+	
+	/**
+	 * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
+	double ECEF_Y = 0.0;
+	
+	/**
+	 * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
+	double ECEF_Z = 0.0;
 
-    /**
-     * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
-     */
-    UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Earth-Centered, Earth-Fixed")
-    void MoveToECEF();
+	/**
+	 * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
+	 */
+	UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Earth-Centered, Earth-Fixed")
+	void MoveToECEF();
 
-    /**
-     * Set the position of the actor in ECEF coordinates.
-     */ 
-    void SetAccurateECEF(double x, double y, double z);
+	/**
+	 * Set the position of the actor in ECEF coordinates.
+	 */ 
+	void SetAccurateECEF(double x, double y, double z);
 
 	virtual void OnRegister() override;
 
@@ -113,7 +113,7 @@ public:
 	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
 private:
-    void _initWorldOriginLocation();
+	void _initWorldOriginLocation();
 	void _updateAbsoluteLocation();
 	void _updateRelativeLocation();
 	void _initGeoreference();
