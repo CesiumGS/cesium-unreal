@@ -184,9 +184,7 @@ public:
 			delete pHalf;
 		} else if (pMainThreadResult) {
 			UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
-			if (pGltf) {
-				this->destroyRecursively(pGltf);
-			}
+			this->destroyRecursively(pGltf);
 		}
 	}
 
@@ -285,7 +283,11 @@ private:
 	// 	return ReferredToObjects.Num();
 	// }
 
-	void destroyRecursively(USceneComponent* pComponent) {
+	void destroyRecursively(USceneComponent* pComponent) {	
+		if (!pComponent) {
+			return;
+		}
+
 		// FString newName = TEXT("Destroyed_") + pComponent->GetName();
 		// pComponent->Rename(*newName);
 
@@ -296,7 +298,6 @@ private:
 			pComponent->UnregisterComponent();
 		}
 
-		// TODO: occasional nullptr crashes seem to happen here, check if pChild == null ??
 		TArray<USceneComponent*> children = pComponent->GetAttachChildren();
 		for (USceneComponent* pChild : children) {
 			this->destroyRecursively(pChild);
