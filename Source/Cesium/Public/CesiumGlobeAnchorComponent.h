@@ -43,6 +43,12 @@ public:
 	void SnapLocalUpToEllipsoidNormal();
 
 	/**
+	 * Aligns the local X, Y, Z axes to West, North, and Up (the ellipsoid normal) respectively.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
+	void SnapToWestNorthUpTangentPlane(); 
+
+	/**
 	 * The longitude to move this actor to.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
@@ -63,7 +69,7 @@ public:
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Longitude Latitude Height")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Longitude Latitude Height")
 	void MoveToLongLatHeight();
 
 	/**
@@ -87,7 +93,7 @@ public:
 	/**
 	 * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
 	 */
-	UFUNCTION(BlueprintCallable, CallinEditor, Category="Cesium|Earth-Centered, Earth-Fixed")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Earth-Centered, Earth-Fixed")
 	void MoveToECEF();
 
 	/**

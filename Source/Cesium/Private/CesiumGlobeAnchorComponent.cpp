@@ -4,6 +4,7 @@
 #include "CesiumTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGeospatial/Transforms.h"
 #include "CesiumUtility/Math.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -66,6 +67,24 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
+void UCesiumGlobeAnchorComponent::SnapToWestNorthUpTangentPlane() {
+	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
+	// TODO: is it safe to assume we have a proper basis, i.e. the column vectors of _actorToECEF are nonzero?
+	// decompose the original scaling matrix
+	// TODO: I think this is missing potentially negative scaling?
+	glm::dmat4 scale(
+		glm::length(this->_actorToECEF[0]), 0.0, 0.0, 0.0,
+		0.0, glm::length(this->_actorToECEF[1]), 0.0, 0.0,
+		0.0, 0.0, glm::length(this->_actorToECEF[2]), 0.0,
+		0.0, 0.0, 0.0, 1.0
+	);
+	// now put together the new orientation with the original translation and scaling.
+	this->_actorToECEF = ENUtoECEF * scale;
+
+	this->_updateActorToUnrealRelativeWorldTransform();
+	this->_setTransform(this->_actorToUnrealRelativeWorld);
+}
+
 void UCesiumGlobeAnchorComponent::MoveToLongLatHeight() {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
 		CesiumGeospatial::Cartographic::fromDegrees(this->Longitude, this->Latitude, this->Height)
@@ -95,7 +114,9 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 
 	AActor* owner = this->GetOwner();
 	this->_ownerRoot = owner->GetRootComponent();
-	this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	if (this->_ownerRoot != this) {
+		this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	}
 
 	this->_initWorldOriginLocation();
 	this->_updateAbsoluteLocation();

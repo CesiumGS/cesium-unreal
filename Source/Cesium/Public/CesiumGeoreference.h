@@ -106,7 +106,7 @@ public:
 	/**
 	 * TODO: write documentation.
 	 */ 
-	UFUNCTION(CallinEditor, Category="Cesium")
+	UFUNCTION(CallInEditor, Category="Cesium")
 	void PlaceGeoreferenceOriginHere();
 
 	/**
