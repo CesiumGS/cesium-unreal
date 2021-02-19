@@ -4,12 +4,14 @@
 #include "CesiumGeoreference.h"
 #include "Engine/World.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumUtility/Math.h"
 #include "CesiumGeoreferenceable.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <optional>
 
 /*static*/ ACesiumGeoreference* ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 	ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(Actor->GetLevel(), TEXT("CesiumGeoreferenceDefault"));
@@ -25,6 +27,49 @@
 ACesiumGeoreference::ACesiumGeoreference()
 {
 	PrimaryActorTick.bCanEverTick = true;
+}
+
+void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
+	// TODO: check that we are in editor mode, and not play-in-editor mode
+	// TODO: should we just assume origin rebasing isn't happening since this is only editor-mode?
+	// Or are we even sure this is only for editor-mode?
+#if WITH_EDITOR
+	glm::dmat4 georeferencedToEllipsoidCenteredTransform = this->GetGeoreferencedToEllipsoidCenteredTransform();
+
+	FViewport* pViewport = GEditor->GetActiveViewport();
+	FViewportClient* pViewportClient = pViewport->GetClient();
+	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
+	const FVector& relativeCameraLocation = pEditorViewportClient->GetViewLocation();
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+
+	// absolute camera location 
+	glm::dvec4 cameraLocation = glm::dvec4(
+		static_cast<double>(relativeCameraLocation.X) + static_cast<double>(originLocation.X),
+		static_cast<double>(relativeCameraLocation.Y) + static_cast<double>(originLocation.Y),
+		static_cast<double>(relativeCameraLocation.Z) + static_cast<double>(originLocation.Z),
+		1.0
+	);
+
+	// ECEF camera location
+	cameraLocation = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * cameraLocation;
+
+	// Long/Lat/Height camera location (also our new target georeference origin)
+	std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraLocation);
+
+	if (!targetGeoreferenceOrigin) {
+		// TODO: should there be some other default behavior here? This only happens when the location is too close to the center of the Earth.
+		return;
+	}
+
+	this->OriginLongitude = CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).longitude);
+	this->OriginLatitude = CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).latitude);
+	this->OriginHeight = (*targetGeoreferenceOrigin).height;
+
+	// TODO: maybe this could eventually be made to happen smoother 
+	this->UpdateGeoreference();
+
+	pEditorViewportClient->SetViewLocation(FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
+#endif
 }
 
 glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {

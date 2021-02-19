@@ -104,6 +104,12 @@ public:
 	bool KeepWorldOriginNearCamera = true;
 
 	/**
+	 * TODO: write documentation.
+	 */ 
+	UFUNCTION(CallinEditor, Category="Cesium")
+	void PlaceGeoreferenceOriginHere();
+
+	/**
 	 * The maximum distance that the camera may move from the world's OriginLocation before the
 	 * world origin is moved closer to the camera.
 	 */
