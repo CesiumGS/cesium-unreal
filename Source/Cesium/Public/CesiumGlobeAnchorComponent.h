@@ -12,10 +12,10 @@
 #include <glm/vec3.hpp>
 #include <optional>
 
-#include "CesiumGeoreferenceComponent.generated.h"
+#include "CesiumGlobeAnchorComponent.generated.h"
 
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUM_API UCesiumGeoreferenceComponent : 
+class CESIUM_API UCesiumGlobeAnchorComponent : 
 	public USceneComponent,
 	public ICesiumGeoreferenceable
 {
@@ -23,7 +23,7 @@ class CESIUM_API UCesiumGeoreferenceComponent :
 
 public:	
 	// Sets default values for this component's properties
-	UCesiumGeoreferenceComponent();
+	UCesiumGlobeAnchorComponent();
 
 	// TODO: Probably should use custom details builder to make the UI a little more friendly,
 	// it would be nice to have the same options reflected in the actor's details panel as well
