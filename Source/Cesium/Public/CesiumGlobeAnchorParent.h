@@ -12,18 +12,6 @@ class CESIUM_API ACesiumGlobeAnchorParent : public AActor
 public:
 	ACesiumGlobeAnchorParent();
 
-	/**
-	 * Aligns the local up direction with the ellipsoid normal at the current location. 
-	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium")
-	void SnapLocalUpToEllipsoidNormal();
-
-	/**
-	 * Aligns the local X, Y, Z axes to East, North, and Up (the ellipsoid normal) respectively.
-	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium")
-	void SnapToEastNorthUpTangentPlane(); 
-
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
