@@ -25,6 +25,8 @@
 #include "Cesium3DTilesetRoot.h"
 #include "Cesium3DTiles/Tileset.h"
 #include "SpdlogUnrealLoggerSink.h"
+#include "LevelSequenceActor.h"
+#include "EngineUtils.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <spdlog/spdlog.h>
@@ -65,6 +67,22 @@ ACesium3DTileset::ACesium3DTileset() :
 
 ACesium3DTileset::~ACesium3DTileset() {
 	this->DestroyTileset();
+}
+
+void ACesium3DTileset::PlayMovieSequencer() {
+	this->_captureMovieMode = true;
+	this->PreloadAncestors = false;
+	this->PreloadSiblings = false;
+	this->ForbidHoles = false;
+	this->LoadingDescendantLimit = 10000;
+}
+
+void ACesium3DTileset::StopMovieSequencer() {
+	this->_captureMovieMode = false;
+}
+
+void ACesium3DTileset::PauseMovieSequencer() {
+	this->_captureMovieMode = false;
 }
 
 const glm::dmat4& ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const
@@ -116,6 +134,24 @@ void ACesium3DTileset::BeginPlay()
 	Super::BeginPlay();
 
 	this->LoadTileset();
+
+	// Search for level sequence.
+	for (auto sequenceActorIt = TActorIterator<ALevelSequenceActor>(GetWorld()); sequenceActorIt; ++sequenceActorIt)
+	{
+		ALevelSequenceActor* sequenceActor = *sequenceActorIt;
+
+		FScriptDelegate playMovieSequencerDelegate;
+		playMovieSequencerDelegate.BindUFunction(this, FName("PlayMovieSequencer"));
+		sequenceActor->GetSequencePlayer()->OnPlay.Add(playMovieSequencerDelegate);
+
+		FScriptDelegate stopMovieSequencerDelegate;
+		stopMovieSequencerDelegate.BindUFunction(this, FName("StopMovieSequencer"));
+		sequenceActor->GetSequencePlayer()->OnStop.Add(stopMovieSequencerDelegate);
+
+		FScriptDelegate pauseMovieSequencerDelegate;
+		pauseMovieSequencerDelegate.BindUFunction(this, FName("PauseMovieSequencer"));
+		sequenceActor->GetSequencePlayer()->OnPause.Add(pauseMovieSequencerDelegate);
+	}
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform)
@@ -565,45 +601,51 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		camera.value().fieldOfViewDegrees
 	);
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetViewState);
+	const Cesium3DTiles::ViewUpdateResult* result = nullptr;
+	if (!this->_captureMovieMode) {
+		result = &this->_pTileset->updateView(tilesetViewState);
+	}
+	else {
+		result = &this->_pTileset->updateViewOffline(tilesetViewState);
+	}
 
 	if (
-		result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
-		result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
-		result.tilesLoadingMediumPriority != this->_lastTilesLoadingMediumPriority ||
-		result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
-		result.tilesVisited != this->_lastTilesVisited ||
-		result.culledTilesVisited != this->_lastCulledTilesVisited ||
-		result.tilesCulled != this->_lastTilesCulled ||
-		result.maxDepthVisited != this->_lastMaxDepthVisited
+		result->tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
+		result->tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
+		result->tilesLoadingMediumPriority != this->_lastTilesLoadingMediumPriority ||
+		result->tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
+		result->tilesVisited != this->_lastTilesVisited ||
+		result->culledTilesVisited != this->_lastCulledTilesVisited ||
+		result->tilesCulled != this->_lastTilesCulled ||
+		result->maxDepthVisited != this->_lastMaxDepthVisited
 	) {
-		this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
-		this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
-		this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
-		this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
+		this->_lastTilesRendered = result->tilesToRenderThisFrame.size();
+		this->_lastTilesLoadingLowPriority = result->tilesLoadingLowPriority;
+		this->_lastTilesLoadingMediumPriority = result->tilesLoadingMediumPriority;
+		this->_lastTilesLoadingHighPriority = result->tilesLoadingHighPriority;
 
-		this->_lastTilesVisited = result.tilesVisited;
-		this->_lastCulledTilesVisited = result.culledTilesVisited;
-		this->_lastTilesCulled = result.tilesCulled;
-		this->_lastMaxDepthVisited = result.maxDepthVisited;
+		this->_lastTilesVisited = result->tilesVisited;
+		this->_lastCulledTilesVisited = result->culledTilesVisited;
+		this->_lastTilesCulled = result->tilesCulled;
+		this->_lastMaxDepthVisited = result->maxDepthVisited;
 
 		UE_LOG(
 			LogActor,
 			Warning,
 			TEXT("%s: Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
-			result.tilesVisited,
-			result.culledTilesVisited,
-			result.tilesToRenderThisFrame.size(),
-			result.tilesCulled,
-			result.maxDepthVisited,
-			result.tilesLoadingLowPriority,
-			result.tilesLoadingMediumPriority,
-			result.tilesLoadingHighPriority
+			result->tilesVisited,
+			result->culledTilesVisited,
+			result->tilesToRenderThisFrame.size(),
+			result->tilesCulled,
+			result->maxDepthVisited,
+			result->tilesLoadingLowPriority,
+			result->tilesLoadingMediumPriority,
+			result->tilesLoadingHighPriority
 		);
 	}
 
-	for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
+	for (Cesium3DTiles::Tile* pTile : result->tilesToNoLongerRenderThisFrame) {
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
 			continue;
 		}
@@ -617,7 +659,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		}
 	}
 
-	for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
+	for (Cesium3DTiles::Tile* pTile : result->tilesToRenderThisFrame) {
 		if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
 			continue;
 		}
@@ -653,5 +695,7 @@ void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ACesium3DTileset::BeginDestroy() {
 	this->DestroyTileset();
+
 	AActor::BeginDestroy();
 }
+

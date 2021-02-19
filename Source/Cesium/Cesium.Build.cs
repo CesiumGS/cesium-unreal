@@ -84,7 +84,8 @@ public class Cesium : ModuleRules
                 "StaticMeshDescription",
                 "HTTP",
                 "MikkTSpace",
-                "Chaos"
+                "Chaos",
+                "LevelSequence"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );

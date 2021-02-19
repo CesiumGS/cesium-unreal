@@ -140,6 +140,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
 	bool ShowInEditor = true;
 
+	UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
+	void PlayMovieSequencer();
+
+	UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
+	void StopMovieSequencer();
+
+	UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
+	void PauseMovieSequencer();
+
 	const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
 	Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
@@ -213,4 +222,5 @@ private:
 	uint32_t _lastMaxDepthVisited;
 	
 	bool _updateGeoreferenceOnBoundingVolumeReady;
+	bool _captureMovieMode;
 };
