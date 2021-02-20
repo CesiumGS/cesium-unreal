@@ -44,7 +44,7 @@ public:
 		return this->_pResponse->GetResponseCode();
 	}
 
-	virtual const std::string& contentType() const override {
+	virtual std::string contentType() const override {
 		return this->_contentType;
 	}
 
@@ -52,9 +52,9 @@ public:
 		return _headers;
 	}
 
-	virtual const CesiumAsync::ResponseCacheControl *cacheControl() const override {
-		return _cacheControl != std::nullopt ? &(*_cacheControl) : nullptr;
-	}
+	//virtual const CesiumAsync::ResponseCacheControl *cacheControl() const override {
+	//	return _cacheControl != std::nullopt ? &(*_cacheControl) : nullptr;
+	//}
 
 	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();

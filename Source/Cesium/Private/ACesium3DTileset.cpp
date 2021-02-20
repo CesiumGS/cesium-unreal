@@ -6,7 +6,7 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/CreditSystem.h"
-#include "CesiumAsync/CacheAssetAccessor.h"
+#include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/DiskCache.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -320,7 +320,7 @@ private:
 
 void ACesium3DTileset::LoadTileset()
 {
-	static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor = std::make_shared<CesiumAsync::CacheAssetAccessor>(
+	static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor = std::make_shared<CesiumAsync::CachingAssetAccessor>(
 		spdlog::default_logger(),
 		std::make_unique<UnrealAssetAccessor>(),
 		std::make_unique<CesiumAsync::DiskCache>("cesium-request-cache.sqlite"));
