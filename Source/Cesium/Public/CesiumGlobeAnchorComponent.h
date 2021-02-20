@@ -37,6 +37,24 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
+	 * The current longitude of this actor.
+	 */ 
+	UPROPERTY(VisibleAnywhere, Category="Transform")
+	double Longitude = 0.0;
+
+	/**
+	 * The current latitude of this actor.
+	 */ 
+	UPROPERTY(VisibleAnywhere, Category="Transform")
+	double Latitude = 0.0;
+
+	/**
+	 * The current height in meters (above the WGS84 ellipsoid) of this actor.
+	 */ 
+	UPROPERTY(VisibleAnywhere, Category="Transform")
+	double Height = 0.0;
+
+	/**
 	 * Aligns the local up direction with the ellipsoid normal at the current location. 
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
@@ -51,49 +69,49 @@ public:
 	/**
 	 * The longitude to move this actor to.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
-	double Longitude = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Longitude Latitude Height")
+	double TargetLongitude = 0.0;
 	
 	/**
 	 * The latitude to move this actor to.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
-	double Latitude = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Longitude Latitude Height")
+	double TargetLatitude = 0.0;
 	
 	/**
 	 * The height to move this actor to (in meters above the WGS84 ellipsoid).
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Longitude Latitude Height")
-	double Height = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Longitude Latitude Height")
+	double TargetHeight = 0.0;
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Longitude Latitude Height")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Teleport|Longitude Latitude Height")
 	void MoveToLongLatHeight();
 
 	/**
 	 * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
-	double ECEF_X = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
+	double TargetECEF_X = 0.0;
 	
 	/**
 	 * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
-	double ECEF_Y = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
+	double TargetECEF_Y = 0.0;
 	
 	/**
 	 * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to.
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Earth-Centered, Earth-Fixed")
-	double ECEF_Z = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
+	double TargetECEF_Z = 0.0;
 
 	/**
 	 * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
 	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Earth-Centered, Earth-Fixed")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
 	void MoveToECEF();
 
 	/**
@@ -127,6 +145,7 @@ private:
 	void _updateActorToUnrealRelativeWorldTransform();
 	void _updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 	void _setTransform(const glm::dmat4& transform);
+	void _updateLongLatHeight();
 
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;

@@ -11,10 +11,11 @@ class CESIUM_API ACesiumGlobeAnchorParent : public AActor
 
 public:
 	ACesiumGlobeAnchorParent();
+    
+    UPROPERTY(EditAnywhere, Category="Cesium")
+    UCesiumGlobeAnchorComponent* GlobeAnchorComponent;
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
-private:
-    UCesiumGlobeAnchorComponent* _globeAnchorComponent;
 };

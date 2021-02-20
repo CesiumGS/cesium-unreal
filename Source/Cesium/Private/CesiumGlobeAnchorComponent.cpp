@@ -8,6 +8,7 @@
 #include "CesiumUtility/Math.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <optional>
 
 UCesiumGlobeAnchorComponent::UCesiumGlobeAnchorComponent() :
 	_worldOriginLocation(0.0),
@@ -87,17 +88,18 @@ void UCesiumGlobeAnchorComponent::SnapToWestNorthUpTangentPlane() {
 
 void UCesiumGlobeAnchorComponent::MoveToLongLatHeight() {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-		CesiumGeospatial::Cartographic::fromDegrees(this->Longitude, this->Latitude, this->Height)
+		CesiumGeospatial::Cartographic::fromDegrees(this->TargetLongitude, this->TargetLatitude, this->TargetHeight)
 	);
 	this->SetAccurateECEF(ecef.x, ecef.y, ecef.z);
 }
 
 void UCesiumGlobeAnchorComponent::MoveToECEF() {
-	this->SetAccurateECEF(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
+	this->SetAccurateECEF(this->TargetECEF_X, this->TargetECEF_Y, this->TargetECEF_Z);
 }
 
 void UCesiumGlobeAnchorComponent::SetAccurateECEF(double ecef_x, double ecef_y, double ecef_z) {
 	this->_actorToECEF[3] = glm::vec4(ecef_x, ecef_y, ecef_z, 1.0);
+	this->_updateLongLatHeight();
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
@@ -228,6 +230,7 @@ void UCesiumGlobeAnchorComponent::_updateActorToECEF() {
 	);
 
 	this->_actorToECEF = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * actorToAbsoluteWorld;
+	this->_updateLongLatHeight();
 }
 
 void UCesiumGlobeAnchorComponent::_updateActorToUnrealRelativeWorldTransform() {
@@ -259,4 +262,17 @@ void UCesiumGlobeAnchorComponent::_setTransform(const glm::dmat4& transform) {
 		FVector(transform[2].x, transform[2].y, transform[2].z),
 		FVector(transform[3].x, transform[3].y, transform[3].z)
 	)));
+}
+
+void UCesiumGlobeAnchorComponent::_updateLongLatHeight() {
+	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(this->_actorToECEF[3]);
+
+	if (!cartographic) {
+		// only happens when actor is too close to the center of the Earth
+		return;
+	}
+
+	this->Longitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
+	this->Latitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
+	this->Height = (*cartographic).height;
 }
