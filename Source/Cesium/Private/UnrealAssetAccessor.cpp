@@ -103,28 +103,40 @@ private:
 	CesiumAsync::HttpHeaders _headers;
 };
 
-void UnrealAssetAccessor::requestAsset(
-	const CesiumAsync::AsyncSystem* /*asyncSystem*/,
+CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAccessor::requestAsset(
+	const CesiumAsync::AsyncSystem& asyncSystem,
 	const std::string& url,
-	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-	std::function<void(std::shared_ptr<CesiumAsync::IAssetRequest>)> callback) 
+	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers)
 {
-	FHttpModule& httpModule = FHttpModule::Get();
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
-	pRequest->SetURL(utf8_to_wstr(url));
-	
-	for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
-		pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
-	}
+	return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>([
+		url = std::move(url),
+		headers = std::move(headers)
+	](auto&& resolve, auto&& reject) {
+		FHttpModule& httpModule = FHttpModule::Get();
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
+		pRequest->SetURL(utf8_to_wstr(url));
 
-	pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
-	pRequest->OnProcessRequestComplete().BindLambda([callback](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
-		if (connectedSuccessfully) {
-			callback(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+		for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+			pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
 		}
-	});
 
-	pRequest->ProcessRequest();
+		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
+
+		pRequest->OnProcessRequestComplete().BindLambda([resolve, reject](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
+			if (connectedSuccessfully) {
+				resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+			} else {
+				switch (pRequest->GetStatus()) {
+				case EHttpRequestStatus::Failed_ConnectionError:
+					reject(std::exception("Connection failed."));
+				default:
+					reject(std::exception("Request failed."));
+				}
+			}
+		});
+
+		pRequest->ProcessRequest();
+	});
 }
 
 void UnrealAssetAccessor::tick() noexcept {
