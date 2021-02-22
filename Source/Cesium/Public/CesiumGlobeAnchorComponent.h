@@ -39,20 +39,20 @@ public:
 	/**
 	 * The current longitude of this actor.
 	 */ 
-	UPROPERTY(VisibleAnywhere, Category="Transform")
-	double Longitude = 0.0;
+	UPROPERTY(VisibleAnywhere, Category="Cesium")
+	double CurrentLongitude = 0.0;
 
 	/**
 	 * The current latitude of this actor.
 	 */ 
-	UPROPERTY(VisibleAnywhere, Category="Transform")
-	double Latitude = 0.0;
+	UPROPERTY(VisibleAnywhere, Category="Cesium")
+	double CurrentLatitude = 0.0;
 
 	/**
 	 * The current height in meters (above the WGS84 ellipsoid) of this actor.
 	 */ 
-	UPROPERTY(VisibleAnywhere, Category="Transform")
-	double Height = 0.0;
+	UPROPERTY(VisibleAnywhere, Category="Cesium")
+	double CurrentHeight = 0.0;
 
 	/**
 	 * Aligns the local up direction with the ellipsoid normal at the current location. 
@@ -85,12 +85,6 @@ public:
 	double TargetHeight = 0.0;
 
 	/**
-	 * Move the actor to the specified longitude/latitude/height.
-	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Teleport|Longitude Latitude Height")
-	void MoveToLongLatHeight();
-
-	/**
 	 * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
@@ -109,15 +103,26 @@ public:
 	double TargetECEF_Z = 0.0;
 
 	/**
-	 * Move the actor to the specified Earth-Centered Earth-Fixed coordinate.
+	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
-	void MoveToECEF();
+	void MoveToLongLatHeight(double longitude, double latitude, double height);
 
 	/**
-	 * Set the position of the actor in ECEF coordinates.
+	 * Move the actor to the specified longitude/latitude/height. Inaccurate since this takes single-precision floats.
 	 */ 
-	void SetAccurateECEF(double x, double y, double z);
+	UFUNCTION(BlueprintCallable)
+	void InaccurateMoveToLongLatHeight(float longitude, float latitude, float height);
+
+	/**
+	 * Move the actor to the specified ECEF coordinates.
+	 */ 
+	void MoveToECEF(double ecef_x, double ecef_y, double ecef_z);
+
+	/**
+	 * Move the actor to the specified ECEF coordinates. Inaccurate since this takes single-precision floats.
+	 */ 
+	UFUNCTION(BlueprintCallable)
+	void InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z);
 
 	virtual void OnRegister() override;
 
@@ -130,6 +135,10 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 public:
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
@@ -140,6 +149,7 @@ public:
 	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
 private:
+	void _initRootComponent();
 	void _initWorldOriginLocation();
 	void _updateAbsoluteLocation();
 	void _updateRelativeLocation();

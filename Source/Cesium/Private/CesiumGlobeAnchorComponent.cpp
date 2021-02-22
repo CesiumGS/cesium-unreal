@@ -1,6 +1,7 @@
 #include "CesiumGlobeAnchorComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
+#include "UObject/NameTypes.h"
 #include "CesiumTransforms.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Cartographic.h"
@@ -89,18 +90,18 @@ void UCesiumGlobeAnchorComponent::SnapToWestNorthUpTangentPlane() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGlobeAnchorComponent::MoveToLongLatHeight() {
+void UCesiumGlobeAnchorComponent::MoveToLongLatHeight(double longitude, double latitude, double height) {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-		CesiumGeospatial::Cartographic::fromDegrees(this->TargetLongitude, this->TargetLatitude, this->TargetHeight)
+		CesiumGeospatial::Cartographic::fromDegrees(longitude, latitude, height)
 	);
-	this->SetAccurateECEF(ecef.x, ecef.y, ecef.z);
+	this->MoveToECEF(ecef.x, ecef.y, ecef.z);
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF() {
-	this->SetAccurateECEF(this->TargetECEF_X, this->TargetECEF_Y, this->TargetECEF_Z);
+void UCesiumGlobeAnchorComponent::InaccurateMoveToLongLatHeight(float longitude, float latitude, float height) {
+	this->MoveToLongLatHeight(longitude, latitude, height);
 }
 
-void UCesiumGlobeAnchorComponent::SetAccurateECEF(double ecef_x, double ecef_y, double ecef_z) {
+void UCesiumGlobeAnchorComponent::MoveToECEF(double ecef_x, double ecef_y, double ecef_z) {
 	this->_actorToECEF[3] = glm::vec4(ecef_x, ecef_y, ecef_z, 1.0);
 	this->_updateLongLatHeight();
 
@@ -113,46 +114,19 @@ void UCesiumGlobeAnchorComponent::SetAccurateECEF(double ecef_x, double ecef_y, 
 	this->_absoluteLocation = this->_relativeLocation + this->_worldOriginLocation;
 }
 
-// TODO: is this the best place to attach this to the root component of the owner actor?
-void UCesiumGlobeAnchorComponent::OnRegister() {
-	Super::OnRegister();
-
-	AActor* owner = this->GetOwner();
-	this->_ownerRoot = owner->GetRootComponent();
-
-	if (!this->_ownerRoot) {
-		return;
-	}
-
-	// if this is not the root component, we need to attach to the root component and control it
-	if (this->_ownerRoot != this) {
-		this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
-	}
-
-	this->_initWorldOriginLocation();
-	this->_updateAbsoluteLocation();
-	this->_updateRelativeLocation();
-	this->_initGeoreference();
+void UCesiumGlobeAnchorComponent::InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z) {
+	this->MoveToECEF(ecef_x, ecef_y, ecef_z);
 }
 
-// TODO: figure out what these parameters actually represent, currently I'm only guessing based on the types
-// TODO: resolve duplicate code btw here and OnRegister
+// TODO: is this the best place to attach to the root component of the owner actor?
+void UCesiumGlobeAnchorComponent::OnRegister() {
+	Super::OnRegister();
+	this->_initRootComponent();
+}
+
+// TODO: figure out what these delegate parameters actually represent, currently I'm only guessing based on the types
 void UCesiumGlobeAnchorComponent::OnRootComponentChanged(USceneComponent* /*newRoot*/, bool /*addedOrRemoved*/) {
-	AActor* owner = this->GetOwner(); 
-	this->_ownerRoot = owner->GetRootComponent();
-
-	if (!this->_ownerRoot) {
-		return;
-	}
-
-	if (this->_ownerRoot != this) {
-		this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
-	}
-
-	this->_initWorldOriginLocation();
-	this->_updateAbsoluteLocation();
-	this->_updateRelativeLocation();
-	this->_initGeoreference();
+	this->_initRootComponent();
 }
 
 void UCesiumGlobeAnchorComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
@@ -192,6 +166,36 @@ void UCesiumGlobeAnchorComponent::BeginPlay() {
 	Super::BeginPlay();
 }
 
+
+#if WITH_EDITOR
+void UCesiumGlobeAnchorComponent::PostEditChangeProperty(FPropertyChangedEvent& event) {
+	Super::PostEditChangeProperty(event);
+
+	if (!event.Property) {
+		return;
+	}
+
+	FName propertyName = event.Property->GetFName();
+
+	if (
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetLongitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetLatitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetHeight)
+	) {
+		this->MoveToLongLatHeight(TargetLongitude, TargetLatitude, TargetHeight);
+		return;
+	} else if (
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetECEF_X) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetECEF_Y) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetECEF_Z)
+	) {
+		this->MoveToECEF(TargetECEF_X, TargetECEF_Y, TargetECEF_Z);
+		return;
+	}
+}
+#endif
+
+
 void UCesiumGlobeAnchorComponent::OnComponentDestroyed(bool bDestroyingHierarchy) {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
 }
@@ -207,6 +211,30 @@ std::optional<Cesium3DTiles::BoundingVolume> UCesiumGlobeAnchorComponent::GetBou
 void UCesiumGlobeAnchorComponent::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
 	this->_updateActorToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
+}
+
+
+/**
+ *  PRIVATE HELPER FUNCTIONS
+ */
+
+void UCesiumGlobeAnchorComponent::_initRootComponent() {
+	AActor* owner = this->GetOwner(); 
+	this->_ownerRoot = owner->GetRootComponent();
+
+	if (!this->_ownerRoot) {
+		return;
+	}
+
+	// if this is not the root component, we need to attach to the root component and control it
+	if (this->_ownerRoot != this) {
+		this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	}
+
+	this->_initWorldOriginLocation();
+	this->_updateAbsoluteLocation();
+	this->_updateRelativeLocation();
+	this->_initGeoreference();
 }
 
 void UCesiumGlobeAnchorComponent::_initWorldOriginLocation() {
@@ -305,7 +333,7 @@ void UCesiumGlobeAnchorComponent::_updateLongLatHeight() {
 		return;
 	}
 
-	this->Longitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
-	this->Latitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
-	this->Height = (*cartographic).height;
+	this->CurrentLongitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
+	this->CurrentLatitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
+	this->CurrentHeight = (*cartographic).height;
 }
