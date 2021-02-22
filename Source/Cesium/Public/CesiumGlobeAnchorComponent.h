@@ -121,6 +121,9 @@ public:
 
 	virtual void OnRegister() override;
 
+	UFUNCTION()
+	void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
+
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 

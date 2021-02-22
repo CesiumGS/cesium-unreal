@@ -22,6 +22,9 @@ UCesiumGlobeAnchorComponent::UCesiumGlobeAnchorComponent() :
 	this->bAutoActivate = true;
 	this->bWantsOnUpdateTransform = true;
 	PrimaryComponentTick.bCanEverTick = false;
+
+	// set a delegate callback when the root component for the actor is set 
+	this->IsRootComponentChanged.AddDynamic(this, &UCesiumGlobeAnchorComponent::OnRootComponentChanged);
 }
 
 void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
@@ -116,6 +119,32 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 
 	AActor* owner = this->GetOwner();
 	this->_ownerRoot = owner->GetRootComponent();
+
+	if (!this->_ownerRoot) {
+		return;
+	}
+
+	// if this is not the root component, we need to attach to the root component and control it
+	if (this->_ownerRoot != this) {
+		this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	}
+
+	this->_initWorldOriginLocation();
+	this->_updateAbsoluteLocation();
+	this->_updateRelativeLocation();
+	this->_initGeoreference();
+}
+
+// TODO: figure out what these parameters actually represent, currently I'm only guessing based on the types
+// TODO: resolve duplicate code btw here and OnRegister
+void UCesiumGlobeAnchorComponent::OnRootComponentChanged(USceneComponent* /*newRoot*/, bool /*addedOrRemoved*/) {
+	AActor* owner = this->GetOwner(); 
+	this->_ownerRoot = owner->GetRootComponent();
+
+	if (!this->_ownerRoot) {
+		return;
+	}
+
 	if (this->_ownerRoot != this) {
 		this->AttachToComponent(this->_ownerRoot, FAttachmentTransformRules::SnapToTargetIncludingScale);
 	}
@@ -200,12 +229,16 @@ void UCesiumGlobeAnchorComponent::_updateAbsoluteLocation() {
 }
 
 void UCesiumGlobeAnchorComponent::_updateRelativeLocation() {
-	// Note: Since we have a presumably accurate _absoluteLocation, this will be more accurate than querying the floating-point UE relative world location.
-	// This means that although the rendering, physics, and anything else on the UE side might be jittery, our internal representation of the location will remain accurate.
+	// Note: Since we have a presumably accurate _absoluteLocation, this will be more accurate than querying the floating-point UE relative world 
+	// location. This means that although the rendering, physics, and anything else on the UE side might be jittery, our internal representation 
+	// of the location will remain accurate.
 	this->_relativeLocation = this->_absoluteLocation - this->_worldOriginLocation;
 }
 
 void UCesiumGlobeAnchorComponent::_initGeoreference() {
+	if (this->Georeference) {
+		return;
+	}
 	this->Georeference = ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
 	if (this->Georeference) {
 		this->_updateActorToECEF(); 
