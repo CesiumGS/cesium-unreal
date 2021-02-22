@@ -323,7 +323,7 @@ void ACesium3DTileset::LoadTileset()
 	static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor = std::make_shared<CesiumAsync::CachingAssetAccessor>(
 		spdlog::default_logger(),
 		std::make_shared<UnrealAssetAccessor>(),
-		std::make_shared<CesiumAsync::SqliteCache>("cesium-request-cache.sqlite"));
+		std::make_shared<CesiumAsync::SqliteCache>(spdlog::default_logger(), "cesium-request-cache.sqlite"));
 
 	this->_startTime = std::chrono::high_resolution_clock::now();
 
