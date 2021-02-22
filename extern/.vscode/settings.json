@@ -92,6 +92,14 @@
         "*.rh": "cpp",
         "span_ext": "cpp",
         "gsl_assert": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "any": "cpp",
+        "complex": "cpp",
+        "csetjmp": "cpp",
+        "csignal": "cpp",
+        "cwctype": "cpp",
+        "filesystem": "cpp",
+        "shared_mutex": "cpp",
+        "strstream": "cpp"
     }
 }
