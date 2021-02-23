@@ -30,14 +30,8 @@ class UnrealAssetResponse : public CesiumAsync::IAssetResponse {
 public:
 	UnrealAssetResponse(FHttpResponsePtr pResponse) :
 		_pResponse(pResponse),
-		_cacheControl{}
+		_headers(parseHeaders(pResponse->GetAllHeaders()))
 	{
-		this->_headers = parseHeaders(this->_pResponse->GetAllHeaders());
-		this->_contentType = wstr_to_utf8(this->_pResponse->GetContentType());
-		CesiumAsync::HttpHeaders::const_iterator cacheControlIter = _headers.find("Cache-Control");
-		if (cacheControlIter != _headers.end()) {
-			this->_cacheControl = CesiumAsync::ResponseCacheControl::parseFromResponseHeaders(_headers);
-		}
 	}
 
 	virtual uint16_t statusCode() const override {
@@ -45,16 +39,12 @@ public:
 	}
 
 	virtual std::string contentType() const override {
-		return this->_contentType;
+		return wstr_to_utf8(this->_pResponse->GetContentType());
 	}
 
 	virtual const CesiumAsync::HttpHeaders& headers() const override {
-		return _headers;
+		return this->_headers;
 	}
-
-	//virtual const CesiumAsync::ResponseCacheControl *cacheControl() const override {
-	//	return _cacheControl != std::nullopt ? &(*_cacheControl) : nullptr;
-	//}
 
 	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
@@ -63,9 +53,7 @@ public:
 
 private:
 	FHttpResponsePtr _pResponse;
-	std::string _contentType;
 	CesiumAsync::HttpHeaders _headers;
-	std::optional<CesiumAsync::ResponseCacheControl> _cacheControl;
 };
 
 class UnrealAssetRequest : public CesiumAsync::IAssetRequest {
