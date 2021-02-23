@@ -13,7 +13,7 @@ public:
 	ACesiumGlobeAnchorParent();
     
     UPROPERTY(EditAnywhere, Category="Cesium")
-    UCesiumGeoreferenceComponent* GlobeAnchorComponent;
+    UCesiumGeoreferenceComponent* GeoreferenceComponent;
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
