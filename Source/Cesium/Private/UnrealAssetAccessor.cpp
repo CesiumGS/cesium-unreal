@@ -1,17 +1,36 @@
 #include "UnrealAssetAccessor.h"
+#include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetRequest.h"
 #include "CesiumAsync/IAssetResponse.h"
-#include "HttpModule.h"
-#include "HttpManager.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "HttpModule.h"
+#include "HttpManager.h"
 #include "UnrealConversions.h"
+#include <set>
 #include <optional>
+
+static CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeaders) {
+	CesiumAsync::HttpHeaders result;
+	for (const FString& header : unrealHeaders) {
+		int32_t separator = -1;
+		if (header.FindChar(':', separator)) {
+			FString fstrKey = header.Left(separator);
+			FString fstrValue = header.Right(header.Len() - separator - 2);
+			std::string key = std::string(TCHAR_TO_UTF8(*fstrKey));
+			std::string value = std::string(TCHAR_TO_UTF8(*fstrValue));
+			result.insert({ std::move(key), std::move(value) });
+		}
+	}
+
+	return result;
+}
 
 class UnrealAssetResponse : public CesiumAsync::IAssetResponse {
 public:
 	UnrealAssetResponse(FHttpResponsePtr pResponse) :
-		_pResponse(pResponse)
+		_pResponse(pResponse),
+		_headers(parseHeaders(pResponse->GetAllHeaders()))
 	{
 	}
 
@@ -23,10 +42,9 @@ public:
 		return wstr_to_utf8(this->_pResponse->GetContentType());
 	}
 
-	//virtual const std::map<std::string, std::string>& headers() override {
-	//	// TODO: return the headers
-	//	return this->_headers;
-	//}
+	virtual const CesiumAsync::HttpHeaders& headers() const override {
+		return this->_headers;
+	}
 
 	virtual gsl::span<const uint8_t> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
@@ -35,91 +53,82 @@ public:
 
 private:
 	FHttpResponsePtr _pResponse;
-	//std::map<std::string, std::string> _headers;
+	CesiumAsync::HttpHeaders _headers;
 };
 
 class UnrealAssetRequest : public CesiumAsync::IAssetRequest {
 public:
-	UnrealAssetRequest(const std::string& url, const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) :
-		_pRequest(nullptr),
-		_pResponse(nullptr),
-		_callback()
+	UnrealAssetRequest(FHttpRequestPtr pRequest, FHttpResponsePtr pResponse) 
+		: _pRequest(pRequest)
+		, _pResponse(std::make_unique<UnrealAssetResponse>(pResponse))
 	{
-		FHttpModule& httpModule = FHttpModule::Get();
-		this->_pRequest = httpModule.CreateRequest();
-		this->_pRequest->SetURL(utf8_to_wstr(url));
-		
-		for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
-			this->_pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
-		}
-
-		this->_pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
-
-		this->_pRequest->OnProcessRequestComplete().BindRaw(this, &UnrealAssetRequest::responseReceived);
-		this->_pRequest->ProcessRequest();
+		this->_headers = parseHeaders(this->_pRequest->GetAllHeaders());
+		this->_url = wstr_to_utf8(this->_pRequest->GetURL());
+		this->_method = wstr_to_utf8(this->_pRequest->GetVerb());
 	}
 
-	virtual ~UnrealAssetRequest() {
-		this->_pRequest->OnProcessRequestComplete().Unbind();
-		this->cancel();
+	virtual const std::string& method() const {
+		return this->_method;
 	}
 
-	virtual std::string url() const {
-		return wstr_to_utf8(this->_pRequest->GetURL());
+	virtual const std::string& url() const {
+		return this->_url;
 	}
 
-	virtual CesiumAsync::IAssetResponse* response() override {
-		if (this->_pResponse) {
-			return this->_pResponse;
-		}
-
-		EHttpRequestStatus::Type status = this->_pRequest->GetStatus();
-		if (status == EHttpRequestStatus::Type::Succeeded) {
-			this->_pResponse = new UnrealAssetResponse(this->_pRequest->GetResponse());
-		} else if (status == EHttpRequestStatus::Type::Failed || status == EHttpRequestStatus::Type::Failed_ConnectionError) {
-			// TODO: report failures
-		}
-
-		return this->_pResponse;
+	virtual const CesiumAsync::HttpHeaders& headers() const override {
+		return _headers;
 	}
 
-	virtual void bind(std::function<void (IAssetRequest*)> callback) {
-		this->_callback = callback;
-	}
-
-	virtual void cancel() noexcept {
-		// Only cancel the request if the HttpManager still has it.
-		// If not, it means the request already completed or canceled, and Unreal
-		// will (for some reason!) re-invoke OnProcessRequestComplete if we
-		// cancel now.
-		FHttpManager& manager = FHttpModule::Get().GetHttpManager();
-		if (manager.IsValidRequest(this->_pRequest.Get())) {
-			this->_pRequest->CancelRequest();
-		}
-	}
-
-protected:
-	void responseReceived(FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
-		// This will be raised in the UE game thread when the response is received.
-		if (this->_callback) {
-			this->_callback(this);
-		}
+	virtual const CesiumAsync::IAssetResponse* response() const override {
+		return this->_pResponse.get();
 	}
 
 private:
 	FHttpRequestPtr _pRequest;
-	CesiumAsync::IAssetResponse* _pResponse;
-	std::function<void (CesiumAsync::IAssetRequest*)> _callback;
+	std::unique_ptr<UnrealAssetResponse> _pResponse;
+	std::string _url;
+	std::string _method;
+	CesiumAsync::HttpHeaders _headers;
 };
 
-std::unique_ptr<CesiumAsync::IAssetRequest> UnrealAssetAccessor::requestAsset(
+CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAccessor::requestAsset(
+	const CesiumAsync::AsyncSystem& asyncSystem,
 	const std::string& url,
-	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers
-) {
-	return std::make_unique<UnrealAssetRequest>(url, headers);
+	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers)
+{
+	return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>([
+		url = std::move(url),
+		headers = std::move(headers)
+	](auto&& resolve, auto&& reject) {
+		FHttpModule& httpModule = FHttpModule::Get();
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
+		pRequest->SetURL(utf8_to_wstr(url));
+
+		for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+			pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
+		}
+
+		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
+
+		pRequest->OnProcessRequestComplete().BindLambda([resolve, reject](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
+			if (connectedSuccessfully) {
+				resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+			} else {
+				switch (pRequest->GetStatus()) {
+				case EHttpRequestStatus::Failed_ConnectionError:
+					reject(std::exception("Connection failed."));
+				default:
+					reject(std::exception("Request failed."));
+				}
+			}
+		});
+
+		pRequest->ProcessRequest();
+	});
 }
 
 void UnrealAssetAccessor::tick() noexcept {
 	FHttpManager& manager = FHttpModule::Get().GetHttpManager();
 	manager.Tick(0.0f);
 }
+
