@@ -386,15 +386,6 @@ void ACesium3DTileset::LoadTileset()
 		spdlog::default_logger()
 	};
 
-	//Cesium3DTiles::TilesetExternals externals{
-	//	std::make_shared<UnrealAssetAccessor>(), 
-	//	std::make_shared<UnrealResourcePreparer>(this),
-	//	std::make_shared<UnrealTaskProcessor>(),
-	//	// TODO: this is temporary, CreditSystem pointer should be passed into ACesium3DTileset on creation 
-	//	std::make_shared<Cesium3DTiles::CreditSystem>(),
-	//	spdlog::default_logger()
-	//};
-
 	if (this->Url.Len() > 0)
 	{
 		pTileset = new Cesium3DTiles::Tileset(externals, wstr_to_utf8(this->Url));
