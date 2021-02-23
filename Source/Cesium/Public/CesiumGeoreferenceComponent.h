@@ -12,10 +12,10 @@
 #include <glm/vec3.hpp>
 #include <optional>
 
-#include "CesiumGlobeAnchorComponent.generated.h"
+#include "CesiumGeoreferenceComponent.generated.h"
 
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUM_API UCesiumGlobeAnchorComponent : 
+class CESIUM_API UCesiumGeoreferenceComponent : 
 	public USceneComponent,
 	public ICesiumGeoreferenceable
 {
@@ -23,7 +23,7 @@ class CESIUM_API UCesiumGlobeAnchorComponent :
 
 public:	
 	// Sets default values for this component's properties
-	UCesiumGlobeAnchorComponent();
+	UCesiumGeoreferenceComponent();
 
 	// TODO: Probably should use custom details builder to make the UI a little more friendly,
 	// it would be nice to have the same options reflected in the actor's details panel as well
@@ -126,6 +126,9 @@ public:
 
 	virtual void OnRegister() override;
 
+	/**
+	 * Delegate implementation to recieve a notification when the owner's root component has changed.
+	 */ 
 	UFUNCTION()
 	void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
 
@@ -169,4 +172,5 @@ private:
 	USceneComponent* _ownerRoot;
 
 	bool _ignoreOnUpdateTransform;
+	bool _autoSnapToTangent;
 };

@@ -1,4 +1,4 @@
-#include "CesiumGlobeAnchorComponent.h"
+#include "CesiumGeoreferenceComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "UObject/NameTypes.h"
@@ -11,7 +11,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <optional>
 
-UCesiumGlobeAnchorComponent::UCesiumGlobeAnchorComponent() :
+UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 	_worldOriginLocation(0.0),
 	_absoluteLocation(0.0),
 	_relativeLocation(0.0),
@@ -25,10 +25,10 @@ UCesiumGlobeAnchorComponent::UCesiumGlobeAnchorComponent() :
 	PrimaryComponentTick.bCanEverTick = false;
 
 	// set a delegate callback when the root component for the actor is set 
-	this->IsRootComponentChanged.AddDynamic(this, &UCesiumGlobeAnchorComponent::OnRootComponentChanged);
+	this->IsRootComponentChanged.AddDynamic(this, &UCesiumGeoreferenceComponent::OnRootComponentChanged);
 }
 
-void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
+void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 	// local up in ECEF (the +Z axis)
 	glm::dvec3 actorUpECEF = glm::normalize(this->_actorToECEF[2]);
 
@@ -72,7 +72,7 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGlobeAnchorComponent::SnapToWestNorthUpTangentPlane() {
+void UCesiumGeoreferenceComponent::SnapToWestNorthUpTangentPlane() {
 	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
 	// TODO: is it safe to assume we have a proper basis, i.e. the column vectors of _actorToECEF are nonzero?
 	// decompose the original scaling matrix
@@ -90,18 +90,18 @@ void UCesiumGlobeAnchorComponent::SnapToWestNorthUpTangentPlane() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGlobeAnchorComponent::MoveToLongLatHeight(double longitude, double latitude, double height) {
+void UCesiumGeoreferenceComponent::MoveToLongLatHeight(double longitude, double latitude, double height) {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
 		CesiumGeospatial::Cartographic::fromDegrees(longitude, latitude, height)
 	);
 	this->MoveToECEF(ecef.x, ecef.y, ecef.z);
 }
 
-void UCesiumGlobeAnchorComponent::InaccurateMoveToLongLatHeight(float longitude, float latitude, float height) {
+void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float longitude, float latitude, float height) {
 	this->MoveToLongLatHeight(longitude, latitude, height);
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF(double ecef_x, double ecef_y, double ecef_z) {
+void UCesiumGeoreferenceComponent::MoveToECEF(double ecef_x, double ecef_y, double ecef_z) {
 	this->_actorToECEF[3] = glm::vec4(ecef_x, ecef_y, ecef_z, 1.0);
 	this->_updateLongLatHeight();
 
@@ -114,22 +114,22 @@ void UCesiumGlobeAnchorComponent::MoveToECEF(double ecef_x, double ecef_y, doubl
 	this->_absoluteLocation = this->_relativeLocation + this->_worldOriginLocation;
 }
 
-void UCesiumGlobeAnchorComponent::InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z) {
+void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z) {
 	this->MoveToECEF(ecef_x, ecef_y, ecef_z);
 }
 
 // TODO: is this the best place to attach to the root component of the owner actor?
-void UCesiumGlobeAnchorComponent::OnRegister() {
+void UCesiumGeoreferenceComponent::OnRegister() {
 	Super::OnRegister();
 	this->_initRootComponent();
 }
 
 // TODO: figure out what these delegate parameters actually represent, currently I'm only guessing based on the types
-void UCesiumGlobeAnchorComponent::OnRootComponentChanged(USceneComponent* /*newRoot*/, bool /*addedOrRemoved*/) {
+void UCesiumGeoreferenceComponent::OnRootComponentChanged(USceneComponent* /*newRoot*/, bool /*addedOrRemoved*/) {
 	this->_initRootComponent();
 }
 
-void UCesiumGlobeAnchorComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
+void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
 	USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
 
 	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
@@ -147,7 +147,7 @@ void UCesiumGlobeAnchorComponent::ApplyWorldOffset(const FVector& InOffset, bool
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGlobeAnchorComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
+void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
 	USceneComponent::OnUpdateTransform(UpdateTransformFlags, Teleport);
 	
 	// if we generated this transform call internally, we should ignore it
@@ -162,13 +162,13 @@ void UCesiumGlobeAnchorComponent::OnUpdateTransform(EUpdateTransformFlags Update
 	this->_updateActorToUnrealRelativeWorldTransform();
 }
 
-void UCesiumGlobeAnchorComponent::BeginPlay() {
+void UCesiumGeoreferenceComponent::BeginPlay() {
 	Super::BeginPlay();
 }
 
 
 #if WITH_EDITOR
-void UCesiumGlobeAnchorComponent::PostEditChangeProperty(FPropertyChangedEvent& event) {
+void UCesiumGeoreferenceComponent::PostEditChangeProperty(FPropertyChangedEvent& event) {
 	Super::PostEditChangeProperty(event);
 
 	if (!event.Property) {
@@ -178,16 +178,16 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(FPropertyChangedEvent& 
 	FName propertyName = event.Property->GetFName();
 
 	if (
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetLongitude) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetLatitude) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetHeight)
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetLongitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetLatitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetHeight)
 	) {
 		this->MoveToLongLatHeight(TargetLongitude, TargetLatitude, TargetHeight);
 		return;
 	} else if (
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetECEF_X) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetECEF_Y) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, TargetECEF_Z)
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetECEF_X) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetECEF_Y) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetECEF_Z)
 	) {
 		this->MoveToECEF(TargetECEF_X, TargetECEF_Y, TargetECEF_Z);
 		return;
@@ -196,19 +196,19 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(FPropertyChangedEvent& 
 #endif
 
 
-void UCesiumGlobeAnchorComponent::OnComponentDestroyed(bool bDestroyingHierarchy) {
+void UCesiumGeoreferenceComponent::OnComponentDestroyed(bool bDestroyingHierarchy) {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
 }
 
-bool UCesiumGlobeAnchorComponent::IsBoundingVolumeReady() const {
+bool UCesiumGeoreferenceComponent::IsBoundingVolumeReady() const {
 	return false;
 }
 
-std::optional<Cesium3DTiles::BoundingVolume> UCesiumGlobeAnchorComponent::GetBoundingVolume() const {
+std::optional<Cesium3DTiles::BoundingVolume> UCesiumGeoreferenceComponent::GetBoundingVolume() const {
 	return std::nullopt;
 }
 
-void UCesiumGlobeAnchorComponent::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
+void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
 	this->_updateActorToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
@@ -218,7 +218,7 @@ void UCesiumGlobeAnchorComponent::UpdateGeoreferenceTransform(const glm::dmat4& 
  *  PRIVATE HELPER FUNCTIONS
  */
 
-void UCesiumGlobeAnchorComponent::_initRootComponent() {
+void UCesiumGeoreferenceComponent::_initRootComponent() {
 	AActor* owner = this->GetOwner(); 
 	this->_ownerRoot = owner->GetRootComponent();
 
@@ -237,7 +237,7 @@ void UCesiumGlobeAnchorComponent::_initRootComponent() {
 	this->_initGeoreference();
 }
 
-void UCesiumGlobeAnchorComponent::_initWorldOriginLocation() {
+void UCesiumGeoreferenceComponent::_initWorldOriginLocation() {
 	const FIntVector& origin = this->GetWorld()->OriginLocation;
 	this->_worldOriginLocation = glm::dvec3(
 		static_cast<double>(origin.X),
@@ -246,7 +246,7 @@ void UCesiumGlobeAnchorComponent::_initWorldOriginLocation() {
 	);
 }
 
-void UCesiumGlobeAnchorComponent::_updateAbsoluteLocation() {
+void UCesiumGeoreferenceComponent::_updateAbsoluteLocation() {
 	const FVector& relativeLocation = this->_ownerRoot->GetComponentLocation();
 	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
 	this->_absoluteLocation = glm::dvec3(
@@ -256,14 +256,14 @@ void UCesiumGlobeAnchorComponent::_updateAbsoluteLocation() {
 	);
 }
 
-void UCesiumGlobeAnchorComponent::_updateRelativeLocation() {
+void UCesiumGeoreferenceComponent::_updateRelativeLocation() {
 	// Note: Since we have a presumably accurate _absoluteLocation, this will be more accurate than querying the floating-point UE relative world 
 	// location. This means that although the rendering, physics, and anything else on the UE side might be jittery, our internal representation 
 	// of the location will remain accurate.
 	this->_relativeLocation = this->_absoluteLocation - this->_worldOriginLocation;
 }
 
-void UCesiumGlobeAnchorComponent::_initGeoreference() {
+void UCesiumGeoreferenceComponent::_initGeoreference() {
 	if (this->Georeference) {
 		return;
 	}
@@ -275,7 +275,7 @@ void UCesiumGlobeAnchorComponent::_initGeoreference() {
 	// Note: when a georeferenced object is added, UpdateGeoreferenceTransform will automatically be called
 }
 
-void UCesiumGlobeAnchorComponent::_updateActorToECEF() {
+void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 	if (!this->Georeference) {
 		return;
 	}
@@ -294,7 +294,7 @@ void UCesiumGlobeAnchorComponent::_updateActorToECEF() {
 	this->_updateLongLatHeight();
 }
 
-void UCesiumGlobeAnchorComponent::_updateActorToUnrealRelativeWorldTransform() {
+void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform() {
 	if (!this->Georeference) {
 		return;
 	}
@@ -302,7 +302,7 @@ void UCesiumGlobeAnchorComponent::_updateActorToUnrealRelativeWorldTransform() {
 	this->_updateActorToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
 }
 
-void UCesiumGlobeAnchorComponent::_updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
+void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
 	glm::dmat4 absoluteToRelativeWorld(
 		glm::dvec4(1.0, 0.0, 0.0, 0.0),
 		glm::dvec4(0.0, 1.0, 0.0, 0.0),
@@ -313,7 +313,7 @@ void UCesiumGlobeAnchorComponent::_updateActorToUnrealRelativeWorldTransform(con
 	this->_actorToUnrealRelativeWorld = absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferencedTransform * this->_actorToECEF;
 }
 
-void UCesiumGlobeAnchorComponent::_setTransform(const glm::dmat4& transform) {
+void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 	// We are about to get an OnUpdateTransform callback for this, so we preemptively mark down to ignore it.
 	_ignoreOnUpdateTransform = true;
 
@@ -325,7 +325,7 @@ void UCesiumGlobeAnchorComponent::_setTransform(const glm::dmat4& transform) {
 	)));
 }
 
-void UCesiumGlobeAnchorComponent::_updateLongLatHeight() {
+void UCesiumGeoreferenceComponent::_updateLongLatHeight() {
 	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(this->_actorToECEF[3]);
 
 	if (!cartographic) {
