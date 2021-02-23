@@ -8,10 +8,10 @@ ACesiumGlobeAnchorParent::ACesiumGlobeAnchorParent() {
 
     // don't create the georeference root component if this is a CDO
     if (!HasAnyFlags(RF_ClassDefaultObject)) {
-        this->GeoreferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("RootComponent"));
-        this->SetRootComponent(this->GeoreferenceComponent);
+        this->_georeferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("RootComponent"));
+        this->SetRootComponent(this->_georeferenceComponent);
 	    this->RootComponent->SetMobility(EComponentMobility::Static);
-        this->GeoreferenceComponent->SnapToWestNorthUpTangentPlane();
+        this->_georeferenceComponent->SetAutoSnapToEastSouthUp(true);
     }
 }
 

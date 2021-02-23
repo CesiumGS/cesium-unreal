@@ -64,7 +64,7 @@ public:
 	 * Aligns the local X, Y, Z axes to West, North, and Up (the ellipsoid normal) respectively.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
-	void SnapToWestNorthUpTangentPlane(); 
+	void SnapToEastSouthUpTangentPlane(); 
 
 	/**
 	 * The longitude to move this actor to.
@@ -151,6 +151,8 @@ public:
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
 	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
 
+	void SetAutoSnapToEastSouthUp(bool value);
+
 private:
 	void _initRootComponent();
 	void _initWorldOriginLocation();
@@ -172,5 +174,5 @@ private:
 	USceneComponent* _ownerRoot;
 
 	bool _ignoreOnUpdateTransform;
-	bool _autoSnapToTangent;
+	bool _autoSnapToEastSouthUp;
 };

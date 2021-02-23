@@ -72,19 +72,10 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGeoreferenceComponent::SnapToWestNorthUpTangentPlane() {
+void UCesiumGeoreferenceComponent::SnapToEastSouthUpTangentPlane() {
 	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
-	// TODO: is it safe to assume we have a proper basis, i.e. the column vectors of _actorToECEF are nonzero?
-	// decompose the original scaling matrix
-	// TODO: I think this is missing potentially negative scaling?
-	glm::dmat4 scale(
-		glm::length(this->_actorToECEF[0]), 0.0, 0.0, 0.0,
-		0.0, glm::length(this->_actorToECEF[1]), 0.0, 0.0,
-		0.0, 0.0, glm::length(this->_actorToECEF[2]), 0.0,
-		0.0, 0.0, 0.0, 1.0
-	);
-	// now put together the new orientation with the original translation and scaling.
-	this->_actorToECEF = ENUtoECEF * scale;
+	
+	this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
@@ -112,6 +103,11 @@ void UCesiumGeoreferenceComponent::MoveToECEF(double ecef_x, double ecef_y, doub
 	// compute the new Unreal locations this way (as opposed to _updateAbsoluteLocation / _updateRelativeLocation).
 	this->_relativeLocation = this->_actorToUnrealRelativeWorld[3];
 	this->_absoluteLocation = this->_relativeLocation + this->_worldOriginLocation;
+
+	// If the transform needs to be snapped to the tangent plane, do it here.
+	if (this->_autoSnapToEastSouthUp) {
+		this->SnapToEastSouthUpTangentPlane();
+	}
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z) {
@@ -155,11 +151,16 @@ void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags Updat
 		_ignoreOnUpdateTransform = false;
 		return;
 	}
-	
+
 	this->_updateAbsoluteLocation();
 	this->_updateRelativeLocation();
 	this->_updateActorToECEF();
 	this->_updateActorToUnrealRelativeWorldTransform();
+
+	// if the transform update originates from unreal, snap the orientation to the tangent plane here if needed
+	if (this->_autoSnapToEastSouthUp) {
+		this->SnapToEastSouthUpTangentPlane();
+	}
 }
 
 void UCesiumGeoreferenceComponent::BeginPlay() {
@@ -211,6 +212,13 @@ std::optional<Cesium3DTiles::BoundingVolume> UCesiumGeoreferenceComponent::GetBo
 void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
 	this->_updateActorToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
+}
+
+void UCesiumGeoreferenceComponent::SetAutoSnapToEastSouthUp(bool value) {
+	this->_autoSnapToEastSouthUp = value;
+	if (value) {
+		this->SnapToEastSouthUpTangentPlane();
+	}
 }
 
 
