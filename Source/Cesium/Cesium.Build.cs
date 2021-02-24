@@ -25,6 +25,7 @@ public class Cesium : ModuleRules
                 Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/spdlog/include"),
                 Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/rapidjson/include"),
                 Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/stb"),
+                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/sqlite3"),
             }
             );
 
@@ -58,6 +59,7 @@ public class Cesium : ModuleRules
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/sqlite3/" + cesiumNativeConfiguration + "/sqlite3.lib"),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/spdlog/" + cesiumNativeConfiguration + "/" + spdlogLibName),
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/modp_b64/" + cesiumNativeConfiguration + "/modp_b64.lib")

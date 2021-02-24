@@ -5,6 +5,9 @@
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
+#include "Cesium3DTiles/CreditSystem.h"
+#include "CesiumAsync/CachingAssetAccessor.h"
+#include "CesiumAsync/SqliteCache.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -315,8 +318,21 @@ private:
 #endif
 };
 
+static std::string getCacheDatabaseName() {
+	FString baseDirectory = FPaths::EngineUserDir();
+	FString filename = FPaths::Combine(baseDirectory, TEXT("cesium-request-cache.sqlite"));
+	return wstr_to_utf8(filename);
+}
+
 void ACesium3DTileset::LoadTileset()
 {
+	static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor = std::make_shared<CesiumAsync::CachingAssetAccessor>(
+		spdlog::default_logger(),
+		std::make_shared<UnrealAssetAccessor>(),
+		std::make_shared<CesiumAsync::SqliteCache>(spdlog::default_logger(), getCacheDatabaseName()));
+
+	this->_startTime = std::chrono::high_resolution_clock::now();
+
 	Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
 	TArray<UCesiumRasterOverlay*> rasterOverlays;
@@ -363,7 +379,7 @@ void ACesium3DTileset::LoadTileset()
 	}
 
 	Cesium3DTiles::TilesetExternals externals{
-		std::make_shared<UnrealAssetAccessor>(),
+		pAssetAccessor,
 		std::make_shared<UnrealResourcePreparer>(this),
 		std::make_shared<UnrealTaskProcessor>(),
 		this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem() : nullptr,
@@ -590,8 +606,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		UE_LOG(
 			LogActor,
 			Warning,
-			TEXT("%s: Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+			TEXT("%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
+			(std::chrono::high_resolution_clock::now() - this->_startTime).count() / 1000000,
 			result.tilesVisited,
 			result.culledTilesVisited,
 			result.tilesToRenderThisFrame.size(),

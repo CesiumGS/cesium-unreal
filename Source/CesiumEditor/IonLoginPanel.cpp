@@ -142,6 +142,7 @@ FReply IonLoginPanel::SignIn() {
 
     CesiumIonConnection::connect(
         *FCesiumEditorModule::ion().pAsyncSystem,
+        FCesiumEditorModule::ion().pAssetAccessor,
         wstr_to_utf8(this->_username.ToString()),
         wstr_to_utf8(this->_password.ToString())
     ).thenInMainThread([this](CesiumIonConnection::Response<CesiumIonConnection>&& response) -> CesiumAsync::Future<void> {
@@ -165,12 +166,12 @@ FReply IonLoginPanel::SignIn() {
 
             // Super-hackily add all the "premium assets" that we need for quick add to our assets.
             // TODO: less hackily maybe?
-            FCesiumEditorModule::ion().pAsyncSystem->post("https://api.cesium.com/premiumAssets/1/add"); // Cesium World Terrain
-            FCesiumEditorModule::ion().pAsyncSystem->post("https://api.cesium.com/premiumAssets/2/add"); // Bing Maps Aerial
-            FCesiumEditorModule::ion().pAsyncSystem->post("https://api.cesium.com/premiumAssets/3/add"); // Bing Maps Aerial with Labels
-            FCesiumEditorModule::ion().pAsyncSystem->post("https://api.cesium.com/premiumAssets/4/add"); // Bing Maps Road
-            FCesiumEditorModule::ion().pAsyncSystem->post("https://api.cesium.com/premiumAssets/3954/add"); // Sentinel-2
-            FCesiumEditorModule::ion().pAsyncSystem->post("https://api.cesium.com/premiumAssets/96188/add"); // Cesium World Terrain
+            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/1/add"); // Cesium World Terrain
+            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/2/add"); // Bing Maps Aerial
+            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/3/add"); // Bing Maps Aerial with Labels
+            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/4/add"); // Bing Maps Road
+            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/3954/add"); // Sentinel-2
+            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/96188/add"); // Cesium World Terrain
 
             std::string tokenName = wstr_to_utf8(FApp::GetProjectName()) + " (Created by Cesium for Unreal)";
 

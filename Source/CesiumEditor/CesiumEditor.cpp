@@ -37,8 +37,8 @@ void FCesiumEditorModule::StartupModule()
 
     IModuleInterface::StartupModule();
 
+    this->ionDetails.pAssetAccessor = std::make_shared<UnrealAssetAccessor>();
     this->ionDetails.pAsyncSystem = std::make_unique<CesiumAsync::AsyncSystem>(
-        std::make_shared<UnrealAssetAccessor>(),
         std::make_shared<UnrealTaskProcessor>()
     );
 
