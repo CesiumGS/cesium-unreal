@@ -61,10 +61,10 @@ public:
 	void SnapLocalUpToEllipsoidNormal();
 
 	/**
-	 * Aligns the local X, Y, Z axes to West, North, and Up (the ellipsoid normal) respectively.
+	 * Turns the actor's local coordinate system into a East-South-Up tangent space in centimeters.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
-	void SnapToEastSouthUpTangentPlane(); 
+	void SnapToEastSouthUp(); 
 
 	/**
 	 * The longitude to move this actor to.
@@ -133,6 +133,7 @@ public:
 	void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
 
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+	virtual bool MoveComponentImpl(const FVector & Delta, const FQuat & NewRotation, bool bSweep, FHitResult * Hit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) override;
 	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 
 protected:
@@ -164,6 +165,7 @@ private:
 	void _updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 	void _setTransform(const glm::dmat4& transform);
 	void _updateLongLatHeight();
+	void _fixToEastSouthUp();
 
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;

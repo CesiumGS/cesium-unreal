@@ -7,12 +7,9 @@ ACesiumGlobeAnchorParent::ACesiumGlobeAnchorParent() {
 	PrimaryActorTick.bCanEverTick = false;
 
     // don't create the georeference root component if this is a CDO
-    if (!HasAnyFlags(RF_ClassDefaultObject)) {
-        this->_georeferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("RootComponent"));
-        this->SetRootComponent(this->_georeferenceComponent);
-	    this->RootComponent->SetMobility(EComponentMobility::Static);
-        this->_georeferenceComponent->SetAutoSnapToEastSouthUp(true);
-    }
+    this->GeoreferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("RootComponent"));
+    this->SetRootComponent(this->GeoreferenceComponent);
+    this->RootComponent->SetMobility(EComponentMobility::Static);
 }
 
 void ACesiumGlobeAnchorParent::OnConstruction(const FTransform& Transform) {

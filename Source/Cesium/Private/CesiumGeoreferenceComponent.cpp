@@ -18,7 +18,8 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 	_actorToECEF(),
 	_actorToUnrealRelativeWorld(),
 	_ownerRoot(nullptr),
-	_ignoreOnUpdateTransform(false)
+	_ignoreOnUpdateTransform(false),
+	_autoSnapToEastSouthUp(false)
 {
 	this->bAutoActivate = true;
 	this->bWantsOnUpdateTransform = true;
@@ -72,12 +73,9 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGeoreferenceComponent::SnapToEastSouthUpTangentPlane() {
-	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
-	
-	this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
-
-	this->_updateActorToUnrealRelativeWorldTransform();
+void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
+	// TODO: revert this if works
+	this->_fixToEastSouthUp();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
@@ -106,7 +104,7 @@ void UCesiumGeoreferenceComponent::MoveToECEF(double ecef_x, double ecef_y, doub
 
 	// If the transform needs to be snapped to the tangent plane, do it here.
 	if (this->_autoSnapToEastSouthUp) {
-		this->SnapToEastSouthUpTangentPlane();
+		this->SnapToEastSouthUp();
 	}
 }
 
@@ -143,6 +141,17 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, boo
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
+
+bool UCesiumGeoreferenceComponent::MoveComponentImpl(const FVector & Delta, const FQuat & NewRotation, bool bSweep, FHitResult * Hit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) {
+	bool result = USceneComponent::MoveComponentImpl(Delta, NewRotation, bSweep, Hit, MoveFlags, Teleport);
+
+	//if (this->_autoSnapToEastSouthUp) {
+	//	this->SnapToEastSouthUp();
+	//}
+
+	return result;
+}
+
 void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
 	USceneComponent::OnUpdateTransform(UpdateTransformFlags, Teleport);
 	
@@ -156,11 +165,6 @@ void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags Updat
 	this->_updateRelativeLocation();
 	this->_updateActorToECEF();
 	this->_updateActorToUnrealRelativeWorldTransform();
-
-	// if the transform update originates from unreal, snap the orientation to the tangent plane here if needed
-	if (this->_autoSnapToEastSouthUp) {
-		this->SnapToEastSouthUpTangentPlane();
-	}
 }
 
 void UCesiumGeoreferenceComponent::BeginPlay() {
@@ -217,7 +221,7 @@ void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4&
 void UCesiumGeoreferenceComponent::SetAutoSnapToEastSouthUp(bool value) {
 	this->_autoSnapToEastSouthUp = value;
 	if (value) {
-		this->SnapToEastSouthUpTangentPlane();
+		this->SnapToEastSouthUp();
 	}
 }
 
@@ -230,7 +234,7 @@ void UCesiumGeoreferenceComponent::_initRootComponent() {
 	AActor* owner = this->GetOwner(); 
 	this->_ownerRoot = owner->GetRootComponent();
 
-	if (!this->_ownerRoot) {
+	if (!this->_ownerRoot || !this->GetWorld()) {
 		return;
 	}
 
@@ -325,7 +329,7 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 	// We are about to get an OnUpdateTransform callback for this, so we preemptively mark down to ignore it.
 	_ignoreOnUpdateTransform = true;
 
-	this->_ownerRoot->SetRelativeTransform(FTransform(FMatrix(
+	this->_ownerRoot->SetWorldTransform(FTransform(FMatrix(
 		FVector(transform[0].x, transform[0].y, transform[0].z),
 		FVector(transform[1].x, transform[1].y, transform[1].z),
 		FVector(transform[2].x, transform[2].y, transform[2].z),
@@ -344,4 +348,10 @@ void UCesiumGeoreferenceComponent::_updateLongLatHeight() {
 	this->CurrentLongitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
 	this->CurrentLatitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
 	this->CurrentHeight = (*cartographic).height;
+}
+
+void UCesiumGeoreferenceComponent::_fixToEastSouthUp() {
+	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
+	this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
+	this->_updateActorToUnrealRelativeWorldTransform();
 }
