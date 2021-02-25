@@ -337,8 +337,8 @@ void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
 	this->_dirty = true;
 
 	this->ECEF_X = this->_actorToECEF[3].x;
-	this->ECEF_Z = this->_actorToECEF[3].y;
-	this->ECEF_Y = this->_actorToECEF[3].z;
+	this->ECEF_Y = this->_actorToECEF[3].y;
+	this->ECEF_Z = this->_actorToECEF[3].z;
 
 	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(this->_actorToECEF[3]);
 
