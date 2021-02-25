@@ -98,8 +98,9 @@
         "csetjmp": "cpp",
         "csignal": "cpp",
         "cwctype": "cpp",
-        "filesystem": "cpp",
         "shared_mutex": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "filesystem": "cpp",
+        "*.idl": "cpp"
     }
 }

@@ -99,7 +99,7 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 	return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>([
 		&url,
 		&headers
-	](auto&& resolve, auto&& reject) {
+	](const auto& promise) {
 		FHttpModule& httpModule = FHttpModule::Get();
 		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
 		pRequest->SetURL(utf8_to_wstr(url));
@@ -110,15 +110,15 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 
 		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal"));
 
-		pRequest->OnProcessRequestComplete().BindLambda([resolve, reject](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
+		pRequest->OnProcessRequestComplete().BindLambda([promise](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
 			if (connectedSuccessfully) {
-				resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+				promise.resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
 			} else {
 				switch (pRequest->GetStatus()) {
 				case EHttpRequestStatus::Failed_ConnectionError:
-					reject(std::exception("Connection failed."));
+					promise.reject(std::exception("Connection failed."));
 				default:
-					reject(std::exception("Request failed."));
+					promise.reject(std::exception("Request failed."));
 				}
 			}
 		});
@@ -137,7 +137,7 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 		&url,
 		&headers,
 		&contentPayload
-	](auto&& resolve, auto&& reject) {
+	](const auto& promise) {
 		FHttpModule& httpModule = FHttpModule::Get();
 		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
 		pRequest->SetVerb(TEXT("POST"));
@@ -151,15 +151,15 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 
 		pRequest->SetContent(TArray<uint8>(contentPayload.data(), contentPayload.size()));
 
-		pRequest->OnProcessRequestComplete().BindLambda([resolve, reject](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
+		pRequest->OnProcessRequestComplete().BindLambda([promise](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
 			if (connectedSuccessfully) {
-				resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+				promise.resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
 			} else {
 				switch (pRequest->GetStatus()) {
 				case EHttpRequestStatus::Failed_ConnectionError:
-					reject(std::exception("Connection failed."));
+					promise.reject(std::exception("Connection failed."));
 				default:
-					reject(std::exception("Request failed."));
+					promise.reject(std::exception("Request failed."));
 				}
 			}
 		});

@@ -206,7 +206,7 @@ void CesiumIonPanel::Refresh() {
     auto& connection = maybeConnection.value();
     this->_refreshInProgress = true;
 
-    connection.assets().thenInMainThread([this](CesiumIonConnection::Response<CesiumIonAssets>&& response) {
+    connection.assets().thenInMainThread([this](CesiumIonClient::Response<CesiumIonAssets>&& response) {
         if (response.value) {
             std::vector<CesiumIonAsset>& items = response.value.value().items;
             this->_assets.SetNum(items.size());
