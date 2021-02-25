@@ -141,23 +141,12 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, boo
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-
-bool UCesiumGeoreferenceComponent::MoveComponentImpl(const FVector & Delta, const FQuat & NewRotation, bool bSweep, FHitResult * Hit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) {
-	bool result = USceneComponent::MoveComponentImpl(Delta, NewRotation, bSweep, Hit, MoveFlags, Teleport);
-
-	//if (this->_autoSnapToEastSouthUp) {
-	//	this->SnapToEastSouthUp();
-	//}
-
-	return result;
-}
-
 void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
 	USceneComponent::OnUpdateTransform(UpdateTransformFlags, Teleport);
 	
 	// if we generated this transform call internally, we should ignore it
-	if (_ignoreOnUpdateTransform) {
-		_ignoreOnUpdateTransform = false;
+	if (this->_ignoreOnUpdateTransform) {
+		this->_ignoreOnUpdateTransform = false;
 		return;
 	}
 
@@ -165,6 +154,11 @@ void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags Updat
 	this->_updateRelativeLocation();
 	this->_updateActorToECEF();
 	this->_updateActorToUnrealRelativeWorldTransform();
+
+	// TODO: add warning or fix unstable behavior when autosnapping a translation in terms of the local axes
+	if (this->_autoSnapToEastSouthUp) {
+		this->SnapToEastSouthUp();
+	}
 }
 
 void UCesiumGeoreferenceComponent::BeginPlay() {

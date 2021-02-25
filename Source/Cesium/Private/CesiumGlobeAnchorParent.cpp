@@ -10,6 +10,7 @@ ACesiumGlobeAnchorParent::ACesiumGlobeAnchorParent() {
     this->GeoreferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("RootComponent"));
     this->SetRootComponent(this->GeoreferenceComponent);
     this->RootComponent->SetMobility(EComponentMobility::Static);
+    this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
 }
 
 void ACesiumGlobeAnchorParent::OnConstruction(const FTransform& Transform) {

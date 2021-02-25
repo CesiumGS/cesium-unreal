@@ -133,7 +133,6 @@ public:
 	void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
 
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
-	virtual bool MoveComponentImpl(const FVector & Delta, const FQuat & NewRotation, bool bSweep, FHitResult * Hit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) override;
 	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 
 protected:
