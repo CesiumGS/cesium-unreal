@@ -135,6 +135,14 @@ public:
 
 	void SetAutoSnapToEastSouthUp(bool value);
 
+	bool CheckCoordinatesChanged() const {
+		return this->_dirty;
+	}
+
+	void MarkCoordinatesUnchanged() {
+		this->_dirty = false;
+	}
+
 private:
 	void _initRootComponent();
 	void _initWorldOriginLocation();
@@ -157,4 +165,5 @@ private:
 
 	bool _ignoreOnUpdateTransform;
 	bool _autoSnapToEastSouthUp;
+	bool _dirty;
 };

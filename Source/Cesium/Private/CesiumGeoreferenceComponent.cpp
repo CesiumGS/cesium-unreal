@@ -19,7 +19,8 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 	_actorToUnrealRelativeWorld(),
 	_ownerRoot(nullptr),
 	_ignoreOnUpdateTransform(false),
-	_autoSnapToEastSouthUp(false)
+	_autoSnapToEastSouthUp(false),
+	_dirty(false)
 {
 	this->bAutoActivate = true;
 	this->bWantsOnUpdateTransform = true;
@@ -333,6 +334,8 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 }
 
 void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
+	this->_dirty = true;
+
 	this->ECEF_X = this->_actorToECEF[3].x;
 	this->ECEF_Z = this->_actorToECEF[3].y;
 	this->ECEF_Y = this->_actorToECEF[3].z;
