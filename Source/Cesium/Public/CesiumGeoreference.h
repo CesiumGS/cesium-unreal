@@ -104,7 +104,9 @@ public:
 	bool KeepWorldOriginNearCamera = true;
 
 	/**
-	 * TODO: write documentation.
+	 * Warning: Make sure to georeference all location-sensitive Unreal actors before pressing. 
+	 * Places the georeference origin at the camera's current location. Rotates the globe so the current longitude/latitude/height
+	 * of the camera is at the Unreal origin. The camera is also teleported to the Unreal origin.
 	 */ 
 	UFUNCTION(CallInEditor, Category="Cesium")
 	void PlaceGeoreferenceOriginHere();

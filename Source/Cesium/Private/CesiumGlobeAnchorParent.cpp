@@ -14,5 +14,5 @@ ACesiumGlobeAnchorParent::ACesiumGlobeAnchorParent() {
 }
 
 void ACesiumGlobeAnchorParent::OnConstruction(const FTransform& Transform) {
-
+    Super::OnConstruction(Transform);
 }

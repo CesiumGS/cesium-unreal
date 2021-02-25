@@ -74,25 +74,26 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 }
 
 void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
-	// TODO: revert this if works
-	this->_fixToEastSouthUp();
+	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
+	this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
+	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGeoreferenceComponent::MoveToLongLatHeight(double longitude, double latitude, double height) {
+void UCesiumGeoreferenceComponent::MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetAltitude) {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-		CesiumGeospatial::Cartographic::fromDegrees(longitude, latitude, height)
+		CesiumGeospatial::Cartographic::fromDegrees(targetLongitude, targetLatitude, targetAltitude)
 	);
 	this->MoveToECEF(ecef.x, ecef.y, ecef.z);
 }
 
-void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float longitude, float latitude, float height) {
-	this->MoveToLongLatHeight(longitude, latitude, height);
+void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetAltitude) {
+	this->MoveToLongLatHeight(targetLongitude, targetLatitude, targetAltitude);
 }
 
-void UCesiumGeoreferenceComponent::MoveToECEF(double ecef_x, double ecef_y, double ecef_z) {
-	this->_actorToECEF[3] = glm::vec4(ecef_x, ecef_y, ecef_z, 1.0);
-	this->_updateLongLatHeight();
+void UCesiumGeoreferenceComponent::MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z) {
+	this->_actorToECEF[3] = glm::vec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
+	this->_updateGeospatialCoordinates();
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
@@ -108,8 +109,8 @@ void UCesiumGeoreferenceComponent::MoveToECEF(double ecef_x, double ecef_y, doub
 	}
 }
 
-void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z) {
-	this->MoveToECEF(ecef_x, ecef_y, ecef_z);
+void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z) {
+	this->MoveToECEF(targetEcef_x, targetEcef_y, targetEcef_z);
 }
 
 // TODO: is this the best place to attach to the root component of the owner actor?
@@ -177,18 +178,18 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(FPropertyChangedEvent&
 	FName propertyName = event.Property->GetFName();
 
 	if (
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetLongitude) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetLatitude) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetHeight)
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Longitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Latitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Altitude)
 	) {
-		this->MoveToLongLatHeight(TargetLongitude, TargetLatitude, TargetHeight);
+		this->MoveToLongLatHeight(Longitude, Latitude, Altitude);
 		return;
 	} else if (
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetECEF_X) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetECEF_Y) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, TargetECEF_Z)
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_X) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Y) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Z)
 	) {
-		this->MoveToECEF(TargetECEF_X, TargetECEF_Y, TargetECEF_Z);
+		this->MoveToECEF(ECEF_X, ECEF_Y, ECEF_Z);
 		return;
 	}
 }
@@ -297,7 +298,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 	);
 
 	this->_actorToECEF = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * actorToAbsoluteWorld;
-	this->_updateLongLatHeight();
+	this->_updateGeospatialCoordinates();
 }
 
 void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform() {
@@ -331,7 +332,11 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 	)));
 }
 
-void UCesiumGeoreferenceComponent::_updateLongLatHeight() {
+void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
+	this->ECEF_X = this->_actorToECEF[3].x;
+	this->ECEF_Z = this->_actorToECEF[3].y;
+	this->ECEF_Y = this->_actorToECEF[3].z;
+
 	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(this->_actorToECEF[3]);
 
 	if (!cartographic) {
@@ -339,13 +344,8 @@ void UCesiumGeoreferenceComponent::_updateLongLatHeight() {
 		return;
 	}
 
-	this->CurrentLongitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
-	this->CurrentLatitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
-	this->CurrentHeight = (*cartographic).height;
+	this->Longitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
+	this->Latitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
+	this->Altitude = (*cartographic).height;
 }
 
-void UCesiumGeoreferenceComponent::_fixToEastSouthUp() {
-	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
-	this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
-	this->_updateActorToUnrealRelativeWorldTransform();
-}

@@ -17,6 +17,12 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <optional>
 
+#if WITH_EDITOR
+#include "Editor.h"
+#include "EditorViewportClient.h"
+#include "Slate/SceneViewport.h"
+#endif
+
 /*static*/ ACesiumGeoreference* ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 	ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(Actor->GetLevel(), TEXT("CesiumGeoreferenceDefault"));
 	if (!pGeoreference) {

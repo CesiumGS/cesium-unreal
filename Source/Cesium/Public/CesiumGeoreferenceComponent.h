@@ -37,92 +37,74 @@ public:
 	ACesiumGeoreference* Georeference;
 
 	/**
-	 * The current longitude of this actor.
+	 * The longitude of this actor.
 	 */ 
-	UPROPERTY(VisibleAnywhere, Category="Cesium")
-	double CurrentLongitude = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	double Longitude = 0.0;
 
 	/**
-	 * The current latitude of this actor.
+	 * The latitude of this actor.
 	 */ 
-	UPROPERTY(VisibleAnywhere, Category="Cesium")
-	double CurrentLatitude = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	double Latitude = 0.0;
 
 	/**
-	 * The current height in meters (above the WGS84 ellipsoid) of this actor.
+	 * The height in meters (above the WGS84 ellipsoid) of this actor.
 	 */ 
-	UPROPERTY(VisibleAnywhere, Category="Cesium")
-	double CurrentHeight = 0.0;
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	double Altitude = 0.0;
+
+	/**
+	 * The Earth-Centered Earth-Fixed X-coordinate of this actor.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	double ECEF_X = 0.0;
+	
+	/**
+	 * The Earth-Centered Earth-Fixed Y-coordinate of this actor.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	double ECEF_Y = 0.0;
+	
+	/**
+	 * The Earth-Centered Earth-Fixed Z-coordinate of this actor.
+	 */
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	double ECEF_Z = 0.0;
 
 	/**
 	 * Aligns the local up direction with the ellipsoid normal at the current location. 
 	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium")
 	void SnapLocalUpToEllipsoidNormal();
 
 	/**
 	 * Turns the actor's local coordinate system into a East-South-Up tangent space in centimeters.
 	 */
-	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium|Orientation")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium")
 	void SnapToEastSouthUp(); 
-
-	/**
-	 * The longitude to move this actor to.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Longitude Latitude Height")
-	double TargetLongitude = 0.0;
-	
-	/**
-	 * The latitude to move this actor to.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Longitude Latitude Height")
-	double TargetLatitude = 0.0;
-	
-	/**
-	 * The height to move this actor to (in meters above the WGS84 ellipsoid).
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Longitude Latitude Height")
-	double TargetHeight = 0.0;
-
-	/**
-	 * The Earth-Centered Earth-Fixed X-coordinate to move this actor to.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
-	double TargetECEF_X = 0.0;
-	
-	/**
-	 * The Earth-Centered Earth-Fixed Y-coordinate to move this actor to.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
-	double TargetECEF_Y = 0.0;
-	
-	/**
-	 * The Earth-Centered Earth-Fixed Z-coordinate to move this actor to.
-	 */
-	UPROPERTY(EditAnywhere, Category="Cesium|Teleport|Earth-Centered, Earth-Fixed")
-	double TargetECEF_Z = 0.0;
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	void MoveToLongLatHeight(double longitude, double latitude, double height);
+	void MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetAltitude);
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height. Inaccurate since this takes single-precision floats.
 	 */ 
 	UFUNCTION(BlueprintCallable)
-	void InaccurateMoveToLongLatHeight(float longitude, float latitude, float height);
+	void InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetAltitude);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates.
 	 */ 
-	void MoveToECEF(double ecef_x, double ecef_y, double ecef_z);
+	void MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates. Inaccurate since this takes single-precision floats.
 	 */ 
 	UFUNCTION(BlueprintCallable)
-	void InaccurateMoveToECEF(float ecef_x, float ecef_y, float ecef_z);
+	void InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z);
 
 	virtual void OnRegister() override;
 
@@ -163,8 +145,7 @@ private:
 	void _updateActorToUnrealRelativeWorldTransform();
 	void _updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 	void _setTransform(const glm::dmat4& transform);
-	void _updateLongLatHeight();
-	void _fixToEastSouthUp();
+	void _updateGeospatialCoordinates();
 
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;
