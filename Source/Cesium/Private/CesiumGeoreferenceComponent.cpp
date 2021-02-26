@@ -33,10 +33,10 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 
 void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 	// local up in ECEF (the +Z axis)
-	glm::dvec3 actorUpECEF = glm::normalize((*(this->_pActorToECEF))[2]);
+	glm::dvec3 actorUpECEF = glm::normalize(this->_actorToECEF[2]);
 
 	// the surface normal of the ellipsoid model of the globe at the ECEF location of the actor
-	glm::dvec3 ellipsoidNormal = CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal((*(this->_pActorToECEF))[3]);
+	glm::dvec3 ellipsoidNormal = CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(this->_actorToECEF[3]);
 	
 	// cosine of the angle between the actor's up direction and the ellipsoid normal
 	double cos = glm::dot(actorUpECEF, ellipsoidNormal);
@@ -46,8 +46,8 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 		// The actor's current up direction is completely upside down with respect to the ellipsoid normal.
 		
 		// We want to do a 180 degree rotation around X. We can do this by flipping the Y and Z axes 
-		(*(this->_pActorToECEF))[1] *= -1.0;
-		(*(this->_pActorToECEF))[2] *= -1.0;
+		this->_actorToECEF[1] *= -1.0;
+		this->_actorToECEF[2] *= -1.0;
 
 	} else {
 		// the axis of the shortest available rotation with a magnitude that is sine of the angle
@@ -66,9 +66,9 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 		glm::dmat4 R = glm::dmat3(1.0) + sin_K + sin_K * sin_K / (1.0 + cos);
 
 		// We only want to apply the rotation to the actor's orientation, not translation.
-		(*(this->_pActorToECEF))[0] = R * (*(this->_pActorToECEF))[0];
-		(*(this->_pActorToECEF))[1] = R * (*(this->_pActorToECEF))[1];
-		(*(this->_pActorToECEF))[2] = R * (*(this->_pActorToECEF))[2];
+		this->_actorToECEF[0] = R * this->_actorToECEF[0];
+		this->_actorToECEF[1] = R * this->_actorToECEF[1];
+		this->_actorToECEF[2] = R * this->_actorToECEF[2];
 	}
 
 	this->_updateActorToUnrealRelativeWorldTransform();
@@ -76,8 +76,8 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 }
 
 void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
-	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame((*(this->_pActorToECEF))[3]);
-	(*(this->_pActorToECEF)) = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
+	glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]);
+	this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;;
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
@@ -94,7 +94,7 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float targetLon
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z) {
-	(*(this->_pActorToECEF))[3] = glm::vec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
+	this->_actorToECEF[3] = glm::vec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
 	this->_updateGeospatialCoordinates();
 
 	this->_updateActorToUnrealRelativeWorldTransform();
@@ -292,6 +292,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
 		this->Georeference->AddGeoreferencedObject(this);
 		this->_georeferenced = true;
 	}
+	
 	// Note: when a georeferenced object is added, UpdateGeoreferenceTransform will automatically be called
 }
 
@@ -311,7 +312,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 		glm::dvec4(this->_absoluteLocation, 1.0)
 	);
 
-	(*(this->_pActorToECEF)) = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * actorToAbsoluteWorld;
+	this->_actorToECEF = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * actorToAbsoluteWorld;
 	this->_updateGeospatialCoordinates();
 }
 
@@ -331,7 +332,7 @@ void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform(co
 		glm::dvec4(-this->_worldOriginLocation, 1.0)
 	);
 
-	this->_actorToUnrealRelativeWorld = absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferencedTransform * (*(this->_pActorToECEF));
+	this->_actorToUnrealRelativeWorld = absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferencedTransform * this->_actorToECEF;
 }
 
 void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
@@ -349,11 +350,11 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
 	this->_dirty = true;
 
-	this->ECEF_X = (*(this->_pActorToECEF))[3].x;
-	this->ECEF_Y = (*(this->_pActorToECEF))[3].y;
-	this->ECEF_Z = (*(this->_pActorToECEF))[3].z;
+	this->ECEF_X = this->_actorToECEF[3].x;
+	this->ECEF_Y = this->_actorToECEF[3].y;
+	this->ECEF_Z = this->_actorToECEF[3].z;
 
-	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic((*(this->_pActorToECEF))[3]);
+	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(this->_actorToECEF[3]);
 
 	if (!cartographic) {
 		// only happens when actor is too close to the center of the Earth
@@ -368,7 +369,7 @@ void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
 void UCesiumGeoreferenceComponent::DebugDump() {
 	UE_LOG(LogActor, Warning, TEXT("_actorToECEF = "));
 	for (size_t i = 0; i < 4; i++) {
-		UE_LOG(LogActor, Warning, TEXT("(%f, %f, %f, %f)"), (*(this->_pActorToECEF))[0][i], (*(this->_pActorToECEF))[1][i], (*(this->_pActorToECEF))[2][i], (*(this->_pActorToECEF))[3][i])
+		UE_LOG(LogActor, Warning, TEXT("(%f, %f, %f, %f)"), this->_actorToECEF[0][i], this->_actorToECEF[1][i], this->_actorToECEF[2][i], this->_actorToECEF[3][i])
 	}
 }
 

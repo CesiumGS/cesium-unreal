@@ -164,16 +164,18 @@ private:
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;
 	glm::dvec3 _relativeLocation;
-	//glm::dmat4 _actorToECEF;
+	
 	UPROPERTY()
-	double _arrayActorToECEF[16];
-	glm::dmat4* _pActorToECEF = (glm::dmat4*) _arrayActorToECEF;
+	double _actorToECEF_Array[16];
+
+	glm::dmat4& _actorToECEF = *(glm::dmat4*)_actorToECEF_Array;
 
 	glm::dmat4 _actorToUnrealRelativeWorld;
 	USceneComponent* _ownerRoot;
 
 	bool _georeferenced;
 	bool _ignoreOnUpdateTransform;
+	UPROPERTY()
 	bool _autoSnapToEastSouthUp;
 	bool _dirty;
 };
