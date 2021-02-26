@@ -652,14 +652,14 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			TEXT("%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
 			*this->GetName(),
 			(std::chrono::high_resolution_clock::now() - this->_startTime).count() / 1000000,
-			result.tilesVisited,
-			result.culledTilesVisited,
-			result.tilesToRenderThisFrame.size(),
-			result.tilesCulled,
-			result.maxDepthVisited,
-			result.tilesLoadingLowPriority,
-			result.tilesLoadingMediumPriority,
-			result.tilesLoadingHighPriority
+			result->tilesVisited,
+			result->culledTilesVisited,
+			result->tilesToRenderThisFrame.size(),
+			result->tilesCulled,
+			result->maxDepthVisited,
+			result->tilesLoadingLowPriority,
+			result->tilesLoadingMediumPriority,
+			result->tilesLoadingHighPriority
 		);
 	}
 
