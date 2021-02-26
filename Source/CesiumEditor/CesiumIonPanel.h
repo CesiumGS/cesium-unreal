@@ -2,7 +2,7 @@
 
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "CesiumIonClient/CesiumIonAssets.h"
+#include "CesiumIonClient/Assets.h"
 
 class FArguments;
 class ITableRow;
@@ -26,17 +26,17 @@ class CesiumIonPanel : public SCompoundWidget {
 
 private:
     TSharedRef<SWidget> AssetDetails();
-    TSharedRef<ITableRow> CreateAssetRow(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, const TSharedRef<STableViewBase>& list);
-    void AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
-    void AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
-    void AddAsset(TSharedPtr<CesiumIonClient::CesiumIonAsset> item);
-    void AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, ESelectInfo::Type selectionType);
+    TSharedRef<ITableRow> CreateAssetRow(TSharedPtr<CesiumIonClient::Asset> item, const TSharedRef<STableViewBase>& list);
+    void AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item);
+    void AddOverlayToTerrain(TSharedPtr<CesiumIonClient::Asset> item);
+    void AddAsset(TSharedPtr<CesiumIonClient::Asset> item);
+    void AssetSelected(TSharedPtr<CesiumIonClient::Asset> item, ESelectInfo::Type selectionType);
 
     FDelegateHandle _connectionChangedDelegateHandle;
-    TSharedPtr<SListView<TSharedPtr<CesiumIonClient::CesiumIonAsset>>> _pListView;
-    TArray<TSharedPtr<CesiumIonClient::CesiumIonAsset>> _assets;
+    TSharedPtr<SListView<TSharedPtr<CesiumIonClient::Asset>>> _pListView;
+    TArray<TSharedPtr<CesiumIonClient::Asset>> _assets;
     bool _refreshInProgress;
     bool _refreshNeeded;
     TSharedPtr<SWidget> _pDetails;
-    TSharedPtr<CesiumIonClient::CesiumIonAsset> _pSelection;
+    TSharedPtr<CesiumIonClient::Asset> _pSelection;
 };

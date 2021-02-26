@@ -8,7 +8,7 @@
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
-#include "CesiumIonClient/CesiumIonConnection.h"
+#include "CesiumIonClient/Connection.h"
 #include "UnrealConversions.h"
 #include "ACesium3DTileset.h"
 #include "Editor.h"

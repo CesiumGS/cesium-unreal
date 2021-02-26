@@ -38,7 +38,7 @@ CesiumIonPanel::~CesiumIonPanel() {
 
 void CesiumIonPanel::Construct(const FArguments& InArgs)
 {
-    this->_pListView = SNew(SListView<TSharedPtr<CesiumIonAsset>>)
+    this->_pListView = SNew(SListView<TSharedPtr<Asset>>)
         .ListItemsSource(&this->_assets)
         .OnMouseButtonDoubleClick(this, &CesiumIonPanel::AddAsset)
         .OnGenerateRow(this, &CesiumIonPanel::CreateAssetRow)
@@ -83,7 +83,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
     this->Refresh();
 }
 
-static bool isSupportedTileset(const TSharedPtr<CesiumIonAsset>& pAsset) {
+static bool isSupportedTileset(const TSharedPtr<Asset>& pAsset) {
     return
         pAsset &&
         (
@@ -92,7 +92,7 @@ static bool isSupportedTileset(const TSharedPtr<CesiumIonAsset>& pAsset) {
         );
 }
 
-static bool isSupportedImagery(const TSharedPtr<CesiumIonAsset>& pAsset) {
+static bool isSupportedImagery(const TSharedPtr<Asset>& pAsset) {
     return
         pAsset &&
         pAsset->type == "IMAGERY";
@@ -206,16 +206,16 @@ void CesiumIonPanel::Refresh() {
     auto& connection = maybeConnection.value();
     this->_refreshInProgress = true;
 
-    connection.assets().thenInMainThread([this](CesiumIonClient::Response<CesiumIonAssets>&& response) {
+    connection.assets().thenInMainThread([this](CesiumIonClient::Response<Assets>&& response) {
         if (response.value) {
-            std::vector<CesiumIonAsset>& items = response.value.value().items;
+            std::vector<Asset>& items = response.value.value().items;
             this->_assets.SetNum(items.size());
             for (size_t i = 0; i < items.size(); ++i) {
-                TSharedPtr<CesiumIonAsset>& pAsset = this->_assets[i];
+                TSharedPtr<Asset>& pAsset = this->_assets[i];
                 if (pAsset) {
                     *pAsset = items[i];
                 } else {
-                    pAsset = MakeShared<CesiumIonAsset>(std::move(items[i]));
+                    pAsset = MakeShared<Asset>(std::move(items[i]));
                 }
             }
         }
@@ -227,12 +227,12 @@ void CesiumIonPanel::Refresh() {
     });
 }
 
-void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::CesiumIonAsset> item, ESelectInfo::Type selectionType)
+void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::Asset> item, ESelectInfo::Type selectionType)
 {
     this->_pSelection = item;
 }
 
-void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::CesiumIonAsset> item) {
+void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
     if (item->type == "IMAGERY") {
         this->AddOverlayToTerrain(item);
     } else {
@@ -240,7 +240,7 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::CesiumIonAsset> item) 
     }
 }
 
-void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset> item)
+void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item)
 {
     UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
     ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
@@ -254,7 +254,7 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::CesiumIonAsset>
     pTileset->RerunConstructionScripts();
 }
 
-void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAsset> item) {
+void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::Asset> item) {
     UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
     ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
@@ -274,11 +274,11 @@ void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::CesiumIonAs
 
 namespace {
 
-    class AssetsTableRow : public SMultiColumnTableRow<TSharedPtr<CesiumIonAsset>> {
+    class AssetsTableRow : public SMultiColumnTableRow<TSharedPtr<Asset>> {
     public:
-        void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& InOwnerTableView, const TSharedPtr<CesiumIonAsset>& pItem) {
+        void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& InOwnerTableView, const TSharedPtr<Asset>& pItem) {
             this->_pItem = pItem;
-            SMultiColumnTableRow<TSharedPtr<CesiumIonAsset>>::Construct(InArgs, InOwnerTableView);
+            SMultiColumnTableRow<TSharedPtr<Asset>>::Construct(InArgs, InOwnerTableView);
         }
 
         virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& InColumnName) override {
@@ -300,11 +300,11 @@ namespace {
         }
 
     private:
-        TSharedPtr<CesiumIonAsset> _pItem;
+        TSharedPtr<Asset> _pItem;
     };
 
 }
 
-TSharedRef<ITableRow> CesiumIonPanel::CreateAssetRow(TSharedPtr<CesiumIonAsset> item, const TSharedRef<STableViewBase>& list) {
+TSharedRef<ITableRow> CesiumIonPanel::CreateAssetRow(TSharedPtr<Asset> item, const TSharedRef<STableViewBase>& list) {
     return SNew(AssetsTableRow, list, item);
 }

@@ -11,7 +11,7 @@
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
-#include "CesiumIonClient/CesiumIonToken.h"
+#include "CesiumIonClient/Token.h"
 #include "CesiumIonClient/Connection.h"
 #include "UnrealConversions.h"
 
@@ -143,30 +143,21 @@ FReply IonLoginPanel::SignIn() {
         FCesiumEditorModule::ion().profile = {};
         FCesiumEditorModule::ion().token = "";
 
-        return FCesiumEditorModule::ion().connection.value().me().thenInMainThread([this](CesiumIonClient::Response<CesiumIonProfile>&& profile) {
+        return FCesiumEditorModule::ion().connection.value().me().thenInMainThread([this](CesiumIonClient::Response<Profile>&& profile) {
             this->_signInInProgress = false;
             FCesiumEditorModule::ion().profile = std::move(profile.value);
             FCesiumEditorModule::ion().ionConnectionChanged.Broadcast();
             return FCesiumEditorModule::ion().connection.value().tokens();
-        }).thenInMainThread([this](CesiumIonClient::Response<std::vector<CesiumIonClient::CesiumIonToken>>&& tokens) -> CesiumAsync::Future<void> {
+        }).thenInMainThread([this](CesiumIonClient::Response<std::vector<CesiumIonClient::Token>>&& tokens) -> CesiumAsync::Future<void> {
             if (!tokens.value) {
                 return FCesiumEditorModule::ion().pAsyncSystem->createResolvedFuture();
             }
 
-            // Super-hackily add all the "premium assets" that we need for quick add to our assets.
-            // TODO: less hackily maybe?
-            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/1/add"); // Cesium World Terrain
-            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/2/add"); // Bing Maps Aerial
-            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/3/add"); // Bing Maps Aerial with Labels
-            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/4/add"); // Bing Maps Road
-            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/3954/add"); // Sentinel-2
-            FCesiumEditorModule::ion().pAssetAccessor->post(*FCesiumEditorModule::ion().pAsyncSystem, "https://api.cesium.com/premiumAssets/96188/add"); // Cesium World Terrain
-
             std::string tokenName = wstr_to_utf8(FApp::GetProjectName()) + " (Created by Cesium for Unreal)";
 
             // TODO: rather than find a token by name, it would be better to store the token ID in the UE project somewhere.
-            const std::vector<CesiumIonToken>& tokenList = tokens.value.value();
-            const CesiumIonToken* pFound = nullptr;
+            const std::vector<Token>& tokenList = tokens.value.value();
+            const Token* pFound = nullptr;
 
             for (auto& token : tokenList) {
                 if (token.name == tokenName) {
@@ -183,7 +174,7 @@ FReply IonLoginPanel::SignIn() {
                     tokenName,
                     { "assets:read" },
                     std::nullopt
-                ).thenInMainThread([this](CesiumIonClient::Response<CesiumIonToken>&& token) {
+                ).thenInMainThread([this](CesiumIonClient::Response<Token>&& token) {
                     if (token.value) {
                         FCesiumEditorModule::ion().token = token.value.value().token;
                     }
