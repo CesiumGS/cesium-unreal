@@ -75,6 +75,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
 	this->PreloadSiblings = false;
 	this->ForbidHoles = false;
 	this->LoadingDescendantLimit = 10000;
+	ACesiumGeoreference::GetDefaultForActor(this)->KeepWorldOriginNearCamera = false;
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
