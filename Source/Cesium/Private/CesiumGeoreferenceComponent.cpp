@@ -20,12 +20,15 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 	_ownerRoot(nullptr),
 	_georeferenced(false),
 	_ignoreOnUpdateTransform(false),
-	_autoSnapToEastSouthUp(false),
+	//_autoSnapToEastSouthUp(false),
 	_dirty(false)
 {
 	this->bAutoActivate = true;
 	this->bWantsOnUpdateTransform = true;
 	PrimaryComponentTick.bCanEverTick = false;
+
+	// TODO: check when exactly constructor is called. Is it possible that it is only called for CDO and then all other load/save/replications 
+	// happen from serialize/deserialize? 
 
 	// set a delegate callback when the root component for the actor is set 
 	this->IsRootComponentChanged.AddDynamic(this, &UCesiumGeoreferenceComponent::OnRootComponentChanged);
@@ -166,6 +169,13 @@ void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags Updat
 
 void UCesiumGeoreferenceComponent::BeginPlay() {
 	Super::BeginPlay();
+}
+
+bool UCesiumGeoreferenceComponent::MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit, EMoveComponentFlags MoveFlags, ETeleportType Teleport) {
+	if (this->_ownerRoot != this) {
+		return false;
+	}
+	return USceneComponent::MoveComponentImpl(Delta, NewRotation, bSweep, OutHit, MoveFlags, Teleport);
 }
 
 
