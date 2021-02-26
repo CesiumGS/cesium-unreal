@@ -7,6 +7,7 @@
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
@@ -57,84 +58,63 @@ void IonLoginPanel::Construct(const FArguments& InArgs)
                 .AutoHeight()
             [
                 SNew(SButton)
-                    .Text(FText::FromString(TEXT("Create a Cesium ion Account")))
-            ]
-            + SVerticalBox::Slot()
-                .VAlign(VAlign_Top)
-                .HAlign(HAlign_Center)
-                .Padding(20)
-            [
-                SNew(STextBlock)
-                    .Text(FText::FromString(TEXT("-or sign in-")))
-            ]
-            + SVerticalBox::Slot()
-                .VAlign(VAlign_Top)
-                .HAlign(HAlign_Left)
-                .Padding(5)
-            [
-                SNew(STextBlock)
-                    .Text(FText::FromString(TEXT("Username or email")))
-            ]
-            + SVerticalBox::Slot()
-                .VAlign(VAlign_Top)
-                .HAlign(HAlign_Left)
-                .Padding(5)
-            [
-                SNew(SEditableTextBox)
-                    .MinDesiredWidth(200.0f)
-                    .OnTextCommitted(this, &IonLoginPanel::setUsername)
-                    
-            ]
-            + SVerticalBox::Slot()
-                .VAlign(VAlign_Top)
-                .HAlign(HAlign_Left)
-                .Padding(5)
-            [
-                SNew(STextBlock)
-                .Text(FText::FromString(TEXT("Password")))
-            ]
-            + SVerticalBox::Slot()
-                .VAlign(VAlign_Top)
-                .HAlign(HAlign_Left)
-                .Padding(5)
-            [
-                SNew(SEditableTextBox)
-                    .MinDesiredWidth(200.0f)
-                    .IsPassword(true)
-                    .OnTextCommitted(this, &IonLoginPanel::setPassword)
-            ]
-            + SVerticalBox::Slot()
-                .VAlign(VAlign_Top)
-                .HAlign(HAlign_Center)
-                .Padding(5)
-                .AutoHeight()
-            [
-                SNew(SButton)
                     .OnClicked(this, &IonLoginPanel::SignIn)
-                    .Text(FText::FromString(TEXT("Sign in")))
+                    .Text(FText::FromString(TEXT("Connect")))
                     .IsEnabled_Lambda([this]() { return !this->_signInInProgress; })
             ]
             + SVerticalBox::Slot()
+                .VAlign(VAlign_Top)
+                .HAlign(HAlign_Fill)
+                .Padding(5, 15, 5, 5)
+                .AutoHeight()
+            [
+                SNew(STextBlock)
+                    .Text(FText::FromString(TEXT("Waiting for you to sign into Cesium ion with your web browser...")))
+                    .Visibility_Lambda([this]() { return this->_signInInProgress ? EVisibility::Visible : EVisibility::Hidden; })
+                    .AutoWrapText(true)
+            ]
+            + SVerticalBox::Slot()
                 .HAlign(HAlign_Center)
+                .Padding(5)
             [
                 SNew(SThrobber)
                     .Animate(SThrobber::Horizontal)
                     .Visibility_Lambda([this]() { return this->_signInInProgress ? EVisibility::Visible : EVisibility::Hidden; })
             ]
+            + SVerticalBox::Slot()
+                .HAlign(HAlign_Center)
+                .Padding(5)
+                .AutoHeight()
+            [
+                SNew(SHyperlink)
+                    .OnNavigate(this, &IonLoginPanel::LaunchBrowserAgain)
+                    .Text(FText::FromString(TEXT("Open web browser again")))
+                    .Visibility_Lambda([this]() { return this->_signInInProgress ? EVisibility::Visible : EVisibility::Hidden; })
+            ]
+            + SVerticalBox::Slot()
+                .VAlign(VAlign_Top)
+                .HAlign(HAlign_Fill)
+                .Padding(5)
+                .AutoHeight()
+            [
+                SNew(STextBlock)
+                    .Text(FText::FromString(TEXT("Or copy the URL below into your web browser")))
+                    .Visibility_Lambda([this]() { return this->_signInInProgress ? EVisibility::Visible : EVisibility::Hidden; })
+                    .AutoWrapText(true)
+            ]
+            + SVerticalBox::Slot()
+                .HAlign(HAlign_Center)
+            [
+                SNew(SBorder)
+                    .Visibility_Lambda([this]() { return this->_signInInProgress ? EVisibility::Visible : EVisibility::Hidden; })
+                [
+                    SNew(SEditableText)
+                        .IsReadOnly(true)
+                        .Text_Lambda([this]() { return FText::FromString(this->_authorizeUrl); })
+                ]
+            ]
         ]
     ];
-}
-
-void IonLoginPanel::setUsername(const FText& value, ETextCommit::Type commitInfo) {
-    this->_username = value;
-}
-
-void IonLoginPanel::setPassword(const FText& value, ETextCommit::Type commitInfo) {
-    this->_password = value;
-
-    if (commitInfo == ETextCommit::OnEnter) {
-        this->SignIn();
-    }
 }
 
 FReply IonLoginPanel::SignIn() {
@@ -154,8 +134,9 @@ FReply IonLoginPanel::SignIn() {
             "tokens:write",
             "geocode"
         },
-        [](const std::string& url) {
-            FPlatformProcess::LaunchURL(*utf8_to_wstr(url), NULL, NULL);
+        [this](const std::string& url) {
+            this->_authorizeUrl = utf8_to_wstr(url);
+            FPlatformProcess::LaunchURL(*this->_authorizeUrl, NULL, NULL);
         }
     ).thenInMainThread([this](CesiumIonClient::Connection&& connection) {
         FCesiumEditorModule::ion().connection = std::move(connection);
@@ -217,4 +198,8 @@ FReply IonLoginPanel::SignIn() {
     });
 
     return FReply::Handled();
+}
+
+void IonLoginPanel::LaunchBrowserAgain() {
+    FPlatformProcess::LaunchURL(*this->_authorizeUrl, NULL, NULL);
 }

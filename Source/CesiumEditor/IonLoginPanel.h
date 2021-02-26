@@ -12,12 +12,10 @@ class IonLoginPanel : public SCompoundWidget {
     void Construct(const FArguments& InArgs);
 
 private:
-    void setUsername(const FText& value, ETextCommit::Type commitInfo);
-    void setPassword(const FText& value, ETextCommit::Type commitInfo);
+    void LaunchBrowserAgain();
 
     bool _signInInProgress = false;
-    FText _username;
-    FText _password;
+    FString _authorizeUrl;
 
     FReply SignIn();
 };
