@@ -124,7 +124,7 @@ FReply IonLoginPanel::SignIn() {
         *FCesiumEditorModule::ion().pAsyncSystem,
         FCesiumEditorModule::ion().pAssetAccessor,
         "Unreal Engine",
-        184,
+        190,
         "/cesium-for-unreal/oauth2/callback",
         {
             "assets:list",
