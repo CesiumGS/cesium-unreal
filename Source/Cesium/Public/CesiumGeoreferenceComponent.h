@@ -114,6 +114,12 @@ public:
 	UFUNCTION()
 	void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
 
+	/**
+	 * Debug Dump
+	 */
+	UFUNCTION(CallInEditor)
+	void DebugDump();
+
 	virtual void ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 
@@ -158,11 +164,15 @@ private:
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;
 	glm::dvec3 _relativeLocation;
-	glm::dmat4 _actorToECEF;
-	glm::dmat4 _actorToUnrealRelativeWorld;
+	//glm::dmat4 _actorToECEF;
+	UPROPERTY()
+	double _arrayActorToECEF[16];
+	glm::dmat4* _pActorToECEF = (glm::dmat4*) _arrayActorToECEF;
 
+	glm::dmat4 _actorToUnrealRelativeWorld;
 	USceneComponent* _ownerRoot;
 
+	bool _georeferenced;
 	bool _ignoreOnUpdateTransform;
 	bool _autoSnapToEastSouthUp;
 	bool _dirty;
