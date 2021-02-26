@@ -10,6 +10,7 @@
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeoreference.h"
 #include "CesiumCreditSystem.h"
+#include <chrono>
 #include "ACesium3DTileset.generated.h"
 
 class UMaterial;
@@ -223,4 +224,5 @@ private:
 	
 	bool _updateGeoreferenceOnBoundingVolumeReady;
 	bool _captureMovieMode;
+	std::chrono::high_resolution_clock::time_point _startTime;
 };
