@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright CesiumGS, Inc. and Contributors
 
 #pragma once
 

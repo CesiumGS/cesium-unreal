@@ -1,3 +1,4 @@
+// Copyright CesiumGS, Inc. and Contributors
 
 #include "CesiumCreditSystem.h"
 #include "UnrealConversions.h"
