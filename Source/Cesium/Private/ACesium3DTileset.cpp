@@ -55,6 +55,8 @@ ACesium3DTileset::ACesium3DTileset() :
 	_lastTilesCulled(0),
 	_lastMaxDepthVisited(0),
 
+	TilesetStats(),
+
 	_updateGeoreferenceOnBoundingVolumeReady(false)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -602,6 +604,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		this->_lastCulledTilesVisited = result.culledTilesVisited;
 		this->_lastTilesCulled = result.tilesCulled;
 		this->_lastMaxDepthVisited = result.maxDepthVisited;
+
+		this->TilesetStats.LastTilesVisited = result.tilesVisited;
+		this->TilesetStats.LastCulledTilesVisited = result.culledTilesVisited;
+		this->TilesetStats.LastTilesCulled = result.tilesCulled;
 
 		UE_LOG(
 			LogActor,

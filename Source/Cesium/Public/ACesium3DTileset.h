@@ -11,6 +11,7 @@
 #include "CesiumGeoreference.h"
 #include "CesiumCreditSystem.h"
 #include <chrono>
+#include "Engine/Blueprint.h"
 #include "ACesium3DTileset.generated.h"
 
 class UMaterial;
@@ -19,6 +20,31 @@ namespace Cesium3DTiles {
 	class Tileset;
 	class TilesetView;
 }
+
+
+USTRUCT(BlueprintType)
+struct FTilesetStats {
+	GENERATED_BODY()
+
+	/**
+	 * The number of tiles that have been visited in the previous traversal pass.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cesium|Debug")
+	int32 LastTilesVisited;
+
+	/**
+	 * The number of culled tiles that have been visited in the previous traversal pass.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cesium|Debug")
+	int32 LastCulledTilesVisited;
+
+	/**
+	 * The number of tiles that have been culled in the previous traversal pass
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cesium|Debug")
+	int LastTilesCulled;
+};
+
 
 UCLASS()
 class CESIUM_API ACesium3DTileset :
@@ -215,4 +241,12 @@ private:
 	
 	bool _updateGeoreferenceOnBoundingVolumeReady;
 	std::chrono::high_resolution_clock::time_point _startTime;
+
+public:
+	/**
+	 * Statistical information from the last traversal pass
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="Cesium|Debug")
+	FTilesetStats TilesetStats;
+
 };
