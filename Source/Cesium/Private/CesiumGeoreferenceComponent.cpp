@@ -130,7 +130,7 @@ void UCesiumGeoreferenceComponent::OnRootComponentChanged(USceneComponent* /*new
 }
 
 void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) {
-	USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
+	// Don't call super, since it will trigger OnUpdateTransform. We will recompute the Unreal transform from source ECEF ourselves.
 
 	const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
 	this->_worldOriginLocation = glm::dvec3(
