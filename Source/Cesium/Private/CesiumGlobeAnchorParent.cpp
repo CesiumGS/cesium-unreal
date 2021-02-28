@@ -52,7 +52,7 @@ void ACesiumGlobeAnchorParent::PostEditChangeProperty(FPropertyChangedEvent& eve
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Latitude) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Altitude)
 	) {
-		this->GeoreferenceComponent->MoveToLongLatHeight(Longitude, Latitude, Altitude);
+		this->GeoreferenceComponent->MoveToLongLatAlt(Longitude, Latitude, Altitude);
 		return;
 	} else if (
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, ECEF_X) ||

@@ -87,13 +87,13 @@ public:
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	void MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetAltitude);
+	void MoveToLongLatAlt(double targetLongitude, double targetLatitude, double targetAltitude);
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height. Inaccurate since this takes single-precision floats.
 	 */ 
 	UFUNCTION(BlueprintCallable)
-	void InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetAltitude);
+	void InaccurateMoveToLongLatAlt(float targetLongitude, float targetLatitude, float targetAltitude);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates.
@@ -160,7 +160,9 @@ private:
 	void _updateActorToUnrealRelativeWorldTransform();
 	void _updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 	void _setTransform(const glm::dmat4& transform);
-	void _updateGeospatialCoordinates();
+	void _setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
+	void _updateDisplayLongLatAlt();
+	void _updateDisplayECEF();
 
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;

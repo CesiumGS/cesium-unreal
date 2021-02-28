@@ -85,33 +85,22 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGeoreferenceComponent::MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetAltitude) {
+void UCesiumGeoreferenceComponent::MoveToLongLatAlt(double targetLongitude, double targetLatitude, double targetAltitude) {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
 		CesiumGeospatial::Cartographic::fromDegrees(targetLongitude, targetLatitude, targetAltitude)
 	);
-	this->MoveToECEF(ecef.x, ecef.y, ecef.z);
+
+	this->_setECEF(ecef.x, ecef.y, ecef.z);
+	this->_updateDisplayECEF();
 }
 
-void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetAltitude) {
-	this->MoveToLongLatHeight(targetLongitude, targetLatitude, targetAltitude);
+void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatAlt(float targetLongitude, float targetLatitude, float targetAltitude) {
+	this->MoveToLongLatAlt(targetLongitude, targetLatitude, targetAltitude);
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z) {
-	this->_actorToECEF[3] = glm::vec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
-	this->_updateGeospatialCoordinates();
-
-	this->_updateActorToUnrealRelativeWorldTransform();
-	this->_setTransform(this->_actorToUnrealRelativeWorld);
-
-	// In this case the ground truth is the newly updated _actorToECEF transformation, so it will be more accurate to
-	// compute the new Unreal locations this way (as opposed to _updateAbsoluteLocation / _updateRelativeLocation).
-	this->_relativeLocation = this->_actorToUnrealRelativeWorld[3];
-	this->_absoluteLocation = this->_relativeLocation + this->_worldOriginLocation;
-
-	// If the transform needs to be snapped to the tangent plane, do it here.
-	if (this->_autoSnapToEastSouthUp) {
-		this->SnapToEastSouthUp();
-	}
+	this->_setECEF(targetEcef_x, targetEcef_y, targetEcef_z);
+	this->_updateDisplayLongLatAlt();
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z) {
@@ -197,14 +186,14 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(FPropertyChangedEvent&
 		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Latitude) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Altitude)
 	) {
-		this->MoveToLongLatHeight(Longitude, Latitude, Altitude);
+		this->MoveToLongLatAlt(this->Longitude, this->Latitude, this->Altitude);
 		return;
 	} else if (
 		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_X) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Y) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Z)
 	) {
-		this->MoveToECEF(ECEF_X, ECEF_Y, ECEF_Z);
+		this->MoveToECEF(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
 		return;
 	}
 }
@@ -326,7 +315,8 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 	);
 
 	this->_actorToECEF = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * actorToAbsoluteWorld;
-	this->_updateGeospatialCoordinates();
+	this->_updateDisplayECEF();
+	this->_updateDisplayLongLatAlt();
 }
 
 void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform() {
@@ -360,13 +350,24 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 	)));
 }
 
-void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
-	this->_dirty = true;
+void UCesiumGeoreferenceComponent::_setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z) {
+	this->_actorToECEF[3] = glm::dvec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
 
-	this->ECEF_X = this->_actorToECEF[3].x;
-	this->ECEF_Y = this->_actorToECEF[3].y;
-	this->ECEF_Z = this->_actorToECEF[3].z;
+	this->_updateActorToUnrealRelativeWorldTransform();
+	this->_setTransform(this->_actorToUnrealRelativeWorld);
 
+	// In this case the ground truth is the newly updated _actorToECEF transformation, so it will be more accurate to
+	// compute the new Unreal locations this way (as opposed to _updateAbsoluteLocation / _updateRelativeLocation).
+	this->_relativeLocation = this->_actorToUnrealRelativeWorld[3];
+	this->_absoluteLocation = this->_relativeLocation + this->_worldOriginLocation;
+
+	// If the transform needs to be snapped to the tangent plane, do it here.
+	if (this->_autoSnapToEastSouthUp) {
+		this->SnapToEastSouthUp();
+	}
+}
+
+void UCesiumGeoreferenceComponent::_updateDisplayLongLatAlt() {
 	std::optional<CesiumGeospatial::Cartographic> cartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(this->_actorToECEF[3]);
 
 	if (!cartographic) {
@@ -374,9 +375,19 @@ void UCesiumGeoreferenceComponent::_updateGeospatialCoordinates() {
 		return;
 	}
 
+	this->_dirty = true;
+
 	this->Longitude = CesiumUtility::Math::radiansToDegrees((*cartographic).longitude);
 	this->Latitude = CesiumUtility::Math::radiansToDegrees((*cartographic).latitude);
 	this->Altitude = (*cartographic).height;
+}
+
+void UCesiumGeoreferenceComponent::_updateDisplayECEF() {
+	this->_dirty = true;
+
+	this->ECEF_X = this->_actorToECEF[3].x;
+	this->ECEF_Y = this->_actorToECEF[3].y;
+	this->ECEF_Z = this->_actorToECEF[3].z;
 }
 
 void UCesiumGeoreferenceComponent::DebugDump() {
