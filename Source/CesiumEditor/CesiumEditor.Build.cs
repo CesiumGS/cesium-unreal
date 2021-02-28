@@ -32,6 +32,7 @@ public class CesiumEditor : ModuleRules
             new string[]
             {
                 Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumIonClient/" + cesiumNativeConfiguration + "/CesiumIonClient.lib"),
+                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/" + cesiumNativeConfiguration + "/csprng.lib")
             }
             );
 
