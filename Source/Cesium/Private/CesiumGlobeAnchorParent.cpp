@@ -1,20 +1,21 @@
 
 #include "CesiumGlobeAnchorParent.h"
 
+#include "Components/SceneComponent.h"
 #include "CesiumGeoreferenceComponent.h"
 
 ACesiumGlobeAnchorParent::ACesiumGlobeAnchorParent() {
 	PrimaryActorTick.bCanEverTick = true;
 
     // don't create the georeference root component if this is a CDO
-    this->GeoreferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("RootComponent"));
-    this->SetRootComponent(this->GeoreferenceComponent);
-    this->RootComponent->SetMobility(EComponentMobility::Movable);
-    this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
+	this->SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent")));
+	this->RootComponent->SetMobility(EComponentMobility::Movable);
+	this->GeoreferenceComponent = CreateDefaultSubobject<UCesiumGeoreferenceComponent>(TEXT("GeoreferenceComponent"));
 }
 
 void ACesiumGlobeAnchorParent::OnConstruction(const FTransform& Transform) {
     Super::OnConstruction(Transform);
+	this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
 }
 
 bool ACesiumGlobeAnchorParent::ShouldTickIfViewportsOnly() const {
