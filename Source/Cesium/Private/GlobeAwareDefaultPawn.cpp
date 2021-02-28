@@ -178,9 +178,7 @@ FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator)
 		FVector(0.0, 0.0, 0.0)
 	);
 
-	UE_LOG(LogActor, Warning, TEXT("Before invert"));
 	FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-	UE_LOG(LogActor, Warning, TEXT("After invert"));
 
 	return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
 }
