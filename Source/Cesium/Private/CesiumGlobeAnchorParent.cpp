@@ -52,14 +52,14 @@ void ACesiumGlobeAnchorParent::PostEditChangeProperty(FPropertyChangedEvent& eve
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Latitude) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Altitude)
 	) {
-		this->GeoreferenceComponent->MoveToLongLatAlt(Longitude, Latitude, Altitude);
+		this->GeoreferenceComponent->MoveToLongLatAlt(this->Longitude, this->Latitude, this->Altitude);
 		return;
 	} else if (
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, ECEF_X) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, ECEF_Y) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, ECEF_Z)
 	) {
-		this->GeoreferenceComponent->MoveToECEF(ECEF_X, ECEF_Y, ECEF_Z);
+		this->GeoreferenceComponent->MoveToECEF(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
 		return;
 	}
 }
