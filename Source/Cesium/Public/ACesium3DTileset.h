@@ -73,18 +73,30 @@ public:
 
 	/**
 	 * Whether to preload ancestor tiles.
+	 * 
+     * Setting this to true optimizes the zoom-out experience and provides more detail in
+     * newly-exposed areas when panning. The down side is that it requires loading more tiles.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	bool PreloadAncestors = true;
 
 	/**
 	 * Whether to preload sibling tiles.
+	 * 
+     * Setting this to true causes tiles with the same parent as a rendered tile to be loaded, even
+     * if they are culled. Setting this to true may provide a better panning experience at the
+     * cost of loading more tiles.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	bool PreloadSiblings = true;
 
 	/**
 	 * Whether to unrefine back to a parent tile when a child isn't done loading.
+	 * 
+     * When this is set to true, the tileset will guarantee that the tileset will never be rendered with 
+	 * holes in place of tiles that are not yet loaded, even though the tile that is rendered instead may
+	 * have low resolution. When false, overall loading will be faster, but newly-visible parts of the 
+	 * tileset may initially be blank.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	bool ForbidHoles = false;
@@ -97,12 +109,21 @@ public:
 
 	/**
 	 * The number of loading descendents a tile should allow before deciding to render itself instead of waiting.
+	 * 
+	 * Setting this to 0 will cause each level of detail to be loaded successively. This will increase
+	 * the overall loading time, but cause additional detail to appear more gradually. Setting this to 
+	 * a high value like 1000 will decrease the overall time until the desired level of detail is achieved,
+	 * but this high-detail representation will appear at once, as soon as it is loaded completely.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	int LoadingDescendantLimit = 20;
 
 	/**
 	 * Whether to cull tiles that are outside the frustum.
+	 * 
+	 * By default this is true, meaning that tiles that are not visible with the
+	 * current camera configuration will be ignored. It can be set to false, so
+	 * that these tiles are still considered for loading, refinement and rendering. 
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
 	bool EnableFrustumCulling = true;
