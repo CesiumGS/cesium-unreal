@@ -32,15 +32,17 @@ public:
 	virtual ~ACesium3DTileset();
 	
 	/**
-	 * The URL of this tileset's "tileset.json" file. If this property is specified, the ion asset ID
-	 * and token are ignored.
+	 * The URL of this tileset's "tileset.json" file. 
+	 *
+	 * If this property is specified, the ion asset ID and token are ignored.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	FString Url;
 
 	/**
-	 * The ID of the Cesium ion asset to use. This property is ignored if the Url is
-	 * specified.
+	 * The ID of the Cesium ion asset to use.
+	 *
+	 * This property is ignored if the Url is specified.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	uint32 IonAssetID;
