@@ -57,7 +57,13 @@ ACesium3DTileset::ACesium3DTileset() :
 	_lastTilesCulled(0),
 	_lastMaxDepthVisited(0),
 
-	_updateGeoreferenceOnBoundingVolumeReady(false)
+	_updateGeoreferenceOnBoundingVolumeReady(false),
+
+	_captureMovieMode{false},
+	_beforeMoviePreloadAncestors{PreloadAncestors},
+	_beforeMoviePreloadSiblings{PreloadSiblings},
+	_beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
+	_beforeMovieKeepWorldOriginNearCamera{true}
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -73,20 +79,31 @@ ACesium3DTileset::~ACesium3DTileset() {
 }
 
 void ACesium3DTileset::PlayMovieSequencer() {
+	ACesiumGeoreference* cesiumGeoreference = ACesiumGeoreference::GetDefaultForActor(this);
+
+	this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
+	this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
+	this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
+	this->_beforeMovieKeepWorldOriginNearCamera = cesiumGeoreference->KeepWorldOriginNearCamera;
+
 	this->_captureMovieMode = true;
 	this->PreloadAncestors = false;
 	this->PreloadSiblings = false;
-	this->ForbidHoles = false;
 	this->LoadingDescendantLimit = 10000;
-	ACesiumGeoreference::GetDefaultForActor(this)->KeepWorldOriginNearCamera = false;
+	cesiumGeoreference->KeepWorldOriginNearCamera = false;
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
+	ACesiumGeoreference* cesiumGeoreference = ACesiumGeoreference::GetDefaultForActor(this);
 	this->_captureMovieMode = false;
+	this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
+	this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
+	this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
+	cesiumGeoreference->KeepWorldOriginNearCamera = this->_beforeMovieKeepWorldOriginNearCamera;
 }
 
 void ACesium3DTileset::PauseMovieSequencer() {
-	this->_captureMovieMode = false;
+	this->StopMovieSequencer();
 }
 
 const glm::dmat4& ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const

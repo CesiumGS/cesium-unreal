@@ -223,6 +223,11 @@ private:
 	uint32_t _lastMaxDepthVisited;
 	
 	bool _updateGeoreferenceOnBoundingVolumeReady;
-	bool _captureMovieMode;
 	std::chrono::high_resolution_clock::time_point _startTime;
+
+	bool _captureMovieMode;
+	bool _beforeMoviePreloadAncestors;
+	bool _beforeMoviePreloadSiblings;
+	int _beforeMovieLoadingDescendantLimit;
+	bool _beforeMovieKeepWorldOriginNearCamera;
 };
