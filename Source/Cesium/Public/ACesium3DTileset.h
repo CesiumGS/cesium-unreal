@@ -66,7 +66,13 @@ public:
 
 	/**
 	 * The maximum number of pixels of error when rendering this tileset.
-     * This is used to select an appropriate level-of-detail.
+	 * 
+	 * This is used to select an appropriate level-of-detail: A low value
+	 * will cause many tiles with a high level of detail to be loaded,
+	 * causing a finer visual representation of the tiles, but with a 
+	 * higher performance cost for loading and rendering. A lower value will 
+	 * cause a coarser visual representation, with lower performance 
+	 * requirements.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
 	double MaximumScreenSpaceError = 16.0;
@@ -74,8 +80,8 @@ public:
 	/**
 	 * Whether to preload ancestor tiles.
 	 * 
-     * Setting this to true optimizes the zoom-out experience and provides more detail in
-     * newly-exposed areas when panning. The down side is that it requires loading more tiles.
+	 * Setting this to true optimizes the zoom-out experience and provides more detail in
+	 * newly-exposed areas when panning. The down side is that it requires loading more tiles.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	bool PreloadAncestors = true;
@@ -83,9 +89,9 @@ public:
 	/**
 	 * Whether to preload sibling tiles.
 	 * 
-     * Setting this to true causes tiles with the same parent as a rendered tile to be loaded, even
-     * if they are culled. Setting this to true may provide a better panning experience at the
-     * cost of loading more tiles.
+	 * Setting this to true causes tiles with the same parent as a rendered tile to be loaded, even
+	 * if they are culled. Setting this to true may provide a better panning experience at the
+	 * cost of loading more tiles.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	bool PreloadSiblings = true;
@@ -93,7 +99,7 @@ public:
 	/**
 	 * Whether to unrefine back to a parent tile when a child isn't done loading.
 	 * 
-     * When this is set to true, the tileset will guarantee that the tileset will never be rendered with 
+	 * When this is set to true, the tileset will guarantee that the tileset will never be rendered with 
 	 * holes in place of tiles that are not yet loaded, even though the tile that is rendered instead may
 	 * have low resolution. When false, overall loading will be faster, but newly-visible parts of the 
 	 * tileset may initially be blank.
@@ -103,6 +109,12 @@ public:
 
 	/**
 	 * The maximum number of tiles that may be loaded at once.
+	 * 
+	 * When new parts of the tileset become visible, the tasks to load the
+	 * corresponding tiles are put into a queue. This value determines how
+	 * many of these tasks are processed at the same time. A higher value
+	 * may cause the tiles to be loaded and rendered more quickly, at the
+	 * cost of a higher network- and processing load.
 	 */ 
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Loading")
 	int MaximumSimultaneousTileLoads = 20;
@@ -130,18 +142,32 @@ public:
 
 	/**
 	 * Whether to cull tiles that are occluded by fog.
+	 * 
+	 * This does not refer to the atmospheric fog of the Unreal Engine,
+	 * but to an internal representation of fog: Depending on the height
+	 * of the camera above the ground, tiles that are far away (close to
+	 * the horizon) will be culled when this flag is enabled. 
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
 	bool EnableFogCulling = true;
 
 	/**
-	 * Whether culled screen-space error should be enforced.
+	 * Whether culled screen-space error should be enforced for culled tiles.
+	 * 
+	 * When "Enable Fog Culling" is selected, this flag will indicate that the 
+	 * screen space error for tiles that have been culled by fog
+	 * should still be enforced.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling")
 	bool EnforceCulledScreenSpaceError = false;
 
 	/**
 	 * The screen-space error to be used for culled tiles.
+	 * 
+	 * In contrast to the global maximum screen space error, this value
+	 * refers to the screen space error that should be used for tiles that
+	 * have been culled by fog. It will only be taken into account when
+	 * "Enforce Culled Screen Space Error" is enabled. 
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium|Tile Culling", meta=(EditCondition="EnforceCulledScreenSpaceError"))
 	double CulledScreenSpaceError = 64.0;
