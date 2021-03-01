@@ -40,7 +40,7 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
     commandList->MapAction(FCesiumCommands::Get().AddFromIon, FExecuteAction::CreateSP(this, &CesiumPanel::addFromIon), FCanExecuteAction::CreateStatic(isSignedIn));
     commandList->MapAction(FCesiumCommands::Get().UploadToIon, FExecuteAction::CreateSP(this, &CesiumPanel::uploadToIon), FCanExecuteAction::CreateStatic(isSignedIn));
     commandList->MapAction(FCesiumCommands::Get().AddBlankTileset, FExecuteAction::CreateSP(this, &CesiumPanel::addBlankTileset));
-    commandList->MapAction(FCesiumCommands::Get().AccessToken, FExecuteAction::CreateSP(this, &CesiumPanel::accessToken), FCanExecuteAction::CreateStatic(isSignedIn));
+    //commandList->MapAction(FCesiumCommands::Get().AccessToken, FExecuteAction::CreateSP(this, &CesiumPanel::accessToken), FCanExecuteAction::CreateStatic(isSignedIn));
     commandList->MapAction(FCesiumCommands::Get().SignOut, FExecuteAction::CreateSP(this, &CesiumPanel::signOut), FCanExecuteAction::CreateStatic(isSignedIn));
     
     FToolBarBuilder builder(commandList, FMultiBoxCustomization::None);
@@ -48,7 +48,7 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
     builder.AddToolBarButton(FCesiumCommands::Get().AddFromIon);
     builder.AddToolBarButton(FCesiumCommands::Get().UploadToIon);
     builder.AddToolBarButton(FCesiumCommands::Get().AddBlankTileset);
-    builder.AddToolBarButton(FCesiumCommands::Get().AccessToken);
+    //builder.AddToolBarButton(FCesiumCommands::Get().AccessToken);
     builder.AddToolBarButton(FCesiumCommands::Get().SignOut);
 
     return builder.MakeWidget();
