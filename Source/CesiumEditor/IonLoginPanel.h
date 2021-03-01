@@ -14,8 +14,5 @@ class IonLoginPanel : public SCompoundWidget {
 private:
     void LaunchBrowserAgain();
 
-    bool _signInInProgress = false;
-    FString _authorizeUrl;
-
     FReply SignIn();
 };

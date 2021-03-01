@@ -21,7 +21,8 @@
 using namespace CesiumIonClient;
 
 CesiumIonPanel::CesiumIonPanel() :
-    _connectionChangedDelegateHandle(),
+    _connectionUpdatedDelegateHandle(),
+    _assetsUpdatedDelegateHandle(),
     _pListView(nullptr),
     _assets(),
     _refreshInProgress(false),
@@ -29,11 +30,13 @@ CesiumIonPanel::CesiumIonPanel() :
     _pDetails(nullptr),
     _pSelection(nullptr)
 {
-    this->_connectionChangedDelegateHandle = FCesiumEditorModule::ion().ionConnectionChanged.AddRaw(this, &CesiumIonPanel::Refresh);
+    this->_connectionUpdatedDelegateHandle = FCesiumEditorModule::ion().ConnectionUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
+    this->_assetsUpdatedDelegateHandle = FCesiumEditorModule::ion().AssetsUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
-    FCesiumEditorModule::ion().ionConnectionChanged.Remove(this->_connectionChangedDelegateHandle);
+    FCesiumEditorModule::ion().AssetsUpdated.Remove(this->_assetsUpdatedDelegateHandle);
+    FCesiumEditorModule::ion().ConnectionUpdated.Remove(this->_connectionUpdatedDelegateHandle);
 }
 
 void CesiumIonPanel::Construct(const FArguments& InArgs)
@@ -80,7 +83,7 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
         ]
     ];
 
-    this->Refresh();
+    FCesiumEditorModule::ion().refreshAssets();
 }
 
 static bool isSupportedTileset(const TSharedPtr<Asset>& pAsset) {
@@ -181,50 +184,22 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails()
         ];
 }
 
-void CesiumIonPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) {
-    SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
-    if (this->_refreshNeeded && !this->_refreshInProgress) {
-        this->_refreshNeeded = false;
-        this->Refresh();
-    }
-}
-
 void CesiumIonPanel::Refresh() {
-    if (this->_refreshInProgress) {
-        this->_refreshNeeded = true;
-        return;
-    }
+    const Assets& assets = FCesiumEditorModule::ion().getAssets();
 
-    auto& maybeConnection = FCesiumEditorModule::ion().connection;
-    if (!maybeConnection) {
-        // Can't refresh while disconnected, but we can clear out previous results.
-        this->_assets.Empty();
-        this->_pListView->RequestListRefresh();
-        return;
-    }
+    this->_assets.SetNum(assets.items.size());
 
-    auto& connection = maybeConnection.value();
-    this->_refreshInProgress = true;
-
-    connection.assets().thenInMainThread([this](CesiumIonClient::Response<Assets>&& response) {
-        if (response.value) {
-            std::vector<Asset>& items = response.value.value().items;
-            this->_assets.SetNum(items.size());
-            for (size_t i = 0; i < items.size(); ++i) {
-                TSharedPtr<Asset>& pAsset = this->_assets[i];
-                if (pAsset) {
-                    *pAsset = items[i];
-                } else {
-                    pAsset = MakeShared<Asset>(std::move(items[i]));
-                }
-            }
+    for (size_t i = 0; i < assets.items.size(); ++i) {
+        TSharedPtr<Asset>& pAsset = this->_assets[i];
+        if (pAsset) {
+            *pAsset = assets.items[i];
         }
-        this->_refreshInProgress = false;
-        this->_pListView->RequestListRefresh();
-    }).catchInMainThread([this](const std::exception& e) {
-        UE_LOG(LogActor, Error, TEXT("Error getting list of assets from Cesium ion: %s"), e.what());
-        this->_refreshInProgress = false;
-    });
+        else {
+            pAsset = MakeShared<Asset>(assets.items[i]);
+        }
+    }
+
+    this->_pListView->RequestListRefresh();
 }
 
 void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::Asset> item, ESelectInfo::Type selectionType)
@@ -249,7 +224,7 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item)
     ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
     pTileset->SetActorLabel(utf8_to_wstr(item->name));
     pTileset->IonAssetID = item->id;
-    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
+    pTileset->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().getAssetAccessToken().token);
 
     pTileset->RerunConstructionScripts();
 }

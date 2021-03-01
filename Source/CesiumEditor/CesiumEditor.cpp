@@ -37,10 +37,10 @@ void FCesiumEditorModule::StartupModule()
 
     IModuleInterface::StartupModule();
 
-    this->ionDetails.pAssetAccessor = std::make_shared<UnrealAssetAccessor>();
-    this->ionDetails.pAsyncSystem = std::make_unique<CesiumAsync::AsyncSystem>(
-        std::make_shared<UnrealTaskProcessor>()
-    );
+    auto pAssetAccessor = std::make_shared<UnrealAssetAccessor>();
+    CesiumAsync::AsyncSystem asyncSystem(std::make_shared<UnrealTaskProcessor>());
+
+    this->_pIonSession = std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
 
     // Only register style once
     if (!StyleSet.IsValid())
@@ -106,8 +106,6 @@ void FCesiumEditorModule::StartupModule()
 
 void FCesiumEditorModule::ShutdownModule()
 {
-    this->ionDetails.pAsyncSystem.reset();
-
     FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
     FCesiumCommands::Unregister();
     IModuleInterface::ShutdownModule();
@@ -183,7 +181,7 @@ ACesium3DTileset* FCesiumEditorModule::CreateTileset(const std::string& name, in
     ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
     pTilesetActor->SetActorLabel(utf8_to_wstr(name));
     pTilesetActor->IonAssetID = assetID;
-    pTilesetActor->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
+    pTilesetActor->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().getAssetAccessToken().token);
 
     return pTilesetActor;
 }
@@ -201,7 +199,7 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(ACesium3DTileset* pTile
 
     UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(pTilesetActor, FName(utf8_to_wstr(name)), RF_Public | RF_Transactional);
     pOverlay->IonAssetID = assetID;
-    pOverlay->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().token);
+    pOverlay->IonAccessToken = utf8_to_wstr(FCesiumEditorModule::ion().getAssetAccessToken().token);
     pOverlay->SetActive(true);
     pOverlay->OnComponentCreated();
 

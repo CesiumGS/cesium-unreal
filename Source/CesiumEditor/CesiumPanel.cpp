@@ -24,12 +24,14 @@ void CesiumPanel::Construct(const FArguments& InArgs)
 }
 
 void CesiumPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) {
-    FCesiumEditorModule::ion().pAsyncSystem->dispatchMainThreadTasks();
+    FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
     SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
 static bool isSignedIn() {
-    return FCesiumEditorModule::ion().connection.has_value();
+    return
+        FCesiumEditorModule::ion().isConnected() &&
+        FCesiumEditorModule::ion().refreshAssetAccessTokenIfNeeded();
 }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
@@ -70,8 +72,8 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
         [
             SNew(STextBlock)
                 .Text_Lambda([]() {
-                    if (FCesiumEditorModule::ion().profile) {
-                        auto& profile = FCesiumEditorModule::ion().profile.value();
+                    if (FCesiumEditorModule::ion().refreshProfileIfNeeded()) {
+                        auto& profile = FCesiumEditorModule::ion().getProfile();
                         std::string s = "Connected to Cesium ion as " + profile.username;
                         return FText::FromString(utf8_to_wstr(s));
                     } else {
@@ -103,7 +105,5 @@ void CesiumPanel::accessToken()
 }
 
 void CesiumPanel::signOut() {
-    FCesiumEditorModule::ion().connection = std::nullopt;
-    FCesiumEditorModule::ion().profile = std::nullopt;
-    FCesiumEditorModule::ion().ionConnectionChanged.Broadcast();
+    FCesiumEditorModule::ion().disconnect();
 }
