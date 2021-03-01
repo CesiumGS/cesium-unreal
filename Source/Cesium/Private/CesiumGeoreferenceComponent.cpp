@@ -136,7 +136,9 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, boo
 
 	this->_updateRelativeLocation();
 	this->_updateActorToUnrealRelativeWorldTransform();
-	this->_setTransform(this->_actorToUnrealRelativeWorld);
+	if (this->FixTransformOnOriginRebase) {
+		this->_setTransform(this->_actorToUnrealRelativeWorld);
+	}
 }
 
 void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
@@ -388,12 +390,5 @@ void UCesiumGeoreferenceComponent::_updateDisplayECEF() {
 	this->ECEF_X = this->_actorToECEF[3].x;
 	this->ECEF_Y = this->_actorToECEF[3].y;
 	this->ECEF_Z = this->_actorToECEF[3].z;
-}
-
-void UCesiumGeoreferenceComponent::DebugDump() {
-	UE_LOG(LogActor, Warning, TEXT("_actorToECEF = "));
-	for (size_t i = 0; i < 4; i++) {
-		UE_LOG(LogActor, Warning, TEXT("(%f, %f, %f, %f)"), this->_actorToECEF[0][i], this->_actorToECEF[1][i], this->_actorToECEF[2][i], this->_actorToECEF[3][i])
-	}
 }
 
