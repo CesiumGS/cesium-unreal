@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright CesiumGS, Inc. and Contributors
 
 #include "Cesium.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"

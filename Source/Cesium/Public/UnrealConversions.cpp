@@ -1,3 +1,5 @@
+// Copyright CesiumGS, Inc. and Contributors
+
 #include "UnrealConversions.h"
 #include <locale>
 #include <codecvt>

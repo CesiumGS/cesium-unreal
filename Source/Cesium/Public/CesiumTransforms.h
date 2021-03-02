@@ -1,3 +1,5 @@
+// Copyright CesiumGS, Inc. and Contributors
+
 #pragma once
 
 #include <glm/mat4x4.hpp>

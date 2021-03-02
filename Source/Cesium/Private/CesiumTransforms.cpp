@@ -1,3 +1,5 @@
+// Copyright CesiumGS, Inc. and Contributors
+
 #include "CesiumTransforms.h"
 
 const double CesiumTransforms::metersToCentimeters = 100.0;

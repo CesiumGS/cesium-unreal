@@ -1,5 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright CesiumGS, Inc. and Contributors
 
 #include "GlobeAwareDefaultPawn.h"
 #include "GameFramework/PlayerController.h"
