@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include <glm/mat3x3.hpp>
 #include "UObject/WeakInterfacePtr.h"
 #include "CesiumGeoreference.generated.h"
@@ -103,6 +104,14 @@ public:
 	bool KeepWorldOriginNearCamera = true;
 
 	/**
+	 * Warning: Make sure to georeference all location-sensitive Unreal actors before pressing. 
+	 * Places the georeference origin at the camera's current location. Rotates the globe so the current longitude/latitude/height
+	 * of the camera is at the Unreal origin. The camera is also teleported to the Unreal origin.
+	 */ 
+	UFUNCTION(CallInEditor, Category="Cesium")
+	void PlaceGeoreferenceOriginHere();
+
+	/**
 	 * The maximum distance that the camera may move from the world's OriginLocation before the
 	 * world origin is moved closer to the camera.
 	 */
@@ -144,7 +153,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
-
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -155,4 +163,4 @@ public:
 
 private:
 	TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
-};                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+};
