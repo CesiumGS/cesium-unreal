@@ -1,3 +1,5 @@
+// Copyright CesiumGS, Inc. and Contributors
+
 #include "UnrealTaskProcessor.h"
 #include "Async/Async.h"
 

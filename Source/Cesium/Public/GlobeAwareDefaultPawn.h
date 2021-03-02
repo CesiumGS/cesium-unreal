@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -29,10 +29,10 @@ class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
 	ACesiumGeoreference* Georeference;
 
 	/**
-		* Input callback to move forward in local space (or backward if Val is negative).
-		* @param Val Amount of movement in the forward direction (or backward if negative).
-		* @see APawn::AddMovementInput()
-		*/
+	 * Input callback to move forward in local space (or backward if Val is negative).
+	 * @param Val Amount of movement in the forward direction (or backward if negative).
+	 * @see APawn::AddMovementInput()
+	 */
 	virtual void MoveForward(float Val) override;
 
 	/**
