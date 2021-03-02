@@ -72,7 +72,7 @@ public:
 	 * This is used to select an appropriate level-of-detail: A low value
 	 * will cause many tiles with a high level of detail to be loaded,
 	 * causing a finer visual representation of the tiles, but with a 
-	 * higher performance cost for loading and rendering. A lower value will 
+	 * higher performance cost for loading and rendering. A higher value will 
 	 * cause a coarser visual representation, with lower performance 
 	 * requirements.
 	 */
