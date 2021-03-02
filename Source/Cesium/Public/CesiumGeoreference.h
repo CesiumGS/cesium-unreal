@@ -52,6 +52,7 @@ class CESIUM_API ACesiumGeoreference : public AActor
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable)
 	static ACesiumGeoreference* GetDefaultForActor(AActor* Actor);
 
 	ACesiumGeoreference();
@@ -116,6 +117,12 @@ public:
 	 */ 
 	UFUNCTION(CallInEditor, Category="Cesium")
 	void PlaceGeoreferenceOriginHere();
+
+	/**
+	 * EXPERIMENTAL
+	 */
+	UFUNCTION(BlueprintCallable)
+	void SetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetAltitude);
 
 	/**
 	 * The maximum distance that the camera may move from the world's OriginLocation before the

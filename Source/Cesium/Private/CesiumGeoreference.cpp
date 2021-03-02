@@ -116,6 +116,14 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #endif
 }
 
+void ACesiumGeoreference::SetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetAltitude) {
+	this->OriginLongitude = targetLongitude;
+	this->OriginLatitude = targetLatitude;
+	this->OriginHeight = targetAltitude;
+
+	this->UpdateGeoreference();
+}
+
 glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
 	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
 		return glm::dmat4(1.0);
