@@ -28,6 +28,8 @@
 #include "Cesium3DTilesetRoot.h"
 #include "Cesium3DTiles/Tileset.h"
 #include "SpdlogUnrealLoggerSink.h"
+#include "LevelSequenceActor.h"
+#include "EngineUtils.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <spdlog/spdlog.h>
@@ -55,7 +57,13 @@ ACesium3DTileset::ACesium3DTileset() :
 	_lastTilesCulled(0),
 	_lastMaxDepthVisited(0),
 
-	_updateGeoreferenceOnBoundingVolumeReady(false)
+	_updateGeoreferenceOnBoundingVolumeReady(false),
+
+	_captureMovieMode{false},
+	_beforeMoviePreloadAncestors{PreloadAncestors},
+	_beforeMoviePreloadSiblings{PreloadSiblings},
+	_beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
+	_beforeMovieKeepWorldOriginNearCamera{true}
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -68,6 +76,34 @@ ACesium3DTileset::ACesium3DTileset() :
 
 ACesium3DTileset::~ACesium3DTileset() {
 	this->DestroyTileset();
+}
+
+void ACesium3DTileset::PlayMovieSequencer() {
+	ACesiumGeoreference* cesiumGeoreference = ACesiumGeoreference::GetDefaultForActor(this);
+
+	this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
+	this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
+	this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
+	this->_beforeMovieKeepWorldOriginNearCamera = cesiumGeoreference->KeepWorldOriginNearCamera;
+
+	this->_captureMovieMode = true;
+	this->PreloadAncestors = false;
+	this->PreloadSiblings = false;
+	this->LoadingDescendantLimit = 10000;
+	cesiumGeoreference->KeepWorldOriginNearCamera = false;
+}
+
+void ACesium3DTileset::StopMovieSequencer() {
+	ACesiumGeoreference* cesiumGeoreference = ACesiumGeoreference::GetDefaultForActor(this);
+	this->_captureMovieMode = false;
+	this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
+	this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
+	this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
+	cesiumGeoreference->KeepWorldOriginNearCamera = this->_beforeMovieKeepWorldOriginNearCamera;
+}
+
+void ACesium3DTileset::PauseMovieSequencer() {
+	this->StopMovieSequencer();
 }
 
 const glm::dmat4& ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const
@@ -119,6 +155,24 @@ void ACesium3DTileset::BeginPlay()
 	Super::BeginPlay();
 
 	this->LoadTileset();
+
+	// Search for level sequence.
+	for (auto sequenceActorIt = TActorIterator<ALevelSequenceActor>(GetWorld()); sequenceActorIt; ++sequenceActorIt)
+	{
+		ALevelSequenceActor* sequenceActor = *sequenceActorIt;
+
+		FScriptDelegate playMovieSequencerDelegate;
+		playMovieSequencerDelegate.BindUFunction(this, FName("PlayMovieSequencer"));
+		sequenceActor->GetSequencePlayer()->OnPlay.Add(playMovieSequencerDelegate);
+
+		FScriptDelegate stopMovieSequencerDelegate;
+		stopMovieSequencerDelegate.BindUFunction(this, FName("StopMovieSequencer"));
+		sequenceActor->GetSequencePlayer()->OnStop.Add(stopMovieSequencerDelegate);
+
+		FScriptDelegate pauseMovieSequencerDelegate;
+		pauseMovieSequencerDelegate.BindUFunction(this, FName("PauseMovieSequencer"));
+		sequenceActor->GetSequencePlayer()->OnPause.Add(pauseMovieSequencerDelegate);
+	}
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform)
@@ -581,7 +635,9 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		camera.value().fieldOfViewDegrees
 	);
 
-	const Cesium3DTiles::ViewUpdateResult& result = this->_pTileset->updateView(tilesetViewState);
+	const Cesium3DTiles::ViewUpdateResult& result = this->_captureMovieMode ?
+		this->_pTileset->updateViewOffline(tilesetViewState) :
+		this->_pTileset->updateView(tilesetViewState);
 
 	if (
 		result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
@@ -670,5 +726,7 @@ void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ACesium3DTileset::BeginDestroy() {
 	this->DestroyTileset();
+
 	AActor::BeginDestroy();
 }
+
