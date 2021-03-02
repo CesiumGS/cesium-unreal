@@ -1,9 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include <glm/mat3x3.hpp>
 #include "UObject/WeakInterfacePtr.h"
 #include "CesiumGeoreference.generated.h"
@@ -56,12 +57,14 @@ public:
 	ACesiumGeoreference();
 
 	/**
-	 * The placement of this Actor's origin (coordinate 0,0,0) within the tileset. 3D Tiles tilesets often
-	 * use Earth-centered, Earth-fixed coordinates, such that the tileset content is in a small bounding
-	 * volume 6-7 million meters (the radius of the Earth) away from the coordinate system origin.
-	 * This property allows an alternative position, other then the tileset's true origin, to be treated
-	 * as the origin for the purpose of this Actor. Using this property will preserve vertex precision
-	 * (and thus avoid jittering) much better than setting the Actor's Transform property.
+	 * The placement of this Actor's origin (coordinate 0,0,0) within the tileset. 
+	 *
+	 * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates, such that the tileset 
+	 * content is in a small bounding volume 6-7 million meters (the radius of the Earth) away from 
+	 * the coordinate system origin. This property allows an alternative position, other then the 
+	 * tileset's true origin, to be treated as the origin for the purpose of this Actor. Using this 
+	 * property will preserve vertex precision (and thus avoid jittering) much better than setting 
+	 * the Actor's Transform property.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
@@ -85,6 +88,8 @@ public:
 	double OriginHeight = 2250.0;
 
 	/**
+	 * Rotate the tileset so that its up-vector is aligned with the Unreal Engine up-direction.
+	 * 
 	 * If true, the tileset is rotated so that the local up at the origin position
 	 * is aligned with the usual Unreal Engine up direction, +Z. This is useful because
 	 * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates in which the local
@@ -95,12 +100,22 @@ public:
 	bool AlignTilesetUpWithZ = true;
 
 	/**
-	 * If true, the world origin is periodically rebased to keep it near the camera. This is important for maintaining vertex
-	 * precision in large worlds. Setting it to false can lead to jiterring artifacts when the camera gets far away from
+	 * If true, the world origin is periodically rebased to keep it near the camera. 
+	 *
+	 * This is important for maintaining vertex precision in large worlds. Setting it 
+	 * to false can lead to jiterring artifacts when the camera gets far away from
 	 * the origin.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	bool KeepWorldOriginNearCamera = true;
+
+	/**
+	 * Warning: Make sure to georeference all location-sensitive Unreal actors before pressing. 
+	 * Places the georeference origin at the camera's current location. Rotates the globe so the current longitude/latitude/height
+	 * of the camera is at the Unreal origin. The camera is also teleported to the Unreal origin.
+	 */ 
+	UFUNCTION(CallInEditor, Category="Cesium")
+	void PlaceGeoreferenceOriginHere();
 
 	/**
 	 * The maximum distance that the camera may move from the world's OriginLocation before the
@@ -144,7 +159,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
-
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -155,4 +169,4 @@ public:
 
 private:
 	TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
-};                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+};

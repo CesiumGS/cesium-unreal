@@ -1,3 +1,5 @@
+// Copyright CesiumGS, Inc. and Contributors
+
 #include "Cesium.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"
 #include "SpdlogUnrealLoggerSink.h"
