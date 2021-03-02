@@ -99,9 +99,9 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers)
 {
 	return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>([
-		url = std::move(url),
-		headers = std::move(headers)
-	](auto&& resolve, auto&& reject) {
+		&url,
+		&headers
+	](const auto& promise) {
 		FHttpModule& httpModule = FHttpModule::Get();
 		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
 		pRequest->SetURL(utf8_to_wstr(url));
@@ -110,17 +110,58 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 			pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
 		}
 
-		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal Engine"));
+		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal"));
 
-		pRequest->OnProcessRequestComplete().BindLambda([resolve, reject](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
+		pRequest->OnProcessRequestComplete().BindLambda([promise](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
 			if (connectedSuccessfully) {
-				resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+				promise.resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
 			} else {
 				switch (pRequest->GetStatus()) {
 				case EHttpRequestStatus::Failed_ConnectionError:
-					reject(std::exception("Connection failed."));
+					promise.reject(std::exception("Connection failed."));
 				default:
-					reject(std::exception("Request failed."));
+					promise.reject(std::exception("Request failed."));
+				}
+			}
+		});
+
+		pRequest->ProcessRequest();
+	});
+}
+
+CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAccessor::post(
+	const CesiumAsync::AsyncSystem& asyncSystem,
+	const std::string& url,
+	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
+	const gsl::span<const uint8_t>& contentPayload
+) {
+	return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>([
+		&url,
+		&headers,
+		&contentPayload
+	](const auto& promise) {
+		FHttpModule& httpModule = FHttpModule::Get();
+		TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest = httpModule.CreateRequest();
+		pRequest->SetVerb(TEXT("POST"));
+		pRequest->SetURL(utf8_to_wstr(url));
+
+		for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+			pRequest->SetHeader(utf8_to_wstr(header.first), utf8_to_wstr(header.second));
+		}
+
+		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal"));
+
+		pRequest->SetContent(TArray<uint8>(contentPayload.data(), contentPayload.size()));
+
+		pRequest->OnProcessRequestComplete().BindLambda([promise](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
+			if (connectedSuccessfully) {
+				promise.resolve(std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
+			} else {
+				switch (pRequest->GetStatus()) {
+				case EHttpRequestStatus::Failed_ConnectionError:
+					promise.reject(std::exception("Connection failed."));
+				default:
+					promise.reject(std::exception("Request failed."));
 				}
 			}
 		});

@@ -6,8 +6,8 @@
 #include "CoreMinimal.h"
 #include "glm/vec3.hpp"
 
-FString utf8_to_wstr(const std::string& utf8);
-std::string wstr_to_utf8(const FString& utf16);
+CESIUM_API FString utf8_to_wstr(const std::string& utf8);
+CESIUM_API std::string wstr_to_utf8(const FString& utf16);
 
 inline glm::dvec3 cesiumVectorToUnrealVector(const glm::dvec3& cesiumVector)
 {

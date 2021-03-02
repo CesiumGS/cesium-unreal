@@ -67,25 +67,25 @@ public:
 	 * the Actor's Transform property.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
-	EOriginPlacement OriginPlacement = EOriginPlacement::BoundingVolumeOrigin;
+	EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
 	/**
 	 * The longitude of the custom origin placement in degrees.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin"))
-	double OriginLongitude = 0.0;
+	double OriginLongitude = -105.25737;
 
 	/**
 	 * The latitude of the custom origin placement in degrees.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin"))
-	double OriginLatitude = 0.0;
+	double OriginLatitude = 39.736401;
 
 	/**
 	 * The height of the custom origin placement in meters above the WGS84 ellipsoid.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin"))
-	double OriginHeight = 0.0;
+	double OriginHeight = 2250.0;
 
 	/**
 	 * Rotate the tileset so that its up-vector is aligned with the Unreal Engine up-direction.
