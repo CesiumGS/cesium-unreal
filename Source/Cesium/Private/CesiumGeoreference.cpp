@@ -2,6 +2,7 @@
 
 #include "CesiumGeoreference.h"
 #include "Engine/World.h"
+#include "Engine/LevelStreaming.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumUtility/Math.h"
 #include "CesiumGeoreferenceable.h"
@@ -21,6 +22,14 @@
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
 #endif
+
+void FCesiumSubLevel::JumpToThisLevel() {
+	if (!this->ParentGeoreference) {
+		return;
+	}
+
+	this->ParentGeoreference->SetGeoreferenceOrigin(this->LevelLongitude, this->LevelLatitude, this->LevelHeight);
+}
 
 /*static*/ ACesiumGeoreference* ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 	ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(Actor->GetLevel(), TEXT("CesiumGeoreferenceDefault"));
@@ -116,12 +125,43 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #endif
 }
 
-void ACesiumGeoreference::SetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetAltitude) {
+void ACesiumGeoreference::CheckForNewSubLevels() {
+	const TArray<ULevelStreaming*>& streamedLevels = this->GetWorld()->GetStreamingLevels();
+	for (ULevelStreaming* streamedLevel : streamedLevels) {
+		FString levelName = streamedLevel->GetWorldAssetPackageName();
+		// check the known levels to see if this one is new
+		bool found = false;
+		for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
+			if (levelName.Equals(subLevel.LevelName)) {
+				found = true;
+				break;
+			}
+		}
+		
+		if (!found) {
+			// add this level to the known streaming levels
+			this->CesiumSubLevels.Add(FCesiumSubLevel{
+				levelName,
+				OriginLongitude,
+				OriginLatitude,
+				OriginHeight,
+				1000.0, // TODO: figure out better default radius
+				this
+			});
+		}
+	}
+}
+
+void ACesiumGeoreference::SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight) {
 	this->OriginLongitude = targetLongitude;
 	this->OriginLatitude = targetLatitude;
-	this->OriginHeight = targetAltitude;
+	this->OriginHeight = targetHeight;
 
 	this->UpdateGeoreference();
+}
+
+void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetHeight) {
+	this->SetGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
 }
 
 glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
@@ -210,9 +250,32 @@ void ACesiumGeoreference::UpdateGeoreference()
 }
 
 #if WITH_EDITOR
-void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event)
 {
-	this->UpdateGeoreference();
+	Super::PostEditChangeProperty(event);
+
+	if (!event.Property) {
+		return;
+	}
+
+	FName propertyName = event.Property->GetFName();
+
+	if (
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginPlacement) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight) ||
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, AlignTilesetUpWithZ)
+	) {
+		this->UpdateGeoreference();
+		return;
+	} else if (
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)
+	) {
+		for (size_t i = 0; i < CesiumSubLevels.Num(); ++i) {
+			//CesiumSubLevels[i] = FString("Error: invalid level name");
+		}
+	}
 }
 #endif
 
@@ -225,10 +288,35 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 		const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
 		const FVector& cameraLocation = pov.Location;
 
+		// TODO: decide whether to origin rebase within static scenes, maybe it should at least be optional
+		// TODO: If KeepWorldOriginNearCamera is on and we play-in-editor and then exit back into the editor,
+		// the editor viewport camera always goes back to the origin. This might be super annoying to users.
+
+		// WIP check if the camera is near any unloaded levels we might want to stream in. If we leave the radius,
+		// we also need to unload them. 
+		// TODO: should this check happen 
+		
+		const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+
+		glm::dvec4 absoluteCamera(
+			static_cast<double>(cameraLocation.X) + static_cast<double>(originLocation.X),
+			static_cast<double>(cameraLocation.Y) + static_cast<double>(originLocation.Y),
+			static_cast<double>(cameraLocation.Z) + static_cast<double>(originLocation.Z),
+			1.0
+		);
+
+		glm::dmat4 georeferencedToECEF = this->GetGeoreferencedToEllipsoidCenteredTransform();
+
+		glm::dvec3 ecefCamera = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * absoluteCamera;
+		
+		const TArray<ULevelStreaming*>& streamedLevels = this->GetWorld()->GetStreamingLevels();
+		for (ULevelStreaming* streamedLevel : streamedLevels) {
+			//FString levelName = streamedLevel->GetWorldAssetPackageName();
+			// check if this level is in
+		}
+
 		if (!cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
 			// Camera has moved too far from the origin, move the origin.
-			const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-
 			this->GetWorld()->SetNewWorldOrigin(FIntVector(
 				static_cast<int32>(cameraLocation.X) + static_cast<int32>(originLocation.X),
 				static_cast<int32>(cameraLocation.Y) + static_cast<int32>(originLocation.Y),

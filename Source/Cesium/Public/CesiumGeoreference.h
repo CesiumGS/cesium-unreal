@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/ActorComponent.h"
+#include "Containers/UnrealString.h"
 #include <glm/mat3x3.hpp>
 #include "UObject/WeakInterfacePtr.h"
 #include "CesiumGeoreference.generated.h"
@@ -35,6 +36,36 @@ enum class EOriginPlacement : uint8 {
 	CartographicOrigin UMETA(DisplayName = "Longitude / latitude / height")
 };
 
+/*
+ * TODO: Documentation for this struct
+ */ 
+USTRUCT()
+struct FCesiumSubLevel {
+	GENERATED_BODY()
+
+	UFUNCTION(CallInEditor)
+	void JumpToThisLevel();
+
+	UPROPERTY(EditAnywhere)
+	FString LevelName;
+
+	UPROPERTY(EditAnywhere)
+	double LevelLongitude;
+	
+	UPROPERTY(EditAnywhere)
+	double LevelLatitude;
+
+	UPROPERTY(EditAnywhere)
+	double LevelHeight;
+
+	UPROPERTY(EditAnywhere)
+	double LoadRadius;
+
+	UPROPERTY()
+	ACesiumGeoreference* ParentGeoreference = nullptr;
+};
+
+
 class APlayerCameraManager;
 
 /**
@@ -56,6 +87,14 @@ public:
 	static ACesiumGeoreference* GetDefaultForActor(AActor* Actor);
 
 	ACesiumGeoreference();
+
+	UFUNCTION(CallInEditor, Category="CesiumLevelStreaming")
+	void CheckForNewSubLevels();
+	/*
+	 * EXPERIMENTAL
+	 */
+	UPROPERTY(EditAnywhere, Category="CesiumLevelStreaming")
+	TArray<FCesiumSubLevel> CesiumSubLevels;
 
 	/**
 	 * The placement of this Actor's origin (coordinate 0,0,0) within the tileset. 
@@ -121,8 +160,14 @@ public:
 	/**
 	 * EXPERIMENTAL
 	 */
+	UFUNCTION()
+	void SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight);
+
+	/**
+	 * EXPERIMENTAL
+	 */
 	UFUNCTION(BlueprintCallable)
-	void SetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetAltitude);
+	void InaccurateSetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetHeight);
 
 	/**
 	 * The maximum distance that the camera may move from the world's OriginLocation before the
