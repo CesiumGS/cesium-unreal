@@ -800,8 +800,14 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 	}
 
 	const CesiumGltf::Image& image = model.images[texture.source];
+	if (image.cesium.width == 0 || image.cesium.height == 0) {
+		return false;
+	}
 
 	UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
+	if (!pTexture) {
+		return false;
+	}
 
 	const CesiumGltf::Sampler* pSampler = CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
 	if (pSampler) {
@@ -860,51 +866,49 @@ bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, cons
 		pTexture->Filter = TextureFilter::TF_Default;
 	}
 
-	if (pTexture) {
-		void* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-		FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
+	void* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
 
-		if (pTexture->Filter == TextureFilter::TF_Trilinear) {
-			// Generate mip levels.
-			// TODO: do this on the GPU?
-			int32_t width = image.cesium.width;
-			int32_t height = image.cesium.height;
+	if (pTexture->Filter == TextureFilter::TF_Trilinear) {
+		// Generate mip levels.
+		// TODO: do this on the GPU?
+		int32_t width = image.cesium.width;
+		int32_t height = image.cesium.height;
 
-			while (width > 1 || height > 1) {
-				FTexture2DMipMap* pLevel = new FTexture2DMipMap();
-				pTexture->PlatformData->Mips.Add(pLevel);
+		while (width > 1 || height > 1) {
+			FTexture2DMipMap* pLevel = new FTexture2DMipMap();
+			pTexture->PlatformData->Mips.Add(pLevel);
 
-				pLevel->SizeX = width >> 1;
-				if (pLevel->SizeX < 1)  pLevel->SizeX = 1;
-				pLevel->SizeY = height >> 1;
-				if (pLevel->SizeY < 1) pLevel->SizeY = 1;
+			pLevel->SizeX = width >> 1;
+			if (pLevel->SizeX < 1)  pLevel->SizeX = 1;
+			pLevel->SizeY = height >> 1;
+			if (pLevel->SizeY < 1) pLevel->SizeY = 1;
 
-				pLevel->BulkData.Lock(LOCK_READ_WRITE);
+			pLevel->BulkData.Lock(LOCK_READ_WRITE);
 
-				void* pMipData = pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
-				if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
-					// Failed to generate mip level, use bilinear filtering instead.
-					pTexture->Filter = TextureFilter::TF_Bilinear;
-					for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
-						pTexture->PlatformData->Mips[i].BulkData.Unlock();
-					}
-					pTexture->PlatformData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
-					break;
+			void* pMipData = pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+			if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
+				// Failed to generate mip level, use bilinear filtering instead.
+				pTexture->Filter = TextureFilter::TF_Bilinear;
+				for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
+					pTexture->PlatformData->Mips[i].BulkData.Unlock();
 				}
-
-				width = pLevel->SizeX;
-				height = pLevel->SizeY;
-				pTextureData = pMipData;
+				pTexture->PlatformData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
+				break;
 			}
-		}
 
-		// Unlock all levels
-		for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
-			pTexture->PlatformData->Mips[i].BulkData.Unlock();
+			width = pLevel->SizeX;
+			height = pLevel->SizeY;
+			pTextureData = pMipData;
 		}
-
-		pTexture->UpdateResource();
 	}
+
+	// Unlock all levels
+	for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
+		pTexture->PlatformData->Mips[i].BulkData.Unlock();
+	}
+
+	pTexture->UpdateResource();
 
 	pMaterial->SetTextureParameterValue(parameterName, pTexture);
 
