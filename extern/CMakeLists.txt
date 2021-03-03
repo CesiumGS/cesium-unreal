@@ -7,4 +7,5 @@ project(
 )
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/install)
 add_subdirectory(cesium-native)
