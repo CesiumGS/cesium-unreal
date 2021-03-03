@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -15,13 +15,13 @@
 #include "CesiumGeoreferenceComponent.generated.h"
 
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUM_API UCesiumGeoreferenceComponent : 
+class CESIUM_API UCesiumGeoreferenceComponent :
 	public USceneComponent,
 	public ICesiumGeoreferenceable
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	// Sets default values for this component's properties
 	UCesiumGeoreferenceComponent();
 
@@ -30,35 +30,35 @@ public:
 	// if that's even possible.
 
 	/**
-	 * The georeference actor controlling how the owning actor's coordinate system relates to the 
+	 * The georeference actor controlling how the owning actor's coordinate system relates to the
 	 * coordinate system in this Unreal Engine level.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	ACesiumGeoreference* Georeference;
 
 	/**
-	 * Whether to automatically restore the precision of the Unreal transform from the source ECEF transform during origin-rebase. This is useful for 
-	 * maintaining high-precision for fixed objects like buildings. This may need to be disabled for objects where the Unreal transform 
-	 * (inaccurate as it may be) is the ground truth, e.g. Unreal physics objects. 
+	 * Whether to automatically restore the precision of the Unreal transform from the source ECEF transform during origin-rebase. This is useful for
+	 * maintaining high-precision for fixed objects like buildings. This may need to be disabled for objects where the Unreal transform
+	 * (inaccurate as it may be) is the ground truth, e.g. Unreal physics objects.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	bool FixTransformOnOriginRebase = true;
 
 	/**
 	 * The longitude of this actor.
-	 */ 
+	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	double Longitude = 0.0;
 
 	/**
 	 * The latitude of this actor.
-	 */ 
+	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	double Latitude = 0.0;
 
 	/**
 	 * The height in meters (above the WGS84 ellipsoid) of this actor.
-	 */ 
+	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	double Altitude = 0.0;
 
@@ -67,13 +67,13 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	double ECEF_X = 0.0;
-	
+
 	/**
 	 * The Earth-Centered Earth-Fixed Y-coordinate of this actor.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	double ECEF_Y = 0.0;
-	
+
 	/**
 	 * The Earth-Centered Earth-Fixed Z-coordinate of this actor.
 	 */
@@ -81,7 +81,7 @@ public:
 	double ECEF_Z = 0.0;
 
 	/**
-	 * Aligns the local up direction with the ellipsoid normal at the current location. 
+	 * Aligns the local up direction with the ellipsoid normal at the current location.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium")
 	void SnapLocalUpToEllipsoidNormal();
@@ -90,7 +90,7 @@ public:
 	 * Turns the actor's local coordinate system into a East-South-Up tangent space in centimeters.
 	 */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category="Cesium")
-	void SnapToEastSouthUp(); 
+	void SnapToEastSouthUp();
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
@@ -99,18 +99,18 @@ public:
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height. Inaccurate since this takes single-precision floats.
-	 */ 
+	 */
 	UFUNCTION(BlueprintCallable)
 	void InaccurateMoveToLongLatAlt(float targetLongitude, float targetLatitude, float targetAltitude);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates.
-	 */ 
+	 */
 	void MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates. Inaccurate since this takes single-precision floats.
-	 */ 
+	 */
 	UFUNCTION(BlueprintCallable)
 	void InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z);
 
@@ -118,7 +118,7 @@ public:
 
 	/**
 	 * Delegate implementation to recieve a notification when the owner's root component has changed.
-	 */ 
+	 */
 	UFUNCTION()
 	void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
 
@@ -129,7 +129,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	virtual bool MoveComponentImpl(const FVector& Delta, const FQuat& NewRotation, bool bSweep, FHitResult* OutHit = NULL, EMoveComponentFlags MoveFlags = MOVECOMP_NoFlags, ETeleportType Teleport = ETeleportType::None) override;
-	
+
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -169,7 +169,7 @@ private:
 	glm::dvec3 _worldOriginLocation;
 	glm::dvec3 _absoluteLocation;
 	glm::dvec3 _relativeLocation;
-	
+
 	UPROPERTY()
 	double _actorToECEF_Array[16];
 

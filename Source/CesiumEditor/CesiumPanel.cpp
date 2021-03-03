@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumPanel.h"
 #include "IonLoginPanel.h"
 #include "CesiumEditor.h"
@@ -42,7 +44,7 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
     commandList->MapAction(FCesiumCommands::Get().AddBlankTileset, FExecuteAction::CreateSP(this, &CesiumPanel::addBlankTileset));
     //commandList->MapAction(FCesiumCommands::Get().AccessToken, FExecuteAction::CreateSP(this, &CesiumPanel::accessToken), FCanExecuteAction::CreateStatic(isSignedIn));
     commandList->MapAction(FCesiumCommands::Get().SignOut, FExecuteAction::CreateSP(this, &CesiumPanel::signOut), FCanExecuteAction::CreateStatic(isSignedIn));
-    
+
     FToolBarBuilder builder(commandList, FMultiBoxCustomization::None);
 
     builder.AddToolBarButton(FCesiumCommands::Get().AddFromIon);

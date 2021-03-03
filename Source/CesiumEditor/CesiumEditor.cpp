@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumEditor.h"
 #include "Framework/Docking/TabManager.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 using UnrealBuildTool;
 using System.IO;
