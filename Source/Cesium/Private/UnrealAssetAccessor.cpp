@@ -11,6 +11,7 @@
 #include "UnrealConversions.h"
 #include <set>
 #include <optional>
+#include <cstddef>
 
 static CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeaders) {
 	CesiumAsync::HttpHeaders result;
@@ -48,9 +49,9 @@ public:
 		return this->_headers;
 	}
 
-	virtual gsl::span<const uint8_t> data() const override	{
+	virtual gsl::span<const std::byte> data() const override	{
 		const TArray<uint8>& content = this->_pResponse->GetContent();
-		return gsl::span(static_cast<const uint8_t*>(content.GetData()), content.Num());
+		return gsl::span(reinterpret_cast<const std::byte*>(content.GetData()), content.Num());
 	}
 
 private:
@@ -133,7 +134,7 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 	const CesiumAsync::AsyncSystem& asyncSystem,
 	const std::string& url,
 	const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-	const gsl::span<const uint8_t>& contentPayload
+	const gsl::span<const std::byte>& contentPayload
 ) {
 	return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>([
 		&url,
@@ -151,7 +152,7 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> UnrealAssetAcce
 
 		pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal"));
 
-		pRequest->SetContent(TArray<uint8>(contentPayload.data(), contentPayload.size()));
+		pRequest->SetContent(TArray<uint8>(reinterpret_cast<const uint8*>(contentPayload.data()), contentPayload.size()));
 
 		pRequest->OnProcessRequestComplete().BindLambda([promise](FHttpRequestPtr pRequest, FHttpResponsePtr pResponse, bool connectedSuccessfully) {
 			if (connectedSuccessfully) {

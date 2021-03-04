@@ -4,6 +4,7 @@
 
 #include "CesiumAsync/IAssetAccessor.h"
 #include "CesiumAsync/AsyncSystem.h"
+#include <cstddef>
 
 class CESIUM_API UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
 {
@@ -18,7 +19,7 @@ public:
         const CesiumAsync::AsyncSystem& asyncSystem,
         const std::string& url,
         const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-        const gsl::span<const uint8_t>& contentPayload
+        const gsl::span<const std::byte>& contentPayload
     ) override;
 
     virtual void tick() noexcept override;
