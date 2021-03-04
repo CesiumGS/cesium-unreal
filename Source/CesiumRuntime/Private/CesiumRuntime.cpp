@@ -7,7 +7,7 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 
-#define LOCTEXT_NAMESPACE "FCesiumModule"
+#define LOCTEXT_NAMESPACE "FCesiumRuntimeModule"
 
 class LStream : public std::stringbuf {
 protected:
@@ -20,7 +20,7 @@ protected:
 
 static LStream LogStream;
 
-void FCesiumModule::StartupModule()
+void FCesiumRuntimeModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	Cesium3DTiles::registerAllTileContentTypes();
@@ -34,7 +34,7 @@ void FCesiumModule::StartupModule()
 	};
 }
 
-void FCesiumModule::ShutdownModule()
+void FCesiumRuntimeModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -42,4 +42,4 @@ void FCesiumModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FCesiumModule, Cesium)
+IMPLEMENT_MODULE(FCesiumRuntimeModule, CesiumRuntime)
