@@ -3,6 +3,7 @@
 #include "CesiumGeoreference.h"
 #include "Engine/World.h"
 #include "Engine/LevelStreaming.h"
+#include "Misc/PackageName.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumUtility/Math.h"
 #include "CesiumGeoreferenceable.h"
@@ -22,14 +23,6 @@
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
 #endif
-
-void FCesiumSubLevel::JumpToThisLevel() {
-	if (!this->ParentGeoreference) {
-		return;
-	}
-
-	this->ParentGeoreference->SetGeoreferenceOrigin(this->LevelLongitude, this->LevelLatitude, this->LevelHeight);
-}
 
 /*static*/ ACesiumGeoreference* ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 	ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(Actor->GetLevel(), TEXT("CesiumGeoreferenceDefault"));
@@ -90,12 +83,11 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 		return;
 	}
 
-	this->OriginLongitude = CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).longitude);
-	this->OriginLatitude = CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).latitude);
-	this->OriginHeight = (*targetGeoreferenceOrigin).height;
-
-	// TODO: maybe this could eventually be made to happen smoother 
-	this->UpdateGeoreference();
+	this->SetGeoreferenceOrigin(
+		CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).longitude),
+		CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).latitude),
+		(*targetGeoreferenceOrigin).height
+	);
 
 	// get the updated ECEF to georeferenced transform
 	glm::dmat4 ellipsoidCenteredToGeoreferenced = this->GetEllipsoidCenteredToGeoreferencedTransform();
@@ -127,8 +119,10 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
 void ACesiumGeoreference::CheckForNewSubLevels() {
 	const TArray<ULevelStreaming*>& streamedLevels = this->GetWorld()->GetStreamingLevels();
+	// check all levels to see if any are new
 	for (ULevelStreaming* streamedLevel : streamedLevels) {
-		FString levelName = streamedLevel->GetWorldAssetPackageName();
+		FString levelName = FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
+		levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
 		// check the known levels to see if this one is new
 		bool found = false;
 		for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
@@ -145,11 +139,20 @@ void ACesiumGeoreference::CheckForNewSubLevels() {
 				OriginLongitude,
 				OriginLatitude,
 				OriginHeight,
-				1000.0, // TODO: figure out better default radius
-				this
+				1000.0 // TODO: figure out better default radius
 			});
 		}
 	}
+}
+
+void ACesiumGeoreference::JumpToCurrentLevel() {
+	if (this->CurrentLevelIndex < 0 || this->CurrentLevelIndex >= this->CesiumSubLevels.Num()) {
+		return;
+	}
+
+	const FCesiumSubLevel& currentLevel = this->CesiumSubLevels[this->CurrentLevelIndex];
+
+	this->SetGeoreferenceOrigin(currentLevel.LevelLongitude, currentLevel.LevelLatitude, currentLevel.LevelHeight);
 }
 
 void ACesiumGeoreference::SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight) {
@@ -229,7 +232,7 @@ void ACesiumGeoreference::BeginPlay()
 	
 	if (this->KeepWorldOriginNearCamera && !this->WorldOriginCamera) {
 		// Find the first player's camera manager
-		APlayerController* pPlayerController = GetWorld()->GetFirstPlayerController();
+		APlayerController* pPlayerController = this->GetWorld()->GetFirstPlayerController();
 		if (pPlayerController) {
 			this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
 		}
@@ -270,11 +273,13 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event)
 		this->UpdateGeoreference();
 		return;
 	} else if (
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CurrentLevelIndex)
+	) {
+		this->JumpToCurrentLevel();
+	} else if (
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)
 	) {
-		for (size_t i = 0; i < CesiumSubLevels.Num(); ++i) {
-			//CesiumSubLevels[i] = FString("Error: invalid level name");
-		}
+		
 	}
 }
 #endif
@@ -298,7 +303,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 		
 		const FIntVector& originLocation = this->GetWorld()->OriginLocation;
 
-		glm::dvec4 absoluteCamera(
+		glm::dvec4 cameraAbsolute(
 			static_cast<double>(cameraLocation.X) + static_cast<double>(originLocation.X),
 			static_cast<double>(cameraLocation.Y) + static_cast<double>(originLocation.Y),
 			static_cast<double>(cameraLocation.Z) + static_cast<double>(originLocation.Z),
@@ -307,12 +312,33 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 		glm::dmat4 georeferencedToECEF = this->GetGeoreferencedToEllipsoidCenteredTransform();
 
-		glm::dvec3 ecefCamera = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * absoluteCamera;
+		glm::dvec3 cameraECEF = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * cameraAbsolute;
 		
 		const TArray<ULevelStreaming*>& streamedLevels = this->GetWorld()->GetStreamingLevels();
 		for (ULevelStreaming* streamedLevel : streamedLevels) {
-			//FString levelName = streamedLevel->GetWorldAssetPackageName();
-			// check if this level is in
+			FString levelName = FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
+			levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
+			// TODO: maybe we should precalculate the level ECEF from level long/lat/height
+			// TODO: consider the case where we're intersecting multiple level radii
+			for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
+				// if this is a known level, we need to tell it whether or not it should be loaded
+				if (levelName.Equals(level.LevelName)) {
+					glm::dvec3 levelECEF = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+						CesiumGeospatial::Cartographic::fromDegrees(
+							level.LevelLongitude, level.LevelLatitude, level.LevelHeight
+						)
+					);
+
+					if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
+						streamedLevel->SetShouldBeLoaded(true);
+						this->_jumpToLevel(level);
+					} else {
+						streamedLevel->SetShouldBeLoaded(false);
+					}
+
+					break;
+				}
+			}
 		}
 
 		if (!cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
@@ -324,5 +350,9 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 			));
 		}
 	}
+}
+
+void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
+	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
 }
 

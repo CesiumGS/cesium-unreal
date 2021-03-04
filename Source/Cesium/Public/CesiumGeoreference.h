@@ -43,26 +43,20 @@ USTRUCT()
 struct FCesiumSubLevel {
 	GENERATED_BODY()
 
-	UFUNCTION(CallInEditor)
-	void JumpToThisLevel();
-
 	UPROPERTY(EditAnywhere)
 	FString LevelName;
 
 	UPROPERTY(EditAnywhere)
-	double LevelLongitude;
+	double LevelLongitude = 0.0;
 	
 	UPROPERTY(EditAnywhere)
-	double LevelLatitude;
+	double LevelLatitude = 0.0;
 
 	UPROPERTY(EditAnywhere)
-	double LevelHeight;
+	double LevelHeight = 0.0;
 
 	UPROPERTY(EditAnywhere)
-	double LoadRadius;
-
-	UPROPERTY()
-	ACesiumGeoreference* ParentGeoreference = nullptr;
+	double LoadRadius = 0.0;
 };
 
 
@@ -88,8 +82,24 @@ public:
 
 	ACesiumGeoreference();
 
+	/*
+	 * EXPERIMENTAL
+	 */
 	UFUNCTION(CallInEditor, Category="CesiumLevelStreaming")
 	void CheckForNewSubLevels();
+
+	/*
+	 * EXPERIMENTAL
+	 */
+	UFUNCTION(CallInEditor, Category="CesiumLevelStreaming")
+	void JumpToCurrentLevel();
+
+	/*
+	 * EXPERIMENTAL
+	 */
+	UPROPERTY(EditAnywhere, Category="CesiumLevelStreaming", meta=(ArrayClamp="CesiumSubLevels"))
+	int CurrentLevelIndex;
+
 	/*
 	 * EXPERIMENTAL
 	 */
@@ -220,5 +230,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+	void _jumpToLevel(const FCesiumSubLevel& level);
+
 	TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };
