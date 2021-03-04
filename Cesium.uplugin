@@ -2,14 +2,15 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"FriendlyName": "Cesium",
-	"Description": "Build world-class 3D geospatial applications",
-	"Category": "Other",
+	"FriendlyName": "Cesium for Unreal",
+	"Description": "Unlock the 3D geospatial ecosystem in Unreal Engine with real-world 3D content and a high accuracy full-scale WGS84 globe.",
+	"Category": "Geospatial",
 	"CreatedBy": "Cesium GS, Inc.",
 	"CreatedByURL": "https://cesium.com",
-	"DocsURL": "",
+	"DocsURL": "https://cesium.com/docs",
 	"MarketplaceURL": "",
-	"SupportURL": "",
+	"SupportURL": "https://community.cesium.com",
+	"EngineVersion":  "4.26.0",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -18,12 +19,14 @@
 		{
 			"Name": "Cesium",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [ "Win64" ]
 		},
 		{
 			"Name": "CesiumEditor",
 			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit"
+			"LoadingPhase": "PostEngineInit",
+			"WhitelistPlatforms": [ "Win64" ]
 		}
 	],
 	"Plugins": [
