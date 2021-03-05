@@ -57,6 +57,9 @@ struct FCesiumSubLevel {
 
 	UPROPERTY(EditAnywhere)
 	double LoadRadius = 0.0;
+
+	// TODO: change to currently visible
+	bool CurrentlyLoaded = false;
 };
 
 

@@ -139,7 +139,8 @@ void ACesiumGeoreference::CheckForNewSubLevels() {
 				OriginLongitude,
 				OriginLatitude,
 				OriginHeight,
-				1000.0 // TODO: figure out better default radius
+				1000.0, // TODO: figure out better default radius
+				false
 			});
 		}
 	}
@@ -237,6 +238,11 @@ void ACesiumGeoreference::BeginPlay()
 			this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
 		}
 	}
+
+	// initialize sublevels as unloaded
+	for (FCesiumSubLevel& level : CesiumSubLevels) {
+		level.CurrentlyLoaded = false;
+	}
 }
 
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
@@ -314,13 +320,15 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 		glm::dvec3 cameraECEF = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * cameraAbsolute;
 		
+		bool insideSublevel = false;
+
 		const TArray<ULevelStreaming*>& streamedLevels = this->GetWorld()->GetStreamingLevels();
 		for (ULevelStreaming* streamedLevel : streamedLevels) {
 			FString levelName = FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
 			levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
 			// TODO: maybe we should precalculate the level ECEF from level long/lat/height
 			// TODO: consider the case where we're intersecting multiple level radii
-			for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
+			for (FCesiumSubLevel& level : this->CesiumSubLevels) {
 				// if this is a known level, we need to tell it whether or not it should be loaded
 				if (levelName.Equals(level.LevelName)) {
 					glm::dvec3 levelECEF = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
@@ -330,10 +338,23 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 					);
 
 					if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
-						streamedLevel->SetShouldBeLoaded(true);
-						this->_jumpToLevel(level);
+						insideSublevel = true;
+						if (!level.CurrentlyLoaded) {
+							this->_jumpToLevel(level);
+							streamedLevel->SetShouldBeLoaded(true);
+							streamedLevel->SetShouldBeVisible(true);
+							level.CurrentlyLoaded = true;
+
+							if (this->KeepWorldOriginNearCamera) {
+								this->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
+							}
+						}
 					} else {
-						streamedLevel->SetShouldBeLoaded(false);
+						if (level.CurrentlyLoaded) {
+							streamedLevel->SetShouldBeLoaded(false);
+							streamedLevel->SetShouldBeVisible(false);
+							level.CurrentlyLoaded = false;
+						}
 					}
 
 					break;
@@ -341,7 +362,8 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 			}
 		}
 
-		if (!cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
+		// TODO: add option of whether to origin rebase inside sub levels
+		if (this->KeepWorldOriginNearCamera && !insideSublevel && !cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
 			// Camera has moved too far from the origin, move the origin.
 			this->GetWorld()->SetNewWorldOrigin(FIntVector(
 				static_cast<int32>(cameraLocation.X) + static_cast<int32>(originLocation.X),
