@@ -734,3 +734,9 @@ void ACesium3DTileset::BeginDestroy() {
 	AActor::BeginDestroy();
 }
 
+void ACesium3DTileset::Destroyed() {
+	this->DestroyTileset();
+
+	AActor::Destroyed();
+}
+
