@@ -5,7 +5,7 @@
 #include "CesiumAsync/IAssetAccessor.h"
 #include "CesiumAsync/AsyncSystem.h"
 
-class CESIUM_API UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
+class CESIUMRUNTIME_API UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
 {
 public:
     virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> requestAsset(
@@ -18,7 +18,7 @@ public:
         const CesiumAsync::AsyncSystem& asyncSystem,
         const std::string& url,
         const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
-        const gsl::span<const uint8_t>& contentPayload
+        const gsl::span<const std::byte>& contentPayload
     ) override;
 
     virtual void tick() noexcept override;

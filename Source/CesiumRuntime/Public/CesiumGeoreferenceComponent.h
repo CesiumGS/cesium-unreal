@@ -15,7 +15,7 @@
 #include "CesiumGeoreferenceComponent.generated.h"
 
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUM_API UCesiumGeoreferenceComponent :
+class CESIUMRUNTIME_API UCesiumGeoreferenceComponent :
 	public USceneComponent,
 	public ICesiumGeoreferenceable
 {

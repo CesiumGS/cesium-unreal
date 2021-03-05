@@ -7,7 +7,7 @@
 #include "CesiumGlobeAnchorParent.generated.h"
 
 UCLASS()
-class CESIUM_API ACesiumGlobeAnchorParent : public AActor
+class CESIUMRUNTIME_API ACesiumGlobeAnchorParent : public AActor
 {
 	GENERATED_BODY()
 

@@ -30,7 +30,7 @@ struct FRectangularCutout {
 };
 
 UCLASS(Abstract)
-class CESIUM_API UCesiumRasterOverlay : public UActorComponent
+class CESIUMRUNTIME_API UCesiumRasterOverlay : public UActorComponent
 {
 	GENERATED_BODY()
 

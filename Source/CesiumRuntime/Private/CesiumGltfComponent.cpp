@@ -1097,8 +1097,8 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
 		ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
 		FConstructorStatics() :
-			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
-			OpacityMaskMaterial(TEXT("/Cesium/GltfMaterialOpacityMask.GltfMaterialOpacityMask"))
+			BaseMaterial(TEXT("/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+			OpacityMaskMaterial(TEXT("/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask"))
 		{
 		}
 	};
@@ -1229,7 +1229,7 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 	// TODO: is it reasonable to use the global thread pool for this?
 	TFuture<void> future = Async(EAsyncExecution::ThreadPool, [this, content]
 	{
-		gsl::span<const uint8_t> data(static_cast<const uint8_t*>(content.GetData()), content.Num());
+		gsl::span<const std::byte> data(reinterpret_cast<const std::byte*>(content.GetData()), content.Num());
 		std::unique_ptr<CesiumGltf::ModelReaderResult> pLoadResult = std::make_unique<CesiumGltf::ModelReaderResult>(std::move(CesiumGltf::readModel(data)));
 
 		if (!pLoadResult->warnings.empty()) {

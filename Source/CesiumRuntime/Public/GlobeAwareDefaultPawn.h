@@ -15,7 +15,7 @@ class UCurveFloat;
  * 
  */
 UCLASS()
-class CESIUM_API AGlobeAwareDefaultPawn : public ADefaultPawn
+class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn
 {
 	GENERATED_BODY()
 

@@ -10,7 +10,7 @@
  * 
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUM_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay
+class CESIUMRUNTIME_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay
 {
 	GENERATED_BODY()
 

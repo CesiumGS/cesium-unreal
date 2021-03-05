@@ -47,7 +47,7 @@ class APlayerCameraManager;
  * by other Cesium Actors to control how this coordinate system is mapped into an Unreal Engine world and level.
  */
 UCLASS()
-class CESIUM_API ACesiumGeoreference : public AActor
+class CESIUMRUNTIME_API ACesiumGeoreference : public AActor
 {
 	GENERATED_BODY()
 

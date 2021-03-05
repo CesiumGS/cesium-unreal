@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FCesiumModule : public IModuleInterface
+class FCesiumRuntimeModule : public IModuleInterface
 {
 public:
 

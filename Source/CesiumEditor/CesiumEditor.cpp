@@ -26,7 +26,7 @@ IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 
 FString FCesiumEditorModule::InContent(const FString& RelativePath, const ANSICHAR* Extension)
 {
-    static FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("Cesium"))->GetContentDir();
+    static FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("CesiumForUnreal"))->GetContentDir();
     return (ContentDir / RelativePath) + Extension;
 }
 

@@ -3,9 +3,9 @@
 using UnrealBuildTool;
 using System.IO;
 
-public class Cesium : ModuleRules
+public class CesiumRuntime : ModuleRules
 {
-    public Cesium(ReadOnlyTargetRules Target) : base(Target)
+    public CesiumRuntime(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
