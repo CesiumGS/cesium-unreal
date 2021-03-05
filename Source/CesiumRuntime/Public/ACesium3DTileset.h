@@ -21,7 +21,7 @@ namespace Cesium3DTiles {
 }
 
 UCLASS()
-class CESIUM_API ACesium3DTileset :
+class CESIUMRUNTIME_API ACesium3DTileset :
 	public AActor,
 	public ICesiumGeoreferenceable
 {

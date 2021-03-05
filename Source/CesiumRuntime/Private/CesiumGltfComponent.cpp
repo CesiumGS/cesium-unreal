@@ -1097,8 +1097,8 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 		ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
 		ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
 		FConstructorStatics() :
-			BaseMaterial(TEXT("/Cesium/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
-			OpacityMaskMaterial(TEXT("/Cesium/GltfMaterialOpacityMask.GltfMaterialOpacityMask"))
+			BaseMaterial(TEXT("/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+			OpacityMaskMaterial(TEXT("/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask"))
 		{
 		}
 	};
