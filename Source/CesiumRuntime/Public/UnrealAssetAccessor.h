@@ -5,7 +5,7 @@
 #include "CesiumAsync/IAssetAccessor.h"
 #include "CesiumAsync/AsyncSystem.h"
 
-class CESIUM_API UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
+class CESIUMRUNTIME_API UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
 {
 public:
     virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> requestAsset(

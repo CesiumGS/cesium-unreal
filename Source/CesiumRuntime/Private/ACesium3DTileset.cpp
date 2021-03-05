@@ -591,6 +591,10 @@ void ACesium3DTileset::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+	if (!pRoot) {
+		return;
+	}
+
 	if (pRoot->IsTransformChanged()) {
 		this->UpdateTransformFromCesium(this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 		pRoot->MarkTransformUnchanged();

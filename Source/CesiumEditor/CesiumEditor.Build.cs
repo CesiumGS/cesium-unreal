@@ -41,7 +41,7 @@ public class CesiumEditor : ModuleRules
 			{
 				"Core",
                 "UnrealEd",
-                "Cesium"
+                "CesiumRuntime"
 			}
 			);
 

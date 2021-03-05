@@ -40,7 +40,7 @@ struct FRasterOverlayTile {
 };
 
 UCLASS()
-class CESIUM_API UCesiumGltfComponent : public USceneComponent
+class CESIUMRUNTIME_API UCesiumGltfComponent : public USceneComponent
 {
 	GENERATED_BODY()
 

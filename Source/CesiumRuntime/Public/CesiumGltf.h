@@ -7,7 +7,7 @@
 #include "CesiumGltf.generated.h"
 
 UCLASS()
-class CESIUM_API ACesiumGltf : public AActor
+class CESIUMRUNTIME_API ACesiumGltf : public AActor
 {
 	GENERATED_BODY()
 	

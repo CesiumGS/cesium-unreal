@@ -10,7 +10,7 @@
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 
 UCesiumCreditSystemBPLoader::UCesiumCreditSystemBPLoader() {
-    ConstructorHelpers::FObjectFinder<UClass> blueprintClassReference(TEXT("Class'/Cesium/CesiumCreditSystemBP.CesiumCreditSystemBP_C'"));
+    ConstructorHelpers::FObjectFinder<UClass> blueprintClassReference(TEXT("Class'/CesiumForUnreal/CesiumCreditSystemBP.CesiumCreditSystemBP_C'"));
     ACesiumCreditSystem::CesiumCreditSystemBP = (UClass*) blueprintClassReference.Object;
 }
 
