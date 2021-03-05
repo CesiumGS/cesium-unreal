@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumGeoreferenceComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
@@ -27,10 +29,10 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent() :
 	this->bWantsOnUpdateTransform = true;
 	PrimaryComponentTick.bCanEverTick = false;
 
-	// TODO: check when exactly constructor is called. Is it possible that it is only called for CDO and then all other load/save/replications 
-	// happen from serialize/deserialize? 
+	// TODO: check when exactly constructor is called. Is it possible that it is only called for CDO and then all other load/save/replications
+	// happen from serialize/deserialize?
 
-	// set a delegate callback when the root component for the actor is set 
+	// set a delegate callback when the root component for the actor is set
 	this->IsRootComponentChanged.AddDynamic(this, &UCesiumGeoreferenceComponent::OnRootComponentChanged);
 }
 
@@ -40,30 +42,30 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 
 	// the surface normal of the ellipsoid model of the globe at the ECEF location of the actor
 	glm::dvec3 ellipsoidNormal = CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(this->_actorToECEF[3]);
-	
+
 	// cosine of the angle between the actor's up direction and the ellipsoid normal
 	double cos = glm::dot(actorUpECEF, ellipsoidNormal);
 
 	// TODO: is this a reasonable epsilon in this case?
 	if (cos < CesiumUtility::Math::EPSILON7 - 1.0) {
 		// The actor's current up direction is completely upside down with respect to the ellipsoid normal.
-		
-		// We want to do a 180 degree rotation around X. We can do this by flipping the Y and Z axes 
+
+		// We want to do a 180 degree rotation around X. We can do this by flipping the Y and Z axes
 		this->_actorToECEF[1] *= -1.0;
 		this->_actorToECEF[2] *= -1.0;
 
 	} else {
 		// the axis of the shortest available rotation with a magnitude that is sine of the angle
 		glm::dvec3 sin_axis = glm::cross(ellipsoidNormal, actorUpECEF);
-		
-		// We construct a rotation matrix using Rodrigues' rotation formula for rotating by theta around an axis. 		
-		
+
+		// We construct a rotation matrix using Rodrigues' rotation formula for rotating by theta around an axis.
+
 		// K is the cross product matrix of the axis, i.e. K v = axis x v, where v is any vector. Here we have a factor
 		// of sine theta that we let through as well since it will simplify the calcuations in Rodrigues` formula.
 		glm::dmat3 sin_K(
 			0.0, -sin_axis.z, sin_axis.y,
 			sin_axis.z, 0.0, -sin_axis.x,
-			-sin_axis.y, sin_axis.x, 0.0 
+			-sin_axis.y, sin_axis.x, 0.0
 		);
 		// Rodrigues' rotation formula
 		glm::dmat4 R = glm::dmat3(1.0) + sin_K + sin_K * sin_K / (1.0 + cos);
@@ -143,7 +145,7 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(const FVector& InOffset, boo
 
 void UCesiumGeoreferenceComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) {
 	USceneComponent::OnUpdateTransform(UpdateTransformFlags, Teleport);
-	
+
 	// if we generated this transform call internally, we should ignore it
 	if (this->_ignoreOnUpdateTransform) {
 		this->_ignoreOnUpdateTransform = false;
@@ -232,7 +234,7 @@ void UCesiumGeoreferenceComponent::SetAutoSnapToEastSouthUp(bool value) {
  */
 
 void UCesiumGeoreferenceComponent::_initRootComponent() {
-	AActor* owner = this->GetOwner(); 
+	AActor* owner = this->GetOwner();
 	this->_ownerRoot = owner->GetRootComponent();
 
 	if (!this->_ownerRoot || !this->GetWorld()) {
@@ -270,8 +272,8 @@ void UCesiumGeoreferenceComponent::_updateAbsoluteLocation() {
 }
 
 void UCesiumGeoreferenceComponent::_updateRelativeLocation() {
-	// Note: Since we have a presumably accurate _absoluteLocation, this will be more accurate than querying the floating-point UE relative world 
-	// location. This means that although the rendering, physics, and anything else on the UE side might be jittery, our internal representation 
+	// Note: Since we have a presumably accurate _absoluteLocation, this will be more accurate than querying the floating-point UE relative world
+	// location. This means that although the rendering, physics, and anything else on the UE side might be jittery, our internal representation
 	// of the location will remain accurate.
 	this->_relativeLocation = this->_absoluteLocation - this->_worldOriginLocation;
 }
@@ -292,11 +294,11 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
 
 	this->Georeference = ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
 	if (this->Georeference) {
-		this->_updateActorToECEF(); 
+		this->_updateActorToECEF();
 		this->Georeference->AddGeoreferencedObject(this);
 		this->_georeferenced = true;
 	}
-	
+
 	// Note: when a georeferenced object is added, UpdateGeoreferenceTransform will automatically be called
 }
 
@@ -305,7 +307,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 	if (!this->Georeference) {
 		return;
 	}
-	
+
 	glm::dmat4 georeferencedToEllipsoidCenteredTransform = this->Georeference->GetGeoreferencedToEllipsoidCenteredTransform();
 
 	FMatrix actorToRelativeWorld = this->_ownerRoot->GetComponentToWorld().ToMatrixWithScale();

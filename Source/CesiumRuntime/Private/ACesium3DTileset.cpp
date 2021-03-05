@@ -1,4 +1,4 @@
-// Copyright CesiumGS, Inc. and Contributors
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "ACesium3DTileset.h"
 #include "Camera/PlayerCameraManager.h"
