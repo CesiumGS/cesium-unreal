@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumEditor.h"
 #include "Framework/Docking/TabManager.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
@@ -24,7 +26,7 @@ IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 
 FString FCesiumEditorModule::InContent(const FString& RelativePath, const ANSICHAR* Extension)
 {
-    static FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("Cesium"))->GetContentDir();
+    static FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("CesiumForUnreal"))->GetContentDir();
     return (ContentDir / RelativePath) + Extension;
 }
 

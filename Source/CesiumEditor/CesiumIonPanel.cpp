@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumIonPanel.h"
 #include "IonLoginPanel.h"
 #include "CesiumEditor.h"
@@ -239,7 +241,7 @@ void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::Asset> item
     }
 
     UCesiumRasterOverlay* pOverlay = FCesiumEditorModule::AddOverlay(pTilesetActor, item->name, item->id);
-    
+
     pTilesetActor->RerunConstructionScripts();
 
     GEditor->SelectNone(true, false);
