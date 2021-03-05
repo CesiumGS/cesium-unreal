@@ -1,4 +1,4 @@
-// Copyright CesiumGS, Inc. and Contributors
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "UnrealAssetAccessor.h"
 #include "CesiumAsync/AsyncSystem.h"
@@ -11,6 +11,7 @@
 #include "UnrealConversions.h"
 #include <set>
 #include <optional>
+#include <cstddef>
 
 static CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeaders) {
 	CesiumAsync::HttpHeaders result;

@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "IonLoginPanel.h"
 #include "CesiumEditor.h"
 #include "Styling/SlateStyle.h"

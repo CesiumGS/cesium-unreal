@@ -1,4 +1,4 @@
-// Copyright CesiumGS, Inc. and Contributors
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfComponent.h"
 #include "CesiumGltf/AccessorView.h"
@@ -37,6 +37,7 @@
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <stb_image_resize.h>
+#include <cstddef>
 
 using namespace CesiumGltf;
 

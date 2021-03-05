@@ -1,4 +1,4 @@
-// Copyright CesiumGS, Inc. and Contributors
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -254,6 +254,7 @@ public:
 	virtual bool ShouldTickIfViewportsOnly() const override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void BeginDestroy() override;
+	virtual void Destroyed() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:

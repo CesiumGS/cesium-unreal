@@ -1,9 +1,10 @@
-// Copyright CesiumGS, Inc. and Contributors
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "CesiumAsync/IAssetAccessor.h"
 #include "CesiumAsync/AsyncSystem.h"
+#include <cstddef>
 
 class CESIUMRUNTIME_API UnrealAssetAccessor : public CesiumAsync::IAssetAccessor
 {

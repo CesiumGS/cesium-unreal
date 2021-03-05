@@ -1,4 +1,4 @@
-// Copyright CesiumGS, Inc. and Contributors
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumIonRasterOverlay.h"
 #include "Cesium3DTiles/Tileset.h"
