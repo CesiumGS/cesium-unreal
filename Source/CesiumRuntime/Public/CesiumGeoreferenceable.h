@@ -18,7 +18,7 @@ class UCesiumGeoreferenceable : public UInterface
 /**
  * 
  */
-class CESIUM_API ICesiumGeoreferenceable
+class CESIUMRUNTIME_API ICesiumGeoreferenceable
 {
 	GENERATED_BODY()
 

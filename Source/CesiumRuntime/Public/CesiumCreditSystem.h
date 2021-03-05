@@ -25,7 +25,7 @@ private:
 };
 
 UCLASS()
-class CESIUM_API ACesiumCreditSystem : public AActor 
+class CESIUMRUNTIME_API ACesiumCreditSystem : public AActor
 {
 	GENERATED_BODY()
 
