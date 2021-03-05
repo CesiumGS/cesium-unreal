@@ -3,27 +3,27 @@
 #include "SpdlogUnrealLoggerSink.h"
 #include "CoreMinimal.h"
 
-DEFINE_LOG_CATEGORY(LogCesiumNative);
+DEFINE_LOG_CATEGORY(LogCesium);
 
 void SpdlogUnrealLoggerSink::sink_it_(const spdlog::details::log_msg& msg) {
     switch (msg.level) {
     case SPDLOG_LEVEL_TRACE:
-        UE_LOG(LogCesiumNative, VeryVerbose, TEXT("%s"), *this->formatMessage(msg));
+        UE_LOG(LogCesium, VeryVerbose, TEXT("%s"), *this->formatMessage(msg));
         break;
     case SPDLOG_LEVEL_DEBUG:
-        UE_LOG(LogCesiumNative, Verbose, TEXT("%s"), *this->formatMessage(msg));
+        UE_LOG(LogCesium, Verbose, TEXT("%s"), *this->formatMessage(msg));
         break;
     case SPDLOG_LEVEL_INFO:
-        UE_LOG(LogCesiumNative, Display, TEXT("%s"), *this->formatMessage(msg));
+        UE_LOG(LogCesium, Display, TEXT("%s"), *this->formatMessage(msg));
         break;
     case SPDLOG_LEVEL_WARN:
-        UE_LOG(LogCesiumNative, Warning, TEXT("%s"), *this->formatMessage(msg));
+        UE_LOG(LogCesium, Warning, TEXT("%s"), *this->formatMessage(msg));
         break;
     case SPDLOG_LEVEL_ERROR:
-        UE_LOG(LogCesiumNative, Error, TEXT("%s"), *this->formatMessage(msg));
+        UE_LOG(LogCesium, Error, TEXT("%s"), *this->formatMessage(msg));
         break;
     case SPDLOG_LEVEL_CRITICAL:
-        UE_LOG(LogCesiumNative, Fatal, TEXT("%s"), *this->formatMessage(msg));
+        UE_LOG(LogCesium, Fatal, TEXT("%s"), *this->formatMessage(msg));
         break;
     }
 }

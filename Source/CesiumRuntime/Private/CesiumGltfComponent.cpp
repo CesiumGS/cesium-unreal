@@ -2,6 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "CesiumGltf/AccessorView.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include "UnrealConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
@@ -1112,27 +1113,27 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 }
 
 UCesiumGltfComponent::~UCesiumGltfComponent() {
-	UE_LOG(LogActor, Warning, TEXT("~UCesiumGltfComponent"));
+	UE_LOG(LogCesium, Warning, TEXT("~UCesiumGltfComponent"));
 }
 
 void UCesiumGltfComponent::LoadModel(const FString& Url)
 {
 	if (this->LoadedUrl == Url)
 	{
-		UE_LOG(LogActor, Warning, TEXT("Model URL unchanged"))
+		UE_LOG(LogCesium, Warning, TEXT("Model URL unchanged"))
 			return;
 	}
 
 	if (this->Mesh)
 	{
-		UE_LOG(LogActor, Warning, TEXT("Deleting old model"));
+		UE_LOG(LogCesium, Warning, TEXT("Deleting old model"));
 		this->Mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
 		this->Mesh->UnregisterComponent();
 		this->Mesh->DestroyComponent(false);
 		this->Mesh = nullptr;
 	}
 
-	UE_LOG(LogActor, Warning, TEXT("Loading model"))
+	UE_LOG(LogCesium, Warning, TEXT("Loading model"))
 
 	this->LoadedUrl = Url;
 
@@ -1176,7 +1177,7 @@ void UCesiumGltfComponent::AttachRasterTile(
 	});
 
 	if (this->_overlayTiles.Num() > 3) {
-		UE_LOG(LogActor, Warning, TEXT("Too many raster overlays"));
+		UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
 	}
 
 	this->updateRasterOverlays();
@@ -1197,7 +1198,7 @@ void UCesiumGltfComponent::DetachRasterTile(
 	size_t numAfter = this->_overlayTiles.Num();
 	
 	if (numBefore - 1 != numAfter) {
-		UE_LOG(LogActor, Warning, TEXT("Raster tiles detached: %d, pTexture: %d, minX: %f, minY: %f, maxX: %f, maxY: %f"), numBefore - numAfter, pTexture, textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY);
+		UE_LOG(LogCesium, Warning, TEXT("Raster tiles detached: %d, pTexture: %d, minX: %f, minY: %f, maxX: %f, maxY: %f"), numBefore - numAfter, pTexture, textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY);
 	}
 	
 	this->updateRasterOverlays();
@@ -1215,7 +1216,7 @@ void UCesiumGltfComponent::SetCollisionEnabled(ECollisionEnabled::Type NewType)
 
 void UCesiumGltfComponent::FinishDestroy()
 {
-	UE_LOG(LogActor, Warning, TEXT("UCesiumGltfComponent::FinishDestroy"));
+	UE_LOG(LogCesium, Warning, TEXT("UCesiumGltfComponent::FinishDestroy"));
 	Super::FinishDestroy();
 }
 
@@ -1234,15 +1235,15 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 		std::unique_ptr<CesiumGltf::ModelReaderResult> pLoadResult = std::make_unique<CesiumGltf::ModelReaderResult>(std::move(CesiumGltf::readModel(data)));
 
 		if (!pLoadResult->warnings.empty()) {
-			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
+			UE_LOG(LogCesium, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
 		}
 
 		if (!pLoadResult->errors.empty()) {
-			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
+			UE_LOG(LogCesium, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
 		}
 
 		if (!pLoadResult->model) {
-			UE_LOG(LogActor, Error, TEXT("glTF model could not be loaded."));
+			UE_LOG(LogCesium, Error, TEXT("glTF model could not be loaded."));
 			return;
 		}
 
