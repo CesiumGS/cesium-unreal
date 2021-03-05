@@ -11,6 +11,7 @@
 #include "UnrealConversions.h"
 #include <set>
 #include <optional>
+#include <cstddef>
 
 static CesiumAsync::HttpHeaders parseHeaders(const TArray<FString>& unrealHeaders) {
 	CesiumAsync::HttpHeaders result;
