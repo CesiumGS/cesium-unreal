@@ -15,12 +15,12 @@ void ACesiumGltf::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogCesium, Display, TEXT("ACesiumGltf::BeginPlay"))
+	UE_LOG(LogCesium, VeryVerbose, TEXT("ACesiumGltf::BeginPlay"))
 	this->Model->LoadModel(this->Url);
 }
 
 void ACesiumGltf::OnConstruction(const FTransform & Transform)
 {
-	UE_LOG(LogCesium, Display, TEXT("ACesiumGltf::OnConstruction"))
+	UE_LOG(LogCesium, VeryVerbose, TEXT("ACesiumGltf::OnConstruction"))
 	this->Model->LoadModel(this->Url);
 }

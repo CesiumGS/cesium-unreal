@@ -144,7 +144,7 @@ void ACesium3DTileset::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCe
 		UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
 		pRoot->UpdateGeoreferenceTransform(ellipsoidCenteredToGeoreferencedTransform);
 	} else {
-	// Otherwise, update the transform later in Tick when the bounding volume is ready 
+		// Otherwise, update the transform later in Tick when the bounding volume is ready 
 		this->_updateGeoreferenceOnBoundingVolumeReady = true;
 	}
 }
@@ -215,11 +215,7 @@ public:
 
 	virtual void* prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
 		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
-		if (!pContent) {
-			return nullptr;
-		}
-
-		if (pContent->model) {
+		if (pContent && pContent->model) {
 			std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(pLoadThreadResult));
 			return UCesiumGltfComponent::CreateOnGameThread(
 				this->_pActor,
@@ -228,7 +224,7 @@ public:
 				this->_pActor->Material
 			);
 		}
-
+		//UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
 		return nullptr;
 	}
 
@@ -285,16 +281,13 @@ public:
 		const glm::dvec2& scale
 	) {
 		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
-		if (!pContent) {
-			return;
-		}
-
-		if (pContent->model) {
+		if (pContent && pContent->model) {
 			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
 			if (pGltfContent) {
 				pGltfContent->AttachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources), textureCoordinateRectangle, translation, scale);
 			}
 		}
+		//UE_LOG(LogCesium, VeryVerbose, TEXT("No content for attaching raster to tile"));
 	}
 
 	virtual void detachRasterInMainThread(
@@ -305,16 +298,13 @@ public:
 		const CesiumGeometry::Rectangle& textureCoordinateRectangle
 	) noexcept override {
 		const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
-		if (!pContent) {
-			return;
-		}
-
-		if (pContent->model) {
+		if (pContent && pContent->model) {
 			UCesiumGltfComponent* pGltfContent = reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
 			if (pGltfContent) {
 				pGltfContent->DetachRasterTile(tile, rasterTile, static_cast<UTexture2D*>(pMainThreadRendererResources), textureCoordinateRectangle);
 			}
 		}
+		//UE_LOG(LogCesium, VeryVerbose, TEXT("No content for detaching raster from tile"));
 	}
 
 private:
@@ -338,6 +328,9 @@ private:
 	// }
 
 	void destroyRecursively(USceneComponent* pComponent) {	
+
+		UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component recursively"));
+
 		if (!pComponent) {
 			return;
 		}
@@ -364,6 +357,8 @@ private:
 		// GetObjReferenceCount(pComponent, &after);
 
 		// UE_LOG(LogActor, Warning, TEXT("Before %d, After %d"), before.Num(), after.Num());
+
+		UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
 	}
 
 	ACesium3DTileset* _pActor;
@@ -380,6 +375,16 @@ static std::string getCacheDatabaseName() {
 
 void ACesium3DTileset::LoadTileset()
 {
+	if (this->Url.Len() > 0)
+	{
+		UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
+	}
+	else
+	{
+		UE_LOG(LogCesium, Log, TEXT("Loading tileset for asset ID %d"), this->IonAssetID);
+	}
+
+
 	static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor = std::make_shared<CesiumAsync::CachingAssetAccessor>(
 		spdlog::default_logger(),
 		std::make_shared<UnrealAssetAccessor>(),
@@ -456,9 +461,28 @@ void ACesium3DTileset::LoadTileset()
 			pOverlay->AddToTileset();
 		}
 	}
+
+	if (this->Url.Len() > 0)
+	{
+		UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s done"), *this->Url);
+	}
+	else
+	{
+		UE_LOG(LogCesium, Log, TEXT("Loading tileset for asset ID %d done"), this->IonAssetID);
+	}
 }
 
 void ACesium3DTileset::DestroyTileset() {
+
+	if (this->Url.Len() > 0)
+	{
+		UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset from URL %s"), *this->Url);
+	}
+	else
+	{
+		UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset for asset ID %d"), this->IonAssetID);
+	}
+
 	// The way CesiumRasterOverlay::add is currently implemented, destroying the tileset without removing overlays will make it 
 	// impossible to add it again once a new tileset is created (e.g. when switching between terrain assets)	
 	TArray<UCesiumRasterOverlay*> rasterOverlays;
@@ -475,6 +499,15 @@ void ACesium3DTileset::DestroyTileset() {
 
 	delete this->_pTileset;
 	this->_pTileset = nullptr;
+
+	if (this->Url.Len() > 0)
+	{
+		UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset from URL %s done"), *this->Url);
+	}
+	else
+	{
+		UE_LOG(LogCesium, Verbose, TEXT("Destroying tileset for asset ID %d done"), this->IonAssetID);
+	}
 }
 
 std::optional<ACesium3DTileset::UnrealCameraParameters> ACesium3DTileset::GetCamera() const {
@@ -691,6 +724,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 			Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		} else {
 			// TODO: why is this happening?
+			UE_LOG(LogCesium, VeryVerbose, TEXT("Tile to no longer render does not have a visible Gltf"));
 		}
 	}
 
@@ -708,6 +742,7 @@ void ACesium3DTileset::Tick(float DeltaTime)
 		UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
 		if (!Gltf) {
 			// TODO: Not-yet-renderable tiles shouldn't be here.
+			//UE_LOG(LogCesium, VeryVerbose, TEXT("Tile to render does not have a Gltf"));
 			continue;
 		}
 
