@@ -19,7 +19,7 @@ public class CesiumRuntime : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-				// ... add other private include paths required here ...
+                // ... add other private include paths required here ...
             }
         );
 
@@ -48,12 +48,12 @@ public class CesiumRuntime : ModuleRules
         PublicAdditionalLibraries.AddRange(libs);
 
         PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
+            new string[]
+            {
+                "Core",
+                // ... add other public dependencies that you statically link with here ...
+            }
+        );
 
 
         PrivateDependencyModuleNames.AddRange(
@@ -70,8 +70,8 @@ public class CesiumRuntime : ModuleRules
                 "MikkTSpace",
                 "Chaos",
                 "LevelSequence"
-				// ... add private dependencies that you statically link with here ...	
-			}
+                // ... add private dependencies that you statically link with here ...
+            }
         );
 
         PublicDefinitions.AddRange(
@@ -79,7 +79,7 @@ public class CesiumRuntime : ModuleRules
             {
                 "SPDLOG_COMPILED_LIB"
             }
-            );
+        );
 
         if (Target.bCompilePhysX && !Target.bUseChaos)
         {
@@ -97,11 +97,11 @@ public class CesiumRuntime : ModuleRules
         }
 
         DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
+            new string[]
+            {
+                // ... add any modules that your module loads dynamically here ...
+            }
+        );
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
