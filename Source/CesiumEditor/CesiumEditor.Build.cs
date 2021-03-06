@@ -22,29 +22,19 @@ public class CesiumEditor : ModuleRules
             }
         );
 
-        string debugRelease = "";
-        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
-        {
-            debugRelease = "-debug";
-        }
-        else
-        {
-            debugRelease = "-release";
-        }
-
         string platform = Target.Platform == UnrealTargetPlatform.Win64
-            ? "-Windows-64"
-            : "-Unknown";
+            ? "Windows-x64"
+            : "Unknown";
 
-        string postfix = platform + debugRelease;
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
 
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib");
+        string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
 
         PublicAdditionalLibraries.AddRange(
             new string[]
             {
-                Path.Combine(libPath, "CesiumionClient" + cesiumNativeConfiguration + ".lib"),
-                Path.Combine(libPath, "csprng" + cesiumNativeConfiguration + ".lib"),
+                Path.Combine(libPath, "CesiumionClient" + debugPostfix + ".lib"),
+                Path.Combine(libPath, "csprng" + debugPostfix + ".lib"),
             }
         );
 

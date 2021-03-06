@@ -23,29 +23,33 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        string debugRelease = "";
-        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
-        {
-            debugRelease = "-debug";
-        }
-        else
-        {
-            debugRelease = "-release";
-        }
-
         string platform = Target.Platform == UnrealTargetPlatform.Win64
-            ? "-Windows-64"
-            : "-Unknown";
+            ? "Windows-x64"
+            : "Unknown";
 
-        string postfix = platform + debugRelease;
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
 
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib");
-        string searchSpec = "*" + postfix + ".lib";
+        string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
 
-        Console.WriteLine("Including " + searchSpec + " in " + libPath);
-
-        string[] libs = Directory.GetFiles(libPath, searchSpec);
-        PublicAdditionalLibraries.AddRange(libs);
+        PublicAdditionalLibraries.AddRange(
+            new string[]
+            {
+                Path.Combine(libPath, "Cesium3DTiles" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "CesiumAsync" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "CesiumGeospatial" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "CesiumGeometry" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "CesiumGltf" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "CesiumGltfReader" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "CesiumUtility" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "uriparser" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "draco" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "asyncplusplus" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "sqlite3" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "tinyxml2" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "spdlog" + debugpostfix + ".lib"),
+                Path.Combine(libPath, "modp_b64" + debugpostfix + ".lib")
+            }
+        );
 
         PublicDependencyModuleNames.AddRange(
             new string[]
