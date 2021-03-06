@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 using UnrealBuildTool;
+using System;
 using System.IO;
 
 public class CesiumRuntime : ModuleRules
@@ -11,60 +12,40 @@ public class CesiumRuntime : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
-				// ... add public include paths required here ...
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/Cesium3DTiles/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumAsync/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGeospatial/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGeometry/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGltf/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGltfReader/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumUtility/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/glm"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/GSL/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/asyncplusplus/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/spdlog/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/rapidjson/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/stb"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/sqlite3"),
+                Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
-            );
+        );
 
 
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
             }
-            );
+        );
 
-        string cesiumNativeConfiguration = "Debug";
-        string tinyxml2Name = "tinyxml2d.lib";
-        string spdlogLibName = "spdlogd.lib";
-        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        string debugRelease = "";
+        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
         {
-            cesiumNativeConfiguration = "RelWithDebInfo";
-            tinyxml2Name = "tinyxml2.lib";
-            spdlogLibName = "spdlog.lib";
+            debugRelease = "-debug";
+        }
+        else
+        {
+            debugRelease = "-release";
         }
 
-        PublicAdditionalLibraries.AddRange(
-            new string[]
-            {
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + cesiumNativeConfiguration + "/Cesium3DTiles.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumAsync/" + cesiumNativeConfiguration + "/CesiumAsync.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + cesiumNativeConfiguration + "/CesiumGeospatial.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + cesiumNativeConfiguration + "/CesiumGeometry.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGltf/" + cesiumNativeConfiguration + "/CesiumGltf.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGltfReader/" + cesiumNativeConfiguration + "/CesiumGltfReader.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/sqlite3/" + cesiumNativeConfiguration + "/sqlite3.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/spdlog/" + cesiumNativeConfiguration + "/" + spdlogLibName),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/modp_b64/" + cesiumNativeConfiguration + "/modp_b64.lib")
-            }
-            );
+        string platform = Target.Platform == UnrealTargetPlatform.Win64
+            ? "-Windows-64"
+            : "-Unknown";
+
+        string postfix = platform + debugRelease;
+
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib");
+        string searchSpec = "*" + postfix + ".lib";
+
+        Console.WriteLine("Including " + searchSpec + " in " + libPath);
+
+        string[] libs = Directory.GetFiles(libPath, searchSpec);
+        PublicAdditionalLibraries.AddRange(libs);
 
         PublicDependencyModuleNames.AddRange(
 			new string[]
