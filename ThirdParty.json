@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Async++",
+    "url": "https://github.com/Amanieu/asyncplusplus",
+    "license": "MIT"
+  },
+  {
+    "name": "cpp-httplib",
+    "url": "https://github.com/yhirose/cpp-httplib",
+    "license": "MIT"
+  },
+  {
+    "name": "CSPRNG",
+    "url": "https://github.com/Duthomhas/CSPRNG",
+    "license": "Boost Software License 1.0"
+  },
+  {
+    "name": "Draco",
+    "url": "https://github.com/google/draco",
+    "license": "Apache 2.0"
+  },
+  {
+    "name": "GLM",
+    "url": "https://github.com/g-truc/glm",
+    "license": "MIT"
+  },
+  {
+    "name": "GSL",
+    "url": "https://github.com/microsoft/GSL",
+    "license": "MIT"
+  },
+  {
+    "name": "PicoSHA2",
+    "url": "https://github.com/okdshin/PicoSHA2",
+    "license": "MIT"
+  },
+  {
+    "name": "RapidJSON",
+    "url": "https://github.com/Tencent/rapidjson",
+    "license": "MIT"
+  },
+  {
+    "name": "spdlog",
+    "url": "https://github.com/gabime/spdlog",
+    "license": "MIT"
+  },
+  {
+    "name": "SQLite Amalgamation",
+    "url": "https://www.sqlite.org/amalgamation.html",
+    "license": "Public Domain"
+  },
+  {
+    "name": "STB",
+    "url": "https://github.com/nothings/stb",
+    "license": "Public Domain"
+  },
+  {
+    "name": "tinyxml2",
+    "url": "https://github.com/leethomason/tinyxml2",
+    "license": "zlib"
+  },
+  {
+    "name": "uriparser",
+    "url": "https://github.com/uriparser/uriparser",
+    "license": "BSD-3-Clause"
+  }
+]
