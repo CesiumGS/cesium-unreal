@@ -3,6 +3,7 @@
 using UnrealBuildTool;
 using System;
 using System.IO;
+using System.Linq;
 
 public class CesiumRuntime : ModuleRules
 {
@@ -23,14 +24,10 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        string debugRelease = "";
+        string debugRelease = "-release";
         if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
         {
             debugRelease = "-debug";
-        }
-        else
-        {
-            debugRelease = "-release";
         }
 
         string platform = Target.Platform == UnrealTargetPlatform.Win64
@@ -39,13 +36,26 @@ public class CesiumRuntime : ModuleRules
 
         string postfix = platform + debugRelease;
 
+        string[] libs = new string[]
+        {
+            "async++",
+            "Cesium3DTiles",
+            "CesiumAsync",
+            "CesiumGeometry",
+            "CesiumGeospatial",
+            "CesiumGltfReader",
+            "CesiumGltf",
+            "CesiumUtility",
+            "draco",
+            "modp_b64",
+            "spdlog",
+            "sqlite3",
+            "tinyxml2",
+            "uriparser"
+        };
+
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib");
-        string searchSpec = "*" + postfix + ".lib";
-
-        Console.WriteLine("Including " + searchSpec + " in " + libPath);
-
-        string[] libs = Directory.GetFiles(libPath, searchSpec);
-        PublicAdditionalLibraries.AddRange(libs);
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + postfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
             new string[]
