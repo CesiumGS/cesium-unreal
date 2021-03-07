@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #pragma once
 
 #include "CesiumAsync/AsyncSystem.h"
@@ -30,7 +32,7 @@ public:
     bool isTokenListLoaded() const { return this->_tokens.has_value(); }
     bool isLoadingTokenList() const { return this->_isLoadingTokens; }
 
-    bool isAssetAccessTokenLoaded() const { return this->_assetAccessToken.has_value(); } 
+    bool isAssetAccessTokenLoaded() const { return this->_assetAccessToken.has_value(); }
     bool isLoadingAssetAccessToken() const { return this->_isLoadingAssetAccessToken; }
 
     void connect();
