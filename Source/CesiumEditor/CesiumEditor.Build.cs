@@ -2,6 +2,7 @@
 
 using UnrealBuildTool;
 using System.IO;
+using System.Linq;
 
 public class CesiumEditor : ModuleRules
 {
@@ -27,16 +28,15 @@ public class CesiumEditor : ModuleRules
             : "Unknown";
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-
         string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
 
-        PublicAdditionalLibraries.AddRange(
-            new string[]
-            {
-                Path.Combine(libPath, "CesiumionClient" + debugPostfix + ".lib"),
-                Path.Combine(libPath, "csprng" + debugPostfix + ".lib"),
-            }
-        );
+        string[] libs = new string[]
+        {
+            "CesiumIonClient",
+            "csprng"
+        };
+
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + debugPostfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
             new string[]
@@ -46,7 +46,6 @@ public class CesiumEditor : ModuleRules
                 "CesiumRuntime"
             }
         );
-
 
         PrivateDependencyModuleNames.AddRange(
             new string[]

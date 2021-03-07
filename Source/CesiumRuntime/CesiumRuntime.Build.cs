@@ -3,6 +3,7 @@
 using UnrealBuildTool;
 using System;
 using System.IO;
+using System.Linq;
 
 public class CesiumRuntime : ModuleRules
 {
@@ -28,28 +29,27 @@ public class CesiumRuntime : ModuleRules
             : "Unknown";
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-
         string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
 
-        PublicAdditionalLibraries.AddRange(
-            new string[]
-            {
-                Path.Combine(libPath, "Cesium3DTiles" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "CesiumAsync" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "CesiumGeospatial" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "CesiumGeometry" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "CesiumGltf" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "CesiumGltfReader" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "CesiumUtility" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "uriparser" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "draco" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "asyncplusplus" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "sqlite3" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "tinyxml2" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "spdlog" + debugpostfix + ".lib"),
-                Path.Combine(libPath, "modp_b64" + debugpostfix + ".lib")
-            }
-        );
+        string[] libs = new string[]
+        {
+            "async++",
+            "Cesium3DTiles",
+            "CesiumAsync",
+            "CesiumGeometry",
+            "CesiumGeospatial",
+            "CesiumGltfReader",
+            "CesiumGltf",
+            "CesiumUtility",
+            "draco",
+            "modp_b64",
+            "spdlog",
+            "sqlite3",
+            "tinyxml2",
+            "uriparser"
+        };
+
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + debugPostfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
             new string[]
