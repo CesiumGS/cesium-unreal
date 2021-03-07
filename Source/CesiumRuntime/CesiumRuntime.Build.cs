@@ -24,17 +24,12 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        string debugRelease = "-release";
-        if (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame)
-        {
-            debugRelease = "-debug";
-        }
-
         string platform = Target.Platform == UnrealTargetPlatform.Win64
-            ? "-Windows-64"
-            : "-Unknown";
+            ? "Windows-x64"
+            : "Unknown";
 
-        string postfix = platform + debugRelease;
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
 
         string[] libs = new string[]
         {
@@ -54,8 +49,7 @@ public class CesiumRuntime : ModuleRules
             "uriparser"
         };
 
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib");
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + postfix + ".lib")));
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + debugPostfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
             new string[]
