@@ -8,7 +8,7 @@
 #include <memory>
 #include <mutex>
 
-DECLARE_LOG_CATEGORY_EXTERN(LogCesiumNative, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogCesium, Log, All);
 
 /**
  * @brief Internal implementation of a spdlog sink that forwards the messages

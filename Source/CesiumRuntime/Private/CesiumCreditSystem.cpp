@@ -2,6 +2,7 @@
 
 #include "CesiumCreditSystem.h"
 #include "UnrealConversions.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include "Cesium3DTiles/CreditSystem.h"
 #include "Engine.h"
 #include <string>
@@ -25,7 +26,7 @@ UCesiumCreditSystemBPLoader::UCesiumCreditSystemBPLoader() {
     ACesiumCreditSystem* pACreditSystem = FindObject<ACesiumCreditSystem>(Actor->GetLevel(), TEXT("CesiumCreditSystemDefault"));
     if (!pACreditSystem) {
         if (!CesiumCreditSystemBP) {
-            UE_LOG(LogActor, Warning, TEXT("Blueprint not found, unable to retrieve default ACesiumCreditSystem"));
+            UE_LOG(LogCesium, Warning, TEXT("Blueprint not found, unable to retrieve default ACesiumCreditSystem"));
             return nullptr;
         }
         

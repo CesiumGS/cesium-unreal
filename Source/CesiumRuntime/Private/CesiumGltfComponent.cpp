@@ -2,6 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "CesiumGltf/AccessorView.h"
+#include "SpdlogUnrealLoggerSink.h"
 #include "UnrealConversions.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
@@ -287,6 +288,7 @@ static void loadPrimitive(
 ) {
 	if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
 		// TODO: add support for primitive types other than triangles.
+		UE_LOG(LogCesium, Warning, TEXT("Primitive mode %d is not supported"), primitive.mode);
 		return;
 	}
 
@@ -790,13 +792,15 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 template <class T>
 bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const CesiumGltf::Model& model, const std::optional<T>& gltfTexture) {
 	if (!gltfTexture || gltfTexture.value().index < 0 || gltfTexture.value().index >= model.textures.size()) {
-		// TODO: report invalid texture if the index isn't -1
+		if (gltfTexture && gltfTexture.value().index >= 0) {
+			UE_LOG(LogCesium, Warning, TEXT("Texture index must be less than %d, but is %d"), model.textures.size(), gltfTexture.value().index);
+		}
 		return false;
 	}
 
 	const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
 	if (texture.source < 0 || texture.source >= model.images.size()) {
-		// TODO: report invalid texture
+		UE_LOG(LogCesium, Warning, TEXT("Texture source index must be non-negative and less than %d, but is %d"), model.images.size(), texture.source);
 		return false;
 	}
 
@@ -1112,27 +1116,27 @@ UCesiumGltfComponent::UCesiumGltfComponent()
 }
 
 UCesiumGltfComponent::~UCesiumGltfComponent() {
-	UE_LOG(LogActor, Warning, TEXT("~UCesiumGltfComponent"));
+	UE_LOG(LogCesium, VeryVerbose, TEXT("~UCesiumGltfComponent"));
 }
 
 void UCesiumGltfComponent::LoadModel(const FString& Url)
 {
 	if (this->LoadedUrl == Url)
 	{
-		UE_LOG(LogActor, Warning, TEXT("Model URL unchanged"))
-			return;
+		UE_LOG(LogCesium, VeryVerbose, TEXT("Model URL unchanged"))
+		return;
 	}
 
 	if (this->Mesh)
 	{
-		UE_LOG(LogActor, Warning, TEXT("Deleting old model"));
+		UE_LOG(LogCesium, Verbose, TEXT("Deleting old model from %s"), *this->LoadedUrl);
 		this->Mesh->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
 		this->Mesh->UnregisterComponent();
 		this->Mesh->DestroyComponent(false);
 		this->Mesh = nullptr;
 	}
 
-	UE_LOG(LogActor, Warning, TEXT("Loading model"))
+	UE_LOG(LogCesium, Verbose, TEXT("Loading model from %s"), *Url)
 
 	this->LoadedUrl = Url;
 
@@ -1176,7 +1180,7 @@ void UCesiumGltfComponent::AttachRasterTile(
 	});
 
 	if (this->_overlayTiles.Num() > 3) {
-		UE_LOG(LogActor, Warning, TEXT("Too many raster overlays"));
+		UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
 	}
 
 	this->updateRasterOverlays();
@@ -1197,7 +1201,10 @@ void UCesiumGltfComponent::DetachRasterTile(
 	size_t numAfter = this->_overlayTiles.Num();
 	
 	if (numBefore - 1 != numAfter) {
-		UE_LOG(LogActor, Warning, TEXT("Raster tiles detached: %d, pTexture: %d, minX: %f, minY: %f, maxX: %f, maxY: %f"), numBefore - numAfter, pTexture, textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY);
+		UE_LOG(LogCesium, VeryVerbose, TEXT("Raster tiles detached: %d, pTexture: %d, minX: %f, minY: %f, maxX: %f, maxY: %f"), 
+			numBefore - numAfter, pTexture, 
+			textureCoordinateRectangle.minimumX, textureCoordinateRectangle.minimumY, 
+			textureCoordinateRectangle.maximumX, textureCoordinateRectangle.maximumY);
 	}
 	
 	this->updateRasterOverlays();
@@ -1215,7 +1222,7 @@ void UCesiumGltfComponent::SetCollisionEnabled(ECollisionEnabled::Type NewType)
 
 void UCesiumGltfComponent::FinishDestroy()
 {
-	UE_LOG(LogActor, Warning, TEXT("UCesiumGltfComponent::FinishDestroy"));
+	UE_LOG(LogCesium, VeryVerbose, TEXT("UCesiumGltfComponent::FinishDestroy"));
 	Super::FinishDestroy();
 }
 
@@ -1234,15 +1241,15 @@ void UCesiumGltfComponent::ModelRequestComplete(FHttpRequestPtr request, FHttpRe
 		std::unique_ptr<CesiumGltf::ModelReaderResult> pLoadResult = std::make_unique<CesiumGltf::ModelReaderResult>(std::move(CesiumGltf::readModel(data)));
 
 		if (!pLoadResult->warnings.empty()) {
-			UE_LOG(LogActor, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
+			UE_LOG(LogCesium, Warning, TEXT("Warnings while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
 		}
 
 		if (!pLoadResult->errors.empty()) {
-			UE_LOG(LogActor, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
+			UE_LOG(LogCesium, Error, TEXT("Errors while loading glTF: %s"), *utf8_to_wstr(CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
 		}
 
 		if (!pLoadResult->model) {
-			UE_LOG(LogActor, Error, TEXT("glTF model could not be loaded."));
+			UE_LOG(LogCesium, Error, TEXT("glTF model could not be loaded."));
 			return;
 		}
 
