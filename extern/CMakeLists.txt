@@ -19,3 +19,6 @@ add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
+
+# Don't build the cesium-native tests by default
+set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
