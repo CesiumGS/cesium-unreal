@@ -168,6 +168,9 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(float targetLongitude,
 	this->SetGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
 }
 
+
+// TODO: we need to add a more sensible reuse of the geo->ecef matrix, currently it's recalculated everytime it's requested. 
+// Once we add the conversion utility functions in particular, this constant recomputing / reallocating might not make much sense
 glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
 	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
 		return glm::dmat4(1.0);
@@ -199,11 +202,7 @@ glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform()
 		center = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->OriginLongitude, this->OriginLatitude, this->OriginHeight));
 	}
 
-	if (this->AlignTilesetUpWithZ) {
-		return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
-	} else {
-		return glm::translate(glm::dmat4(1.0), center);
-	}
+	return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
 }
 
 glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedTransform() const {
@@ -231,7 +230,7 @@ void ACesiumGeoreference::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (this->KeepWorldOriginNearCamera && !this->WorldOriginCamera) {
+	if (!this->WorldOriginCamera) {
 		// Find the first player's camera manager
 		APlayerController* pPlayerController = this->GetWorld()->GetFirstPlayerController();
 		if (pPlayerController) {
@@ -273,8 +272,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event)
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginPlacement) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, AlignTilesetUpWithZ)
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight) 
 	) {
 		this->UpdateGeoreference();
 		return;
@@ -291,22 +289,55 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event)
 #endif
 
 // Called every frame
+bool ACesiumGeoreference::ShouldTickIfViewportsOnly() const {
+	return true;
+}
+
 void ACesiumGeoreference::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (this->KeepWorldOriginNearCamera && this->WorldOriginCamera) {
+	bool isGame = this->GetWorld()->IsGameWorld();
+
+#if WITH_EDITOR
+	// TODO: maybe this should only be allowed in editor and not PIE
+	if (!isGame && this->EditOriginInViewport) {
+		FHitResult mouseRayResults;
+		bool mouseRaySuccess;
+
+		this->_lineTraceViewport(false, mouseRaySuccess, mouseRayResults);
+
+		if (mouseRaySuccess) {
+			FVector grabbedLocation = mouseRayResults.Location;
+			const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+			// convert from UE to ECEF to LongLatHeight
+			glm::dvec4 grabbedLocationAbs(
+				static_cast<double>(grabbedLocation.X) + static_cast<double>(originLocation.X),
+				static_cast<double>(grabbedLocation.Y) + static_cast<double>(originLocation.Y),
+				static_cast<double>(grabbedLocation.Z) + static_cast<double>(originLocation.Z),
+				1.0
+			);
+
+			glm::dmat4 georeferencedToECEF = this->GetGeoreferencedToEllipsoidCenteredTransform();
+
+			glm::dvec3 grabbedLocationECEF = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * grabbedLocationAbs;
+			std::optional<CesiumGeospatial::Cartographic> optCartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(grabbedLocationECEF);
+
+			if (optCartographic) {
+				CesiumGeospatial::Cartographic cartographic = *optCartographic;				
+				UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
+			}
+		}
+	}
+#endif
+
+	if (isGame && this->WorldOriginCamera) {
 		const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
 		const FVector& cameraLocation = pov.Location;
 
-		// TODO: decide whether to origin rebase within static scenes, maybe it should at least be optional
 		// TODO: If KeepWorldOriginNearCamera is on and we play-in-editor and then exit back into the editor,
 		// the editor viewport camera always goes back to the origin. This might be super annoying to users.
 
-		// WIP check if the camera is near any unloaded levels we might want to stream in. If we leave the radius,
-		// we also need to unload them. 
-		// TODO: should this check happen 
-		
 		const FIntVector& originLocation = this->GetWorld()->OriginLocation;
 
 		glm::dvec4 cameraAbsolute(
@@ -345,7 +376,9 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 							streamedLevel->SetShouldBeVisible(true);
 							level.CurrentlyLoaded = true;
 
-							if (this->KeepWorldOriginNearCamera) {
+							// If we are not going to continue origin rebasing inside the sublevel, just set the origin back to zero
+							// since the sublevel will be centered around zero anyways.
+							if (this->KeepWorldOriginNearCamera && !this->OriginRebaseInsideSublevels) {
 								this->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
 							}
 						}
@@ -363,7 +396,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 		}
 
 		// TODO: add option of whether to origin rebase inside sub levels
-		if (this->KeepWorldOriginNearCamera && !insideSublevel && !cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
+		if (this->KeepWorldOriginNearCamera && (!insideSublevel || this->OriginRebaseInsideSublevels) && !cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
 			// Camera has moved too far from the origin, move the origin.
 			this->GetWorld()->SetNewWorldOrigin(FIntVector(
 				static_cast<int32>(cameraLocation.X) + static_cast<int32>(originLocation.X),
@@ -378,3 +411,74 @@ void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
 }
 
+// TODO: streamline / obfuscate below functions
+#if WITH_EDITOR
+void ACesiumGeoreference::_getViewportCursorInformation(bool& Focused, FVector& WorldLocation, FVector& WorldDirection) {
+	Focused = false;
+	WorldLocation = FVector::ZeroVector;
+	WorldDirection = FVector::ZeroVector;
+
+	FViewport* pViewport = GEditor->GetActiveViewport();
+	FViewportClient* pViewportClient = pViewport->GetClient();
+	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
+
+	if (pEditorViewportClient != nullptr && pEditorViewportClient->Viewport->HasFocus()) {
+		FViewportCursorLocation cursorWL = pEditorViewportClient->GetCursorWorldLocationFromMousePos();
+
+		WorldLocation = cursorWL.GetOrigin();
+		WorldDirection = cursorWL.GetDirection();
+		Focused = true;
+	}
+}
+
+void ACesiumGeoreference::_lineTraceViewport(const bool ShowTrace, bool& Success, FHitResult& HitResult) {
+	HitResult = FHitResult();
+	Success = false;
+	FVector WorldLocation;
+	FVector WorldDirection;
+	bool Focused;
+	this->_getViewportCursorInformation(Focused, WorldLocation, WorldDirection);
+	
+	if (Focused)
+	{
+		this->_lineTrace(WorldLocation, WorldDirection, ShowTrace, Success, HitResult);
+	}
+}
+
+void ACesiumGeoreference::_lineTrace(const FVector WorldLocation, const FVector WorldDirection, const bool ShowTrace, bool& Success, FHitResult& HitResult)
+{
+	HitResult = FHitResult();
+	Success = false;
+	UWorld* world = this->GetWorld();
+	if (world == nullptr) 
+		return;
+
+	FVector LineCheckStart = WorldLocation;
+	FVector LineCheckEnd = WorldLocation + WorldDirection * 637100000;
+
+	static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
+	if (ShowTrace) {
+		world->DebugDrawTraceTag = LineTraceSingleName;
+	}
+	else
+	{
+		world->DebugDrawTraceTag = NAME_None;
+	}
+
+	FCollisionQueryParams CollisionParams(LineTraceSingleName);
+	CollisionParams.bTraceComplex = false;
+	CollisionParams.bReturnPhysicalMaterial = true;
+	CollisionParams.bReturnFaceIndex = false; // Ask for face index, as long as we didn't disable globally
+	//CollisionParams.AddIgnoredActors(ActorsToIgnore);
+
+	FCollisionObjectQueryParams ObjectParams = FCollisionObjectQueryParams(ECC_WorldStatic);
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
+	ObjectParams.AddObjectTypesToQuery(ECC_Visibility);
+
+	if (world->LineTraceSingleByObjectType(HitResult, LineCheckStart, LineCheckEnd, ObjectParams, CollisionParams))
+	{
+		Success = true;
+	}
+}
+#endif

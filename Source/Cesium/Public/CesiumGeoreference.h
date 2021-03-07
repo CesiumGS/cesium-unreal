@@ -37,28 +37,45 @@ enum class EOriginPlacement : uint8 {
 };
 
 /*
- * TODO: Documentation for this struct
+ * Sublevels can be georeferenced to the globe by filling out this struct.
  */ 
 USTRUCT()
 struct FCesiumSubLevel {
 	GENERATED_BODY()
 
+	/**
+	 * The plain name of the sub level, without any prefixes.
+	 */
 	UPROPERTY(EditAnywhere)
 	FString LevelName;
 
+	/**
+	 * The longitude of where on the WGS84 globe this level should sit.
+	 */
 	UPROPERTY(EditAnywhere)
 	double LevelLongitude = 0.0;
 	
+	/**
+	 * The latitude of where on the WGS84 globe this level should sit.
+	 */
 	UPROPERTY(EditAnywhere)
 	double LevelLatitude = 0.0;
 
+	/**
+	 * The height in meters above the WGS84 globe this level should sit.
+	 */
 	UPROPERTY(EditAnywhere)
 	double LevelHeight = 0.0;
 
+	/**
+	 * How far in meters from the sublevel local origin the camera needs to be to load the level.
+	 */
 	UPROPERTY(EditAnywhere)
 	double LoadRadius = 0.0;
 
-	// TODO: change to currently visible
+	/**
+	 * Whether or not this level is currently loaded. Not relevant in the editor.
+	 */
 	bool CurrentlyLoaded = false;
 };
 
@@ -86,27 +103,41 @@ public:
 	ACesiumGeoreference();
 
 	/*
-	 * EXPERIMENTAL
+	 * Whether to continue origin rebasing once inside a sublevel. If actors inside the sublevels react 
+	 * poorly to origin rebasing, it might be worth turning this option off.
 	 */
-	UFUNCTION(CallInEditor, Category="CesiumLevelStreaming")
+	UPROPERTY(EditAnywhere, Category="CesiumSublevels", meta=(EditCondition="KeepWorldOriginNearCamera"))
+	bool OriginRebaseInsideSublevels = true;
+
+	/*
+	 * Rescan for sublevels that have not been georeferenced yet. New levels are placed at the Unreal origin and
+	 * georeferenced automatically.
+	 */
+	UFUNCTION(CallInEditor, Category="CesiumSublevels")
 	void CheckForNewSubLevels();
 
 	/*
-	 * EXPERIMENTAL
+	 * Jump to the level specified by "Current Level Index".
+	 * 
+	 * Warning: Before clicking, ensure that all non-Cesium objects in the persistent level are georeferenced with the "CesiumGeoreferenceComponent" or
+	 * attached to a "CesiumGlobeAnchorParent". Ensure that static actors only exist in georeferenced sublevels.
 	 */
-	UFUNCTION(CallInEditor, Category="CesiumLevelStreaming")
+	UFUNCTION(CallInEditor, Category="CesiumSublevels")
 	void JumpToCurrentLevel();
 
 	/*
-	 * EXPERIMENTAL
+	 * The index of the level the georeference origin should be set to. This aligns the globe with the specified level so that it can be worked on in the editor.
+	 * 
+	 * Warning: Before changing, ensure the last level you worked on has been properly georeferenced. Ensure all actors are georeferenced, either by inclusion in
+	 * a georeferenced sublevel, by adding the "CesiumGeoreferenceComponent", or by attaching to a "CesiumGlobeAnchorParent".
 	 */
-	UPROPERTY(EditAnywhere, Category="CesiumLevelStreaming", meta=(ArrayClamp="CesiumSubLevels"))
+	UPROPERTY(EditAnywhere, Category="CesiumSublevels", meta=(ArrayClamp="CesiumSubLevels"))
 	int CurrentLevelIndex;
 
 	/*
-	 * EXPERIMENTAL
+	 * The list of georeferenced sublevels. Each of these has a corresponding world location that can be jumped to. Only one level can be worked on in the editor at a time.
 	 */
-	UPROPERTY(EditAnywhere, Category="CesiumLevelStreaming")
+	UPROPERTY(EditAnywhere, Category="CesiumSublevels")
 	TArray<FCesiumSubLevel> CesiumSubLevels;
 
 	/**
@@ -141,16 +172,10 @@ public:
 	double OriginHeight = 2250.0;
 
 	/**
-	 * Rotate the tileset so that its up-vector is aligned with the Unreal Engine up-direction.
-	 * 
-	 * If true, the tileset is rotated so that the local up at the origin position
-	 * is aligned with the usual Unreal Engine up direction, +Z. This is useful because
-	 * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates in which the local
-	 * up direction depends on where you are on the Earth. If false, the tileset's true rotation
-	 * is used.
+	 * EXPERIMENTAL TODO: figure out if meta tag is needed
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium", meta=(EditCondition="OriginPlacement==EOriginPlacement::CartographicOrigin || OriginPlacement==EOriginPlacement::BoundingVolumeOrigin"))
-	bool AlignTilesetUpWithZ = true;
+	UPROPERTY(EditAnywhere, Category="Cesium")
+	bool EditOriginInViewport = false;
 
 	/**
 	 * If true, the world origin is periodically rebased to keep it near the camera. 
@@ -163,24 +188,14 @@ public:
 	bool KeepWorldOriginNearCamera = true;
 
 	/**
-	 * Warning: Make sure to georeference all location-sensitive Unreal actors before pressing. 
 	 * Places the georeference origin at the camera's current location. Rotates the globe so the current longitude/latitude/height
 	 * of the camera is at the Unreal origin. The camera is also teleported to the Unreal origin.
+	 * 
+	 * Warning: Before clicking, ensure that all non-Cesium objects in the persistent level are georeferenced with the "CesiumGeoreferenceComponent" or
+	 * attached to a "CesiumGlobeAnchorParent". Ensure that static actors only exist in georeferenced sublevels.
 	 */ 
 	UFUNCTION(CallInEditor, Category="Cesium")
 	void PlaceGeoreferenceOriginHere();
-
-	/**
-	 * EXPERIMENTAL
-	 */
-	UFUNCTION()
-	void SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight);
-
-	/**
-	 * EXPERIMENTAL
-	 */
-	UFUNCTION(BlueprintCallable)
-	void InaccurateSetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetHeight);
 
 	/**
 	 * The maximum distance that the camera may move from the world's OriginLocation before the
@@ -196,6 +211,21 @@ public:
 	APlayerCameraManager* WorldOriginCamera;
 
 	// TODO: Allow user to select/configure the ellipsoid.
+
+
+	/**
+	 * This aligns the specified global coordinates to Unreal's world origin, i.e. it rotates the globe so that these coordinates exactly fall on the origin.
+	 */
+	UFUNCTION()
+	void SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight);
+
+	/**
+	 * This aligns the specified global coordinates to Unreal's world origin, i.e. it rotates the globe so that these coordinates exactly fall on the origin.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void InaccurateSetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetHeight);
+
+	// TODO: add utility conversion functions between relative / absolute -> ecef -> long/lat/height
 
 	/**
 	 * @brief Gets the transformation from the "Georeferenced" reference frame defined by this instance to the "Ellipsoid-centered" reference frame (i.e. ECEF).
@@ -230,10 +260,15 @@ protected:
 
 public:	
 	// Called every frame
+	virtual bool ShouldTickIfViewportsOnly() const override;
 	virtual void Tick(float DeltaTime) override;
 
 private:
 	void _jumpToLevel(const FCesiumSubLevel& level);
-
+#if WITH_EDITOR
+	void _getViewportCursorInformation(bool& Focused, FVector& WorldLocation, FVector& WorldDirection);
+	void _lineTraceViewport(const bool ShowTrace, bool& Success, FHitResult& HitResult);
+	void _lineTrace(const FVector WorldLocation, const FVector WorldDirection, const bool ShowTrace, bool& Success, FHitResult& HitResult);
+#endif
 	TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };

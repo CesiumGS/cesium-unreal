@@ -39,7 +39,7 @@ public:
 	/**
 	 * Whether to automatically restore the precision of the Unreal transform from the source ECEF transform during origin-rebase. This is useful for 
 	 * maintaining high-precision for fixed objects like buildings. This may need to be disabled for objects where the Unreal transform 
-	 * (inaccurate as it may be) is the ground truth, e.g. Unreal physics objects. 
+	 * (inaccurate as it may be) is the ground truth, e.g. Unreal physics objects, cameras, etc. 
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
 	bool FixTransformOnOriginRebase = true;
