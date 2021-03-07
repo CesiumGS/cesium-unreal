@@ -35,6 +35,11 @@
     "license": "MIT"
   },
   {
+    "name": "modp_b64",
+    "url": "https://github.com/chromium/chromium/tree/15996b5d2322b634f4197447b10289bddc2b0b32/third_party/modp_b64",
+    "license": "BSD-3-Clause"
+  },
+  {
     "name": "RapidJSON",
     "url": "https://github.com/Tencent/rapidjson",
     "license": "MIT"
