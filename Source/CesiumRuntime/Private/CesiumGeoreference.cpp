@@ -49,8 +49,6 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 	// TODO: should we just assume origin rebasing isn't happening since this is only editor-mode?
 	// Or are we even sure this is only for editor-mode?
 #if WITH_EDITOR
-	glm::dmat4 georeferencedToEllipsoidCenteredTransform = this->GetGeoreferencedToEllipsoidCenteredTransform();
-
 	FViewport* pViewport = GEditor->GetActiveViewport();
 	FViewportClient* pViewportClient = pViewport->GetClient();
 	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
@@ -77,7 +75,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 	);
 
 	// camera local space to ECEF
-	glm::dmat4 cameraToECEF = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * cameraToAbsolute;
+	glm::dmat4 cameraToECEF = this->_ueToEcef * cameraToAbsolute;
 
 	// Long/Lat/Height camera location (also our new target georeference origin)
 	std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraToECEF[3]);
@@ -93,9 +91,6 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 		(*targetGeoreferenceOrigin).height
 	);
 
-	// get the updated ECEF to georeferenced transform
-	glm::dmat4 ellipsoidCenteredToGeoreferenced = this->GetEllipsoidCenteredToGeoreferencedTransform();
-
 	glm::dmat4 absoluteToRelativeWorld(
 		glm::dvec4(1.0, 0.0, 0.0, 0.0),
 		glm::dvec4(0.0, 1.0, 0.0, 0.0),
@@ -104,7 +99,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 	);
 
 	// TODO: check for degeneracy ?
-	glm::dmat4 newCameraTransform = absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferenced * cameraToECEF;
+	glm::dmat4 newCameraTransform = absoluteToRelativeWorld * this->_ecefToUe * cameraToECEF;
 	glm::dvec3 cameraFront = glm::normalize(newCameraTransform[0]);
 	glm::dvec3 cameraRight = glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
 	glm::dvec3 cameraUp = glm::normalize(glm::cross(cameraFront, cameraRight));
@@ -338,9 +333,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 				1.0
 			);
 
-			glm::dmat4 georeferencedToECEF = this->GetGeoreferencedToEllipsoidCenteredTransform();
-
-			glm::dvec3 grabbedLocationECEF = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * grabbedLocationAbs;
+			glm::dvec3 grabbedLocationECEF = this->_ueToEcef * grabbedLocationAbs;
 			std::optional<CesiumGeospatial::Cartographic> optCartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(grabbedLocationECEF);
 
 			if (optCartographic) {
@@ -372,9 +365,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 			1.0
 		);
 
-		glm::dmat4 georeferencedToECEF = this->GetGeoreferencedToEllipsoidCenteredTransform();
-
-		glm::dvec3 cameraECEF = georeferencedToECEF * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * cameraAbsolute;
+		glm::dvec3 cameraECEF = this->_ueToEcef * cameraAbsolute;
 		
 		bool insideSublevel = false;
 
