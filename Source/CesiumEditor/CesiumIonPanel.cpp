@@ -22,6 +22,12 @@
 
 using namespace CesiumIonClient;
 
+// Identifiers for the columns of the asset table view
+static FName ColumnName_Name = "Name";
+static FName ColumnName_Type = "Type";
+static FName ColumnName_DateAdded = "DateAdded";
+static FName ColumnName_Size = "Size";
+
 CesiumIonPanel::CesiumIonPanel() :
     _connectionUpdatedDelegateHandle(),
     _assetsUpdatedDelegateHandle(),
@@ -43,17 +49,42 @@ CesiumIonPanel::~CesiumIonPanel() {
 
 void CesiumIonPanel::Construct(const FArguments& InArgs)
 {
+    // A function that returns the lambda that is used for rendering
+    // the sort mode indicator of the header column: If sorting is
+    // currently done based on the given name, then this will 
+    // return the current _sortMode. Otherwise, it will return 
+    // the 'None' sort mode.
+    auto sortModeLambda = [this](const FName& columnName) {
+        return [this, columnName]() {
+            if (_sortColumnName != columnName) {
+                return EColumnSortMode::None;
+            }
+            return _sortMode;
+        };
+    };
+
     this->_pListView = SNew(SListView<TSharedPtr<Asset>>)
         .ListItemsSource(&this->_assets)
         .OnMouseButtonDoubleClick(this, &CesiumIonPanel::AddAsset)
         .OnGenerateRow(this, &CesiumIonPanel::CreateAssetRow)
         .OnSelectionChanged(this, &CesiumIonPanel::AssetSelected)
-        .HeaderRow(
-            SNew(SHeaderRow)
-            + SHeaderRow::Column("Name").DefaultLabel(FText::FromString(TEXT("Name")))
-            + SHeaderRow::Column("Type").DefaultLabel(FText::FromString(TEXT("Type")))
-            + SHeaderRow::Column("DateAdded").DefaultLabel(FText::FromString(TEXT("Date added")))
-            + SHeaderRow::Column("Size").DefaultLabel(FText::FromString(TEXT("Size")))
+        .HeaderRow( SNew(SHeaderRow)
+            + SHeaderRow::Column(ColumnName_Name)
+                .DefaultLabel(FText::FromString(TEXT("Name")))
+                .SortMode_Lambda(sortModeLambda(ColumnName_Name))
+                .OnSort(FOnSortModeChanged::CreateSP(this, &CesiumIonPanel::OnSortChange))
+            + SHeaderRow::Column(ColumnName_Type)
+                .DefaultLabel(FText::FromString(TEXT("Type")))
+                .SortMode_Lambda(sortModeLambda(ColumnName_Type))
+                .OnSort(FOnSortModeChanged::CreateSP(this, &CesiumIonPanel::OnSortChange))
+            + SHeaderRow::Column(ColumnName_DateAdded)
+                .DefaultLabel(FText::FromString(TEXT("Date added")))
+                .SortMode_Lambda(sortModeLambda(ColumnName_DateAdded))
+                .OnSort(FOnSortModeChanged::CreateSP(this, &CesiumIonPanel::OnSortChange))
+            + SHeaderRow::Column(ColumnName_Size)
+                .DefaultLabel(FText::FromString(TEXT("Size")))
+                .SortMode_Lambda(sortModeLambda(ColumnName_Size))
+                .OnSort(FOnSortModeChanged::CreateSP(this, &CesiumIonPanel::OnSortChange))
         );
 
     this->_pDetails = this->AssetDetails();
@@ -86,6 +117,24 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
     ];
 
     FCesiumEditorModule::ion().refreshAssets();
+}
+
+void CesiumIonPanel::OnSortChange(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type Mode)
+{
+	if (_sortColumnName == ColumnName)
+	{
+        if (_sortMode == EColumnSortMode::Type::None) {
+            _sortMode = EColumnSortMode::Type::Ascending;
+        } else if (_sortMode == EColumnSortMode::Type::Ascending) {
+            _sortMode = EColumnSortMode::Type::Descending;
+        } else {
+            _sortMode = EColumnSortMode::Type::None;
+        }
+    } else {
+        _sortColumnName = ColumnName;
+        _sortMode = EColumnSortMode::Type::Ascending;
+    } 
+    Refresh();
 }
 
 static bool isSupportedTileset(const TSharedPtr<Asset>& pAsset) {
@@ -186,21 +235,63 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails()
         ];
 }
 
+/**
+ * @brief Returns a comparator for the property of an Asset that is
+ * associated with the given column name.
+ * 
+ * @param columnName The column name
+ * @return The comparator, comparing is ascending order (comparing by 
+ * the asset->name by default, if the given column name was not known)
+ */
+static std::function<bool(const TSharedPtr<Asset>&, const TSharedPtr<Asset>&)> comparatorFor(const FName& columnName) 
+{
+    if (columnName == ColumnName_Type) {
+        return [](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
+            return a0->type < a1->type;
+        };
+    }
+    if (columnName == ColumnName_DateAdded) {
+        return [](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
+            return a0->dateAdded < a1->dateAdded;
+        };
+    }
+    if (columnName == ColumnName_Size) {
+        return [](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
+            return a0->bytes < a1->bytes;
+        };
+    }
+    return [](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
+        return a0->name < a1->name;
+    };
+}
+
+
+void CesiumIonPanel::ApplySorting() {
+
+    //UE_LOG(LogActor, Warning, TEXT("applySorting %s with %d"), *_sortColumnName.ToString(), _sortMode);
+
+    if (_sortMode == EColumnSortMode::Type::None) {
+        return;
+    }
+    auto baseComparator = comparatorFor(_sortColumnName);
+    if (_sortMode == EColumnSortMode::Type::Ascending) {
+        this->_assets.Sort(baseComparator);
+    } else {
+        this->_assets.Sort([&baseComparator](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
+           return baseComparator(a1, a0);
+        });
+    }
+}
+
 void CesiumIonPanel::Refresh() {
     const Assets& assets = FCesiumEditorModule::ion().getAssets();
 
     this->_assets.SetNum(assets.items.size());
 
     for (size_t i = 0; i < assets.items.size(); ++i) {
-        TSharedPtr<Asset>& pAsset = this->_assets[i];
-        if (pAsset) {
-            *pAsset = assets.items[i];
-        }
-        else {
-            pAsset = MakeShared<Asset>(assets.items[i]);
-        }
+        this->_assets[i] = MakeShared<Asset>(assets.items[i]);
     }
-
+    ApplySorting();
     this->_pListView->RequestListRefresh();
 }
 
