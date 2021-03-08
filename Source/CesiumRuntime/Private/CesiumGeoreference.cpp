@@ -268,7 +268,7 @@ void ACesiumGeoreference::UpdateGeoreference()
 	this->_ueToEcef = this->_georeferencedToEcef * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;
 
 	// update ECEF -> UE
-	this->_ecefToUe = glm::affineInverse(this->_ueToEcef);
+	this->_ecefToUe = CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * this->_ecefToGeoreferenced;
 
 	for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
 		if (pObject.IsValid()) {
