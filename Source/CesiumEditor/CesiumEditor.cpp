@@ -43,6 +43,7 @@ void FCesiumEditorModule::StartupModule()
     CesiumAsync::AsyncSystem asyncSystem(std::make_shared<UnrealTaskProcessor>());
 
     this->_pIonSession = std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
+    this->_pIonSession->resume();
 
     // Only register style once
     if (!StyleSet.IsValid())
