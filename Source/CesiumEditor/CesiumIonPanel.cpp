@@ -40,6 +40,8 @@ CesiumIonPanel::CesiumIonPanel() :
 {
     this->_connectionUpdatedDelegateHandle = FCesiumEditorModule::ion().ConnectionUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
     this->_assetsUpdatedDelegateHandle = FCesiumEditorModule::ion().AssetsUpdated.AddRaw(this, &CesiumIonPanel::Refresh);
+    this->_sortColumnName = ColumnName_DateAdded;
+    this->_sortMode = EColumnSortMode::Type::Descending;
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
