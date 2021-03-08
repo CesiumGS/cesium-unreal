@@ -44,6 +44,13 @@ using namespace CesiumGltf;
 
 static uint32_t nextMaterialId = 0;
 
+struct LoadTextureResult {
+	FTexturePlatformData* pTextureData;
+	TEnumAsByte<enum TextureAddress> addressX;
+	TEnumAsByte<enum TextureAddress> addressY;
+	TEnumAsByte<enum TextureFilter> filter;
+};
+
 struct LoadModelResult
 {
 	FStaticMeshRenderData* RenderData;
@@ -56,6 +63,12 @@ struct LoadModelResult
 	TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> pCollisionMesh;
 #endif
 	std::string name;
+
+	std::optional<LoadTextureResult> baseColorTexture;
+	std::optional<LoadTextureResult> metallicRoughnessTexture;
+	std::optional<LoadTextureResult> normalTexture;
+	std::optional<LoadTextureResult> emissiveTexture;
+	std::optional<LoadTextureResult> occlusionTexture;
 	std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 };
 
@@ -272,6 +285,159 @@ struct ColorVisitor {
 	}
 };
 
+static FTexturePlatformData* createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format)
+{
+	if (sizeX > 0 && sizeY > 0 &&
+		(sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
+		(sizeY % GPixelFormats[format].BlockSizeY) == 0)
+	{
+		FTexturePlatformData* pTexturePlatformData = new FTexturePlatformData();
+		pTexturePlatformData->SizeX = sizeX;
+		pTexturePlatformData->SizeY = sizeY;
+		pTexturePlatformData->PixelFormat = format;
+
+		// Allocate first mipmap.
+		int32 NumBlocksX = sizeX / GPixelFormats[format].BlockSizeX;
+		int32 NumBlocksY = sizeY / GPixelFormats[format].BlockSizeY;
+		FTexture2DMipMap* Mip = new FTexture2DMipMap();
+		pTexturePlatformData->Mips.Add(Mip);
+		Mip->SizeX = sizeX;
+		Mip->SizeY = sizeY;
+		Mip->BulkData.Lock(LOCK_READ_WRITE);
+		Mip->BulkData.Realloc(NumBlocksX * NumBlocksY * GPixelFormats[format].BlockBytes);
+		Mip->BulkData.Unlock();
+
+		return pTexturePlatformData;
+	}
+	else {
+		return nullptr;
+	}
+}
+
+template <class T>
+static std::optional<LoadTextureResult> loadTexture(const CesiumGltf::Model& model, const std::optional<T>& gltfTexture) {
+	if (!gltfTexture || gltfTexture.value().index < 0 || gltfTexture.value().index >= model.textures.size()) {
+		if (gltfTexture && gltfTexture.value().index >= 0) {
+			UE_LOG(LogCesium, Warning, TEXT("Texture index must be less than %d, but is %d"), model.textures.size(), gltfTexture.value().index);
+		}
+		return std::nullopt;
+	}
+
+	const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
+	if (texture.source < 0 || texture.source >= model.images.size()) {
+		UE_LOG(LogCesium, Warning, TEXT("Texture source index must be non-negative and less than %d, but is %d"), model.images.size(), texture.source);
+		return std::nullopt;
+	}
+
+	const CesiumGltf::Image& image = model.images[texture.source];
+	LoadTextureResult result;
+	result.pTextureData = createTexturePlatformData(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
+	if (!result.pTextureData) {
+		return std::nullopt;
+	}
+
+	const CesiumGltf::Sampler* pSampler = CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
+	if (pSampler) {
+		switch (pSampler->wrapS) {
+		case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
+			result.addressX = TextureAddress::TA_Clamp;
+			break;
+		case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
+			result.addressX = TextureAddress::TA_Mirror;
+			break;
+		case CesiumGltf::Sampler::WrapS::REPEAT:
+			result.addressX = TextureAddress::TA_Wrap;
+			break;
+		}
+
+		switch (pSampler->wrapT) {
+		case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
+			result.addressY = TextureAddress::TA_Clamp;
+			break;
+		case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
+			result.addressY = TextureAddress::TA_Mirror;
+			break;
+		case CesiumGltf::Sampler::WrapT::REPEAT:
+			result.addressY = TextureAddress::TA_Wrap;
+			break;
+		}
+
+		// Unreal Engine's available filtering modes are only nearest, bilinear, and trilinear, and
+		// are not specified separately for minification and magnification. So we get as close as we can.
+		if (!pSampler->minFilter && !pSampler->magFilter) {
+			result.filter = TextureFilter::TF_Default;
+		} else if (
+			(!pSampler->minFilter || pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
+			(!pSampler->magFilter || pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)
+		) {
+			result.filter = TextureFilter::TF_Nearest;
+		} else if (pSampler->minFilter) {
+			switch (pSampler->minFilter.value()) {
+			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+				result.filter = TextureFilter::TF_Trilinear;
+				break;
+			default:
+				result.filter = TextureFilter::TF_Bilinear;
+				break;
+			}
+		} else if (pSampler->magFilter) {
+			result.filter = pSampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::LINEAR ? TextureFilter::TF_Bilinear : TextureFilter::TF_Nearest;
+		}
+	} else {
+		// glTF spec: "When undefined, a sampler with repeat wrapping and auto filtering should be used."
+		result.addressX = TextureAddress::TA_Wrap;
+		result.addressY = TextureAddress::TA_Wrap;
+		result.filter = TextureFilter::TF_Default;
+	}
+
+	void* pTextureData = static_cast<unsigned char*>(result.TextureData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
+
+	if (result.filter == TextureFilter::TF_Trilinear) {
+		// Generate mip levels.
+		// TODO: do this on the GPU?
+		int32_t width = image.cesium.width;
+		int32_t height = image.cesium.height;
+
+		while (width > 1 || height > 1) {
+			FTexture2DMipMap* pLevel = new FTexture2DMipMap();
+			result.pTextureData->Mips.Add(pLevel);
+
+			pLevel->SizeX = width >> 1;
+			if (pLevel->SizeX < 1)  pLevel->SizeX = 1;
+			pLevel->SizeY = height >> 1;
+			if (pLevel->SizeY < 1) pLevel->SizeY = 1;
+
+			pLevel->BulkData.Lock(LOCK_READ_WRITE);
+
+			void* pMipData = pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+			if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
+				// Failed to generate mip level, use bilinear filtering instead.
+				result.filter = TextureFilter::TF_Bilinear;
+				for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
+					result.pTextureData->Mips[i].BulkData.Unlock();
+				}
+				result.pTextureData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
+				break;
+			}
+
+			width = pLevel->SizeX;
+			height = pLevel->SizeY;
+			pTextureData = pMipData;
+		}
+	}
+
+	// Unlock all levels
+	for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
+		result.pTextureData->Mips[i].BulkData.Unlock();
+	}
+
+	return result;
+}
+
 template <class TIndexAccessor>
 static void loadPrimitive(
 	std::vector<LoadModelResult>& result,
@@ -420,6 +586,11 @@ static void loadPrimitive(
 
 	std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
+	primitiveResult.baseColorTexture = loadTexture(model, pbrMetallicRoughness.baseColorTexture);
+	primitiveResult.metallicRoughnessTexture = loadTexture(model, pbrMetallicRoughness.metallicRoughnessTexture);
+	primitiveResult.normalTexture = loadTexture(model, material.normalTexture);
+	primitiveResult.occlusionTexture = loadTexture(model, material.occlusionTexture);
+	primitiveResult.emissiveTexture = loadTexture(model, material.emissiveTexture);
 	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
 	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
 	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.normalTexture, textureCoordinateMap);
