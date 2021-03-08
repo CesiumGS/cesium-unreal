@@ -167,22 +167,6 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(float targetLongitude,
 	this->SetGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
 }
 
-const glm::dmat4& ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
-	return this->_georeferencedToEcef;
-}
-
-const glm::dmat4& ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedTransform() const {
-	return this->_ecefToGeoreferenced;
-}
-
-const glm::dmat4& ACesiumGeoreference::GetUnrealWorldToEllipsoidCenteredTransform() const {
-	return this->_ueToEcef;
-}
-
-const glm::dmat4& ACesiumGeoreference::GetEllipsoidCenteredToUnrealWorldTransform() const {
-	return this->_ecefToUe;
-}
-
 void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object)
 {
 	this->_georeferencedObjects.Add(*Object);
@@ -320,7 +304,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 		FHitResult mouseRayResults;
 		bool mouseRaySuccess;
 
-		this->_lineTraceViewport(false, mouseRaySuccess, mouseRayResults);
+		this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
 
 		if (mouseRaySuccess) {
 			FVector grabbedLocation = mouseRayResults.Location;
@@ -338,7 +322,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 			if (optCartographic) {
 				CesiumGeospatial::Cartographic cartographic = *optCartographic;
-				//UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
+				UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
 
 				//if (mouseDown) {
 					//SetGeoreferenceOrigin()
@@ -423,57 +407,36 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 	}
 }
 
-// CONVERSION HELPER FUNCTIONS
+// TODO: CONVERSION HELPER FUNCTIONS
 
 
 void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
 }
 
-// TODO: streamline / obfuscate below functions
+// TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal raycast seems to be inaccurate at glancing angles, perhaps due to the large single-precision distances.
 #if WITH_EDITOR
-void ACesiumGeoreference::_getViewportCursorInformation(bool& Focused, FVector& WorldLocation, FVector& WorldDirection) {
-	Focused = false;
-	WorldLocation = FVector::ZeroVector;
-	WorldDirection = FVector::ZeroVector;
+void ACesiumGeoreference::_lineTraceViewportMouse(const bool ShowTrace, bool& Success, FHitResult& HitResult)
+{
+	HitResult = FHitResult();
+	Success = false;
+	
+	UWorld* world = this->GetWorld();
 
 	FViewport* pViewport = GEditor->GetActiveViewport();
 	FViewportClient* pViewportClient = pViewport->GetClient();
 	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
 
-	if (pEditorViewportClient != nullptr && pEditorViewportClient->Viewport->HasFocus()) {
-		FViewportCursorLocation cursorWL = pEditorViewportClient->GetCursorWorldLocationFromMousePos();
-
-		WorldLocation = cursorWL.GetOrigin();
-		WorldDirection = cursorWL.GetDirection();
-		Focused = true;
-	}
-}
-
-void ACesiumGeoreference::_lineTraceViewport(const bool ShowTrace, bool& Success, FHitResult& HitResult) {
-	HitResult = FHitResult();
-	Success = false;
-	FVector WorldLocation;
-	FVector WorldDirection;
-	bool Focused;
-	this->_getViewportCursorInformation(Focused, WorldLocation, WorldDirection);
-	
-	if (Focused)
-	{
-		this->_lineTrace(WorldLocation, WorldDirection, ShowTrace, Success, HitResult);
-	}
-}
-
-void ACesiumGeoreference::_lineTrace(const FVector WorldLocation, const FVector WorldDirection, const bool ShowTrace, bool& Success, FHitResult& HitResult)
-{
-	HitResult = FHitResult();
-	Success = false;
-	UWorld* world = this->GetWorld();
-	if (world == nullptr) 
+	if (!world || !pEditorViewportClient || !pEditorViewportClient->Viewport->HasFocus()) {
 		return;
+	}
+		
+	FViewportCursorLocation cursor = pEditorViewportClient->GetCursorWorldLocationFromMousePos();
 
-	FVector LineCheckStart = WorldLocation;
-	FVector LineCheckEnd = WorldLocation + WorldDirection * 637100000;
+	const FVector& viewLoc = cursor.GetOrigin();
+	const FVector& viewDir = cursor.GetDirection();
+
+	FVector lineEnd = viewLoc + viewDir * 637100000;
 
 	static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
 	if (ShowTrace) {
@@ -485,17 +448,13 @@ void ACesiumGeoreference::_lineTrace(const FVector WorldLocation, const FVector 
 	}
 
 	FCollisionQueryParams CollisionParams(LineTraceSingleName);
-	CollisionParams.bTraceComplex = false;
-	CollisionParams.bReturnPhysicalMaterial = true;
-	CollisionParams.bReturnFaceIndex = false; // Ask for face index, as long as we didn't disable globally
-	//CollisionParams.AddIgnoredActors(ActorsToIgnore);
 
 	FCollisionObjectQueryParams ObjectParams = FCollisionObjectQueryParams(ECC_WorldStatic);
 	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 	ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
 	ObjectParams.AddObjectTypesToQuery(ECC_Visibility);
 
-	if (world->LineTraceSingleByObjectType(HitResult, LineCheckStart, LineCheckEnd, ObjectParams, CollisionParams))
+	if (world->LineTraceSingleByObjectType(HitResult, viewLoc, lineEnd, ObjectParams, CollisionParams))
 	{
 		Success = true;
 	}

@@ -233,7 +233,9 @@ public:
 	 * Gets a matrix that transforms coordinates from the "Georeference" reference frame defined by this instance to the "Ellipsoid-centered"
 	 * reference frame, which is usually Earth-centered, Earth-fixed. See {@link reference-frames.md}.
 	 */
-	const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const;
+	const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const {
+		return this->_georeferencedToEcef;
+	}
 
 	/**
 	 * @brief Gets the transformation from the "Ellipsoid-centered" reference frame (i.e. ECEF) to the georeferenced reference frame defined by this instance.
@@ -241,7 +243,9 @@ public:
 	 * Gets a matrix that transforms coordinates from the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed) to
 	 * the "Georeferenced" reference frame defined by this instance. See {@link reference-frames.md}.
 	 */
-	const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const;
+	const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const {
+		return this->_ecefToGeoreferenced;
+	}
 
 	/**
 	 * @brief Gets the transformation from the "Unreal World" reference frame to the "Ellipsoid-centered" reference frame (i.e. ECEF).
@@ -249,7 +253,9 @@ public:
 	 * Gets a matrix that transforms coordinates from the "Unreal World" reference frame (with respect to the absolute world origin, not the floating origin) to 
 	 * the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed). See {@link reference-frames.md}.
 	 */
-	const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const;
+	const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
+		return this->_ueToEcef;
+	}
 
 	/**
 	 * @brief Gets the transformation from the "Ellipsoid-centered" reference frame (i.e. ECEF) to the "Unreal World" reference frame.
@@ -257,7 +263,9 @@ public:
 	 * Gets a matrix that transforms coordinates from the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed) to
 	 * the "Unreal world" reference frame (with respect to the absolute world origin, not the floating origin). See {@link reference-frames.md}.
 	 */
-	const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const;
+	const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
+		return this->_ecefToUe;
+	}
 
 	void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
@@ -287,9 +295,7 @@ private:
 
 	void _jumpToLevel(const FCesiumSubLevel& level);
 #if WITH_EDITOR
-	void _getViewportCursorInformation(bool& Focused, FVector& WorldLocation, FVector& WorldDirection);
-	void _lineTraceViewport(const bool ShowTrace, bool& Success, FHitResult& HitResult);
-	void _lineTrace(const FVector WorldLocation, const FVector WorldDirection, const bool ShowTrace, bool& Success, FHitResult& HitResult);
+	void _lineTraceViewportMouse(const bool ShowTrace, bool& Success, FHitResult& HitResult);
 #endif
 	TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };
