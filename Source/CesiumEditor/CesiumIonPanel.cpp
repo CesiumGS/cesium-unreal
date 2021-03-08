@@ -26,7 +26,6 @@ using namespace CesiumIonClient;
 static FName ColumnName_Name = "Name";
 static FName ColumnName_Type = "Type";
 static FName ColumnName_DateAdded = "DateAdded";
-static FName ColumnName_Size = "Size";
 
 CesiumIonPanel::CesiumIonPanel() :
     _connectionUpdatedDelegateHandle(),
@@ -82,10 +81,6 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
             + SHeaderRow::Column(ColumnName_DateAdded)
                 .DefaultLabel(FText::FromString(TEXT("Date added")))
                 .SortMode_Lambda(sortModeLambda(ColumnName_DateAdded))
-                .OnSort(FOnSortModeChanged::CreateSP(this, &CesiumIonPanel::OnSortChange))
-            + SHeaderRow::Column(ColumnName_Size)
-                .DefaultLabel(FText::FromString(TEXT("Size")))
-                .SortMode_Lambda(sortModeLambda(ColumnName_Size))
                 .OnSort(FOnSortModeChanged::CreateSP(this, &CesiumIonPanel::OnSortChange))
         );
 
@@ -257,11 +252,6 @@ static std::function<bool(const TSharedPtr<Asset>&, const TSharedPtr<Asset>&)> c
             return a0->dateAdded < a1->dateAdded;
         };
     }
-    if (columnName == ColumnName_Size) {
-        return [](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
-            return a0->bytes < a1->bytes;
-        };
-    }
     return [](const TSharedPtr<Asset>& a0, const TSharedPtr<Asset>& a1) {
         return a0->name < a1->name;
     };
@@ -361,9 +351,6 @@ namespace {
             } else if (InColumnName == "DateAdded") {
                 return SNew(STextBlock)
                     .Text(FText::FromString(utf8_to_wstr(_pItem->dateAdded)));
-            } else if (InColumnName == "Size") {
-                return SNew(STextBlock)
-                    .Text(FText::FromString(utf8_to_wstr(_pItem->bytes > 0 ? std::to_string(_pItem->bytes) : "-")));
             } else {
                 return SNew(STextBlock);
             }
