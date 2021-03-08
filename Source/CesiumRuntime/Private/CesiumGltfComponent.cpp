@@ -35,6 +35,7 @@
 #include "mikktspace.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumUtility/joinToString.h"
+#include "PixelFormat.h"
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <stb_image_resize.h>
@@ -393,7 +394,7 @@ static std::optional<LoadTextureResult> loadTexture(const CesiumGltf::Model& mod
 		result.filter = TextureFilter::TF_Default;
 	}
 
-	void* pTextureData = static_cast<unsigned char*>(result.TextureData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	void* pTextureData = static_cast<unsigned char*>(result.pTextureData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
 	FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
 
 	if (result.filter == TextureFilter::TF_Trilinear) {
@@ -417,10 +418,10 @@ static std::optional<LoadTextureResult> loadTexture(const CesiumGltf::Model& mod
 			if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
 				// Failed to generate mip level, use bilinear filtering instead.
 				result.filter = TextureFilter::TF_Bilinear;
-				for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
+				for (int32_t i = 1; i < result.pTextureData->Mips.Num(); ++i) {
 					result.pTextureData->Mips[i].BulkData.Unlock();
 				}
-				result.pTextureData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
+				result.pTextureData->Mips.RemoveAt(1, result.pTextureData->Mips.Num() - 1);
 				break;
 			}
 
@@ -431,7 +432,7 @@ static std::optional<LoadTextureResult> loadTexture(const CesiumGltf::Model& mod
 	}
 
 	// Unlock all levels
-	for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
+	for (int32_t i = 0; i < result.pTextureData->Mips.Num(); ++i) {
 		result.pTextureData->Mips[i].BulkData.Unlock();
 	}
 
@@ -960,134 +961,23 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 	return result;
 }
 
-template <class T>
-bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const CesiumGltf::Model& model, const std::optional<T>& gltfTexture) {
-	if (!gltfTexture || gltfTexture.value().index < 0 || gltfTexture.value().index >= model.textures.size()) {
-		if (gltfTexture && gltfTexture.value().index >= 0) {
-			UE_LOG(LogCesium, Warning, TEXT("Texture index must be less than %d, but is %d"), model.textures.size(), gltfTexture.value().index);
-		}
+bool applyTexture(UMaterialInstanceDynamic* pMaterial, FName parameterName, const std::optional<LoadTextureResult>& loadedTexture) {
+	if (!loadedTexture) {
 		return false;
 	}
 
-	const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
-	if (texture.source < 0 || texture.source >= model.images.size()) {
-		UE_LOG(LogCesium, Warning, TEXT("Texture source index must be non-negative and less than %d, but is %d"), model.images.size(), texture.source);
-		return false;
-	}
+	UTexture2D* pTexture = NewObject<UTexture2D>(
+		GetTransientPackage(),
+		NAME_None,
+		RF_Transient
+	);
 
-	const CesiumGltf::Image& image = model.images[texture.source];
-	if (image.cesium.width == 0 || image.cesium.height == 0) {
-		return false;
-	}
-
-	UTexture2D* pTexture = UTexture2D::CreateTransient(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
-	if (!pTexture) {
-		return false;
-	}
-
-	const CesiumGltf::Sampler* pSampler = CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
-	if (pSampler) {
-		switch (pSampler->wrapS) {
-		case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
-			pTexture->AddressX = TextureAddress::TA_Clamp;
-			break;
-		case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
-			pTexture->AddressX = TextureAddress::TA_Mirror;
-			break;
-		case CesiumGltf::Sampler::WrapS::REPEAT:
-			pTexture->AddressX = TextureAddress::TA_Wrap;
-			break;
-		}
-
-		switch (pSampler->wrapT) {
-		case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
-			pTexture->AddressY = TextureAddress::TA_Clamp;
-			break;
-		case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
-			pTexture->AddressY = TextureAddress::TA_Mirror;
-			break;
-		case CesiumGltf::Sampler::WrapT::REPEAT:
-			pTexture->AddressY = TextureAddress::TA_Wrap;
-			break;
-		}
-
-		// Unreal Engine's available filtering modes are only nearest, bilinear, and trilinear, and
-		// are not specified separately for minification and magnification. So we get as close as we can.
-		if (!pSampler->minFilter && !pSampler->magFilter) {
-			pTexture->Filter = TextureFilter::TF_Default;
-		} else if (
-			(!pSampler->minFilter || pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
-			(!pSampler->magFilter || pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)
-		) {
-			pTexture->Filter = TextureFilter::TF_Nearest;
-		} else if (pSampler->minFilter) {
-			switch (pSampler->minFilter.value()) {
-			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
-			case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
-			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
-			case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
-				pTexture->Filter = TextureFilter::TF_Trilinear;
-				break;
-			default:
-				pTexture->Filter = TextureFilter::TF_Bilinear;
-				break;
-			}
-		} else if (pSampler->magFilter) {
-			pTexture->Filter = pSampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::LINEAR ? TextureFilter::TF_Bilinear : TextureFilter::TF_Nearest;
-		}
-	} else {
-		// glTF spec: "When undefined, a sampler with repeat wrapping and auto filtering should be used."
-		pTexture->AddressX = TextureAddress::TA_Wrap;
-		pTexture->AddressY = TextureAddress::TA_Wrap;
-		pTexture->Filter = TextureFilter::TF_Default;
-	}
-
-	void* pTextureData = static_cast<unsigned char*>(pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-	FMemory::Memcpy(pTextureData, image.cesium.pixelData.data(), image.cesium.pixelData.size());
-
-	if (pTexture->Filter == TextureFilter::TF_Trilinear) {
-		// Generate mip levels.
-		// TODO: do this on the GPU?
-		int32_t width = image.cesium.width;
-		int32_t height = image.cesium.height;
-
-		while (width > 1 || height > 1) {
-			FTexture2DMipMap* pLevel = new FTexture2DMipMap();
-			pTexture->PlatformData->Mips.Add(pLevel);
-
-			pLevel->SizeX = width >> 1;
-			if (pLevel->SizeX < 1)  pLevel->SizeX = 1;
-			pLevel->SizeY = height >> 1;
-			if (pLevel->SizeY < 1) pLevel->SizeY = 1;
-
-			pLevel->BulkData.Lock(LOCK_READ_WRITE);
-
-			void* pMipData = pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
-			if (!stbir_resize_uint8(static_cast<const unsigned char*>(pTextureData), width, height, 0, static_cast<unsigned char*>(pMipData), pLevel->SizeX, pLevel->SizeY, 0, 4)) {
-				// Failed to generate mip level, use bilinear filtering instead.
-				pTexture->Filter = TextureFilter::TF_Bilinear;
-				for (int32_t i = 1; i < pTexture->PlatformData->Mips.Num(); ++i) {
-					pTexture->PlatformData->Mips[i].BulkData.Unlock();
-				}
-				pTexture->PlatformData->Mips.RemoveAt(1, pTexture->PlatformData->Mips.Num() - 1);
-				break;
-			}
-
-			width = pLevel->SizeX;
-			height = pLevel->SizeY;
-			pTextureData = pMipData;
-		}
-	}
-
-	// Unlock all levels
-	for (int32_t i = 0; i < pTexture->PlatformData->Mips.Num(); ++i) {
-		pTexture->PlatformData->Mips[i].BulkData.Unlock();
-	}
-
+	pTexture->PlatformData = loadedTexture->pTextureData;
+	pTexture->AddressX = loadedTexture->addressX;
+	pTexture->AddressY = loadedTexture->addressY;
+	pTexture->Filter = loadedTexture->filter;
 	pTexture->UpdateResource();
-
 	pMaterial->SetTextureParameterValue(parameterName, pTexture);
-
 	return true;
 }
 
@@ -1143,11 +1033,11 @@ static void loadModelGameThreadPart(UCesiumGltfComponent* pGltf, LoadModelResult
 	pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
 	pMaterial->SetScalarParameterValue("opacityMask", 1.0);
 
-	applyTexture(pMaterial, "baseColorTexture", model, pbr.baseColorTexture);
-	applyTexture(pMaterial, "metallicRoughnessTexture", model, pbr.metallicRoughnessTexture);
-	applyTexture(pMaterial, "normalTexture", model, material.normalTexture);
-	bool hasEmissiveTexture = applyTexture(pMaterial, "emissiveTexture", model, material.emissiveTexture);
-	applyTexture(pMaterial, "occlusionTexture", model, material.occlusionTexture);
+	applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
+	applyTexture(pMaterial, "metallicRoughnessTexture", loadResult.metallicRoughnessTexture);
+	applyTexture(pMaterial, "normalTexture", loadResult.normalTexture);
+	bool hasEmissiveTexture = applyTexture(pMaterial, "emissiveTexture", loadResult.emissiveTexture);
+	applyTexture(pMaterial, "occlusionTexture", loadResult.occlusionTexture);
 
 	if (material.emissiveFactor.size() >= 3) {
 		pMaterial->SetVectorParameterValue("emissiveFactor", FVector(material.emissiveFactor[0], material.emissiveFactor[1], material.emissiveFactor[2]));
