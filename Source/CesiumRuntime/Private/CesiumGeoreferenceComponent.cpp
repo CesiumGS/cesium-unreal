@@ -216,8 +216,8 @@ std::optional<Cesium3DTiles::BoundingVolume> UCesiumGeoreferenceComponent::GetBo
 	return std::nullopt;
 }
 
-void UCesiumGeoreferenceComponent::UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
-	this->_updateActorToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
+void UCesiumGeoreferenceComponent::NotifyGeoreferenceUpdated() {
+	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
@@ -299,7 +299,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
 		this->_georeferenced = true;
 	}
 
-	// Note: when a georeferenced object is added, UpdateGeoreferenceTransform will automatically be called
+	// Note: when a georeferenced object is added, NotifyGeoreferenceUpdated will automatically be called
 }
 
 // this is what georeferences the actor
@@ -308,7 +308,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 		return;
 	}
 
-	glm::dmat4 georeferencedToEllipsoidCenteredTransform = this->Georeference->GetGeoreferencedToEllipsoidCenteredTransform();
+	glm::dmat4 unrealWorldToEcef = this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
 
 	FMatrix actorToRelativeWorld = this->_ownerRoot->GetComponentToWorld().ToMatrixWithScale();
 	glm::dmat4 actorToAbsoluteWorld(
@@ -318,7 +318,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 		glm::dvec4(this->_absoluteLocation, 1.0)
 	);
 
-	this->_actorToECEF = georeferencedToEllipsoidCenteredTransform * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium * actorToAbsoluteWorld;
+	this->_actorToECEF = unrealWorldToEcef * actorToAbsoluteWorld;
 	this->_updateDisplayECEF();
 	this->_updateDisplayLongLatAlt();
 }
@@ -327,11 +327,7 @@ void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform() 
 	if (!this->Georeference) {
 		return;
 	}
-	glm::dmat4 ellipsoidCenteredToGeoreferencedTransform = this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
-	this->_updateActorToUnrealRelativeWorldTransform(ellipsoidCenteredToGeoreferencedTransform);
-}
-
-void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) {
+	const glm::dmat4& ecefToUnrealWorld = this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
 	glm::dmat4 absoluteToRelativeWorld(
 		glm::dvec4(1.0, 0.0, 0.0, 0.0),
 		glm::dvec4(0.0, 1.0, 0.0, 0.0),
@@ -339,7 +335,7 @@ void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform(co
 		glm::dvec4(-this->_worldOriginLocation, 1.0)
 	);
 
-	this->_actorToUnrealRelativeWorld = absoluteToRelativeWorld * CesiumTransforms::unrealToOrFromCesium * CesiumTransforms::scaleToUnrealWorld * ellipsoidCenteredToGeoreferencedTransform * this->_actorToECEF;
+	this->_actorToUnrealRelativeWorld = absoluteToRelativeWorld * ecefToUnrealWorld * this->_actorToECEF;
 }
 
 void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {

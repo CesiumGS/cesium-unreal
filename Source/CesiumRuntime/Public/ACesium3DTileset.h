@@ -207,7 +207,7 @@ public:
 	virtual bool IsBoundingVolumeReady() const override;
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
 	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal);
-	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
+	virtual void NotifyGeoreferenceUpdated();
 
 protected:
 	// Called when the game starts or when spawned

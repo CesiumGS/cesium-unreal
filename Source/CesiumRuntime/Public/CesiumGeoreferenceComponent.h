@@ -140,7 +140,7 @@ public:
 	// ICesiumGeoreferenceable virtual functions
 	virtual bool IsBoundingVolumeReady() const override;
 	virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
-	virtual void UpdateGeoreferenceTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
+	virtual void NotifyGeoreferenceUpdated() override;
 
 	void SetAutoSnapToEastSouthUp(bool value);
 
@@ -160,7 +160,6 @@ private:
 	void _initGeoreference();
 	void _updateActorToECEF();
 	void _updateActorToUnrealRelativeWorldTransform();
-	void _updateActorToUnrealRelativeWorldTransform(const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 	void _setTransform(const glm::dmat4& transform);
 	void _setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
 	void _updateDisplayLongLatAlt();

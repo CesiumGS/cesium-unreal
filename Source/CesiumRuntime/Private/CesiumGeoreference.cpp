@@ -35,7 +35,11 @@
 	return pGeoreference;
 }
 
-ACesiumGeoreference::ACesiumGeoreference()
+ACesiumGeoreference::ACesiumGeoreference() :
+	_georeferencedToEcef(1.0),
+	_ecefToGeoreferenced(1.0),
+	_ueToEcef(1.0),
+	_ecefToUe(1.0)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -168,45 +172,20 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(float targetLongitude,
 	this->SetGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
 }
 
-
-// TODO: we need to add a more sensible reuse of the geo->ecef matrix, currently it's recalculated everytime it's requested. 
-// Once we add the conversion utility functions in particular, this constant recomputing / reallocating might not make much sense
-glm::dmat4x4 ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
-	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
-		return glm::dmat4(1.0);
-	}
-
-	glm::dvec3 center(0.0, 0.0, 0.0);
-
-	if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-		// TODO: it'd be better to compute the union of the bounding volumes and then use the union's center,
-		//       rather than averaging the centers.
-		size_t numberOfPositions = 0;
-
-		for (const TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
-			if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
-				std::optional<Cesium3DTiles::BoundingVolume> bv = pObject->GetBoundingVolume();
-				if (bv) {
-					center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
-					++numberOfPositions;
-				}
-			}
-		}
-
-		if (numberOfPositions > 0) {
-			center /= numberOfPositions;
-		}
-	}
-	else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-		const CesiumGeospatial::Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
-		center = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->OriginLongitude, this->OriginLatitude, this->OriginHeight));
-	}
-
-	return CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+const glm::dmat4& ACesiumGeoreference::GetGeoreferencedToEllipsoidCenteredTransform() const {
+	return this->_georeferencedToEcef;
 }
 
-glm::dmat4x4 ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedTransform() const {
-	return glm::affineInverse(this->GetGeoreferencedToEllipsoidCenteredTransform());
+const glm::dmat4& ACesiumGeoreference::GetEllipsoidCenteredToGeoreferencedTransform() const {
+	return this->_ecefToGeoreferenced;
+}
+
+const glm::dmat4& ACesiumGeoreference::GetUnrealWorldToEllipsoidCenteredTransform() const {
+	return this->_ueToEcef;
+}
+
+const glm::dmat4& ACesiumGeoreference::GetEllipsoidCenteredToUnrealWorldTransform() const {
+	return this->_ecefToUe;
 }
 
 void ACesiumGeoreference::AddGeoreferencedObject(ICesiumGeoreferenceable* Object)
@@ -249,10 +228,51 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform)
 
 void ACesiumGeoreference::UpdateGeoreference()
 {
-	glm::dmat4 transform = this->GetEllipsoidCenteredToGeoreferencedTransform();
+	// update georeferenced -> ECEF
+	if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
+		this->_georeferencedToEcef = glm::dmat4(1.0);
+	} else {
+		glm::dvec3 center(0.0, 0.0, 0.0);
+
+		if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
+			// TODO: it'd be better to compute the union of the bounding volumes and then use the union's center,
+			//       rather than averaging the centers.
+			size_t numberOfPositions = 0;
+
+			for (const TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
+				if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
+					std::optional<Cesium3DTiles::BoundingVolume> bv = pObject->GetBoundingVolume();
+					if (bv) {
+						center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
+						++numberOfPositions;
+					}
+				}
+			}
+
+			if (numberOfPositions > 0) {
+				center /= numberOfPositions;
+			}
+		}
+		else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+			const CesiumGeospatial::Ellipsoid& ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
+			center = ellipsoid.cartographicToCartesian(CesiumGeospatial::Cartographic::fromDegrees(this->OriginLongitude, this->OriginLatitude, this->OriginHeight));
+		}
+
+		this->_georeferencedToEcef = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+	}
+
+	// update ECEF -> georeferenced
+	this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
+
+	// update UE -> ECEF
+	this->_ueToEcef = this->_georeferencedToEcef * CesiumTransforms::scaleToCesium * CesiumTransforms::unrealToOrFromCesium;
+
+	// update ECEF -> UE
+	this->_ecefToUe = glm::affineInverse(this->_ueToEcef);
+
 	for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject : this->_georeferencedObjects) {
 		if (pObject.IsValid()) {
-			pObject->UpdateGeoreferenceTransform(transform);
+			pObject->NotifyGeoreferenceUpdated();
 		}
 	}
 }
@@ -299,8 +319,8 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 	bool isGame = this->GetWorld()->IsGameWorld();
 
+// TODO: remove this if a convenient way to place georeference origin with mouse can't be found
 #if WITH_EDITOR
-	// TODO: maybe this should only be allowed in editor and not PIE
 	if (!isGame && this->EditOriginInViewport) {
 		FHitResult mouseRayResults;
 		bool mouseRaySuccess;
@@ -324,8 +344,13 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 			std::optional<CesiumGeospatial::Cartographic> optCartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(grabbedLocationECEF);
 
 			if (optCartographic) {
-				CesiumGeospatial::Cartographic cartographic = *optCartographic;				
-				UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
+				CesiumGeospatial::Cartographic cartographic = *optCartographic;
+				//UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
+
+				//if (mouseDown) {
+					//SetGeoreferenceOrigin()
+				//	this->EditOriginInViewport = false;
+				//}
 			}
 		}
 	}
@@ -406,6 +431,9 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 		}
 	}
 }
+
+// CONVERSION HELPER FUNCTIONS
+
 
 void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);

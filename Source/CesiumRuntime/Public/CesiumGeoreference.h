@@ -233,7 +233,7 @@ public:
 	 * Gets a matrix that transforms coordinates from the "Georeference" reference frame defined by this instance to the "Ellipsoid-centered"
 	 * reference frame, which is usually Earth-centered, Earth-fixed. See {@link reference-frames.md}.
 	 */
-	glm::dmat4x4 GetGeoreferencedToEllipsoidCenteredTransform() const;
+	const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const;
 
 	/**
 	 * @brief Gets the transformation from the "Ellipsoid-centered" reference frame (i.e. ECEF) to the georeferenced reference frame defined by this instance.
@@ -241,7 +241,23 @@ public:
 	 * Gets a matrix that transforms coordinates from the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed) to
 	 * the "Georeferenced" reference frame defined by this instance. See {@link reference-frames.md}.
 	 */
-	glm::dmat4x4 GetEllipsoidCenteredToGeoreferencedTransform() const;
+	const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const;
+
+	/**
+	 * @brief Gets the transformation from the "Unreal World" reference frame to the "Ellipsoid-centered" reference frame (i.e. ECEF).
+	 * 
+	 * Gets a matrix that transforms coordinates from the "Unreal World" reference frame (with respect to the absolute world origin, not the floating origin) to 
+	 * the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed). See {@link reference-frames.md}.
+	 */
+	const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const;
+
+	/**
+	 * @brief Gets the transformation from the "Ellipsoid-centered" reference frame (i.e. ECEF) to the "Unreal World" reference frame.
+	 *
+	 * Gets a matrix that transforms coordinates from the "Ellipsoid-centered" reference frame (which is usually Earth-centered, Earth-fixed) to
+	 * the "Unreal world" reference frame (with respect to the absolute world origin, not the floating origin). See {@link reference-frames.md}.
+	 */
+	const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const;
 
 	void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
@@ -264,6 +280,11 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+	glm::dmat4 _georeferencedToEcef;
+	glm::dmat4 _ecefToGeoreferenced;
+	glm::dmat4 _ueToEcef;
+	glm::dmat4 _ecefToUe;
+
 	void _jumpToLevel(const FCesiumSubLevel& level);
 #if WITH_EDITOR
 	void _getViewportCursorInformation(bool& Focused, FVector& WorldLocation, FVector& WorldDirection);
