@@ -8,6 +8,7 @@
 #include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SUniformGridPanel.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SButton.h"
 #include "Editor.h"
@@ -93,7 +94,25 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
         + SSplitter::Slot()
             .Value(0.66f)
         [
-            this->_pListView.ToSharedRef()
+            // Add the search bar at the upper right
+            SNew(SVerticalBox)
+            +SVerticalBox::Slot()
+                .AutoHeight()
+            [
+                SNew(SUniformGridPanel)
+                    .SlotPadding(FMargin(5.0f))
+                +SUniformGridPanel::Slot(1,0)
+                    .HAlign(HAlign_Right)
+                [
+                    SAssignNew(SearchBox, SSearchBox)
+                        .OnTextChanged(this, &CesiumIonPanel::OnSearchTextChange)
+                        .MinDesiredWidth(200.f)
+                ]
+            ]
+            +SVerticalBox::Slot()
+            [
+                this->_pListView.ToSharedRef()
+            ]
         ]
         + SSplitter::Slot()
             .Value(0.34f)
@@ -118,8 +137,8 @@ void CesiumIonPanel::Construct(const FArguments& InArgs)
 
 void CesiumIonPanel::OnSortChange(const EColumnSortPriority::Type SortPriority, const FName& ColumnName, const EColumnSortMode::Type Mode)
 {
-	if (_sortColumnName == ColumnName)
-	{
+    if (_sortColumnName == ColumnName)
+    {
         if (_sortMode == EColumnSortMode::Type::None) {
             _sortMode = EColumnSortMode::Type::Ascending;
         } else if (_sortMode == EColumnSortMode::Type::Ascending) {
@@ -133,6 +152,13 @@ void CesiumIonPanel::OnSortChange(const EColumnSortPriority::Type SortPriority, 
     } 
     Refresh();
 }
+
+void CesiumIonPanel::OnSearchTextChange(const FText& SearchText)
+{
+    _searchString = SearchText.ToString().TrimStartAndEnd();
+    Refresh();
+}
+
 
 static bool isSupportedTileset(const TSharedPtr<Asset>& pAsset) {
     return
@@ -258,9 +284,37 @@ static std::function<bool(const TSharedPtr<Asset>&, const TSharedPtr<Asset>&)> c
 }
 
 
+void CesiumIonPanel::ApplyFilter() {
+
+    //UE_LOG(LogActor, Warning, TEXT("ApplyFilter %s"), *_searchString);
+
+    if (_searchString.IsEmpty()) {
+        return;
+    }
+    this->_assets = this->_assets.FilterByPredicate([this](const TSharedPtr<Asset>& Asset)
+    {
+        // This mimics the behavior of the ion web UI, which 
+        // searches for the given text in the name and description.
+        // 
+        // Creating and using FString instances here instead of
+        // converting the _searchString to a std::string, because
+        // the 'FString::Contains' function does the desired
+        // case-INsensitive check by default.
+        FString Name = utf8_to_wstr(Asset->name);
+        if (Name.Contains(_searchString)) {
+            return true;
+        }
+        FString Description = utf8_to_wstr(Asset->description);
+        if (Description.Contains(_searchString)) {
+            return true;
+        }
+        return false;
+    });
+}
+
 void CesiumIonPanel::ApplySorting() {
 
-    //UE_LOG(LogActor, Warning, TEXT("applySorting %s with %d"), *_sortColumnName.ToString(), _sortMode);
+    //UE_LOG(LogActor, Warning, TEXT("ApplySorting %s with %d"), *_sortColumnName.ToString(), _sortMode);
 
     if (_sortMode == EColumnSortMode::Type::None) {
         return;
@@ -283,6 +337,7 @@ void CesiumIonPanel::Refresh() {
     for (size_t i = 0; i < assets.items.size(); ++i) {
         this->_assets[i] = MakeShared<Asset>(assets.items[i]);
     }
+    ApplyFilter();
     ApplySorting();
     this->_pListView->RequestListRefresh();
 }
