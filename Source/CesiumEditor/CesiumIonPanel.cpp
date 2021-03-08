@@ -295,6 +295,11 @@ void CesiumIonPanel::Refresh() {
     this->_pListView->RequestListRefresh();
 }
 
+void CesiumIonPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) {
+    FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+    SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+}
+
 void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::Asset> item, ESelectInfo::Type selectionType)
 {
     this->_pSelection = item;
