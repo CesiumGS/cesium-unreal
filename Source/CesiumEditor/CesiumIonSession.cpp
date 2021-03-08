@@ -4,6 +4,7 @@
 #include "UnrealConversions.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
+#include "CesiumEditorSettings.h"
 
 using namespace CesiumIonClient;
 
@@ -19,6 +20,7 @@ CesiumIonSession::CesiumIonSession(
     _tokens(std::nullopt),
     _assetAccessToken(std::nullopt),
     _isConnecting(false),
+    _isResuming(false),
     _isLoadingProfile(false),
     _isLoadingAssets(false),
     _isLoadingTokens(false),
@@ -31,7 +33,7 @@ CesiumIonSession::CesiumIonSession(
 }
 
 void CesiumIonSession::connect() {
-    if (this->isConnecting() || this->isConnected()) {
+    if (this->isConnecting() || this->isConnected() || this->isResuming()) {
         return;
     }
 
@@ -58,11 +60,40 @@ void CesiumIonSession::connect() {
     ).thenInMainThread([this](CesiumIonClient::Connection&& connection) {
         this->_isConnecting = false;
         this->_connection = std::move(connection);
+
+        UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
+        pSettings->CesiumIonAccessToken = utf8_to_wstr(this->_connection.value().getAccessToken());
+        pSettings->SaveConfig();
+
         this->ConnectionUpdated.Broadcast();
     }).catchInMainThread([this](std::exception&& e) {
         this->_isConnecting = false;
         this->_connection = std::nullopt;
         this->ConnectionUpdated.Broadcast();
+    });
+}
+
+void CesiumIonSession::resume() {
+    const UCesiumEditorSettings* pSettings = GetDefault<UCesiumEditorSettings>();
+    if (pSettings->CesiumIonAccessToken.IsEmpty()) {
+        // No existing session to resume.
+        return;
+    }
+
+    this->_isResuming = true;
+
+    this->_connection = Connection(this->_asyncSystem, this->_pAssetAccessor, wstr_to_utf8(GetDefault<UCesiumEditorSettings>()->CesiumIonAccessToken));
+
+    // Verify that the connection actually works.
+    this->_connection.value().me().thenInMainThread([this](Response<Profile>&& response) {
+        if (!response.value.has_value()) {
+            this->_connection.reset();
+        }
+        this->_isResuming = false;
+        this->ConnectionUpdated.Broadcast();
+    }).catchInMainThread([this](std::exception&& e) {
+        this->_isResuming = false;
+        this->_connection.reset();
     });
 }
 
@@ -72,6 +103,10 @@ void CesiumIonSession::disconnect() {
     this->_assets.reset();
     this->_tokens.reset();
     this->_assetAccessToken.reset();
+
+    UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
+    pSettings->CesiumIonAccessToken.Empty();
+    pSettings->SaveConfig();
 
     this->ConnectionUpdated.Broadcast();
     this->ProfileUpdated.Broadcast();

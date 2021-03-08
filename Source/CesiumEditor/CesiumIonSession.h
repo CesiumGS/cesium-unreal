@@ -22,6 +22,7 @@ public:
 
     bool isConnected() const { return this->_connection.has_value(); }
     bool isConnecting() const { return this->_isConnecting; }
+    bool isResuming() const { return this->_isResuming; }
 
     bool isProfileLoaded() const { return this->_profile.has_value(); }
     bool isLoadingProfile() const { return this->_isLoadingProfile; }
@@ -36,6 +37,7 @@ public:
     bool isLoadingAssetAccessToken() const { return this->_isLoadingAssetAccessToken; }
 
     void connect();
+    void resume();
     void disconnect();
 
     void refreshProfile();
@@ -72,6 +74,7 @@ private:
     std::optional<CesiumIonClient::Token> _assetAccessToken;
 
     bool _isConnecting;
+    bool _isResuming;
     bool _isLoadingProfile;
     bool _isLoadingAssets;
     bool _isLoadingTokens;
