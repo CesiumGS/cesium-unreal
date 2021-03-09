@@ -23,7 +23,7 @@ public class CesiumEditor : ModuleRules
             );
 
         string cesiumNativeConfiguration = "Debug";
-        //if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
         {
             cesiumNativeConfiguration = "RelWithDebInfo";
         }
