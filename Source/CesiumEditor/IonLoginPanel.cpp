@@ -118,29 +118,29 @@ void IonLoginPanel::Construct(const FArguments& InArgs)
             ]
             + SVerticalBox::Slot()
                 .HAlign(HAlign_Center)
+                .AutoHeight()
             [
-                SNew(SBorder)
+                SNew(SHorizontalBox)
                     .Visibility_Lambda([this]() { return FCesiumEditorModule::ion().isConnecting() ? EVisibility::Visible : EVisibility::Hidden; })
+                + SHorizontalBox::Slot()
+                    .HAlign(HAlign_Fill)
+                    .VAlign(VAlign_Center)
                 [
-                    SNew(SHorizontalBox)
-                    + SHorizontalBox::Slot()
-                        .HAlign(HAlign_Fill)
-                        .VAlign(VAlign_Center)
+                    SNew(SBorder)
                     [
                         SNew(SEditableText)
                             .IsReadOnly(true)
                             .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl())); })
                     ]
-                    + SHorizontalBox::Slot()
-                        .VAlign(VAlign_Center)
-                        .HAlign(HAlign_Right)
-                        .AutoWidth()
-                    [
-                        SNew(SButton)
-                            .OnClicked(this, &IonLoginPanel::CopyAuthorizeUrlToClipboard)
-                            .Text(FText::FromString(TEXT("Copy to clipboard")))
-                    ]
-            
+                ]
+                + SHorizontalBox::Slot()
+                    .VAlign(VAlign_Center)
+                    .HAlign(HAlign_Right)
+                    .AutoWidth()
+                [
+                    SNew(SButton)
+                        .OnClicked(this, &IonLoginPanel::CopyAuthorizeUrlToClipboard)
+                        .Text(FText::FromString(TEXT("Copy to clipboard")))
                 ]
             ]
         ]
