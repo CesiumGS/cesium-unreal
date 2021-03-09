@@ -2,6 +2,7 @@
 
 #include "CesiumGltf.h"
 #include "CesiumGltfComponent.h"
+#include "SpdlogUnrealLoggerSink.h"
 
 // Sets default values
 ACesiumGltf::ACesiumGltf()
@@ -14,12 +15,12 @@ void ACesiumGltf::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogActor, Warning, TEXT("ACesiumGltf::BeginPlay"))
+	UE_LOG(LogCesium, VeryVerbose, TEXT("ACesiumGltf::BeginPlay"))
 	this->Model->LoadModel(this->Url);
 }
 
 void ACesiumGltf::OnConstruction(const FTransform & Transform)
 {
-	UE_LOG(LogActor, Warning, TEXT("ACesiumGltf::OnConstruction"))
+	UE_LOG(LogCesium, VeryVerbose, TEXT("ACesiumGltf::OnConstruction"))
 	this->Model->LoadModel(this->Url);
 }

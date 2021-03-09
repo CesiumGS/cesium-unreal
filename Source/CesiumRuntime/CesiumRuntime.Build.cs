@@ -64,6 +64,7 @@ public class CesiumRuntime : ModuleRules
             new string[]
             {
                 // TODO: remove Slate dependency? Anything else?
+                "RHI",
                 "CoreUObject",
                 "Engine",
                 "Slate",
