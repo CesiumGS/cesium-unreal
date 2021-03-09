@@ -47,9 +47,9 @@ static uint32_t nextMaterialId = 0;
 
 struct LoadTextureResult {
 	FTexturePlatformData* pTextureData;
-	TEnumAsByte<enum TextureAddress> addressX;
-	TEnumAsByte<enum TextureAddress> addressY;
-	TEnumAsByte<enum TextureFilter> filter;
+	TextureAddress addressX;
+	TextureAddress addressY;
+	TextureFilter filter;
 };
 
 struct LoadModelResult
@@ -331,7 +331,7 @@ static std::optional<LoadTextureResult> loadTexture(const CesiumGltf::Model& mod
 	}
 
 	const CesiumGltf::Image& image = model.images[texture.source];
-	LoadTextureResult result;
+	LoadTextureResult result{};
 	result.pTextureData = createTexturePlatformData(image.cesium.width, image.cesium.height, PF_R8G8B8A8);
 	if (!result.pTextureData) {
 		return std::nullopt;
