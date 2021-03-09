@@ -13,6 +13,7 @@
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
+#include "GenericPlatform/GenericPlatformMisc.h"
 #include "CesiumIonClient/Token.h"
 #include "CesiumIonClient/Connection.h"
 #include "UnrealConversions.h"
@@ -121,9 +122,25 @@ void IonLoginPanel::Construct(const FArguments& InArgs)
                 SNew(SBorder)
                     .Visibility_Lambda([this]() { return FCesiumEditorModule::ion().isConnecting() ? EVisibility::Visible : EVisibility::Hidden; })
                 [
-                    SNew(SEditableText)
-                        .IsReadOnly(true)
-                        .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl())); })
+                    SNew(SHorizontalBox)
+                    + SHorizontalBox::Slot()
+                        .HAlign(HAlign_Fill)
+                        .VAlign(VAlign_Center)
+                    [
+                        SNew(SEditableText)
+                            .IsReadOnly(true)
+                            .Text_Lambda([this]() { return FText::FromString(utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl())); })
+                    ]
+                    + SHorizontalBox::Slot()
+                        .VAlign(VAlign_Center)
+                        .HAlign(HAlign_Right)
+                        .AutoWidth()
+                    [
+                        SNew(SButton)
+                            .OnClicked(this, &IonLoginPanel::CopyAuthorizeUrlToClipboard)
+                            .Text(FText::FromString(TEXT("Copy to clipboard")))
+                    ]
+            
                 ]
             ]
         ]
@@ -132,6 +149,12 @@ void IonLoginPanel::Construct(const FArguments& InArgs)
 
 FReply IonLoginPanel::SignIn() {
     FCesiumEditorModule::ion().connect();
+    return FReply::Handled();
+}
+
+FReply IonLoginPanel::CopyAuthorizeUrlToClipboard() {
+    FText url = FText::FromString(utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl()));
+	FGenericPlatformMisc::ClipboardCopy(*url.ToString());
     return FReply::Handled();
 }
 
