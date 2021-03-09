@@ -60,7 +60,8 @@ public class CesiumEditor : ModuleRules
                 "Chaos",
                 "Projects",
                 "InputCore",
-                "PropertyEditor"
+                "PropertyEditor",
+                "DeveloperSettings"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );
