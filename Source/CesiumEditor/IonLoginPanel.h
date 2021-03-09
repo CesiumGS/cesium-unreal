@@ -17,4 +17,5 @@ private:
     void LaunchBrowserAgain();
 
     FReply SignIn();
+    FReply CopyAuthorizeUrlToClipboard();
 };
