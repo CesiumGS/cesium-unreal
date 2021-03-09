@@ -421,6 +421,28 @@ namespace {
         return "(Unknown)";
     }
 
+    /**
+     * @brief Format the given asset date into a date string.
+     * 
+     * The given string is assumed to be in ISO8601 format, as returned
+     * from the `asset.dateAdded`. It will be returned as a string in
+     * the YYYY-MM-DD format. If the string cannot be parsed, it will
+     * be returned as-it-is.
+     * 
+     * @param assetDate The asset date 
+     * @return The formatted string
+     */
+    FString formatDate(const std::string& assetDate) {
+        FString unrealDateString = utf8_to_wstr(assetDate);
+        FDateTime dateTime;
+        bool success = FDateTime::ParseIso8601(*unrealDateString, dateTime);
+        if (!success) {
+            UE_LOG(LogTemp, Warning, TEXT("Could not parse date %s"), assetDate.c_str());
+            return utf8_to_wstr(assetDate);
+        }
+        return dateTime.ToString(TEXT("%Y-%m-%d"));
+    }
+
 
     class AssetsTableRow : public SMultiColumnTableRow<TSharedPtr<Asset>> {
     public:
@@ -438,7 +460,7 @@ namespace {
                     .Text(FText::FromString(utf8_to_wstr(assetTypeToString(_pItem->type))));
             } else if (InColumnName == ColumnName_DateAdded) {
                 return SNew(STextBlock)
-                    .Text(FText::FromString(utf8_to_wstr(_pItem->dateAdded)));
+                    .Text(FText::FromString(formatDate(_pItem->dateAdded)));
             } else {
                 return SNew(STextBlock);
             }
