@@ -396,13 +396,13 @@ namespace {
      * @brief Returns a short string indicating the given asset type.
      * 
      * The input must be one of the strings indicating the type of
-     * an asset, as of https://cesium.com/docs/rest-api/#tag/Assets
+     * an asset, as of https://cesium.com/docs/rest-api/#tag/Assets.
      * 
      * If the input is not a known type, then an unspecified error
      * indicator will be returned.
      * 
-     * @param The asset type
-     * @return The string
+     * @param assetType The asset type.
+     * @return The string.
      */
     std::string assetTypeToString(const std::string& assetType) {
         static std::map<std::string, std::string> lookup = {
