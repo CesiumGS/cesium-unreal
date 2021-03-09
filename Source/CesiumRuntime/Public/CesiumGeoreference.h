@@ -141,6 +141,12 @@ public:
 	TArray<FCesiumSubLevel> CesiumSubLevels;
 
 	/**
+	 * EXPERIMENTAL
+	 */ 
+	UPROPERTY(EditAnywhere, Category="CesiumSunSky")
+	AActor* SunSky = nullptr;
+	
+	/**
 	 * The placement of this Actor's origin (coordinate 0,0,0) within the tileset. 
 	 *
 	 * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates, such that the tileset 

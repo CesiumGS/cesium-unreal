@@ -13,6 +13,8 @@
 #include "Math/Rotator.h"
 #include "Math/RotationTranslationMatrix.h"
 #include "Math/Matrix.h"
+#include "UObject/UnrealType.h"
+#include "UObject/Class.h"
 #include "CesiumTransforms.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -254,6 +256,40 @@ void ACesiumGeoreference::UpdateGeoreference()
 			pObject->NotifyGeoreferenceUpdated();
 		}
 	}
+
+	// EXPERIMENTAL: update sun sky 
+	// TODO: make sure it eventually works with non-zero heights of the georeference origin
+	// TODO: move into separate function so it is decoupled from general georeference updates (e.g. it can be updated separately based on camera even)
+	if (!SunSky) {
+		return;
+	}
+	UClass* SunSkyClass = SunSky->GetClass();
+	static FName LongProp = TEXT("Longitude");
+	static FName LatProp = TEXT("Latitude");
+	for (TFieldIterator<FProperty> PropertyIterator(SunSkyClass); PropertyIterator; ++PropertyIterator)
+	{
+		FProperty* Property = *PropertyIterator;
+		FName const PropertyName = Property->GetFName();
+		if (PropertyName == LongProp) {
+			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
+			if (floatProp)
+			{
+				floatProp->SetPropertyValue_InContainer((void*)SunSky, this->OriginLongitude);
+			}
+		}
+		else if (PropertyName == LatProp) {
+			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
+			if (floatProp)
+			{
+				floatProp->SetPropertyValue_InContainer((void*)SunSky, this->OriginLatitude);
+			}
+		}
+	}
+	UFunction* UpdateSun = SunSky->FindFunction(TEXT("UpdateSun"));
+	if (UpdateSun) {
+		SunSky->ProcessEvent(UpdateSun, NULL);
+		UE_LOG(LogActor, Warning, TEXT("UpdateSun executed"));
+	}
 }
 
 #if WITH_EDITOR
@@ -271,7 +307,8 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event)
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginPlacement) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude) ||
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
-		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight) 
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)  ||
+		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, SunSky)
 	) {
 		this->UpdateGeoreference();
 		return;
