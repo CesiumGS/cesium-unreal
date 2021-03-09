@@ -348,10 +348,13 @@ void CesiumIonPanel::AssetSelected(TSharedPtr<CesiumIonClient::Asset> item, ESel
 }
 
 void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
-    if (item->type == "IMAGERY") {
+
+    if (isSupportedImagery(item)) {
         this->AddOverlayToTerrain(item);
-    } else {
+    } else if (isSupportedTileset(item)) {
         this->AddAssetToLevel(item);
+    } else {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot add asset of type %s"), item->type.c_str());
     }
 }
 
@@ -389,6 +392,36 @@ void CesiumIonPanel::AddOverlayToTerrain(TSharedPtr<CesiumIonClient::Asset> item
 
 namespace {
 
+    /**
+     * @brief Returns a short string indicating the given asset type.
+     * 
+     * The input must be one of the strings indicating the type of
+     * an asset, as of https://cesium.com/docs/rest-api/#tag/Assets
+     * 
+     * If the input is not a known type, then an unspecified error
+     * indicator will be returned.
+     * 
+     * @param The asset type
+     * @return The string
+     */
+    std::string assetTypeToString(const std::string& assetType) {
+        static std::map<std::string, std::string> lookup = {
+            {"3DTILES", "3D Tiles"}, 
+            {"GLTF", "glTF"}, 
+            {"IMAGERY", "Imagery"}, 
+            {"TERRAIN", "Terrain"}, 
+            {"CZML", "CZML"}, 
+            {"KML", "KML"}, 
+            {"GEOJSON", "GeoJSON"}
+        };
+        auto it = lookup.find(assetType);
+        if (it != lookup.end()) {
+            return it->second;
+        }
+        return "(Unknown)";
+    }
+
+
     class AssetsTableRow : public SMultiColumnTableRow<TSharedPtr<Asset>> {
     public:
         void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& InOwnerTableView, const TSharedPtr<Asset>& pItem) {
@@ -397,13 +430,13 @@ namespace {
         }
 
         virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& InColumnName) override {
-            if (InColumnName == "Name") {
+            if (InColumnName == ColumnName_Name) {
                 return SNew(STextBlock)
                     .Text(FText::FromString(utf8_to_wstr(_pItem->name)));
-            } else if (InColumnName == "Type") {
+            } else if (InColumnName == ColumnName_Type) {
                 return SNew(STextBlock)
-                    .Text(FText::FromString(utf8_to_wstr(_pItem->type)));
-            } else if (InColumnName == "DateAdded") {
+                    .Text(FText::FromString(utf8_to_wstr(assetTypeToString(_pItem->type))));
+            } else if (InColumnName == ColumnName_DateAdded) {
                 return SNew(STextBlock)
                     .Text(FText::FromString(utf8_to_wstr(_pItem->dateAdded)));
             } else {
