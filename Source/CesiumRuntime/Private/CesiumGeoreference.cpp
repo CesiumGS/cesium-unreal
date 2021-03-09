@@ -263,6 +263,11 @@ void ACesiumGeoreference::UpdateGeoreference()
 	if (!SunSky) {
 		return;
 	}
+
+	// SunSky needs to be clamped to the ellipsoid below the georeference origin
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	SunSky->SetActorLocation(FVector(0.0, 0.0, -100.0 * this->OriginHeight) - FVector(originLocation));
+
 	UClass* SunSkyClass = SunSky->GetClass();
 	static FName LongProp = TEXT("Longitude");
 	static FName LatProp = TEXT("Latitude");
