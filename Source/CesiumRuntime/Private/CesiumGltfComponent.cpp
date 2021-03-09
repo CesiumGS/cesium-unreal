@@ -89,12 +89,12 @@ glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
-template <class T, class TIndexAccessor>
+template <class T>
 static uint32_t updateTextureCoordinates(
 	const CesiumGltf::Model& model,
 	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
-	const TIndexAccessor& indicesView,
+	const TArray<uint32>& indices,
 	const std::optional<T>& texture,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
@@ -106,18 +106,17 @@ static uint32_t updateTextureCoordinates(
 		model,
 		primitive,
 		vertices,
-		indicesView,
+		indices,
 		"TEXCOORD_" + std::to_string(texture.value().texCoord),
 		textureCoordinateMap
 	);
 }
 
-template <class TIndexAccessor>
 uint32_t updateTextureCoordinates(
 	const CesiumGltf::Model& model,
 	const CesiumGltf::MeshPrimitive& primitive,
 	TArray<FStaticMeshBuildVertex>& vertices,
-	const TIndexAccessor& indicesView,
+	const TArray<uint32>& indices,
 	const std::string& attributeName,
 	std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap
 ) {
@@ -139,9 +138,9 @@ uint32_t updateTextureCoordinates(
 
 	CesiumGltf::AccessorView<FVector2D> uvAccessor(model, uvAccessorID);
 
-	for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
+	for (int64_t i = 0; i < indices.Num(); ++i) {
 		FStaticMeshBuildVertex& vertex = vertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesView[i];
+		uint32 vertexIndex = indices[i];
 		if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
 			vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
 		} else {
@@ -216,10 +215,9 @@ static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe> Build
 static const CesiumGltf::Material defaultMaterial;
 static const CesiumGltf::MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
 
-template <typename TIndexView>
 struct ColorVisitor {
 	TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
-	const TIndexView& indicesView;
+	const TArray<uint32>& indices;
 
 	bool operator()(AccessorView<nullptr_t>&& invalidView) {
 		return false;
@@ -229,9 +227,9 @@ struct ColorVisitor {
 	bool operator()(TColorView&& colorView) {
 		bool success = true;
 
-		for (int64_t i = 0; success && i < static_cast<int64_t>(this->indicesView.size()); ++i) {
+		for (int64_t i = 0; success && i < this->indices.Num(); ++i) {
 			FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
-			TIndexView::value_type vertexIndex = this->indicesView[i];
+			uint32 vertexIndex = this->indices[i];
 			if (vertexIndex >= colorView.size()) {
 				success = false;
 			} else {
@@ -453,7 +451,7 @@ static void loadPrimitive(
 	const CesiumGltf::AccessorView<FVector>& positionView,
 	const TIndexAccessor& indicesView
 ) {
-	if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
+	if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES && primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
 		// TODO: add support for primitive types other than triangles.
 		UE_LOG(LogCesium, Warning, TEXT("Primitive mode %d is not supported"), primitive.mode);
 		return;
@@ -502,18 +500,43 @@ static void loadPrimitive(
 	aaBox.GetCenterAndExtents(BoundingBoxAndSphere.Origin, BoundingBoxAndSphere.BoxExtent);
 	BoundingBoxAndSphere.SphereRadius = 0.0f;
 
+	TArray<uint32> indices;
+	if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
+		indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+
+		// Note that we're reversing the order of the indices, because the change from the glTF right-handed to
+		// the Unreal left-handed coordinate system reverses the winding order.
+		for (int32 i = 0; i < indicesView.size(); ++i) {
+			indices[i] = indicesView[i];
+		}
+	}
+	else {
+		for (int32 i = 0; i < indicesView.size() - 2; ++i) {
+			if (i % 2) {
+				indices.Add(indicesView[i]);
+				indices.Add(indicesView[i+2]);
+				indices.Add(indicesView[i+1]);
+			}
+			else {
+				indices.Add(indicesView[i]);
+				indices.Add(indicesView[i+1]);
+				indices.Add(indicesView[i+2]);
+			}
+		}
+	}
+
 	TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-	StaticMeshBuildVertices.SetNum(indicesView.size());
+	StaticMeshBuildVertices.SetNum(indices.Num());
 
 	// The static mesh we construct will _not_ be indexed, even if the incoming glTF is.
 	// This allows us to compute flat normals if the glTF doesn't include them already, and it
 	// allows us to compute a correct tangent space basis according to the MikkTSpace algorithm
 	// when tangents are not included in the glTF.
 
-	for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i)
+	for (int64_t i = 0; i < indices.Num(); ++i)
 	{
 		FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-		TIndexAccessor::value_type vertexIndex = indicesView[i];
+		uint32 vertexIndex = indices[i];
 		vertex.Position = positionView[vertexIndex];
 		vertex.UVs[0] = FVector2D(0.0f, 0.0f);
 		vertex.UVs[2] = FVector2D(0.0f, 0.0f);
@@ -529,14 +552,14 @@ static void loadPrimitive(
 		int normalAccessorID = normalAccessorIt->second;
 		CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
 
-		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
+		for (int64_t i = 0; i < indices.Num(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesView[i];
+			uint32 vertexIndex = indices[i];
 			vertex.TangentZ = normalAccessor[vertexIndex];
 		}
 	} else {
 		// Compute flat normals
-		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); i += 3) {
+		for (int64_t i = 0; i < indices.Num(); i += 3) {
 			FStaticMeshBuildVertex& v0 = StaticMeshBuildVertices[i];
 			FStaticMeshBuildVertex& v1 = StaticMeshBuildVertices[i + 1];
 			FStaticMeshBuildVertex& v2 = StaticMeshBuildVertices[i + 2];
@@ -556,9 +579,9 @@ static void loadPrimitive(
 		int tangentAccessorID = tangentAccessorIt->second;
 		CesiumGltf::AccessorView<FVector4> tangentAccessor(model, tangentAccessorID);
 
-		for (int64_t i = 0; i < static_cast<int64_t>(indicesView.size()); ++i) {
+		for (int64_t i = 0; i < indices.Num(); ++i) {
 			FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-			TIndexAccessor::value_type vertexIndex = indicesView[i];
+			uint32 vertexIndex = indices[i];
 			const FVector4& tangent = tangentAccessor[vertexIndex];
 			vertex.TangentX = tangent;
 			vertex.TangentY = FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
@@ -573,7 +596,7 @@ static void loadPrimitive(
 	auto colorAccessorIt = primitive.attributes.find("COLOR_0");
 	if (colorAccessorIt != primitive.attributes.end()) {
 		int colorAccessorID = colorAccessorIt->second;
-		hasVertexColors = CesiumGltf::createAccessorView(model, colorAccessorID, ColorVisitor<TIndexAccessor>{ StaticMeshBuildVertices, indicesView });
+		hasVertexColors = CesiumGltf::createAccessorView(model, colorAccessorID, ColorVisitor{ StaticMeshBuildVertices, indices });
 	}
 
 	LODResources.bHasColorVertexData = hasVertexColors;
@@ -592,15 +615,15 @@ static void loadPrimitive(
 	primitiveResult.normalTexture = loadTexture(model, material.normalTexture);
 	primitiveResult.occlusionTexture = loadTexture(model, material.occlusionTexture);
 	primitiveResult.emissiveTexture = loadTexture(model, material.emissiveTexture);
-	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.normalTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.occlusionTexture, textureCoordinateMap);
-	primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, material.emissiveTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["baseColorTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indices, pbrMetallicRoughness.baseColorTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indices, pbrMetallicRoughness.metallicRoughnessTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indices, material.normalTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["occlusionTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indices, material.occlusionTexture, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["emissiveTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indices, material.emissiveTexture, textureCoordinateMap);
 
 	// Currently only one set of raster overlay texture coordinates is supported.
 	// TODO: Support more texture coordinate sets (e.g. web mercator and geographic)
-	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indicesView, rasterOverlay0, textureCoordinateMap);
+	primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] = updateTextureCoordinates(model, primitive, StaticMeshBuildVertices, indices, rasterOverlay0, textureCoordinateMap);
 
 	RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -611,9 +634,9 @@ static void loadPrimitive(
 	{
 		ColorVertexBuffer.Init(StaticMeshBuildVertices);
 	}
-	else if (indicesView.size() > 0)
+	else if (indices.Num() > 0)
 	{
-		ColorVertexBuffer.InitFromSingleColor(FColor::White, indicesView.size());
+		ColorVertexBuffer.InitFromSingleColor(FColor::White, indices.Num());
 	}
 
 	LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(StaticMeshBuildVertices, textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
@@ -628,9 +651,6 @@ static void loadPrimitive(
 	section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
 	section.bEnableCollision = true;
 	section.bCastShadow = true;
-
-	TArray<uint32> indices;
-	indices.SetNum(StaticMeshBuildVertices.Num());
 
 	// Note that we're reversing the order of the indices, because the change from the glTF right-handed to
 	// the Unreal left-handed coordinate system reverses the winding order.
