@@ -12,6 +12,7 @@
 #include "UnrealConversions.h"
 #include "IonQuickAddPanel.h"
 #include "CesiumIonPanel.h"
+#include "LevelEditor.h"
 
 void CesiumPanel::Construct(const FArguments& InArgs)
 {
@@ -87,7 +88,9 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
 
 void CesiumPanel::addFromIon()
 {
-    FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TEXT("CesiumIon")));
+    FLevelEditorModule* pLevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>(FName(TEXT("LevelEditor")));
+    TSharedPtr<FTabManager> pTabManager = pLevelEditorModule ? pLevelEditorModule->GetLevelEditorTabManager() : FGlobalTabmanager::Get();
+    pTabManager->TryInvokeTab(FTabId(TEXT("CesiumIon")));
 }
 
 void CesiumPanel::uploadToIon()
