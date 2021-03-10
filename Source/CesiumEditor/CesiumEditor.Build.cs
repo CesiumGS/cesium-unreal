@@ -2,6 +2,7 @@
 
 using UnrealBuildTool;
 using System.IO;
+using System.Linq;
 
 public class CesiumEditor : ModuleRules
 {
@@ -11,40 +12,40 @@ public class CesiumEditor : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
-				// ... add public include paths required here ...
-			}
-            );
+                // ... add public include paths required here ...
+            }
+        );
 
 
         PrivateIncludePaths.AddRange(
             new string[] {
-                "../extern/cesium-native/CesiumIonClient/include",
+                Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
-            );
+        );
 
-        string cesiumNativeConfiguration = "Debug";
-        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        string platform = Target.Platform == UnrealTargetPlatform.Win64
+            ? "Windows-x64"
+            : "Unknown";
+
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
+
+        string[] libs = new string[]
         {
-            cesiumNativeConfiguration = "RelWithDebInfo";
-        }
+            "CesiumIonClient",
+            "csprng"
+        };
 
-        PublicAdditionalLibraries.AddRange(
-            new string[]
-            {
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumIonClient/" + cesiumNativeConfiguration + "/CesiumIonClient.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/" + cesiumNativeConfiguration + "/csprng.lib")
-            }
-            );
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + debugPostfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
+            new string[]
+            {
+                "Core",
                 "UnrealEd",
                 "CesiumRuntime"
-			}
-			);
-
+            }
+        );
 
         PrivateDependencyModuleNames.AddRange(
             new string[]
@@ -60,7 +61,8 @@ public class CesiumEditor : ModuleRules
                 "Chaos",
                 "Projects",
                 "InputCore",
-                "PropertyEditor"
+                "PropertyEditor",
+                "DeveloperSettings"
 				// ... add private dependencies that you statically link with here ...	
 			}
         );
@@ -69,14 +71,14 @@ public class CesiumEditor : ModuleRules
             new string[]
             {
             }
-            );
+        );
 
         DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
+            new string[]
+            {
+                // ... add any modules that your module loads dynamically here ...
+            }
+        );
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "PCH.h";

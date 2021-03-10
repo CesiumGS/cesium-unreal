@@ -5,6 +5,11 @@
     "license": "MIT"
   },
   {
+    "name": "cesium-native",
+    "url": "https://github.com/CesiumGS/cesium-native",
+    "license": "Apache 2.0"
+  },
+  {
     "name": "cpp-httplib",
     "url": "https://github.com/yhirose/cpp-httplib",
     "license": "MIT"
