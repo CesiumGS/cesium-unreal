@@ -110,6 +110,12 @@ public:
 	bool OriginRebaseInsideSublevels = true;
 
 	/*
+	 * Whether to visualize the level loading radii in the editor. Helpful for positioning the level and choosing a load radius.
+	 */
+	UPROPERTY(EditAnywhere, Category="CesiumSublevels")
+	bool ShowLoadRadii = true;
+
+	/*
 	 * Rescan for sublevels that have not been georeferenced yet. New levels are placed at the Unreal origin and
 	 * georeferenced automatically.
 	 */
@@ -178,9 +184,9 @@ public:
 	double OriginHeight = 2250.0;
 
 	/**
-	 * EXPERIMENTAL TODO: figure out if meta tag is needed
+	 * EXPERIMENTAL
 	 */
-	UPROPERTY(EditAnywhere, Category="Cesium")
+	UPROPERTY(EditAnywhere, Category="Cesium", AdvancedDisplay)
 	bool EditOriginInViewport = false;
 
 	/**
@@ -222,7 +228,6 @@ public:
 	/**
 	 * This aligns the specified global coordinates to Unreal's world origin, i.e. it rotates the globe so that these coordinates exactly fall on the origin.
 	 */
-	UFUNCTION()
 	void SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight);
 
 	/**
@@ -231,7 +236,27 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InaccurateSetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetHeight);
 
-	// TODO: add utility conversion functions between relative / absolute -> ecef -> long/lat/height
+	/**
+	 * Transforms the given point from ECEF to Unreal relative world coordinates (relative to the floating origin).
+	 */ 
+	glm::dvec3 TransformEcefToUe(glm::dvec3 point);
+
+	/**
+	 * Transforms the given point from ECEF to Unreal relative world coordinates (relative to the floating origin).
+	 */ 
+	UFUNCTION(BlueprintCallable)
+	FVector InaccurateTransformEcefToUe(FVector point);
+
+	/**
+	 * Transforms the given point from Unreal relative world (relative to the floating origin) to ECEF.
+	 */
+	glm::dvec3 TransformUeToEcef(glm::dvec3 point);
+
+	/**
+	 * Transforms the given point from Unreal relative world (relative to the floating origin) to ECEF.
+	 */
+	UFUNCTION(BlueprintCallable)
+	FVector InaccurateTransformUeToEcef(FVector point);
 
 	/**
 	 * @brief Gets the transformation from the "Georeferenced" reference frame defined by this instance to the "Ellipsoid-centered" reference frame (i.e. ECEF).
@@ -300,6 +325,8 @@ private:
 	glm::dmat4 _ecefToUe;
 
 	void _jumpToLevel(const FCesiumSubLevel& level);
+	void _setSunSky(double longitude, double latitude);
+
 #if WITH_EDITOR
 	void _lineTraceViewportMouse(const bool ShowTrace, bool& Success, FHitResult& HitResult);
 #endif

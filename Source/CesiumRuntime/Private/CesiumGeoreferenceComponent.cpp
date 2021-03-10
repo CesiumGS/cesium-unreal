@@ -339,6 +339,10 @@ void UCesiumGeoreferenceComponent::_updateActorToUnrealRelativeWorldTransform() 
 }
 
 void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
+	if (!this->GetWorld()) {
+		return;
+	}
+
 	// We are about to get an OnUpdateTransform callback for this, so we preemptively mark down to ignore it.
 	_ignoreOnUpdateTransform = true;
 

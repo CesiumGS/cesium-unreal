@@ -24,6 +24,7 @@
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
+#include "DrawDebugHelpers.h"
 #endif
 
 /*static*/ ACesiumGeoreference* ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
@@ -257,8 +258,8 @@ void ACesiumGeoreference::UpdateGeoreference()
 		}
 	}
 
-	// EXPERIMENTAL: update sun sky 
-	// TODO: make sure it eventually works with non-zero heights of the georeference origin
+	this->_setSunSky(this->OriginLongitude, this->OriginLatitude);
+	/*
 	// TODO: move into separate function so it is decoupled from general georeference updates (e.g. it can be updated separately based on camera even)
 	if (!SunSky) {
 		return;
@@ -293,8 +294,8 @@ void ACesiumGeoreference::UpdateGeoreference()
 	UFunction* UpdateSun = SunSky->FindFunction(TEXT("UpdateSun"));
 	if (UpdateSun) {
 		SunSky->ProcessEvent(UpdateSun, NULL);
-		UE_LOG(LogActor, Warning, TEXT("UpdateSun executed"));
 	}
+	*/
 }
 
 #if WITH_EDITOR
@@ -325,6 +326,10 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event)
 		propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)
 	) {
 		
+	} else {
+		//FString propertyString; 
+		//propertyName.ToString(propertyString);
+		//UE_LOG(LogActor, Warning, TEXT("Property Changed: %s"), *propertyString);
 	}
 }
 #endif
@@ -339,37 +344,53 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	bool isGame = this->GetWorld()->IsGameWorld();
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
 
-// TODO: remove this if a convenient way to place georeference origin with mouse can't be found
 #if WITH_EDITOR
-	if (!isGame && this->EditOriginInViewport) {
-		FHitResult mouseRayResults;
-		bool mouseRaySuccess;
+	if (!isGame) {
+		if (this->ShowLoadRadii) {
+			for (FCesiumSubLevel& level : this->CesiumSubLevels) {
+				glm::dvec3 levelECEF = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+					CesiumGeospatial::Cartographic::fromDegrees(
+						level.LevelLongitude, level.LevelLatitude, level.LevelHeight
+					)
+				);
 
-		this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
+				glm::dvec4 levelAbs = this->_ecefToUe * glm::dvec4(levelECEF, 1.0);
+				FVector levelRelative = FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
+				DrawDebugSphere(this->GetWorld(), levelRelative, 100.0 * level.LoadRadius, 100, FColor::Blue);
+			}
+		}
+		
+		// TODO: remove this if a convenient way to place georeference origin with mouse can't be found
+		if(this->EditOriginInViewport) {
+			FHitResult mouseRayResults;
+			bool mouseRaySuccess;
 
-		if (mouseRaySuccess) {
-			FVector grabbedLocation = mouseRayResults.Location;
-			const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-			// convert from UE to ECEF to LongLatHeight
-			glm::dvec4 grabbedLocationAbs(
-				static_cast<double>(grabbedLocation.X) + static_cast<double>(originLocation.X),
-				static_cast<double>(grabbedLocation.Y) + static_cast<double>(originLocation.Y),
-				static_cast<double>(grabbedLocation.Z) + static_cast<double>(originLocation.Z),
-				1.0
-			);
+			this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
 
-			glm::dvec3 grabbedLocationECEF = this->_ueToEcef * grabbedLocationAbs;
-			std::optional<CesiumGeospatial::Cartographic> optCartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(grabbedLocationECEF);
+			if (mouseRaySuccess) {
+				FVector grabbedLocation = mouseRayResults.Location;
+				// convert from UE to ECEF to LongLatHeight
+				glm::dvec4 grabbedLocationAbs(
+					static_cast<double>(grabbedLocation.X) + static_cast<double>(originLocation.X),
+					static_cast<double>(grabbedLocation.Y) + static_cast<double>(originLocation.Y),
+					static_cast<double>(grabbedLocation.Z) + static_cast<double>(originLocation.Z),
+					1.0
+				);
 
-			if (optCartographic) {
-				CesiumGeospatial::Cartographic cartographic = *optCartographic;
-				UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
+				glm::dvec3 grabbedLocationECEF = this->_ueToEcef * grabbedLocationAbs;
+				std::optional<CesiumGeospatial::Cartographic> optCartographic = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(grabbedLocationECEF);
 
-				//if (mouseDown) {
-					//SetGeoreferenceOrigin()
-				//	this->EditOriginInViewport = false;
-				//}
+				if (optCartographic) {
+					CesiumGeospatial::Cartographic cartographic = *optCartographic;
+					UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
+
+					//if (mouseDown) {
+						//SetGeoreferenceOrigin()
+					//	this->EditOriginInViewport = false;
+					//}
+				}
 			}
 		}
 	}
@@ -381,8 +402,6 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 		// TODO: If KeepWorldOriginNearCamera is on and we play-in-editor and then exit back into the editor,
 		// the editor viewport camera always goes back to the origin. This might be super annoying to users.
-
-		const FIntVector& originLocation = this->GetWorld()->OriginLocation;
 
 		glm::dvec4 cameraAbsolute(
 			static_cast<double>(cameraLocation.X) + static_cast<double>(originLocation.X),
@@ -437,7 +456,16 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 			}
 		}
 
-		// TODO: add option of whether to origin rebase inside sub levels
+		/*
+		// EXPERIMENTAL GEOREFERENCE REBASING
+		if (!insideSublevel && glm::length(cameraECEF - glm::dvec3(this->_ueToEcef[3])) > 1000000.0) {
+			std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF);
+			if (targetGeoreferenceOrigin) {
+				this->SetGeoreferenceOrigin(glm::degrees((*targetGeoreferenceOrigin).longitude), glm::degrees((*targetGeoreferenceOrigin).latitude), (*targetGeoreferenceOrigin).height);
+			}
+		}
+		*/
+
 		if (this->KeepWorldOriginNearCamera && (!insideSublevel || this->OriginRebaseInsideSublevels) && !cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
 			// Camera has moved too far from the origin, move the origin.
 			this->GetWorld()->SetNewWorldOrigin(FIntVector(
@@ -449,17 +477,100 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 	}
 }
 
-// TODO: CONVERSION HELPER FUNCTIONS
+/**
+ * Useful Conversion Functions
+ */
 
+glm::dvec3 ACesiumGeoreference::TransformEcefToUe(glm::dvec3 point) {
+	glm::dvec3 ueAbs = this->_ecefToUe * glm::vec4(point, 1.0);	
+	
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	return ueAbs - glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
+}
+
+FVector ACesiumGeoreference::InaccurateTransformEcefToUe(FVector point) {
+	glm::dvec3 ue = this->TransformEcefToUe(glm::dvec3(point.X, point.Y, point.Z));
+	return FVector(ue.x, ue.y, ue.z);
+}
+
+glm::dvec3 ACesiumGeoreference::TransformUeToEcef(glm::dvec3 point) {
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	glm::dvec4 ueAbs(
+		point.x + static_cast<double>(originLocation.X),
+		point.y + static_cast<double>(originLocation.Y),
+		point.z + static_cast<double>(originLocation.Z),
+		1.0
+	);
+
+	return this->_ueToEcef * ueAbs;
+}
+
+FVector ACesiumGeoreference::InaccurateTransformUeToEcef(FVector point) {
+	glm::dvec3 ecef = this->TransformUeToEcef(glm::dvec3(point.X, point.Y, point.Z));
+	return FVector(ecef.x, ecef.y, ecef.z);
+}
+
+/**
+ * Private Helper Functions
+ */
 
 void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
 }
 
+// TODO: Figure out if sunsky can ever be oriented so it's not at the top of the planet.
+// The options in skyatmosphere (i.e. abs origin is top, comp transform is top, comp transf is center)
+// are all worth trying, but ime they only affect the position, not orientation of the sunsky. If there
+// is no way to orient the sunsky, that means the sunsky will only look correct when camera is close to 
+// the georeference origin. 
+void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
+	if (!this->SunSky) {
+		return;
+	}
+
+	// SunSky needs to be clamped to the ellipsoid surface at this long/lat
+	glm::dvec3 targetEcef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+		CesiumGeospatial::Cartographic::fromDegrees(
+			longitude, latitude, 0.0
+		)
+	);
+	glm::dvec4 targetAbsUe = this->_ecefToUe * glm::dvec4(targetEcef, 1.0);
+
+	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+	this->SunSky->SetActorLocation(FVector(targetAbsUe.x, targetAbsUe.y, targetAbsUe.z) - FVector(originLocation));
+
+	UClass* SunSkyClass = this->SunSky->GetClass();
+	static FName LongProp = TEXT("Longitude");
+	static FName LatProp = TEXT("Latitude");
+	for (TFieldIterator<FProperty> PropertyIterator(SunSkyClass); PropertyIterator; ++PropertyIterator)
+	{
+		FProperty* Property = *PropertyIterator;
+		FName const PropertyName = Property->GetFName();
+		if (PropertyName == LongProp) {
+			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
+			if (floatProp)
+			{
+				floatProp->SetPropertyValue_InContainer((void*)this->SunSky, longitude);
+			}
+		}
+		else if (PropertyName == LatProp) {
+			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
+			if (floatProp)
+			{
+				floatProp->SetPropertyValue_InContainer((void*)this->SunSky, latitude);
+			}
+		}
+	}
+	UFunction* UpdateSun = this->SunSky->FindFunction(TEXT("UpdateSun"));
+	if (UpdateSun) {
+		this->SunSky->ProcessEvent(UpdateSun, NULL);
+		//UE_LOG(LogActor, Warning, TEXT("UpdateSun executed"));
+	}
+}
+
 // TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal raycast seems to be inaccurate at glancing angles, perhaps due to the large single-precision distances.
 #if WITH_EDITOR
-void ACesiumGeoreference::_lineTraceViewportMouse(const bool ShowTrace, bool& Success, FHitResult& HitResult)
-{
+void ACesiumGeoreference::_lineTraceViewportMouse(const bool ShowTrace, bool& Success, FHitResult& HitResult) {
 	HitResult = FHitResult();
 	Success = false;
 	
