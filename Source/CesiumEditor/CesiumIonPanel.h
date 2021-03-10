@@ -27,6 +27,8 @@ class CesiumIonPanel : public SCompoundWidget {
 
     void Refresh();
 
+    virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
+
 private:
     TSharedRef<SWidget> AssetDetails();
     TSharedRef<ITableRow> CreateAssetRow(TSharedPtr<CesiumIonClient::Asset> item, const TSharedRef<STableViewBase>& list);
