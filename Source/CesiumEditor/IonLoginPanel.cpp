@@ -13,7 +13,7 @@
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
-#include "GenericPlatform/GenericPlatformMisc.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "CesiumIonClient/Token.h"
 #include "CesiumIonClient/Connection.h"
 #include "UnrealConversions.h"
@@ -154,7 +154,7 @@ FReply IonLoginPanel::SignIn() {
 
 FReply IonLoginPanel::CopyAuthorizeUrlToClipboard() {
     FText url = FText::FromString(utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl()));
-	FGenericPlatformMisc::ClipboardCopy(*url.ToString());
+	FPlatformApplicationMisc::ClipboardCopy(*url.ToString());
     return FReply::Handled();
 }
 

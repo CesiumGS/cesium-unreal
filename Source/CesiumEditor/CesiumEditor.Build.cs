@@ -52,6 +52,7 @@ public class CesiumEditor : ModuleRules
             {
                 "CoreUObject",
                 "Engine",
+                "ApplicationCore",
                 "Slate",
                 "SlateCore",
                 "MeshDescription",
