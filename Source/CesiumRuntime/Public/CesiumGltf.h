@@ -7,20 +7,19 @@
 #include "CesiumGltf.generated.h"
 
 UCLASS()
-class CESIUMRUNTIME_API ACesiumGltf : public AActor
-{
-	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	ACesiumGltf();
+class CESIUMRUNTIME_API ACesiumGltf : public AActor {
+  GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Cesium")
-	FString Url;
+public:
+  // Sets default values for this actor's properties
+  ACesiumGltf();
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Url;
 
 protected:
-	virtual void BeginPlay() override;
-	virtual void OnConstruction(const FTransform& Transform);
+  virtual void BeginPlay() override;
+  virtual void OnConstruction(const FTransform& Transform);
 
-	class UCesiumGltfComponent* Model;
+  class UCesiumGltfComponent* Model;
 };
