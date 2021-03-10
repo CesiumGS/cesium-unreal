@@ -6,3 +6,11 @@ PointerAlignment: Left
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: false
+# Rules for Unreal Engine Pregenerated Headers
+IncludeCategories:
+  - Regex:           '.*\.generated\.h'
+    Priority:        100
+  - Regex:           '.*(PCH).*'
+    Priority:        -1
+# Don't break string literals - Unreal isn't good at handling them
+BreakStringLiterals: false
