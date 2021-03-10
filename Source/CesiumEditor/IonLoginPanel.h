@@ -7,15 +7,14 @@
 class FArguments;
 
 class IonLoginPanel : public SCompoundWidget {
-    SLATE_BEGIN_ARGS(IonLoginPanel)
-    {}
-    SLATE_END_ARGS()
+  SLATE_BEGIN_ARGS(IonLoginPanel) {}
+  SLATE_END_ARGS()
 
-    void Construct(const FArguments& InArgs);
+  void Construct(const FArguments& InArgs);
 
 private:
-    void LaunchBrowserAgain();
+  void LaunchBrowserAgain();
 
-    FReply SignIn();
-    FReply CopyAuthorizeUrlToClipboard();
+  FReply SignIn();
+  FReply CopyAuthorizeUrlToClipboard();
 };
