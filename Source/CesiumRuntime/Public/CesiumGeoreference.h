@@ -324,6 +324,9 @@ private:
 	glm::dmat4 _ueToEcef;
 	glm::dmat4 _ecefToUe;
 
+	bool _insideSublevel;
+
+	void _setGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight);
 	void _jumpToLevel(const FCesiumSubLevel& level);
 	void _setSunSky(double longitude, double latitude);
 

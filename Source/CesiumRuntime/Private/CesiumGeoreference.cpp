@@ -42,7 +42,8 @@ ACesiumGeoreference::ACesiumGeoreference() :
 	_georeferencedToEcef(1.0),
 	_ecefToGeoreferenced(1.0),
 	_ueToEcef(1.0),
-	_ecefToUe(1.0)
+	_ecefToUe(1.0),
+	_insideSublevel(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -88,11 +89,11 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 	std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraToECEF[3]);
 
 	if (!targetGeoreferenceOrigin) {
-		// TODO: should there be some other default behavior here? This only happens when the location is too close to the center of the Earth.
+		// This only happens when the location is too close to the center of the Earth.
 		return;
 	}
 
-	this->SetGeoreferenceOrigin(
+	this->_setGeoreferenceOrigin(
 		CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).longitude),
 		CesiumUtility::Math::radiansToDegrees((*targetGeoreferenceOrigin).latitude),
 		(*targetGeoreferenceOrigin).height
@@ -163,11 +164,11 @@ void ACesiumGeoreference::JumpToCurrentLevel() {
 }
 
 void ACesiumGeoreference::SetGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight) {
-	this->OriginLongitude = targetLongitude;
-	this->OriginLatitude = targetLatitude;
-	this->OriginHeight = targetHeight;
-
-	this->UpdateGeoreference();
+	// Should not allow externally initiated georeference origin changing if we are inside a sublevel
+	if (this->_insideSublevel) {
+		return;
+	}
+	this->_setGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
 }
 
 void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(float targetLongitude, float targetLatitude, float targetHeight) {
@@ -354,7 +355,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 					UE_LOG(LogActor, Warning, TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"), glm::degrees(cartographic.longitude), glm::degrees(cartographic.latitude), cartographic.height);
 
 					//if (mouseDown) {
-						//SetGeoreferenceOrigin()
+						//this->_setGeoreferenceOrigin()
 					//	this->EditOriginInViewport = false;
 					//}
 				}
@@ -379,7 +380,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 		glm::dvec3 cameraECEF = this->_ueToEcef * cameraAbsolute;
 		
-		bool insideSublevel = false;
+		this->_insideSublevel = false;
 
 		const TArray<ULevelStreaming*>& streamedLevels = this->GetWorld()->GetStreamingLevels();
 		for (ULevelStreaming* streamedLevel : streamedLevels) {
@@ -397,7 +398,7 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 					);
 
 					if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
-						insideSublevel = true;
+						this->_insideSublevel = true;
 						if (!level.CurrentlyLoaded) {
 							this->_jumpToLevel(level);
 							streamedLevel->SetShouldBeLoaded(true);
@@ -425,15 +426,15 @@ void ACesiumGeoreference::Tick(float DeltaTime)
 
 		/*
 		// EXPERIMENTAL GEOREFERENCE REBASING
-		if (!insideSublevel && glm::length(cameraECEF - glm::dvec3(this->_ueToEcef[3])) > 1000000.0) {
+		if (!this->_insideSublevel && glm::length(cameraECEF - glm::dvec3(this->_ueToEcef[3])) > 1000000.0) {
 			std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF);
 			if (targetGeoreferenceOrigin) {
-				this->SetGeoreferenceOrigin(glm::degrees((*targetGeoreferenceOrigin).longitude), glm::degrees((*targetGeoreferenceOrigin).latitude), (*targetGeoreferenceOrigin).height);
+				this->_setGeoreferenceOrigin(glm::degrees((*targetGeoreferenceOrigin).longitude), glm::degrees((*targetGeoreferenceOrigin).latitude), (*targetGeoreferenceOrigin).height);
 			}
 		}
 		*/
 
-		if (this->KeepWorldOriginNearCamera && (!insideSublevel || this->OriginRebaseInsideSublevels) && !cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
+		if (this->KeepWorldOriginNearCamera && (!this->_insideSublevel || this->OriginRebaseInsideSublevels) && !cameraLocation.Equals(FVector(0.0f, 0.0f, 0.0f), this->MaximumWorldOriginDistanceFromCamera)) {
 			// Camera has moved too far from the origin, move the origin.
 			this->GetWorld()->SetNewWorldOrigin(FIntVector(
 				static_cast<int32>(cameraLocation.X) + static_cast<int32>(originLocation.X),
@@ -481,8 +482,16 @@ FVector ACesiumGeoreference::InaccurateTransformUeToEcef(FVector point) {
  * Private Helper Functions
  */
 
+void ACesiumGeoreference::_setGeoreferenceOrigin(double targetLongitude, double targetLatitude, double targetHeight) {
+	this->OriginLongitude = targetLongitude;
+	this->OriginLatitude = targetLatitude;
+	this->OriginHeight = targetHeight;
+
+	this->UpdateGeoreference();
+}
+
 void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
-	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
+	this->_setGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
 }
 
 // TODO: Figure out if sunsky can ever be oriented so it's not at the top of the planet. Without this
