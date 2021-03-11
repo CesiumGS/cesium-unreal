@@ -48,10 +48,14 @@ ACesiumGeoreference::ACesiumGeoreference() :
 }
 
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
-	// TODO: check that we are in editor mode, and not play-in-editor mode
-	// TODO: should we just assume origin rebasing isn't happening since this is only editor-mode?
-	// Or are we even sure this is only for editor-mode?
 #if WITH_EDITOR
+	// TODO: should we just assume origin rebasing isn't happening since this is only editor-mode?
+
+	// If this is PIE mode, ignore
+	if (this->GetWorld()->IsGameWorld()) {
+		return;
+	}
+
 	FViewport* pViewport = GEditor->GetActiveViewport();
 	FViewportClient* pViewportClient = pViewport->GetClient();
 	FEditorViewportClient* pEditorViewportClient = static_cast<FEditorViewportClient*>(pViewportClient);
