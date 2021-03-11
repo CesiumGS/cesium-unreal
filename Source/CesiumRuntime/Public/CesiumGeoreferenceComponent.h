@@ -60,7 +60,7 @@ public:
 	 * The height in meters (above the WGS84 ellipsoid) of this actor.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
-	double Altitude = 0.0;
+	double Height = 0.0;
 
 	/**
 	 * The Earth-Centered Earth-Fixed X-coordinate of this actor.
@@ -95,13 +95,13 @@ public:
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	void MoveToLongLatAlt(double targetLongitude, double targetLatitude, double targetAltitude);
+	void MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetHeight);
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height. Inaccurate since this takes single-precision floats.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void InaccurateMoveToLongLatAlt(float targetLongitude, float targetLatitude, float targetAltitude);
+	void InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetHeight);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates.
@@ -162,7 +162,7 @@ private:
 	void _updateActorToUnrealRelativeWorldTransform();
 	void _setTransform(const glm::dmat4& transform);
 	void _setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
-	void _updateDisplayLongLatAlt();
+	void _updateDisplayLongLatHeight();
 	void _updateDisplayECEF();
 
 	glm::dvec3 _worldOriginLocation;

@@ -30,7 +30,7 @@ public:
 	 * The height in meters (above the WGS84 ellipsoid) of this actor.
 	 */
 	UPROPERTY(EditAnywhere, Category="Cesium")
-	double Altitude = 0.0;
+	double Height = 0.0;
 
 	/**
 	 * The Earth-Centered Earth-Fixed X-coordinate of this actor.
