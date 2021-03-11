@@ -524,14 +524,14 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
 		FProperty* Property = *PropertyIterator;
 		FName const PropertyName = Property->GetFName();
 		if (PropertyName == LongProp) {
-			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
+			FFloatProperty* floatProp = CastField<FFloatProperty>(Property);
 			if (floatProp)
 			{
 				floatProp->SetPropertyValue_InContainer((void*)this->SunSky, longitude);
 			}
 		}
 		else if (PropertyName == LatProp) {
-			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
+			FFloatProperty* floatProp = CastField<FFloatProperty>(Property);
 			if (floatProp)
 			{
 				floatProp->SetPropertyValue_InContainer((void*)this->SunSky, latitude);
