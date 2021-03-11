@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 
-namespace Chaos
-{
-	void CesiumCleanTriMeshes(TArray<FVector>& InOutVertices, TArray<int32>& InOutIndices, TArray<int32>* OutOptFaceRemap);
+namespace Chaos {
+void CesiumCleanTriMeshes(
+    TArray<FVector>& InOutVertices,
+    TArray<int32>& InOutIndices,
+    TArray<int32>* OutOptFaceRemap);
 }
