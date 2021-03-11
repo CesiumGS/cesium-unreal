@@ -5,6 +5,11 @@
     "license": "MIT"
   },
   {
+    "name": "cesium-native",
+    "url": "https://github.com/CesiumGS/cesium-native",
+    "license": "Apache 2.0"
+  },
+  {
     "name": "cpp-httplib",
     "url": "https://github.com/yhirose/cpp-httplib",
     "license": "MIT"
@@ -33,6 +38,11 @@
     "name": "PicoSHA2",
     "url": "https://github.com/okdshin/PicoSHA2",
     "license": "MIT"
+  },
+  {
+    "name": "modp_b64",
+    "url": "https://github.com/chromium/chromium/tree/15996b5d2322b634f4197447b10289bddc2b0b32/third_party/modp_b64",
+    "license": "BSD-3-Clause"
   },
   {
     "name": "RapidJSON",

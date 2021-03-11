@@ -1,7 +1,9 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 using UnrealBuildTool;
+using System;
 using System.IO;
+using System.Linq;
 
 public class CesiumRuntime : ModuleRules
 {
@@ -11,74 +13,58 @@ public class CesiumRuntime : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
-				// ... add public include paths required here ...
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/Cesium3DTiles/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumAsync/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGeospatial/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGeometry/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGltf/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumGltfReader/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/CesiumUtility/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/glm"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/GSL/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/asyncplusplus/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/spdlog/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/rapidjson/include"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/stb"),
-                Path.Combine(ModuleDirectory, "../../extern/cesium-native/extern/sqlite3"),
+                Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
-            );
+        );
 
 
         PrivateIncludePaths.AddRange(
             new string[] {
-				// ... add other private include paths required here ...
+                // ... add other private include paths required here ...
             }
-            );
+        );
 
-        string cesiumNativeConfiguration = "Debug";
-        string tinyxml2Name = "tinyxml2d.lib";
-        string spdlogLibName = "spdlogd.lib";
-        if (Target.Configuration == UnrealTargetConfiguration.Shipping)
+        string platform = Target.Platform == UnrealTargetPlatform.Win64
+            ? "Windows-x64"
+            : "Unknown";
+
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
+
+        string[] libs = new string[]
         {
-            cesiumNativeConfiguration = "RelWithDebInfo";
-            tinyxml2Name = "tinyxml2.lib";
-            spdlogLibName = "spdlog.lib";
-        }
+            "async++",
+            "Cesium3DTiles",
+            "CesiumAsync",
+            "CesiumGeometry",
+            "CesiumGeospatial",
+            "CesiumGltfReader",
+            "CesiumGltf",
+            "CesiumUtility",
+            "draco",
+            "modp_b64",
+            "spdlog",
+            "sqlite3",
+            "tinyxml2",
+            "uriparser"
+        };
 
-        PublicAdditionalLibraries.AddRange(
-            new string[]
-            {
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/Cesium3DTiles/" + cesiumNativeConfiguration + "/Cesium3DTiles.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumAsync/" + cesiumNativeConfiguration + "/CesiumAsync.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeospatial/" + cesiumNativeConfiguration + "/CesiumGeospatial.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGeometry/" + cesiumNativeConfiguration + "/CesiumGeometry.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGltf/" + cesiumNativeConfiguration + "/CesiumGltf.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumGltfReader/" + cesiumNativeConfiguration + "/CesiumGltfReader.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/CesiumUtility/" + cesiumNativeConfiguration + "/CesiumUtility.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/uriparser/" + cesiumNativeConfiguration + "/uriparser.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/draco/" + cesiumNativeConfiguration + "/draco.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/asyncplusplus/" + cesiumNativeConfiguration + "/async++.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/sqlite3/" + cesiumNativeConfiguration + "/sqlite3.lib"),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/tinyxml2/" + cesiumNativeConfiguration + "/" + tinyxml2Name),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/spdlog/" + cesiumNativeConfiguration + "/" + spdlogLibName),
-                Path.Combine(ModuleDirectory, "../../extern/build/cesium-native/extern/modp_b64/" + cesiumNativeConfiguration + "/modp_b64.lib")
-            }
-            );
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + debugPostfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
+            new string[]
+            {
+                "Core",
+                // ... add other public dependencies that you statically link with here ...
+            }
+        );
 
 
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
                 // TODO: remove Slate dependency? Anything else?
+                "RHI",
                 "CoreUObject",
                 "Engine",
                 "Slate",
@@ -89,8 +75,8 @@ public class CesiumRuntime : ModuleRules
                 "MikkTSpace",
                 "Chaos",
                 "LevelSequence"
-				// ... add private dependencies that you statically link with here ...	
-			}
+                // ... add private dependencies that you statically link with here ...
+            }
         );
 
         PublicDefinitions.AddRange(
@@ -98,7 +84,7 @@ public class CesiumRuntime : ModuleRules
             {
                 "SPDLOG_COMPILED_LIB"
             }
-            );
+        );
 
         if (Target.bCompilePhysX && !Target.bUseChaos)
         {
@@ -116,11 +102,11 @@ public class CesiumRuntime : ModuleRules
         }
 
         DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
+            new string[]
+            {
+                // ... add any modules that your module loads dynamically here ...
+            }
+        );
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
