@@ -95,24 +95,24 @@ public:
 	/**
 	 * Move the actor to the specified longitude/latitude/height.
 	 */
-	void MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetHeight);
+	void MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetHeight, bool maintainRelativeOrientation = true);
 
 	/**
 	 * Move the actor to the specified longitude/latitude/height. Inaccurate since this takes single-precision floats.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetHeight);
+	void InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetHeight, bool maintainRelativeOrientation = true);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates.
 	 */
-	void MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
+	void MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z, bool maintainRelativeOrientation = true);
 
 	/**
 	 * Move the actor to the specified ECEF coordinates. Inaccurate since this takes single-precision floats.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z);
+	void InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z, bool maintainRelativeOrientation = true);
 
 	virtual void OnRegister() override;
 
@@ -161,7 +161,7 @@ private:
 	void _updateActorToECEF();
 	void _updateActorToUnrealRelativeWorldTransform();
 	void _setTransform(const glm::dmat4& transform);
-	void _setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
+	void _setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z, bool maintainRelativeOrientation);
 	void _updateDisplayLongLatHeight();
 	void _updateDisplayECEF();
 

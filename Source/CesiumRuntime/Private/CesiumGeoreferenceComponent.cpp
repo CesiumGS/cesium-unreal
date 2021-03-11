@@ -87,26 +87,26 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGeoreferenceComponent::MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetHeight) {
+void UCesiumGeoreferenceComponent::MoveToLongLatHeight(double targetLongitude, double targetLatitude, double targetHeight, bool maintainRelativeOrientation) {
 	glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
 		CesiumGeospatial::Cartographic::fromDegrees(targetLongitude, targetLatitude, targetHeight)
 	);
 
-	this->_setECEF(ecef.x, ecef.y, ecef.z);
+	this->_setECEF(ecef.x, ecef.y, ecef.z, maintainRelativeOrientation);
 	this->_updateDisplayECEF();
 }
 
-void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetHeight) {
-	this->MoveToLongLatHeight(targetLongitude, targetLatitude, targetHeight);
+void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(float targetLongitude, float targetLatitude, float targetHeight, bool maintainRelativeOrientation) {
+	this->MoveToLongLatHeight(targetLongitude, targetLatitude, targetHeight, maintainRelativeOrientation);
 }
 
-void UCesiumGeoreferenceComponent::MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z) {
-	this->_setECEF(targetEcef_x, targetEcef_y, targetEcef_z);
+void UCesiumGeoreferenceComponent::MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z, bool maintainRelativeOrientation) {
+	this->_setECEF(targetEcef_x, targetEcef_y, targetEcef_z, maintainRelativeOrientation);
 	this->_updateDisplayLongLatHeight();
 }
 
-void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z) {
-	this->MoveToECEF(targetEcef_x, targetEcef_y, targetEcef_z);
+void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(float targetEcef_x, float targetEcef_y, float targetEcef_z, bool maintainRelativeOrientation) {
+	this->MoveToECEF(targetEcef_x, targetEcef_y, targetEcef_z, maintainRelativeOrientation);
 }
 
 // TODO: is this the best place to attach to the root component of the owner actor?
@@ -354,8 +354,15 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 	)));
 }
 
-void UCesiumGeoreferenceComponent::_setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z) {
-	this->_actorToECEF[3] = glm::dvec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
+void UCesiumGeoreferenceComponent::_setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z, bool maintainRelativeOrientation) {
+	if (!maintainRelativeOrientation) {
+		this->_actorToECEF[3] = glm::dvec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
+	} else {
+		// Note: this probably degenerates when starting at or moving to either of the poles
+		glm::dmat4 startEcefToEnu = glm::affineInverse(CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(this->_actorToECEF[3]));
+		glm::dmat4 endEnuToEcef = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(glm::vec3(targetEcef_x, targetEcef_y, targetEcef_z));
+		this->_actorToECEF = endEnuToEcef * startEcefToEnu * this->_actorToECEF;
+	}
 
 	this->_updateActorToUnrealRelativeWorldTransform();
 	this->_setTransform(this->_actorToUnrealRelativeWorld);
