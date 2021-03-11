@@ -259,43 +259,6 @@ void ACesiumGeoreference::UpdateGeoreference()
 	}
 
 	this->_setSunSky(this->OriginLongitude, this->OriginLatitude);
-	/*
-	// TODO: move into separate function so it is decoupled from general georeference updates (e.g. it can be updated separately based on camera even)
-	if (!SunSky) {
-		return;
-	}
-
-	// SunSky needs to be clamped to the ellipsoid below the georeference origin
-	const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-	SunSky->SetActorLocation(FVector(0.0, 0.0, -100.0 * this->OriginHeight) - FVector(originLocation));
-
-	UClass* SunSkyClass = SunSky->GetClass();
-	static FName LongProp = TEXT("Longitude");
-	static FName LatProp = TEXT("Latitude");
-	for (TFieldIterator<FProperty> PropertyIterator(SunSkyClass); PropertyIterator; ++PropertyIterator)
-	{
-		FProperty* Property = *PropertyIterator;
-		FName const PropertyName = Property->GetFName();
-		if (PropertyName == LongProp) {
-			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
-			if (floatProp)
-			{
-				floatProp->SetPropertyValue_InContainer((void*)SunSky, this->OriginLongitude);
-			}
-		}
-		else if (PropertyName == LatProp) {
-			FFloatProperty* floatProp = Cast<FFloatProperty>(Property);
-			if (floatProp)
-			{
-				floatProp->SetPropertyValue_InContainer((void*)SunSky, this->OriginLatitude);
-			}
-		}
-	}
-	UFunction* UpdateSun = SunSky->FindFunction(TEXT("UpdateSun"));
-	if (UpdateSun) {
-		SunSky->ProcessEvent(UpdateSun, NULL);
-	}
-	*/
 }
 
 #if WITH_EDITOR
@@ -518,11 +481,12 @@ void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 	this->SetGeoreferenceOrigin(level.LevelLongitude, level.LevelLatitude, level.LevelHeight);
 }
 
-// TODO: Figure out if sunsky can ever be oriented so it's not at the top of the planet.
-// The options in skyatmosphere (i.e. abs origin is top, comp transform is top, comp transf is center)
-// are all worth trying, but ime they only affect the position, not orientation of the sunsky. If there
-// is no way to orient the sunsky, that means the sunsky will only look correct when camera is close to 
-// the georeference origin. 
+// TODO: Figure out if sunsky can ever be oriented so it's not at the top of the planet. Without this
+// sunsky will only look good when we set the georeference origin to be near the camera. There 
+// might be hope in creating our own blueprint (SunSky seems pretty simple since the underlying C++
+// library does most of the heavy lifting). Creating our own blueprint that uses the SunSky C++ library
+// would let us potentially orient as desired and would greatly simplify the process of interoperability 
+// between SunSky and our plugin, since we can preset all the settings we'd need.
 void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
 	if (!this->SunSky) {
 		return;
