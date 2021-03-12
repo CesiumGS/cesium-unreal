@@ -107,6 +107,98 @@ void ACesium3DTileset::StopMovieSequencer() {
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
 
+void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
+  struct TransformBoundingVolume {
+    glm::dmat4 toUnrealCoordinate;
+
+    Cesium3DTiles::BoundingVolume operator()(const CesiumGeometry::BoundingSphere& sphere) {
+      return Cesium3DTiles::transformBoundingVolume(toUnrealCoordinate, sphere);
+    }
+
+    Cesium3DTiles::BoundingVolume
+    operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
+      return Cesium3DTiles::transformBoundingVolume(toUnrealCoordinate, orientedBoundingBox);
+    }
+
+    Cesium3DTiles::BoundingVolume
+    operator()(const CesiumGeospatial::BoundingRegion& boundingRegion) {
+      return Cesium3DTiles::transformBoundingVolume(toUnrealCoordinate, boundingRegion.getBoundingBox());
+    }
+
+    Cesium3DTiles::BoundingVolume
+    operator()(const CesiumGeospatial::BoundingRegionWithLooseFittingHeights& boundingRegionWithLooseFittingHeights) {
+      return Cesium3DTiles::transformBoundingVolume(toUnrealCoordinate, boundingRegionWithLooseFittingHeights.getBoundingRegion().getBoundingBox());
+    }
+
+  };
+
+  struct BoundingVolumeToFBox {
+    FBox operator()(const CesiumGeometry::BoundingSphere& sphere) {
+      const glm::dvec3& center = sphere.getCenter();
+      FVector unrealCenter(center.x, center.y, center.z); 
+      return FBox(unrealCenter - sphere.getRadius(), unrealCenter + sphere.getRadius());
+    }
+
+    FBox
+    operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
+      const glm::dvec3& center = orientedBoundingBox.getCenter();
+      const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
+      const glm::dvec3& xHalf = halfAxes[0];
+      const glm::dvec3& yHalf = halfAxes[1];
+      const glm::dvec3& zHalf = halfAxes[2];
+
+      static const double signs[] = {-1.0, 1.0};
+      glm::dvec3 min{std::numeric_limits<double>::max()};
+      glm::dvec3 max{std::numeric_limits<double>::lowest()};
+      for (int32 i = 0; i < 2; i++) {
+        for (int32 j = 0; j < 2; j++) {
+          for (int32 k = 0; k < 2; k++) {
+            glm::dvec3 corner =
+                center + signs[i] * xHalf + signs[j] * yHalf + signs[k] * zHalf;
+            min.x = glm::min(corner.x, min.x);
+            min.y = glm::min(corner.y, min.y);
+            min.z = glm::min(corner.z, min.z);
+
+            max.x = glm::max(corner.x, max.x);
+            max.y = glm::max(corner.y, max.y);
+            max.z = glm::max(corner.z, max.z);
+          }
+        }
+      }
+
+      return FBox(FVector(min.x, min.y, min.z), FVector(max.x, max.y, max.z));
+    }
+
+    FBox
+    operator()(const CesiumGeospatial::BoundingRegion& boundingRegion) {
+      return (*this)(boundingRegion.getBoundingBox());
+    }
+
+    FBox operator()(const CesiumGeospatial::BoundingRegionWithLooseFittingHeights& boundingRegionWithLooseFittingHeights) {
+      return (*this)(boundingRegionWithLooseFittingHeights.getBoundingRegion());
+    }
+  };
+
+  if (actor != this) {
+    return; 
+  }
+
+  const Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
+  if (!pRootTile) {
+    return;
+  }
+
+  glm::dmat4 transform = this->GetCesiumTilesetToUnrealRelativeWorldTransform();
+  const Cesium3DTiles::BoundingVolume& boundingVolume =
+      pRootTile->getBoundingVolume();
+  Cesium3DTiles::BoundingVolume unrealCoordBoundingVolume = std::visit(
+      TransformBoundingVolume{
+          this->GetCesiumTilesetToUnrealRelativeWorldTransform()},
+      boundingVolume);
+  FBox unrealAABB = std::visit(BoundingVolumeToFBox(), unrealCoordBoundingVolume);
+  GEditor->MoveViewportCamerasToBox(unrealAABB, false); 
+}
+
 const glm::dmat4&
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
   return Cast<UCesium3DTilesetRoot>(this->RootComponent)
@@ -184,6 +276,14 @@ void ACesium3DTileset::BeginPlay() {
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
+#if WITH_EDITOR
+  FEditorDelegates::OnFocusViewportOnActors.AddLambda([this](const TArray<AActor *>& actors) {
+	if (actors.Num() == 1) {
+	  this->OnFocusEditorViewportOnActors(actors[0]);
+	}
+  });
+#endif // EDITOR
+
   this->LoadTileset();
 }
 

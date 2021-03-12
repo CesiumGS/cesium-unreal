@@ -267,6 +267,8 @@ public:
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+  void OnFocusEditorViewportOnActors(const AActor* actor);
+
   Cesium3DTiles::Tileset* _pTileset;
 
   UMaterial* _lastMaterial = nullptr;
