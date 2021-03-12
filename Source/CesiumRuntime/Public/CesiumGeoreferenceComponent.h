@@ -40,7 +40,7 @@ public:
    * the source ECEF transform during origin-rebase. This is useful for
    * maintaining high-precision for fixed objects like buildings. This may need
    * to be disabled for objects where the Unreal transform (inaccurate as it may
-   * be) is the ground truth, e.g. Unreal physics objects.
+   * be) is the ground truth, e.g. Unreal physics objects, cameras, etc.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   bool FixTransformOnOriginRebase = true;
@@ -61,7 +61,7 @@ public:
    * The height in meters (above the WGS84 ellipsoid) of this actor.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  double Altitude = 0.0;
+  double Height = 0.0;
 
   /**
    * The Earth-Centered Earth-Fixed X-coordinate of this actor.
@@ -98,26 +98,31 @@ public:
   /**
    * Move the actor to the specified longitude/latitude/height.
    */
-  void MoveToLongLatAlt(
+  void MoveToLongLatHeight(
       double targetLongitude,
       double targetLatitude,
-      double targetAltitude);
+      double targetHeight,
+      bool maintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified longitude/latitude/height. Inaccurate since
    * this takes single-precision floats.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateMoveToLongLatAlt(
+  void InaccurateMoveToLongLatHeight(
       float targetLongitude,
       float targetLatitude,
-      float targetAltitude);
+      float targetHeight,
+      bool maintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified ECEF coordinates.
    */
-  void
-  MoveToECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
+  void MoveToECEF(
+      double targetEcef_x,
+      double targetEcef_y,
+      double targetEcef_z,
+      bool maintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified ECEF coordinates. Inaccurate since this
@@ -127,7 +132,8 @@ public:
   void InaccurateMoveToECEF(
       float targetEcef_x,
       float targetEcef_y,
-      float targetEcef_z);
+      float targetEcef_z,
+      bool maintainRelativeOrientation = true);
 
   virtual void OnRegister() override;
 
@@ -167,8 +173,7 @@ public:
   virtual bool IsBoundingVolumeReady() const override;
   virtual std::optional<Cesium3DTiles::BoundingVolume>
   GetBoundingVolume() const override;
-  virtual void UpdateGeoreferenceTransform(
-      const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) override;
+  virtual void NotifyGeoreferenceUpdated() override;
 
   void SetAutoSnapToEastSouthUp(bool value);
 
@@ -184,11 +189,13 @@ private:
   void _initGeoreference();
   void _updateActorToECEF();
   void _updateActorToUnrealRelativeWorldTransform();
-  void _updateActorToUnrealRelativeWorldTransform(
-      const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
   void _setTransform(const glm::dmat4& transform);
-  void _setECEF(double targetEcef_x, double targetEcef_y, double targetEcef_z);
-  void _updateDisplayLongLatAlt();
+  void _setECEF(
+      double targetEcef_x,
+      double targetEcef_y,
+      double targetEcef_z,
+      bool maintainRelativeOrientation);
+  void _updateDisplayLongLatHeight();
   void _updateDisplayECEF();
 
   glm::dvec3 _worldOriginLocation;

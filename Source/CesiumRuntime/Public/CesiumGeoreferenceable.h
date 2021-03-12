@@ -37,9 +37,9 @@ public:
   GetBoundingVolume() const = 0;
 
   /**
-   * Updates this object with a new transformation from the ellipsoid-centered
-   * coordinate system to the local coordinates of the georeferenced origin.
+   * Notifies georeferenced objects that the underlying georeference transforms
+   * have been updated. The new transforms can be fetched from the
+   * `CesiumWorldGeoreference` actor.
    */
-  virtual void UpdateGeoreferenceTransform(
-      const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform) = 0;
+  virtual void NotifyGeoreferenceUpdated() = 0;
 };

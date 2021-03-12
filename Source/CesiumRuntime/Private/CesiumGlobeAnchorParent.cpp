@@ -31,7 +31,7 @@ void ACesiumGlobeAnchorParent::Tick(float DeltaTime) {
 
     this->Longitude = this->GeoreferenceComponent->Longitude;
     this->Latitude = this->GeoreferenceComponent->Latitude;
-    this->Altitude = this->GeoreferenceComponent->Altitude;
+    this->Height = this->GeoreferenceComponent->Height;
 
     this->ECEF_X = this->GeoreferenceComponent->ECEF_X;
     this->ECEF_Y = this->GeoreferenceComponent->ECEF_Y;
@@ -57,11 +57,11 @@ void ACesiumGlobeAnchorParent::PostEditChangeProperty(
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Latitude) ||
       propertyName ==
-          GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Altitude)) {
-    this->GeoreferenceComponent->MoveToLongLatAlt(
+          GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Height)) {
+    this->GeoreferenceComponent->MoveToLongLatHeight(
         this->Longitude,
         this->Latitude,
-        this->Altitude);
+        this->Height);
     return;
   } else if (
       propertyName ==
