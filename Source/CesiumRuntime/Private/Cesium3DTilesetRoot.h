@@ -4,6 +4,7 @@
 
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
+#include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <optional>
 #include "Cesium3DTilesetRoot.generated.h"
@@ -37,21 +38,8 @@ public:
   /**
    * @brief Recalculates {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
    * and marks it changed.
-   *
-   * It is not usually necessary to call this method directly.
    */
   void RecalculateTransform();
-
-  /**
-   * @brief Recalculates {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * using the new ellipsoid-centered to georeferenced transform and marks it
-   * changed.
-   *
-   * @param ellipsoidCenteredToGeoreferencedTransform The updated
-   * ellipsoid-centered to georeferenced transform to use
-   */
-  void UpdateGeoreferenceTransform(
-      const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 
   /**
    * @brief Gets the transform from the "Cesium Tileset" reference frame to the
@@ -93,8 +81,6 @@ protected:
 private:
   void _updateAbsoluteLocation();
   void _updateTilesetToUnrealRelativeWorldTransform();
-  void _updateTilesetToUnrealRelativeWorldTransform(
-      const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
 
   glm::dvec3 _worldOriginLocation;
   glm::dvec3 _absoluteLocation;
