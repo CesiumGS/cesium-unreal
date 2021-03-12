@@ -290,31 +290,91 @@ public:
       float targetLatitude,
       float targetHeight);
 
+  /*
+   * USEFUL CONVERSION FUNCTIONS
+   */
+
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into ECEF coordinates.
+   */
+  glm::dvec3 TransformLongLatHeightToEcef(glm::dvec3 longLatHeight) const;
+
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into ECEF coordinates.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformLongLatHeightToEcef(FVector longLatHeight) const;
+
+  /**
+   * Transforms the given ECEF coordinates into longitude, latitude, and height
+   * (in degrees and meters respectively) relative to the WGS84 ellipsoid.
+   */
+  glm::dvec3 TransformEcefToLongLatHeight(glm::dvec3 ecef) const;
+
+  /**
+   * Transforms the given ECEF coordinates into longitude, latitude, and height
+   * (in degrees and meters respectively) relative to the WGS84 ellipsoid.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformEcefToLongLatHeight(FVector ecef) const;
+  
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into Unreal world coordinates (relative to the 
+   * absolute origin).
+   */
+  glm::dvec3 TransformLongLatHeightToUe(glm::dvec3 longLatHeight) const;
+
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into Unreal world coordinates (relative to the
+   * absolute origin).
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformLongLatHeightToUe(FVector longLatHeight) const;
+
+  /**
+   * Transforms Unreal world coordinates (relative to the absolute origin) to
+   * longitude, latitude, and height (in degrees and meters respectively)
+   * relative to the WGS84 ellipsoid.
+   */
+  glm::dvec3 TransformUeToLongLatHeight(glm::dvec3 ue) const;
+
+  /**
+   * Transforms Unreal world coordinates (relative to the absolute origin) to
+   * longitude, latitude, and height (in degrees and meters respectively)
+   * relative to the WGS84 ellipsoid.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformUeToLongLatHeight(FVector ue) const;
+
   /**
    * Transforms the given point from ECEF to Unreal relative world coordinates
    * (relative to the floating origin).
    */
-  glm::dvec3 TransformEcefToUe(glm::dvec3 point);
+  glm::dvec3 TransformEcefToUe(glm::dvec3 ecef) const;
 
   /**
    * Transforms the given point from ECEF to Unreal relative world coordinates
    * (relative to the floating origin).
    */
   UFUNCTION(BlueprintCallable)
-  FVector InaccurateTransformEcefToUe(FVector point);
+  FVector InaccurateTransformEcefToUe(FVector ecef) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to ECEF.
    */
-  glm::dvec3 TransformUeToEcef(glm::dvec3 point);
+  glm::dvec3 TransformUeToEcef(glm::dvec3 ue) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to ECEF.
    */
   UFUNCTION(BlueprintCallable)
-  FVector InaccurateTransformUeToEcef(FVector point);
+  FVector InaccurateTransformUeToEcef(FVector ue) const;
 
   /**
    * @brief Gets the transformation from the "Georeferenced" reference frame

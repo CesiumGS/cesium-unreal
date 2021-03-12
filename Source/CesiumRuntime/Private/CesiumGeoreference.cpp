@@ -534,34 +534,97 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
  * Useful Conversion Functions
  */
 
-glm::dvec3 ACesiumGeoreference::TransformEcefToUe(glm::dvec3 point) {
-  glm::dvec3 ueAbs = this->_ecefToUe * glm::vec4(point, 1.0);
+glm::dvec3 ACesiumGeoreference::TransformLongLatHeightToEcef(
+  glm::dvec3 longLatHeight) const {
+  return CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+      CesiumGeospatial::Cartographic::fromDegrees(
+        longLatHeight.x,
+        longLatHeight.y,
+        longLatHeight.z));
+}
+
+FVector ACesiumGeoreference::InaccurateTransformLongLatHeightToEcef(
+    FVector longLatHeight) const {
+  glm::dvec3 ecef = this->TransformLongLatHeightToEcef(
+    glm::dvec3(longLatHeight.X, longLatHeight.Y, longLatHeight.Z));
+  return FVector(ecef.x, ecef.y, ecef.z);
+}
+
+glm::dvec3
+ACesiumGeoreference::TransformEcefToLongLatHeight(glm::dvec3 ecef) const {
+  std::optional<CesiumGeospatial::Cartographic> llh =
+      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
+  if (!llh) {
+    // TODO: since degenerate cases only happen close to Earth's center
+    // would it make more sense to assign an arbitrary LLH coordinate to
+    // this case such as (0.0, 0.0, -_EARTH_RADIUS_)?
+    return glm::dvec3(0.0, 0.0, 0.0);
+  }
+  return glm::dvec3(
+      glm::degrees((*llh).longitude),
+      glm::degrees((*llh).latitude),
+      (*llh).height);
+}
+
+FVector ACesiumGeoreference::InaccurateTransformEcefToLongLatHeight(
+    FVector ecef) const {
+  glm::dvec3 llh =
+      this->TransformEcefToLongLatHeight(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+  return FVector(llh.x, llh.y, llh.z);
+}
+
+glm::dvec3 ACesiumGeoreference::TransformLongLatHeightToUe(
+    glm::dvec3 longLatHeight) const {
+  glm::dvec3 ecef = this->TransformLongLatHeightToEcef(longLatHeight);
+  return this->_ecefToUe * glm::dvec4(ecef, 1.0);
+}
+
+FVector ACesiumGeoreference::InaccurateTransformLongLatHeightToUe(
+    FVector longLatHeight) const {
+  glm::dvec3 ue = this->TransformLongLatHeightToUe(
+      glm::dvec3(longLatHeight.X, longLatHeight.Y, longLatHeight.Z));
+  return FVector(ue.x, ue.y, ue.z);
+}
+
+glm::dvec3
+ACesiumGeoreference::TransformUeToLongLatHeight(glm::dvec3 ue) const {
+  glm::dvec3 ecef = this->_ueToEcef * glm::dvec4(ue, 1.0);
+  return this->TransformEcefToLongLatHeight(ecef);
+}
+
+FVector
+ACesiumGeoreference::InaccurateTransformUeToLongLatHeight(FVector ue) const {
+  glm::dvec3 llh = this->TransformUeToLongLatHeight(
+    glm::dvec3(ue.X, ue.Y, ue.Z));
+  return FVector(llh.x, llh.y, llh.z);
+}
+
+glm::dvec3 ACesiumGeoreference::TransformEcefToUe(glm::dvec3 ecef) const {
+  glm::dvec3 ueAbs = this->_ecefToUe * glm::vec4(ecef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   return ueAbs -
          glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
 }
 
-FVector ACesiumGeoreference::InaccurateTransformEcefToUe(FVector point) {
-  glm::dvec3 ue =
-      this->TransformEcefToUe(glm::dvec3(point.X, point.Y, point.Z));
+FVector ACesiumGeoreference::InaccurateTransformEcefToUe(FVector ecef) const {
+  glm::dvec3 ue = this->TransformEcefToUe(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
   return FVector(ue.x, ue.y, ue.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformUeToEcef(glm::dvec3 point) {
+glm::dvec3 ACesiumGeoreference::TransformUeToEcef(glm::dvec3 ue) const {
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   glm::dvec4 ueAbs(
-      point.x + static_cast<double>(originLocation.X),
-      point.y + static_cast<double>(originLocation.Y),
-      point.z + static_cast<double>(originLocation.Z),
+      ue.x + static_cast<double>(originLocation.X),
+      ue.y + static_cast<double>(originLocation.Y),
+      ue.z + static_cast<double>(originLocation.Z),
       1.0);
 
   return this->_ueToEcef * ueAbs;
 }
 
-FVector ACesiumGeoreference::InaccurateTransformUeToEcef(FVector point) {
-  glm::dvec3 ecef =
-      this->TransformUeToEcef(glm::dvec3(point.X, point.Y, point.Z));
+FVector ACesiumGeoreference::InaccurateTransformUeToEcef(FVector ue) const {
+  glm::dvec3 ecef = this->TransformUeToEcef(glm::dvec3(ue.X, ue.Y, ue.Z));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
