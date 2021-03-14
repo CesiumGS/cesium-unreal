@@ -9,6 +9,8 @@
 class CESIUMRUNTIME_API UnrealAssetAccessor
     : public CesiumAsync::IAssetAccessor {
 public:
+  UnrealAssetAccessor();
+
   virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
   requestAsset(
       const CesiumAsync::AsyncSystem& asyncSystem,
@@ -23,4 +25,7 @@ public:
       const gsl::span<const std::byte>& contentPayload) override;
 
   virtual void tick() noexcept override;
+
+private:
+	FString _userAgent;
 };

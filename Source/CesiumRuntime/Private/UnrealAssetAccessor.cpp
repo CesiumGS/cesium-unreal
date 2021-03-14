@@ -90,13 +90,29 @@ private:
   CesiumAsync::HttpHeaders _headers;
 };
 
+UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
+  FString OsVersion, OsSubVersion;
+  FPlatformMisc::GetOSVersions(OsVersion, OsSubVersion);
+
+  FString projectName = FApp::GetProjectName();
+
+  this->_userAgent = TEXT("Mozilla/5.0 (");
+  this->_userAgent += OsVersion;
+  this->_userAgent += TEXT(") Cesium For Unreal/1.0.0 (Project ");
+  this->_userAgent += projectName;
+  this->_userAgent += TEXT(")");
+}
+
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
 UnrealAssetAccessor::requestAsset(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
+
+  const FString& userAgent = this->_userAgent;
+
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
-      [&url, &headers](const auto& promise) {
+      [&url, &headers, &userAgent](const auto& promise) {
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
@@ -108,7 +124,7 @@ UnrealAssetAccessor::requestAsset(
               utf8_to_wstr(header.second));
         }
 
-        pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal"));
+        pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
 
         pRequest->OnProcessRequestComplete().BindLambda(
             [promise](
@@ -138,8 +154,11 @@ UnrealAssetAccessor::post(
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
     const gsl::span<const std::byte>& contentPayload) {
+
+  const FString& userAgent = this->_userAgent;
+
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
-      [&url, &headers, &contentPayload](const auto& promise) {
+      [&url, &headers, &userAgent, &contentPayload](const auto& promise) {
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
@@ -152,7 +171,7 @@ UnrealAssetAccessor::post(
               utf8_to_wstr(header.second));
         }
 
-        pRequest->AppendToHeader(TEXT("User-Agent"), TEXT("Cesium for Unreal"));
+        pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
 
         pRequest->SetContent(TArray<uint8>(
             reinterpret_cast<const uint8*>(contentPayload.data()),
