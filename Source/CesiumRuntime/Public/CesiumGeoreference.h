@@ -290,6 +290,7 @@ public:
       float targetLatitude,
       float targetHeight);
 
+
   /*
    * USEFUL CONVERSION FUNCTIONS
    */
@@ -323,27 +324,27 @@ public:
   /**
    * Transforms the given WGS84 longitude, latitude, and height (in degrees and
    * meters respectively) into Unreal world coordinates (relative to the 
-   * absolute origin).
+   * floating origin).
    */
   glm::dvec3 TransformLongLatHeightToUe(glm::dvec3 longLatHeight) const;
 
   /**
    * Transforms the given WGS84 longitude, latitude, and height (in degrees and
    * meters respectively) into Unreal world coordinates (relative to the
-   * absolute origin).
+   * floating origin).
    */
   UFUNCTION(BlueprintCallable)
   FVector InaccurateTransformLongLatHeightToUe(FVector longLatHeight) const;
 
   /**
-   * Transforms Unreal world coordinates (relative to the absolute origin) to
+   * Transforms Unreal world coordinates (relative to the floating origin) to
    * longitude, latitude, and height (in degrees and meters respectively)
    * relative to the WGS84 ellipsoid.
    */
   glm::dvec3 TransformUeToLongLatHeight(glm::dvec3 ue) const;
 
   /**
-   * Transforms Unreal world coordinates (relative to the absolute origin) to
+   * Transforms Unreal world coordinates (relative to the floating origin) to
    * longitude, latitude, and height (in degrees and meters respectively)
    * relative to the WGS84 ellipsoid.
    */
@@ -375,6 +376,11 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   FVector InaccurateTransformUeToEcef(FVector ue) const;
+
+
+  /*
+   * GEOREFERENCE TRANSFORMS
+   */
 
   /**
    * @brief Gets the transformation from the "Georeferenced" reference frame
@@ -414,7 +420,7 @@ public:
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
-    return this->_ueToEcef;
+    return this->_ueAbsToEcef;
   }
 
   /**
@@ -427,11 +433,11 @@ public:
    * not the floating origin). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
-    return this->_ecefToUe;
+    return this->_ecefToUeAbs;
   }
 
-  void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
+  void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
   void UpdateGeoreference();
 
 protected:
@@ -452,8 +458,8 @@ public:
 private:
   glm::dmat4 _georeferencedToEcef;
   glm::dmat4 _ecefToGeoreferenced;
-  glm::dmat4 _ueToEcef;
-  glm::dmat4 _ecefToUe;
+  glm::dmat4 _ueAbsToEcef;
+  glm::dmat4 _ecefToUeAbs;
 
   bool _insideSublevel;
 

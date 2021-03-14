@@ -45,8 +45,8 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 ACesiumGeoreference::ACesiumGeoreference()
     : _georeferencedToEcef(1.0),
       _ecefToGeoreferenced(1.0),
-      _ueToEcef(1.0),
-      _ecefToUe(1.0),
+      _ueAbsToEcef(1.0),
+      _ecefToUeAbs(1.0),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
@@ -101,7 +101,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           1.0));
 
   // camera local space to ECEF
-  glm::dmat4 cameraToECEF = this->_ueToEcef * cameraToAbsolute;
+  glm::dmat4 cameraToECEF = this->_ueAbsToEcef * cameraToAbsolute;
 
   // Long/Lat/Height camera location (also our new target georeference origin)
   std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin =
@@ -129,7 +129,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
   // TODO: check for degeneracy ?
   glm::dmat4 newCameraTransform =
-      absoluteToRelativeWorld * this->_ecefToUe * cameraToECEF;
+      absoluteToRelativeWorld * this->_ecefToUeAbs * cameraToECEF;
   glm::dvec3 cameraFront = glm::normalize(newCameraTransform[0]);
   glm::dvec3 cameraRight =
       glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
@@ -295,12 +295,12 @@ void ACesiumGeoreference::UpdateGeoreference() {
   this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
 
   // update UE -> ECEF
-  this->_ueToEcef = this->_georeferencedToEcef *
+  this->_ueAbsToEcef = this->_georeferencedToEcef *
                     CesiumTransforms::scaleToCesium *
                     CesiumTransforms::unrealToOrFromCesium;
 
   // update ECEF -> UE
-  this->_ecefToUe = CesiumTransforms::unrealToOrFromCesium *
+  this->_ecefToUeAbs = CesiumTransforms::unrealToOrFromCesium *
                     CesiumTransforms::scaleToUnrealWorld *
                     this->_ecefToGeoreferenced;
 
@@ -371,7 +371,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
                     level.LevelLatitude,
                     level.LevelHeight));
 
-        glm::dvec4 levelAbs = this->_ecefToUe * glm::dvec4(levelECEF, 1.0);
+        glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
         FVector levelRelative = FVector(levelAbs.x, levelAbs.y, levelAbs.z) -
                                 FVector(originLocation);
         DrawDebugSphere(
@@ -403,7 +403,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
                 static_cast<double>(originLocation.Z),
             1.0);
 
-        glm::dvec3 grabbedLocationECEF = this->_ueToEcef * grabbedLocationAbs;
+        glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
         std::optional<CesiumGeospatial::Cartographic> optCartographic =
             CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
                 grabbedLocationECEF);
@@ -445,7 +445,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
             static_cast<double>(originLocation.Z),
         1.0);
 
-    glm::dvec3 cameraECEF = this->_ueToEcef * cameraAbsolute;
+    glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
 
     this->_insideSublevel = false;
 
@@ -501,7 +501,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
     /*
     // EXPERIMENTAL GEOREFERENCE REBASING
     if (!this->_insideSublevel && glm::length(cameraECEF -
-    glm::dvec3(this->_ueToEcef[3])) > 1000000.0) {
+    glm::dvec3(this->_ueAbsToEcef[3])) > 1000000.0) {
             std::optional<CesiumGeospatial::Cartographic>
     targetGeoreferenceOrigin =
     CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF); if
@@ -530,6 +530,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   }
 }
 
+
 /**
  * Useful Conversion Functions
  */
@@ -556,8 +557,8 @@ ACesiumGeoreference::TransformEcefToLongLatHeight(glm::dvec3 ecef) const {
       CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
   if (!llh) {
     // TODO: since degenerate cases only happen close to Earth's center
-    // would it make more sense to assign an arbitrary LLH coordinate to
-    // this case such as (0.0, 0.0, -_EARTH_RADIUS_)?
+    // would it make more sense to assign an arbitrary but correct LLH 
+    // coordinate to this case such as (0.0, 0.0, -_EARTH_RADIUS_)?
     return glm::dvec3(0.0, 0.0, 0.0);
   }
   return glm::dvec3(
@@ -576,7 +577,7 @@ FVector ACesiumGeoreference::InaccurateTransformEcefToLongLatHeight(
 glm::dvec3 ACesiumGeoreference::TransformLongLatHeightToUe(
     glm::dvec3 longLatHeight) const {
   glm::dvec3 ecef = this->TransformLongLatHeightToEcef(longLatHeight);
-  return this->_ecefToUe * glm::dvec4(ecef, 1.0);
+  return this->TransformEcefToUe(ecef);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformLongLatHeightToUe(
@@ -588,7 +589,7 @@ FVector ACesiumGeoreference::InaccurateTransformLongLatHeightToUe(
 
 glm::dvec3
 ACesiumGeoreference::TransformUeToLongLatHeight(glm::dvec3 ue) const {
-  glm::dvec3 ecef = this->_ueToEcef * glm::dvec4(ue, 1.0);
+  glm::dvec3 ecef = this->_ueAbsToEcef * glm::dvec4(ue, 1.0);
   return this->TransformEcefToLongLatHeight(ecef);
 }
 
@@ -600,7 +601,7 @@ ACesiumGeoreference::InaccurateTransformUeToLongLatHeight(FVector ue) const {
 }
 
 glm::dvec3 ACesiumGeoreference::TransformEcefToUe(glm::dvec3 ecef) const {
-  glm::dvec3 ueAbs = this->_ecefToUe * glm::vec4(ecef, 1.0);
+  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::vec4(ecef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   return ueAbs -
@@ -620,7 +621,7 @@ glm::dvec3 ACesiumGeoreference::TransformUeToEcef(glm::dvec3 ue) const {
       ue.z + static_cast<double>(originLocation.Z),
       1.0);
 
-  return this->_ueToEcef * ueAbs;
+  return this->_ueAbsToEcef * ueAbs;
 }
 
 FVector ACesiumGeoreference::InaccurateTransformUeToEcef(FVector ue) const {
@@ -670,7 +671,7 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
               longitude,
               latitude,
               0.0));
-  glm::dvec4 targetAbsUe = this->_ecefToUe * glm::dvec4(targetEcef, 1.0);
+  glm::dvec4 targetAbsUe = this->_ecefToUeAbs * glm::dvec4(targetEcef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   this->SunSky->SetActorLocation(
