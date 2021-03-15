@@ -14,6 +14,7 @@ public:
   TSharedPtr<FUICommandInfo> AddBlankTileset;
   TSharedPtr<FUICommandInfo> AccessToken;
   TSharedPtr<FUICommandInfo> SignOut;
+  TSharedPtr<FUICommandInfo> OpenDocumentation;
 
   virtual void RegisterCommands() override;
 };

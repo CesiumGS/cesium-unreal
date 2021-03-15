@@ -13,3 +13,4 @@ noun_Key_679682.svg, noun_Key_679682.png: Key by IconfactoryTeam from the Noun P
 
 noun_sign_out_538366.svg, noun_sign_out_538366.png: sign out by IconfactoryTeam from the Noun Project https://thenounproject.com/term/signout/538366/
 
+noun_Learning_2161843.svg, noun_Learning_2161843.png: Learning by Adrien Coquet from the Noun Project https://thenounproject.com/term/Learning/2161843/

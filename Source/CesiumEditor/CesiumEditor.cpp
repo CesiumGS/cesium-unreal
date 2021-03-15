@@ -93,6 +93,11 @@ void FCesiumEditorModule::StartupModule() {
     StyleSet->Set(
         "Cesium.Common.SignOut",
         new IMAGE_BRUSH("NounProject/noun_sign_out_538366", Icon40x40));
+    StyleSet->Set(
+        "Cesium.Common.OpenDocumentation",
+        new IMAGE_BRUSH("NounProject/noun_Learning_2161843", Icon40x40));
+
+    
 
     StyleSet->Set(
         "Cesium.Logo",

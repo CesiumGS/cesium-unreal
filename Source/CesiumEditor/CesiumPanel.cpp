@@ -57,6 +57,9 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
       FCesiumCommands::Get().SignOut,
       FExecuteAction::CreateSP(this, &CesiumPanel::signOut),
       FCanExecuteAction::CreateStatic(isSignedIn));
+  commandList->MapAction(
+      FCesiumCommands::Get().OpenDocumentation,
+      FExecuteAction::CreateSP(this, &CesiumPanel::openDocumentation));
 
   FToolBarBuilder builder(commandList, FMultiBoxCustomization::None);
 
@@ -65,6 +68,7 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
   builder.AddToolBarButton(FCesiumCommands::Get().AddBlankTileset);
   // builder.AddToolBarButton(FCesiumCommands::Get().AccessToken);
   builder.AddToolBarButton(FCesiumCommands::Get().SignOut);
+  builder.AddToolBarButton(FCesiumCommands::Get().OpenDocumentation);
 
   return builder.MakeWidget();
 }
@@ -130,3 +134,10 @@ void CesiumPanel::addBlankTileset() {
 void CesiumPanel::accessToken() {}
 
 void CesiumPanel::signOut() { FCesiumEditorModule::ion().disconnect(); }
+
+void CesiumPanel::openDocumentation() {
+  FPlatformProcess::LaunchURL(
+      TEXT("https://cesium.com/docs"),
+      NULL,
+      NULL);
+}

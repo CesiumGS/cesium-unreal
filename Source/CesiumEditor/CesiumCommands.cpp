@@ -43,6 +43,12 @@ void FCesiumCommands::RegisterCommands() {
       "Sign out of Cesium ion",
       EUserInterfaceActionType::Button,
       FInputChord());
+  UI_COMMAND(
+      OpenDocumentation,
+      "Documentation",
+      "Open the documentation center with help and learning resources",
+      EUserInterfaceActionType::Button,
+      FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE
