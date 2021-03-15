@@ -8,6 +8,7 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Misc/EngineVersion.h"
 #include "UnrealConversions.h"
 #include <cstddef>
 #include <optional>
@@ -94,12 +95,14 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
   FString OsVersion, OsSubVersion;
   FPlatformMisc::GetOSVersions(OsVersion, OsSubVersion);
 
-  FString projectName = FApp::GetProjectName();
-
   this->_userAgent = TEXT("Mozilla/5.0 (");
   this->_userAgent += OsVersion;
+  this->_userAgent += " ";
+  this->_userAgent += FPlatformMisc::GetOSVersion();
   this->_userAgent += TEXT(") Cesium For Unreal/1.0.0 (Project ");
-  this->_userAgent += projectName;
+  this->_userAgent += FApp::GetProjectName();
+  this->_userAgent += " Engine ";
+  this->_userAgent += FEngineVersion::Current().ToString();
   this->_userAgent += TEXT(")");
 }
 
