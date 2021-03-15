@@ -75,37 +75,6 @@ public:
   // Useful transformations
 
   /**
-   * Transforms a point expressed in ECEF coordinates to UE Coordinates.
-   * WARNING - For debugging purpose only as computations are done in Floating
-   * point precision
-   */
-  FVector InaccurateTransformECEFToUE(FVector& Point);
-
-  /**
-   * Transforms accurately (double precision) coordinates from ECEF to UE
-   * coordinates, taking into account the current World rebasing origin
-   */
-  void AccurateTransformECEFToUE(
-      double X,
-      double Y,
-      double Z,
-      double& ResultX,
-      double& ResultY,
-      double& ResultZ);
-
-  /**
-   * Transforms accurately (double precision) coordinates from UE to ECEF
-   * coordinates, taking into account the current World rebasing origin
-   */
-  void AccurateTransformUEToECEF(
-      double X,
-      double Y,
-      double Z,
-      double& ResultX,
-      double& ResultY,
-      double& ResultZ);
-
-  /**
   * Transforms a rotator expressed in UE coordinates to one expressed in ENU
   coordinates. (Single precision, but this should not be an issue)
   */
@@ -139,7 +108,7 @@ public:
   float FlyToDuration = 5;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  float FlyToGranulatiryDegrees = 0.01;
+  float FlyToGranularityDegrees = 0.01;
 
   void FlyToLocation(
       double ECEFDestinationX,

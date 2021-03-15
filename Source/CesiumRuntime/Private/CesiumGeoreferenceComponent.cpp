@@ -390,7 +390,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
     return;
   }
 
-  glm::dmat4 unrealWorldToEcef =
+  const glm::dmat4& unrealWorldToEcef =
       this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
 
   FMatrix actorToRelativeWorld =

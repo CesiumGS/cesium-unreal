@@ -103,57 +103,6 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 //////////////////////////////////////////////////////////////////////////
 // Useful transformations
 //////////////////////////////////////////////////////////////////////////
-FVector AGlobeAwareDefaultPawn::InaccurateTransformECEFToUE(FVector& point) {
-  glm::dvec3 cameraUnreal =
-      ecefToUnreal * glm::dvec4(point.X, point.Y, point.Z, 1.0);
-
-  return FVector(cameraUnreal.x, cameraUnreal.y, cameraUnreal.z) -
-         FVector(this->GetWorld()->OriginLocation);
-}
-
-void AGlobeAwareDefaultPawn::AccurateTransformECEFToUE(
-    double X,
-    double Y,
-    double Z,
-    double& ResultX,
-    double& ResultY,
-    double& ResultZ) {
-  FIntVector ueOrigin = this->GetWorld()->OriginLocation;
-
-  glm::dvec3 cameraUnreal = ecefToUnreal * glm::dvec4(X, Y, Z, 1.0);
-  glm::dvec3 location =
-      glm::dvec3(cameraUnreal.x, cameraUnreal.y, cameraUnreal.z) -
-      glm::dvec3(
-          static_cast<double>(ueOrigin.X),
-          static_cast<double>(ueOrigin.Y),
-          static_cast<double>(ueOrigin.Z));
-
-  ResultX = location.x;
-  ResultY = location.y;
-  ResultZ = location.z;
-}
-
-void AGlobeAwareDefaultPawn::AccurateTransformUEToECEF(
-    double X,
-    double Y,
-    double Z,
-    double& ResultX,
-    double& ResultY,
-    double& ResultZ) {
-  FIntVector ueOrigin = this->GetWorld()->OriginLocation;
-  glm::dvec3 location = glm::dvec3(
-      X + static_cast<double>(ueOrigin.X),
-      Y + static_cast<double>(ueOrigin.Y), // ? TBC
-      Z + static_cast<double>(ueOrigin.Z));
-  glm::dmat4 unrealToEcef =
-      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
-  glm::dvec3 locationEcef = unrealToEcef * glm::dvec4(location, 1.0);
-
-  ResultX = locationEcef.x;
-  ResultY = locationEcef.y;
-  ResultZ = locationEcef.z;
-}
-
 FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) {
   glm::dmat3 enuToFixedUE = this->computeEastNorthUpToFixedFrame();
 
@@ -184,30 +133,26 @@ void AGlobeAwareDefaultPawn::GetECEFCameraLocation(
     double& Y,
     double& Z) {
   FVector ueLocation = this->GetPawnViewLocation();
-  double ecefX, ecefY, ecefZ;
-  AccurateTransformUEToECEF(
+  glm::dvec3 ecef = this->Georeference->TransformUeToEcef(
+    glm::dvec3(
       ueLocation.X,
       ueLocation.Y,
-      ueLocation.Z,
-      ecefX,
-      ecefY,
-      ecefZ);
+      ueLocation.Z));
 
-  X = ecefX;
-  Y = ecefY;
-  Z = ecefZ;
+  X = ecef.x;
+  Y = ecef.y;
+  Z = ecef.z;
 }
 
 void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
     double X,
     double Y,
     double Z) {
-  double ueX, ueY, ueZ;
-  AccurateTransformECEFToUE(X, Y, Z, ueX, ueY, ueZ);
+  glm::dvec3 ue = this->Georeference->TransformEcefToUe(glm::dvec3(X, Y, Z));
   ADefaultPawn::SetActorLocation(FVector(
-      static_cast<float>(ueX),
-      static_cast<float>(ueY),
-      static_cast<float>(ueZ)));
+      static_cast<float>(ue.x),
+      static_cast<float>(ue.y),
+      static_cast<float>(ue.z)));
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocation(
@@ -240,7 +185,7 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
   FVector flyRotationAxis;
   flyQuat.ToAxisAndAngle(flyRotationAxis, flyTotalAngle);
   int steps = FMath::Max(
-      int(flyTotalAngle / FMath::DegreesToRadians(FlyToGranulatiryDegrees)) - 1,
+      int(flyTotalAngle / FMath::DegreesToRadians(FlyToGranularityDegrees)) - 1,
       0);
   Keypoints.Empty(steps + 2);
 
@@ -291,13 +236,13 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
 
   // Add first keypoint
   Keypoints.Add(sourceECEFLocation);
-  // DrawDebugPoint(GetWorld(), InaccurateTransformECEFToUE(sourceECEFLocation),
+  // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(sourceECEFLocation),
   // 8, FColor::Red, true, 30);
   for (int step = 1; step <= steps; step++) {
     float percentage = (float)step / (steps + 1);
     float altitude =
         FMath::Lerp<float>(sourceAltitude, destinationAltitude, percentage);
-    float phi = FlyToGranulatiryDegrees * static_cast<float>(step);
+    float phi = FlyToGranularityDegrees * static_cast<float>(step);
 
     FVector rotated = sourceUpVector.RotateAngleAxis(phi, flyRotationAxis);
     if (auto scaled = ellipsoid.scaleToGeodeticSurface(
@@ -318,13 +263,13 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
 
       FVector point = projected + upVector * (altitude + offsetAltitude);
       Keypoints.Add(point);
-      // DrawDebugPoint(GetWorld(), InaccurateTransformECEFToUE(point), 8,
+      // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(point), 8,
       // FColor::Red, true, 30);
     }
   }
   Keypoints.Add(destinationECEFLocation);
   // DrawDebugPoint(GetWorld(),
-  // InaccurateTransformECEFToUE(destinationECEFLocation), 8, FColor::Red, true,
+  // this->Georeference->InaccurateTransformEcefToUe(destinationECEFLocation), 8, FColor::Red, true,
   // 30);
 
   // Tell the tick we will be flying from now
