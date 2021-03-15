@@ -160,9 +160,7 @@ public:
 
 protected:
   virtual void BeginPlay() override;
-
-  virtual void RefreshMatricesCache();
-
+  
 private:
   /**
    * Computes the local East-North-Up to Fixed frame transformation based on the
@@ -171,6 +169,4 @@ private:
    * left-handed coordinate system.
    */
   glm::dmat3 computeEastNorthUpToFixedFrame() const;
-
-  glm::dmat4x4 ecefToUnreal;
 };

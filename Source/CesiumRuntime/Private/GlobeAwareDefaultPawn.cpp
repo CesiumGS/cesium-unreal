@@ -278,8 +278,6 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
-  RefreshMatricesCache();
-
   if (bFlyingToLocation) {
     currentFlyTime += DeltaSeconds;
     if (currentFlyTime < FlyToDuration) {
@@ -336,12 +334,6 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
   }
-}
-
-void AGlobeAwareDefaultPawn::RefreshMatricesCache() {
-  // Optim - Refresh is needed only when CesiumGeoReference actor is changed...
-  ecefToUnreal =
-      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
 }
 
 glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
