@@ -12,7 +12,9 @@ class ACesiumGeoreference;
 class UCurveFloat;
 
 /**
- *
+ * This pawn can be used to easily move around the globe while maintaining a
+ * sensible orientation. As the pawn moves across the horizon, it automatically
+ * changes its own up direction such that the world always looks right-side up.
  */
 UCLASS()
 class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {

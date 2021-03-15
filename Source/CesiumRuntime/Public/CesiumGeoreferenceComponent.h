@@ -14,6 +14,14 @@
 
 #include "CesiumGeoreferenceComponent.generated.h"
 
+/**
+ * This component can be added to movable actors to globally georeference them 
+ * and maintain precise placement. When the owning actor is transformed through 
+ * Unreal, the internal geospatial coordinates will be automatically updated.
+ * The actor position can also be set in terms of Earth-Centered, Eath-Fixed
+ * coordinates (ECEF) or Longitude, Latitude, and Height relative to the WGS84
+ * ellipsoid.   
+ */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
     : public USceneComponent,
@@ -23,10 +31,6 @@ class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
 public:
   // Sets default values for this component's properties
   UCesiumGeoreferenceComponent();
-
-  // TODO: Probably should use custom details builder to make the UI a little
-  // more friendly, it would be nice to have the same options reflected in the
-  // actor's details panel as well if that's even possible.
 
   /**
    * The georeference actor controlling how the owning actor's coordinate system
@@ -202,6 +206,7 @@ private:
   glm::dvec3 _absoluteLocation;
   glm::dvec3 _relativeLocation;
 
+  // Note: this is done to allow Unreal to recognize and serialize _actorToECEF
   UPROPERTY()
   double _actorToECEF_Array[16];
 

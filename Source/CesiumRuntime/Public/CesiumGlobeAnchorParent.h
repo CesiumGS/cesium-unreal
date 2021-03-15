@@ -6,6 +6,13 @@
 
 #include "CesiumGlobeAnchorParent.generated.h"
 
+/**
+ * This actor defines a local East-South-Up reference frame in centimeters
+ * wherever on the globe it is placed. Actors can be attached as children of
+ * this actor and operate in the local space. This local reference frame is
+ * automatically georeferenced to the globe and its location will be precisely
+ * maintained. Note: all children actors must be movable. 
+ */ 
 UCLASS()
 class CESIUMRUNTIME_API ACesiumGlobeAnchorParent : public AActor {
   GENERATED_BODY()
