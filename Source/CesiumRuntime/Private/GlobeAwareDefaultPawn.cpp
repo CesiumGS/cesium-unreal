@@ -155,6 +155,7 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
       static_cast<float>(ue.z)));
 }
 
+// TODO: rewrite this to be more precise
 void AGlobeAwareDefaultPawn::FlyToLocation(
     double ECEFDestinationX,
     double ECEFDestinationY,

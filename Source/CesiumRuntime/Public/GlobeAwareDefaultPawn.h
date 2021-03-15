@@ -75,41 +75,72 @@ public:
   // Useful transformations
 
   /**
-  * Transforms a rotator expressed in UE coordinates to one expressed in ENU
-  coordinates. (Single precision, but this should not be an issue)
-  */
+   * Transforms a rotator expressed in UE coordinates to one expressed in ENU
+   * coordinates. (Single precision, but this should not be an issue)
+   */
   FRotator TransformRotatorUEToENU(FRotator UERotator);
 
   /**
-  * Transforms a rotator expressed in ENU coordinates to one expressed in UE
-  coordinates. (Single precision, but this should not be an issue)
-  */
+   * Transforms a rotator expressed in ENU coordinates to one expressed in UE
+   * coordinates. (Single precision, but this should not be an issue)
+   */
   FRotator TransformRotatorENUToUE(FRotator UERotator);
 
   /**
    * Get the pawn Camera location accurately in ECEF Coordinates
    */
   void GetECEFCameraLocation(double& X, double& Y, double& Z);
+  
   /**
    * Set the pawn Camera location accurately from ECEF Coordinates
    */
   void SetECEFCameraLocation(double X, double Y, double Z);
 
+  /** 
+   * This curve dictates what percentage of the max altitude the pawn should
+   * take at a given time on the curve. This curve must be kept in the 0 to
+   * 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} dictates the
+   * actual max altitude at each point along the curve.
+   */ 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToAltitudeProfileCurve;
 
+  /**
+   * This curve is used to determine the progress percentage for all the other
+   * curves. This allows us to accelerate and deaccelerate as wanted throughout
+   * the curve.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToProgressCurve;
 
+  /**
+   * This curve dictates the maximum altitude at each point along the curve.
+   * This can be used in conjunction with the {@see FlyToAltitudeProfileCurve}
+   * to allow the pawn to take some altitude during the flight.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToMaximumAltitudeCurve;
 
+  /**
+   * The length in seconds that the flight should last.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   float FlyToDuration = 5;
 
+  /**
+   * The granularity in degrees with which keypoints should be generated for
+   * the flight interpolation.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   float FlyToGranularityDegrees = 0.01;
 
+  /**
+   * Begin a smooth camera flight to the specified destination ECEF such that
+   * the camera ends at the specified yaw and pitch. The characteristics of the
+   * flight can be configured with {@see FlyToAltitudeProfileCurve}, 
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
+   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   */
   void FlyToLocation(
       double ECEFDestinationX,
       double ECEFDestinationY,
