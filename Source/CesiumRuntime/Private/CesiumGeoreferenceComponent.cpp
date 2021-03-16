@@ -63,6 +63,9 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
     this->_actorToECEF[2] *= -1.0;
 
   } else {
+    // TODO: can probably replace the obscure calculations below with 
+    // R = glm::toMat3(glm::rotation(actorUpECEF, ellipsoidNormal));
+
     // the axis of the shortest available rotation with a magnitude that is sine
     // of the angle
     glm::dvec3 sin_axis = glm::cross(ellipsoidNormal, actorUpECEF);

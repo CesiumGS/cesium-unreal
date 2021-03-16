@@ -8,8 +8,11 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 //
 #include "DrawDebugHelpers.h"
@@ -47,7 +50,7 @@ void AGlobeAwareDefaultPawn::MoveForward(float Val) {
 
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   if (Val != 0.f) {
-    glm::dmat3 enuToFixed = this->computeEastNorthUpToFixedFrame();
+    glm::dmat3 enuToFixed = this->_computeEastNorthUpToFixedFrame();
     FVector up(enuToFixed[2].x, enuToFixed[2].y, enuToFixed[2].z);
     AddMovementInput(up, Val);
   }
@@ -85,7 +88,7 @@ void AGlobeAwareDefaultPawn::AddControllerRollInput(float Val) {
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FRotator localRotation = ADefaultPawn::GetViewRotation();
 
-  glm::dmat3 enuToFixedUE = this->computeEastNorthUpToFixedFrame();
+  glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
 
   FMatrix enuAdjustmentMatrix(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
@@ -104,7 +107,7 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 // Useful transformations
 //////////////////////////////////////////////////////////////////////////
 FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) {
-  glm::dmat3 enuToFixedUE = this->computeEastNorthUpToFixedFrame();
+  glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
 
   FMatrix enuAdjustmentMatrix(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
@@ -116,7 +119,7 @@ FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) {
 }
 
 FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator) {
-  glm::dmat3 enuToFixedUE = this->computeEastNorthUpToFixedFrame();
+  glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
   FMatrix enuAdjustmentMatrix(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
       FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
@@ -168,27 +171,25 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
   // Compute source and destination locations in ECEF
   double sourceLocationX, sourceLocationY, sourceLocationZ;
   GetECEFCameraLocation(sourceLocationX, sourceLocationY, sourceLocationZ);
-  FVector sourceECEFLocation =
-      FVector(sourceLocationX, sourceLocationY, sourceLocationZ);
-  FVector destinationECEFLocation =
-      FVector(ECEFDestinationX, ECEFDestinationY, ECEFDestinationZ);
+  glm::dvec3 sourceECEFLocation(
+    sourceLocationX, sourceLocationY, sourceLocationZ);
+  glm::dvec3 destinationECEFLocation(
+    ECEFDestinationX, ECEFDestinationY, ECEFDestinationZ);
 
   // Compute the source and destination rotations in ENU
   // As during the flight, we can go around the globe, this is better to
   // interpolate in ENU coordinates
-  flyToSourceRotation = ADefaultPawn::GetViewRotation();
-  flyToDestinationRotation = FRotator(PitchAtDestination, YawAtDestination, 0);
+  _flyToSourceRotation = ADefaultPawn::GetViewRotation();
+  _flyToDestinationRotation = FRotator(PitchAtDestination, YawAtDestination, 0);
 
   // Compute axis/Angle transform and initialize key points
-  FQuat flyQuat =
-      FQuat::FindBetweenVectors(sourceECEFLocation, destinationECEFLocation);
-  float flyTotalAngle;
-  FVector flyRotationAxis;
-  flyQuat.ToAxisAndAngle(flyRotationAxis, flyTotalAngle);
-  int steps = FMath::Max(
-      int(flyTotalAngle / FMath::DegreesToRadians(FlyToGranularityDegrees)) - 1,
+  glm::dquat flyQuat = glm::rotation(sourceEcefLocation, destinationECEFLocation);
+  double flyTotalAngle = glm::angle(flyQuat);
+  glm::dvec3 flyRotationAxis = glm::axis(flyQuat);
+  int steps = glm::max(
+      int(flyTotalAngle / glm::radians(FlyToGranularityDegrees)) - 1,
       0);
-  Keypoints.Empty(steps + 2);
+  _keypoints.clear();
 
   // We will not create a curve projected along the ellipsoid as we want to take
   // altitude while flying. The radius of the current point will evolve as
@@ -201,49 +202,36 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
   //  - Add as flightProfile offset /-\ defined by a curve.
 
   // Compute global radius at source and destination points
-  FVector sourceUpVector, destinationUpVector;
-  float sourceRadius, destinationRadius;
-  sourceECEFLocation.ToDirectionAndLength(sourceUpVector, sourceRadius);
-  destinationECEFLocation.ToDirectionAndLength(
-      destinationUpVector,
-      destinationRadius);
+  double sourceRadius = glm::length(sourceECEFLocation);
+  glm::dvec3 sourceUpVector = sourceECEFLocation;
 
   // Compute actual altitude at source and destination points by scaling on
   // ellipsoid.
-  float sourceAltitude, destinationAltitude = 0;
+  double sourceAltitude, destinationAltitude = 0;
   const CesiumGeospatial::Ellipsoid& ellipsoid =
       CesiumGeospatial::Ellipsoid::WGS84;
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(glm::dvec3(
-          sourceECEFLocation.X,
-          sourceECEFLocation.Y,
-          sourceECEFLocation.Z))) {
-    sourceAltitude = FVector::Dist(
-        sourceECEFLocation,
-        FVector(scaled->x, scaled->y, scaled->z));
+  if (auto scaled = ellipsoid.scaleToGeodeticSurface(sourceECEFLocation)) {
+    sourceAltitude = glm::length(sourceECEFLocation - *scaled);
   }
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(glm::dvec3(
-          destinationECEFLocation.X,
-          destinationECEFLocation.Y,
-          destinationECEFLocation.Z))) {
-    destinationAltitude = FVector::Dist(
-        destinationECEFLocation,
-        FVector(scaled->x, scaled->y, scaled->z));
+  if (auto scaled = ellipsoid.scaleToGeodeticSurface(
+    destinationECEFLocation.Z)) {
+    destinationAltitude = glm::length(destinationECEFLocation - *scaled);
   }
 
   // Get distance between source and destination points to compute a wanted
   // altitude from curve
-  float flyTodistance =
-      FVector::Dist(sourceECEFLocation, destinationECEFLocation);
+  double flyTodistance =
+      glm::length(destinationECEFLocation - sourceECEFLocation);
 
   // Add first keypoint
   Keypoints.Add(sourceECEFLocation);
   // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(sourceECEFLocation),
   // 8, FColor::Red, true, 30);
   for (int step = 1; step <= steps; step++) {
-    float percentage = (float)step / (steps + 1);
+    double percentage = (double)step / (steps + 1);
     float altitude =
         FMath::Lerp<float>(sourceAltitude, destinationAltitude, percentage);
-    float phi = FlyToGranularityDegrees * static_cast<float>(step);
+    float phi = FlyToGranularityDegrees * static_cast<double>(step);
 
     FVector rotated = sourceUpVector.RotateAngleAxis(phi, flyRotationAxis);
     if (auto scaled = ellipsoid.scaleToGeodeticSurface(
@@ -313,8 +301,8 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
       // Interpolate rotation - Computation has to be done at each step because
       // the ENU CRS is depending on locatiom
       FRotator currentRotator = FMath::Lerp<FRotator>(
-          TransformRotatorUEToENU(flyToSourceRotation),
-          TransformRotatorUEToENU(flyToDestinationRotation),
+          TransformRotatorUEToENU(_flyToSourceRotation),
+          TransformRotatorUEToENU(_flyToDestinationRotation),
           flyPercentage);
       GetController()->SetControlRotation(
           TransformRotatorENUToUE(currentRotator));
@@ -336,7 +324,7 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
   }
 }
 
-glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
+glm::dmat3 AGlobeAwareDefaultPawn::_computeEastNorthUpToFixedFrame() const {
   if (!this->Georeference) {
     return glm::dmat3(1.0);
   }

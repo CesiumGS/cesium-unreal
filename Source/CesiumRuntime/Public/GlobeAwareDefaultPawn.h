@@ -6,6 +6,8 @@
 #include "GameFramework/DefaultPawn.h"
 
 #include <glm/mat3x3.hpp>
+#include <glm/vec3.hpp>
+#include <vector>
 #include "GlobeAwareDefaultPawn.generated.h"
 
 class ACesiumGeoreference;
@@ -127,14 +129,14 @@ public:
    * The length in seconds that the flight should last.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  float FlyToDuration = 5;
+  double FlyToDuration = 5;
 
   /**
    * The granularity in degrees with which keypoints should be generated for
    * the flight interpolation.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  float FlyToGranularityDegrees = 0.01;
+  double FlyToGranularityDegrees = 0.01;
 
   /**
    * Begin a smooth camera flight to the specified destination ECEF such that
@@ -150,17 +152,11 @@ public:
       float YawAtDestination,
       float PitchAtDestination);
 
-  bool bFlyingToLocation = false;
-  float currentFlyTime = 0;
-  FRotator flyToSourceRotation;
-  FRotator flyToDestinationRotation;
-
   virtual void Tick(float DeltaSeconds) override;
-  TArray<FVector> Keypoints;
 
 protected:
   virtual void BeginPlay() override;
-  
+
 private:
   /**
    * Computes the local East-North-Up to Fixed frame transformation based on the
@@ -168,5 +164,13 @@ private:
    * {@see GetPawnViewLocation}. The returned transformation works in Unreal's
    * left-handed coordinate system.
    */
-  glm::dmat3 computeEastNorthUpToFixedFrame() const;
+  glm::dmat3 _computeEastNorthUpToFixedFrame() const;
+
+  // helper variables for FlyToLocation
+  bool _bFlyingToLocation = false;
+  float _currentFlyTime = 0;
+  FRotator _flyToSourceRotation;
+  FRotator _flyToDestinationRotation;
+
+  std::vector<glm::dvec3> _keypoints;
 };
