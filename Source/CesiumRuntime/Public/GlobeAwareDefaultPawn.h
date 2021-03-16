@@ -152,6 +152,21 @@ public:
       float YawAtDestination,
       float PitchAtDestination);
 
+  /**
+   * Begin a smooth camera flight to the specified destination ECEF such that
+   * the camera ends at the specified yaw and pitch. The characteristics of the
+   * flight can be configured with {@see FlyToAltitudeProfileCurve},
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
+   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   */
+  UFUNCTION(BlueprintCallable)
+  void InaccurateFlyToLocation(
+      float ECEFDestinationX,
+      float ECEFDestinationY,
+      float ECEFDestinationZ,
+      float YawAtDestination,
+      float PitchAtDestination);
+
   virtual void Tick(float DeltaSeconds) override;
 
 protected:
@@ -168,7 +183,7 @@ private:
 
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;
-  float _currentFlyTime = 0;
+  double _currentFlyTime = 0.0;
   FRotator _flyToSourceRotation;
   FRotator _flyToDestinationRotation;
 

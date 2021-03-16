@@ -165,6 +165,10 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
     double ECEFDestinationZ,
     float YawAtDestination,
     float PitchAtDestination) {
+
+  if (this->_bFlyingToLocation) {
+    return;
+  }
   // We will work in ECEF space, but using Unreal Classes to benefit from Math
   // tools. Actual precision might suffer, but this is for a cosmetic flight...
 
@@ -179,17 +183,24 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
   // Compute the source and destination rotations in ENU
   // As during the flight, we can go around the globe, this is better to
   // interpolate in ENU coordinates
-  _flyToSourceRotation = ADefaultPawn::GetViewRotation();
-  _flyToDestinationRotation = FRotator(PitchAtDestination, YawAtDestination, 0);
+  this->_flyToSourceRotation = ADefaultPawn::GetViewRotation();
+  this->_flyToDestinationRotation = 
+    FRotator(PitchAtDestination, YawAtDestination, 0);
 
   // Compute axis/Angle transform and initialize key points
-  glm::dquat flyQuat = glm::rotation(sourceEcefLocation, destinationECEFLocation);
+  glm::dquat flyQuat = glm::rotation(
+    glm::normalize(sourceECEFLocation), 
+    glm::normalize(destinationECEFLocation));
   double flyTotalAngle = glm::angle(flyQuat);
   glm::dvec3 flyRotationAxis = glm::axis(flyQuat);
   int steps = glm::max(
-      int(flyTotalAngle / glm::radians(FlyToGranularityDegrees)) - 1,
+      int(flyTotalAngle / glm::radians(this->FlyToGranularityDegrees)) - 1,
       0);
-  _keypoints.clear();
+  this->_keypoints.clear();
+
+  if (steps == 0) {
+    return;
+  }
 
   // We will not create a curve projected along the ellipsoid as we want to take
   // altitude while flying. The radius of the current point will evolve as
@@ -214,7 +225,7 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
     sourceAltitude = glm::length(sourceECEFLocation - *scaled);
   }
   if (auto scaled = ellipsoid.scaleToGeodeticSurface(
-    destinationECEFLocation.Z)) {
+      destinationECEFLocation)) {
     destinationAltitude = glm::length(destinationECEFLocation - *scaled);
   }
 
@@ -224,94 +235,113 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
       glm::length(destinationECEFLocation - sourceECEFLocation);
 
   // Add first keypoint
-  Keypoints.Add(sourceECEFLocation);
+  this->_keypoints.push_back(sourceECEFLocation);
   // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(sourceECEFLocation),
   // 8, FColor::Red, true, 30);
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
-    float altitude =
-        FMath::Lerp<float>(sourceAltitude, destinationAltitude, percentage);
-    float phi = FlyToGranularityDegrees * static_cast<double>(step);
+    double altitude = 
+      (1.0 - percentage) * sourceAltitude + 
+      percentage * destinationAltitude;
+    double phi = 
+      glm::radians(this->FlyToGranularityDegrees * static_cast<double>(step));
 
-    FVector rotated = sourceUpVector.RotateAngleAxis(phi, flyRotationAxis);
-    if (auto scaled = ellipsoid.scaleToGeodeticSurface(
-            glm::dvec3(rotated.X, rotated.Y, rotated.Z))) {
-      FVector projected(scaled->x, scaled->y, scaled->z);
-      FVector upVector = projected.GetSafeNormal();
+    glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
+    if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
+      glm::dvec3 upVector = glm::normalize(*scaled);
 
       // Add an altitude if we have a profile curve for it
-      float offsetAltitude = 0;
-      if (FlyToAltitudeProfileCurve != NULL) {
-        float maxAltitude = 30000;
-        if (FlyToMaximumAltitudeCurve != NULL) {
-          maxAltitude = FlyToMaximumAltitudeCurve->GetFloatValue(flyTodistance);
+      double offsetAltitude = 0;
+      if (this->FlyToAltitudeProfileCurve != NULL) {
+        double maxAltitude = 30000;
+        if (this->FlyToMaximumAltitudeCurve != NULL) {
+          maxAltitude = static_cast<double>(
+            this->FlyToMaximumAltitudeCurve->GetFloatValue(flyTodistance));
         }
-        offsetAltitude =
-            maxAltitude * FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+        offsetAltitude = static_cast<double>(maxAltitude * 
+          this->FlyToAltitudeProfileCurve->GetFloatValue(percentage));
       }
 
-      FVector point = projected + upVector * (altitude + offsetAltitude);
-      Keypoints.Add(point);
+      glm::dvec3 point = *scaled + upVector * (altitude + offsetAltitude);
+      this->_keypoints.push_back(point);
       // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(point), 8,
       // FColor::Red, true, 30);
     }
   }
-  Keypoints.Add(destinationECEFLocation);
+  this->_keypoints.push_back(destinationECEFLocation);
   // DrawDebugPoint(GetWorld(),
   // this->Georeference->InaccurateTransformEcefToUe(destinationECEFLocation), 8, FColor::Red, true,
   // 30);
 
   // Tell the tick we will be flying from now
-  bFlyingToLocation = true;
+  this->_bFlyingToLocation = true;
+}
+
+void AGlobeAwareDefaultPawn::InaccurateFlyToLocation(
+    float ECEFDestinationX,
+    float ECEFDestinationY,
+    float ECEFDestinationZ,
+    float YawAtDestination,
+    float PitchAtDestination) {
+
+  this->FlyToLocation(
+      static_cast<double>(ECEFDestinationX),
+      static_cast<double>(ECEFDestinationY),
+      static_cast<double>(ECEFDestinationZ),
+      YawAtDestination,
+      PitchAtDestination);
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
-  if (bFlyingToLocation) {
-    currentFlyTime += DeltaSeconds;
-    if (currentFlyTime < FlyToDuration) {
-      float rawPercentage = currentFlyTime / FlyToDuration;
+  if (this->_bFlyingToLocation) {
+    this->_currentFlyTime += DeltaSeconds;
+    if (this->_currentFlyTime < this->FlyToDuration) {
+      double rawPercentage = this->_currentFlyTime / this->FlyToDuration;
 
       // In order to accelerate at start and slow down at end, we use a progress
       // profile curve
-      float flyPercentage = rawPercentage;
-      if (FlyToProgressCurve != NULL) {
-        flyPercentage = FMath::Clamp<float>(
-            FlyToProgressCurve->GetFloatValue(rawPercentage),
+      double flyPercentage = rawPercentage;
+      if (this->FlyToProgressCurve != NULL) {
+        flyPercentage = glm::clamp(
+            static_cast<double>(
+              this->FlyToProgressCurve->GetFloatValue(rawPercentage)),
             0.0,
             1.0);
       }
 
       // Find the keypoint indexes corresponding to the current percentage
-      int lastIndex = FMath::Floor(rawPercentage * (Keypoints.Num() - 1));
-      float segmentPercentage =
-          rawPercentage * (Keypoints.Num() - 1) - lastIndex;
+      int lastIndex = 
+        FMath::Floor(rawPercentage * (this->_keypoints.size() - 1));
+      double segmentPercentage =
+          rawPercentage * (this->_keypoints.size() - 1) - lastIndex;
       int nextIndex = lastIndex + 1;
 
       // Get the current position by interpolating between those two points
-      FVector lastPosition = Keypoints[lastIndex];
-      FVector nextPosition = Keypoints[nextIndex];
-      FVector currentPosition =
-          FMath::Lerp<FVector>(lastPosition, nextPosition, segmentPercentage);
+      const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
+      const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
+      glm::dvec3 currentPosition =
+        (1.0 - segmentPercentage) * lastPosition + segmentPercentage * nextPosition;
       // Set Location
-      SetECEFCameraLocation(
-          currentPosition.X,
-          currentPosition.Y,
-          currentPosition.Z);
+      this->SetECEFCameraLocation(
+          currentPosition.x,
+          currentPosition.y,
+          currentPosition.z);
 
       // Interpolate rotation - Computation has to be done at each step because
       // the ENU CRS is depending on locatiom
       FRotator currentRotator = FMath::Lerp<FRotator>(
-          TransformRotatorUEToENU(_flyToSourceRotation),
-          TransformRotatorUEToENU(_flyToDestinationRotation),
+          this->TransformRotatorUEToENU(this->_flyToSourceRotation),
+          this->TransformRotatorUEToENU(this->_flyToDestinationRotation),
           flyPercentage);
       GetController()->SetControlRotation(
           TransformRotatorENUToUE(currentRotator));
     } else {
-      // We reached the end - Set actual destination location
-      FVector finalPoint = Keypoints.Last();
-      SetECEFCameraLocation(finalPoint.X, finalPoint.Y, finalPoint.Z);
-      bFlyingToLocation = false;
-      currentFlyTime = 0;
+      // We reached the end - Set actual destination location and orientation
+      const glm::dvec3& finalPoint = _keypoints.back();
+      this->SetECEFCameraLocation(finalPoint.x, finalPoint.y, finalPoint.z);
+      GetController()->SetControlRotation(this->_flyToDestinationRotation);
+      this->_bFlyingToLocation = false;
+      this->_currentFlyTime = 0;
     }
   }
 }
