@@ -1,0 +1,30 @@
+{
+  "name": "cesium-unreal",
+  "version": "1.0.0",
+  "description": "Cesium for Unreal",
+  "main": "index.js",
+  "directories": {
+    "doc": "Documentation"
+  },
+  "scripts": {
+    "format": "clang-format -i \"--glob=Source/@(Cesium*)/**/*.@(cpp|h|hpp)\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CesiumGS/cesium-unreal.git"
+  },
+  "keywords": [
+    "3D",
+    "geospatial",
+    "C++"
+  ],
+  "author": "CesiumGS, Inc. and Contributors",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/CesiumGS/cesium-unreal/issues"
+  },
+  "homepage": "https://github.com/CesiumGS/cesium-unreal#readme",
+  "devDependencies": {
+    "clang-format": "^1.5.0"
+  }
+}

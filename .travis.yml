@@ -17,8 +17,6 @@ jobs:
         - npm run format -- --dry-run -Werror
     - name: Windows + VS2017
       os: windows
-      install:
-        - choco install doxygen.install
       before_script:
         - mkdir -p extern/build
         - cd extern/build
