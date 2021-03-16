@@ -157,7 +157,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
       pRootTile->getBoundingVolume();
 
   // calculate unreal camera position
-  glm::dmat4 transform = this->GetCesiumTilesetToUnrealRelativeWorldTransform();
+  const glm::dmat4& transform = this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition = std::visit(CalculateECEFCameraPosition(), boundingVolume);
   glm::dvec3 unrealCameraPosition = transform * glm::dvec4(ecefCameraPosition, 1.0);
 
