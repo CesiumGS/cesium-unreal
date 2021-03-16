@@ -1,0 +1,25 @@
+language: cpp
+# Default scripts, which may be overridden by some jobs
+before_script:
+  - mkdir -p build
+  - cd build
+  - cmake ..
+script:
+  - cmake --build . --config Release
+jobs:
+  include:
+    - name: Check Source Formatting
+      os: linux
+      dist: focal
+      before_script:
+      script:
+        - npm install
+        - npm run format -- --dry-run -Werror
+    - name: Windows + VS2017
+      os: windows
+      install:
+        - choco install doxygen.install
+      before_script:
+        - mkdir -p extern/build
+        - cd extern/build
+        - cmake .. -A x64
