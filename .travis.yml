@@ -17,7 +17,7 @@ jobs:
   - name: Windows + VS2017
     os: windows
     install:
-    - choco install awscli
+    - pip install awscli
     - choco install 7zip.portable
     - aws s3 cp s3://cesium-unreal-engine/2021-03-16/UE_4.26.zip .
     - 7z e UE_4.26.zip "-oC:\Program Files\Epic Games"
