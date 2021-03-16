@@ -1,4 +1,4 @@
-[![Cesium for Unreal Logo](Content/CESIUM-4-UNREAL-LOGOS_RGB_CESIUM-4-UNREAL-WhiteH.png)](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7)
+[![Cesium for Unreal Logo](Content/Cesium-for-Unreal-Logo-WhiteBGH.jpg)](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7)
 
 The Cesium for Unreal plugin unlocks the entire 3D geospatial ecosystem in Unreal Engine. By combining a high-accuracy full-scale WGS84 globe, open APIs and open standards for spatial indexing like 3D Tiles, and cloud-based real-world content with the power of Unreal Engine, enables a new era of geospatial applications and workflows.
 
