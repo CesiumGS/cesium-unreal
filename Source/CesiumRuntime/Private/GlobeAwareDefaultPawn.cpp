@@ -294,7 +294,7 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocation(
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   if (this->_bFlyingToLocation) {
-    this->_currentFlyTime += DeltaSeconds;
+    this->_currentFlyTime += static_cast<double>(DeltaSeconds);
     if (this->_currentFlyTime < this->FlyToDuration) {
       double rawPercentage = this->_currentFlyTime / this->FlyToDuration;
 

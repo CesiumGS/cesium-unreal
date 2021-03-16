@@ -115,11 +115,9 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   }
 
   this->_setGeoreferenceOrigin(
-      CesiumUtility::Math::radiansToDegrees(
-          (*targetGeoreferenceOrigin).longitude),
-      CesiumUtility::Math::radiansToDegrees(
-          (*targetGeoreferenceOrigin).latitude),
-      (*targetGeoreferenceOrigin).height);
+      glm::degrees(targetGeoreferenceOrigin->longitude),
+      glm::degrees(targetGeoreferenceOrigin->latitude),
+      targetGeoreferenceOrigin->height);
 
   glm::dmat4 absoluteToRelativeWorld(
       glm::dvec4(1.0, 0.0, 0.0, 0.0),
@@ -506,9 +504,9 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
     targetGeoreferenceOrigin =
     CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF); if
     (targetGeoreferenceOrigin) {
-                    this->_setGeoreferenceOrigin(glm::degrees((*targetGeoreferenceOrigin).longitude),
-    glm::degrees((*targetGeoreferenceOrigin).latitude),
-    (*targetGeoreferenceOrigin).height);
+                    this->_setGeoreferenceOrigin(glm::degrees(targetGeoreferenceOrigin->longitude),
+    glm::degrees(targetGeoreferenceOrigin->latitude),
+    targetGeoreferenceOrigin->height);
             }
     }
     */
@@ -562,9 +560,9 @@ ACesiumGeoreference::TransformEcefToLongLatHeight(glm::dvec3 ecef) const {
     return glm::dvec3(0.0, 0.0, 0.0);
   }
   return glm::dvec3(
-      glm::degrees((*llh).longitude),
-      glm::degrees((*llh).latitude),
-      (*llh).height);
+      glm::degrees(llh->longitude),
+      glm::degrees(llh->latitude),
+      llh->height);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformEcefToLongLatHeight(
@@ -589,7 +587,7 @@ FVector ACesiumGeoreference::InaccurateTransformLongLatHeightToUe(
 
 glm::dvec3
 ACesiumGeoreference::TransformUeToLongLatHeight(glm::dvec3 ue) const {
-  glm::dvec3 ecef = this->_ueAbsToEcef * glm::dvec4(ue, 1.0);
+  glm::dvec3 ecef = this->TransformUeToEcef(ue);
   return this->TransformEcefToLongLatHeight(ecef);
 }
 
