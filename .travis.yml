@@ -32,6 +32,11 @@ jobs:
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -A x64
+    script:
+    - cmake --build . --config Release --target install
+    - export CLONEDIR=$PWD
+    - cd /c/Program Files/Epic Games/UE_4.26/Engine/Build/BatchFiles
+    - ./RunUAT.bat BuildPlugin -Plugin=$CLONEDIR/CesiumForUnreal.uplugin -Package=$CLONEDIR/packages -CreateSubFolder
     env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 env:
   global:
