@@ -91,37 +91,37 @@ TSharedRef<SWidget> CesiumPanel::MainPanel() {
 
 TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
 
-    auto linkVisibility = []() {
-        FCesiumEditorModule::ion().refreshProfileIfNeeded();
-        if (!FCesiumEditorModule::ion().isProfileLoaded()) {
-            return EVisibility::Collapsed;
-        }
-        if (!isSignedIn()) {
-            return EVisibility::Collapsed;
-        }
-        return EVisibility::Visible;
-    };
-    auto linkText = []() {
-        auto& profile = FCesiumEditorModule::ion().getProfile();
-        std::string s = "Connected to Cesium ion as " + profile.username;
-        return FText::FromString(utf8_to_wstr(s));
-    };
-    auto loadingMessageVisibility = []() {
-        return FCesiumEditorModule::ion().isLoadingProfile() ? EVisibility::Visible : EVisibility::Collapsed;
-    };
-    return SNew(SVerticalBox)
-      + SVerticalBox::Slot()[
-    		SNew(SHyperlink)
-                .Visibility_Lambda(linkVisibility)
-                .Text_Lambda(linkText)
-                .ToolTipText(FText::FromString(TEXT("Visit Cesium ion")))
-		        .OnNavigate(this, &CesiumPanel::visitIon)
-      ]
-      + SVerticalBox::Slot()[
-            SNew(STextBlock)
-                .Visibility_Lambda(loadingMessageVisibility)
-                .Text(FText::FromString(TEXT("Loading user information...")))
-      ];
+  auto linkVisibility = []() {
+    FCesiumEditorModule::ion().refreshProfileIfNeeded();
+    if (!FCesiumEditorModule::ion().isProfileLoaded()) {
+      return EVisibility::Collapsed;
+    }
+    if (!isSignedIn()) {
+      return EVisibility::Collapsed;
+    }
+    return EVisibility::Visible;
+  };
+  auto linkText = []() {
+    auto& profile = FCesiumEditorModule::ion().getProfile();
+    std::string s = "Connected to Cesium ion as " + profile.username;
+    return FText::FromString(utf8_to_wstr(s));
+  };
+  auto loadingMessageVisibility = []() {
+    return FCesiumEditorModule::ion().isLoadingProfile()
+               ? EVisibility::Visible
+               : EVisibility::Collapsed;
+  };
+  return SNew(SVerticalBox) +
+         SVerticalBox::Slot()[SNew(SHyperlink)
+                                  .Visibility_Lambda(linkVisibility)
+                                  .Text_Lambda(linkText)
+                                  .ToolTipText(FText::FromString(
+                                      TEXT("Visit Cesium ion")))
+                                  .OnNavigate(this, &CesiumPanel::visitIon)] +
+         SVerticalBox::Slot()[SNew(STextBlock)
+                                  .Visibility_Lambda(loadingMessageVisibility)
+                                  .Text(FText::FromString(
+                                      TEXT("Loading user information...")))];
 }
 
 void CesiumPanel::addFromIon() {
@@ -142,12 +142,8 @@ void CesiumPanel::uploadToIon() {
 }
 
 void CesiumPanel::visitIon() {
-  FPlatformProcess::LaunchURL(
-      TEXT("https://cesium.com/ion"),
-      NULL,
-      NULL);
+  FPlatformProcess::LaunchURL(TEXT("https://cesium.com/ion"), NULL, NULL);
 }
-
 
 void CesiumPanel::addBlankTileset() {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
@@ -166,10 +162,7 @@ void CesiumPanel::accessToken() {}
 void CesiumPanel::signOut() { FCesiumEditorModule::ion().disconnect(); }
 
 void CesiumPanel::openDocumentation() {
-  FPlatformProcess::LaunchURL(
-      TEXT("https://cesium.com/docs"),
-      NULL,
-      NULL);
+  FPlatformProcess::LaunchURL(TEXT("https://cesium.com/docs"), NULL, NULL);
 }
 
 void CesiumPanel::openSupport() {
@@ -178,4 +171,3 @@ void CesiumPanel::openSupport() {
       NULL,
       NULL);
 }
-

@@ -100,8 +100,6 @@ void FCesiumEditorModule::StartupModule() {
         "Cesium.Common.OpenSupport",
         new IMAGE_BRUSH("FontAwesome/hands-helping-solid", Icon40x40));
 
-    
-
     StyleSet->Set(
         "Cesium.Logo",
         new IMAGE_BRUSH(
