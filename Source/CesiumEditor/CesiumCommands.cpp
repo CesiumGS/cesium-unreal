@@ -49,6 +49,12 @@ void FCesiumCommands::RegisterCommands() {
       "Open the documentation center with help and learning resources",
       EUserInterfaceActionType::Button,
       FInputChord());
+  UI_COMMAND(
+      OpenSupport,
+      "Support",
+      "Open the support center",
+      EUserInterfaceActionType::Button,
+      FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

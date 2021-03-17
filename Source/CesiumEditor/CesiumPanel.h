@@ -25,8 +25,10 @@ private:
 
   void addFromIon();
   void uploadToIon();
+  void visitIon();
   void addBlankTileset();
   void accessToken();
   void signOut();
   void openDocumentation();
+  void openSupport();
 };
