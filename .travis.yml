@@ -24,6 +24,7 @@ jobs:
     install:
     - ./travis-get-ue.sh
     before_script:
+    - export CESIUM_UNREAL_VERSION=$(git describe)
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -A x64
@@ -33,7 +34,10 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages" -CreateSubFolder
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
+    - cd "$CLONEDIR/../packages"
+    - 7z a CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip "CesiumForUnreal\"
+    - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 env:
   global:
