@@ -25,6 +25,8 @@ jobs:
     - aws s3 cp s3://cesium-unreal-engine/2021-03-16/UE_4.26.zip .
     - 7z x UE_4.26.zip "-oC:\Program Files\Epic Games"
     - rm UE_4.26.zip
+    - ls /c/Program\ Files/Epic\ Games
+    - ls "c:\Program Files\Epic Games"
     - aws s3 cp s3://cesium-unreal-engine/2021-03-16/Launcher.zip .
     - 7z x Launcher.zip "-oC:\Program Files (x86)\Epic Games"
     - rm Launcher.zip
@@ -35,7 +37,7 @@ jobs:
     script:
     - cmake --build . --config Release --target install
     - export CLONEDIR=$PWD
-    - cd /c/Program\ Files/Epic Games/UE_4.26/Engine/Build/BatchFiles
+    - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/packages" -CreateSubFolder
     env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 env:
