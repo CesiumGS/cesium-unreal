@@ -12,8 +12,10 @@
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
 #include "EngineUtils.h"
+#include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "Interfaces/IPluginManager.h"
+#include "LevelEditor.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "UnrealAssetAccessor.h"
@@ -95,7 +97,7 @@ void FCesiumEditorModule::StartupModule() {
     StyleSet->Set(
         "Cesium.Logo",
         new IMAGE_BRUSH(
-            "CESIUM-4-UNREAL-LOGOS_RGB_Micro_CESIUM-4-UNREAL-BlackV",
+            "Cesium-for-Unreal-Logo-Micro-BlackV",
             FVector2D(222.0, 200.0f)));
 
     StyleSet->Set(
@@ -146,6 +148,23 @@ void FCesiumEditorModule::StartupModule() {
       .SetDisplayName(FText::FromString(TEXT("Cesium ion Assets")))
       .SetTooltipText(FText::FromString(TEXT("Cesium ion Assets")))
       .SetIcon(FSlateIcon(TEXT("CesiumStyleSet"), TEXT("Cesium.MenuIcon")));
+
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->OnRegisterLayoutExtensions().AddLambda(
+        [](FLayoutExtender& extender) {
+          extender.ExtendLayout(
+              FTabId("PlacementBrowser"),
+              ELayoutExtensionPosition::After,
+              FTabManager::FTab(FName("Cesium"), ETabState::OpenedTab));
+          extender.ExtendLayout(
+              FTabId("OutputLog"),
+              ELayoutExtensionPosition::Before,
+              FTabManager::FTab(FName("CesiumIon"), ETabState::ClosedTab));
+        });
+  }
 }
 
 void FCesiumEditorModule::ShutdownModule() {

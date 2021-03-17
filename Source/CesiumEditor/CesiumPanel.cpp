@@ -9,6 +9,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
+#include "LevelEditor.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "UnrealConversions.h"
 #include "Widgets/Layout/SHeader.h"
@@ -98,7 +99,13 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
 }
 
 void CesiumPanel::addFromIon() {
-  FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TEXT("CesiumIon")));
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  TSharedPtr<FTabManager> pTabManager =
+      pLevelEditorModule ? pLevelEditorModule->GetLevelEditorTabManager()
+                         : FGlobalTabmanager::Get();
+  pTabManager->TryInvokeTab(FTabId(TEXT("CesiumIon")));
 }
 
 void CesiumPanel::uploadToIon() {

@@ -12,23 +12,6 @@ namespace Cesium3DTiles {
 class Tileset;
 }
 
-USTRUCT()
-struct FRectangularCutout {
-  GENERATED_BODY()
-
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double west;
-
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double south;
-
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double east;
-
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double north;
-};
-
 UCLASS(Abstract)
 class CESIUMRUNTIME_API UCesiumRasterOverlay : public UActorComponent {
   GENERATED_BODY()
@@ -36,13 +19,6 @@ class CESIUMRUNTIME_API UCesiumRasterOverlay : public UActorComponent {
 public:
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
-
-  /**
-   * Rectangular cutouts where this tileset should not be drawn. Each cutout is
-   * specified as "west,south,east,north" in decimal degrees.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Experimental")
-  TArray<FRectangularCutout> Cutouts;
 
 protected:
   // Called when the game starts
