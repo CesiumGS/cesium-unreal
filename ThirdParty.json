@@ -25,6 +25,11 @@
     "license": "Apache 2.0"
   },
   {
+    "name": "Font Awesome Icons",
+    "url": "https://fontawesome.com/",
+    "license": "CC BY 4.0 License"
+  },
+  {
     "name": "GLM",
     "url": "https://github.com/g-truc/glm",
     "license": "MIT"
@@ -73,10 +78,5 @@
     "name": "uriparser",
     "url": "https://github.com/uriparser/uriparser",
     "license": "BSD-3-Clause"
-  },
-  {
-    "name": "FontAwesome",
-    "url": "https://fontawesome.com/",
-    "license": "CC-BY-4.0"
   }
 ]

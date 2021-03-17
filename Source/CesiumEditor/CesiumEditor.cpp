@@ -80,13 +80,13 @@ void FCesiumEditorModule::StartupModule() {
 
     StyleSet->Set(
         "Cesium.Common.AddFromIon",
-        new IMAGE_BRUSH("FontAwesome/cloud-download-alt-solid", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/plus-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.UploadToIon",
         new IMAGE_BRUSH("FontAwesome/cloud-upload-alt-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.AddBlankTileset",
-        new IMAGE_BRUSH("FontAwesome/edit-regular", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/globe-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.AccessToken",
         new IMAGE_BRUSH("FontAwesome/key-solid", Icon40x40));

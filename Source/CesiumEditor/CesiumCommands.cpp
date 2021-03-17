@@ -45,7 +45,7 @@ void FCesiumCommands::RegisterCommands() {
       FInputChord());
   UI_COMMAND(
       OpenDocumentation,
-      "Documentation",
+      "Learn",
       "Open the documentation center with help and learning resources",
       EUserInterfaceActionType::Button,
       FInputChord());
