@@ -255,6 +255,7 @@ protected:
 
 #if WITH_EDITOR
   std::optional<UnrealCameraParameters> GetEditorCamera() const;
+  void OnFocusEditorViewportOnActors(const AActor* actor);
 #endif
 
 public:
