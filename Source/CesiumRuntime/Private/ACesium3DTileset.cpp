@@ -163,14 +163,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter = Cesium3DTiles::getBoundingVolumeCenter(boundingVolume);
-  glm::dvec3 ecefGeodeticNormal =
-      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(ecefCenter);
-  glm::dvec3 unrealGeodeticNormal =
-      transform * glm::dvec4(ecefGeodeticNormal, 0.0);
   glm::dvec3 unrealCenter = transform * glm::dvec4(ecefCenter, 1.0);
   glm::dvec3 unrealCameraFront = glm::normalize(unrealCenter - unrealCameraPosition);
   glm::dvec3 unrealCameraRight =
-	  glm::normalize(glm::cross(unrealGeodeticNormal, unrealCameraFront));
+	  glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), unrealCameraFront));
   glm::dvec3 unrealCameraUp =
       glm::normalize(glm::cross(unrealCameraFront, unrealCameraRight));
   FRotator cameraRotator =
