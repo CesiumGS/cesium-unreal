@@ -158,8 +158,7 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
       static_cast<float>(ue.z)));
 }
 
-// TODO: rewrite this to be more precise
-void AGlobeAwareDefaultPawn::FlyToLocation(
+void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     double ECEFDestinationX,
     double ECEFDestinationY,
     double ECEFDestinationZ,
@@ -277,19 +276,41 @@ void AGlobeAwareDefaultPawn::FlyToLocation(
   this->_bFlyingToLocation = true;
 }
 
-void AGlobeAwareDefaultPawn::InaccurateFlyToLocation(
+void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
     float ECEFDestinationX,
     float ECEFDestinationY,
     float ECEFDestinationZ,
     float YawAtDestination,
     float PitchAtDestination) {
 
-  this->FlyToLocation(
+  this->FlyToLocationECEF(
       static_cast<double>(ECEFDestinationX),
       static_cast<double>(ECEFDestinationY),
       static_cast<double>(ECEFDestinationZ),
       YawAtDestination,
       PitchAtDestination);
+}
+
+void AGlobeAwareDefaultPawn::FlyToLocationLongLatHeight(
+    double Longitude,
+    double Latitude,
+    double Height,
+    float YawAtDestination,
+    float PitchAtDestination) {
+
+  glm::dvec3 ecef = this->Georeference->TransformLongLatHeightToEcef(glm::dvec3(Longitude, Latitude, Height));
+  this->FlyToLocationECEF(ecef.x, ecef.y, ecef.z, YawAtDestination, PitchAtDestination);      
+}
+
+UFUNCTION(BlueprintCallable)
+void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongLatHeight(
+    float Longitude,
+    float Latitude,
+    float Height,
+    float YawAtDestination,
+    float PitchAtDestination) {
+  
+  this->FlyToLocationLongLatHeight(Longitude, Latitude, Height, YawAtDestination, PitchAtDestination);
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {

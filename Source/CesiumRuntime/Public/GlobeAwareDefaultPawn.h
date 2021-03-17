@@ -145,7 +145,7 @@ public:
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
-  void FlyToLocation(
+  void FlyToLocationECEF(
       double ECEFDestinationX,
       double ECEFDestinationY,
       double ECEFDestinationZ,
@@ -160,10 +160,39 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateFlyToLocation(
+  void InaccurateFlyToLocationECEF(
       float ECEFDestinationX,
       float ECEFDestinationY,
       float ECEFDestinationZ,
+      float YawAtDestination,
+      float PitchAtDestination);
+
+  /**
+   * Begin a smooth camera flight to the specified destination LLH such that
+   * the camera ends at the specified yaw and pitch. The characteristics of the
+   * flight can be configured with {@see FlyToAltitudeProfileCurve}, 
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
+   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   */
+  void FlyToLocationLongLatHeight(
+      double Longitude,
+      double Latitude,
+      double Height,
+      float YawAtDestination,
+      float PitchAtDestination);
+
+  /**
+   * Begin a smooth camera flight to the specified destination LLH such that
+   * the camera ends at the specified yaw and pitch. The characteristics of the
+   * flight can be configured with {@see FlyToAltitudeProfileCurve},
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
+   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   */
+  UFUNCTION(BlueprintCallable)
+  void InaccurateFlyToLocationLongLatHeight(
+      float Longitude,
+      float Latitude,
+      float Height,
       float YawAtDestination,
       float PitchAtDestination);
 
