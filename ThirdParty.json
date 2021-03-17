@@ -73,5 +73,10 @@
     "name": "uriparser",
     "url": "https://github.com/uriparser/uriparser",
     "license": "BSD-3-Clause"
+  },
+  {
+    "name": "FontAwesome",
+    "url": "https://fontawesome.com/",
+    "license": "CC-BY-4.0"
   }
 ]
