@@ -51,7 +51,7 @@ void FCesiumCommands::RegisterCommands() {
       FInputChord());
   UI_COMMAND(
       OpenSupport,
-      "Support",
+      "Help",
       "Open the support center",
       EUserInterfaceActionType::Button,
       FInputChord());
