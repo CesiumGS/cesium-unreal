@@ -16,18 +16,13 @@ jobs:
     - npm run format -- --dry-run -Werror
   - name: Windows + VS2017
     os: windows
+    cache:
+      timeout: 1000
+      directories:
+      - /c/Program\ Files/Epic\ Games/UE_4.26
+      - /c/Program\ Files\ \(x86\)/Epic\ Games
     install:
-    - choco install 7zip.portable
-    - choco install python --version 3.8.0
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - aws s3 cp s3://cesium-unreal-engine/2021-03-16/UE_4.26.zip .
-    - 7z x UE_4.26.zip "-oC:\Program Files\Epic Games"
-    - rm UE_4.26.zip
-    - aws s3 cp s3://cesium-unreal-engine/2021-03-16/Launcher.zip .
-    - 7z x Launcher.zip "-oC:\Program Files (x86)\Epic Games"
-    - rm Launcher.zip
+    - ./travis-get-ue.sh
     before_script:
     - mkdir -p extern/build
     - cd extern/build
@@ -35,6 +30,7 @@ jobs:
     script:
     - cmake --build . --config Release --target install -- /maxcpucount:4
     - cd ../..
+    - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages" -CreateSubFolder
