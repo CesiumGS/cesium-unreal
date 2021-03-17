@@ -275,20 +275,14 @@ public:
    * This aligns the specified global coordinates to Unreal's world origin, i.e.
    * it rotates the globe so that these coordinates exactly fall on the origin.
    */
-  void SetGeoreferenceOrigin(
-      double targetLongitude,
-      double targetLatitude,
-      double targetHeight);
+  void SetGeoreferenceOrigin(glm::dvec3 targetLongLatHeight);
 
   /**
    * This aligns the specified global coordinates to Unreal's world origin, i.e.
    * it rotates the globe so that these coordinates exactly fall on the origin.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateSetGeoreferenceOrigin(
-      float targetLongitude,
-      float targetLatitude,
-      float targetHeight);
+  void InaccurateSetGeoreferenceOrigin(FVector targetLongLatHeight);
 
 
   /*
@@ -463,6 +457,7 @@ private:
 
   bool _insideSublevel;
 
+  // TODO: add option to set georeference directly from ECEF
   void _setGeoreferenceOrigin(
       double targetLongitude,
       double targetLatitude,

@@ -184,29 +184,32 @@ void ACesiumGeoreference::JumpToCurrentLevel() {
   const FCesiumSubLevel& currentLevel =
       this->CesiumSubLevels[this->CurrentLevelIndex];
 
-  this->SetGeoreferenceOrigin(
+  this->SetGeoreferenceOrigin(glm::dvec3(
       currentLevel.LevelLongitude,
       currentLevel.LevelLatitude,
-      currentLevel.LevelHeight);
+      currentLevel.LevelHeight));
 }
 
-void ACesiumGeoreference::SetGeoreferenceOrigin(
-    double targetLongitude,
-    double targetLatitude,
-    double targetHeight) {
+void ACesiumGeoreference::SetGeoreferenceOrigin(glm::dvec3 targetLongLatHeight) {
   // Should not allow externally initiated georeference origin changing if we
   // are inside a sublevel
   if (this->_insideSublevel) {
     return;
   }
-  this->_setGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
+  this->_setGeoreferenceOrigin(
+    targetLongLatHeight.x, 
+    targetLongLatHeight.y, 
+    targetLongLatHeight.z);
 }
 
-void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
-    float targetLongitude,
-    float targetLatitude,
-    float targetHeight) {
-  this->SetGeoreferenceOrigin(targetLongitude, targetLatitude, targetHeight);
+void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(FVector targetLongLatHeight) {
+  this->SetGeoreferenceOrigin(
+    glm::dvec3(
+      targetLongLatHeight.X,
+      targetLongLatHeight.Y,
+      targetLongLatHeight.Z
+    )
+  );
 }
 
 void ACesiumGeoreference::AddGeoreferencedObject(
@@ -429,10 +432,6 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   if (isGame && this->WorldOriginCamera) {
     const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
     const FVector& cameraLocation = pov.Location;
-
-    // TODO: If KeepWorldOriginNearCamera is on and we play-in-editor and then
-    // exit back into the editor, the editor viewport camera always goes back to
-    // the origin. This might be super annoying to users.
 
     glm::dvec4 cameraAbsolute(
         static_cast<double>(cameraLocation.X) +

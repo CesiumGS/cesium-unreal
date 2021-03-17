@@ -93,12 +93,12 @@ public:
   /**
    * Get the pawn Camera location accurately in ECEF Coordinates
    */
-  void GetECEFCameraLocation(double& X, double& Y, double& Z);
+  glm::dvec3 GetECEFCameraLocation();
   
   /**
    * Set the pawn Camera location accurately from ECEF Coordinates
    */
-  void SetECEFCameraLocation(double X, double Y, double Z);
+  void SetECEFCameraLocation(glm::dvec3 ECEF);
 
   /** 
    * This curve dictates what percentage of the max altitude the pawn should
@@ -146,9 +146,7 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationECEF(
-      double ECEFDestinationX,
-      double ECEFDestinationY,
-      double ECEFDestinationZ,
+      glm::dvec3 ECEFDestination,
       float YawAtDestination,
       float PitchAtDestination);
 
@@ -161,9 +159,7 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateFlyToLocationECEF(
-      float ECEFDestinationX,
-      float ECEFDestinationY,
-      float ECEFDestinationZ,
+      FVector ECEFDestination,
       float YawAtDestination,
       float PitchAtDestination);
 
@@ -175,9 +171,7 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationLongLatHeight(
-      double Longitude,
-      double Latitude,
-      double Height,
+      glm::dvec3 LongLatHeightDestination,
       float YawAtDestination,
       float PitchAtDestination);
 
@@ -190,9 +184,7 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateFlyToLocationLongLatHeight(
-      float Longitude,
-      float Latitude,
-      float Height,
+      FVector LongLatHeightDestination,
       float YawAtDestination,
       float PitchAtDestination);
 

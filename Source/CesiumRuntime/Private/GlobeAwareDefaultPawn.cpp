@@ -131,27 +131,18 @@ FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator) {
   return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
 }
 
-void AGlobeAwareDefaultPawn::GetECEFCameraLocation(
-    double& X,
-    double& Y,
-    double& Z) {
+glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() {
   FVector ueLocation = this->GetPawnViewLocation();
-  glm::dvec3 ecef = this->Georeference->TransformUeToEcef(
+  return this->Georeference->TransformUeToEcef(
     glm::dvec3(
       ueLocation.X,
       ueLocation.Y,
       ueLocation.Z));
-
-  X = ecef.x;
-  Y = ecef.y;
-  Z = ecef.z;
 }
 
 void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
-    double X,
-    double Y,
-    double Z) {
-  glm::dvec3 ue = this->Georeference->TransformEcefToUe(glm::dvec3(X, Y, Z));
+    glm::dvec3 ecef) {
+  glm::dvec3 ue = this->Georeference->TransformEcefToUe(ecef);
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
       static_cast<float>(ue.y),
@@ -159,9 +150,7 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
-    double ECEFDestinationX,
-    double ECEFDestinationY,
-    double ECEFDestinationZ,
+    glm::dvec3 ECEFDestination,
     float YawAtDestination,
     float PitchAtDestination) {
 
@@ -171,13 +160,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   // We will work in ECEF space, but using Unreal Classes to benefit from Math
   // tools. Actual precision might suffer, but this is for a cosmetic flight...
 
-  // Compute source and destination locations in ECEF
-  double sourceLocationX, sourceLocationY, sourceLocationZ;
-  GetECEFCameraLocation(sourceLocationX, sourceLocationY, sourceLocationZ);
-  glm::dvec3 sourceECEFLocation(
-    sourceLocationX, sourceLocationY, sourceLocationZ);
-  glm::dvec3 destinationECEFLocation(
-    ECEFDestinationX, ECEFDestinationY, ECEFDestinationZ);
+  // Compute source location in ECEF
+  glm::dvec3 ECEFSource = this->GetECEFCameraLocation();
 
   // Compute the source and destination rotations in ENU
   // As during the flight, we can go around the globe, this is better to
@@ -188,8 +172,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // Compute axis/Angle transform and initialize key points
   glm::dquat flyQuat = glm::rotation(
-    glm::normalize(sourceECEFLocation), 
-    glm::normalize(destinationECEFLocation));
+    glm::normalize(ECEFSource), 
+    glm::normalize(ECEFDestination));
   double flyTotalAngle = glm::angle(flyQuat);
   glm::dvec3 flyRotationAxis = glm::axis(flyQuat);
   int steps = glm::max(
@@ -212,30 +196,29 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   //  - Add as flightProfile offset /-\ defined by a curve.
 
   // Compute global radius at source and destination points
-  double sourceRadius = glm::length(sourceECEFLocation);
-  glm::dvec3 sourceUpVector = sourceECEFLocation;
+  double sourceRadius = glm::length(ECEFSource);
+  glm::dvec3 sourceUpVector = ECEFSource;
 
   // Compute actual altitude at source and destination points by scaling on
   // ellipsoid.
   double sourceAltitude, destinationAltitude = 0;
   const CesiumGeospatial::Ellipsoid& ellipsoid =
       CesiumGeospatial::Ellipsoid::WGS84;
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(sourceECEFLocation)) {
-    sourceAltitude = glm::length(sourceECEFLocation - *scaled);
+  if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFSource)) {
+    sourceAltitude = glm::length(ECEFSource - *scaled);
   }
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(
-      destinationECEFLocation)) {
-    destinationAltitude = glm::length(destinationECEFLocation - *scaled);
+  if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFDestination)) {
+    destinationAltitude = glm::length(ECEFDestination - *scaled);
   }
 
   // Get distance between source and destination points to compute a wanted
   // altitude from curve
   double flyTodistance =
-      glm::length(destinationECEFLocation - sourceECEFLocation);
+      glm::length(ECEFDestination - ECEFSource);
 
   // Add first keypoint
-  this->_keypoints.push_back(sourceECEFLocation);
-  // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(sourceECEFLocation),
+  this->_keypoints.push_back(ECEFSource);
+  // DrawDebugPoint(GetWorld(), this->Georeference->InaccurateTransformEcefToUe(ECEFSource),
   // 8, FColor::Red, true, 30);
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
@@ -267,9 +250,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       // FColor::Red, true, 30);
     }
   }
-  this->_keypoints.push_back(destinationECEFLocation);
+  this->_keypoints.push_back(ECEFDestination);
   // DrawDebugPoint(GetWorld(),
-  // this->Georeference->InaccurateTransformEcefToUe(destinationECEFLocation), 8, FColor::Red, true,
+  // this->Georeference->InaccurateTransformEcefToUe(ECEFDestination), 8, FColor::Red, true,
   // 30);
 
   // Tell the tick we will be flying from now
@@ -277,40 +260,43 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 }
 
 void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
-    float ECEFDestinationX,
-    float ECEFDestinationY,
-    float ECEFDestinationZ,
+    FVector ECEFDestination,
     float YawAtDestination,
     float PitchAtDestination) {
 
   this->FlyToLocationECEF(
-      static_cast<double>(ECEFDestinationX),
-      static_cast<double>(ECEFDestinationY),
-      static_cast<double>(ECEFDestinationZ),
+      glm::dvec3(
+        ECEFDestination.X,
+        ECEFDestination.Y,
+        ECEFDestination.Z
+      ),
       YawAtDestination,
       PitchAtDestination);
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationLongLatHeight(
-    double Longitude,
-    double Latitude,
-    double Height,
+    glm::dvec3 LongLatHeightDestination,
     float YawAtDestination,
     float PitchAtDestination) {
 
-  glm::dvec3 ecef = this->Georeference->TransformLongLatHeightToEcef(glm::dvec3(Longitude, Latitude, Height));
-  this->FlyToLocationECEF(ecef.x, ecef.y, ecef.z, YawAtDestination, PitchAtDestination);      
+  glm::dvec3 ecef = this->Georeference->TransformLongLatHeightToEcef(LongLatHeightDestination);
+  this->FlyToLocationECEF(ecef, YawAtDestination, PitchAtDestination);      
 }
 
 UFUNCTION(BlueprintCallable)
 void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongLatHeight(
-    float Longitude,
-    float Latitude,
-    float Height,
+    FVector LongLatHeightDestination,
     float YawAtDestination,
     float PitchAtDestination) {
   
-  this->FlyToLocationLongLatHeight(Longitude, Latitude, Height, YawAtDestination, PitchAtDestination);
+  this->FlyToLocationLongLatHeight(
+    glm::dvec3(
+      LongLatHeightDestination.X, 
+      LongLatHeightDestination.Y, 
+      LongLatHeightDestination.Z
+    ), 
+    YawAtDestination, 
+    PitchAtDestination);
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
@@ -343,10 +329,7 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
       glm::dvec3 currentPosition =
         (1.0 - segmentPercentage) * lastPosition + segmentPercentage * nextPosition;
       // Set Location
-      this->SetECEFCameraLocation(
-          currentPosition.x,
-          currentPosition.y,
-          currentPosition.z);
+      this->SetECEFCameraLocation(currentPosition);
 
       // Interpolate rotation - Computation has to be done at each step because
       // the ENU CRS is depending on locatiom
@@ -359,7 +342,7 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
     } else {
       // We reached the end - Set actual destination location and orientation
       const glm::dvec3& finalPoint = _keypoints.back();
-      this->SetECEFCameraLocation(finalPoint.x, finalPoint.y, finalPoint.z);
+      this->SetECEFCameraLocation(finalPoint);
       GetController()->SetControlRotation(this->_flyToDestinationRotation);
       this->_bFlyingToLocation = false;
       this->_currentFlyTime = 0;
