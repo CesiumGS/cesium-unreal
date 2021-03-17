@@ -22,6 +22,11 @@ jobs:
       - C:\Program Files\Epic Games\UE_4.26
       - C:\Program Files (x86)\Epic Games\Launcher
     install:
+    - choco install 7zip.portable
+    - choco install python --version 3.9.2
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
     - choco install httpie
     - "./travis-get-ue.sh"
     before_script:
@@ -41,7 +46,7 @@ jobs:
     - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package "target_url=${PACKAGE_LINK}"
-    env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
 env:
   global:
   - secure: PbZbyzY3rqCYG9AysPOtC616bFyX2RH2XRg6DJ9CrRQmcpifDcMJAUEFl3Z2Xcl1OeUyAeZP6lxYO55436jmQMnmT46oFIl4CNIh1pN88NwYsMZ6MDCt50rPy+PvPQldxYhIhTfeNVuWrscrCodKgE2ewSvu8IjwSeJfs85ZUxvH8Eme7CYbGqoB4HJEQG8Sdc2VH5z0C6Fy+fGV1Q0W0ItH2A6UKpkRcGrXnvPxWr+AJkI91DdOlNiHrrr+Bi71tYp3DXVz+YtaS9fa/jO9bEdBV56hdJgG6NoH0bnRyTVAqgjMawecMr+1i+m7S7G4G3qwivXSsS2k5nQE8jsf4pLIzb1GyDNe2Lo/gnRcRhiLCW01SwIl+W3VozKzSofs7Wi+kn/Hkbe15f35NsOnmaqfNRRWAChAEovs4NLsnzpUwKwXmxOPDNYsgpnpB3YNycvIDkvCYcoHvrBJO4ytwrG1gXTKjfg5CChwjSoLbtxVEpyUb1W/XL2KgcECDoCkja8Xp+QUdUn/kaN8vpo7sVetKDK+BURlqTCQWGkwmo1dje7XrZUwCX+61+FiQBJu6QmUHnYFDT6P3wyKNZ522ETeqnfdOjzekFQnMDTtOi5Kv7L6bdYS1pG3fhKk2slc3QQuFgmHNfl8JFofjBgGW7sAKl0k5uqKDYf8V6WPuMQ=
