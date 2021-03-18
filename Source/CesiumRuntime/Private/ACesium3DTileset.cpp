@@ -108,6 +108,7 @@ void ACesium3DTileset::StopMovieSequencer() {
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
 
+#if WITH_EDITOR
 void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
   struct CalculateECEFCameraPosition {
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
@@ -205,6 +206,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
     }
   }
 }
+#endif
 
 const glm::dmat4&
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
