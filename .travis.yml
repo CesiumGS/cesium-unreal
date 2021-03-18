@@ -28,7 +28,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - choco install httpie
-    - "./travis-get-ue.sh"
+    - "./travis/travis-get-ue.sh"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - mkdir -p extern/build
