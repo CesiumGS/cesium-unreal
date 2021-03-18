@@ -112,12 +112,13 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
                : EVisibility::Collapsed;
   };
   return SNew(SVerticalBox) +
-         SVerticalBox::Slot()[SNew(SHyperlink)
-                                  .Visibility_Lambda(linkVisibility)
-                                  .Text_Lambda(linkText)
-                                  .ToolTipText(FText::FromString(
-                                      TEXT("Visit Cesium ion")))
-                                  .OnNavigate(this, &CesiumPanel::visitIon)] +
+         SVerticalBox::Slot()
+             [SNew(SHyperlink)
+                  .Visibility_Lambda(linkVisibility)
+                  .Text_Lambda(linkText)
+                  .ToolTipText(FText::FromString(
+                      TEXT("Open your Cesium ion account in your browser")))
+                  .OnNavigate(this, &CesiumPanel::visitIon)] +
          SVerticalBox::Slot()[SNew(STextBlock)
                                   .Visibility_Lambda(loadingMessageVisibility)
                                   .Text(FText::FromString(
