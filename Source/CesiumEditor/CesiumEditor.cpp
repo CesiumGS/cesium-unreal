@@ -97,7 +97,7 @@ void FCesiumEditorModule::StartupModule() {
     StyleSet->Set(
         "Cesium.Logo",
         new IMAGE_BRUSH(
-            "CESIUM-4-UNREAL-LOGOS_RGB_Micro_CESIUM-4-UNREAL-BlackV",
+            "Cesium-for-Unreal-Logo-Micro-BlackV",
             FVector2D(222.0, 200.0f)));
 
     StyleSet->Set(

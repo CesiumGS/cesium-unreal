@@ -58,15 +58,6 @@ void UCesiumRasterOverlay::AddToTileset() {
       this->CreateOverlay();
   this->_pOverlay = pOverlay.get();
 
-  for (const FRectangularCutout& cutout : this->Cutouts) {
-    pOverlay->getCutouts().push_back(
-        CesiumGeospatial::GlobeRectangle::fromDegrees(
-            cutout.west,
-            cutout.south,
-            cutout.east,
-            cutout.north));
-  }
-
   pTileset->getOverlays().add(std::move(pOverlay));
 }
 
