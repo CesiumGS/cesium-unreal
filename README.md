@@ -51,8 +51,9 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 2. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
 
     ```cmd
-    cmake -B build -S . -G "Visual Studio 15 2017 Win64"
-    cmake --build build --config Release --target install # You can optionally compile with --config Debug, RelWithDebInfo, or MinSizeRel as well.
+    cmake -B build -S . -G "Visual Studio 15 2017 Win64" # Optionally use "Visual Studio 16 2019"
+    cmake --build build --config Debug --target install # Optional, but recommended for debugging
+    cmake --build build --config Release --target install # Optionally compile with --config RelWithDebInfo or MinSizeRel.
     ```
 
 3. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
