@@ -1,0 +1,6 @@
+The SVG icons in this directory are from the "Font Awesome" project.
+They are published under the CC BY 4.0 License. See 
+https://fontawesome.com/license/free for further information.
+
+The SVG files have been edited to change the fill color from 
+the "currentColor" to "#cccccc".
