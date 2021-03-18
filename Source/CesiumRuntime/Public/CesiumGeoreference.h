@@ -221,9 +221,9 @@ public:
   double OriginHeight = 2250.0;
 
   /**
-   * EXPERIMENTAL
+   * TODO: Once point-and-click georeference placement is in place, restore this as a UPROPERTY
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
+  //UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
   bool EditOriginInViewport = false;
 
   /**
