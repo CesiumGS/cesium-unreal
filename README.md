@@ -39,7 +39,7 @@ TODO: Publish roadmap.
 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html). Cesium for Unreal is free for both commercial and non-commercial use.
 
-### :computer: Using with Unreal Engine
+### :computer: Developing with Unreal Engine
 
 #### :hammer_and_wrench: Compiling Cesium for Unreal
 
