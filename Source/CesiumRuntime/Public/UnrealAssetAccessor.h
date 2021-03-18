@@ -27,5 +27,5 @@ public:
   virtual void tick() noexcept override;
 
 private:
-	FString _userAgent;
+  FString _userAgent;
 };

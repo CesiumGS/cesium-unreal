@@ -120,7 +120,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
       return position;
     }
 
-    glm::dvec3 
+    glm::dvec3
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
       glm::dmat4 ENU =
@@ -138,14 +138,15 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
     }
 
     glm::dvec3
-    operator()(const CesiumGeospatial::BoundingRegionWithLooseFittingHeights& boundingRegionWithLooseFittingHeights) {
+    operator()(const CesiumGeospatial::BoundingRegionWithLooseFittingHeights&
+                   boundingRegionWithLooseFittingHeights) {
       return (*this)(boundingRegionWithLooseFittingHeights.getBoundingRegion()
                          .getBoundingBox());
     }
   };
 
   if (actor != this) {
-    return; 
+    return;
   }
 
   const Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
@@ -157,22 +158,33 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
       pRootTile->getBoundingVolume();
 
   // calculate unreal camera position
-  const glm::dmat4& transform = this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  glm::dvec3 ecefCameraPosition = std::visit(CalculateECEFCameraPosition(), boundingVolume);
-  glm::dvec3 unrealCameraPosition = transform * glm::dvec4(ecefCameraPosition, 1.0);
+  const glm::dmat4& transform =
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
+  glm::dvec3 ecefCameraPosition =
+      std::visit(CalculateECEFCameraPosition(), boundingVolume);
+  glm::dvec3 unrealCameraPosition =
+      transform * glm::dvec4(ecefCameraPosition, 1.0);
 
   // calculate unreal camera orientation
-  glm::dvec3 ecefCenter = Cesium3DTiles::getBoundingVolumeCenter(boundingVolume);
+  glm::dvec3 ecefCenter =
+      Cesium3DTiles::getBoundingVolumeCenter(boundingVolume);
   glm::dvec3 unrealCenter = transform * glm::dvec4(ecefCenter, 1.0);
-  glm::dvec3 unrealCameraFront = glm::normalize(unrealCenter - unrealCameraPosition);
+  glm::dvec3 unrealCameraFront =
+      glm::normalize(unrealCenter - unrealCameraPosition);
   glm::dvec3 unrealCameraRight =
-	  glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), unrealCameraFront));
+      glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), unrealCameraFront));
   glm::dvec3 unrealCameraUp =
       glm::normalize(glm::cross(unrealCameraFront, unrealCameraRight));
   FRotator cameraRotator =
       FMatrix(
-          FVector(unrealCameraFront.x, unrealCameraFront.y, unrealCameraFront.z),
-          FVector(unrealCameraRight.x, unrealCameraRight.y, unrealCameraRight.z),
+          FVector(
+              unrealCameraFront.x,
+              unrealCameraFront.y,
+              unrealCameraFront.z),
+          FVector(
+              unrealCameraRight.x,
+              unrealCameraRight.y,
+              unrealCameraRight.z),
           FVector(unrealCameraUp.x, unrealCameraUp.y, unrealCameraUp.z),
           FVector(0.0f, 0.0f, 0.0f))
           .Rotator();
@@ -182,9 +194,13 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
        GEditor->GetLevelViewportClients()) {
     // Dont move camera attach to an actor
     if (!LinkedViewportClient->IsAnyActorLocked()) {
-	  FViewportCameraTransform& ViewTransform = LinkedViewportClient->GetViewTransform();
-	  LinkedViewportClient->SetViewRotation(cameraRotator);
-	  LinkedViewportClient->SetViewLocation(FVector(unrealCameraPosition.x, unrealCameraPosition.y, unrealCameraPosition.z));
+      FViewportCameraTransform& ViewTransform =
+          LinkedViewportClient->GetViewTransform();
+      LinkedViewportClient->SetViewRotation(cameraRotator);
+      LinkedViewportClient->SetViewLocation(FVector(
+          unrealCameraPosition.x,
+          unrealCameraPosition.y,
+          unrealCameraPosition.z));
       LinkedViewportClient->Invalidate();
     }
   }
@@ -266,11 +282,12 @@ void ACesium3DTileset::BeginPlay() {
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
 #if WITH_EDITOR
-  FEditorDelegates::OnFocusViewportOnActors.AddLambda([this](const TArray<AActor *>& actors) {
-	if (actors.Num() == 1) {
-	  this->OnFocusEditorViewportOnActors(actors[0]);
-	}
-  });
+  FEditorDelegates::OnFocusViewportOnActors.AddLambda(
+      [this](const TArray<AActor*>& actors) {
+        if (actors.Num() == 1) {
+          this->OnFocusEditorViewportOnActors(actors[0]);
+        }
+      });
 #endif // EDITOR
 
   this->LoadTileset();
