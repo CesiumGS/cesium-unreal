@@ -583,9 +583,6 @@ static void loadPrimitive(
   if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
-    // Note that we're reversing the order of the indices, because the change
-    // from the glTF right-handed to the Unreal left-handed coordinate system
-    // reverses the winding order.
     for (int32 i = 0; i < indicesView.size(); ++i) {
       indices[i] = indicesView[i];
     }
