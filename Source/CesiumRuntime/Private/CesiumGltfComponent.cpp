@@ -88,6 +88,13 @@ glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
+template<class ...T>
+struct IsAccessorView;
+
+template<class T> struct IsAccessorView<T> : std::false_type {};
+
+template<class T> struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
+
 template <class T>
 static uint32_t updateTextureCoordinates(
     const CesiumGltf::Model& model,
@@ -133,6 +140,9 @@ uint32_t updateTextureCoordinates(
   textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
 
   CesiumGltf::AccessorView<FVector2D> uvAccessor(model, uvAccessorID);
+  if (uvAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    return 0;
+  }
 
   for (int64_t i = 0; i < indices.Num(); ++i) {
     FStaticMeshBuildVertex& vertex = vertices[i];
@@ -229,6 +239,23 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   genTangSpaceDefault(&MikkTContext);
 }
 
+static void computeFlatNormals(const TArray<uint32_t>& indices, TArray<FStaticMeshBuildVertex>& vertices) {
+  // Compute flat normals
+  for (int64_t i = 0; i < indices.Num(); i += 3) {
+    FStaticMeshBuildVertex& v0 = vertices[i];
+    FStaticMeshBuildVertex& v1 = vertices[i + 1];
+    FStaticMeshBuildVertex& v2 = vertices[i + 2];
+
+    FVector v01 = v1.Position - v0.Position;
+    FVector v02 = v2.Position - v0.Position;
+    FVector normal = FVector::CrossProduct(v01, v02);
+
+    v0.TangentZ = normal.GetSafeNormal();
+    v1.TangentZ = v0.TangentZ;
+    v2.TangentZ = v0.TangentZ;
+  }
+}
+
 #if !PHYSICS_INTERFACE_PHYSX
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
@@ -247,8 +274,11 @@ struct ColorVisitor {
   bool operator()(AccessorView<nullptr_t>&& invalidView) { return false; }
 
   template <typename TColorView> bool operator()(TColorView&& colorView) {
-    bool success = true;
+    if (colorView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      return false;
+    }
 
+    bool success = true;
     for (int64_t i = 0; success && i < this->indices.Num(); ++i) {
       FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
       uint32 vertexIndex = this->indices[i];
@@ -514,6 +544,22 @@ static void loadPrimitive(
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
+  if (positionView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Invalid position buffer"),
+        primitive.mode);
+    return;
+  }
+
+  if constexpr (IsAccessorView<TIndexAccessor>::value) {
+    if (indicesView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(LogCesium, Warning, TEXT("Invalid indices buffer"));
+      return;
+    }
+  }
+
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
     // TODO: add support for primitive types other than triangles.
@@ -565,9 +611,23 @@ static void loadPrimitive(
 
   const std::vector<double>& min = positionAccessor.min;
   const std::vector<double>& max = positionAccessor.max;
+  glm::dvec3 minPosition{std::numeric_limits<double>::max()};
+  glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
+  if (min.empty() || max.empty()) {
+    for (int32_t i = 0; i < positionView.size(); ++i) {
+      minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
+      minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
+      minPosition.z = glm::min<double>(minPosition.z, positionView[i].Z);
 
-  glm::dvec3 minPosition = glm::dvec3(min[0], min[1], min[2]);
-  glm::dvec3 maxPosition = glm::dvec3(max[0], max[1], max[2]);
+      maxPosition.x = glm::max<double>(maxPosition.x, positionView[i].X);
+      maxPosition.y = glm::max<double>(maxPosition.y, positionView[i].Y);
+      maxPosition.z = glm::max<double>(maxPosition.z, positionView[i].Z);
+    }
+  } else {
+    minPosition = glm::dvec3(min[0], min[1], min[2]);
+	maxPosition = glm::dvec3(max[0], max[1], max[2]);
+  }
+
 
   FBox aaBox(
       FVector(minPosition.x, minPosition.y, minPosition.z),
@@ -628,27 +688,19 @@ static void loadPrimitive(
   if (normalAccessorIt != primitive.attributes.end()) {
     int normalAccessorID = normalAccessorIt->second;
     CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
-
-    for (int64_t i = 0; i < indices.Num(); ++i) {
-      FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-      uint32 vertexIndex = indices[i];
-      vertex.TangentZ = normalAccessor[vertexIndex];
+    if (normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        vertex.TangentZ = normalAccessor[vertexIndex];
+      }
+    } 
+    else {
+      UE_LOG(LogCesium, Warning, TEXT("Invalid normal buffer. Flat normal will be auto-generated instead"));
+      computeFlatNormals(indices, StaticMeshBuildVertices);
     }
   } else {
-    // Compute flat normals
-    for (int64_t i = 0; i < indices.Num(); i += 3) {
-      FStaticMeshBuildVertex& v0 = StaticMeshBuildVertices[i];
-      FStaticMeshBuildVertex& v1 = StaticMeshBuildVertices[i + 1];
-      FStaticMeshBuildVertex& v2 = StaticMeshBuildVertices[i + 2];
-
-      FVector v01 = v1.Position - v0.Position;
-      FVector v02 = v2.Position - v0.Position;
-      FVector normal = FVector::CrossProduct(v01, v02);
-
-      v0.TangentZ = normal.GetSafeNormal();
-      v1.TangentZ = v0.TangentZ;
-      v2.TangentZ = v0.TangentZ;
-    }
+    computeFlatNormals(indices, StaticMeshBuildVertices);
   }
 
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
@@ -658,13 +710,18 @@ static void loadPrimitive(
         model,
         tangentAccessorID);
 
-    for (int64_t i = 0; i < indices.Num(); ++i) {
-      FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-      uint32 vertexIndex = indices[i];
-      const FVector4& tangent = tangentAccessor[vertexIndex];
-      vertex.TangentX = tangent;
-      vertex.TangentY =
-          FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+    if (tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        const FVector4& tangent = tangentAccessor[vertexIndex];
+        vertex.TangentX = tangent;
+        vertex.TangentY =
+            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+      }
+    } else {
+      UE_LOG(LogCesium, Warning, TEXT("Invalid tangent buffer. Tangent vector will be auto-generated instead"));
+      computeTangentSpace(StaticMeshBuildVertices);
     }
   } else {
     // Use mikktspace to calculate the tangents
