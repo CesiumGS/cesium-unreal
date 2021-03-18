@@ -88,7 +88,7 @@ public:
    * Transforms a rotator expressed in ENU coordinates to one expressed in UE
    * coordinates. (Single precision, but this should not be an issue)
    */
-  FRotator TransformRotatorENUToUE(FRotator UERotator);
+  FRotator TransformRotatorENUToUE(FRotator ENURotator);
 
   /**
    * Get the pawn Camera location accurately in ECEF Coordinates

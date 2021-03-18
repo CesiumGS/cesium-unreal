@@ -364,15 +364,9 @@ glm::dmat3 AGlobeAwareDefaultPawn::_computeEastNorthUpToFixedFrame() const {
   }
 
   FVector ueLocation = this->GetPawnViewLocation();
-  FIntVector ueOrigin = this->GetWorld()->OriginLocation;
-  glm::dvec3 location = glm::dvec3(
-      static_cast<double>(ueLocation.X) + static_cast<double>(ueOrigin.X),
-      static_cast<double>(ueLocation.Y) + static_cast<double>(ueOrigin.Y),
-      static_cast<double>(ueLocation.Z) + static_cast<double>(ueOrigin.Z));
-
-  const glm::dmat4& unrealToEcef =
-      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
-  glm::dvec3 cameraEcef = unrealToEcef * glm::dvec4(location, 1.0);
+  glm::dvec3 cameraEcef = this->Georeference->TransformUeToEcef(
+    glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z)
+  );
   glm::dmat4 enuToEcefAtCamera =
       CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(cameraEcef);
   const glm::dmat4& ecefToGeoreferenced =
