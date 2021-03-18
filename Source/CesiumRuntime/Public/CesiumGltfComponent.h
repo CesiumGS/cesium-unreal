@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
+#include "CoreMinimal.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -16,108 +16,113 @@ class IPhysXCooking;
 class UTexture2D;
 
 namespace CesiumGltf {
-	struct Model;
+struct Model;
 }
 
 namespace Cesium3DTiles {
-	class Tile;
-	class RasterOverlayTile;
-}
+class Tile;
+class RasterOverlayTile;
+} // namespace Cesium3DTiles
 
 namespace CesiumGeometry {
-	struct Rectangle;
+struct Rectangle;
 }
 
 USTRUCT()
 struct FRasterOverlayTile {
-	GENERATED_BODY()
+  GENERATED_BODY()
 
-	UPROPERTY()
-	UTexture2D* pTexture;
+  UPROPERTY()
+  UTexture2D* pTexture;
 
-	FLinearColor textureCoordinateRectangle;
-	FLinearColor translationAndScale;
+  FLinearColor textureCoordinateRectangle;
+  FLinearColor translationAndScale;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumGltfComponent : public USceneComponent
-{
-	GENERATED_BODY()
+class CESIUMRUNTIME_API UCesiumGltfComponent : public USceneComponent {
+  GENERATED_BODY()
 
 public:
-	class HalfConstructed {
-	public:
-		virtual ~HalfConstructed() = 0 {}
-	};
+  class HalfConstructed {
+  public:
+    virtual ~HalfConstructed() = 0 {}
+  };
 
-	/// <summary>
-	/// Constructs a UCesiumGltfComponent from the provided glTF model. This method does as much of the
-	/// work in the calling thread as possible, and the calling thread need not be the game thread.
-	/// The final component creation is done in the game thread (as required by Unreal Engine) and
-	/// the provided callback is raised in the game thread with the result.
-	/// </summary>
-	static void CreateOffGameThread(AActor* pActor, const CesiumGltf::Model& model, const glm::dmat4x4& transform, TFunction<void (UCesiumGltfComponent*)>);
-	static std::unique_ptr<HalfConstructed> CreateOffGameThread(
-		const CesiumGltf::Model& model,
-		const glm::dmat4x4& transform
+  /// <summary>
+  /// Constructs a UCesiumGltfComponent from the provided glTF model. This
+  /// method does as much of the work in the calling thread as possible, and the
+  /// calling thread need not be the game thread. The final component creation
+  /// is done in the game thread (as required by Unreal Engine) and the provided
+  /// callback is raised in the game thread with the result.
+  /// </summary>
+  static void CreateOffGameThread(
+      AActor* pActor,
+      const CesiumGltf::Model& model,
+      const glm::dmat4x4& transform,
+      TFunction<void(UCesiumGltfComponent*)>);
+  static std::unique_ptr<HalfConstructed> CreateOffGameThread(
+      const CesiumGltf::Model& model,
+      const glm::dmat4x4& transform
 #if PHYSICS_INTERFACE_PHYSX
-		,IPhysXCooking* pPhysXCooking = nullptr
+      ,
+      IPhysXCooking* pPhysXCooking = nullptr
 #endif
-	);
-	static UCesiumGltfComponent* CreateOnGameThread(
-		AActor* pParentActor,
-		std::unique_ptr<HalfConstructed> pHalfConstructed,
-		const glm::dmat4x4& cesiumToUnrealTransform,
-		UMaterial* pBaseMaterial
-	);
+  );
+  static UCesiumGltfComponent* CreateOnGameThread(
+      AActor* pParentActor,
+      std::unique_ptr<HalfConstructed> pHalfConstructed,
+      const glm::dmat4x4& cesiumToUnrealTransform,
+      UMaterial* pBaseMaterial);
 
-	UCesiumGltfComponent();
-	virtual ~UCesiumGltfComponent();
+  UCesiumGltfComponent();
+  virtual ~UCesiumGltfComponent();
 
-	UPROPERTY(EditAnywhere)
-	UMaterial* BaseMaterial;
+  UPROPERTY(EditAnywhere)
+  UMaterial* BaseMaterial;
 
-	UPROPERTY(EditAnywhere)
-	UMaterial* OpacityMaskMaterial;
+  UPROPERTY(EditAnywhere)
+  UMaterial* OpacityMaskMaterial;
 
-	UFUNCTION(BlueprintCallable)
-	void LoadModel(const FString& Url);
+  UFUNCTION(BlueprintCallable)
+  void LoadModel(const FString& Url);
 
-	void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
+  void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
 
-	void AttachRasterTile(
-		const Cesium3DTiles::Tile& tile,
-		const Cesium3DTiles::RasterOverlayTile& rasterTile,
-		UTexture2D* pTexture,
-		const CesiumGeometry::Rectangle& textureCoordinateRectangle,
-		const glm::dvec2& translation,
-		const glm::dvec2& scale
-	);
+  void AttachRasterTile(
+      const Cesium3DTiles::Tile& tile,
+      const Cesium3DTiles::RasterOverlayTile& rasterTile,
+      UTexture2D* pTexture,
+      const CesiumGeometry::Rectangle& textureCoordinateRectangle,
+      const glm::dvec2& translation,
+      const glm::dvec2& scale);
 
-	void DetachRasterTile(
-		const Cesium3DTiles::Tile& tile,
-		const Cesium3DTiles::RasterOverlayTile& rasterTile,
-		UTexture2D* pTexture,
-		const CesiumGeometry::Rectangle& textureCoordinateRectangle
-	);
+  void DetachRasterTile(
+      const Cesium3DTiles::Tile& tile,
+      const Cesium3DTiles::RasterOverlayTile& rasterTile,
+      UTexture2D* pTexture,
+      const CesiumGeometry::Rectangle& textureCoordinateRectangle);
 
-	UFUNCTION(BlueprintCallable, Category = "Collision")
-	virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
+  UFUNCTION(BlueprintCallable, Category = "Collision")
+  virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
-	virtual void FinishDestroy() override;
+  virtual void FinishDestroy() override;
 
 protected:
-	//virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+  // virtual void BeginPlay() override;
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	FString LoadedUrl;
-	class UStaticMeshComponent* Mesh;
+  FString LoadedUrl;
+  class UStaticMeshComponent* Mesh;
 
-	glm::dmat4x4 _cesiumTransformation;
+  glm::dmat4x4 _cesiumTransformation;
 
-	TArray<FRasterOverlayTile> _overlayTiles;
+  TArray<FRasterOverlayTile> _overlayTiles;
 
 private:
-	void ModelRequestComplete(FHttpRequestPtr request, FHttpResponsePtr response, bool x);
-	void updateRasterOverlays();
+  void ModelRequestComplete(
+      FHttpRequestPtr request,
+      FHttpResponsePtr response,
+      bool x);
+  void updateRasterOverlays();
 };

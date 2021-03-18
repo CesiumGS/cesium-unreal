@@ -4,7 +4,8 @@
 
 #include "CesiumAsync/ITaskProcessor.h"
 
-class CESIUMRUNTIME_API UnrealTaskProcessor : public CesiumAsync::ITaskProcessor {
+class CESIUMRUNTIME_API UnrealTaskProcessor
+    : public CesiumAsync::ITaskProcessor {
 public:
-    virtual void startTask(std::function<void()> f) override;
+  virtual void startTask(std::function<void()> f) override;
 };

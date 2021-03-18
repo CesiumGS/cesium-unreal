@@ -5,16 +5,15 @@
 #include "CoreMinimal.h"
 #include "Framework/Commands/Commands.h"
 
-class FCesiumCommands : public TCommands<FCesiumCommands>
-{
+class FCesiumCommands : public TCommands<FCesiumCommands> {
 public:
-	FCesiumCommands();
+  FCesiumCommands();
 
-    TSharedPtr<FUICommandInfo> AddFromIon;
-    TSharedPtr<FUICommandInfo> UploadToIon;
-	TSharedPtr<FUICommandInfo> AddBlankTileset;
-	TSharedPtr<FUICommandInfo> AccessToken;
-	TSharedPtr<FUICommandInfo> SignOut;
+  TSharedPtr<FUICommandInfo> AddFromIon;
+  TSharedPtr<FUICommandInfo> UploadToIon;
+  TSharedPtr<FUICommandInfo> AddBlankTileset;
+  TSharedPtr<FUICommandInfo> AccessToken;
+  TSharedPtr<FUICommandInfo> SignOut;
 
-	virtual void RegisterCommands() override;
+  virtual void RegisterCommands() override;
 };
