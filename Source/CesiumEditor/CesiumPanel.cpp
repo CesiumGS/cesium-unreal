@@ -70,9 +70,9 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
   builder.AddToolBarButton(FCesiumCommands::Get().UploadToIon);
   builder.AddToolBarButton(FCesiumCommands::Get().AddBlankTileset);
   // builder.AddToolBarButton(FCesiumCommands::Get().AccessToken);
-  builder.AddToolBarButton(FCesiumCommands::Get().SignOut);
   builder.AddToolBarButton(FCesiumCommands::Get().OpenDocumentation);
   builder.AddToolBarButton(FCesiumCommands::Get().OpenSupport);
+  builder.AddToolBarButton(FCesiumCommands::Get().SignOut);
 
   return builder.MakeWidget();
 }

@@ -46,7 +46,7 @@ void FCesiumCommands::RegisterCommands() {
   UI_COMMAND(
       OpenDocumentation,
       "Learn",
-      "Open Cesium for Unreal tutorials and and learning resources",
+      "Open Cesium for Unreal tutorials and learning resources",
       EUserInterfaceActionType::Button,
       FInputChord());
   UI_COMMAND(
