@@ -12,7 +12,7 @@
 #include "LevelEditor.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "UnrealConversions.h"
-#include "Widgets/Layout/SHeader.h"
+#include "Widgets/Input/SHyperlink.h"
 
 void CesiumPanel::Construct(const FArguments& InArgs) {
   ChildSlot
@@ -57,6 +57,12 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
       FCesiumCommands::Get().SignOut,
       FExecuteAction::CreateSP(this, &CesiumPanel::signOut),
       FCanExecuteAction::CreateStatic(isSignedIn));
+  commandList->MapAction(
+      FCesiumCommands::Get().OpenDocumentation,
+      FExecuteAction::CreateSP(this, &CesiumPanel::openDocumentation));
+  commandList->MapAction(
+      FCesiumCommands::Get().OpenSupport,
+      FExecuteAction::CreateSP(this, &CesiumPanel::openSupport));
 
   FToolBarBuilder builder(commandList, FMultiBoxCustomization::None);
 
@@ -64,6 +70,8 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
   builder.AddToolBarButton(FCesiumCommands::Get().UploadToIon);
   builder.AddToolBarButton(FCesiumCommands::Get().AddBlankTileset);
   // builder.AddToolBarButton(FCesiumCommands::Get().AccessToken);
+  builder.AddToolBarButton(FCesiumCommands::Get().OpenDocumentation);
+  builder.AddToolBarButton(FCesiumCommands::Get().OpenSupport);
   builder.AddToolBarButton(FCesiumCommands::Get().SignOut);
 
   return builder.MakeWidget();
@@ -82,20 +90,39 @@ TSharedRef<SWidget> CesiumPanel::MainPanel() {
 }
 
 TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
-  return SNew(SHeader)
-      .Visibility_Lambda([]() {
-        return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed;
-      })
-      .HAlign(EHorizontalAlignment::HAlign_Right)
-      .Content()[SNew(STextBlock).Text_Lambda([]() {
-        if (FCesiumEditorModule::ion().refreshProfileIfNeeded()) {
-          auto& profile = FCesiumEditorModule::ion().getProfile();
-          std::string s = "Connected to Cesium ion as " + profile.username;
-          return FText::FromString(utf8_to_wstr(s));
-        } else {
-          return FText::FromString(TEXT("Loading user information..."));
-        }
-      })];
+
+  auto linkVisibility = []() {
+    FCesiumEditorModule::ion().refreshProfileIfNeeded();
+    if (!FCesiumEditorModule::ion().isProfileLoaded()) {
+      return EVisibility::Collapsed;
+    }
+    if (!isSignedIn()) {
+      return EVisibility::Collapsed;
+    }
+    return EVisibility::Visible;
+  };
+  auto linkText = []() {
+    auto& profile = FCesiumEditorModule::ion().getProfile();
+    std::string s = "Connected to Cesium ion as " + profile.username;
+    return FText::FromString(utf8_to_wstr(s));
+  };
+  auto loadingMessageVisibility = []() {
+    return FCesiumEditorModule::ion().isLoadingProfile()
+               ? EVisibility::Visible
+               : EVisibility::Collapsed;
+  };
+  return SNew(SVerticalBox) +
+         SVerticalBox::Slot()
+             [SNew(SHyperlink)
+                  .Visibility_Lambda(linkVisibility)
+                  .Text_Lambda(linkText)
+                  .ToolTipText(FText::FromString(
+                      TEXT("Open your Cesium ion account in your browser")))
+                  .OnNavigate(this, &CesiumPanel::visitIon)] +
+         SVerticalBox::Slot()[SNew(STextBlock)
+                                  .Visibility_Lambda(loadingMessageVisibility)
+                                  .Text(FText::FromString(
+                                      TEXT("Loading user information...")))];
 }
 
 void CesiumPanel::addFromIon() {
@@ -115,6 +142,10 @@ void CesiumPanel::uploadToIon() {
       NULL);
 }
 
+void CesiumPanel::visitIon() {
+  FPlatformProcess::LaunchURL(TEXT("https://cesium.com/ion"), NULL, NULL);
+}
+
 void CesiumPanel::addBlankTileset() {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
@@ -130,3 +161,14 @@ void CesiumPanel::addBlankTileset() {
 void CesiumPanel::accessToken() {}
 
 void CesiumPanel::signOut() { FCesiumEditorModule::ion().disconnect(); }
+
+void CesiumPanel::openDocumentation() {
+  FPlatformProcess::LaunchURL(TEXT("https://cesium.com/docs"), NULL, NULL);
+}
+
+void CesiumPanel::openSupport() {
+  FPlatformProcess::LaunchURL(
+      TEXT("https://community.cesium.com/"),
+      NULL,
+      NULL);
+}
