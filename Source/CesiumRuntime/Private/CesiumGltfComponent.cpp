@@ -88,12 +88,12 @@ glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
-template<class ...T>
-struct IsAccessorView;
+template <class... T> struct IsAccessorView;
 
-template<class T> struct IsAccessorView<T> : std::false_type {};
+template <class T> struct IsAccessorView<T> : std::false_type {};
 
-template<class T> struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
+template <class T>
+struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
 
 template <class T>
 static uint32_t updateTextureCoordinates(
@@ -239,7 +239,9 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   genTangSpaceDefault(&MikkTContext);
 }
 
-static void computeFlatNormals(const TArray<uint32_t>& indices, TArray<FStaticMeshBuildVertex>& vertices) {
+static void computeFlatNormals(
+    const TArray<uint32_t>& indices,
+    TArray<FStaticMeshBuildVertex>& vertices) {
   // Compute flat normals
   for (int64_t i = 0; i < indices.Num(); i += 3) {
     FStaticMeshBuildVertex& v0 = vertices[i];
@@ -629,9 +631,8 @@ static void loadPrimitive(
     }
   } else {
     minPosition = glm::dvec3(min[0], min[1], min[2]);
-	maxPosition = glm::dvec3(max[0], max[1], max[2]);
+    maxPosition = glm::dvec3(max[0], max[1], max[2]);
   }
-
 
   FBox aaBox(
       FVector(minPosition.x, minPosition.y, minPosition.z),
@@ -698,8 +699,7 @@ static void loadPrimitive(
         uint32 vertexIndex = indices[i];
         vertex.TangentZ = normalAccessor[vertexIndex];
       }
-    } 
-    else {
+    } else {
       UE_LOG(
           LogCesium,
           Warning,
