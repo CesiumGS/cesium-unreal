@@ -23,6 +23,7 @@
 #include "UnrealTaskProcessor.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
+DEFINE_LOG_CATEGORY(LogCesiumEditor);
 
 #define IMAGE_BRUSH(RelativePath, ...)                                         \
   FSlateImageBrush(                                                            \

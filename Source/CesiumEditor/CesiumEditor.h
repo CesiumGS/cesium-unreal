@@ -13,6 +13,8 @@ class FSpawnTabArgs;
 class ACesium3DTileset;
 class UCesiumIonRasterOverlay;
 
+DECLARE_LOG_CATEGORY_EXTERN(LogCesiumEditor, Log, All);
+
 class FCesiumEditorModule : public IModuleInterface {
 public:
   /** IModuleInterface implementation */

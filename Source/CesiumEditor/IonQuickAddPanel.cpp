@@ -104,22 +104,63 @@ TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(
 }
 
 void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
-  ACesium3DTileset* pTileset =
-      FCesiumEditorModule::FindFirstTilesetWithAssetID(item->tilesetID);
-  if (!pTileset) {
-    pTileset =
-        FCesiumEditorModule::CreateTileset(item->tilesetName, item->tilesetID);
+  if (this->_itemsBeingAdded.find(item->name) != this->_itemsBeingAdded.end()) {
+    // Add is already in progress.
+    return;
   }
 
-  if (item->overlayID > 0) {
-    FCesiumEditorModule::AddOverlay(
-        pTileset,
-        item->overlayName,
-        item->overlayID);
+  const std::optional<CesiumIonClient::Connection>& connection =
+      FCesiumEditorModule::ion().getConnection();
+  if (!connection) {
+    return;
   }
 
-  pTileset->RerunConstructionScripts();
+  connection->asset(item->tilesetID)
+      .thenInMainThread([item, connection](Response<Asset>&& response) {
+        if (!response.value.has_value()) {
+          return connection->getAsyncSystem().createResolvedFuture<int64_t>(
+              std::move(int64_t(item->tilesetID)));
+        }
 
-  GEditor->SelectNone(true, false);
-  GEditor->SelectActor(pTileset, true, true, true, true);
+        if (item->overlayID >= 0) {
+          return connection->asset(item->overlayID)
+              .thenInMainThread([item](Response<Asset>&& overlayResponse) {
+                return overlayResponse.value.has_value()
+                           ? int64_t(-1)
+                           : int64_t(item->overlayID);
+              });
+        } else {
+          return connection->getAsyncSystem().createResolvedFuture<int64_t>(-1);
+        }
+      })
+      .thenInMainThread([item](int64_t missingAsset) {
+        if (missingAsset != -1) {
+          UE_LOG(
+              LogCesiumEditor,
+              Warning,
+              TEXT("Asset ID is not available in my assets."));
+        } else {
+          ACesium3DTileset* pTileset =
+              FCesiumEditorModule::FindFirstTilesetWithAssetID(item->tilesetID);
+          if (!pTileset) {
+            pTileset = FCesiumEditorModule::CreateTileset(
+                item->tilesetName,
+                item->tilesetID);
+          }
+
+          FCesiumEditorModule::ion().getAssets();
+
+          if (item->overlayID > 0) {
+            FCesiumEditorModule::AddOverlay(
+                pTileset,
+                item->overlayName,
+                item->overlayID);
+          }
+
+          pTileset->RerunConstructionScripts();
+
+          GEditor->SelectNone(true, false);
+          GEditor->SelectActor(pTileset, true, true, true, true);
+        }
+      });
 }
