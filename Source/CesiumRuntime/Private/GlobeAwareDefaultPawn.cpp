@@ -107,10 +107,7 @@ FVector AGlobeAwareDefaultPawn::InaccurateTransformECEFToUE(FVector& point) {
   glm::dvec3 cameraUnreal =
       ecefToUnreal * glm::dvec4(point.X, point.Y, point.Z, 1.0);
 
-  return FVector(
-             cameraUnreal.x * 100.0,
-             -cameraUnreal.y * 100.0,
-             cameraUnreal.z * 100.0) -
+  return FVector(cameraUnreal.x, cameraUnreal.y, cameraUnreal.z) -
          FVector(this->GetWorld()->OriginLocation);
 }
 
@@ -124,14 +121,12 @@ void AGlobeAwareDefaultPawn::AccurateTransformECEFToUE(
   FIntVector ueOrigin = this->GetWorld()->OriginLocation;
 
   glm::dvec3 cameraUnreal = ecefToUnreal * glm::dvec4(X, Y, Z, 1.0);
-  glm::dvec3 location = glm::dvec3(
-                            cameraUnreal.x * 100.0,
-                            -cameraUnreal.y * 100.0,
-                            cameraUnreal.z * 100.0) -
-                        glm::dvec3(
-                            static_cast<double>(ueOrigin.X),
-                            static_cast<double>(ueOrigin.Y),
-                            static_cast<double>(ueOrigin.Z));
+  glm::dvec3 location =
+      glm::dvec3(cameraUnreal.x, cameraUnreal.y, cameraUnreal.z) -
+      glm::dvec3(
+          static_cast<double>(ueOrigin.X),
+          static_cast<double>(ueOrigin.Y),
+          static_cast<double>(ueOrigin.Z));
 
   ResultX = location.x;
   ResultY = location.y;
@@ -147,12 +142,11 @@ void AGlobeAwareDefaultPawn::AccurateTransformUEToECEF(
     double& ResultZ) {
   FIntVector ueOrigin = this->GetWorld()->OriginLocation;
   glm::dvec3 location = glm::dvec3(
-                            X + static_cast<double>(ueOrigin.X),
-                            -(Y + static_cast<double>(ueOrigin.Y)), // ? TBC
-                            Z + static_cast<double>(ueOrigin.Z)) /
-                        100.0;
+      X + static_cast<double>(ueOrigin.X),
+      Y + static_cast<double>(ueOrigin.Y), // ? TBC
+      Z + static_cast<double>(ueOrigin.Z));
   glm::dmat4 unrealToEcef =
-      this->Georeference->GetGeoreferencedToEllipsoidCenteredTransform();
+      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
   glm::dvec3 locationEcef = unrealToEcef * glm::dvec4(location, 1.0);
 
   ResultX = locationEcef.x;
@@ -401,7 +395,7 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
 void AGlobeAwareDefaultPawn::RefreshMatricesCache() {
   // Optim - Refresh is needed only when CesiumGeoReference actor is changed...
   ecefToUnreal =
-      this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
+      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
 }
 
 glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
@@ -411,25 +405,23 @@ glm::dmat3 AGlobeAwareDefaultPawn::computeEastNorthUpToFixedFrame() const {
 
   FVector ueLocation = this->GetPawnViewLocation();
   FIntVector ueOrigin = this->GetWorld()->OriginLocation;
-  glm::dvec3 location =
-      glm::dvec3(
-          static_cast<double>(ueLocation.X) + static_cast<double>(ueOrigin.X),
-          -(static_cast<double>(ueLocation.Y) +
-            static_cast<double>(ueOrigin.Y)),
-          static_cast<double>(ueLocation.Z) + static_cast<double>(ueOrigin.Z)) /
-      100.0;
+  glm::dvec3 location = glm::dvec3(
+      static_cast<double>(ueLocation.X) + static_cast<double>(ueOrigin.X),
+      static_cast<double>(ueLocation.Y) + static_cast<double>(ueOrigin.Y),
+      static_cast<double>(ueLocation.Z) + static_cast<double>(ueOrigin.Z));
 
-  glm::dmat4 unrealToEcef =
-      this->Georeference->GetGeoreferencedToEllipsoidCenteredTransform();
+  const glm::dmat4& unrealToEcef =
+      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
   glm::dvec3 cameraEcef = unrealToEcef * glm::dvec4(location, 1.0);
   glm::dmat4 enuToEcefAtCamera =
       CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(cameraEcef);
-  glm::dmat4 ecefToUnrealTmp = glm::affineInverse(unrealToEcef);
+  const glm::dmat4& ecefToGeoreferenced =
+      this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
 
   // Camera Axes = ENU
   // Unreal Axes = controlled by Georeference
   glm::dmat3 rotationCesium =
-      glm::dmat3(ecefToUnrealTmp) * glm::dmat3(enuToEcefAtCamera);
+      glm::dmat3(ecefToGeoreferenced) * glm::dmat3(enuToEcefAtCamera);
 
   glm::dmat3 cameraToUnreal =
       glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *

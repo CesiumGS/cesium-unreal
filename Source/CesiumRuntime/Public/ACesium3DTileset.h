@@ -218,8 +218,7 @@ public:
   virtual std::optional<Cesium3DTiles::BoundingVolume>
   GetBoundingVolume() const override;
   void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal);
-  virtual void UpdateGeoreferenceTransform(
-      const glm::dmat4& ellipsoidCenteredToGeoreferencedTransform);
+  virtual void NotifyGeoreferenceUpdated();
 
 protected:
   // Called when the game starts or when spawned
@@ -256,6 +255,7 @@ protected:
 
 #if WITH_EDITOR
   std::optional<UnrealCameraParameters> GetEditorCamera() const;
+  void OnFocusEditorViewportOnActors(const AActor* actor);
 #endif
 
 public:
