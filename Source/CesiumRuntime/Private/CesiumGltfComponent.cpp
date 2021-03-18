@@ -544,22 +544,6 @@ static void loadPrimitive(
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
-  if (positionView.status() != CesiumGltf::AccessorViewStatus::Valid) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Invalid position buffer"),
-        primitive.mode);
-    return;
-  }
-
-  if constexpr (IsAccessorView<TIndexAccessor>::value) {
-    if (indicesView.status() != CesiumGltf::AccessorViewStatus::Valid) {
-      UE_LOG(LogCesium, Warning, TEXT("Invalid indices buffer"));
-      return;
-    }
-  }
-
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
     // TODO: add support for primitive types other than triangles.
@@ -603,6 +587,26 @@ static void loadPrimitive(
   }
 
   primitiveResult.name = name;
+
+  if (positionView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("%s: Invalid position buffer"),
+        UTF8_TO_TCHAR(name.c_str()));
+    return;
+  }
+
+  if constexpr (IsAccessorView<TIndexAccessor>::value) {
+    if (indicesView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s: Invalid indices buffer"),
+          UTF8_TO_TCHAR(name.c_str()));
+      return;
+    }
+  }
 
   FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
   RenderData->AllocateLODResources(1);
@@ -696,7 +700,12 @@ static void loadPrimitive(
       }
     } 
     else {
-      UE_LOG(LogCesium, Warning, TEXT("Invalid normal buffer. Flat normal will be auto-generated instead"));
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "%s: Invalid normal buffer. Flat normal will be auto-generated instead"),
+          UTF8_TO_TCHAR(name.c_str()));
       computeFlatNormals(indices, StaticMeshBuildVertices);
     }
   } else {
@@ -720,7 +729,12 @@ static void loadPrimitive(
             FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
       }
     } else {
-      UE_LOG(LogCesium, Warning, TEXT("Invalid tangent buffer. Tangent vector will be auto-generated instead"));
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "%s: Invalid tangent buffer. Tangent vector will be auto-generated instead"),
+          UTF8_TO_TCHAR(name.c_str()));
       computeTangentSpace(StaticMeshBuildVertices);
     }
   } else {
