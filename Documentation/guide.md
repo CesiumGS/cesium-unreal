@@ -4,7 +4,7 @@ Cesium for Unreal brings a high-fidelity model of Planet Earth into Unreal Engin
 
 Representing our massive and intricate planet in Unreal Engine requires two things:
 
-1. specialized techniques for _preserving precision_ in the position of things in the world, and
+1. specialized techniques for _preserving the precision_ of things in the world, and
 2. a _lot_ of data.
 
 Techniques for preserving precision are necessary because Earth coordinate values are very large. In a standard Cartesian coordinate system centered at the center of the Earth, positions on the Earth's surface have a magnitude of over 6.3 million meters. The standard numeric representation used in game engines - the 32-bit, single-precision floating point number - can only accurately represent a position of this magnitude down to about a meter, at best. Without the specialized techniques used by Cesium for Unreal, this imprecision means that objects would appear to jump around on the screen or "jitter" due to floating-point rounding errors as an object or the camera move.
