@@ -2,6 +2,7 @@
 
 #include "GlobeAwareDefaultPawn.h"
 #include "CesiumGeoreference.h"
+#include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumTransforms.h"
@@ -106,7 +107,7 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 //////////////////////////////////////////////////////////////////////////
 // Useful transformations
 //////////////////////////////////////////////////////////////////////////
-FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) {
+FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) const {
   glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
 
   FMatrix enuAdjustmentMatrix(
@@ -118,7 +119,7 @@ FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) {
   return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
 }
 
-FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator) {
+FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator) const {
   glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
   FMatrix enuAdjustmentMatrix(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
@@ -131,7 +132,7 @@ FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator) {
   return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
 }
 
-glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() {
+glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
   FVector ueLocation = this->GetPawnViewLocation();
   return this->Georeference->TransformUeToEcef(
     glm::dvec3(
@@ -157,8 +158,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   if (this->_bFlyingToLocation) {
     return;
   }
-  // We will work in ECEF space, but using Unreal Classes to benefit from Math
-  // tools. Actual precision might suffer, but this is for a cosmetic flight...
 
   // Compute source location in ECEF
   glm::dvec3 ECEFSource = this->GetECEFCameraLocation();
@@ -299,6 +298,10 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongLatHeight(
     PitchAtDestination);
 }
 
+void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
+  this->SetECEFCameraLocation(this->_currentEcef);
+}
+
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   if (this->_bFlyingToLocation) {
     this->_currentFlyTime += static_cast<double>(DeltaSeconds);
@@ -348,6 +351,9 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
       this->_currentFlyTime = 0;
     }
   }
+
+  // track current ecef in case we need to restore it on georeference update
+  this->_currentEcef = this->GetECEFCameraLocation();
 }
 
 void AGlobeAwareDefaultPawn::BeginPlay() {
@@ -355,7 +361,12 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
 
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    
+    this->_currentEcef = this->GetECEFCameraLocation();
+    this->Georeference->AddGeoreferencedObject(this);
   }
+
+  this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
 }
 
 glm::dmat3 AGlobeAwareDefaultPawn::_computeEastNorthUpToFixedFrame() const {
@@ -363,10 +374,7 @@ glm::dmat3 AGlobeAwareDefaultPawn::_computeEastNorthUpToFixedFrame() const {
     return glm::dmat3(1.0);
   }
 
-  FVector ueLocation = this->GetPawnViewLocation();
-  glm::dvec3 cameraEcef = this->Georeference->TransformUeToEcef(
-    glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z)
-  );
+  glm::dvec3 cameraEcef = this->GetECEFCameraLocation();
   glm::dmat4 enuToEcefAtCamera =
       CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(cameraEcef);
   const glm::dmat4& ecefToGeoreferenced =

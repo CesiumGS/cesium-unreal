@@ -626,6 +626,27 @@ FVector ACesiumGeoreference::InaccurateTransformUeToEcef(FVector ue) const {
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
+glm::dmat3 ACesiumGeoreference::ComputeEastNorthUpToUnreal(glm::dvec3 ecef) const {
+  glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
+
+  // Camera Axes = ENU
+  // Unreal Axes = controlled by Georeference
+  glm::dmat3 rotationCesium =
+      glm::dmat3(this->_ecefToGeoreferenced) * glm::dmat3(enuToEcef);
+
+  glm::dmat3 cameraToUnreal =
+      glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
+      glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+
+  return cameraToUnreal;
+}
+
+glm::dmat3 ACesiumGeoreference::ComputeEastNorthUpToEcef(glm::dvec3 ecef) const {
+  return glm::dmat3(
+    CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef)
+  );
+}
+
 /**
  * Private Helper Functions
  */

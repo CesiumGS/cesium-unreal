@@ -365,6 +365,19 @@ public:
   glm::dvec3 TransformUeToEcef(glm::dvec3 ue) const;
 
   /**
+   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * specified ECEF location. The returned transformation works in Unreal's 
+   * left-handed coordinate system.
+   */
+  glm::dmat3 ComputeEastNorthUpToUnreal(glm::dvec3 ecef) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to ECEF at the
+   * specified ECEF location. 
+   */
+  glm::dmat3 ComputeEastNorthUpToEcef(glm::dvec3 ecef) const;
+
+  /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to ECEF.
    */

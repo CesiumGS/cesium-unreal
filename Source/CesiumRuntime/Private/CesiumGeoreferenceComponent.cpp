@@ -447,6 +447,22 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
       FVector(transform[1].x, transform[1].y, transform[1].z),
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
+
+  // TODO: try direct setting of transformation, may work for static objects on
+  // origin rebase
+  /*
+  this->_ownerRoot->SetRelativeLocation_Direct(
+      FVector(transform[3].x, transform[3].y, transform[3].z));
+
+  this->_ownerRoot->SetRelativeRotation_Direct(FMatrix(
+    FVector(transform[0].x, transform[0].y, transform[0].z),
+    FVector(transform[1].x, transform[1].y, transform[1].z),
+    FVector(transform[2].x, transform[2].y, transform[2].z),
+    FVector(0.0, 0.0, 0.0)
+  ).Rotator());
+
+  this->_ownerRoot->SetComponentToWorld(this->_ownerRoot->GetRelativeTransform());
+  */
 }
 
 void UCesiumGeoreferenceComponent::_setECEF(

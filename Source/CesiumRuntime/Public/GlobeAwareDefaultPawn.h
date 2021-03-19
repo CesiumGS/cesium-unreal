@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
+#include "Cesium3DTiles/BoundingVolume.h"
+#include "CesiumGeoreferenceable.h"
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
@@ -19,7 +21,9 @@ class UCurveFloat;
  * changes its own up direction such that the world always looks right-side up.
  */
 UCLASS()
-class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {
+class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
+    : public ADefaultPawn,
+      public ICesiumGeoreferenceable {
   GENERATED_BODY()
 
   AGlobeAwareDefaultPawn();
@@ -82,18 +86,18 @@ public:
    * Transforms a rotator expressed in UE coordinates to one expressed in ENU
    * coordinates. (Single precision, but this should not be an issue)
    */
-  FRotator TransformRotatorUEToENU(FRotator UERotator);
+  FRotator TransformRotatorUEToENU(FRotator UERotator) const;
 
   /**
    * Transforms a rotator expressed in ENU coordinates to one expressed in UE
    * coordinates. (Single precision, but this should not be an issue)
    */
-  FRotator TransformRotatorENUToUE(FRotator ENURotator);
+  FRotator TransformRotatorENUToUE(FRotator ENURotator) const;
 
   /**
    * Get the pawn Camera location accurately in ECEF Coordinates
    */
-  glm::dvec3 GetECEFCameraLocation();
+  glm::dvec3 GetECEFCameraLocation() const;
   
   /**
    * Set the pawn Camera location accurately from ECEF Coordinates
@@ -188,6 +192,17 @@ public:
       float YawAtDestination,
       float PitchAtDestination);
 
+  // ICesiumGeoreferenceable functions
+
+  virtual bool IsBoundingVolumeReady() const override { return false; }
+
+  virtual std::optional<Cesium3DTiles::BoundingVolume>
+    GetBoundingVolume() const override {
+    return std::nullopt;
+  }
+
+  virtual void NotifyGeoreferenceUpdated() override;
+
   virtual void Tick(float DeltaSeconds) override;
 
 protected:
@@ -201,6 +216,10 @@ private:
    * left-handed coordinate system.
    */
   glm::dmat3 _computeEastNorthUpToFixedFrame() const;
+
+  // the current ECEF coordinates, stored in case they need to be restored on
+  // georeference update
+  glm::dvec3 _currentEcef;
 
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;
