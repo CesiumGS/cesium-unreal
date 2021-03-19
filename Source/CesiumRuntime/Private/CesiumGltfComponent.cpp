@@ -619,7 +619,7 @@ static void loadPrimitive(
   const std::vector<double>& max = positionAccessor.max;
   glm::dvec3 minPosition{std::numeric_limits<double>::max()};
   glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
-  if (min.empty() || max.empty()) {
+  if (min.size() != 3 || max.size() != 3) {
     for (int32_t i = 0; i < positionView.size(); ++i) {
       minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
       minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
