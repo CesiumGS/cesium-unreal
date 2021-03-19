@@ -154,7 +154,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
                                 .AutoWrapText(true)
                                 .Text(FText::FromString(TEXT(
                                     "Before " + utf8_to_wstr(item->name) +
-                                    " can be added to your level, it must be added to My Assets in your Cesium ion account.")))] +
+                                    " can be added to your level, it must be added to \"My Assets\" in your Cesium ion account.")))] +
                        SVerticalBox::Slot()
                            .AutoHeight()
                            .HAlign(EHorizontalAlignment::HAlign_Left)
@@ -183,7 +183,7 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
                            .Padding(10.0f, 5.0f)
                                [SNew(STextBlock)
                                     .Text(FText::FromString(TEXT(
-                                        "Return to Cesium for Unreal and try adding this dataset again")))] +
+                                        "Return to Cesium for Unreal and try adding this asset again")))] +
                        SVerticalBox::Slot()
                            .AutoHeight()
                            .HAlign(EHorizontalAlignment::HAlign_Center)
