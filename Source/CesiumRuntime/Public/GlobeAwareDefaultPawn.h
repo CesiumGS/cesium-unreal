@@ -152,7 +152,8 @@ public:
   void FlyToLocationECEF(
       glm::dvec3 ECEFDestination,
       float YawAtDestination,
-      float PitchAtDestination);
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
 
   /**
    * Begin a smooth camera flight to the specified destination ECEF such that
@@ -165,7 +166,8 @@ public:
   void InaccurateFlyToLocationECEF(
       FVector ECEFDestination,
       float YawAtDestination,
-      float PitchAtDestination);
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
 
   /**
    * Begin a smooth camera flight to the specified destination LLH such that
@@ -177,7 +179,8 @@ public:
   void FlyToLocationLongLatHeight(
       glm::dvec3 LongLatHeightDestination,
       float YawAtDestination,
-      float PitchAtDestination);
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
 
   /**
    * Begin a smooth camera flight to the specified destination LLH such that
@@ -190,7 +193,8 @@ public:
   void InaccurateFlyToLocationLongLatHeight(
       FVector LongLatHeightDestination,
       float YawAtDestination,
-      float PitchAtDestination);
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
 
   // ICesiumGeoreferenceable functions
 
@@ -217,12 +221,15 @@ private:
    */
   glm::dmat3 _computeEastNorthUpToFixedFrame() const;
 
+  void _interruptFlight();
+
   // the current ECEF coordinates, stored in case they need to be restored on
   // georeference update
   glm::dvec3 _currentEcef;
 
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;
+  bool _bCanInterruptFlight = false;
   double _currentFlyTime = 0.0;
   FRotator _flyToSourceRotation;
   FRotator _flyToDestinationRotation;

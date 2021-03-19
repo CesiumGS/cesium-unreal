@@ -9,6 +9,7 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Camera/CameraComponent.h"
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -32,6 +33,10 @@ void AGlobeAwareDefaultPawn::MoveRight(float Val) {
       AddMovementInput(
           FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::Y),
           Val);
+
+      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+        this->_interruptFlight();
+      }
     }
   }
 }
@@ -45,6 +50,10 @@ void AGlobeAwareDefaultPawn::MoveForward(float Val) {
       AddMovementInput(
           FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::X),
           Val);
+
+      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+        this->_interruptFlight();
+      }
     }
   }
 }
@@ -54,6 +63,10 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     glm::dmat3 enuToFixed = this->_computeEastNorthUpToFixedFrame();
     FVector up(enuToFixed[2].x, enuToFixed[2].y, enuToFixed[2].z);
     AddMovementInput(up, Val);
+
+    if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+      this->_interruptFlight();
+    }
   }
 }
 
@@ -153,7 +166,8 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     glm::dvec3 ECEFDestination,
     float YawAtDestination,
-    float PitchAtDestination) {
+    float PitchAtDestination,
+    bool CanInterruptByMoving) {
 
   if (this->_bFlyingToLocation) {
     return;
@@ -179,6 +193,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       int(flyTotalAngle / glm::radians(this->FlyToGranularityDegrees)) - 1,
       0);
   this->_keypoints.clear();
+  this->_currentFlyTime = 0.0;
 
   if (steps == 0) {
     return;
@@ -200,7 +215,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // Compute actual altitude at source and destination points by scaling on
   // ellipsoid.
-  double sourceAltitude, destinationAltitude = 0;
+  double sourceAltitude = 0.0, destinationAltitude = 0.0;
   const CesiumGeospatial::Ellipsoid& ellipsoid =
       CesiumGeospatial::Ellipsoid::WGS84;
   if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFSource)) {
@@ -256,12 +271,14 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // Tell the tick we will be flying from now
   this->_bFlyingToLocation = true;
+  this->_bCanInterruptFlight = CanInterruptByMoving;
 }
 
 void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
     FVector ECEFDestination,
     float YawAtDestination,
-    float PitchAtDestination) {
+    float PitchAtDestination,
+    bool CanInterruptByMoving) {
 
   this->FlyToLocationECEF(
       glm::dvec3(
@@ -270,23 +287,26 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
         ECEFDestination.Z
       ),
       YawAtDestination,
-      PitchAtDestination);
+      PitchAtDestination,
+      CanInterruptByMoving);
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationLongLatHeight(
     glm::dvec3 LongLatHeightDestination,
     float YawAtDestination,
-    float PitchAtDestination) {
+    float PitchAtDestination,
+    bool CanInterruptByMoving) {
 
   glm::dvec3 ecef = this->Georeference->TransformLongLatHeightToEcef(LongLatHeightDestination);
-  this->FlyToLocationECEF(ecef, YawAtDestination, PitchAtDestination);      
+  this->FlyToLocationECEF(ecef, YawAtDestination, PitchAtDestination, CanInterruptByMoving);      
 }
 
 UFUNCTION(BlueprintCallable)
 void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongLatHeight(
     FVector LongLatHeightDestination,
     float YawAtDestination,
-    float PitchAtDestination) {
+    float PitchAtDestination,
+    bool CanInterruptByMoving) {
   
   this->FlyToLocationLongLatHeight(
     glm::dvec3(
@@ -295,7 +315,8 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongLatHeight(
       LongLatHeightDestination.Z
     ), 
     YawAtDestination, 
-    PitchAtDestination);
+    PitchAtDestination,
+    CanInterruptByMoving);
 }
 
 void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
@@ -336,19 +357,21 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
 
       // Interpolate rotation - Computation has to be done at each step because
       // the ENU CRS is depending on locatiom
-      FRotator currentRotator = FMath::Lerp<FRotator>(
-          this->TransformRotatorUEToENU(this->_flyToSourceRotation),
-          this->TransformRotatorUEToENU(this->_flyToDestinationRotation),
+      FQuat currentQuat = FQuat::Slerp(
+          this->TransformRotatorUEToENU(this->_flyToSourceRotation)
+            .Quaternion(),
+          this->TransformRotatorUEToENU(this->_flyToDestinationRotation)
+            .Quaternion(),
           flyPercentage);
       GetController()->SetControlRotation(
-          TransformRotatorENUToUE(currentRotator));
+          this->TransformRotatorENUToUE(currentQuat.Rotator()));
     } else {
       // We reached the end - Set actual destination location and orientation
       const glm::dvec3& finalPoint = _keypoints.back();
       this->SetECEFCameraLocation(finalPoint);
       GetController()->SetControlRotation(this->_flyToDestinationRotation);
       this->_bFlyingToLocation = false;
-      this->_currentFlyTime = 0;
+      this->_currentFlyTime = 0.0;
     }
   }
 
@@ -366,6 +389,8 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
     this->Georeference->AddGeoreferencedObject(this);
   }
 
+  // TODO: find more elegant solution
+  // the controller gets confused if the pawn itself has a nonzero orientation
   this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
 }
 
@@ -390,4 +415,13 @@ glm::dmat3 AGlobeAwareDefaultPawn::_computeEastNorthUpToFixedFrame() const {
       glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
 
   return cameraToUnreal;
+}
+
+void AGlobeAwareDefaultPawn::_interruptFlight() {
+  this->_bFlyingToLocation = false;
+
+  // fix any camera roll to 0.0 
+  FRotator currentRotator = GetController()->GetControlRotation();
+  currentRotator.Roll = 0.0;
+  GetController()->SetControlRotation(currentRotator);
 }
