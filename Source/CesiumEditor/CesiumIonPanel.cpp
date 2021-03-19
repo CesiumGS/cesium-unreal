@@ -288,7 +288,7 @@ comparatorFor(const FName& columnName) {
 
 void CesiumIonPanel::ApplyFilter() {
 
-  // UE_LOG(LogActor, Warning, TEXT("ApplyFilter %s"), *_searchString);
+  // UE_LOG(LogCesiumEditor, Warning, TEXT("ApplyFilter %s"), *_searchString);
 
   if (_searchString.IsEmpty()) {
     return;
@@ -316,7 +316,7 @@ void CesiumIonPanel::ApplyFilter() {
 
 void CesiumIonPanel::ApplySorting() {
 
-  // UE_LOG(LogActor, Warning, TEXT("ApplySorting %s with %d"),
+  // UE_LOG(LogCesiumEditor, Warning, TEXT("ApplySorting %s with %d"),
   // *_sortColumnName.ToString(), _sortMode);
 
   if (_sortMode == EColumnSortMode::Type::None) {
@@ -368,7 +368,7 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
     this->AddAssetToLevel(item);
   } else {
     UE_LOG(
-        LogTemp,
+        LogCesiumEditor,
         Warning,
         TEXT("Cannot add asset of type %s"),
         item->type.c_str());
@@ -463,7 +463,7 @@ FString formatDate(const std::string& assetDate) {
   bool success = FDateTime::ParseIso8601(*unrealDateString, dateTime);
   if (!success) {
     UE_LOG(
-        LogTemp,
+        LogCesiumEditor,
         Warning,
         TEXT("Could not parse date %s"),
         assetDate.c_str());
