@@ -120,7 +120,8 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 //////////////////////////////////////////////////////////////////////////
 // Useful transformations
 //////////////////////////////////////////////////////////////////////////
-FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) const {
+FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(
+    const FRotator& UERotator) const {
   glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
 
   FMatrix enuAdjustmentMatrix(
@@ -132,7 +133,8 @@ FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(FRotator UERotator) con
   return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
 }
 
-FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(FRotator ENURotator) const {
+FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(
+    const FRotator& ENURotator) const {
   glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
   FMatrix enuAdjustmentMatrix(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
@@ -154,8 +156,7 @@ glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
       ueLocation.Z));
 }
 
-void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
-    glm::dvec3 ecef) {
+void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
   glm::dvec3 ue = this->Georeference->TransformEcefToUe(ecef);
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
@@ -164,7 +165,7 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
-    glm::dvec3 ECEFDestination,
+    const glm::dvec3& ECEFDestination,
     float YawAtDestination,
     float PitchAtDestination,
     bool CanInterruptByMoving) {
@@ -275,7 +276,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 }
 
 void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
-    FVector ECEFDestination,
+    const FVector& ECEFDestination,
     float YawAtDestination,
     float PitchAtDestination,
     bool CanInterruptByMoving) {
@@ -292,7 +293,7 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
-    glm::dvec3 LongitudeLatitudeHeightDestination,
+    const glm::dvec3& LongitudeLatitudeHeightDestination,
     float YawAtDestination,
     float PitchAtDestination,
     bool CanInterruptByMoving) {
@@ -303,7 +304,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
 
 UFUNCTION(BlueprintCallable)
 void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
-    FVector LongitudeLatitudeHeightDestination,
+    const FVector& LongitudeLatitudeHeightDestination,
     float YawAtDestination,
     float PitchAtDestination,
     bool CanInterruptByMoving) {

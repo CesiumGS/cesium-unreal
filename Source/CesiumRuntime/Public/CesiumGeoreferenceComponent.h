@@ -103,7 +103,7 @@ public:
    * Move the actor to the specified longitude/latitude/height.
    */
   void MoveToLongitudeLatitudeHeight(
-      glm::dvec3 targetLongitudeLatitudeHeight,
+      const glm::dvec3& targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
@@ -112,14 +112,14 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToLongitudeLatitudeHeight(
-      FVector targetLongitudeLatitudeHeight,
+      const FVector& targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified ECEF coordinates.
    */
   void MoveToECEF(
-      glm::dvec3 targetEcef,
+      const glm::dvec3& targetEcef,
       bool maintainRelativeOrientation = true);
 
   /**
@@ -128,7 +128,7 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToECEF(
-      FVector targetEcef,
+      const FVector& targetEcef,
       bool maintainRelativeOrientation = true);
 
   virtual void OnRegister() override;
@@ -186,7 +186,7 @@ private:
   void _updateActorToECEF();
   void _updateActorToUnrealRelativeWorldTransform();
   void _setTransform(const glm::dmat4& transform);
-  void _setECEF(glm::dvec3 targetEcef, bool maintainRelativeOrientation);
+  void _setECEF(const glm::dvec3& targetEcef, bool maintainRelativeOrientation);
   void _updateDisplayLongitudeLatitudeHeight();
   void _updateDisplayECEF();
 

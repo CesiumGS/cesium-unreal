@@ -111,7 +111,7 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
 }
 
 void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
-    glm::dvec3 targetLongitudeLatitudeHeight,
+    const glm::dvec3& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
   glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
       CesiumGeospatial::Cartographic::fromDegrees(
@@ -124,7 +124,7 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
-    FVector targetLongitudeLatitudeHeight,
+    const FVector& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
   this->MoveToLongitudeLatitudeHeight(
     glm::dvec3(
@@ -136,7 +136,7 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF(
-    glm::dvec3 targetEcef,
+    const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
   this->_setECEF(
       targetEcef,
@@ -145,7 +145,7 @@ void UCesiumGeoreferenceComponent::MoveToECEF(
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
-    FVector targetEcef,
+    const FVector& targetEcef,
     bool maintainRelativeOrientation) {
   this->MoveToECEF(
       glm::dvec3(
@@ -466,7 +466,7 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
 }
 
 void UCesiumGeoreferenceComponent::_setECEF(
-  glm::dvec3 targetEcef, 
+  const glm::dvec3& targetEcef, 
   bool maintainRelativeOrientation) {
   if (!maintainRelativeOrientation) {
     this->_actorToECEF[3] =

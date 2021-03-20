@@ -86,13 +86,13 @@ public:
    * Transforms a rotator expressed in UE coordinates to one expressed in ENU
    * coordinates. (Single precision, but this should not be an issue)
    */
-  FRotator TransformRotatorUEToENU(FRotator UERotator) const;
+  FRotator TransformRotatorUEToENU(const FRotator& UERotator) const;
 
   /**
    * Transforms a rotator expressed in ENU coordinates to one expressed in UE
    * coordinates. (Single precision, but this should not be an issue)
    */
-  FRotator TransformRotatorENUToUE(FRotator ENURotator) const;
+  FRotator TransformRotatorENUToUE(const FRotator& ENURotator) const;
 
   /**
    * Get the pawn Camera location accurately in ECEF Coordinates
@@ -102,7 +102,7 @@ public:
   /**
    * Set the pawn Camera location accurately from ECEF Coordinates
    */
-  void SetECEFCameraLocation(glm::dvec3 ECEF);
+  void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
   /** 
    * This curve dictates what percentage of the max altitude the pawn should
@@ -150,7 +150,7 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationECEF(
-      glm::dvec3 ECEFDestination,
+      const glm::dvec3& ECEFDestination,
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
@@ -164,7 +164,7 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateFlyToLocationECEF(
-      FVector ECEFDestination,
+      const FVector& ECEFDestination,
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
@@ -177,7 +177,7 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationLongitudeLatitudeHeight(
-      glm::dvec3 LongitudeLatitudeHeightDestination,
+      const glm::dvec3& LongitudeLatitudeHeightDestination,
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
@@ -191,7 +191,7 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateFlyToLocationLongitudeLatitudeHeight(
-      FVector LongitudeLatitudeHeightDestination,
+      const FVector& LongitudeLatitudeHeightDestination,
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
