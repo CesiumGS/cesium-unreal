@@ -49,30 +49,14 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
       CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
           this->_actorToECEF[3]);
 
-  // cosine of the angle between the actor's up direction and the ellipsoid
-  // normal
-  double cos = glm::dot(actorUpECEF, ellipsoidNormal);
+  // the shortest rotation to align local up with the ellipsoid normal
+  glm::dquat R = glm::rotation(actorUpECEF, ellipsoidNormal);
 
-  // TODO: is this a reasonable epsilon in this case?
-  if (cos < CesiumUtility::Math::EPSILON7 - 1.0) {
-    // The actor's current up direction is completely upside down with respect
-    // to the ellipsoid normal.
-
-    // We want to do a 180 degree rotation around X. We can do this by flipping
-    // the Y and Z axes
-    this->_actorToECEF[1] *= -1.0;
-    this->_actorToECEF[2] *= -1.0;
-
-  } else {
-    // the shortest rotation to align local up with the ellipsoid normal
-    glm::dquat R = glm::rotation(actorUpECEF, ellipsoidNormal);
-
-    // We only want to apply the rotation to the actor's orientation, not
-    // translation.
-    this->_actorToECEF[0] = R * this->_actorToECEF[0];
-    this->_actorToECEF[1] = R * this->_actorToECEF[1];
-    this->_actorToECEF[2] = R * this->_actorToECEF[2];
-  }
+  // We only want to apply the rotation to the actor's orientation, not
+  // translation.
+  this->_actorToECEF[0] = R * this->_actorToECEF[0];
+  this->_actorToECEF[1] = R * this->_actorToECEF[1];
+  this->_actorToECEF[2] = R * this->_actorToECEF[2];
 
   this->_updateActorToUnrealRelativeWorldTransform();
   this->_setTransform(this->_actorToUnrealRelativeWorld);
