@@ -11,6 +11,7 @@
 #include "UObject/NameTypes.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <optional>
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent()
@@ -63,31 +64,8 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
     this->_actorToECEF[2] *= -1.0;
 
   } else {
-    // TODO: can probably replace the obscure calculations below with 
-    // R = glm::toMat3(glm::rotation(actorUpECEF, ellipsoidNormal));
-
-    // the axis of the shortest available rotation with a magnitude that is sine
-    // of the angle
-    glm::dvec3 sin_axis = glm::cross(ellipsoidNormal, actorUpECEF);
-
-    // We construct a rotation matrix using Rodrigues' rotation formula for
-    // rotating by theta around an axis.
-
-    // K is the cross product matrix of the axis, i.e. K v = axis x v, where v
-    // is any vector. Here we have a factor of sine theta that we let through as
-    // well since it will simplify the calcuations in Rodrigues` formula.
-    glm::dmat3 sin_K(
-        0.0,
-        -sin_axis.z,
-        sin_axis.y,
-        sin_axis.z,
-        0.0,
-        -sin_axis.x,
-        -sin_axis.y,
-        sin_axis.x,
-        0.0);
-    // Rodrigues' rotation formula
-    glm::dmat4 R = glm::dmat3(1.0) + sin_K + sin_K * sin_K / (1.0 + cos);
+    // the shortest rotation to align local up with the ellipsoid normal
+    glm::dquat R = glm::rotation(actorUpECEF, ellipsoidNormal);
 
     // We only want to apply the rotation to the actor's orientation, not
     // translation.
