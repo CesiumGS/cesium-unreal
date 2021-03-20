@@ -238,8 +238,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
     double altitude = 
-      (1.0 - percentage) * sourceAltitude + 
-      percentage * destinationAltitude;
+      glm::mix(sourceAltitude, destinationAltitude, percentage);
     double phi = 
       glm::radians(this->FlyToGranularityDegrees * static_cast<double>(step));
 
@@ -343,7 +342,7 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
 
       // Find the keypoint indexes corresponding to the current percentage
       int lastIndex = 
-        FMath::Floor(rawPercentage * (this->_keypoints.size() - 1));
+        glm::floor(rawPercentage * (this->_keypoints.size() - 1));
       double segmentPercentage =
           rawPercentage * (this->_keypoints.size() - 1) - lastIndex;
       int nextIndex = lastIndex + 1;
@@ -351,8 +350,8 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
       // Get the current position by interpolating between those two points
       const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
       const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
-      glm::dvec3 currentPosition =
-        (1.0 - segmentPercentage) * lastPosition + segmentPercentage * nextPosition;
+      glm::dvec3 currentPosition = 
+        glm::mix(lastPosition, nextPosition, segmentPercentage);
       // Set Location
       this->SetECEFCameraLocation(currentPosition);
 
