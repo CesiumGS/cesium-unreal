@@ -291,28 +291,28 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
       CanInterruptByMoving);
 }
 
-void AGlobeAwareDefaultPawn::FlyToLocationLongLatHeight(
-    glm::dvec3 LongLatHeightDestination,
+void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
+    glm::dvec3 LongitudeLatitudeHeightDestination,
     float YawAtDestination,
     float PitchAtDestination,
     bool CanInterruptByMoving) {
 
-  glm::dvec3 ecef = this->Georeference->TransformLongLatHeightToEcef(LongLatHeightDestination);
+  glm::dvec3 ecef = this->Georeference->TransformLongitudeLatitudeHeightToEcef(LongitudeLatitudeHeightDestination);
   this->FlyToLocationECEF(ecef, YawAtDestination, PitchAtDestination, CanInterruptByMoving);      
 }
 
 UFUNCTION(BlueprintCallable)
-void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongLatHeight(
-    FVector LongLatHeightDestination,
+void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
+    FVector LongitudeLatitudeHeightDestination,
     float YawAtDestination,
     float PitchAtDestination,
     bool CanInterruptByMoving) {
   
-  this->FlyToLocationLongLatHeight(
+  this->FlyToLocationLongitudeLatitudeHeight(
     glm::dvec3(
-      LongLatHeightDestination.X, 
-      LongLatHeightDestination.Y, 
-      LongLatHeightDestination.Z
+      LongitudeLatitudeHeightDestination.X, 
+      LongitudeLatitudeHeightDestination.Y, 
+      LongitudeLatitudeHeightDestination.Z
     ), 
     YawAtDestination, 
     PitchAtDestination,

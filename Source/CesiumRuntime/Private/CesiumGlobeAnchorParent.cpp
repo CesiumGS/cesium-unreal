@@ -58,7 +58,7 @@ void ACesiumGlobeAnchorParent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Latitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Height)) {
-    this->GeoreferenceComponent->MoveToLongLatHeight(
+    this->GeoreferenceComponent->MoveToLongitudeLatitudeHeight(
       glm::dvec3(
         this->Longitude,
         this->Latitude,

@@ -102,8 +102,8 @@ public:
   /**
    * Move the actor to the specified longitude/latitude/height.
    */
-  void MoveToLongLatHeight(
-      glm::dvec3 targetLongLatHeight,
+  void MoveToLongitudeLatitudeHeight(
+      glm::dvec3 targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
@@ -111,8 +111,8 @@ public:
    * this takes single-precision floats.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateMoveToLongLatHeight(
-      FVector targetLongLatHeight,
+  void InaccurateMoveToLongitudeLatitudeHeight(
+      FVector targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
@@ -187,7 +187,7 @@ private:
   void _updateActorToUnrealRelativeWorldTransform();
   void _setTransform(const glm::dmat4& transform);
   void _setECEF(glm::dvec3 targetEcef, bool maintainRelativeOrientation);
-  void _updateDisplayLongLatHeight();
+  void _updateDisplayLongitudeLatitudeHeight();
   void _updateDisplayECEF();
 
   glm::dvec3 _worldOriginLocation;

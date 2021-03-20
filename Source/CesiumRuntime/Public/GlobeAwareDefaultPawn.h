@@ -176,8 +176,8 @@ public:
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
-  void FlyToLocationLongLatHeight(
-      glm::dvec3 LongLatHeightDestination,
+  void FlyToLocationLongitudeLatitudeHeight(
+      glm::dvec3 LongitudeLatitudeHeightDestination,
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
@@ -190,8 +190,8 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateFlyToLocationLongLatHeight(
-      FVector LongLatHeightDestination,
+  void InaccurateFlyToLocationLongitudeLatitudeHeight(
+      FVector LongitudeLatitudeHeightDestination,
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
