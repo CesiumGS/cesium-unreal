@@ -58,10 +58,11 @@ void ACesiumGlobeAnchorParent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Latitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, Height)) {
-    this->GeoreferenceComponent->MoveToLongLatHeight(
+    this->GeoreferenceComponent->MoveToLongitudeLatitudeHeight(
+      glm::dvec3(
         this->Longitude,
         this->Latitude,
-        this->Height);
+        this->Height));
     return;
   } else if (
       propertyName ==
@@ -71,9 +72,10 @@ void ACesiumGlobeAnchorParent::PostEditChangeProperty(
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGlobeAnchorParent, ECEF_Z)) {
     this->GeoreferenceComponent->MoveToECEF(
+      glm::dvec3(
         this->ECEF_X,
         this->ECEF_Y,
-        this->ECEF_Z);
+        this->ECEF_Z));
     return;
   }
 }

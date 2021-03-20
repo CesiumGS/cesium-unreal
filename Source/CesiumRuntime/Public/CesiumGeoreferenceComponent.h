@@ -14,6 +14,14 @@
 
 #include "CesiumGeoreferenceComponent.generated.h"
 
+/**
+ * This component can be added to movable actors to globally georeference them 
+ * and maintain precise placement. When the owning actor is transformed through 
+ * Unreal, the internal geospatial coordinates will be automatically updated.
+ * The actor position can also be set in terms of Earth-Centered, Eath-Fixed
+ * coordinates (ECEF) or Longitude, Latitude, and Height relative to the WGS84
+ * ellipsoid.   
+ */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
     : public USceneComponent,
@@ -23,10 +31,6 @@ class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
 public:
   // Sets default values for this component's properties
   UCesiumGeoreferenceComponent();
-
-  // TODO: Probably should use custom details builder to make the UI a little
-  // more friendly, it would be nice to have the same options reflected in the
-  // actor's details panel as well if that's even possible.
 
   /**
    * The georeference actor controlling how the owning actor's coordinate system
@@ -98,10 +102,8 @@ public:
   /**
    * Move the actor to the specified longitude/latitude/height.
    */
-  void MoveToLongLatHeight(
-      double targetLongitude,
-      double targetLatitude,
-      double targetHeight,
+  void MoveToLongitudeLatitudeHeight(
+      const glm::dvec3& targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
@@ -109,19 +111,15 @@ public:
    * this takes single-precision floats.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateMoveToLongLatHeight(
-      float targetLongitude,
-      float targetLatitude,
-      float targetHeight,
+  void InaccurateMoveToLongitudeLatitudeHeight(
+      const FVector& targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified ECEF coordinates.
    */
   void MoveToECEF(
-      double targetEcef_x,
-      double targetEcef_y,
-      double targetEcef_z,
+      const glm::dvec3& targetEcef,
       bool maintainRelativeOrientation = true);
 
   /**
@@ -130,9 +128,7 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToECEF(
-      float targetEcef_x,
-      float targetEcef_y,
-      float targetEcef_z,
+      const FVector& targetEcef,
       bool maintainRelativeOrientation = true);
 
   virtual void OnRegister() override;
@@ -190,18 +186,15 @@ private:
   void _updateActorToECEF();
   void _updateActorToUnrealRelativeWorldTransform();
   void _setTransform(const glm::dmat4& transform);
-  void _setECEF(
-      double targetEcef_x,
-      double targetEcef_y,
-      double targetEcef_z,
-      bool maintainRelativeOrientation);
-  void _updateDisplayLongLatHeight();
+  void _setECEF(const glm::dvec3& targetEcef, bool maintainRelativeOrientation);
+  void _updateDisplayLongitudeLatitudeHeight();
   void _updateDisplayECEF();
 
   glm::dvec3 _worldOriginLocation;
   glm::dvec3 _absoluteLocation;
   glm::dvec3 _relativeLocation;
 
+  // Note: this is done to allow Unreal to recognize and serialize _actorToECEF
   UPROPERTY()
   double _actorToECEF_Array[16];
 

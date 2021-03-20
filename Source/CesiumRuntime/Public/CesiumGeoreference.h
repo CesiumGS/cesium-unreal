@@ -221,9 +221,9 @@ public:
   double OriginHeight = 2250.0;
 
   /**
-   * EXPERIMENTAL
+   * TODO: Once point-and-click georeference placement is in place, restore this as a UPROPERTY
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
+  //UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
   bool EditOriginInViewport = false;
 
   /**
@@ -275,46 +275,118 @@ public:
    * This aligns the specified global coordinates to Unreal's world origin, i.e.
    * it rotates the globe so that these coordinates exactly fall on the origin.
    */
-  void SetGeoreferenceOrigin(
-      double targetLongitude,
-      double targetLatitude,
-      double targetHeight);
+  void SetGeoreferenceOrigin(const glm::dvec3& targetLongitudeLatitudeHeight);
 
   /**
    * This aligns the specified global coordinates to Unreal's world origin, i.e.
    * it rotates the globe so that these coordinates exactly fall on the origin.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateSetGeoreferenceOrigin(
-      float targetLongitude,
-      float targetLatitude,
-      float targetHeight);
+  void InaccurateSetGeoreferenceOrigin(const FVector& targetLongitudeLatitudeHeight);
+
+
+  /*
+   * USEFUL CONVERSION FUNCTIONS
+   */
+
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into ECEF coordinates.
+   */
+  glm::dvec3 TransformLongitudeLatitudeHeightToEcef(const glm::dvec3& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into ECEF coordinates.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformLongitudeLatitudeHeightToEcef(const FVector& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given ECEF coordinates into longitude, latitude, and height
+   * (in degrees and meters respectively) relative to the WGS84 ellipsoid.
+   */
+  glm::dvec3 TransformEcefToLongitudeLatitudeHeight(const glm::dvec3& ecef) const;
+
+  /**
+   * Transforms the given ECEF coordinates into longitude, latitude, and height
+   * (in degrees and meters respectively) relative to the WGS84 ellipsoid.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformEcefToLongitudeLatitudeHeight(const FVector& ecef) const;
+  
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into Unreal world coordinates (relative to the 
+   * floating origin).
+   */
+  glm::dvec3 TransformLongitudeLatitudeHeightToUe(const glm::dvec3& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given WGS84 longitude, latitude, and height (in degrees and
+   * meters respectively) into Unreal world coordinates (relative to the
+   * floating origin).
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformLongitudeLatitudeHeightToUe(const FVector& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms Unreal world coordinates (relative to the floating origin) to
+   * longitude, latitude, and height (in degrees and meters respectively)
+   * relative to the WGS84 ellipsoid.
+   */
+  glm::dvec3 TransformUeToLongitudeLatitudeHeight(const glm::dvec3& ue) const;
+
+  /**
+   * Transforms Unreal world coordinates (relative to the floating origin) to
+   * longitude, latitude, and height (in degrees and meters respectively)
+   * relative to the WGS84 ellipsoid.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformUeToLongitudeLatitudeHeight(const FVector& ue) const;
 
   /**
    * Transforms the given point from ECEF to Unreal relative world coordinates
    * (relative to the floating origin).
    */
-  glm::dvec3 TransformEcefToUe(glm::dvec3 point);
+  glm::dvec3 TransformEcefToUe(const glm::dvec3& ecef) const;
 
   /**
    * Transforms the given point from ECEF to Unreal relative world coordinates
    * (relative to the floating origin).
    */
   UFUNCTION(BlueprintCallable)
-  FVector InaccurateTransformEcefToUe(FVector point);
+  FVector InaccurateTransformEcefToUe(const FVector& ecef) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to ECEF.
    */
-  glm::dvec3 TransformUeToEcef(glm::dvec3 point);
+  glm::dvec3 TransformUeToEcef(const glm::dvec3& ue) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to ECEF.
    */
   UFUNCTION(BlueprintCallable)
-  FVector InaccurateTransformUeToEcef(FVector point);
+  FVector InaccurateTransformUeToEcef(const FVector& ue) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * specified ECEF location. The returned transformation works in Unreal's 
+   * left-handed coordinate system.
+   */
+  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& ecef) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to ECEF at the
+   * specified ECEF location. 
+   */
+  glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const;
+
+  /*
+   * GEOREFERENCE TRANSFORMS
+   */
 
   /**
    * @brief Gets the transformation from the "Georeferenced" reference frame
@@ -354,7 +426,7 @@ public:
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
-    return this->_ueToEcef;
+    return this->_ueAbsToEcef;
   }
 
   /**
@@ -367,11 +439,11 @@ public:
    * not the floating origin). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
-    return this->_ecefToUe;
+    return this->_ecefToUeAbs;
   }
 
-  void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
+  void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
   void UpdateGeoreference();
 
 protected:
@@ -392,11 +464,12 @@ public:
 private:
   glm::dmat4 _georeferencedToEcef;
   glm::dmat4 _ecefToGeoreferenced;
-  glm::dmat4 _ueToEcef;
-  glm::dmat4 _ecefToUe;
+  glm::dmat4 _ueAbsToEcef;
+  glm::dmat4 _ecefToUeAbs;
 
   bool _insideSublevel;
 
+  // TODO: add option to set georeference directly from ECEF
   void _setGeoreferenceOrigin(
       double targetLongitude,
       double targetLatitude,
