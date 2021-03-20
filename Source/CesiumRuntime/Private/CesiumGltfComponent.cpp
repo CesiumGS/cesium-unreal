@@ -31,7 +31,7 @@
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
-#include "UCesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "mikktspace.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>

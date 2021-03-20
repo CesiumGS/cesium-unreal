@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRasterOverlay.h"
-#include "ACesium3DTileset.h"
+#include "Cesium3DTileset.h"
 #include "Cesium3DTiles/Tileset.h"
 
 // Sets default values for this component's properties

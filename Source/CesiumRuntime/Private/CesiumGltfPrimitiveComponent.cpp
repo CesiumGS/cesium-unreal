@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "UCesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {

@@ -11,7 +11,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include <chrono>
 #include <glm/mat4x4.hpp>
-#include "ACesium3DTileset.generated.h"
+#include "Cesium3DTileset.generated.h"
 
 class UMaterial;
 

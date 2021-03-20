@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumIonPanel.h"
-#include "ACesium3DTileset.h"
+#include "Cesium3DTileset.h"
 #include "Cesium3DTiles/Tile.h"
 #include "Cesium3DTiles/Tileset.h"
 #include "CesiumCommands.h"
