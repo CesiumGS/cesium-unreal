@@ -27,11 +27,11 @@
 #include "Cesium3DTiles/RasterOverlayTile.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/Reader.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
-#include "CesiumGltfPrimitiveComponent.h"
 #include "mikktspace.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
