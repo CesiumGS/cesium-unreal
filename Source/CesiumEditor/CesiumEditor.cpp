@@ -23,6 +23,7 @@
 #include "UnrealTaskProcessor.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
+DEFINE_LOG_CATEGORY(LogCesiumEditor);
 
 #define IMAGE_BRUSH(RelativePath, ...)                                         \
   FSlateImageBrush(                                                            \
@@ -80,19 +81,25 @@ void FCesiumEditorModule::StartupModule() {
 
     StyleSet->Set(
         "Cesium.Common.AddFromIon",
-        new IMAGE_BRUSH("NounProject/noun_add_on_cloud_724752", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/plus-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.UploadToIon",
-        new IMAGE_BRUSH("NounProject/noun_Cloud_Upload_827113", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/cloud-upload-alt-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.AddBlankTileset",
-        new IMAGE_BRUSH("NounProject/noun_edit_838988", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/globe-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.AccessToken",
-        new IMAGE_BRUSH("NounProject/noun_Key_679682", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/key-solid", Icon40x40));
     StyleSet->Set(
         "Cesium.Common.SignOut",
-        new IMAGE_BRUSH("NounProject/noun_sign_out_538366", Icon40x40));
+        new IMAGE_BRUSH("FontAwesome/sign-out-alt-solid", Icon40x40));
+    StyleSet->Set(
+        "Cesium.Common.OpenDocumentation",
+        new IMAGE_BRUSH("FontAwesome/book-reader-solid", Icon40x40));
+    StyleSet->Set(
+        "Cesium.Common.OpenSupport",
+        new IMAGE_BRUSH("FontAwesome/hands-helping-solid", Icon40x40));
 
     StyleSet->Set(
         "Cesium.Logo",

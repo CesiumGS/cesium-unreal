@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Widgets/SCompoundWidget.h"
+#include <string>
+#include <unordered_set>
 
 class FArguments;
 
@@ -26,4 +28,6 @@ private:
       TSharedRef<QuickAddItem> item,
       const TSharedRef<STableViewBase>& list);
   void AddItemToLevel(TSharedRef<QuickAddItem> item);
+
+  std::unordered_set<std::string> _itemsBeingAdded;
 };

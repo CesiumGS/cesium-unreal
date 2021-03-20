@@ -1,6 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 using UnrealBuildTool;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -28,7 +30,12 @@ public class CesiumEditor : ModuleRules
             : "Unknown";
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-        string debugPostfix = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame) ? "d" : "";
+
+        string releasePostfix = "";
+        string debugPostfix = "d";
+
+        bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
+        string postfix = preferDebug ? debugPostfix : releasePostfix;
 
         string[] libs = new string[]
         {
@@ -36,7 +43,23 @@ public class CesiumEditor : ModuleRules
             "csprng"
         };
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + debugPostfix + ".lib")));
+        if (preferDebug)
+        {
+            // We prefer Debug, but might still use Release if that's all that's available.
+            foreach (string lib in libs)
+            {
+                string debugPath = Path.Combine(libPath, lib + debugPostfix + ".lib");
+                if (!File.Exists(debugPath))
+                {
+                    Console.WriteLine("Using release build of cesium-native because a debug build is not available.");
+                    preferDebug = false;
+                    postfix = releasePostfix;
+                    break;
+                }
+            }
+        }
+
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + postfix + ".lib")));
 
         PublicDependencyModuleNames.AddRange(
             new string[]

@@ -61,15 +61,15 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
 
   /**
    * Called via input to turn at a given rate.
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired
-   * turn rate
+   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
+   * desired turn rate
    */
   virtual void TurnAtRate(float Rate) override;
 
   /**
    * Called via input to look up at a given rate (or down if Rate is negative).
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired
-   * turn rate
+   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
+   * desired turn rate
    */
   virtual void LookUpAtRate(float Rate) override;
 
