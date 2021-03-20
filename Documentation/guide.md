@@ -11,9 +11,9 @@ Techniques for preserving precision are necessary because Earth coordinate value
 
 [jitter video?]
 
-When we say that representing Earth requires a lot of data, we are talking on the order of petabytes (millions of gigabytes). This is far more data than can be realistically stored on a single end-user system. By tapping into Cesium ion and the entire Cesium platform, Cesium for Unreal can stream massive real-world data from the Cloud into an Unreal Engine application as it is needed.  We can view the Earth from afar by streaming in a low-detail representation of the entire planet. Or we can zoom in close to a detailed model of a building and examine the grout lines between individual bricks.
+When we say that representing Earth requires a lot of data, we are talking on the order of petabytes (millions of gigabytes). This is far more data than can be realistically stored on a single end-user system. By tapping into Cesium ion and the entire Cesium platform, Cesium for Unreal streams massive real-world data from the Cloud into an Unreal Engine application as it is needed.  We view the Earth from afar by streaming in a low-detail representation of the entire planet. Or we zoom in close to a detailed model of a building and can examine the grout lines between individual bricks.
 
-Cesium for Unreal allows us to use the entire world as context for our applications, and in fact allows our users to roam anywhere on the planet. At the same time, it allows us to use the normal toolbox of Unreal Actors, Pawns, Components, and more to add sophisticated visualization, interactivity, and realistic physics anyhere on the globe. Achieving both of these things together requires us to exercise some care in how we build our levels. The rest of this guide covers best-practices for building worlds with Cesium for Unreal.
+Cesium for Unreal allows us to use the entire world as context for our applications, and in fact allows our users to roam anywhere on the planet. At the same time, it allows us to use the normal toolbox of Unreal Actors, Pawns, Components, and more to add sophisticated visualization, interactivity, and physics anyhere on the globe. Achieving both of these things together requires us to exercise some care in how we build our levels. The rest of this guide covers best-practices for building worlds with Cesium for Unreal.
 
 # A single area of interest, with global context
 
@@ -23,9 +23,9 @@ The simplest world we can build with Cesium for Unreal has a single primary area
 * Allow players to get in a car and drive it around the city.
 * Use DataSmith to import a CAD model of a planned building.
 * Use the Foliage Tool to place trees and other plants around the area.
-* Record videos.
+* Record cinematic videos.
 
-But we want that city to be accurately located in the world, and we want to allow the user to visit elsewhere on the globe if they like. Other places on the globe won't have any custom Unreal Engine objects, but they _will_ have accurate terrain, imagery, and Cesium 3D Tiles models. This is easy to achieve with Cesium for Unreal.
+But we _also_ want that city to be accurately located in the world, and we want to allow the user to visit elsewhere on the globe if they like. Other places on the globe won't have any custom Unreal Engine objects, but they _will_ have accurate terrain, imagery, and Cesium 3D Tiles models. This is easy to achieve with Cesium for Unreal.
 
 First, create a new Level and add "Cesium World Terrain + Bing Maps Aerial imagery" to it using the Cesium panel:
 
