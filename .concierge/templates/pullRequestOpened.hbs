@@ -1,13 +1,5 @@
-{{#if askAboutContributors}}
-Thank you so much for the pull request @{{ userName }}! I noticed this is your first pull request and I wanted to say welcome to the Cesium community!
-
-The [Pull Request Guidelines](https://github.com/CesiumGS/cesium-unreal/blob/master/CONTRIBUTING.md#pull-request-guidelines) is a handy reference for making sure your PR gets accepted quickly, so make sure to skim that.
-
-* :x: Missing `CONTRIBUTORS.md` entry.
-    * Please add yourself to the [contributors]({{ contributorsUrl }}) file!
-{{else}}
 Thanks for the pull request @{{ userName }}!
-{{/if}}
+
 {{#if claEnabled}}
 {{#if errorCla}}
 * :grey_exclamation: There was an error checking the CLA! If this is your first contribution, please send in a [Contributor License Agreement](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTING.md#contributor-license-agreement-cla).
