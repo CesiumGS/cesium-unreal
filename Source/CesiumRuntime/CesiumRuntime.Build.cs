@@ -104,7 +104,8 @@ public class CesiumRuntime : ModuleRules
         PublicDefinitions.AddRange(
             new string[]
             {
-                "SPDLOG_COMPILED_LIB"
+                "SPDLOG_COMPILED_LIB",
+                "LIBASYNC_STATIC"
             }
         );
 

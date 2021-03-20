@@ -105,7 +105,7 @@ public class CesiumEditor : ModuleRules
         );
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivatePCHHeaderFile = "PCH.h";
+        PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
     }
 }

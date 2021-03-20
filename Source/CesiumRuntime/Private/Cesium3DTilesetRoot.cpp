@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTilesetRoot.h"
-#include "ACesium3DTileset.h"
+#include "Cesium3DTileset.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/World.h"
 

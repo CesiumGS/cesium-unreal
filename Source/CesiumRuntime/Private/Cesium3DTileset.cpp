@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "ACesium3DTileset.h"
+#include "Cesium3DTileset.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/CreditSystem.h"

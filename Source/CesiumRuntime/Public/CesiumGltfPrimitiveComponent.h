@@ -5,7 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
-#include "UCesiumGltfPrimitiveComponent.generated.h"
+#include "CesiumGltfPrimitiveComponent.generated.h"
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumGltfPrimitiveComponent
