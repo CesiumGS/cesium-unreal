@@ -1384,36 +1384,6 @@ static void loadModelGameThreadPart(
   pMesh->RegisterComponent();
 }
 
-/*static*/ void UCesiumGltfComponent::CreateOffGameThread(
-    AActor* pActor,
-    const CesiumGltf::Model& model,
-    const glm::dmat4x4& transform,
-    TFunction<void(UCesiumGltfComponent*)> callback) {
-  std::vector<LoadModelResult> result = loadModelAnyThreadPart(
-      model,
-      transform
-#if PHYSICS_INTERFACE_PHYSX
-      ,
-      nullptr
-#endif
-  );
-
-  AsyncTask(
-      ENamedThreads::GameThread,
-      [pActor, callback, result{std::move(result)}]() mutable {
-        UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pActor);
-        for (LoadModelResult& model : result) {
-          loadModelGameThreadPart(
-              Gltf,
-              model,
-              CesiumTransforms::unrealToOrFromCesium *
-                  CesiumTransforms::scaleToUnrealWorld);
-        }
-        Gltf->SetVisibility(false, true);
-        callback(Gltf);
-      });
-}
-
 namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
@@ -1424,20 +1394,20 @@ public:
 
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
-    const CesiumGltf::Model& model,
-    const glm::dmat4x4& transform
+    const CesiumGltf::Model& Model,
+    const glm::dmat4x4& Transform
 #if PHYSICS_INTERFACE_PHYSX
     ,
-    IPhysXCooking* pPhysXCooking
+    IPhysXCooking* PhysXCooking
 #endif
 ) {
   auto pResult = std::make_unique<HalfConstructedReal>();
   pResult->loadModelResult = std::move(loadModelAnyThreadPart(
-      model,
-      transform
+      Model,
+      Transform
 #if PHYSICS_INTERFACE_PHYSX
       ,
-      pPhysXCooking
+      PhysXCooking
 #endif
       ));
   return pResult;
@@ -1495,43 +1465,6 @@ UCesiumGltfComponent::~UCesiumGltfComponent() {
   UE_LOG(LogCesium, VeryVerbose, TEXT("~UCesiumGltfComponent"));
 }
 
-void UCesiumGltfComponent::LoadModel(const FString& Url) {
-  if (this->LoadedUrl == Url) {
-    UE_LOG(LogCesium, VeryVerbose, TEXT("Model URL unchanged"))
-    return;
-  }
-
-  if (this->Mesh) {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Deleting old model from %s"),
-        *this->LoadedUrl);
-    this->Mesh->DetachFromComponent(
-        FDetachmentTransformRules::KeepRelativeTransform);
-    this->Mesh->UnregisterComponent();
-    this->Mesh->DestroyComponent(false);
-    this->Mesh = nullptr;
-  }
-
-  UE_LOG(LogCesium, Verbose, TEXT("Loading model from %s"), *Url)
-
-  this->LoadedUrl = Url;
-
-  FHttpModule& httpModule = FHttpModule::Get();
-  FHttpRequestRef request = httpModule.CreateRequest();
-  request->SetURL(Url);
-
-  // TODO: This delegate will be invoked in the game thread, which is totally
-  // unnecessary and a waste of the game thread's time. Ideally we'd avoid the
-  // main thread entirely, but for now we just dispatch the real work to another
-  // thread.
-  request->OnProcessRequestComplete().BindUObject(
-      this,
-      &UCesiumGltfComponent::ModelRequestComplete);
-  request->ProcessRequest();
-}
-
 void UCesiumGltfComponent::UpdateTransformFromCesium(
     const glm::dmat4& cesiumToUnrealTransform) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
@@ -1550,12 +1483,12 @@ void UCesiumGltfComponent::AttachRasterTile(
     const CesiumGeometry::Rectangle& textureCoordinateRectangle,
     const glm::dvec2& translation,
     const glm::dvec2& scale) {
-  if (this->_overlayTiles.Num() == 0) {
+  if (this->OverlayTiles.Num() == 0) {
     // First overlay tile, generate texture coordinates
     // TODO
   }
 
-  this->_overlayTiles.Add(FRasterOverlayTile{
+  this->OverlayTiles.Add(FRasterOverlayTile{
       pTexture,
       FLinearColor(
           textureCoordinateRectangle.minimumX,
@@ -1564,11 +1497,11 @@ void UCesiumGltfComponent::AttachRasterTile(
           textureCoordinateRectangle.maximumY),
       FLinearColor(translation.x, translation.y, scale.x, scale.y)});
 
-  if (this->_overlayTiles.Num() > 3) {
+  if (this->OverlayTiles.Num() > 3) {
     UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
   }
 
-  this->updateRasterOverlays();
+  this->UpdateRasterOverlays();
 }
 
 void UCesiumGltfComponent::DetachRasterTile(
@@ -1576,17 +1509,17 @@ void UCesiumGltfComponent::DetachRasterTile(
     const Cesium3DTiles::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture,
     const CesiumGeometry::Rectangle& textureCoordinateRectangle) {
-  size_t numBefore = this->_overlayTiles.Num();
-  this->_overlayTiles.RemoveAll(
+  size_t numBefore = this->OverlayTiles.Num();
+  this->OverlayTiles.RemoveAll(
       [pTexture, &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
-        return tile.pTexture == pTexture &&
-               tile.textureCoordinateRectangle.Equals(FLinearColor(
+        return tile.Texture == pTexture &&
+               tile.TextureCoordinateRectangle.Equals(FLinearColor(
                    textureCoordinateRectangle.minimumX,
                    textureCoordinateRectangle.minimumY,
                    textureCoordinateRectangle.maximumX,
                    textureCoordinateRectangle.maximumY));
       });
-  size_t numAfter = this->_overlayTiles.Num();
+  size_t numAfter = this->OverlayTiles.Num();
 
   if (numBefore - 1 != numAfter) {
     UE_LOG(
@@ -1602,7 +1535,7 @@ void UCesiumGltfComponent::DetachRasterTile(
         textureCoordinateRectangle.maximumY);
   }
 
-  this->updateRasterOverlays();
+  this->UpdateRasterOverlays();
 }
 
 void UCesiumGltfComponent::SetCollisionEnabled(
@@ -1621,80 +1554,7 @@ void UCesiumGltfComponent::FinishDestroy() {
   Super::FinishDestroy();
 }
 
-void UCesiumGltfComponent::ModelRequestComplete(
-    FHttpRequestPtr request,
-    FHttpResponsePtr response,
-    bool x) {
-  const TArray<uint8>& content = response->GetContent();
-  if (content.Num() < 4) {
-    return;
-  }
-
-  // TODO: is it reasonable to use the global thread pool for this?
-  TFuture<void> future = Async(EAsyncExecution::ThreadPool, [this, content] {
-    gsl::span<const std::byte> data(
-        reinterpret_cast<const std::byte*>(content.GetData()),
-        content.Num());
-    std::unique_ptr<CesiumGltf::ModelReaderResult> pLoadResult =
-        std::make_unique<CesiumGltf::ModelReaderResult>(
-            std::move(CesiumGltf::readModel(data)));
-
-    if (!pLoadResult->warnings.empty()) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("Warnings while loading glTF: %s"),
-          *utf8_to_wstr(
-              CesiumUtility::joinToString(pLoadResult->warnings, "\n- ")));
-    }
-
-    if (!pLoadResult->errors.empty()) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT("Errors while loading glTF: %s"),
-          *utf8_to_wstr(
-              CesiumUtility::joinToString(pLoadResult->errors, "\n- ")));
-    }
-
-    if (!pLoadResult->model) {
-      UE_LOG(LogCesium, Error, TEXT("glTF model could not be loaded."));
-      return;
-    }
-
-    CesiumGltf::Model& model = pLoadResult->model.value();
-
-    std::vector<LoadModelResult> result = loadModelAnyThreadPart(
-        model,
-        glm::dmat4x4(1.0)
-#if PHYSICS_INTERFACE_PHYSX
-            ,
-        nullptr
-#endif
-    );
-
-    AsyncTask(
-        ENamedThreads::GameThread,
-        [this,
-         pLoadResult{std::move(pLoadResult)},
-         result{std::move(result)}]() mutable {
-          for (LoadModelResult& model : result) {
-            loadModelGameThreadPart(
-                this,
-                model,
-                CesiumTransforms::unrealToOrFromCesium *
-                    CesiumTransforms::scaleToUnrealWorld);
-          }
-        });
-  });
-}
-
-void UCesiumGltfComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-  // this->Mesh->DestroyComponent();
-  // this->Mesh = nullptr;
-}
-
-void UCesiumGltfComponent::updateRasterOverlays() {
+void UCesiumGltfComponent::UpdateRasterOverlays() {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
     UCesiumGltfPrimitiveComponent* pPrimitive =
         Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
@@ -1710,14 +1570,14 @@ void UCesiumGltfComponent::updateRasterOverlays() {
         continue;
       }
 
-      for (size_t i = 0; i < this->_overlayTiles.Num(); ++i) {
-        FRasterOverlayTile& overlayTile = this->_overlayTiles[i];
+      for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
+        FRasterOverlayTile& overlayTile = this->OverlayTiles[i];
         std::string is = std::to_string(i + 1);
         pMaterial->SetTextureParameterValue(
             ("OverlayTexture" + is).c_str(),
-            overlayTile.pTexture);
+            overlayTile.Texture);
 
-        if (!overlayTile.pTexture) {
+        if (!overlayTile.Texture) {
           // The texture is null so don't use it.
           pMaterial->SetVectorParameterValue(
               ("OverlayRect" + is).c_str(),
@@ -1725,15 +1585,15 @@ void UCesiumGltfComponent::updateRasterOverlays() {
         } else {
           pMaterial->SetVectorParameterValue(
               ("OverlayRect" + is).c_str(),
-              overlayTile.textureCoordinateRectangle);
+              overlayTile.TextureCoordinateRectangle);
         }
 
         pMaterial->SetVectorParameterValue(
             ("OverlayTranslationScale" + is).c_str(),
-            overlayTile.translationAndScale);
+            overlayTile.TranslationAndScale);
       }
 
-      for (size_t i = this->_overlayTiles.Num(); i < 3; ++i) {
+      for (size_t i = this->OverlayTiles.Num(); i < 3; ++i) {
         std::string is = std::to_string(i + 1);
         pMaterial->SetTextureParameterValue(
             ("OverlayTexture" + is).c_str(),
@@ -1748,7 +1608,7 @@ void UCesiumGltfComponent::updateRasterOverlays() {
 
       pMaterial->SetScalarParameterValue(
           "opacityMask",
-          this->_overlayTiles.Num() > 0 ? 0.0 : 1.0);
+          this->OverlayTiles.Num() > 0 ? 0.0 : 1.0);
     }
   }
 }

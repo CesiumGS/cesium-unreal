@@ -16,13 +16,6 @@ UCesiumRasterOverlay::UCesiumRasterOverlay() {
   // ...
 }
 
-// Called when the game starts
-void UCesiumRasterOverlay::BeginPlay() {
-  Super::BeginPlay();
-
-  // ...
-}
-
 #if WITH_EDITOR
 // Called when properties are changed in the editor
 void UCesiumRasterOverlay::PostEditChangeProperty(
@@ -33,16 +26,6 @@ void UCesiumRasterOverlay::PostEditChangeProperty(
   this->AddToTileset();
 }
 #endif
-
-// Called every frame
-void UCesiumRasterOverlay::TickComponent(
-    float DeltaTime,
-    ELevelTick TickType,
-    FActorComponentTickFunction* ThisTickFunction) {
-  Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-  // ...
-}
 
 void UCesiumRasterOverlay::AddToTileset() {
   if (this->_pOverlay) {

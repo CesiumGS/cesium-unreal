@@ -15,34 +15,17 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 
 void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
-    const glm::dmat4& cesiumToUnrealTransform) {
+    const glm::dmat4& CesiumToUnrealTransform) {
   this->SetUsingAbsoluteLocation(true);
   this->SetUsingAbsoluteRotation(true);
   this->SetUsingAbsoluteScale(true);
 
   const glm::dmat4x4& transform =
-      cesiumToUnrealTransform * this->HighPrecisionNodeTransform;
+      CesiumToUnrealTransform * this->HighPrecisionNodeTransform;
 
   this->SetRelativeTransform(FTransform(FMatrix(
       FVector(transform[0].x, transform[0].y, transform[0].z),
       FVector(transform[1].x, transform[1].y, transform[1].z),
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
-}
-
-// Called when the game starts
-void UCesiumGltfPrimitiveComponent::BeginPlay() {
-  Super::BeginPlay();
-
-  // ...
-}
-
-// Called every frame
-void UCesiumGltfPrimitiveComponent::TickComponent(
-    float DeltaTime,
-    ELevelTick TickType,
-    FActorComponentTickFunction* ThisTickFunction) {
-  Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-  // ...
 }
