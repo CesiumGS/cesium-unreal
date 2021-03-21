@@ -117,36 +117,6 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Useful transformations
-//////////////////////////////////////////////////////////////////////////
-FRotator AGlobeAwareDefaultPawn::TransformRotatorUEToENU(
-    const FRotator& UERotator) const {
-  glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
-
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
-
-  return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
-}
-
-FRotator AGlobeAwareDefaultPawn::TransformRotatorENUToUE(
-    const FRotator& ENURotator) const {
-  glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
-
-  FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-
-  return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
-}
-
 glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
   FVector ueLocation = this->GetPawnViewLocation();
   return this->Georeference->TransformUeToEcef(
@@ -326,7 +296,11 @@ void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   if (this->_bFlyingToLocation) {
     this->_currentFlyTime += static_cast<double>(DeltaSeconds);
-    if (this->_currentFlyTime < this->FlyToDuration) {
+
+    // double check that we don't have an empty list of keypoints
+    if (this->_keypoints.size() == 0) {
+      this->_bFlyingToLocation = false;
+    } else if (this->_currentFlyTime < this->FlyToDuration) {
       double rawPercentage = this->_currentFlyTime / this->FlyToDuration;
 
       // In order to accelerate at start and slow down at end, we use a progress
@@ -356,15 +330,19 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
       this->SetECEFCameraLocation(currentPosition);
 
       // Interpolate rotation - Computation has to be done at each step because
-      // the ENU CRS is depending on locatiom
+      // the ENU CRS is depending on location
       FQuat currentQuat = FQuat::Slerp(
-          this->TransformRotatorUEToENU(this->_flyToSourceRotation)
-            .Quaternion(),
-          this->TransformRotatorUEToENU(this->_flyToDestinationRotation)
-            .Quaternion(),
+          this->Georeference->TransformRotatorUeToEnu(
+            this->_flyToSourceRotation, 
+            this->_keypoints[0]).Quaternion(),
+          this->Georeference->TransformRotatorUeToEnu(
+            this->_flyToDestinationRotation,
+            this->_keypoints.back()).Quaternion(),
           flyPercentage);
       GetController()->SetControlRotation(
-          this->TransformRotatorENUToUE(currentQuat.Rotator()));
+          this->Georeference->TransformRotatorEnuToUe(
+            currentQuat.Rotator(),
+            currentPosition));
     } else {
       // We reached the end - Set actual destination location and orientation
       const glm::dvec3& finalPoint = _keypoints.back();

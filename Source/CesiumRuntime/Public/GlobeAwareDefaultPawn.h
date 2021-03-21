@@ -80,19 +80,6 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
   virtual FRotator GetBaseAimRotation() const override;
 
 public:
-  // Useful transformations
-
-  /**
-   * Transforms a rotator expressed in UE coordinates to one expressed in ENU
-   * coordinates. (Single precision, but this should not be an issue)
-   */
-  FRotator TransformRotatorUEToENU(const FRotator& UERotator) const;
-
-  /**
-   * Transforms a rotator expressed in ENU coordinates to one expressed in UE
-   * coordinates. (Single precision, but this should not be an issue)
-   */
-  FRotator TransformRotatorENUToUE(const FRotator& ENURotator) const;
 
   /**
    * Get the pawn Camera location accurately in ECEF Coordinates

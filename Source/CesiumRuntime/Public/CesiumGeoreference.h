@@ -167,7 +167,9 @@ public:
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
-   * EXPERIMENTAL
+   * The CesiumSunSky actor to georeference. Allows the CesiumSunSky to be in
+   * sync with the georeferenced globe. This is only useful when 
+   * OriginPlacement = EOriginPlacement::CartographicOrigin. 
    */
   UPROPERTY(EditAnywhere, Category = "CesiumSunSky")
   AActor* SunSky = nullptr;
@@ -370,19 +372,64 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   FVector InaccurateTransformUeToEcef(const FVector& ue) const;
+  
+  /**
+   * Transforms a rotator expressed in Unreal coordinates to one expressed in
+   * East-North-Up coordinates at the given Earth-Centered, Earth-Fixed 
+   * location. 
+   */
+  FRotator TransformRotatorUeToEnu(const FRotator& UERotator, const glm::dvec3& ueLocation) const;
+  
+  /**
+   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Unreal relative world location (relative to the floating origin).
+   * location. 
+   */
+  UFUNCTION(BlueprintCallable)
+  FRotator InaccurateTransformRotatorUeToEnu(const FRotator& UERotator, const FVector& ueLocation) const;
+
+  /**
+   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Unreal relative world location (relative to the floating origin).
+   */
+  FRotator TransformRotatorEnuToUe(const FRotator& ENURotator, const glm::dvec3& ueLocation) const;
+
+  /**
+   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Unreal relative world location (relative to the floating origin).
+   */
+  UFUNCTION(BlueprintCallable)
+  FRotator InaccurateTransformRotatorEnuToUe(const FRotator& ENURotator, const FVector& ueLocation) const;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to Unreal at the
-   * specified ECEF location. The returned transformation works in Unreal's 
-   * left-handed coordinate system.
+   * specified Unreal relative world location (relative to the floating 
+   * origin). The returned transformation works in Unreal's left-handed 
+   * coordinate system.
    */
-  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& ecef) const;
+  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const;
+  
+  /**
+   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * specified Unreal relative world location (relative to the floating 
+   * origin). The returned transformation works in Unreal's left-handed 
+   * coordinate system.
+   */
+  UFUNCTION(BlueprintCallable)
+  FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& ue) const;
 
   /**
-   * Computes the rotation matrix from the local East-North-Up to ECEF at the
-   * specified ECEF location. 
+   * Computes the rotation matrix from the local East-North-Up to 
+   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location. 
    */
   glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const;
+  
+  /**
+   * Computes the rotation matrix from the local East-North-Up to 
+   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location. 
+   */
+  UFUNCTION(BlueprintCallable)
+  FMatrix InaccurateComputeEastNorthUpToEcef(const FVector& ecef) const;
 
   /*
    * GEOREFERENCE TRANSFORMS
@@ -442,8 +489,19 @@ public:
     return this->_ecefToUeAbs;
   }
 
-
+  /**
+   * Add objects inheriting from ICesiumGeoreferenceable to be notified on 
+   * changes to the world georeference transforms. Additionally, if 
+   * OriginPlacement = EOriginPlacement::BoundingVolumeOrigin, georeferenced
+   * objects added here can optionally contribute to the bounding
+   * volume center calculation.
+   */
   void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
+
+  /**
+   * Recomputes all world georeference transforms. Usually there is no need to
+   * explicitly call this from external code.
+   */
   void UpdateGeoreference();
 
 protected:

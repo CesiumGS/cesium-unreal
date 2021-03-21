@@ -345,11 +345,6 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
-
-  } else {
-    // FString propertyString;
-    // propertyName.ToString(propertyString);
-    // UE_LOG(LogActor, Warning, TEXT("Property Changed: %s"), *propertyString);
   }
 }
 #endif
@@ -386,8 +381,6 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
       }
     }
 
-    // TODO: remove this if a convenient way to place georeference origin with
-    // mouse can't be found
     if (this->EditOriginInViewport) {
       FHitResult mouseRayResults;
       bool mouseRaySuccess;
@@ -421,6 +414,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
               glm::degrees(cartographic.latitude),
               cartographic.height);
 
+          // TODO: find editor viewport mouse click event
           // if (mouseDown) {
           // this->_setGeoreferenceOrigin()
           //	this->EditOriginInViewport = false;
@@ -630,8 +624,50 @@ ACesiumGeoreference::InaccurateTransformUeToEcef(const FVector& ue) const {
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
+FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
+    const FRotator& UERotator, const glm::dvec3& ueLocation) const {
+  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
+
+  FMatrix enuAdjustmentMatrix(
+      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
+      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
+      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
+      FVector(0.0, 0.0, 0.0));
+
+  return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
+}
+
+FRotator ACesiumGeoreference::InaccurateTransformRotatorUeToEnu(
+    const FRotator& UERotator, const FVector& ueLocation) const {
+  return this->TransformRotatorUeToEnu(
+    UERotator, 
+    glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+}
+
+FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
+    const FRotator& ENURotator, const glm::dvec3& ueLocation) const {
+  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
+  FMatrix enuAdjustmentMatrix(
+      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
+      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
+      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
+      FVector(0.0, 0.0, 0.0));
+
+  FMatrix inverse = enuAdjustmentMatrix.InverseFast();
+
+  return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
+}
+
+FRotator ACesiumGeoreference::InaccurateTransformRotatorEnuToUe(
+    const FRotator& ENURotator, const FVector& ueLocation) const {
+  return this->TransformRotatorEnuToUe(
+      ENURotator,
+      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+}
+
 glm::dmat3
-ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ecef) const {
+ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
+  glm::dvec3 ecef = this->TransformUeToEcef(ue);
   glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
 
   // Camera Axes = ENU
@@ -639,17 +675,40 @@ ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ecef) const {
   glm::dmat3 rotationCesium =
       glm::dmat3(this->_ecefToGeoreferenced) * glm::dmat3(enuToEcef);
 
-  glm::dmat3 cameraToUnreal =
+  return
       glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
       glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+}
 
-  return cameraToUnreal;
+FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(const FVector& ue) const {
+  glm::dmat3 enuToUnreal = 
+    this->ComputeEastNorthUpToUnreal(glm::dvec3(ue.X, ue.Y, ue.Z));
+
+  return FMatrix(
+    FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
+    FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
+    FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
+    FVector(0.0, 0.0, 0.0)
+  );
 }
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
   return glm::dmat3(
     CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef)
+  );
+}
+
+FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
+    const FVector& ecef) const {
+  glm::dmat3 enuToEcef = 
+    this->ComputeEastNorthUpToEcef(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+
+  return FMatrix(
+    FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
+    FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
+    FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
+    FVector(0.0, 0.0, 0.0)
   );
 }
 
@@ -677,12 +736,7 @@ void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 
 // TODO: Figure out if sunsky can ever be oriented so it's not at the top of the
 // planet. Without this sunsky will only look good when we set the georeference
-// origin to be near the camera. There might be hope in creating our own
-// blueprint (SunSky seems pretty simple since the underlying C++ library does
-// most of the heavy lifting). Creating our own blueprint that uses the SunSky
-// C++ library would let us potentially orient as desired and would greatly
-// simplify the process of interoperability between SunSky and our plugin, since
-// we can preset all the settings we'd need.
+// origin to be near the camera. 
 void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
   if (!this->SunSky) {
     return;
@@ -725,7 +779,6 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
   UFunction* UpdateSun = this->SunSky->FindFunction(TEXT("UpdateSun"));
   if (UpdateSun) {
     this->SunSky->ProcessEvent(UpdateSun, NULL);
-    // UE_LOG(LogActor, Warning, TEXT("UpdateSun executed"));
   }
 }
 
