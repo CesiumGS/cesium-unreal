@@ -60,8 +60,9 @@ void AGlobeAwareDefaultPawn::MoveForward(float Val) {
 
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   if (Val != 0.f) {
-    glm::dmat3 enuToFixed = this->_computeEastNorthUpToFixedFrame();
-    FVector up(enuToFixed[2].x, enuToFixed[2].y, enuToFixed[2].z);
+    FMatrix enuToFixed = 
+      this->Georeference->InaccurateComputeEastNorthUpToUnreal(this->GetPawnViewLocation());
+    FVector up = enuToFixed.GetColumn(2);
     AddMovementInput(up, Val);
 
     if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
@@ -102,13 +103,9 @@ void AGlobeAwareDefaultPawn::AddControllerRollInput(float Val) {
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FRotator localRotation = ADefaultPawn::GetViewRotation();
 
-  glm::dmat3 enuToFixedUE = this->_computeEastNorthUpToFixedFrame();
-
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
+  FMatrix enuAdjustmentMatrix = 
+    this->Georeference->InaccurateComputeEastNorthUpToUnreal(
+      this->GetPawnViewLocation());
 
   return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
 }
@@ -370,29 +367,6 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
   // TODO: find more elegant solution
   // the controller gets confused if the pawn itself has a nonzero orientation
   this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
-}
-
-glm::dmat3 AGlobeAwareDefaultPawn::_computeEastNorthUpToFixedFrame() const {
-  if (!this->Georeference) {
-    return glm::dmat3(1.0);
-  }
-
-  glm::dvec3 cameraEcef = this->GetECEFCameraLocation();
-  glm::dmat4 enuToEcefAtCamera =
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(cameraEcef);
-  const glm::dmat4& ecefToGeoreferenced =
-      this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
-
-  // Camera Axes = ENU
-  // Unreal Axes = controlled by Georeference
-  glm::dmat3 rotationCesium =
-      glm::dmat3(ecefToGeoreferenced) * glm::dmat3(enuToEcefAtCamera);
-
-  glm::dmat3 cameraToUnreal =
-      glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
-      glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
-
-  return cameraToUnreal;
 }
 
 void AGlobeAwareDefaultPawn::_interruptFlight() {

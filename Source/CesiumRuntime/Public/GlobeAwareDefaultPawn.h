@@ -200,14 +200,6 @@ protected:
   virtual void BeginPlay() override;
 
 private:
-  /**
-   * Computes the local East-North-Up to Fixed frame transformation based on the
-   * current
-   * {@see GetPawnViewLocation}. The returned transformation works in Unreal's
-   * left-handed coordinate system.
-   */
-  glm::dmat3 _computeEastNorthUpToFixedFrame() const;
-
   void _interruptFlight();
 
   // the current ECEF coordinates, stored in case they need to be restored on
