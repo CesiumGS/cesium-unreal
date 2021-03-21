@@ -21,13 +21,13 @@ public:
   ACesiumGlobeAnchorParent();
 
   /**
-   * The longitude of this actor.
+   * The WGS84 longitude in degrees of this actor.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Longitude = 0.0;
 
   /**
-   * The latitude of this actor.
+   * The WGS84 latitude in degrees of this actor.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Latitude = 0.0;

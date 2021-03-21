@@ -372,7 +372,7 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
 void AGlobeAwareDefaultPawn::_interruptFlight() {
   this->_bFlyingToLocation = false;
 
-  // fix any camera roll to 0.0 
+  // fix camera roll to 0.0 
   FRotator currentRotator = GetController()->GetControlRotation();
   currentRotator.Roll = 0.0;
   GetController()->SetControlRotation(currentRotator);

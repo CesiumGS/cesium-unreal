@@ -82,12 +82,14 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
 public:
 
   /**
-   * Get the pawn Camera location accurately in ECEF Coordinates
+   * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF) 
+   * coordinates.
    */
   glm::dvec3 GetECEFCameraLocation() const;
   
   /**
-   * Set the pawn Camera location accurately from ECEF Coordinates
+   * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF) 
+   * coordinates.
    */
   void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
@@ -130,11 +132,12 @@ public:
   double FlyToGranularityDegrees = 0.01;
 
   /**
-   * Begin a smooth camera flight to the specified destination ECEF such that
-   * the camera ends at the specified yaw and pitch. The characteristics of the
-   * flight can be configured with {@see FlyToAltitudeProfileCurve}, 
-   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
-   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed 
+   * (ECEF) destination such that the camera ends at the specified yaw and
+   * pitch. The characteristics of the flight can be configured with 
+   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve}, 
+   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and 
+   * {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationECEF(
       const glm::dvec3& ECEFDestination,
@@ -143,11 +146,12 @@ public:
       bool CanInterruptByMoving);
 
   /**
-   * Begin a smooth camera flight to the specified destination ECEF such that
-   * the camera ends at the specified yaw and pitch. The characteristics of the
-   * flight can be configured with {@see FlyToAltitudeProfileCurve},
-   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
-   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed 
+   * (ECEF) destination such that the camera ends at the specified yaw and
+   * pitch. The characteristics of the flight can be configured with 
+   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve}, 
+   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and 
+   * {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateFlyToLocationECEF(
@@ -157,9 +161,10 @@ public:
       bool CanInterruptByMoving);
 
   /**
-   * Begin a smooth camera flight to the specified destination LLH such that
-   * the camera ends at the specified yaw and pitch. The characteristics of the
-   * flight can be configured with {@see FlyToAltitudeProfileCurve}, 
+   * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
+   * latitude in degrees (y), and height in meters (z) such that the camera
+   * ends at the given yaw and pitch. The characteristics of the flight can be
+   * configured with {@see FlyToAltitudeProfileCurve}, 
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
@@ -170,10 +175,11 @@ public:
       bool CanInterruptByMoving);
 
   /**
-   * Begin a smooth camera flight to the specified destination LLH such that
-   * the camera ends at the specified yaw and pitch. The characteristics of the
-   * flight can be configured with {@see FlyToAltitudeProfileCurve},
-   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
+   * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
+   * latitude in degrees (y), and height in meters (z) such that the camera
+   * ends at the given yaw and pitch. The characteristics of the flight can be
+   * configured with {@see FlyToAltitudeProfileCurve}, 
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable)

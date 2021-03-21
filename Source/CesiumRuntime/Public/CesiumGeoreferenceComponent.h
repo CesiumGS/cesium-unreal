@@ -17,10 +17,10 @@
 /**
  * This component can be added to movable actors to globally georeference them 
  * and maintain precise placement. When the owning actor is transformed through 
- * Unreal, the internal geospatial coordinates will be automatically updated.
- * The actor position can also be set in terms of Earth-Centered, Eath-Fixed
- * coordinates (ECEF) or Longitude, Latitude, and Height relative to the WGS84
- * ellipsoid.   
+ * normal Unreal Engine mechanisms, the internal geospatial coordinates will be 
+ * automatically updated. The actor position can also be set in terms of 
+ * Earth-Centered, Eath-Fixed coordinates (ECEF) or Longitude, Latitude, and 
+ * Height relative to the WGS84 ellipsoid.   
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
@@ -41,22 +41,23 @@ public:
 
   /**
    * Whether to automatically restore the precision of the Unreal transform from
-   * the source ECEF transform during origin-rebase. This is useful for
-   * maintaining high-precision for fixed objects like buildings. This may need
-   * to be disabled for objects where the Unreal transform (inaccurate as it may
-   * be) is the ground truth, e.g. Unreal physics objects, cameras, etc.
+   * the source Earth-Centered, Earth-Fixed (ECEF) transform during 
+   * origin-rebase. This is useful for maintaining high-precision for fixed 
+   * objects like buildings. This may need to be disabled for objects where the
+   * Unreal transform is to be treated as the ground truth, e.g. Unreal physics
+   * objects, cameras, etc.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   bool FixTransformOnOriginRebase = true;
 
   /**
-   * The longitude of this actor.
+   * The WGS84 longitude in degrees of this actor.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Longitude = 0.0;
 
   /**
-   * The latitude of this actor.
+   * The WGS84 latitude in degrees of this actor.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Latitude = 0.0;
@@ -100,15 +101,16 @@ public:
   void SnapToEastSouthUp();
 
   /**
-   * Move the actor to the specified longitude/latitude/height.
+   * Move the actor to the specified WGS84 longitude in degrees (x), latitude
+   * in degrees (y), and height in meters (z).
    */
   void MoveToLongitudeLatitudeHeight(
       const glm::dvec3& targetLongitudeLatitudeHeight,
       bool maintainRelativeOrientation = true);
 
   /**
-   * Move the actor to the specified longitude/latitude/height. Inaccurate since
-   * this takes single-precision floats.
+   * Move the actor to the specified WGS84 longitude in degrees (x), latitude
+   * in degrees (y), and height in meters (z).
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToLongitudeLatitudeHeight(
@@ -116,15 +118,16 @@ public:
       bool maintainRelativeOrientation = true);
 
   /**
-   * Move the actor to the specified ECEF coordinates.
+   * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF) 
+   * coordinates.
    */
   void MoveToECEF(
       const glm::dvec3& targetEcef,
       bool maintainRelativeOrientation = true);
 
   /**
-   * Move the actor to the specified ECEF coordinates. Inaccurate since this
-   * takes single-precision floats.
+   * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF) 
+   * coordinates.
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToECEF(
