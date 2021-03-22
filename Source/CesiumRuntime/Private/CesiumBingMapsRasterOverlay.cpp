@@ -1,12 +1,12 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumBingMapsOverlay.h"
+#include "CesiumBingMapsRasterOverlay.h"
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/Tileset.h"
 #include "UnrealConversions.h"
 
 std::unique_ptr<Cesium3DTiles::RasterOverlay>
-UCesiumBingMapsOverlay::CreateOverlay() {
+UCesiumBingMapsRasterOverlay::CreateOverlay() {
   std::string mapStyle;
 
   switch (this->MapStyle) {

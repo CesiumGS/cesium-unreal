@@ -1,8 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRasterOverlay.h"
-#include "ACesium3DTileset.h"
 #include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTileset.h"
 
 // Sets default values for this component's properties
 UCesiumRasterOverlay::UCesiumRasterOverlay() {
@@ -12,13 +12,6 @@ UCesiumRasterOverlay::UCesiumRasterOverlay() {
   // every frame.  You can turn these features off to improve performance if you
   // don't need them.
   PrimaryComponentTick.bCanEverTick = false;
-
-  // ...
-}
-
-// Called when the game starts
-void UCesiumRasterOverlay::BeginPlay() {
-  Super::BeginPlay();
 
   // ...
 }
@@ -33,16 +26,6 @@ void UCesiumRasterOverlay::PostEditChangeProperty(
   this->AddToTileset();
 }
 #endif
-
-// Called every frame
-void UCesiumRasterOverlay::TickComponent(
-    float DeltaTime,
-    ELevelTick TickType,
-    FActorComponentTickFunction* ThisTickFunction) {
-  Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-  // ...
-}
 
 void UCesiumRasterOverlay::AddToTileset() {
   if (this->_pOverlay) {

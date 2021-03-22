@@ -4,7 +4,7 @@
 
 #include "CesiumRasterOverlay.h"
 #include "CoreMinimal.h"
-#include "CesiumBingMapsOverlay.generated.h"
+#include "CesiumBingMapsRasterOverlay.generated.h"
 
 UENUM(BlueprintType)
 enum class EBingMapsStyle : uint8 {
@@ -19,25 +19,23 @@ enum class EBingMapsStyle : uint8 {
 };
 
 /**
- *
+ * A raster overlay that directly accesses Bing Maps. If you're using Bing Maps
+ * via Cesium ion, use the "Cesium ion Raster Overlay" component instead.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumBingMapsOverlay : public UCesiumRasterOverlay {
+class CESIUMRUNTIME_API UCesiumBingMapsRasterOverlay
+    : public UCesiumRasterOverlay {
   GENERATED_BODY()
 
 public:
   /**
    * The Bing Maps API key to use.
-   *
-   * This property is ignored if the Ion Asset ID is non-zero.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString BingMapsKey;
 
   /**
    * The map style to use.
-   *
-   * This property is ignored if the Ion Asset ID is non-zero.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   EBingMapsStyle MapStyle = EBingMapsStyle::Aerial;
