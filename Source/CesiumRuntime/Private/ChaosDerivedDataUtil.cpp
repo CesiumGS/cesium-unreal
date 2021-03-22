@@ -1,4 +1,5 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright Epic Games, Inc. All Rights Reserved.
+// Copied from C:\Program Files\Epic Games\UE_4.26\Engine\Source\Runtime\Engine\Private\PhysicsEngine\Experimental\ChaosDerivedDataUtil.cpp
 
 #include "ChaosDerivedDataUtil.h"
 #include "CoreMinimal.h"
