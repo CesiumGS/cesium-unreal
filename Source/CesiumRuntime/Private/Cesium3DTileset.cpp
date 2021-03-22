@@ -39,7 +39,6 @@
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "LevelEditorViewport.h"
-#include "Slate/SceneViewport.h"
 #endif
 
 // Sets default values
@@ -230,12 +229,12 @@ ACesium3DTileset::GetBoundingVolume() const {
 }
 
 void ACesium3DTileset::UpdateTransformFromCesium(
-    const glm::dmat4& cesiumToUnreal) {
+    const glm::dmat4& CesiumToUnreal) {
   TArray<UCesiumGltfComponent*> gltfComponents;
   this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
   for (UCesiumGltfComponent* pGltf : gltfComponents) {
-    pGltf->UpdateTransformFromCesium(cesiumToUnreal);
+    pGltf->UpdateTransformFromCesium(CesiumToUnreal);
   }
 }
 
@@ -792,7 +791,7 @@ ACesium3DTileset::GetEditorCamera() const {
 #endif
 
 bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
-  return this->ShowInEditor;
+  return this->UpdateInEditor;
 }
 
 // Called every frame
