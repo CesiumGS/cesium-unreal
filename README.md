@@ -1,6 +1,6 @@
 [![Cesium for Unreal Logo](Content/Cesium-for-Unreal-Logo-WhiteBGH.jpg)](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7)
 
-The Cesium for Unreal plugin unlocks the entire 3D geospatial ecosystem in Unreal Engine. By combining a high-accuracy full-scale WGS84 globe, open APIs and open standards for spatial indexing like 3D Tiles, and cloud-based real-world content with the power of Unreal Engine, enables a new era of geospatial applications and workflows.
+The Cesium for Unreal plugin unlocks the 3D geospatial ecosystem in Unreal Engine. By combining a high-accuracy full-scale WGS84 globe, open APIs and open standards for spatial indexing like 3D Tiles, and cloud-based real-world content with the power of Unreal Engine, enables a new era of geospatial applications and workflows.
 
 [Cesium for Unreal Homepage](https://cesium.com/cesium-for-unreal)
 
@@ -9,8 +9,6 @@ The Cesium for Unreal plugin unlocks the entire 3D geospatial ecosystem in Unrea
 **[Download Cesium for Unreal from Unreal Engine Marketplace](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7)** (Available March 30, 2021)
 
 Have question? Ask them on the [community forum](https://community.cesium.com).
-
-TODO: Unreal will create an Unreal Engine Forums post for the plugin. Include that here as well.
 
 ### :clap: Featured Demos
 
@@ -23,9 +21,9 @@ TODO: Unreal will create an Unreal Engine Forums post for the plugin. Include th
 
 ### :house_with_garden: Cesium for Unreal and the 3D Geospatial Ecosystem
 
-Cesium for Unreal can stream real-world 3D content such as high-resolution photogrammetry, terrain, imagery, and 3D Buildings from the commercial [Cesium ion](https://cesium.com/cesium-ion) platform and other content sources. The plugin will include Cesium ion integration for instant access to global high-resolution 3D content ready for runtime streaming. Cesium ion users can also leverage cloud-based 3D tiling pipelines to create end-to-end workflows to transform massive heterogenous content into semantically-rich 3D Tiles, ready for streaming to Unreal Engine.
+Cesium for Unreal can stream real-world 3D content such as high-resolution photogrammetry, terrain, imagery, and 3D Buildings from [Cesium ion](https://cesium.com/cesium-ion) and other content sources, available as optional commercial subscriptions. The plugin will include a Cesium ion integration for instant access to global high-resolution 3D content ready for runtime streaming. Cesium ion users can also leverage cloud-based 3D tiling pipelines to create end-to-end workflows to transform massive heterogenous content into semantically-rich 3D Tiles, ready for streaming to Unreal Engine.
 
-Cesium for Unreal will support cloud and private network content and services based on open standards and APIs. You are free to use any combination of content sources with Cesium for Unreal that you please.
+Cesium for Unreal supports cloud and private network content and services based on open standards and APIs. You are free to use any combination of supported content sources, standards, APIs with Cesium for Unreal that you please.
 
 [![Cesium for Unreal Ecosystem Architecture](https://cesium.com/images/graphics/unreal-pipeline.png)](https://cesium.com/cesium-for-unreal)
 
