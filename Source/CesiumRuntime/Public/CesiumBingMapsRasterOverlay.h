@@ -23,7 +23,8 @@ enum class EBingMapsStyle : uint8 {
  * via Cesium ion, use the "Cesium ion Raster Overlay" component instead.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumBingMapsRasterOverlay : public UCesiumRasterOverlay {
+class CESIUMRUNTIME_API UCesiumBingMapsRasterOverlay
+    : public UCesiumRasterOverlay {
   GENERATED_BODY()
 
 public:
