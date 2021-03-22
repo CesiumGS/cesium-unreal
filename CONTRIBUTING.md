@@ -67,7 +67,6 @@ If you have any questions, feel free to reach out to [hello@cesium.com](mailto:h
 
 Our code is our lifeblood so maintaining Cesium's high code quality is important to us.
 
-- If this is your first contribution to Cesium for Unreal, add your name to [CONTRIBUTORS.md](https://github.com/CesiumGS/cesium/blob/master/CONTRIBUTORS.md).
 - For an overview of our workflow see [github pull request workflows](https://cesium.com/blog/2013/10/08/github-pull-request-workflows/).
 - Pull request tips
   - After you open a pull request, the friendly [cesium-concierge](https://github.com/CesiumGS/cesium-concierge) bot will comment with a short automated review. At least one human will also review your pull request.
