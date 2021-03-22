@@ -290,8 +290,12 @@ void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
   this->SetECEFCameraLocation(this->_currentEcef);
 }
 
+bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const {
+  return true;
+}
+
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
-  if (this->_bFlyingToLocation) {
+  if (this->GetWorld()->IsGameWorld() && this->_bFlyingToLocation) {
     this->_currentFlyTime += static_cast<double>(DeltaSeconds);
 
     // double check that we don't have an empty list of keypoints
@@ -352,6 +356,15 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
 
   // track current ecef in case we need to restore it on georeference update
   this->_currentEcef = this->GetECEFCameraLocation();
+}
+
+void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    
+    this->_currentEcef = this->GetECEFCameraLocation();
+    this->Georeference->AddGeoreferencedObject(this);
+  }
 }
 
 void AGlobeAwareDefaultPawn::BeginPlay() {

@@ -200,9 +200,11 @@ public:
 
   virtual void NotifyGeoreferenceUpdated() override;
 
+  virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
 
 protected:
+  virtual void OnConstruction(const FTransform& Transform) override;
   virtual void BeginPlay() override;
 
 private:
