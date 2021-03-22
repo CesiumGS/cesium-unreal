@@ -198,20 +198,17 @@ void ACesiumGeoreference::SetGeoreferenceOrigin(
     return;
   }
   this->_setGeoreferenceOrigin(
-    targetLongitudeLatitudeHeight.x, 
-    targetLongitudeLatitudeHeight.y, 
-    targetLongitudeLatitudeHeight.z);
+      targetLongitudeLatitudeHeight.x,
+      targetLongitudeLatitudeHeight.y,
+      targetLongitudeLatitudeHeight.z);
 }
 
 void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
     const FVector& targetLongitudeLatitudeHeight) {
-  this->SetGeoreferenceOrigin(
-    glm::dvec3(
+  this->SetGeoreferenceOrigin(glm::dvec3(
       targetLongitudeLatitudeHeight.X,
       targetLongitudeLatitudeHeight.Y,
-      targetLongitudeLatitudeHeight.Z
-    )
-  );
+      targetLongitudeLatitudeHeight.Z));
 }
 
 void ACesiumGeoreference::AddGeoreferencedObject(
@@ -299,13 +296,13 @@ void ACesiumGeoreference::UpdateGeoreference() {
 
   // update UE -> ECEF
   this->_ueAbsToEcef = this->_georeferencedToEcef *
-                    CesiumTransforms::scaleToCesium *
-                    CesiumTransforms::unrealToOrFromCesium;
+                       CesiumTransforms::scaleToCesium *
+                       CesiumTransforms::unrealToOrFromCesium;
 
   // update ECEF -> UE
   this->_ecefToUeAbs = CesiumTransforms::unrealToOrFromCesium *
-                    CesiumTransforms::scaleToUnrealWorld *
-                    this->_ecefToGeoreferenced;
+                       CesiumTransforms::scaleToUnrealWorld *
+                       this->_ecefToGeoreferenced;
 
   for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
        this->_georeferencedObjects) {
@@ -399,7 +396,8 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
                 static_cast<double>(originLocation.Z),
             1.0);
 
-        glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
+        glm::dvec3 grabbedLocationECEF =
+            this->_ueAbsToEcef * grabbedLocationAbs;
         std::optional<CesiumGeospatial::Cartographic> optCartographic =
             CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
                 grabbedLocationECEF);
@@ -523,7 +521,6 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   }
 }
 
-
 /**
  * Useful Conversion Functions
  */
@@ -532,15 +529,17 @@ glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
     const glm::dvec3& longitudeLatitudeHeight) const {
   return CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
       CesiumGeospatial::Cartographic::fromDegrees(
-        longitudeLatitudeHeight.x,
-        longitudeLatitudeHeight.y,
-        longitudeLatitudeHeight.z));
+          longitudeLatitudeHeight.x,
+          longitudeLatitudeHeight.y,
+          longitudeLatitudeHeight.z));
 }
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(
-    glm::dvec3(longitudeLatitudeHeight.X, longitudeLatitudeHeight.Y, longitudeLatitudeHeight.Z));
+  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+      longitudeLatitudeHeight.X,
+      longitudeLatitudeHeight.Y,
+      longitudeLatitudeHeight.Z));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
@@ -550,7 +549,7 @@ glm::dvec3 ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
       CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
   if (!llh) {
     // TODO: since degenerate cases only happen close to Earth's center
-    // would it make more sense to assign an arbitrary but correct LLH 
+    // would it make more sense to assign an arbitrary but correct LLH
     // coordinate to this case such as (0.0, 0.0, -_EARTH_RADIUS_)?
     return glm::dvec3(0.0, 0.0, 0.0);
   }
@@ -562,21 +561,24 @@ glm::dvec3 ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
 
 FVector ACesiumGeoreference::InaccurateTransformEcefToLongitudeLatitudeHeight(
     const FVector& ecef) const {
-  glm::dvec3 llh =
-      this->TransformEcefToLongitudeLatitudeHeight(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+  glm::dvec3 llh = this->TransformEcefToLongitudeLatitudeHeight(
+      glm::dvec3(ecef.X, ecef.Y, ecef.Z));
   return FVector(llh.x, llh.y, llh.z);
 }
 
 glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUe(
     const glm::dvec3& longitudeLatitudeHeight) const {
-  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
+  glm::dvec3 ecef =
+      this->TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
   return this->TransformEcefToUe(ecef);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUe(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(
-      glm::dvec3(longitudeLatitudeHeight.X, longitudeLatitudeHeight.Y, longitudeLatitudeHeight.Z));
+  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(glm::dvec3(
+      longitudeLatitudeHeight.X,
+      longitudeLatitudeHeight.Y,
+      longitudeLatitudeHeight.Z));
   return FVector(ue.x, ue.y, ue.z);
 }
 
@@ -588,12 +590,13 @@ glm::dvec3 ACesiumGeoreference::TransformUeToLongitudeLatitudeHeight(
 
 FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
     const FVector& ue) const {
-  glm::dvec3 llh = this->TransformUeToLongitudeLatitudeHeight(
-    glm::dvec3(ue.X, ue.Y, ue.Z));
+  glm::dvec3 llh =
+      this->TransformUeToLongitudeLatitudeHeight(glm::dvec3(ue.X, ue.Y, ue.Z));
   return FVector(llh.x, llh.y, llh.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
+glm::dvec3
+ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
   glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::vec4(ecef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
@@ -625,7 +628,8 @@ ACesiumGeoreference::InaccurateTransformUeToEcef(const FVector& ue) const {
 }
 
 FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
-    const FRotator& UERotator, const glm::dvec3& ueLocation) const {
+    const FRotator& UERotator,
+    const glm::dvec3& ueLocation) const {
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
 
   FMatrix enuAdjustmentMatrix(
@@ -638,14 +642,16 @@ FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
 }
 
 FRotator ACesiumGeoreference::InaccurateTransformRotatorUeToEnu(
-    const FRotator& UERotator, const FVector& ueLocation) const {
+    const FRotator& UERotator,
+    const FVector& ueLocation) const {
   return this->TransformRotatorUeToEnu(
-    UERotator, 
-    glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+      UERotator,
+      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
 }
 
 FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
-    const FRotator& ENURotator, const glm::dvec3& ueLocation) const {
+    const FRotator& ENURotator,
+    const glm::dvec3& ueLocation) const {
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
   FMatrix enuAdjustmentMatrix(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
@@ -659,7 +665,8 @@ FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
 }
 
 FRotator ACesiumGeoreference::InaccurateTransformRotatorEnuToUe(
-    const FRotator& ENURotator, const FVector& ueLocation) const {
+    const FRotator& ENURotator,
+    const FVector& ueLocation) const {
   return this->TransformRotatorEnuToUe(
       ENURotator,
       glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
@@ -675,41 +682,38 @@ ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
   glm::dmat3 rotationCesium =
       glm::dmat3(this->_ecefToGeoreferenced) * glm::dmat3(enuToEcef);
 
-  return
-      glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
-      glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+  return glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
+         glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
 }
 
-FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(const FVector& ue) const {
-  glm::dmat3 enuToUnreal = 
-    this->ComputeEastNorthUpToUnreal(glm::dvec3(ue.X, ue.Y, ue.Z));
+FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
+    const FVector& ue) const {
+  glm::dmat3 enuToUnreal =
+      this->ComputeEastNorthUpToUnreal(glm::dvec3(ue.X, ue.Y, ue.Z));
 
   return FMatrix(
-    FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
-    FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
-    FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
-    FVector(0.0, 0.0, 0.0)
-  );
+      FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
+      FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
+      FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
+      FVector(0.0, 0.0, 0.0));
 }
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
   return glm::dmat3(
-    CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef)
-  );
+      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef));
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
     const FVector& ecef) const {
-  glm::dmat3 enuToEcef = 
-    this->ComputeEastNorthUpToEcef(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+  glm::dmat3 enuToEcef =
+      this->ComputeEastNorthUpToEcef(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
 
   return FMatrix(
-    FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
-    FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
-    FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
-    FVector(0.0, 0.0, 0.0)
-  );
+      FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
+      FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
+      FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
+      FVector(0.0, 0.0, 0.0));
 }
 
 /**
@@ -736,7 +740,7 @@ void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
 
 // TODO: Figure out if sunsky can ever be oriented so it's not at the top of the
 // planet. Without this sunsky will only look good when we set the georeference
-// origin to be near the camera. 
+// origin to be near the camera.
 void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
   if (!this->SunSky) {
     return;

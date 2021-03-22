@@ -15,12 +15,12 @@
 #include "CesiumGeoreferenceComponent.generated.h"
 
 /**
- * This component can be added to movable actors to globally georeference them 
- * and maintain precise placement. When the owning actor is transformed through 
- * normal Unreal Engine mechanisms, the internal geospatial coordinates will be 
- * automatically updated. The actor position can also be set in terms of 
- * Earth-Centered, Eath-Fixed coordinates (ECEF) or Longitude, Latitude, and 
- * Height relative to the WGS84 ellipsoid.   
+ * This component can be added to movable actors to globally georeference them
+ * and maintain precise placement. When the owning actor is transformed through
+ * normal Unreal Engine mechanisms, the internal geospatial coordinates will be
+ * automatically updated. The actor position can also be set in terms of
+ * Earth-Centered, Eath-Fixed coordinates (ECEF) or Longitude, Latitude, and
+ * Height relative to the WGS84 ellipsoid.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
@@ -41,8 +41,8 @@ public:
 
   /**
    * Whether to automatically restore the precision of the Unreal transform from
-   * the source Earth-Centered, Earth-Fixed (ECEF) transform during 
-   * origin-rebase. This is useful for maintaining high-precision for fixed 
+   * the source Earth-Centered, Earth-Fixed (ECEF) transform during
+   * origin-rebase. This is useful for maintaining high-precision for fixed
    * objects like buildings. This may need to be disabled for objects where the
    * Unreal transform is to be treated as the ground truth, e.g. Unreal physics
    * objects, cameras, etc.
@@ -118,7 +118,7 @@ public:
       bool maintainRelativeOrientation = true);
 
   /**
-   * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF) 
+   * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
   void MoveToECEF(
@@ -126,7 +126,7 @@ public:
       bool maintainRelativeOrientation = true);
 
   /**
-   * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF) 
+   * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
   UFUNCTION(BlueprintCallable)

@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/DefaultPawn.h"
 #include "Cesium3DTiles/BoundingVolume.h"
 #include "CesiumGeoreferenceable.h"
+#include "CoreMinimal.h"
+#include "GameFramework/DefaultPawn.h"
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
@@ -80,25 +80,24 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
   virtual FRotator GetBaseAimRotation() const override;
 
 public:
-
   /**
-   * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF) 
+   * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
   glm::dvec3 GetECEFCameraLocation() const;
-  
+
   /**
-   * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF) 
+   * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
   void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
-  /** 
+  /**
    * This curve dictates what percentage of the max altitude the pawn should
    * take at a given time on the curve. This curve must be kept in the 0 to
    * 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} dictates the
    * actual max altitude at each point along the curve.
-   */ 
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToAltitudeProfileCurve;
 
@@ -132,11 +131,11 @@ public:
   double FlyToGranularityDegrees = 0.01;
 
   /**
-   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed 
+   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed
    * (ECEF) destination such that the camera ends at the specified yaw and
-   * pitch. The characteristics of the flight can be configured with 
-   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve}, 
-   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and 
+   * pitch. The characteristics of the flight can be configured with
+   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
+   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
    * {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationECEF(
@@ -146,11 +145,11 @@ public:
       bool CanInterruptByMoving);
 
   /**
-   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed 
+   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed
    * (ECEF) destination such that the camera ends at the specified yaw and
-   * pitch. The characteristics of the flight can be configured with 
-   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve}, 
-   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and 
+   * pitch. The characteristics of the flight can be configured with
+   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
+   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
    * {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable)
@@ -164,8 +163,8 @@ public:
    * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
    * latitude in degrees (y), and height in meters (z) such that the camera
    * ends at the given yaw and pitch. The characteristics of the flight can be
-   * configured with {@see FlyToAltitudeProfileCurve}, 
-   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
+   * configured with {@see FlyToAltitudeProfileCurve},
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   void FlyToLocationLongitudeLatitudeHeight(
@@ -178,8 +177,8 @@ public:
    * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
    * latitude in degrees (y), and height in meters (z) such that the camera
    * ends at the given yaw and pitch. The characteristics of the flight can be
-   * configured with {@see FlyToAltitudeProfileCurve}, 
-   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve}, 
+   * configured with {@see FlyToAltitudeProfileCurve},
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable)
@@ -194,7 +193,7 @@ public:
   virtual bool IsBoundingVolumeReady() const override { return false; }
 
   virtual std::optional<Cesium3DTiles::BoundingVolume>
-    GetBoundingVolume() const override {
+  GetBoundingVolume() const override {
     return std::nullopt;
   }
 
