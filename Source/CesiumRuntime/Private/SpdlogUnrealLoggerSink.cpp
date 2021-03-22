@@ -3,8 +3,6 @@
 #include "SpdlogUnrealLoggerSink.h"
 #include "CoreMinimal.h"
 
-DEFINE_LOG_CATEGORY(LogCesium);
-
 void SpdlogUnrealLoggerSink::sink_it_(const spdlog::details::log_msg& msg) {
   switch (msg.level) {
   case SPDLOG_LEVEL_TRACE:
