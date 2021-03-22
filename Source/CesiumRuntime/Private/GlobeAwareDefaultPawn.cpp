@@ -287,13 +287,6 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
 
 void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
   this->SetECEFCameraLocation(this->_currentEcef);
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT("NOTIFY: (%f, %f, %f)"),
-      this->_currentEcef.x,
-      this->_currentEcef.y,
-      this->_currentEcef.z);
 }
 
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
