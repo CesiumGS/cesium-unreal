@@ -287,6 +287,7 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
 
 void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
   this->SetECEFCameraLocation(this->_currentEcef);
+  UE_LOG(LogCesium, Warning, TEXT("NOTIFY: (%f, %f, %f)"), this->_currentEcef.x, this->_currentEcef.y, this->_currentEcef.z);
 }
 
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
@@ -372,10 +373,10 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
 
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-
-    this->_currentEcef = this->GetECEFCameraLocation();
-    this->Georeference->AddGeoreferencedObject(this);
   }
+
+  this->_currentEcef = this->GetECEFCameraLocation();
+  this->Georeference->AddGeoreferencedObject(this);
 
   // TODO: find more elegant solution
   // the controller gets confused if the pawn itself has a nonzero orientation
