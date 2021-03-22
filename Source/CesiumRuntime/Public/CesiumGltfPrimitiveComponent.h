@@ -17,18 +17,17 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
+  /**
+   * The double-precision transformation matrix for this glTF node.
+   */
   glm::dmat4x4 HighPrecisionNodeTransform;
 
-  void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnrealTransform);
-
-protected:
-  // Called when the game starts
-  virtual void BeginPlay() override;
-
-public:
-  // Called every frame
-  virtual void TickComponent(
-      float DeltaTime,
-      ELevelTick TickType,
-      FActorComponentTickFunction* ThisTickFunction) override;
+  /**
+   * Updates this component's transform from a new double-precision
+   * transformation from the Cesium world to the Unreal Engine world, as well as
+   * the current HighPrecisionNodeTransform.
+   *
+   * @param CesiumToUnrealTransform The new transformation.
+   */
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 };

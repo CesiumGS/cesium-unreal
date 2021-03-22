@@ -7,9 +7,12 @@
 #include "CesiumIonRasterOverlay.generated.h"
 
 /**
- *
+ * A raster overlay that uses an IMAGERY asset from Cesium ion.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(
+    DisplayName = "Cesium ion Raster Overlay",
+    ClassGroup = (Cesium),
+    meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay {
   GENERATED_BODY()
 
