@@ -2,20 +2,28 @@
 
 #pragma once
 
+#include "Cesium3DTiles/BoundingVolume.h"
+#include "CesiumGeoreferenceable.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
 
 #include <glm/mat3x3.hpp>
+#include <glm/vec3.hpp>
+#include <vector>
 #include "GlobeAwareDefaultPawn.generated.h"
 
 class ACesiumGeoreference;
 class UCurveFloat;
 
 /**
- *
+ * This pawn can be used to easily move around the globe while maintaining a
+ * sensible orientation. As the pawn moves across the horizon, it automatically
+ * changes its own up direction such that the world always looks right-side up.
  */
 UCLASS()
-class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {
+class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
+    : public ADefaultPawn,
+      public ICesiumGeoreferenceable {
   GENERATED_BODY()
 
   AGlobeAwareDefaultPawn();
@@ -72,103 +80,145 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {
   virtual FRotator GetBaseAimRotation() const override;
 
 public:
-  // Useful transformations
-
   /**
-   * Transforms a point expressed in ECEF coordinates to UE Coordinates.
-   * WARNING - For debugging purpose only as computations are done in Floating
-   * point precision
+   * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF)
+   * coordinates.
    */
-  FVector InaccurateTransformECEFToUE(FVector& Point);
+  glm::dvec3 GetECEFCameraLocation() const;
 
   /**
-   * Transforms accurately (double precision) coordinates from ECEF to UE
-   * coordinates, taking into account the current World rebasing origin
+   * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF)
+   * coordinates.
    */
-  void AccurateTransformECEFToUE(
-      double X,
-      double Y,
-      double Z,
-      double& ResultX,
-      double& ResultY,
-      double& ResultZ);
+  void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
   /**
-   * Transforms accurately (double precision) coordinates from UE to ECEF
-   * coordinates, taking into account the current World rebasing origin
+   * This curve dictates what percentage of the max altitude the pawn should
+   * take at a given time on the curve. This curve must be kept in the 0 to
+   * 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} dictates the
+   * actual max altitude at each point along the curve.
    */
-  void AccurateTransformUEToECEF(
-      double X,
-      double Y,
-      double Z,
-      double& ResultX,
-      double& ResultY,
-      double& ResultZ);
-
-  /**
-  * Transforms a rotator expressed in UE coordinates to one expressed in ENU
-  coordinates. (Single precision, but this should not be an issue)
-  */
-  FRotator TransformRotatorUEToENU(FRotator UERotator);
-
-  /**
-  * Transforms a rotator expressed in ENU coordinates to one expressed in UE
-  coordinates. (Single precision, but this should not be an issue)
-  */
-  FRotator TransformRotatorENUToUE(FRotator UERotator);
-
-  /**
-   * Get the pawn Camera location accurately in ECEF Coordinates
-   */
-  void GetECEFCameraLocation(double& X, double& Y, double& Z);
-  /**
-   * Set the pawn Camera location accurately from ECEF Coordinates
-   */
-  void SetECEFCameraLocation(double X, double Y, double Z);
-
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToAltitudeProfileCurve;
 
+  /**
+   * This curve is used to determine the progress percentage for all the other
+   * curves. This allows us to accelerate and deaccelerate as wanted throughout
+   * the curve.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToProgressCurve;
 
+  /**
+   * This curve dictates the maximum altitude at each point along the curve.
+   * This can be used in conjunction with the {@see FlyToAltitudeProfileCurve}
+   * to allow the pawn to take some altitude during the flight.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UCurveFloat* FlyToMaximumAltitudeCurve;
 
+  /**
+   * The length in seconds that the flight should last.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  float FlyToDuration = 5;
+  double FlyToDuration = 5;
 
+  /**
+   * The granularity in degrees with which keypoints should be generated for
+   * the flight interpolation.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  float FlyToGranulatiryDegrees = 0.01;
+  double FlyToGranularityDegrees = 0.01;
 
-  void FlyToLocation(
-      double ECEFDestinationX,
-      double ECEFDestinationY,
-      double ECEFDestinationZ,
+  /**
+   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed
+   * (ECEF) destination such that the camera ends at the specified yaw and
+   * pitch. The characteristics of the flight can be configured with
+   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
+   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
+   * {@see FlyToGranularityDegrees}.
+   */
+  void FlyToLocationECEF(
+      const glm::dvec3& ECEFDestination,
       float YawAtDestination,
-      float PitchAtDestination);
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
 
-  bool bFlyingToLocation = false;
-  float currentFlyTime = 0;
-  FRotator flyToSourceRotation;
-  FRotator flyToDestinationRotation;
+  /**
+   * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed
+   * (ECEF) destination such that the camera ends at the specified yaw and
+   * pitch. The characteristics of the flight can be configured with
+   * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
+   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
+   * {@see FlyToGranularityDegrees}.
+   */
+  UFUNCTION(BlueprintCallable)
+  void InaccurateFlyToLocationECEF(
+      const FVector& ECEFDestination,
+      float YawAtDestination,
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
 
+  /**
+   * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
+   * latitude in degrees (y), and height in meters (z) such that the camera
+   * ends at the given yaw and pitch. The characteristics of the flight can be
+   * configured with {@see FlyToAltitudeProfileCurve},
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
+   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   */
+  void FlyToLocationLongitudeLatitudeHeight(
+      const glm::dvec3& LongitudeLatitudeHeightDestination,
+      float YawAtDestination,
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
+
+  /**
+   * Begin a smooth camera flight to the given WGS84 longitude in degrees (x),
+   * latitude in degrees (y), and height in meters (z) such that the camera
+   * ends at the given yaw and pitch. The characteristics of the flight can be
+   * configured with {@see FlyToAltitudeProfileCurve},
+   * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
+   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   */
+  UFUNCTION(BlueprintCallable)
+  void InaccurateFlyToLocationLongitudeLatitudeHeight(
+      const FVector& LongitudeLatitudeHeightDestination,
+      float YawAtDestination,
+      float PitchAtDestination,
+      bool CanInterruptByMoving);
+
+  // ICesiumGeoreferenceable functions
+
+  virtual bool IsBoundingVolumeReady() const override { return false; }
+
+  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  GetBoundingVolume() const override {
+    return std::nullopt;
+  }
+
+  virtual void NotifyGeoreferenceUpdated() override;
+
+  virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
-  TArray<FVector> Keypoints;
 
 protected:
+  virtual void OnConstruction(const FTransform& Transform) override;
   virtual void BeginPlay() override;
 
-  virtual void RefreshMatricesCache();
-
 private:
-  /**
-   * Computes the local East-North-Up to Fixed frame transformation based on the
-   * current
-   * {@see GetPawnViewLocation}. The returned transformation works in Unreal's
-   * left-handed coordinate system.
-   */
-  glm::dmat3 computeEastNorthUpToFixedFrame() const;
+  void _interruptFlight();
 
-  glm::dmat4x4 ecefToUnreal;
+  // the current ECEF coordinates, stored in case they need to be restored on
+  // georeference update
+  glm::dvec3 _currentEcef;
+
+  // helper variables for FlyToLocation
+  bool _bFlyingToLocation = false;
+  bool _bCanInterruptFlight = false;
+  double _currentFlyTime = 0.0;
+  FRotator _flyToSourceRotation;
+  FRotator _flyToDestinationRotation;
+
+  std::vector<glm::dvec3> _keypoints;
 };

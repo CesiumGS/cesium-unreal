@@ -11,6 +11,7 @@
 #include "UObject/NameTypes.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <optional>
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent()
@@ -48,50 +49,14 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
       CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
           this->_actorToECEF[3]);
 
-  // cosine of the angle between the actor's up direction and the ellipsoid
-  // normal
-  double cos = glm::dot(actorUpECEF, ellipsoidNormal);
+  // the shortest rotation to align local up with the ellipsoid normal
+  glm::dquat R = glm::rotation(actorUpECEF, ellipsoidNormal);
 
-  // TODO: is this a reasonable epsilon in this case?
-  if (cos < CesiumUtility::Math::EPSILON7 - 1.0) {
-    // The actor's current up direction is completely upside down with respect
-    // to the ellipsoid normal.
-
-    // We want to do a 180 degree rotation around X. We can do this by flipping
-    // the Y and Z axes
-    this->_actorToECEF[1] *= -1.0;
-    this->_actorToECEF[2] *= -1.0;
-
-  } else {
-    // the axis of the shortest available rotation with a magnitude that is sine
-    // of the angle
-    glm::dvec3 sin_axis = glm::cross(ellipsoidNormal, actorUpECEF);
-
-    // We construct a rotation matrix using Rodrigues' rotation formula for
-    // rotating by theta around an axis.
-
-    // K is the cross product matrix of the axis, i.e. K v = axis x v, where v
-    // is any vector. Here we have a factor of sine theta that we let through as
-    // well since it will simplify the calcuations in Rodrigues` formula.
-    glm::dmat3 sin_K(
-        0.0,
-        -sin_axis.z,
-        sin_axis.y,
-        sin_axis.z,
-        0.0,
-        -sin_axis.x,
-        -sin_axis.y,
-        sin_axis.x,
-        0.0);
-    // Rodrigues' rotation formula
-    glm::dmat4 R = glm::dmat3(1.0) + sin_K + sin_K * sin_K / (1.0 + cos);
-
-    // We only want to apply the rotation to the actor's orientation, not
-    // translation.
-    this->_actorToECEF[0] = R * this->_actorToECEF[0];
-    this->_actorToECEF[1] = R * this->_actorToECEF[1];
-    this->_actorToECEF[2] = R * this->_actorToECEF[2];
-  }
+  // We only want to apply the rotation to the actor's orientation, not
+  // translation.
+  this->_actorToECEF[0] = R * this->_actorToECEF[0];
+  this->_actorToECEF[1] = R * this->_actorToECEF[1];
+  this->_actorToECEF[2] = R * this->_actorToECEF[2];
 
   this->_updateActorToUnrealRelativeWorldTransform();
   this->_setTransform(this->_actorToUnrealRelativeWorld);
@@ -107,55 +72,42 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
   this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
-void UCesiumGeoreferenceComponent::MoveToLongLatHeight(
-    double targetLongitude,
-    double targetLatitude,
-    double targetHeight,
+void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
+    const glm::dvec3& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
   glm::dvec3 ecef = CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
       CesiumGeospatial::Cartographic::fromDegrees(
-          targetLongitude,
-          targetLatitude,
-          targetHeight));
+          targetLongitudeLatitudeHeight.x,
+          targetLongitudeLatitudeHeight.y,
+          targetLongitudeLatitudeHeight.z));
 
-  this->_setECEF(ecef.x, ecef.y, ecef.z, maintainRelativeOrientation);
+  this->_setECEF(ecef, maintainRelativeOrientation);
   this->_updateDisplayECEF();
 }
 
-void UCesiumGeoreferenceComponent::InaccurateMoveToLongLatHeight(
-    float targetLongitude,
-    float targetLatitude,
-    float targetHeight,
+void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
+    const FVector& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
-  this->MoveToLongLatHeight(
-      targetLongitude,
-      targetLatitude,
-      targetHeight,
+  this->MoveToLongitudeLatitudeHeight(
+      glm::dvec3(
+          targetLongitudeLatitudeHeight.X,
+          targetLongitudeLatitudeHeight.Y,
+          targetLongitudeLatitudeHeight.Z),
       maintainRelativeOrientation);
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF(
-    double targetEcef_x,
-    double targetEcef_y,
-    double targetEcef_z,
+    const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
-  this->_setECEF(
-      targetEcef_x,
-      targetEcef_y,
-      targetEcef_z,
-      maintainRelativeOrientation);
-  this->_updateDisplayLongLatHeight();
+  this->_setECEF(targetEcef, maintainRelativeOrientation);
+  this->_updateDisplayLongitudeLatitudeHeight();
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
-    float targetEcef_x,
-    float targetEcef_y,
-    float targetEcef_z,
+    const FVector& targetEcef,
     bool maintainRelativeOrientation) {
   this->MoveToECEF(
-      targetEcef_x,
-      targetEcef_y,
-      targetEcef_z,
+      glm::dvec3(targetEcef.X, targetEcef.Y, targetEcef.Z),
       maintainRelativeOrientation);
 }
 
@@ -260,7 +212,8 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Latitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Height)) {
-    this->MoveToLongLatHeight(this->Longitude, this->Latitude, this->Height);
+    this->MoveToLongitudeLatitudeHeight(
+        glm::dvec3(this->Longitude, this->Latitude, this->Height));
     return;
   } else if (
       propertyName ==
@@ -269,7 +222,7 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Y) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Z)) {
-    this->MoveToECEF(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
+    this->MoveToECEF(glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
   }
 }
@@ -390,7 +343,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
     return;
   }
 
-  glm::dmat4 unrealWorldToEcef =
+  const glm::dmat4& unrealWorldToEcef =
       this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
 
   FMatrix actorToRelativeWorld =
@@ -415,7 +368,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 
   this->_actorToECEF = unrealWorldToEcef * actorToAbsoluteWorld;
   this->_updateDisplayECEF();
-  this->_updateDisplayLongLatHeight();
+  this->_updateDisplayLongitudeLatitudeHeight();
 }
 
 void UCesiumGeoreferenceComponent::
@@ -449,16 +402,29 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
       FVector(transform[1].x, transform[1].y, transform[1].z),
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
+
+  // TODO: try direct setting of transformation, may work for static objects on
+  // origin rebase
+  /*
+  this->_ownerRoot->SetRelativeLocation_Direct(
+      FVector(transform[3].x, transform[3].y, transform[3].z));
+
+  this->_ownerRoot->SetRelativeRotation_Direct(FMatrix(
+    FVector(transform[0].x, transform[0].y, transform[0].z),
+    FVector(transform[1].x, transform[1].y, transform[1].z),
+    FVector(transform[2].x, transform[2].y, transform[2].z),
+    FVector(0.0, 0.0, 0.0)
+  ).Rotator());
+
+  this->_ownerRoot->SetComponentToWorld(this->_ownerRoot->GetRelativeTransform());
+  */
 }
 
 void UCesiumGeoreferenceComponent::_setECEF(
-    double targetEcef_x,
-    double targetEcef_y,
-    double targetEcef_z,
+    const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
   if (!maintainRelativeOrientation) {
-    this->_actorToECEF[3] =
-        glm::dvec4(targetEcef_x, targetEcef_y, targetEcef_z, 1.0);
+    this->_actorToECEF[3] = glm::dvec4(targetEcef, 1.0);
   } else {
     // Note: this probably degenerates when starting at or moving to either of
     // the poles
@@ -466,8 +432,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
         CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
             this->_actorToECEF[3]));
     glm::dmat4 endEnuToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-            glm::vec3(targetEcef_x, targetEcef_y, targetEcef_z));
+        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(targetEcef);
     this->_actorToECEF = endEnuToEcef * startEcefToEnu * this->_actorToECEF;
   }
 
@@ -488,7 +453,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
   }
 }
 
-void UCesiumGeoreferenceComponent::_updateDisplayLongLatHeight() {
+void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
   std::optional<CesiumGeospatial::Cartographic> cartographic =
       CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
           this->_actorToECEF[3]);
