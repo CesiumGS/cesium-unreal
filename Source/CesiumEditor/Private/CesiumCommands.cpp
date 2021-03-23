@@ -55,6 +55,13 @@ void FCesiumCommands::RegisterCommands() {
       "Search for existing questions or ask a new question on the Cesium Community Forum",
       EUserInterfaceActionType::Button,
       FInputChord());
+
+  UI_COMMAND(
+      OpenCesiumPanel,
+      "Cesium",
+      "Open the Cesium panel",
+      EUserInterfaceActionType::Button,
+      FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

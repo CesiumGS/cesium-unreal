@@ -372,10 +372,10 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
 
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-
-    this->_currentEcef = this->GetECEFCameraLocation();
-    this->Georeference->AddGeoreferencedObject(this);
   }
+
+  this->_currentEcef = this->GetECEFCameraLocation();
+  this->Georeference->AddGeoreferencedObject(this);
 
   // TODO: find more elegant solution
   // the controller gets confused if the pawn itself has a nonzero orientation

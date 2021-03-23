@@ -14,6 +14,7 @@
 #include "EngineUtils.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Interfaces/IPluginManager.h"
 #include "LevelEditor.h"
 #include "Styling/SlateStyle.h"
@@ -102,6 +103,10 @@ void FCesiumEditorModule::StartupModule() {
         new IMAGE_BRUSH("FontAwesome/hands-helping-solid", Icon40x40));
 
     StyleSet->Set(
+        "Cesium.Common.OpenCesiumPanel",
+        new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon40x40));
+
+    StyleSet->Set(
         "Cesium.Logo",
         new IMAGE_BRUSH(
             "Cesium-for-Unreal-Logo-Micro-BlackV",
@@ -171,6 +176,35 @@ void FCesiumEditorModule::StartupModule() {
               ELayoutExtensionPosition::Before,
               FTabManager::FTab(FName("CesiumIon"), ETabState::ClosedTab));
         });
+
+    TSharedRef<FUICommandList> toolbarCommandList =
+        MakeShared<FUICommandList>();
+
+    toolbarCommandList->MapAction(
+        FCesiumCommands::Get().OpenCesiumPanel,
+        FExecuteAction::CreateLambda([]() {
+          FLevelEditorModule* pLevelEditorModule =
+              FModuleManager::GetModulePtr<FLevelEditorModule>(
+                  FName(TEXT("LevelEditor")));
+          TSharedPtr<FTabManager> pTabManager =
+              pLevelEditorModule
+                  ? pLevelEditorModule->GetLevelEditorTabManager()
+                  : FGlobalTabmanager::Get();
+          pTabManager->TryInvokeTab(FTabId(TEXT("Cesium")));
+        }));
+
+    TSharedPtr<FExtender> pToolbarExtender = MakeShared<FExtender>();
+    pToolbarExtender->AddToolBarExtension(
+        "Settings",
+        EExtensionHook::After,
+        toolbarCommandList,
+        FToolBarExtensionDelegate::CreateLambda([](FToolBarBuilder& builder) {
+          builder.BeginSection("Cesium");
+          builder.AddToolBarButton(FCesiumCommands::Get().OpenCesiumPanel);
+          builder.EndSection();
+        }));
+    pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
+        pToolbarExtender);
   }
 }
 
