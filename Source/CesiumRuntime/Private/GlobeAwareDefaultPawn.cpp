@@ -60,11 +60,25 @@ void AGlobeAwareDefaultPawn::MoveForward(float Val) {
 
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   if (Val != 0.f) {
+    // TODO: Determine why the commented out code doesn't work
+    /*
     FMatrix enuToFixed =
         this->Georeference->InaccurateComputeEastNorthUpToUnreal(
             this->GetPawnViewLocation());
     FVector up = enuToFixed.GetColumn(2);
-    AddMovementInput(up, Val);
+    */
+
+    FVector loc = this->GetPawnViewLocation();
+    glm::dvec3 locEcef =
+      this->Georeference->TransformUeToEcef(glm::dvec3(loc.X, loc.Y, loc.Z));
+    glm::dvec4 upEcef(
+        CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
+        0.0);
+    glm::dvec4 up =
+        this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform() *
+        upEcef;
+    
+    AddMovementInput(FVector(up.x, up.y, up.z), Val);
 
     if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
       this->_interruptFlight();

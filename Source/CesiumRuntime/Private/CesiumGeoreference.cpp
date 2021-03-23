@@ -213,6 +213,15 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
 
 void ACesiumGeoreference::AddGeoreferencedObject(
     ICesiumGeoreferenceable* Object) {
+
+  // avoid adding duplicates
+  for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
+       this->_georeferencedObjects) {
+    if (Cast<ICesiumGeoreferenceable>(pObject.GetObject()) == Object) {
+      return;
+    }  
+  }
+
   this->_georeferencedObjects.Add(*Object);
 
   // If this object is an Actor or UActorComponent, make sure it ticks _after_
@@ -680,7 +689,7 @@ ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
   // Camera Axes = ENU
   // Unreal Axes = controlled by Georeference
   glm::dmat3 rotationCesium =
-      glm::dmat3(this->_ecefToGeoreferenced) * glm::dmat3(enuToEcef);
+      glm::dmat3(this->_ecefToGeoreferenced) * enuToEcef;
 
   return glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
          glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
