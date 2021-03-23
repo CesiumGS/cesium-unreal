@@ -19,7 +19,6 @@
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "UnrealAssetAccessor.h"
-#include "UnrealConversions.h"
 #include "UnrealTaskProcessor.h"
 
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
@@ -248,10 +247,10 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
       false,
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
-  pTilesetActor->SetActorLabel(utf8_to_wstr(name));
+  pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
   pTilesetActor->IonAssetID = assetID;
-  pTilesetActor->IonAccessToken =
-      utf8_to_wstr(FCesiumEditorModule::ion().getAssetAccessToken().token);
+  pTilesetActor->IonAccessToken = UTF8_TO_TCHAR(
+      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
 
   return pTilesetActor;
 }
@@ -272,11 +271,11 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
 
   UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
       pTilesetActor,
-      FName(utf8_to_wstr(name)),
+      FName(name.c_str()),
       RF_Public | RF_Transactional);
   pOverlay->IonAssetID = assetID;
-  pOverlay->IonAccessToken =
-      utf8_to_wstr(FCesiumEditorModule::ion().getAssetAccessToken().token);
+  pOverlay->IonAccessToken = UTF8_TO_TCHAR(
+      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
   pOverlay->SetActive(true);
   pOverlay->OnComponentCreated();
 

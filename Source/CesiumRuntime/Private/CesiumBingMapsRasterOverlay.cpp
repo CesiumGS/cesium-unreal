@@ -3,7 +3,6 @@
 #include "CesiumBingMapsRasterOverlay.h"
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
 #include "Cesium3DTiles/Tileset.h"
-#include "UnrealConversions.h"
 
 std::unique_ptr<Cesium3DTiles::RasterOverlay>
 UCesiumBingMapsRasterOverlay::CreateOverlay() {
@@ -38,7 +37,7 @@ UCesiumBingMapsRasterOverlay::CreateOverlay() {
 
   return std::make_unique<Cesium3DTiles::BingMapsRasterOverlay>(
       "https://dev.virtualearth.net",
-      wstr_to_utf8(this->BingMapsKey),
+      TCHAR_TO_UTF8(*this->BingMapsKey),
       mapStyle,
       "",
       CesiumGeospatial::Ellipsoid::WGS84);

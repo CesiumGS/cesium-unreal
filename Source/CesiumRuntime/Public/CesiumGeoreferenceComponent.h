@@ -105,8 +105,8 @@ public:
    * in degrees (y), and height in meters (z).
    */
   void MoveToLongitudeLatitudeHeight(
-      const glm::dvec3& targetLongitudeLatitudeHeight,
-      bool maintainRelativeOrientation = true);
+      const glm::dvec3& TargetLongitudeLatitudeHeight,
+      bool MaintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified WGS84 longitude in degrees (x), latitude
@@ -114,16 +114,16 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToLongitudeLatitudeHeight(
-      const FVector& targetLongitudeLatitudeHeight,
-      bool maintainRelativeOrientation = true);
+      const FVector& TargetLongitudeLatitudeHeight,
+      bool MaintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
   void MoveToECEF(
-      const glm::dvec3& targetEcef,
-      bool maintainRelativeOrientation = true);
+      const glm::dvec3& TargetEcef,
+      bool MaintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
@@ -131,23 +131,40 @@ public:
    */
   UFUNCTION(BlueprintCallable)
   void InaccurateMoveToECEF(
-      const FVector& targetEcef,
-      bool maintainRelativeOrientation = true);
-
-  virtual void OnRegister() override;
+      const FVector& TargetEcef,
+      bool MaintainRelativeOrientation = true);
 
   /**
    * Delegate implementation to recieve a notification when the owner's root
    * component has changed.
    */
   UFUNCTION()
-  void OnRootComponentChanged(USceneComponent* newRoot, bool idk);
+  void OnRootComponentChanged(
+      USceneComponent* UpdatedComponent,
+      bool bIsRootComponent);
+
+  void SetAutoSnapToEastSouthUp(bool bValue);
+
+  bool CheckCoordinatesChanged() const { return this->_dirty; }
+
+  void MarkCoordinatesUnchanged() { this->_dirty = false; }
 
   virtual void
   ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+
   virtual void OnUpdateTransform(
       EUpdateTransformFlags UpdateTransformFlags,
       ETeleportType Teleport) override;
+
+  virtual void OnRegister() override;
+
+  virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
+
+  // ICesiumGeoreferenceable virtual functions
+  virtual bool IsBoundingVolumeReady() const override;
+  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  GetBoundingVolume() const override;
+  virtual void NotifyGeoreferenceUpdated() override;
 
 protected:
   // Called when the game starts
@@ -164,21 +181,6 @@ protected:
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
-
-public:
-  virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
-
-  // ICesiumGeoreferenceable virtual functions
-  virtual bool IsBoundingVolumeReady() const override;
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
-  GetBoundingVolume() const override;
-  virtual void NotifyGeoreferenceUpdated() override;
-
-  void SetAutoSnapToEastSouthUp(bool value);
-
-  bool CheckCoordinatesChanged() const { return this->_dirty; }
-
-  void MarkCoordinatesUnchanged() { this->_dirty = false; }
 
 private:
   void _initRootComponent();

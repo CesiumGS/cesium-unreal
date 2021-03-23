@@ -3,7 +3,6 @@
 #include "CesiumCreditSystem.h"
 #include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumCreditSystemBPLoader.h"
-#include "UnrealConversions.h"
 #include <string>
 #include <vector>
 
@@ -76,7 +75,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
           "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) + "</li>";
     }
     creditString += "</ul></body>";
-    Credits = utf8_to_wstr(creditString);
+    Credits = UTF8_TO_TCHAR(creditString.c_str());
 
     _lastCreditsCount = creditsToShowThisFrame.size();
   }

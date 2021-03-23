@@ -4,7 +4,6 @@
 #include "CesiumEditorSettings.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
-#include "UnrealConversions.h"
 
 using namespace CesiumIonClient;
 
@@ -51,7 +50,7 @@ void CesiumIonSession::connect() {
       [this](const std::string& url) {
         this->_authorizeUrl = url;
         FPlatformProcess::LaunchURL(
-            *utf8_to_wstr(this->_authorizeUrl),
+            UTF8_TO_TCHAR(this->_authorizeUrl.c_str()),
             NULL,
             NULL);
       })
@@ -62,7 +61,7 @@ void CesiumIonSession::connect() {
         UCesiumEditorSettings* pSettings =
             GetMutableDefault<UCesiumEditorSettings>();
         pSettings->CesiumIonAccessToken =
-            utf8_to_wstr(this->_connection.value().getAccessToken());
+            UTF8_TO_TCHAR(this->_connection.value().getAccessToken().c_str());
         pSettings->SaveConfig();
 
         this->ConnectionUpdated.Broadcast();
@@ -86,7 +85,8 @@ void CesiumIonSession::resume() {
   this->_connection = Connection(
       this->_asyncSystem,
       this->_pAssetAccessor,
-      wstr_to_utf8(GetDefault<UCesiumEditorSettings>()->CesiumIonAccessToken));
+      TCHAR_TO_UTF8(
+          *GetDefault<UCesiumEditorSettings>()->CesiumIonAccessToken));
 
   // Verify that the connection actually works.
   this->_connection.value()
@@ -206,8 +206,8 @@ void CesiumIonSession::refreshAssetAccessToken() {
   this->_isLoadingAssetAccessToken = true;
   this->_loadAssetAccessTokenQueued = false;
 
-  std::string tokenName =
-      wstr_to_utf8(FApp::GetProjectName()) + " (Created by Cesium for Unreal)";
+  std::string tokenName = TCHAR_TO_UTF8(FApp::GetProjectName());
+  tokenName += " (Created by Cesium for Unreal)";
 
   // TODO: rather than find a token by name, it would be better to store the
   // token ID in the UE project somewhere.

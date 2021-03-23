@@ -11,7 +11,6 @@
 #include "IonQuickAddPanel.h"
 #include "LevelEditor.h"
 #include "Styling/SlateStyleRegistry.h"
-#include "UnrealConversions.h"
 #include "Widgets/Input/SHyperlink.h"
 
 void CesiumPanel::Construct(const FArguments& InArgs) {
@@ -104,7 +103,7 @@ TSharedRef<SWidget> CesiumPanel::ConnectionStatus() {
   auto linkText = []() {
     auto& profile = FCesiumEditorModule::ion().getProfile();
     std::string s = "Connected to Cesium ion as " + profile.username;
-    return FText::FromString(utf8_to_wstr(s));
+    return FText::FromString(UTF8_TO_TCHAR(s.c_str()));
   };
   auto loadingMessageVisibility = []() {
     return FCesiumEditorModule::ion().isLoadingProfile()

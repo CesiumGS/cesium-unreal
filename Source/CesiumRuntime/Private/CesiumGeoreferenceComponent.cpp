@@ -121,8 +121,8 @@ void UCesiumGeoreferenceComponent::OnRegister() {
 // TODO: figure out what these delegate parameters actually represent, currently
 // I'm only guessing based on the types
 void UCesiumGeoreferenceComponent::OnRootComponentChanged(
-    USceneComponent* /*newRoot*/,
-    bool /*addedOrRemoved*/) {
+    USceneComponent* UpdatedComponent,
+    bool bIsRootComponent) {
   this->_initRootComponent();
 }
 

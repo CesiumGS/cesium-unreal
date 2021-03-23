@@ -16,8 +16,7 @@ void FCesiumRuntimeModule::StartupModule() {
   pLogger->sinks() = {std::make_shared<SpdlogUnrealLoggerSink>()};
 }
 
-void FCesiumRuntimeModule::ShutdownModule() {
-}
+void FCesiumRuntimeModule::ShutdownModule() {}
 
 #undef LOCTEXT_NAMESPACE
 

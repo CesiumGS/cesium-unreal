@@ -14,7 +14,6 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UnrealConversions.h"
 #include <iostream>
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
