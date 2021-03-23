@@ -219,7 +219,7 @@ void ACesiumGeoreference::AddGeoreferencedObject(
        this->_georeferencedObjects) {
     if (Cast<ICesiumGeoreferenceable>(pObject.GetObject()) == Object) {
       return;
-    }  
+    }
   }
 
   this->_georeferencedObjects.Add(*Object);

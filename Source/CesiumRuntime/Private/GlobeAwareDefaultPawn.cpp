@@ -70,14 +70,14 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
 
     FVector loc = this->GetPawnViewLocation();
     glm::dvec3 locEcef =
-      this->Georeference->TransformUeToEcef(glm::dvec3(loc.X, loc.Y, loc.Z));
+        this->Georeference->TransformUeToEcef(glm::dvec3(loc.X, loc.Y, loc.Z));
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
     glm::dvec4 up =
         this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform() *
         upEcef;
-    
+
     AddMovementInput(FVector(up.x, up.y, up.z), Val);
 
     if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
