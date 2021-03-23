@@ -195,11 +195,13 @@ void FCesiumEditorModule::StartupModule() {
 
     TSharedPtr<FExtender> pToolbarExtender = MakeShared<FExtender>();
     pToolbarExtender->AddToolBarExtension(
-        "Content",
+        "Settings",
         EExtensionHook::After,
         toolbarCommandList,
         FToolBarExtensionDelegate::CreateLambda([](FToolBarBuilder& builder) {
+          builder.BeginSection("Cesium");
           builder.AddToolBarButton(FCesiumCommands::Get().OpenCesiumPanel);
+          builder.EndSection();
         }));
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
         pToolbarExtender);
