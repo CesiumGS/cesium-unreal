@@ -17,5 +17,7 @@ public:
   TSharedPtr<FUICommandInfo> OpenDocumentation;
   TSharedPtr<FUICommandInfo> OpenSupport;
 
+  TSharedPtr<FUICommandInfo> OpenCesiumPanel;
+
   virtual void RegisterCommands() override;
 };
