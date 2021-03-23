@@ -6,7 +6,6 @@
 #include "CesiumGeoreferenceable.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
-
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 #include <vector>
@@ -26,6 +25,7 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
       public ICesiumGeoreferenceable {
   GENERATED_BODY()
 
+public:
   AGlobeAwareDefaultPawn();
 
   /**
@@ -79,7 +79,6 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
   virtual FRotator GetViewRotation() const override;
   virtual FRotator GetBaseAimRotation() const override;
 
-public:
   /**
    * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
