@@ -14,16 +14,11 @@ namespace Cesium3DTiles {
 class CreditSystem;
 }
 
-UCLASS()
-class UCesiumCreditSystemBPLoader : public UObject {
-  GENERATED_BODY()
-
-private:
-  friend ACesiumCreditSystem;
-
-  UCesiumCreditSystemBPLoader();
-};
-
+/**
+ * Manages credits / atttribution for Cesium data sources. These credits
+ * are displayed by the corresponding Blueprints class
+ * /CesiumForUnreal/CesiumCreditSystemBP.CesiumCreditSystemBP_C.
+ */
 UCLASS()
 class CESIUMRUNTIME_API ACesiumCreditSystem : public AActor {
   GENERATED_BODY()
@@ -32,18 +27,15 @@ public:
   static ACesiumCreditSystem* GetDefaultForActor(AActor* Actor);
 
   ACesiumCreditSystem();
-  virtual ~ACesiumCreditSystem();
 
   /**
-   * Credits text
-   *
+   * The credits text to display.
    */
   UPROPERTY(BlueprintReadOnly)
   FString Credits = "";
 
   /**
    * Whether the credit string has changed since last frame.
-   *
    */
   UPROPERTY(BlueprintReadOnly)
   bool CreditsUpdated = false;
@@ -57,16 +49,11 @@ public:
     return _pCreditSystem;
   }
 
-protected:
-  virtual void OnConstruction(const FTransform& Transform) override;
-
 private:
-  friend UCesiumCreditSystemBPLoader;
-
   static UClass* CesiumCreditSystemBP;
 
   // the underlying cesium-native credit system that is managed by this actor.
   std::shared_ptr<Cesium3DTiles::CreditSystem> _pCreditSystem;
 
-  size_t _lastCreditsCount = 0;
+  size_t _lastCreditsCount;
 };

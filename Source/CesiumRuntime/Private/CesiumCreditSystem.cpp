@@ -2,30 +2,23 @@
 
 #include "CesiumCreditSystem.h"
 #include "Cesium3DTiles/CreditSystem.h"
-#include "Engine.h"
-#include "SpdlogUnrealLoggerSink.h"
+#include "CesiumCreditSystemBPLoader.h"
 #include "UnrealConversions.h"
 #include <string>
 #include <vector>
 
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 
-UCesiumCreditSystemBPLoader::UCesiumCreditSystemBPLoader() {
-  ConstructorHelpers::FObjectFinder<UClass> blueprintClassReference(TEXT(
-      "Class'/CesiumForUnreal/CesiumCreditSystemBP.CesiumCreditSystemBP_C'"));
-  ACesiumCreditSystem::CesiumCreditSystemBP =
-      (UClass*)blueprintClassReference.Object;
-}
-
 /*static*/ ACesiumCreditSystem*
 ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
   // Blueprint loading can only happen in a constructor, so we instantiate a
-  // loader object that initializes the static blueprint class in its
-  // constructor. We can destroy the loader immediately once it's done since it
-  // will have already set CesiumCreditSystemBP.
+  // loader object that retrieves the blueprint class in its constructor. We can
+  // destroy the loader immediately once it's done since it will have already
+  // set CesiumCreditSystemBP.
   if (!CesiumCreditSystemBP) {
     UCesiumCreditSystemBPLoader* bpLoader =
         NewObject<UCesiumCreditSystemBPLoader>();
+    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP;
     bpLoader->ConditionalBeginDestroy();
   }
 
@@ -53,12 +46,11 @@ ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
   return pACreditSystem;
 }
 
-ACesiumCreditSystem::ACesiumCreditSystem() {
+ACesiumCreditSystem::ACesiumCreditSystem()
+    : _pCreditSystem(std::make_shared<Cesium3DTiles::CreditSystem>()),
+      _lastCreditsCount(0) {
   PrimaryActorTick.bCanEverTick = true;
-  _pCreditSystem = std::make_shared<Cesium3DTiles::CreditSystem>();
 }
-
-ACesiumCreditSystem::~ACesiumCreditSystem() { _pCreditSystem.reset(); }
 
 bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 
@@ -91,5 +83,3 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
   _pCreditSystem->startNextFrame();
 }
-
-void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {}
