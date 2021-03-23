@@ -8,7 +8,6 @@
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "Styling/SlateStyle.h"
-#include "UnrealConversions.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
@@ -93,8 +92,8 @@ TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(
                         EVerticalAlignment::VAlign_Center)
                         [SNew(STextBlock)
                              .AutoWrapText(true)
-                             .Text(
-                                 FText::FromString(utf8_to_wstr(item->name)))] +
+                             .Text(FText::FromString(
+                                 UTF8_TO_TCHAR(item->name.c_str())))] +
                     SHorizontalBox::Slot().AutoWidth().VAlign(
                         EVerticalAlignment::VAlign_Center)
                         [PropertyCustomizationHelpers::MakeNewBlueprintButton(
@@ -153,7 +152,8 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
                            [SNew(STextBlock)
                                 .AutoWrapText(true)
                                 .Text(FText::FromString(TEXT(
-                                    "Before " + utf8_to_wstr(item->name) +
+                                    "Before " +
+                                    FString(UTF8_TO_TCHAR(item->name.c_str())) +
                                     " can be added to your level, it must be added to \"My Assets\" in your Cesium ion account.")))] +
                        SVerticalBox::Slot()
                            .AutoHeight()
@@ -162,9 +162,10 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
                                [SNew(SHyperlink)
                                     .OnNavigate_Lambda([missingAsset]() {
                                       FPlatformProcess::LaunchURL(
-                                          *utf8_to_wstr(
-                                              "https://cesium.com/ion/assetdepot/" +
-                                              std::to_string(missingAsset)),
+                                          UTF8_TO_TCHAR(
+                                              ("https://cesium.com/ion/assetdepot/" +
+                                               std::to_string(missingAsset))
+                                                  .c_str()),
                                           NULL,
                                           NULL);
                                     })

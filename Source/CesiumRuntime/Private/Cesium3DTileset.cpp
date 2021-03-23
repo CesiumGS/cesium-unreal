@@ -15,6 +15,7 @@
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumRasterOverlay.h"
+#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
@@ -26,9 +27,7 @@
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
 #include "PhysicsPublicCore.h"
-#include "SpdlogUnrealLoggerSink.h"
 #include "UnrealAssetAccessor.h"
-#include "UnrealConversions.h"
 #include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -39,7 +38,6 @@
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "LevelEditorViewport.h"
-#include "Slate/SceneViewport.h"
 #endif
 
 // Sets default values
@@ -230,12 +228,12 @@ ACesium3DTileset::GetBoundingVolume() const {
 }
 
 void ACesium3DTileset::UpdateTransformFromCesium(
-    const glm::dmat4& cesiumToUnreal) {
+    const glm::dmat4& CesiumToUnreal) {
   TArray<UCesiumGltfComponent*> gltfComponents;
   this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
   for (UCesiumGltfComponent* pGltf : gltfComponents) {
-    pGltf->UpdateTransformFromCesium(cesiumToUnreal);
+    pGltf->UpdateTransformFromCesium(CesiumToUnreal);
   }
 }
 
@@ -538,7 +536,7 @@ static std::string getCacheDatabaseName() {
   FString baseDirectory = FPaths::EngineUserDir();
   FString filename =
       FPaths::Combine(baseDirectory, TEXT("cesium-request-cache.sqlite"));
-  return wstr_to_utf8(filename);
+  return TCHAR_TO_UTF8(*filename);
 }
 
 void ACesium3DTileset::LoadTileset() {
@@ -573,14 +571,14 @@ void ACesium3DTileset::LoadTileset() {
       // asset ID / access token
       if (this->Url.Len() > 0) {
         if (pTileset->getUrl() &&
-            wstr_to_utf8(this->Url) == pTileset->getUrl()) {
+            TCHAR_TO_UTF8(*this->Url) == pTileset->getUrl()) {
           // Already using this URL.
           return;
         }
       } else {
         if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() &&
             this->IonAssetID == pTileset->getIonAssetID() &&
-            wstr_to_utf8(this->IonAccessToken) ==
+            TCHAR_TO_UTF8(*this->IonAccessToken) ==
                 pTileset->getIonAccessToken()) {
           // Already using this asset ID and access token.
           return;
@@ -612,12 +610,12 @@ void ACesium3DTileset::LoadTileset() {
       spdlog::default_logger()};
 
   if (this->Url.Len() > 0) {
-    pTileset = new Cesium3DTiles::Tileset(externals, wstr_to_utf8(this->Url));
+    pTileset = new Cesium3DTiles::Tileset(externals, TCHAR_TO_UTF8(*this->Url));
   } else {
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         this->IonAssetID,
-        wstr_to_utf8(this->IonAccessToken));
+        TCHAR_TO_UTF8(*this->IonAccessToken));
   }
 
   this->_pTileset = pTileset;
@@ -792,7 +790,7 @@ ACesium3DTileset::GetEditorCamera() const {
 #endif
 
 bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
-  return this->ShowInEditor;
+  return this->UpdateInEditor;
 }
 
 // Called every frame

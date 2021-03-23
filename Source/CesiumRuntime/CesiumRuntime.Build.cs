@@ -31,7 +31,7 @@ public class CesiumRuntime : ModuleRules
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
 
-        string releasePostfix = "";        
+        string releasePostfix = "";
         string debugPostfix = "d";
 
         bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
@@ -85,19 +85,14 @@ public class CesiumRuntime : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                // TODO: remove Slate dependency? Anything else?
                 "RHI",
                 "CoreUObject",
                 "Engine",
-                "Slate",
-                "SlateCore",
                 "MeshDescription",
                 "StaticMeshDescription",
                 "HTTP",
                 "MikkTSpace",
-                "Chaos",
                 "LevelSequence"
-                // ... add private dependencies that you statically link with here ...
             }
         );
 
@@ -114,12 +109,18 @@ public class CesiumRuntime : ModuleRules
             PrivateDependencyModuleNames.Add("PhysXCooking");
             PrivateDependencyModuleNames.Add("PhysicsCore");
         }
+        else
+        {
+            PrivateDependencyModuleNames.Add("Chaos");
+        }
 
         if (Target.bBuildEditor == true)
         {
             PublicDependencyModuleNames.AddRange(
                 new string[] {
                     "UnrealEd",
+                    "Slate",
+                    "SlateCore",
                 }
             );
         }

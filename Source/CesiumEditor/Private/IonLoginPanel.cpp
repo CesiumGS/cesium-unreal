@@ -7,7 +7,6 @@
 #include "HAL/PlatformApplicationMisc.h"
 #include "Misc/App.h"
 #include "Styling/SlateStyle.h"
-#include "UnrealConversions.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -142,9 +141,10 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                                            .IsReadOnly(true)
                                            .Text_Lambda([this]() {
                                              return FText::FromString(
-                                                 utf8_to_wstr(
+                                                 UTF8_TO_TCHAR(
                                                      FCesiumEditorModule::ion()
-                                                         .getAuthorizeUrl()));
+                                                         .getAuthorizeUrl()
+                                                         .c_str()));
                                            })]] +
                          SHorizontalBox::Slot()
                              .VAlign(VAlign_Center)
@@ -166,14 +166,14 @@ FReply IonLoginPanel::SignIn() {
 
 FReply IonLoginPanel::CopyAuthorizeUrlToClipboard() {
   FText url = FText::FromString(
-      utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl()));
+      UTF8_TO_TCHAR(FCesiumEditorModule::ion().getAuthorizeUrl().c_str()));
   FPlatformApplicationMisc::ClipboardCopy(*url.ToString());
   return FReply::Handled();
 }
 
 void IonLoginPanel::LaunchBrowserAgain() {
   FPlatformProcess::LaunchURL(
-      *utf8_to_wstr(FCesiumEditorModule::ion().getAuthorizeUrl()),
+      UTF8_TO_TCHAR(FCesiumEditorModule::ion().getAuthorizeUrl().c_str()),
       NULL,
       NULL);
 }

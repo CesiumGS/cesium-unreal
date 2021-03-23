@@ -9,7 +9,6 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Misc/EngineVersion.h"
-#include "UnrealConversions.h"
 #include <cstddef>
 #include <optional>
 #include <set>
@@ -42,7 +41,7 @@ public:
   }
 
   virtual std::string contentType() const override {
-    return wstr_to_utf8(this->_pResponse->GetContentType());
+    return TCHAR_TO_UTF8(*this->_pResponse->GetContentType());
   }
 
   virtual const CesiumAsync::HttpHeaders& headers() const override {
@@ -67,8 +66,8 @@ public:
       : _pRequest(pRequest),
         _pResponse(std::make_unique<UnrealAssetResponse>(pResponse)) {
     this->_headers = parseHeaders(this->_pRequest->GetAllHeaders());
-    this->_url = wstr_to_utf8(this->_pRequest->GetURL());
-    this->_method = wstr_to_utf8(this->_pRequest->GetVerb());
+    this->_url = TCHAR_TO_UTF8(*this->_pRequest->GetURL());
+    this->_method = TCHAR_TO_UTF8(*this->_pRequest->GetVerb());
   }
 
   virtual const std::string& method() const { return this->_method; }
@@ -119,12 +118,12 @@ UnrealAssetAccessor::requestAsset(
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
-        pRequest->SetURL(utf8_to_wstr(url));
+        pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
         for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
           pRequest->SetHeader(
-              utf8_to_wstr(header.first),
-              utf8_to_wstr(header.second));
+              UTF8_TO_TCHAR(header.first.c_str()),
+              UTF8_TO_TCHAR(header.second.c_str()));
         }
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
@@ -166,12 +165,12 @@ UnrealAssetAccessor::post(
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
         pRequest->SetVerb(TEXT("POST"));
-        pRequest->SetURL(utf8_to_wstr(url));
+        pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
         for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
           pRequest->SetHeader(
-              utf8_to_wstr(header.first),
-              utf8_to_wstr(header.second));
+              UTF8_TO_TCHAR(header.first.c_str()),
+              UTF8_TO_TCHAR(header.second.c_str()));
         }
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);

@@ -14,7 +14,6 @@
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
 #include "Styling/SlateStyleRegistry.h"
-#include "UnrealConversions.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -172,15 +171,16 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                     .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
                     .Text_Lambda([this]() {
                       return FText::FromString(
-                          utf8_to_wstr(this->_pSelection->name));
+                          UTF8_TO_TCHAR(this->_pSelection->name.c_str()));
                     })] +
          SScrollBox::Slot()
              .Padding(10, 5, 10, 10)
              .HAlign(EHorizontalAlignment::HAlign_Fill)
                  [SNew(STextBlock).Text_Lambda([this]() {
-                   return FText::FromString(utf8_to_wstr(
-                       std::string("(ID: ") +
-                       std::to_string(this->_pSelection->id) + ")"));
+                   return FText::FromString(UTF8_TO_TCHAR(
+                       (std::string("(ID: ") +
+                        std::to_string(this->_pSelection->id) + ")")
+                           .c_str()));
                  })] +
          SScrollBox::Slot().Padding(10).HAlign(
              EHorizontalAlignment::HAlign_Fill)
@@ -238,8 +238,8 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                         FCesiumEditorModule::GetStyle(),
                         "AssetDetailsFieldValue")
                     .Text_Lambda([this]() {
-                      return FText::FromString(
-                          utf8_to_wstr(this->_pSelection->description));
+                      return FText::FromString(UTF8_TO_TCHAR(
+                          this->_pSelection->description.c_str()));
                     })] +
          SScrollBox::Slot().Padding(10).HAlign(
              EHorizontalAlignment::HAlign_Fill)
@@ -256,8 +256,8 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                         FCesiumEditorModule::GetStyle(),
                         "AssetDetailsFieldValue")
                     .Text_Lambda([this]() {
-                      return FText::FromString(
-                          utf8_to_wstr(this->_pSelection->attribution));
+                      return FText::FromString(UTF8_TO_TCHAR(
+                          this->_pSelection->attribution.c_str()));
                     })];
 }
 
@@ -302,11 +302,11 @@ void CesiumIonPanel::ApplyFilter() {
         // converting the _searchString to a std::string, because
         // the 'FString::Contains' function does the desired
         // case-INsensitive check by default.
-        FString Name = utf8_to_wstr(Asset->name);
+        FString Name = UTF8_TO_TCHAR(Asset->name.c_str());
         if (Name.Contains(_searchString)) {
           return true;
         }
-        FString Description = utf8_to_wstr(Asset->description);
+        FString Description = UTF8_TO_TCHAR(Asset->description.c_str());
         if (Description.Contains(_searchString)) {
           return true;
         }
@@ -386,10 +386,10 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
       false,
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
-  pTileset->SetActorLabel(utf8_to_wstr(item->name));
+  pTileset->SetActorLabel(UTF8_TO_TCHAR(item->name.c_str()));
   pTileset->IonAssetID = item->id;
-  pTileset->IonAccessToken =
-      utf8_to_wstr(FCesiumEditorModule::ion().getAssetAccessToken().token);
+  pTileset->IonAccessToken = UTF8_TO_TCHAR(
+      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
 
   pTileset->RerunConstructionScripts();
 }
@@ -458,7 +458,7 @@ std::string assetTypeToString(const std::string& assetType) {
  * @return The formatted string
  */
 FString formatDate(const std::string& assetDate) {
-  FString unrealDateString = utf8_to_wstr(assetDate);
+  FString unrealDateString = UTF8_TO_TCHAR(assetDate.c_str());
   FDateTime dateTime;
   bool success = FDateTime::ParseIso8601(*unrealDateString, dateTime);
   if (!success) {
@@ -467,7 +467,7 @@ FString formatDate(const std::string& assetDate) {
         Warning,
         TEXT("Could not parse date %s"),
         assetDate.c_str());
-    return utf8_to_wstr(assetDate);
+    return UTF8_TO_TCHAR(assetDate.c_str());
   }
   return dateTime.ToString(TEXT("%Y-%m-%d"));
 }
@@ -488,11 +488,11 @@ public:
   GenerateWidgetForColumn(const FName& InColumnName) override {
     if (InColumnName == ColumnName_Name) {
       return SNew(STextBlock)
-          .Text(FText::FromString(utf8_to_wstr(_pItem->name)));
+          .Text(FText::FromString(UTF8_TO_TCHAR(_pItem->name.c_str())));
     } else if (InColumnName == ColumnName_Type) {
       return SNew(STextBlock)
-          .Text(
-              FText::FromString(utf8_to_wstr(assetTypeToString(_pItem->type))));
+          .Text(FText::FromString(
+              UTF8_TO_TCHAR(assetTypeToString(_pItem->type).c_str())));
     } else if (InColumnName == ColumnName_DateAdded) {
       return SNew(STextBlock)
           .Text(FText::FromString(formatDate(_pItem->dateAdded)));

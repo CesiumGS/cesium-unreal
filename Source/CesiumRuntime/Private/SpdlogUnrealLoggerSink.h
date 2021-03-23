@@ -8,8 +8,6 @@
 #include <spdlog/details/null_mutex.h>
 #include <spdlog/sinks/base_sink.h>
 
-DECLARE_LOG_CATEGORY_EXTERN(LogCesium, Log, All);
-
 /**
  * @brief Internal implementation of a spdlog sink that forwards the messages
  * to Unreal log macros.

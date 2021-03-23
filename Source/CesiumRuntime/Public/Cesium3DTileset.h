@@ -76,6 +76,11 @@ public:
    * higher performance cost for loading and rendering. A higher value will
    * cause a coarser visual representation, with lower performance
    * requirements.
+   *
+   * When a tileset uses the older layer.json / quantized-mesh format rather
+   * than 3D Tiles, this value is effectively divided by 8.0. So the default
+   * value of 16.0 corresponds to the standard value for quantized-mesh terrain
+   * of 2.0.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
   double MaximumScreenSpaceError = 16.0;
@@ -145,6 +150,9 @@ public:
    * current camera configuration will be ignored. It can be set to false, so
    * that these tiles are still considered for loading, refinement and
    * rendering.
+   *
+   * This will cause more tiles to be loaded, but helps to avoid holes and
+   * provides a more consistent mesh, which may be helpful for physics.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
   bool EnableFrustumCulling = true;
@@ -161,22 +169,46 @@ public:
   bool EnableFogCulling = true;
 
   /**
-   * Whether culled screen-space error should be enforced for culled tiles.
+   * Whether a specified screen-space error should be enforced for tiles that
+   * are outside the frustum or hidden in fog.
    *
-   * When "Enable Fog Culling" is selected, this flag will indicate that the
-   * screen space error for tiles that have been culled by fog
-   * should still be enforced.
+   * When "Enable Frustum Culling" and "Enable Fog Culling" are both true, tiles
+   * outside the view frustum or hidden in fog are effectively ignored, and so
+   * their level-of-detail doesn't matter. And in this scenario, this property
+   * is ignored.
+   *
+   * However, when either of those flags are false, these "would-be-culled"
+   * tiles continue to be processed, and the question arises of how to handle
+   * their level-of-detail. When this property is false, refinement terminates
+   * at these tiles, no matter what their current screen-space error. The tiles
+   * are available for physics, shadows, etc., but their level-of-detail may
+   * be very low.
+   *
+   * When set to true, these tiles are refined until they achieve the specified
+   * "Culled Screen Space Error". This allows control over the minimum quality
+   * of these would-be-culled tiles.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
   /**
-   * The screen-space error to be used for culled tiles.
+   * The screen-space error to be enforced for tiles that are outside the view
+   * frustum or hidden in fog.
    *
-   * In contrast to the global maximum screen space error, this value
-   * refers to the screen space error that should be used for tiles that
-   * have been culled by fog. It will only be taken into account when
-   * "Enforce Culled Screen Space Error" is enabled.
+   * When "Enable Frustum Culling" and "Enable Fog Culling" are both true, tiles
+   * outside the view frustum or hidden in fog are effectively ignored, and so
+   * their level-of-detail doesn't matter. And in this scenario, this property
+   * is ignored.
+   *
+   * However, when either of those flags are false, these "would-be-culled"
+   * tiles continue to be processed, and the question arises of how to handle
+   * their level-of-detail. When "Enforce Culled Screen Space Error" is false,
+   * this property is ignored and refinement terminates at these tiles, no
+   * matter what their current screen-space error. The tiles are available for
+   * physics, shadows, etc., but their level-of-detail may be very low.
+   *
+   * When set to true, these tiles are refined until they achieve the
+   * screen-space error specified by this property.
    */
   UPROPERTY(
       EditAnywhere,
@@ -184,6 +216,13 @@ public:
       meta = (EditCondition = "EnforceCulledScreenSpaceError"))
   double CulledScreenSpaceError = 64.0;
 
+  /**
+   * A custom Material to use to render this tileset, in order to implement
+   * custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "GltfMaterialWithOverlays" material and customizing it as desired.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   UMaterial* Material = nullptr;
 
@@ -194,11 +233,11 @@ public:
   bool SuspendUpdate;
 
   /**
-   * If true, this tileset is loaded and shown in the editor. If false, is only
-   * shown while playing (including Play-in-Editor).
+   * If true, this tileset is ticked/updated in the editor. If false, is only
+   * ticked while playing (including Play-in-Editor).
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
-  bool ShowInEditor = true;
+  bool UpdateInEditor = true;
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
@@ -214,11 +253,20 @@ public:
   Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
   const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
 
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
+
+  // ICesiumGeoreferenceable implementation
   virtual bool IsBoundingVolumeReady() const override;
   virtual std::optional<Cesium3DTiles::BoundingVolume>
   GetBoundingVolume() const override;
-  void UpdateTransformFromCesium(const glm::dmat4& cesiumToUnreal);
   virtual void NotifyGeoreferenceUpdated();
+
+  // AActor overrides
+  virtual bool ShouldTickIfViewportsOnly() const override;
+  virtual void Tick(float DeltaTime) override;
+  virtual void BeginDestroy() override;
+  virtual void Destroyed() override;
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 protected:
   // Called when the game starts or when spawned
@@ -235,6 +283,7 @@ protected:
       FVector NormalImpulse,
       const FHitResult& Hit) override;
 
+private:
   void LoadTileset();
   void DestroyTileset();
   Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
@@ -258,14 +307,6 @@ protected:
   void OnFocusEditorViewportOnActors(const AActor* actor);
 #endif
 
-public:
-  // Called every frame
-  virtual bool ShouldTickIfViewportsOnly() const override;
-  virtual void Tick(float DeltaTime) override;
-  virtual void BeginDestroy() override;
-  virtual void Destroyed() override;
-  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
@@ -287,6 +328,6 @@ private:
   bool _captureMovieMode;
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
-  int _beforeMovieLoadingDescendantLimit;
+  int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
 };

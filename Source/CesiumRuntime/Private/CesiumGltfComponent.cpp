@@ -12,10 +12,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
 #include "PhysicsEngine/BodySetup.h"
-#include "SpdlogUnrealLoggerSink.h"
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UnrealConversions.h"
 #include <iostream>
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
@@ -28,6 +26,7 @@
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
