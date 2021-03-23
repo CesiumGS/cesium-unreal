@@ -65,9 +65,9 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true} {
-  // Set this actor to call Tick() every frame.  You can turn this off to
-  // improve performance if you don't need it.
+
   PrimaryActorTick.bCanEverTick = true;
+  PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
   this->SetActorEnableCollision(true);
 

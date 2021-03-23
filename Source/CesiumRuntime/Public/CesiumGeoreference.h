@@ -51,13 +51,14 @@ struct FCesiumSubLevel {
   FString LevelName;
 
   /**
-   * The longitude of where on the WGS84 globe this level should sit.
+   * The WGS84 longitude in degrees of where this level should sit on the
+   * globe.
    */
   UPROPERTY(EditAnywhere)
   double LevelLongitude = 0.0;
 
   /**
-   * The latitude of where on the WGS84 globe this level should sit.
+   * The WGS84 latitude in degrees of where this level should sit on the globe.
    */
   UPROPERTY(EditAnywhere)
   double LevelLatitude = 0.0;
@@ -118,7 +119,7 @@ public:
 
   /*
    * Whether to visualize the level loading radii in the editor. Helpful for
-   * positioning the level and choosing a load radius.
+   * initially positioning the level and choosing a load radius.
    */
   UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
   bool ShowLoadRadii = true;
@@ -167,7 +168,9 @@ public:
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
-   * EXPERIMENTAL
+   * The CesiumSunSky actor to georeference. Allows the CesiumSunSky to be in
+   * sync with the georeferenced globe. This is only useful when
+   * OriginPlacement = EOriginPlacement::CartographicOrigin.
    */
   UPROPERTY(EditAnywhere, Category = "CesiumSunSky")
   AActor* SunSky = nullptr;
@@ -221,9 +224,10 @@ public:
   double OriginHeight = 2250.0;
 
   /**
-   * EXPERIMENTAL
+   * TODO: Once point-and-click georeference placement is in place, restore this
+   * as a UPROPERTY
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
+  // UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
   bool EditOriginInViewport = false;
 
   /**
@@ -251,8 +255,9 @@ public:
   void PlaceGeoreferenceOriginHere();
 
   /**
-   * The maximum distance that the camera may move from the world's
-   * OriginLocation before the world origin is moved closer to the camera.
+   * The maximum distance in centimeters that the camera may move from the
+   * world's OriginLocation before the world origin is moved closer to the
+   * camera.
    */
   UPROPERTY(
       EditAnywhere,
@@ -272,49 +277,185 @@ public:
   // TODO: Allow user to select/configure the ellipsoid.
 
   /**
-   * This aligns the specified global coordinates to Unreal's world origin, i.e.
-   * it rotates the globe so that these coordinates exactly fall on the origin.
+   * This aligns the specified WGS84 longitude in degrees (x), latitude in
+   * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
+   * rotates the globe so that these coordinates exactly fall on the origin.
    */
-  void SetGeoreferenceOrigin(
-      double targetLongitude,
-      double targetLatitude,
-      double targetHeight);
+  void SetGeoreferenceOrigin(const glm::dvec3& targetLongitudeLatitudeHeight);
 
   /**
-   * This aligns the specified global coordinates to Unreal's world origin, i.e.
-   * it rotates the globe so that these coordinates exactly fall on the origin.
+   * This aligns the specified WGS84 longitude in degrees (x), latitude in
+   * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
+   * rotates the globe so that these coordinates exactly fall on the origin.
    */
   UFUNCTION(BlueprintCallable)
-  void InaccurateSetGeoreferenceOrigin(
-      float targetLongitude,
-      float targetLatitude,
-      float targetHeight);
+  void
+  InaccurateSetGeoreferenceOrigin(const FVector& targetLongitudeLatitudeHeight);
+
+  /*
+   * USEFUL CONVERSION FUNCTIONS
+   */
 
   /**
-   * Transforms the given point from ECEF to Unreal relative world coordinates
+   * Transforms the given WGS84 longitude in degrees (x), latitude in
+   * degrees (y), and height in meters (z) into Earth-Centered, Earth-Fixed
+   * (ECEF) coordinates.
+   */
+  glm::dvec3 TransformLongitudeLatitudeHeightToEcef(
+      const glm::dvec3& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given WGS84 longitude in degrees (x), latitude in
+   * degrees (y), and height in meters (z) into Earth-Centered, Earth-Fixed
+   * (ECEF) coordinates.
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformLongitudeLatitudeHeightToEcef(
+      const FVector& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
+   * meters (z).
+   */
+  glm::dvec3
+  TransformEcefToLongitudeLatitudeHeight(const glm::dvec3& ecef) const;
+
+  /**
+   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
+   * meters (z).
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector
+  InaccurateTransformEcefToLongitudeLatitudeHeight(const FVector& ecef) const;
+
+  /**
+   * Transforms the given WGS84 longitude in degrees (x), latitude in
+   * degrees (y), and height in meters (z) into Unreal world coordinates
    * (relative to the floating origin).
    */
-  glm::dvec3 TransformEcefToUe(glm::dvec3 point);
+  glm::dvec3 TransformLongitudeLatitudeHeightToUe(
+      const glm::dvec3& longitudeLatitudeHeight) const;
 
   /**
-   * Transforms the given point from ECEF to Unreal relative world coordinates
+   * Transforms the given WGS84 longitude in degrees (x), latitude in
+   * degrees (y), and height in meters (z) into Unreal world coordinates
    * (relative to the floating origin).
    */
   UFUNCTION(BlueprintCallable)
-  FVector InaccurateTransformEcefToUe(FVector point);
+  FVector InaccurateTransformLongitudeLatitudeHeightToUe(
+      const FVector& longitudeLatitudeHeight) const;
+
+  /**
+   * Transforms Unreal world coordinates (relative to the floating origin) into
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
+   * meters (z).
+   */
+  glm::dvec3 TransformUeToLongitudeLatitudeHeight(const glm::dvec3& ue) const;
+
+  /**
+   * Transforms Unreal world coordinates (relative to the floating origin) into
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
+   * meters (z).
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector
+  InaccurateTransformUeToLongitudeLatitudeHeight(const FVector& ue) const;
+
+  /**
+   * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
+   * Unreal relative world (relative to the floating origin).
+   */
+  glm::dvec3 TransformEcefToUe(const glm::dvec3& ecef) const;
+
+  /**
+   * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
+   * Unreal relative world (relative to the floating origin).
+   */
+  UFUNCTION(BlueprintCallable)
+  FVector InaccurateTransformEcefToUe(const FVector& ecef) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
-   * floating origin) to ECEF.
+   * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
-  glm::dvec3 TransformUeToEcef(glm::dvec3 point);
+  glm::dvec3 TransformUeToEcef(const glm::dvec3& ue) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
-   * floating origin) to ECEF.
+   * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
   UFUNCTION(BlueprintCallable)
-  FVector InaccurateTransformUeToEcef(FVector point);
+  FVector InaccurateTransformUeToEcef(const FVector& ue) const;
+
+  /**
+   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Unreal relative world location (relative to the floating origin).
+   */
+  FRotator TransformRotatorUeToEnu(
+      const FRotator& UERotator,
+      const glm::dvec3& ueLocation) const;
+
+  /**
+   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Unreal relative world location (relative to the floating origin).
+   */
+  UFUNCTION(BlueprintCallable)
+  FRotator InaccurateTransformRotatorUeToEnu(
+      const FRotator& UERotator,
+      const FVector& ueLocation) const;
+
+  /**
+   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Unreal relative world location (relative to the floating origin).
+   */
+  FRotator TransformRotatorEnuToUe(
+      const FRotator& ENURotator,
+      const glm::dvec3& ueLocation) const;
+
+  /**
+   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Unreal relative world location (relative to the floating origin).
+   */
+  UFUNCTION(BlueprintCallable)
+  FRotator InaccurateTransformRotatorEnuToUe(
+      const FRotator& ENURotator,
+      const FVector& ueLocation) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * specified Unreal relative world location (relative to the floating
+   * origin). The returned transformation works in Unreal's left-handed
+   * coordinate system.
+   */
+  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * specified Unreal relative world location (relative to the floating
+   * origin). The returned transformation works in Unreal's left-handed
+   * coordinate system.
+   */
+  UFUNCTION(BlueprintCallable)
+  FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& ue) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to
+   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
+   */
+  glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to
+   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
+   */
+  UFUNCTION(BlueprintCallable)
+  FMatrix InaccurateComputeEastNorthUpToEcef(const FVector& ecef) const;
+
+  /*
+   * GEOREFERENCE TRANSFORMS
+   */
 
   /**
    * @brief Gets the transformation from the "Georeferenced" reference frame
@@ -354,7 +495,7 @@ public:
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
-    return this->_ueToEcef;
+    return this->_ueAbsToEcef;
   }
 
   /**
@@ -367,11 +508,22 @@ public:
    * not the floating origin). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
-    return this->_ecefToUe;
+    return this->_ecefToUeAbs;
   }
 
+  /**
+   * Add objects inheriting from ICesiumGeoreferenceable to be notified on
+   * changes to the world georeference transforms. Additionally, if
+   * OriginPlacement = EOriginPlacement::BoundingVolumeOrigin, georeferenced
+   * objects added here can optionally contribute to the bounding
+   * volume center calculation.
+   */
   void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
 
+  /**
+   * Recomputes all world georeference transforms. Usually there is no need to
+   * explicitly call this from external code.
+   */
   void UpdateGeoreference();
 
 protected:
@@ -392,11 +544,12 @@ public:
 private:
   glm::dmat4 _georeferencedToEcef;
   glm::dmat4 _ecefToGeoreferenced;
-  glm::dmat4 _ueToEcef;
-  glm::dmat4 _ecefToUe;
+  glm::dmat4 _ueAbsToEcef;
+  glm::dmat4 _ecefToUeAbs;
 
   bool _insideSublevel;
 
+  // TODO: add option to set georeference directly from ECEF
   void _setGeoreferenceOrigin(
       double targetLongitude,
       double targetLatitude,
