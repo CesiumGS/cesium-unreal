@@ -327,9 +327,9 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
       }
 
       // Find the keypoint indexes corresponding to the current percentage
-      int lastIndex = glm::floor(rawPercentage * (this->_keypoints.size() - 1));
+      int lastIndex = glm::floor(flyPercentage * (this->_keypoints.size() - 1));
       double segmentPercentage =
-          rawPercentage * (this->_keypoints.size() - 1) - lastIndex;
+          flyPercentage * (this->_keypoints.size() - 1) - lastIndex;
       int nextIndex = lastIndex + 1;
 
       // Get the current position by interpolating between those two points
