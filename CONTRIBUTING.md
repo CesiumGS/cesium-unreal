@@ -35,14 +35,14 @@ In addition to contributing code, we appreciate many types of contributions:
 
 - Being active on the [Cesium community forum](https://community.cesium.com/) by answering questions and providing input on Cesium's direction.
 - Showcasing your Cesium for Unreal apps on [Cesium blog](https://cesium.com/blog/categories/userstories/). Contact us at hello@cesium.com.
-- Writing tutorials, creating examples, and improving the reference documentation. See the issues labeled [doc](https://github.com/CesiumGS/cesium-unreal/labels/doc).
+- Writing tutorials, creating examples, and improving the reference documentation. See the issues labeled [category - doc](https://github.com/CesiumGS/cesium-unreal/labels/category%20-%20doc).
 - Submitting issues as [described above](#submitting-an-issue).
 - Triaging issues. Browse the [issues](https://github.com/CesiumGS/cesium-unreal/issues) and comment on issues that are no longer reproducible or on issues for which you have additional information.
 
 For ideas for Cesium for Unreal code contributions, see:
 
 - issues labeled [`good first issue`](https://github.com/CesiumGS/cesium-unreal/labels/good%20first%20issue) and
-- issues labeled [`roadmap`](https://github.com/CesiumGS/cesium-unreal/labels/roadmap).
+- issues labeled [`type - roadmap`](https://github.com/CesiumGS/cesium-unreal/labels/type%20-%20roadmap).
 
 See the [build guide](https://github.com/CesiumGS/cesium-unreal#computer-developing-with-unreal-engine) for how to build and run Cesium for Unreal.
 
