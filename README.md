@@ -6,7 +6,7 @@ Cesium for Unreal brings the 3D geospatial ecosystem to Unreal Engine. By combin
 
 ### :rocket: Get Started
 
-**[Download Cesium for Unreal from Unreal Engine Marketplace](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7)** (Available March 30, 2021)
+**[Download Cesium for Unreal from Unreal Engine Marketplace](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7)**
 
 Have questions? Ask them on the [community forum](https://community.cesium.com).
 
@@ -62,4 +62,6 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 
 #### :package: Accessing Packaged Plugin
 
-Cesium for Unreal has Travis CI integration that prepares packages with each CI build. To access these packages, click the ✔️ icon on the GitHub branch or commit and click the `Details` next to `plugin-package`. You can extract the downloaded plugin package into your Unreal project's `Plugins` directory.
+The easiest way to access Cesium for Unreal is by downloading it from the [Unreal Engine Marketplace](https://www.unrealengine.com/marketplace/en-US/87b0d05800a545d49bf858ef3458c4f7).
+
+If you would like to access development versions of the plugin, Cesium for Unreal has Travis CI integration that prepares packages with each CI build. To access these packages, click the ✔️ icon on the GitHub branch or commit and click the `Details` next to `plugin-package`. You can extract the downloaded plugin package into your Unreal project's `Plugins` directory.
