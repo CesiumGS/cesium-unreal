@@ -31,13 +31,13 @@ public:
   /**
    * The credits text to display.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   FString Credits = "";
 
   /**
    * Whether the credit string has changed since last frame.
    */
-  UPROPERTY(BlueprintReadOnly)
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
 
   // Called every frame

@@ -151,7 +151,7 @@ public:
    * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
    * {@see FlyToGranularityDegrees}.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InaccurateFlyToLocationECEF(
       const FVector& ECEFDestination,
       float YawAtDestination,
@@ -180,7 +180,7 @@ public:
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InaccurateFlyToLocationLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeightDestination,
       float YawAtDestination,
