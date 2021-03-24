@@ -33,10 +33,6 @@ Using Cesium ion helps support Cesium for Unreal development. :heart:
 
 Cesium for Unreal is tightly integrated with Unreal Engine making it possible to visualize and interact with real-world content in editor and at runtime. The plugin also has support for Unreal Engine physics, collisions, character interaction, and landscaping tools. Leverage decades worth of cutting-edge advancements in Unreal Engine and geospatial to create cohesive, interactive, and realistic simulations and applications with Cesium for Unreal.
 
-### :card_index: Roadmap
-
-TODO: Publish roadmap.
-
 ### :green_book: License
 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html). Cesium for Unreal is free for both commercial and non-commercial use.
