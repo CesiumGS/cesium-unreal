@@ -375,10 +375,10 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
 void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-
-    this->_currentEcef = this->GetECEFCameraLocation();
-    this->Georeference->AddGeoreferencedObject(this);
   }
+
+  this->_currentEcef = this->GetECEFCameraLocation();
+  this->Georeference->AddGeoreferencedObject(this);
 }
 
 void AGlobeAwareDefaultPawn::BeginPlay() {
