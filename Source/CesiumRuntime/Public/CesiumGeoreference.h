@@ -47,33 +47,33 @@ struct FCesiumSubLevel {
   /**
    * The plain name of the sub level, without any prefixes.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   FString LevelName;
 
   /**
    * The WGS84 longitude in degrees of where this level should sit on the
    * globe.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double LevelLongitude = 0.0;
 
   /**
    * The WGS84 latitude in degrees of where this level should sit on the globe.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double LevelLatitude = 0.0;
 
   /**
    * The height in meters above the WGS84 globe this level should sit.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double LevelHeight = 0.0;
 
   /**
    * How far in meters from the sublevel local origin the camera needs to be to
    * load the level.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double LoadRadius = 0.0;
 
   /**
@@ -101,7 +101,7 @@ class CESIUMRUNTIME_API ACesiumGeoreference : public AActor {
   GENERATED_BODY()
 
 public:
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   static ACesiumGeoreference* GetDefaultForActor(AActor* Actor);
 
   ACesiumGeoreference();
@@ -288,7 +288,7 @@ public:
    * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
    * rotates the globe so that these coordinates exactly fall on the origin.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void
   InaccurateSetGeoreferenceOrigin(const FVector& TargetLongitudeLatitudeHeight);
 
@@ -309,7 +309,7 @@ public:
    * degrees (y), and height in meters (z) into Earth-Centered, Earth-Fixed
    * (ECEF) coordinates.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateTransformLongitudeLatitudeHeightToEcef(
       const FVector& LongitudeLatitudeHeight) const;
 
@@ -326,7 +326,7 @@ public:
    * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
    * meters (z).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector
   InaccurateTransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
 
@@ -343,7 +343,7 @@ public:
    * degrees (y), and height in meters (z) into Unreal world coordinates
    * (relative to the floating origin).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateTransformLongitudeLatitudeHeightToUe(
       const FVector& LongitudeLatitudeHeight) const;
 
@@ -359,7 +359,7 @@ public:
    * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
    * meters (z).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector
   InaccurateTransformUeToLongitudeLatitudeHeight(const FVector& Ue) const;
 
@@ -373,7 +373,7 @@ public:
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
    * Unreal relative world (relative to the floating origin).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateTransformEcefToUe(const FVector& Ecef) const;
 
   /**
@@ -386,7 +386,7 @@ public:
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateTransformUeToEcef(const FVector& Ue) const;
 
   /**
@@ -401,7 +401,7 @@ public:
    * Transforms a rotator from Unreal world to East-North-Up at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorUeToEnu(
       const FRotator& UeRotator,
       const FVector& UeLocation) const;
@@ -418,7 +418,7 @@ public:
    * Transforms a rotator from East-North-Up to Unreal world at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorEnuToUe(
       const FRotator& EnuRotator,
       const FVector& UeLocation) const;
@@ -437,7 +437,7 @@ public:
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& Ue) const;
 
   /**
@@ -450,7 +450,7 @@ public:
    * Computes the rotation matrix from the local East-North-Up to
    * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FMatrix InaccurateComputeEastNorthUpToEcef(const FVector& Ecef) const;
 
   /*

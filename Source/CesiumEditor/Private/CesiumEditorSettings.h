@@ -18,6 +18,6 @@ public:
    * The token used to access Cesium ion. If this is blank or invalid, the
    * Cesium panel will prompt you to log in to Cesium ion with OAuth2.
    */
-  UPROPERTY(Config, EditAnywhere)
+  UPROPERTY(Config, EditAnywhere, Category = "Cesium")
   FString CesiumIonAccessToken;
 };

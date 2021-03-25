@@ -69,10 +69,10 @@ public:
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
 
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterial* BaseMaterial;
 
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterial* OpacityMaskMaterial;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);

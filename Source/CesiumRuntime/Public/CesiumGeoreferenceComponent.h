@@ -112,7 +112,7 @@ public:
    * Move the actor to the specified WGS84 longitude in degrees (x), latitude
    * in degrees (y), and height in meters (z).
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InaccurateMoveToLongitudeLatitudeHeight(
       const FVector& TargetLongitudeLatitudeHeight,
       bool MaintainRelativeOrientation = true);
@@ -129,7 +129,7 @@ public:
    * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InaccurateMoveToECEF(
       const FVector& TargetEcef,
       bool MaintainRelativeOrientation = true);
