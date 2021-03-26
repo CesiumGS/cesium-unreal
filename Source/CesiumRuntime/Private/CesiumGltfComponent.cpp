@@ -1408,7 +1408,7 @@ UCesiumGltfComponent::CreateOffGameThread(
       ,
       PhysXCooking
 #endif
-      );
+  );
   return pResult;
 }
 
