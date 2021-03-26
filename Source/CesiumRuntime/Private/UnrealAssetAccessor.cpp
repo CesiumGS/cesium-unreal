@@ -139,9 +139,9 @@ UnrealAssetAccessor::requestAsset(
               } else {
                 switch (pRequest->GetStatus()) {
                 case EHttpRequestStatus::Failed_ConnectionError:
-                  promise.reject(std::exception("Connection failed."));
+                  promise.reject(std::runtime_error("Connection failed."));
                 default:
-                  promise.reject(std::exception("Request failed."));
+                  promise.reject(std::runtime_error("Request failed."));
                 }
               }
             });
@@ -190,9 +190,9 @@ UnrealAssetAccessor::post(
               } else {
                 switch (pRequest->GetStatus()) {
                 case EHttpRequestStatus::Failed_ConnectionError:
-                  promise.reject(std::exception("Connection failed."));
+                  promise.reject(std::runtime_error("Connection failed."));
                 default:
-                  promise.reject(std::exception("Request failed."));
+                  promise.reject(std::runtime_error("Request failed."));
                 }
               }
             });

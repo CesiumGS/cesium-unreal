@@ -48,7 +48,7 @@ class CESIUMRUNTIME_API UCesiumGltfComponent : public USceneComponent {
 public:
   class HalfConstructed {
   public:
-    virtual ~HalfConstructed() = 0 {}
+    virtual ~HalfConstructed() = default;
   };
 
   static std::unique_ptr<HalfConstructed> CreateOffGameThread(

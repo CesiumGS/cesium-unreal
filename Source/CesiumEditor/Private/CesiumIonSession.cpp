@@ -250,7 +250,7 @@ CesiumIonSession::getConnection() const {
 }
 
 const CesiumIonClient::Profile& CesiumIonSession::getProfile() {
-  static const CesiumIonClient::Profile empty;
+  static const CesiumIonClient::Profile empty{};
   if (this->_profile) {
     return *this->_profile;
   } else {
@@ -280,7 +280,7 @@ const std::vector<CesiumIonClient::Token>& CesiumIonSession::getTokens() {
 }
 
 const CesiumIonClient::Token& CesiumIonSession::getAssetAccessToken() {
-  static const CesiumIonClient::Token empty;
+  static const CesiumIonClient::Token empty{};
   if (this->_assetAccessToken) {
     return *this->_assetAccessToken;
   } else {
