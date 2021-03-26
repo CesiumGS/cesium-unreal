@@ -172,7 +172,7 @@ public:
    * sync with the georeferenced globe. This is only useful when
    * OriginPlacement = EOriginPlacement::CartographicOrigin.
    */
-  UPROPERTY(EditAnywhere, Category = "CesiumSunSky")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CesiumSunSky")
   AActor* SunSky = nullptr;
 
   /**
@@ -524,6 +524,7 @@ public:
    * Recomputes all world georeference transforms. Usually there is no need to
    * explicitly call this from external code.
    */
+  UFUNCTION(BlueprintCallable)
   void UpdateGeoreference();
 
   // Called every frame
