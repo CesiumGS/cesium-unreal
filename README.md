@@ -13,7 +13,7 @@ Have questions? Ask them on the [community forum](https://community.cesium.com).
 ### :clap: Featured Demos
 
 <p>
-<a href="https://github.com/CesiumGS/cesium-unreal-demo"><img src="https://cesium.com/images/cesium-for-unreal/melbourne.jpg" width="48%" /></a>&nbsp;
+<a href="https://github.com/CesiumGS/cesium-unreal-demo"><img src="https://images.prismic.io/cesium/bfa9f768-26eb-4a6f-a427-8e9cecbe16b1_melbourne.jpg" width="48%" /></a>&nbsp;
 <a href="https://www.unrealengine.com/en-US/industry/project-anywhere"><img src="https://cesium.com/blog/images/2020/11-30/Project-Anywhere-3.jpg" width="48%" /></a>&nbsp;
 <br/>
 <br/>
@@ -25,7 +25,7 @@ Cesium for Unreal can stream real-world 3D content such as high-resolution photo
 
 Cesium for Unreal supports cloud and private network content and services based on open standards and APIs. You are free to use any combination of supported content sources, standards, APIs with Cesium for Unreal.
 
-[![Cesium for Unreal Ecosystem Architecture](https://cesium.com/images/graphics/unreal-pipeline.png)](https://cesium.com/cesium-for-unreal?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal)
+[![Cesium for Unreal Ecosystem Architecture](https://prismic-io.s3.amazonaws.com/cesium/b1505fbc-5769-4032-9233-364a4f52acf6_unreal-pipeline-ice-blue-background.png)](https://cesium.com/cesium-for-unreal?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal)
 
 Using Cesium ion helps support Cesium for Unreal development. :heart:
 
