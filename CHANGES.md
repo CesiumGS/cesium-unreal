@@ -4,14 +4,14 @@
 
 ##### Features  :tada:
 
-- 3D Tiles loading and rendering.
-  - Batched 3D Model (B3DM) content.
-  - B3DM content can also be loaded from Composite (CMPT) tiles.
-- `quantized-mesh` terrain loading and rendering.
-- A single raster overlay draped on terrain.
-  - Bing Maps
-  - Tile Map Service (TMS)
-- Cesium ion integration, including an in-Editor UI to make it easy to add content from ion.
-- `ACesiumGeoreference` actor creates an Unreal Engine-friendly world at any location on the globe.
-- `UCesiumGeoreferenceComponent` to give a reliable global position to arbitrary Actors.
-- And much more!
+- A highly-accurate, global-scale WGS84 globe for visualization of real-world 3D content
+- A runtime 3D Tiles engine to stream massive 3D geospatial datasets, such as terrain, imagery, 3D cities, and photogrammetry
+  - Streaming from the cloud, a private network, or the local machine.
+  - Level-of-detail selection
+  - Caching
+  - Multithreaded loading
+  - Batched 3D Model (B3DM) content, including the B3DM content inside Composite (CMPT) tiles
+  - `quantized-mesh` terrain loading and rendering
+  - Bing Maps and Tile Map Service (TMS) raster overlays draped on terrain
+- Integrated with Cesium ion cloud services for instance access to curated 3D geospatial content such as global terrain, imagery, and buildings, as well as 3D tiling pipelines to optimize real-world 3D content for streaming. 
+- Integrated with Unreal Engine Editor, Actors and Components, Blueprints, Landscaping and Foliage, Sublevels, and Sequencer.
