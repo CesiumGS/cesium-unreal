@@ -7,6 +7,7 @@
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "CesiumModuleListener.h"
 #include <optional>
 
 class FSpawnTabArgs;
@@ -47,6 +48,10 @@ private:
   TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
   TSharedRef<SDockTab>
   SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
+
+  void AddModuleListeners();
+
+  TArray<TSharedRef<ICesiumModuleListener>> _moduleListeners;
 
   std::shared_ptr<CesiumIonSession> _pIonSession;
 

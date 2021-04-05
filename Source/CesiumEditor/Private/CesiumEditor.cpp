@@ -7,6 +7,7 @@
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumPanel.h"
+#include "CesiumGeoreferenceModeTool.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
@@ -53,6 +54,11 @@ void FCesiumEditorModule::StartupModule() {
   this->_pIonSession =
       std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
   this->_pIonSession->resume();
+
+  this->AddModuleListeners();
+  for (int32 i = 0; i < this->_moduleListeners.Num(); ++i) {
+    this->_moduleListeners[i]->OnStartupModule();
+  }
 
   // Only register style once
   if (!StyleSet.IsValid()) {
@@ -212,6 +218,10 @@ void FCesiumEditorModule::ShutdownModule() {
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
 
+  for (int32 i = 0; i < this->_moduleListeners.Num(); ++i) {
+    this->_moduleListeners[i]->OnShutdownModule();
+  }
+
   _pModule = nullptr;
 }
 
@@ -316,4 +326,9 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
   pTilesetActor->AddInstanceComponent(pOverlay);
 
   return pOverlay;
+}
+
+
+void FCesiumEditorModule::AddModuleListeners() {
+  this->_moduleListeners.Add(MakeShareable(new CesiumGeoreferenceModeTool));
 }
