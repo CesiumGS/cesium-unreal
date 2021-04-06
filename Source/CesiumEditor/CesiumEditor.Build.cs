@@ -25,9 +25,24 @@ public class CesiumEditor : ModuleRules
             }
         );
 
-        string platform = Target.Platform == UnrealTargetPlatform.Win64
-            ? "Windows-x64"
-            : "Unknown";
+        string libPrefix;
+        string libPostfix;
+        string platform;
+        if (Target.Platform == UnrealTargetPlatform.Win64) {
+            platform = "Windows-x64";
+            libPostfix = ".lib";
+            libPrefix = "";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Mac) {
+            platform = "Darwin-x64";
+            libPostfix = ".a";
+            libPrefix = "lib";
+        }
+        else {
+            platform = "Unknown";
+            libPostfix = ".Unknown";
+            libPrefix = "Unknown";
+        }
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
 
@@ -48,7 +63,7 @@ public class CesiumEditor : ModuleRules
             // We prefer Debug, but might still use Release if that's all that's available.
             foreach (string lib in libs)
             {
-                string debugPath = Path.Combine(libPath, lib + debugPostfix + ".lib");
+                string debugPath = Path.Combine(libPath, libPrefix + lib + debugPostfix + libPostfix);
                 if (!File.Exists(debugPath))
                 {
                     Console.WriteLine("Using release build of cesium-native because a debug build is not available.");
@@ -59,7 +74,7 @@ public class CesiumEditor : ModuleRules
             }
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, lib + postfix + ".lib")));
+        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
 
         PublicDependencyModuleNames.AddRange(
             new string[]

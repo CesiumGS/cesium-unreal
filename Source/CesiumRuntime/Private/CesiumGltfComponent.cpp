@@ -1386,7 +1386,7 @@ static void loadModelGameThreadPart(
 namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
-  virtual ~HalfConstructedReal() = default;
+  virtual ~HalfConstructedReal() {}
   std::vector<LoadModelResult> loadModelResult;
 };
 } // namespace
@@ -1401,14 +1401,14 @@ UCesiumGltfComponent::CreateOffGameThread(
 #endif
 ) {
   auto pResult = std::make_unique<HalfConstructedReal>();
-  pResult->loadModelResult = std::move(loadModelAnyThreadPart(
+  pResult->loadModelResult = loadModelAnyThreadPart(
       Model,
       Transform
 #if PHYSICS_INTERFACE_PHYSX
       ,
       PhysXCooking
 #endif
-      ));
+  );
   return pResult;
 }
 

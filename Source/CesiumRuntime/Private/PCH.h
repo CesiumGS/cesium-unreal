@@ -8,6 +8,7 @@
 // Workaround for an unhelpful warning (that gets treated as an error) in
 // VS2017. See https://github.com/akrzemi1/Optional/issues/57 and
 // https://answers.unrealengine.com/questions/607946/anonymous-union-with-none-trivial-type.html
+#ifdef _MSC_VER
 #if _MSC_VER < 1920
 #pragma warning(push)
 #pragma warning(disable : 4583)
@@ -15,4 +16,5 @@
 #include <optional>
 #include <variant>
 #pragma warning(pop)
+#endif
 #endif
