@@ -28,26 +28,38 @@ public class CesiumEditor : ModuleRules
         string libPrefix;
         string libPostfix;
         string platform;
+        string releasePostfix = "";
+        string debugPostfix = "";
         if (Target.Platform == UnrealTargetPlatform.Win64) {
             platform = "Windows-x64";
             libPostfix = ".lib";
             libPrefix = "";
+            releasePostfix = "";
+            debugPostfix = "d";
         }
         else if (Target.Platform == UnrealTargetPlatform.Mac) {
             platform = "Darwin-x64";
             libPostfix = ".a";
             libPrefix = "lib";
+            releasePostfix = "";
+            debugPostfix = "d";
+        }
+        if(Target.Platform == UnrealTargetPlatform.Linux) {
+            platform = "Linux-x64";
+            libPostfix = ".a";
+            libPrefix = "lib";
+            releasePostfix = "";
+            debugPostfix = "";
         }
         else {
             platform = "Unknown";
             libPostfix = ".Unknown";
             libPrefix = "Unknown";
+            releasePostfix = "";
+            debugPostfix = "";
         }
 
         string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-
-        string releasePostfix = "";
-        string debugPostfix = "d";
 
         bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
         string postfix = preferDebug ? debugPostfix : releasePostfix;
