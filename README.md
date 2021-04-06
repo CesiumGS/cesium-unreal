@@ -48,8 +48,25 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 1. Clone the repository using `git clone --recursive git@github.com:CesiumGS/cesium-unreal.git`.
 2. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
 
+    * CMake configuration on Windows platform:
+
     ```cmd
     cmake -B build -S . -G "Visual Studio 15 2017 Win64" # Optionally use "Visual Studio 16 2019"
+    ```
+
+    * CMake configuration on Linux platform:
+    
+    ```cmd
+    export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
+    export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu/bin/
+    export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
+
+    cmake -B build -S . -DCMAKE_CXX_COMPILER=$UNREAL_ENGINE_COMPILER_DIR/clang++ -DCMAKE_CXX_LINK_EXECUTABLE=$UNREAL_ENGINE_COMPILER_DIR/ld.lld -DCMAKE_CXX_FLAGS="-nostdinc++ -I$UNREAL_ENGINE_LIBCXX_DIR/include -I$UNREAL_ENGINE_LIBCXX_DIR/include/c++/v1" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    ```
+
+    * CMake build (any platform):
+
+    ```
     cmake --build build --config Debug --target install # Optional, recommended for debugging
     cmake --build build --config Release --target install # Can optionally compile with --config RelWithDebInfo or MinSizeRel.
     ```
