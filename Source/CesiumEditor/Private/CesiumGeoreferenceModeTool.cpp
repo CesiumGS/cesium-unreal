@@ -6,7 +6,7 @@
 #include "CesiumEditor.h"
 #include "CesiumGeoreferenceMode.h"
 
-#define IMAGE_BRUSH(RelativePath, ...) FSlateImageBrush(StyleSet->RootToContentDir(RelativePath, TEXT(".png")), __VA_ARGS__)
+//#define IMAGE_BRUSH(RelativePath, ...) FSlateImageBrush(StyleSet->RootToContentDir(RelativePath, TEXT(".png")), __VA_ARGS__)
 
 TSharedPtr< FSlateStyleSet > CesiumGeoreferenceModeTool::StyleSet = nullptr;
 
@@ -72,4 +72,4 @@ void CesiumGeoreferenceModeTool::UnregisterEditorMode()
     FEditorModeRegistry::Get().UnregisterMode(FCesiumGeoreferenceMode::EM_CesiumGeoreferenceMode);
 }
 
-#undef IMAGE_BRUSH
+//#undef IMAGE_BRUSH

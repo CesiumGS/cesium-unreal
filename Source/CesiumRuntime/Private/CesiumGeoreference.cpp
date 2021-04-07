@@ -8,6 +8,7 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
+#include "Engine/Level.h"
 #include "GameFramework/PlayerController.h"
 #include "Math/Matrix.h"
 #include "Math/RotationTranslationMatrix.h"
@@ -29,15 +30,21 @@
 
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
-  ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
-      Actor->GetLevel(),
+  return ACesiumGeoreference::GetDefaultForLevel(
+      Actor->GetWorld()->PersistentLevel);
+}
+
+// TODO: should do this in CesiumCreditSystem too
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultForLevel(ULevel* Level) {
+  ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(Level,
       TEXT("CesiumGeoreferenceDefault"));
   if (!pGeoreference) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
-    spawnParameters.OverrideLevel = Actor->GetLevel();
+    spawnParameters.OverrideLevel = Level;
     pGeoreference =
-        Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
+        Level->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
   }
   return pGeoreference;
 }

@@ -104,6 +104,9 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   static ACesiumGeoreference* GetDefaultForActor(AActor* Actor);
 
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static ACesiumGeoreference* GetDefaultForLevel(ULevel* Level);
+
   ACesiumGeoreference();
 
   /*
