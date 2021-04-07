@@ -54,7 +54,7 @@ bool FCesiumGeoreferenceMode::InputKey(
         FKey Key,
         EInputEvent Event) {
   
-  if (!this->Georeference || 1) {
+  if (!this->Georeference) {
     return false;
   }
   
