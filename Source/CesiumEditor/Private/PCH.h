@@ -5,7 +5,6 @@
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 #include "CoreMinimal.h"
 
-#ifdef _MSC_VER
 // Workaround for an unhelpful warning (that gets treated as an error) in
 // VS2017. See https://github.com/akrzemi1/Optional/issues/57 and
 // https://answers.unrealengine.com/questions/607946/anonymous-union-with-none-trivial-type.html
@@ -18,4 +17,4 @@
 #include <variant>
 #pragma warning(pop)
 #endif
-#endif // ifdef _MSC_VER
+#endif

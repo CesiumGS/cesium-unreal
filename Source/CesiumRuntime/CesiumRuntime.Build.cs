@@ -44,7 +44,7 @@ public class CesiumRuntime : ModuleRules
             releasePostfix = "";
             debugPostfix = "d";
         }
-        if(Target.Platform == UnrealTargetPlatform.Linux) {
+        else if(Target.Platform == UnrealTargetPlatform.Linux) {
             platform = "Linux-x64";
             libPostfix = ".a";
             libPrefix = "lib";

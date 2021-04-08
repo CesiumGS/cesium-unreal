@@ -61,7 +61,7 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
     export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu/bin/
     export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
 
-    cmake -B build -S . -DCMAKE_CXX_COMPILER=$UNREAL_ENGINE_COMPILER_DIR/clang++ -DCMAKE_CXX_LINK_EXECUTABLE=$UNREAL_ENGINE_COMPILER_DIR/ld.lld -DCMAKE_CXX_FLAGS="-nostdinc++ -I$UNREAL_ENGINE_LIBCXX_DIR/include -I$UNREAL_ENGINE_LIBCXX_DIR/include/c++/v1" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    cmake -B build -S . -DCMAKE_CXX_COMPILER=$UNREAL_ENGINE_COMPILER_DIR/clang++ -DCMAKE_C_COMPILER=$UNREAL_ENGINE_COMPILER_DIR/clang -DCMAKE_CXX_LINK_EXECUTABLE=$UNREAL_ENGINE_COMPILER_DIR/ld.lld -DCMAKE_CXX_FLAGS="-nostdinc++ -I$UNREAL_ENGINE_LIBCXX_DIR/include -I$UNREAL_ENGINE_LIBCXX_DIR/include/c++/v1" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     ```
 
     * CMake build (any platform):
