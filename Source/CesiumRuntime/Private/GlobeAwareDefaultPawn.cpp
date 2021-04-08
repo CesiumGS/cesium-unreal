@@ -306,6 +306,7 @@ void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
+  Super::Tick(DeltaSeconds);
   if (this->GetWorld()->IsGameWorld() && this->_bFlyingToLocation) {
     this->_currentFlyTime += static_cast<double>(DeltaSeconds);
 
