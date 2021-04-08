@@ -24,6 +24,8 @@
 #endif
 #include "Cesium3DTiles/RasterOverlayTile.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGeometry/Axes.h"
+#include "CesiumGeometry/Axis.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
@@ -34,7 +36,6 @@
 #include "mikktspace.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <glm/mat3x3.hpp>
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
@@ -72,36 +73,6 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> occlusionTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 };
-
-// Initialize with a static function instead of inline to avoid an
-// internal compiler error in MSVC v14.27.29110.
-static glm::dmat4 createYupToZup() {
-  // https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
-  return glm::dmat4(
-      glm::dvec4(1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(0.0, -1.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
-}
-static glm::dmat4 createXupToZup() {
-  return glm::dmat4(
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(0.0, 1.0, 0.0, 0.0),
-      glm::dvec4(-1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
-}
-
-/**
- * A matrix to convert from x-up orientation to z-up orientation
- * by rotating about the y-axis by -PI/2 radians
- */
-static const glm::dmat4 X_UP_TO_Z_UP = createXupToZup();
-
-/**
- * A matrix to convert from y-up orientation to z-up orientation,
- * by rotating about the x-axis by PI/2 radians
- */
-static const glm::dmat4 Y_UP_TO_Z_UP = createYupToZup();
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
@@ -1205,7 +1176,7 @@ void applyRtcCenter(
  * property, then the information about the up-axis has been stored in as a
  * number property called `gltfUpAxis` in the `extras` of the given model.
  *
- * Depending on whether this value is 0 (for X), 1 (for Y) or 2 (for Z),
+ * Depending on whether this value is CesiumGeometry::Axis::X, Y, or Z,
  * the given matrix will be multiplied with a matrix that converts the
  * respective axis to be the Z-axis, as required by the 3D Tiles standard.
  *
@@ -1221,16 +1192,16 @@ void applyGltfUpAxisTransform(
     // The default up-axis of glTF is the Y-axis, and no other
     // up-axis was specified. Transform the Y-axis to the Z-axis,
     // to match the 3D Tiles specification
-    rootTransform *= Y_UP_TO_Z_UP;
+    rootTransform *= CesiumGeometry::Axes::Y_UP_TO_Z_UP;
     return;
   }
   const CesiumGltf::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
   auto gltfUpAxisValue = gltfUpAxis.getNumber(1);
-  if (gltfUpAxisValue == 0) {
-    rootTransform *= X_UP_TO_Z_UP;
-  } else if (gltfUpAxisValue == 1) {
-    rootTransform *= Y_UP_TO_Z_UP;
-  } else if (gltfUpAxisValue == 2) {
+  if (gltfUpAxisValue == CesiumGeometry::Axis::X) {
+    rootTransform *= CesiumGeometry::Axes::X_UP_TO_Z_UP;
+  } else if (gltfUpAxisValue == CesiumGeometry::Axis::Y) {
+    rootTransform *= CesiumGeometry::Axes::Y_UP_TO_Z_UP;
+  } else if (gltfUpAxisValue == CesiumGeometry::Axis::Z) {
     // No transform required
   } else {
     UE_LOG(
