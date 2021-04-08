@@ -23,9 +23,9 @@
 #include "ChaosDerivedDataUtil.h"
 #endif
 #include "Cesium3DTiles/RasterOverlayTile.h"
-#include "CesiumGeometry/Rectangle.h"
 #include "CesiumGeometry/Axes.h"
 #include "CesiumGeometry/Axis.h"
+#include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
