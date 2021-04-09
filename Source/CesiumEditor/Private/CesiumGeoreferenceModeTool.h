@@ -1,22 +1,22 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
-#include "Modules/ModuleManager.h"
 #include "CesiumModuleListener.h"
+#include "Modules/ModuleManager.h"
 
 class CesiumGeoreferenceModeTool : public ICesiumModuleListener {
 public:
-    virtual void OnStartupModule() override;
-    virtual void OnShutdownModule() override;
+  virtual void OnStartupModule() override;
+  virtual void OnShutdownModule() override;
 
-    virtual ~CesiumGeoreferenceModeTool() {}
+  virtual ~CesiumGeoreferenceModeTool() {}
 
 private:
-    static TSharedPtr<class FSlateStyleSet> StyleSet;
+  static TSharedPtr<class FSlateStyleSet> StyleSet;
 
-    void RegisterStyleSet();
-    void UnregisterStyleSet();
+  void RegisterStyleSet();
+  void UnregisterStyleSet();
 
-    void RegisterEditorMode();
-    void UnregisterEditorMode();
+  void RegisterEditorMode();
+  void UnregisterEditorMode();
 };

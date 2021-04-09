@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CesiumIonSession.h"
+#include "CesiumModuleListener.h"
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 #include "Styling/SlateStyle.h"
 #include "Widgets/Docking/SDockTab.h"
-#include "CesiumModuleListener.h"
 #include <optional>
 
 class FSpawnTabArgs;

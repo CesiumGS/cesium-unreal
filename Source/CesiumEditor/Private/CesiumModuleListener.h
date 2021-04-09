@@ -4,6 +4,6 @@
 
 class ICesiumModuleListener {
 public:
-    virtual void OnStartupModule() {};
-    virtual void OnShutdownModule() {};
+  virtual void OnStartupModule(){};
+  virtual void OnShutdownModule(){};
 };

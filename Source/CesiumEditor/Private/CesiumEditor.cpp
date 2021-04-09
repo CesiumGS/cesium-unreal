@@ -4,10 +4,10 @@
 #include "Cesium3DTiles/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "CesiumCommands.h"
+#include "CesiumGeoreferenceModeTool.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumPanel.h"
-#include "CesiumGeoreferenceModeTool.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
@@ -327,7 +327,6 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
 
   return pOverlay;
 }
-
 
 void FCesiumEditorModule::AddModuleListeners() {
   this->_moduleListeners.Add(MakeShareable(new CesiumGeoreferenceModeTool));

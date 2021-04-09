@@ -6,9 +6,9 @@
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "Engine/Level.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
-#include "Engine/Level.h"
 #include "GameFramework/PlayerController.h"
 #include "Math/Matrix.h"
 #include "Math/RotationTranslationMatrix.h"
@@ -37,8 +37,8 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 // TODO: should do this in CesiumCreditSystem too
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForLevel(ULevel* Level) {
-  ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(Level,
-      TEXT("CesiumGeoreferenceDefault"));
+  ACesiumGeoreference* pGeoreference =
+      FindObject<ACesiumGeoreference>(Level, TEXT("CesiumGeoreferenceDefault"));
   if (!pGeoreference) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
