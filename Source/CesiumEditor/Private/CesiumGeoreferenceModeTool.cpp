@@ -7,7 +7,7 @@
 #include "Misc/Paths.h"
 
 //#define IMAGE_BRUSH(RelativePath, ...)
-//FSlateImageBrush(StyleSet->RootToContentDir(RelativePath, TEXT(".png")),
+// FSlateImageBrush(StyleSet->RootToContentDir(RelativePath, TEXT(".png")),
 //__VA_ARGS__)
 
 TSharedPtr<FSlateStyleSet> CesiumGeoreferenceModeTool::StyleSet = nullptr;
