@@ -72,6 +72,9 @@ ACesium3DTileset::ACesium3DTileset()
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->RootComponent->SetMobility(EComponentMobility::Static);
+  
+  this->NavLinkComponent = CreateDefaultSubobject<UNavLinkComponent>(TEXT("NavLinkComponent"));
+  this->NavLinkComponent->SetupAttachment(RootComponent);
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }

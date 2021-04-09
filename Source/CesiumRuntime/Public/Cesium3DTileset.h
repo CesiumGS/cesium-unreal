@@ -1,3 +1,4 @@
+
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
@@ -7,6 +8,8 @@
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceable.h"
 #include "CoreMinimal.h"
+
+#include "NavLinkComponent.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include <chrono>
@@ -66,6 +69,10 @@ public:
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ACesiumCreditSystem* CreditSystem;
+  
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UNavLinkComponent* NavLinkComponent;
+                                            
 
   /**
    * The maximum number of pixels of error when rendering this tileset.
