@@ -23,7 +23,7 @@
 #include "ChaosDerivedDataUtil.h"
 #endif
 #include "Cesium3DTiles/RasterOverlayTile.h"
-#include "CesiumGeometry/Axes.h"
+#include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/Reader.h"
@@ -1192,16 +1192,16 @@ void applyGltfUpAxisTransform(
     // The default up-axis of glTF is the Y-axis, and no other
     // up-axis was specified. Transform the Y-axis to the Z-axis,
     // to match the 3D Tiles specification
-    rootTransform *= CesiumGeometry::Axes::Y_UP_TO_Z_UP;
+    rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
     return;
   }
   const CesiumGltf::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
-  auto gltfUpAxisValue = gltfUpAxis.getNumber(1);
-  if (gltfUpAxisValue == CesiumGeometry::Axis::X) {
-    rootTransform *= CesiumGeometry::Axes::X_UP_TO_Z_UP;
-  } else if (gltfUpAxisValue == CesiumGeometry::Axis::Y) {
-    rootTransform *= CesiumGeometry::Axes::Y_UP_TO_Z_UP;
-  } else if (gltfUpAxisValue == CesiumGeometry::Axis::Z) {
+  int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getNumber(1));
+  if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::X)) {
+    rootTransform *= CesiumGeometry::AxisTransforms::X_UP_TO_Z_UP;
+  } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Y)) {
+    rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
+  } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Z)) {
     // No transform required
   } else {
     UE_LOG(
