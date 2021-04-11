@@ -131,12 +131,20 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 
 glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
   FVector ueLocation = this->GetPawnViewLocation();
-  return this->Georeference->TransformUeToEcef(
-      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+  const glm::dvec3 ueLocationVec(ueLocation.X, ueLocation.Y, ueLocation.Z);
+  if (!IsValid(this->Georeference)) {
+    return ueLocationVec;
+  }
+  return this->Georeference->TransformUeToEcef(ueLocationVec);
 }
 
 void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
-  glm::dvec3 ue = this->Georeference->TransformEcefToUe(ecef);
+  glm::dvec3 ue;
+  if (!IsValid(this->Georeference)) {
+    ue = ecef;
+  } else {
+    ue = this->Georeference->TransformEcefToUe(ecef);
+  }
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
       static_cast<float>(ue.y),
