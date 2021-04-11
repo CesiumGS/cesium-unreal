@@ -49,6 +49,7 @@ jobs:
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - name: MacOS
     os: osx
+    osx_image: xcode10.2
     addons:
       homebrew:
         packages:
