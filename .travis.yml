@@ -47,3 +47,23 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package "target_url=${PACKAGE_LINK}" --ignore-stdin
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+  - name: MacOS
+    os: osx
+    addons:
+      homebrew:
+        packages:
+          - python@3.9
+          - p7zip
+          - httpie
+    install:
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
+    before_script:
+    - mkdir -p extern/build
+    - cd extern/build
+    - cmake .. -A x64
+    script:
+    - cmake --build . --config Release --target install -- /maxcpucount:4
+    - cd ../..
+    - rm -rf extern
