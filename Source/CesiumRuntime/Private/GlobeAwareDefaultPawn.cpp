@@ -313,7 +313,6 @@ void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
 
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
 
-
 void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   if (!IsValid(this->Georeference)) {
@@ -389,7 +388,6 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
           currentQuat.Rotator(),
           currentPosition));
 }
-
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   _handleFlightStep(DeltaSeconds);
