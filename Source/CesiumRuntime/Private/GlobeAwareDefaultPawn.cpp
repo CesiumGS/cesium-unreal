@@ -313,68 +313,86 @@ void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
 
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
 
-void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
-  if (this->GetWorld()->IsGameWorld() && this->_bFlyingToLocation) {
-    this->_currentFlyTime += static_cast<double>(DeltaSeconds);
 
-    // double check that we don't have an empty list of keypoints
-    if (this->_keypoints.size() == 0) {
-      this->_bFlyingToLocation = false;
-    } else if (this->_currentFlyTime < this->FlyToDuration) {
-      double rawPercentage = this->_currentFlyTime / this->FlyToDuration;
+void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
-      // In order to accelerate at start and slow down at end, we use a progress
-      // profile curve
-      double flyPercentage = rawPercentage;
-      if (this->FlyToProgressCurve != NULL) {
-        flyPercentage = glm::clamp(
-            static_cast<double>(
-                this->FlyToProgressCurve->GetFloatValue(rawPercentage)),
-            0.0,
-            1.0);
-      }
-
-      // Find the keypoint indexes corresponding to the current percentage
-      int lastIndex = glm::floor(flyPercentage * (this->_keypoints.size() - 1));
-      double segmentPercentage =
-          flyPercentage * (this->_keypoints.size() - 1) - lastIndex;
-      int nextIndex = lastIndex + 1;
-
-      // Get the current position by interpolating between those two points
-      const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
-      const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
-      glm::dvec3 currentPosition =
-          glm::mix(lastPosition, nextPosition, segmentPercentage);
-      // Set Location
-      this->SetECEFCameraLocation(currentPosition);
-
-      // Interpolate rotation - Computation has to be done at each step because
-      // the ENU CRS is depending on location
-      FQuat currentQuat = FQuat::Slerp(
-          this->Georeference
-              ->TransformRotatorUeToEnu(
-                  this->_flyToSourceRotation,
-                  this->_keypoints[0])
-              .Quaternion(),
-          this->Georeference
-              ->TransformRotatorUeToEnu(
-                  this->_flyToDestinationRotation,
-                  this->_keypoints.back())
-              .Quaternion(),
-          flyPercentage);
-      GetController()->SetControlRotation(
-          this->Georeference->TransformRotatorEnuToUe(
-              currentQuat.Rotator(),
-              currentPosition));
-    } else {
-      // We reached the end - Set actual destination location and orientation
-      const glm::dvec3& finalPoint = _keypoints.back();
-      this->SetECEFCameraLocation(finalPoint);
-      GetController()->SetControlRotation(this->_flyToDestinationRotation);
-      this->_bFlyingToLocation = false;
-      this->_currentFlyTime = 0.0;
-    }
+  if (!IsValid(this->Georeference)) {
+    return;
   }
+  if (!this->GetWorld()->IsGameWorld() || !this->_bFlyingToLocation) {
+    return;
+  }
+
+  this->_currentFlyTime += static_cast<double>(DeltaSeconds);
+
+  // double check that we don't have an empty list of keypoints
+  if (this->_keypoints.size() == 0) {
+    this->_bFlyingToLocation = false;
+    return;
+  }
+
+  // If we reached the end, set actual destination location and orientation
+  if (this->_currentFlyTime >= this->FlyToDuration) {
+    const glm::dvec3& finalPoint = _keypoints.back();
+    this->SetECEFCameraLocation(finalPoint);
+    GetController()->SetControlRotation(this->_flyToDestinationRotation);
+    this->_bFlyingToLocation = false;
+    this->_currentFlyTime = 0.0;
+    return;
+  }
+
+  // We're currently in flight. Interpolate the position and orientation:
+
+  double rawPercentage = this->_currentFlyTime / this->FlyToDuration;
+
+  // In order to accelerate at start and slow down at end, we use a progress
+  // profile curve
+  double flyPercentage = rawPercentage;
+  if (this->FlyToProgressCurve != NULL) {
+    flyPercentage = glm::clamp(
+        static_cast<double>(
+            this->FlyToProgressCurve->GetFloatValue(rawPercentage)),
+        0.0,
+        1.0);
+  }
+
+  // Find the keypoint indexes corresponding to the current percentage
+  int lastIndex = glm::floor(flyPercentage * (this->_keypoints.size() - 1));
+  double segmentPercentage =
+      flyPercentage * (this->_keypoints.size() - 1) - lastIndex;
+  int nextIndex = lastIndex + 1;
+
+  // Get the current position by interpolating between those two points
+  const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
+  const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
+  glm::dvec3 currentPosition =
+      glm::mix(lastPosition, nextPosition, segmentPercentage);
+  // Set Location
+  this->SetECEFCameraLocation(currentPosition);
+
+  // Interpolate rotation - Computation has to be done at each step because
+  // the ENU CRS is depending on location
+  FQuat currentQuat = FQuat::Slerp(
+      this->Georeference
+          ->TransformRotatorUeToEnu(
+              this->_flyToSourceRotation,
+              this->_keypoints[0])
+          .Quaternion(),
+      this->Georeference
+          ->TransformRotatorUeToEnu(
+              this->_flyToDestinationRotation,
+              this->_keypoints.back())
+          .Quaternion(),
+      flyPercentage);
+  GetController()->SetControlRotation(
+      this->Georeference->TransformRotatorEnuToUe(
+          currentQuat.Rotator(),
+          currentPosition));
+}
+
+
+void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
+  _handleFlightStep(DeltaSeconds);
 
   // track current ecef in case we need to restore it on georeference update
   this->_currentEcef = this->GetECEFCameraLocation();
