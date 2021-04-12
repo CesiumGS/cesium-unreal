@@ -23,6 +23,8 @@
 #include "ChaosDerivedDataUtil.h"
 #endif
 #include "Cesium3DTiles/RasterOverlayTile.h"
+#include "CesiumGeometry/Axis.h"
+#include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/Reader.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -71,19 +73,6 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> occlusionTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 };
-
-// Initialize with a static function instead of inline to avoid an
-// internal compiler error in MSVC v14.27.29110.
-static glm::dmat4 createGltfAxesToCesiumAxes() {
-  // https://github.com/CesiumGS/3d-tiles/tree/master/specification#gltf-transforms
-  return glm::dmat4(
-      glm::dvec4(1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(0.0, -1.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 0.0, 1.0));
-}
-
-glm::dmat4 gltfAxesToCesiumAxes = createGltfAxesToCesiumAxes();
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
 
@@ -1129,6 +1118,102 @@ static void loadNode(
   }
 }
 
+namespace {
+/**
+ * @brief Apply the transform for the `RTC_CENTER`
+ *
+ * If the B3DM that contained the given model had an `RTC_CENTER` in its Feature
+ * Table, then it was stored in the `extras` property of the glTF model, as a
+ * 3-element array under the name `RTC_CENTER`.
+ *
+ * This function will multiply the given matrix with the (translation) matrix
+ * that was created from this `RTC_CENTER` property in the `extras` of the given
+ * model. If the given model does not have this property, then nothing will be
+ * done.
+ *
+ * @param model The glTF model
+ * @param rootTransform The matrix that will be multiplied with the transform
+ */
+void applyRtcCenter(
+    const CesiumGltf::Model& model,
+    glm::dmat4x4& rootTransform) {
+  auto rtcCenterIt = model.extras.find("RTC_CENTER");
+  if (rtcCenterIt == model.extras.end()) {
+    return;
+  }
+  const CesiumGltf::JsonValue& rtcCenter = rtcCenterIt->second;
+  const std::vector<CesiumGltf::JsonValue>* pArray =
+      std::get_if<CesiumGltf::JsonValue::Array>(&rtcCenter.value);
+  if (!pArray) {
+    return;
+  }
+  if (pArray->size() != 3) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("The RTC_CENTER must have a size of 3, but has {}"),
+        pArray->size());
+    return;
+  }
+  const double x = (*pArray)[0].getNumber(0.0);
+  const double y = (*pArray)[1].getNumber(0.0);
+  const double z = (*pArray)[2].getNumber(0.0);
+  const glm::dmat4x4 rtcTransform(
+      glm::dvec4(1.0, 0.0, 0.0, 0.0),
+      glm::dvec4(0.0, 1.0, 0.0, 0.0),
+      glm::dvec4(0.0, 0.0, 1.0, 0.0),
+      glm::dvec4(x, y, z, 1.0));
+  rootTransform *= rtcTransform;
+}
+
+/**
+ * @brief Apply the transform so that the up-axis of the given model is the
+ * Z-axis.
+ *
+ * By default, the up-axis of a glTF model will the the Y-axis.
+ *
+ * If the tileset that contained the model had the `asset.gltfUpAxis` string
+ * property, then the information about the up-axis has been stored in as a
+ * number property called `gltfUpAxis` in the `extras` of the given model.
+ *
+ * Depending on whether this value is CesiumGeometry::Axis::X, Y, or Z,
+ * the given matrix will be multiplied with a matrix that converts the
+ * respective axis to be the Z-axis, as required by the 3D Tiles standard.
+ *
+ * @param model The glTF model
+ * @param rootTransform The matrix that will be multiplied with the transform
+ */
+void applyGltfUpAxisTransform(
+    const CesiumGltf::Model& model,
+    glm::dmat4x4& rootTransform) {
+
+  auto gltfUpAxisIt = model.extras.find("gltfUpAxis");
+  if (gltfUpAxisIt == model.extras.end()) {
+    // The default up-axis of glTF is the Y-axis, and no other
+    // up-axis was specified. Transform the Y-axis to the Z-axis,
+    // to match the 3D Tiles specification
+    rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
+    return;
+  }
+  const CesiumGltf::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
+  int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getNumber(1));
+  if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::X)) {
+    rootTransform *= CesiumGeometry::AxisTransforms::X_UP_TO_Z_UP;
+  } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Y)) {
+    rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
+  } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Z)) {
+    // No transform required
+  } else {
+    UE_LOG(
+        LogCesium,
+        VeryVerbose,
+        TEXT("Unknown gltfUpAxis value: {}"),
+        gltfUpAxisValue);
+  }
+}
+
+} // namespace
+
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
     const CesiumGltf::Model& model,
     const glm::dmat4x4& transform
@@ -1139,30 +1224,9 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 ) {
   std::vector<LoadModelResult> result;
 
-  glm::dmat4x4 rootTransform;
-
-  auto rtcCenterIt = model.extras.find("RTC_CENTER");
-  if (rtcCenterIt != model.extras.end()) {
-    const CesiumGltf::JsonValue& rtcCenter = rtcCenterIt->second;
-    const std::vector<CesiumGltf::JsonValue>* pArray =
-        std::get_if<CesiumGltf::JsonValue::Array>(&rtcCenter.value);
-    if (pArray && pArray->size() == 3) {
-      glm::dmat4x4 rtcTransform(
-          glm::dvec4(1.0, 0.0, 0.0, 0.0),
-          glm::dvec4(0.0, 1.0, 0.0, 0.0),
-          glm::dvec4(0.0, 0.0, 1.0, 0.0),
-          glm::dvec4(
-              (*pArray)[0].getNumber(0.0),
-              (*pArray)[1].getNumber(0.0),
-              (*pArray)[2].getNumber(0.0),
-              1.0));
-      rootTransform = transform * rtcTransform * gltfAxesToCesiumAxes;
-    } else {
-      rootTransform = transform * gltfAxesToCesiumAxes;
-    }
-  } else {
-    rootTransform = transform * gltfAxesToCesiumAxes;
-  }
+  glm::dmat4x4 rootTransform = transform;
+  applyRtcCenter(model, rootTransform);
+  applyGltfUpAxisTransform(model, rootTransform);
 
   if (model.scene >= 0 && model.scene < model.scenes.size()) {
     // Show the default scene
