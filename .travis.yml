@@ -54,6 +54,7 @@ jobs:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install gsutil
+    - echo -e "$GOOGLE_ACCESS_KEY_ID\n$GOOGLE_SECRET_ACCESS_KEY\n" | gsutil config -a
     - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh"
     before_script:
