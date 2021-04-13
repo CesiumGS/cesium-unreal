@@ -26,5 +26,5 @@ public:
       EInputEvent Event) override;
 
 private:
-  ACesiumGeoreference* Georeference;
+  class ACesiumGeoreference* Georeference;
 };
