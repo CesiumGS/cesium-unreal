@@ -52,8 +52,7 @@ jobs:
     osx_image: xcode10.2
     addons:
       homebrew:
-        packages:
-          - python@3.9
+        casks:
           - google-cloud-sdk
     install:
     - python -m pip install --upgrade pip
