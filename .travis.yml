@@ -54,6 +54,7 @@ jobs:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install gsutil
+    - "./travis/travis-get-ue.sh"
     before_script:
     - mkdir -p extern/build
     - cd extern/build
@@ -62,3 +63,5 @@ jobs:
     - cmake --build . -j 4 --target install 
     - cd ../..
     - rm -rf extern
+    - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
+    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
