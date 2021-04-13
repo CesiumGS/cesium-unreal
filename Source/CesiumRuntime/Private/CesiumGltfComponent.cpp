@@ -843,27 +843,30 @@ static void loadPrimitive(
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
-  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() && 
+  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
       onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
     bool onlyWater = onlyWaterIt->second.getBool(false);
     bool onlyLand = onlyLandIt->second.getBool(false);
     primitiveResult.onlyWater = onlyWater;
     primitiveResult.onlyLand = onlyLand;
-    if (!onlyWater && !onlyLand) { 
-    // We have to use the water mask
+    if (!onlyWater && !onlyLand) {
+      // We have to use the water mask
       auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
-      auto waterMaskTextureCoordsIdIt = primitive.extras.find("WaterMaskTexCoords");
-      if (waterMaskTextureIdIt != primitive.extras.end() && 
+      auto waterMaskTextureCoordsIdIt =
+          primitive.extras.find("WaterMaskTexCoords");
+      if (waterMaskTextureIdIt != primitive.extras.end() &&
           waterMaskTextureCoordsIdIt != primitive.extras.end()) {
-        int32_t waterMaskTextureId = 
-          static_cast<int32_t>(waterMaskTextureIdIt->second.getNumber(-1.0));
-        int64_t waterMaskTextureCoordsId = 
-          static_cast<int64_t>(waterMaskTextureCoordsIdIt->second.getNumber(-1.0));
+        int32_t waterMaskTextureId =
+            static_cast<int32_t>(waterMaskTextureIdIt->second.getNumber(-1.0));
+        int64_t waterMaskTextureCoordsId = static_cast<int64_t>(
+            waterMaskTextureCoordsIdIt->second.getNumber(-1.0));
         CesiumGltf::TextureInfo waterMaskInfo;
         waterMaskInfo.index = waterMaskTextureId;
         waterMaskInfo.texCoord = waterMaskTextureCoordsId;
-        if (waterMaskTextureId >= 0 && waterMaskTextureId < model.textures.size()) {
-          primitiveResult.waterMaskTexture = loadTexture(model, std::make_optional(waterMaskInfo));
+        if (waterMaskTextureId >= 0 &&
+            waterMaskTextureId < model.textures.size()) {
+          primitiveResult.waterMaskTexture =
+              loadTexture(model, std::make_optional(waterMaskInfo));
           primitiveResult
               .textureCoordinateParameters["waterMaskTextureCoordinateIndex"] =
               updateTextureCoordinates(
@@ -880,7 +883,6 @@ static void loadPrimitive(
     primitiveResult.onlyWater = false;
     primitiveResult.onlyLand = true;
   }
-
 
   RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -1398,8 +1400,12 @@ static void loadModelGameThreadPart(
         FVector(1.0f, 1.0f, 1.0f));
   }
 
-  pMaterial->SetScalarParameterValue("OnlyLand", static_cast<float>(loadResult.onlyLand));
-  pMaterial->SetScalarParameterValue("OnlyWater", static_cast<float>(loadResult.onlyWater));
+  pMaterial->SetScalarParameterValue(
+      "OnlyLand",
+      static_cast<float>(loadResult.onlyLand));
+  pMaterial->SetScalarParameterValue(
+      "OnlyWater",
+      static_cast<float>(loadResult.onlyWater));
 
   if (!loadResult.onlyLand && !loadResult.onlyWater) {
     applyTexture(pMaterial, "WaterMask", loadResult.waterMaskTexture);
