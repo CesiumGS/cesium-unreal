@@ -6,8 +6,10 @@
 #include "CesiumCreditSystem.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceable.h"
+#include "CesiumExclusionZone.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include <PhysicsEngine/BodyInstance.h>
 #include "Interfaces/IHttpRequest.h"
 #include <chrono>
 #include <glm/mat4x4.hpp>
@@ -49,7 +51,7 @@ public:
    * The access token to use to access the Cesium ion resource.
    */
   UPROPERTY(
-      EditAnywhere,
+      EditAnywhere, BlueprintReadOnly,
       Category = "Cesium",
       meta = (EditCondition = "IonAssetID"))
   FString IonAccessToken;
@@ -191,6 +193,19 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
+
+  /**
+   * Sometimes it might be useful to cull out some tiles to avoid overlapping
+   * of geometry coming from different tilesets. 
+   * For instance, to exclude OSM buildings where there are photogrammetry assets. 
+   * 
+   * All 3D Tiles whose bounding box intersect these exclusion zones will be
+   * removed from the streamed geometry
+  */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  TArray<FCesiumExclusionZone> ExclusionZones;
+
+
   /**
    * The screen-space error to be enforced for tiles that are outside the view
    * frustum or hidden in fog.
@@ -239,6 +254,12 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
   bool UpdateInEditor = true;
 
+  /**
+   * Define the collision profile for all the 3D tiles created inside this actor. 
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium|Collision", meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
+  FBodyInstance BodyInstance;
+
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
 
@@ -267,6 +288,7 @@ public:
   virtual void BeginDestroy() override;
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+  virtual void PostLoad() override;
 
 protected:
   // Called when the game starts or when spawned

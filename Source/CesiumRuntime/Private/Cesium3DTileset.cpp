@@ -14,6 +14,7 @@
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -26,6 +27,7 @@
 #include "IPhysXCookingModule.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
+#include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -915,7 +917,27 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
     if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
       continue;
+		}
+     
+    // Consider Exclusion zone to drop this tile... Ideally, should be considered in Cesium3DTiles::ViewState to avoid loading the tile first...
+    if (ExclusionZones.Num() > 0) {
+        const CesiumGeospatial::BoundingRegion* pRegion = std::get_if<CesiumGeospatial::BoundingRegion>(&pTile->getBoundingVolume());
+        bool culled = false;
+        for (FCesiumExclusionZone ExclusionZone : ExclusionZones)
+        {
+            CesiumGeospatial::GlobeRectangle cgExclusionZone = CesiumGeospatial::GlobeRectangle::fromDegrees(ExclusionZone.West, ExclusionZone.South, ExclusionZone.East, ExclusionZone.North);
+            if (cgExclusionZone.intersect(pRegion->getRectangle()))
+            {
+                culled = true;
+                continue;
+            }
+        }
+
+        if (culled) {
+            continue;
+        }
     }
+    
 
     // const Cesium3DTiles::TileID& id = pTile->getTileID();
     // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
@@ -933,6 +955,22 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       continue;
     }
 
+    // Apply Actor-defined collision settings to the newly-created component. 
+	UCesiumGltfPrimitiveComponent* PrimitiveComponent = static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+	if (PrimitiveComponent != nullptr)
+	{
+		const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+		if (ChannelEnum)
+		{
+			for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX; ChannelValue++)
+			{
+				ECollisionResponse response = BodyInstance.GetCollisionResponse().GetResponse(ECollisionChannel(ChannelValue));
+				PrimitiveComponent->SetCollisionResponseToChannel(ECollisionChannel(ChannelValue), response);
+			}
+		}
+	}
+    
+
     if (Gltf->GetAttachParent() == nullptr) {
       Gltf->AttachToComponent(
           this->RootComponent,
@@ -949,6 +987,13 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
   this->DestroyTileset();
   AActor::EndPlay(EndPlayReason);
+}
+
+void ACesium3DTileset::PostLoad()
+{
+    BodyInstance.FixupData(this); // We need to call this one after Loading the actor to have correct BodyInstance values. 
+
+    Super::PostLoad();
 }
 
 void ACesium3DTileset::BeginDestroy() {
