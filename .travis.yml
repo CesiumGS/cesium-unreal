@@ -54,8 +54,7 @@ jobs:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
-    - curl https://storage.googleapis.com/pub/gsutil.tar.gz --output gsutil.tar.gz 
-    - tar xfz gsutil.tar.gz -C $HOME
+    - pip3 install gsutil
     before_script:
     - mkdir -p extern/build
     - cd extern/build
