@@ -52,6 +52,7 @@ jobs:
     osx_image: xcode10.2
     addons:
       homebrew:
+        update: true
         casks:
           - google-cloud-sdk
     install:
