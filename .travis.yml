@@ -54,6 +54,7 @@ jobs:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install gsutil
+    - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh"
     before_script:
     - mkdir -p extern/build
