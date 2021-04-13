@@ -25,6 +25,7 @@
 #include "Cesium3DTiles/RasterOverlayTile.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/Reader.h"
+#include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -69,7 +70,11 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> normalTexture;
   std::optional<LoadTextureResult> emissiveTexture;
   std::optional<LoadTextureResult> occlusionTexture;
+  std::optional<LoadTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
+
+  bool onlyLand;
+  bool onlyWater;
 };
 
 // Initialize with a static function instead of inline to avoid an
@@ -834,6 +839,49 @@ static void loadPrimitive(
           rasterOverlay0,
           textureCoordinateMap);
 
+  // TODO: add option to disable this
+  // Initialize water mask if needed.
+  auto onlyWaterIt = primitive.extras.find("OnlyWater");
+  auto onlyLandIt = primitive.extras.find("OnlyLand");
+  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() && 
+      onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
+    bool onlyWater = onlyWaterIt->second.getBool(false);
+    bool onlyLand = onlyLandIt->second.getBool(false);
+    primitiveResult.onlyWater = onlyWater;
+    primitiveResult.onlyLand = onlyLand;
+    if (!onlyWater && !onlyLand) { 
+    // We have to use the water mask
+      auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
+      auto waterMaskTextureCoordsIdIt = primitive.extras.find("WaterMaskTexCoords");
+      if (waterMaskTextureIdIt != primitive.extras.end() && 
+          waterMaskTextureCoordsIdIt != primitive.extras.end()) {
+        int32_t waterMaskTextureId = 
+          static_cast<int32_t>(waterMaskTextureIdIt->second.getNumber(-1.0));
+        int64_t waterMaskTextureCoordsId = 
+          static_cast<int64_t>(waterMaskTextureCoordsIdIt->second.getNumber(-1.0));
+        CesiumGltf::TextureInfo waterMaskInfo;
+        waterMaskInfo.index = waterMaskTextureId;
+        waterMaskInfo.texCoord = waterMaskTextureCoordsId;
+        if (waterMaskTextureId >= 0 && waterMaskTextureId < model.textures.size()) {
+          primitiveResult.waterMaskTexture = loadTexture(model, std::make_optional(waterMaskInfo));
+          primitiveResult
+              .textureCoordinateParameters["waterMaskTextureCoordinateIndex"] =
+              updateTextureCoordinates(
+                  model,
+                  primitive,
+                  StaticMeshBuildVertices,
+                  indices,
+                  "TEXCOORD_" + std::to_string(waterMaskTextureCoordsId),
+                  textureCoordinateMap);
+        }
+      }
+    }
+  } else {
+    primitiveResult.onlyWater = false;
+    primitiveResult.onlyLand = true;
+  }
+
+
   RenderData->Bounds = BoundingBoxAndSphere;
 
   LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
@@ -1350,6 +1398,13 @@ static void loadModelGameThreadPart(
         FVector(1.0f, 1.0f, 1.0f));
   }
 
+  pMaterial->SetScalarParameterValue("OnlyLand", static_cast<float>(loadResult.onlyLand));
+  pMaterial->SetScalarParameterValue("OnlyWater", static_cast<float>(loadResult.onlyWater));
+
+  if (!loadResult.onlyLand && !loadResult.onlyWater) {
+    applyTexture(pMaterial, "WaterMask", loadResult.waterMaskTexture);
+  }
+
   pMaterial->TwoSided = true;
 
   pStaticMesh->AddMaterial(pMaterial);
@@ -1447,7 +1502,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+              "/CesiumForUnreal/GltfMaterialWithOverlaysAndWater.GltfMaterialWithOverlaysAndWater")),
           OpacityMaskMaterial(TEXT(
               "/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask")) {
     }
