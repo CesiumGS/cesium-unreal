@@ -54,10 +54,12 @@ jobs:
       homebrew:
         packages:
           - python@3.9
+          - google-cloud-sdk
     install:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
+    - /usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/install.sh
     before_script:
     - mkdir -p extern/build
     - cd extern/build
