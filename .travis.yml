@@ -49,7 +49,11 @@ jobs:
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - name: MacOS
     os: osx
-    osx_image: xcode10.2
+    cache:
+      timeout: 1000
+      directories:
+      - $HOME/UE_4.26
+    osx_image: xcode11.4.1
     install:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
