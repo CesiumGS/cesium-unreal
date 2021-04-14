@@ -8,7 +8,7 @@ then
     rm Launcher.zip
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
-    gsutil cp gs://cesium-unreal-engine/macos-2021-04-13/UE_4.26.tar.gz $HOME/UE_4.26.tar.gz
+    AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/macos-2021-04-13/UE_4.26.tar.gz .
     tar xfz UE_4.26.tar.gz -C $HOME
     rm UE_4.26.tar.gz
 fi
