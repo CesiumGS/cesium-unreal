@@ -31,7 +31,7 @@ jobs:
     - "./travis/travis-get-ue.sh"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
-    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME= CesiumForUnreal-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -A x64
@@ -64,7 +64,7 @@ jobs:
     - "./travis/travis-get-ue.sh"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
-    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME= CesiumForUnreal-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -DCMAKE_BUILD_TYPE=Release
