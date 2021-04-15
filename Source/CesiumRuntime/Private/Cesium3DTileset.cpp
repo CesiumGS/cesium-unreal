@@ -815,7 +815,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     this->_updateGeoreferenceOnBoundingVolumeReady = false;
     // Need to potentially recalculate the transform for all georeferenced
     // objects, not just for this tileset
-    this->Georeference->UpdateGeoreference();
+    if (IsValid(this->Georeference)) {
+      this->Georeference->UpdateGeoreference();
+    }
   }
 
   if (this->SuspendUpdate) {
@@ -877,7 +879,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
     UE_LOG(
         LogCesium,
-        Display,
+        Verbose,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
