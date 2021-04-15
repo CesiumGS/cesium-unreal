@@ -1141,9 +1141,9 @@ void applyRtcCenter(
   if (rtcCenterIt == model.extras.end()) {
     return;
   }
-  const CesiumGltf::JsonValue& rtcCenter = rtcCenterIt->second;
-  const std::vector<CesiumGltf::JsonValue>* pArray =
-      std::get_if<CesiumGltf::JsonValue::Array>(&rtcCenter.value);
+  const CesiumUtility::JsonValue& rtcCenter = rtcCenterIt->second;
+  const std::vector<CesiumUtility::JsonValue>* pArray =
+      std::get_if<CesiumUtility::JsonValue::Array>(&rtcCenter.value);
   if (!pArray) {
     return;
   }
@@ -1195,7 +1195,7 @@ void applyGltfUpAxisTransform(
     rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
     return;
   }
-  const CesiumGltf::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
+  const CesiumUtility::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
   int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getNumber(1));
   if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::X)) {
     rootTransform *= CesiumGeometry::AxisTransforms::X_UP_TO_Z_UP;
