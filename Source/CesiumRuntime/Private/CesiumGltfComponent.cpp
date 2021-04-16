@@ -550,7 +550,7 @@ static void loadPrimitive(
 
   auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
   if (urlIt != model.extras.end()) {
-    name = urlIt->second.getString("glTF");
+    name = urlIt->second.getStringOrDefault("glTF");
   }
 
   auto meshIt = std::find_if(
@@ -1154,9 +1154,9 @@ void applyRtcCenter(
         pArray->size());
     return;
   }
-  const double x = (*pArray)[0].getNumber(0.0);
-  const double y = (*pArray)[1].getNumber(0.0);
-  const double z = (*pArray)[2].getNumber(0.0);
+  const double x = (*pArray)[0].getSafeNumberOrDefault(0.0);
+  const double y = (*pArray)[1].getSafeNumberOrDefault(0.0);
+  const double z = (*pArray)[2].getSafeNumberOrDefault(0.0);
   const glm::dmat4x4 rtcTransform(
       glm::dvec4(1.0, 0.0, 0.0, 0.0),
       glm::dvec4(0.0, 1.0, 0.0, 0.0),
@@ -1195,7 +1195,7 @@ void applyGltfUpAxisTransform(
     return;
   }
   const CesiumUtility::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
-  int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getNumber(1));
+  int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getSafeNumberOrDefault(1));
   if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::X)) {
     rootTransform *= CesiumGeometry::AxisTransforms::X_UP_TO_Z_UP;
   } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Y)) {
