@@ -26,7 +26,6 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
-#include "CesiumGltf/Reader.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -551,7 +550,7 @@ static void loadPrimitive(
 
   auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
   if (urlIt != model.extras.end()) {
-    name = urlIt->second.getString("glTF");
+    name = urlIt->second.getStringOrDefault("glTF");
   }
 
   auto meshIt = std::find_if(
@@ -1141,9 +1140,9 @@ void applyRtcCenter(
   if (rtcCenterIt == model.extras.end()) {
     return;
   }
-  const CesiumGltf::JsonValue& rtcCenter = rtcCenterIt->second;
-  const std::vector<CesiumGltf::JsonValue>* pArray =
-      std::get_if<CesiumGltf::JsonValue::Array>(&rtcCenter.value);
+  const CesiumUtility::JsonValue& rtcCenter = rtcCenterIt->second;
+  const std::vector<CesiumUtility::JsonValue>* pArray =
+      std::get_if<CesiumUtility::JsonValue::Array>(&rtcCenter.value);
   if (!pArray) {
     return;
   }
@@ -1155,9 +1154,9 @@ void applyRtcCenter(
         pArray->size());
     return;
   }
-  const double x = (*pArray)[0].getNumber(0.0);
-  const double y = (*pArray)[1].getNumber(0.0);
-  const double z = (*pArray)[2].getNumber(0.0);
+  const double x = (*pArray)[0].getSafeNumberOrDefault(0.0);
+  const double y = (*pArray)[1].getSafeNumberOrDefault(0.0);
+  const double z = (*pArray)[2].getSafeNumberOrDefault(0.0);
   const glm::dmat4x4 rtcTransform(
       glm::dvec4(1.0, 0.0, 0.0, 0.0),
       glm::dvec4(0.0, 1.0, 0.0, 0.0),
@@ -1195,8 +1194,8 @@ void applyGltfUpAxisTransform(
     rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
     return;
   }
-  const CesiumGltf::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
-  int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getNumber(1));
+  const CesiumUtility::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
+  int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getSafeNumberOrDefault(1));
   if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::X)) {
     rootTransform *= CesiumGeometry::AxisTransforms::X_UP_TO_Z_UP;
   } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Y)) {
