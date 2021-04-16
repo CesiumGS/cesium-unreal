@@ -26,7 +26,6 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
-#include "CesiumGltf/Reader.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
