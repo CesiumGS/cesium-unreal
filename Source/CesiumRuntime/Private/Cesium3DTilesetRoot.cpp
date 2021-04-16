@@ -8,7 +8,7 @@
 UCesium3DTilesetRoot::UCesium3DTilesetRoot()
     : _worldOriginLocation(0.0),
       _absoluteLocation(0.0, 0.0, 0.0),
-      _tilesetToUnrealRelativeWorld(),
+      _tilesetToUnrealRelativeWorld(1.0),
       _isDirty(false) {
   PrimaryComponentTick.bCanEverTick = false;
 }
@@ -85,7 +85,9 @@ void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
 
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
-  if (!pTileset->Georeference) {
+  if (!IsValid(pTileset->Georeference)) {
+    this->_tilesetToUnrealRelativeWorld = glm::dmat4(1.0);
+    this->_isDirty = true;
     return;
   }
 

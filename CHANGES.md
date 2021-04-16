@@ -1,5 +1,11 @@
 # Change Log
 
+### v?.?.? - ?
+
+- Changed the log level for the tile selection output from `Display` to `Verbose`. With default settings, the output will no longer be displayed in the console, but only written to the log file.
+- Added MacOS support: The build- and plugin files have been updated to support the `Mac` platform.
+- Added support for the legacy `gltfUpAxis` property in a tileset `asset` dictionary. Although this property is **not** part of the specification, there are many existing assets that use this property and had been shown with a wrong rotation otherwise.
+
 ### v1.0.0 - 2021-03-30 - Initial Release
 
 ##### Features  :tada:

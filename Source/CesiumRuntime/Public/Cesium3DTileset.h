@@ -15,7 +15,7 @@
 #include <glm/mat4x4.hpp>
 #include "Cesium3DTileset.generated.h"
 
-class UMaterial;
+class UMaterialInterface;
 
 namespace Cesium3DTiles {
 class Tileset;
@@ -239,7 +239,7 @@ public:
    * "GltfMaterialWithOverlays" material and customizing it as desired.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  UMaterial* Material = nullptr;
+  UMaterialInterface* Material = nullptr;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.
@@ -332,7 +332,7 @@ private:
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
-  UMaterial* _lastMaterial = nullptr;
+  UMaterialInterface* _lastMaterial = nullptr;
 
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;

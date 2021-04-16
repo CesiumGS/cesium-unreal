@@ -208,6 +208,23 @@ protected:
 private:
   void _interruptFlight();
 
+  /**
+   * @brief Advance the camera flight based on the given time delta.
+   *
+   * NOTE: This function requires the Georefence to be valid. If it
+   * is not valid, then this function will do nothing.
+   *
+   * The given delta will be added to the _currentFlyTime, and the position
+   * and orientation will be computed by interpolating the _keypoints
+   * and _flyToSourceRotation/_flyToDestinationRotation  based on this time.
+   *
+   * The position will be set as the SetECEFCameraLocation, and the
+   * orientation will be assigned GetController()->SetControlRotation.
+   *
+   * @param DeltaSeconds The time delta, in seconds
+   */
+  void _handleFlightStep(float DeltaSeconds);
+
   // the current ECEF coordinates, stored in case they need to be restored on
   // georeference update
   glm::dvec3 _currentEcef;

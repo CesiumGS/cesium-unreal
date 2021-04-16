@@ -4,6 +4,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "CesiumGeoreferenceable.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
@@ -33,11 +34,26 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
       Actor->GetLevel(),
       TEXT("CesiumGeoreferenceDefault"));
   if (!pGeoreference) {
+    const FString actorName = Actor->GetName();
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Creating default Georeference for actor %s"),
+        *actorName);
     FActorSpawnParameters spawnParameters;
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
     spawnParameters.OverrideLevel = Actor->GetLevel();
     pGeoreference =
         Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
+  } else {
+    const FString georeferenceName = pGeoreference->GetName();
+    const FString actorName = Actor->GetName();
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Using existing Georeference %s for actor %s"),
+        *georeferenceName,
+        *actorName);
   }
   return pGeoreference;
 }
@@ -620,13 +636,20 @@ ACesiumGeoreference::InaccurateTransformEcefToUe(const FVector& ecef) const {
 }
 
 glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
+
+  if (!IsValid(this->GetWorld())) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("The CesiumGeoreference is not spawned in a level"));
+    return ue;
+  }
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   glm::dvec4 ueAbs(
       ue.x + static_cast<double>(originLocation.X),
       ue.y + static_cast<double>(originLocation.Y),
       ue.z + static_cast<double>(originLocation.Z),
       1.0);
-
   return this->_ueAbsToEcef * ueAbs;
 }
 
