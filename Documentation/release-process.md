@@ -11,5 +11,5 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 * Verify that cesium-unreal's CHANGES.md is complete and accurate.
 * Tag the cesium-unreal release, e.g., `git tag -a v1.1.0 -m "1.1.0 release"`
 * Push the tag to github: `git push origin v1.1.0`
-* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new
+* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Upload the release ZIP for each platform from CI.
 * TODO: add instructions for updating on the Marketplace.
