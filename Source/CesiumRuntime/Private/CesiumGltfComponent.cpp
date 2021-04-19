@@ -73,8 +73,13 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
+  // TODO: does this belong here?
   bool onlyLand;
   bool onlyWater;
+
+  double waterMaskTranslationX;
+  double waterMaskTranslationY;
+  double waterMaskScale;
 };
 
 // Initialize with a static function instead of inline to avoid an
@@ -884,6 +889,26 @@ static void loadPrimitive(
     primitiveResult.onlyLand = true;
   }
 
+  auto waterMaskTranslationXIt = 
+    primitive.extras.find("WaterMaskTranslationX");
+  auto waterMaskTranslationYIt = 
+    primitive.extras.find("WaterMaskTranslationY");
+  auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
+
+  if (waterMaskTranslationXIt != primitive.extras.end() && 
+      waterMaskTranslationXIt->second.isNumber() &&
+      waterMaskTranslationYIt != primitive.extras.end() && 
+      waterMaskTranslationYIt->second.isNumber() &&
+      waterMaskScaleIt != primitive.extras.end() && 
+      waterMaskScaleIt->second.isNumber()) {
+    primitiveResult.waterMaskTranslationX = 
+      waterMaskTranslationXIt->second.getNumber(0.0);
+    primitiveResult.waterMaskTranslationY = 
+      waterMaskTranslationYIt->second.getNumber(0.0);
+    primitiveResult.waterMaskScale = 
+      waterMaskScaleIt->second.getNumber(1.0);
+  }
+
   RenderData->Bounds = BoundingBoxAndSphere;
 
   LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
@@ -1410,6 +1435,14 @@ static void loadModelGameThreadPart(
   if (!loadResult.onlyLand && !loadResult.onlyWater) {
     applyTexture(pMaterial, "WaterMask", loadResult.waterMaskTexture);
   }
+
+  pMaterial->SetVectorParameterValue(
+    "WaterMaskTranslationScale",
+    FLinearColor(
+      loadResult.waterMaskTranslationX, 
+      loadResult.waterMaskTranslationY,
+      loadResult.waterMaskScale)
+  );
 
   pMaterial->TwoSided = true;
 
