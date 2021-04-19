@@ -8,6 +8,7 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/EngineVersion.h"
 #include <cstddef>
 #include <optional>
@@ -94,11 +95,22 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
   FString OsVersion, OsSubVersion;
   FPlatformMisc::GetOSVersions(OsVersion, OsSubVersion);
 
+  IPluginManager& PluginManager = IPluginManager::Get();
+  TSharedPtr<IPlugin> pCesiumPlugin =
+      PluginManager.FindPlugin("CesiumForUnreal");
+
+  FString version = "unknown";
+  if (pCesiumPlugin) {
+    version = pCesiumPlugin->GetDescriptor().VersionName;
+  }
+
   this->_userAgent = TEXT("Mozilla/5.0 (");
   this->_userAgent += OsVersion;
   this->_userAgent += " ";
   this->_userAgent += FPlatformMisc::GetOSVersion();
-  this->_userAgent += TEXT(") Cesium For Unreal/1.0.0 (Project ");
+  this->_userAgent += TEXT(") Cesium For Unreal/");
+  this->_userAgent += version;
+  this->_userAgent += TEXT(" (Project ");
   this->_userAgent += FApp::GetProjectName();
   this->_userAgent += " Engine ";
   this->_userAgent += FEngineVersion::Current().ToString();
