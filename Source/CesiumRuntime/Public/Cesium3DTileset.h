@@ -4,13 +4,13 @@
 
 #include "Cesium3DTiles/ViewState.h"
 #include "CesiumCreditSystem.h"
+#include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceable.h"
-#include "CesiumExclusionZone.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include <PhysicsEngine/BodyInstance.h>
 #include "Interfaces/IHttpRequest.h"
+#include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include "Cesium3DTileset.generated.h"
@@ -51,7 +51,8 @@ public:
    * The access token to use to access the Cesium ion resource.
    */
   UPROPERTY(
-      EditAnywhere, BlueprintReadOnly,
+      EditAnywhere,
+      BlueprintReadOnly,
       Category = "Cesium",
       meta = (EditCondition = "IonAssetID"))
   FString IonAccessToken;
@@ -193,18 +194,24 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
-
   /**
-   * Sometimes it might be useful to cull out some tiles to avoid overlapping
-   * of geometry coming from different tilesets. 
-   * For instance, to exclude OSM buildings where there are photogrammetry assets. 
-   * 
-   * All 3D Tiles whose bounding box intersect these exclusion zones will be
-   * removed from the streamed geometry
-  */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+   * A list of rectangles that are excluded from this tileset. Any tiles that
+   * overlap any of these rectangles are not shown. This is a crude method to
+   * avoid overlapping geometry coming from different tilesets. For example, to
+   * exclude Cesium OSM Buildings where there are photogrammetry assets.
+   *
+   * Note that in the current version, excluded tiles are still loaded, they're
+   * just not displayed. Also, because the tiles shown when zoomed out cover a
+   * large area, using an exclusion zone often means the tileset won't be shown
+   * at all when zoomed out.
+   *
+   * This property is currently only supported for 3D Tiles that use "region"
+   * for their bounding volumes. For other tilesets it is silently ignored.
+   *
+   * This is an experimental feature and may change in future versions.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Experimental")
   TArray<FCesiumExclusionZone> ExclusionZones;
-
 
   /**
    * The screen-space error to be enforced for tiles that are outside the view
@@ -255,9 +262,14 @@ public:
   bool UpdateInEditor = true;
 
   /**
-   * Define the collision profile for all the 3D tiles created inside this actor. 
+   * Define the collision profile for all the 3D tiles created inside this
+   * actor.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium|Collision", meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      Category = "Cesium|Collision",
+      meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")

@@ -9,6 +9,8 @@
 - Changed the log level for the tile selection output from `Display` to `Verbose`. With default settings, the output will no longer be displayed in the console, but only written to the log file.
 - Added more diagnostic details to error messages for invalid glTF inputs.
 - Added diagnostic details to error messages for failed OAuth2 authorization with `CesiumIonClient::Connection`.
+- Added a `BodyInstance` property to `Cesium3DTileset` so that collision profiles can be configured.
+- Added an experimental "Exclusion Zones" property to `Cesium3DTileset`. While likely to change in the future, it already provides a way to exclude parts of a 3D Tiles tileset to make room for another.
 
 ##### Fixes :wrench:
 
