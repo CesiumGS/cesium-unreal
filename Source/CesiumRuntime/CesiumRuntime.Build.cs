@@ -108,7 +108,8 @@ public class CesiumRuntime : ModuleRules
                 "StaticMeshDescription",
                 "HTTP",
                 "MikkTSpace",
-                "LevelSequence"
+                "LevelSequence",
+                "Projects"
             }
         );
 
