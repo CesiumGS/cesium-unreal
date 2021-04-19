@@ -889,24 +889,21 @@ static void loadPrimitive(
     primitiveResult.onlyLand = true;
   }
 
-  auto waterMaskTranslationXIt = 
-    primitive.extras.find("WaterMaskTranslationX");
-  auto waterMaskTranslationYIt = 
-    primitive.extras.find("WaterMaskTranslationY");
+  auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
+  auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
   auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
 
-  if (waterMaskTranslationXIt != primitive.extras.end() && 
+  if (waterMaskTranslationXIt != primitive.extras.end() &&
       waterMaskTranslationXIt->second.isNumber() &&
-      waterMaskTranslationYIt != primitive.extras.end() && 
+      waterMaskTranslationYIt != primitive.extras.end() &&
       waterMaskTranslationYIt->second.isNumber() &&
-      waterMaskScaleIt != primitive.extras.end() && 
+      waterMaskScaleIt != primitive.extras.end() &&
       waterMaskScaleIt->second.isNumber()) {
-    primitiveResult.waterMaskTranslationX = 
-      waterMaskTranslationXIt->second.getNumber(0.0);
-    primitiveResult.waterMaskTranslationY = 
-      waterMaskTranslationYIt->second.getNumber(0.0);
-    primitiveResult.waterMaskScale = 
-      waterMaskScaleIt->second.getNumber(1.0);
+    primitiveResult.waterMaskTranslationX =
+        waterMaskTranslationXIt->second.getNumber(0.0);
+    primitiveResult.waterMaskTranslationY =
+        waterMaskTranslationYIt->second.getNumber(0.0);
+    primitiveResult.waterMaskScale = waterMaskScaleIt->second.getNumber(1.0);
   }
 
   RenderData->Bounds = BoundingBoxAndSphere;
@@ -1437,12 +1434,11 @@ static void loadModelGameThreadPart(
   }
 
   pMaterial->SetVectorParameterValue(
-    "WaterMaskTranslationScale",
-    FLinearColor(
-      loadResult.waterMaskTranslationX, 
-      loadResult.waterMaskTranslationY,
-      loadResult.waterMaskScale)
-  );
+      "WaterMaskTranslationScale",
+      FLinearColor(
+          loadResult.waterMaskTranslationX,
+          loadResult.waterMaskTranslationY,
+          loadResult.waterMaskScale));
 
   pMaterial->TwoSided = true;
 
