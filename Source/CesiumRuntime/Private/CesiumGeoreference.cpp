@@ -43,11 +43,7 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _georeferencedToEcef(1.0),
-      _ecefToGeoreferenced(1.0),
-      _ueAbsToEcef(1.0),
-      _ecefToUeAbs(1.0),
-      _insideSublevel(false) {
+    : _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -256,7 +252,11 @@ void ACesiumGeoreference::BeginPlay() {
   }
 }
 
-void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {}
+/** In case the CesiumGeoreference gets spawned at run time, instead of design
+ *  time, ensure that frames are updated */
+void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
+  this->UpdateGeoreference(); 
+}
 
 void ACesiumGeoreference::UpdateGeoreference() {
   // update georeferenced -> ECEF
