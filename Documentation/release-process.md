@@ -11,7 +11,8 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 * Verify that cesium-unreal's CHANGES.md is complete and accurate.
 * Tag the cesium-unreal release, e.g., `git tag -a v1.1.0 -m "1.1.0 release"`
 * Push the tag to github: `git push origin v1.1.0`
-* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Upload the release ZIP for each platform from CI.
+* Wait for the tag CI build to complete, then download its `plugin-package-combined`. You can find it by switching to the tag in the GitHub UI, clicking the green tick in the header, and then clicking the Details button next to `plugin-package-combined`. While you're here, copy the download URL because you'll need it later.
+* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Upload the release ZIP above.
 
 ## Updating the Release on Marketplace
 
@@ -28,8 +29,8 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
     2. Confirm the supported Unreal Engine versions.
     3. Confirm the supported platforms.
     4. Update the version notes with information from [CHANGES.md](https://github.com/CesiumGS/cesium-unreal/blob/main/CHANGES.md).
-    5. We need to combined the Windows and MacOS builds into a single file. Download the built packages from GitHub, combine the directories, and create a single zip file named `CesiumForUnreal-vX.Y.Z.zip`. Upload this to AWS S3 bucket for Cesium for Unreal builds. Copy this public link into the **Project File Link** field.
-    ![image](https://user-images.githubusercontent.com/2288659/115272024-f0b46b00-a10b-11eb-98ec-c01e40b5e3fb.png)
+    5. Copy the CI-generated combined package URL into the **Project File Link** field.
+        ![image](https://user-images.githubusercontent.com/2288659/115272024-f0b46b00-a10b-11eb-98ec-c01e40b5e3fb.png)
 6. Click **Submit**.
 7. This should take you back to the product page, and the **Product Files** section should show **View Pending File Update**. The admin will also recieve an email confirming the submission. The release is now pending Epic's review. If the Marketplace Team reaches out about any issues, those may need resolving, and follow this process again to submit a new zip file for the release.
    ![image](https://user-images.githubusercontent.com/2288659/115330453-140a0500-a162-11eb-95f4-fd7e3f3312b0.png)
