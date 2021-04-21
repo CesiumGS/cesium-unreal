@@ -1,20 +1,16 @@
 language: cpp
-before_script:
-- mkdir -p build
-- cd build
-- cmake ..
-script:
-- cmake --build . --config Release --target install
 jobs:
   include:
-  - name: Check Source Formatting
+  - stage: Static Checks
+    name: Formatting
     os: linux
     dist: focal
     before_script: 
     script:
     - npm install
     - npm run format -- --dry-run -Werror
-  - name: Windows + VS2017
+  - stage: Build OS Packages
+    name: Windows + VS2017
     os: windows
     cache:
       timeout: 1000
@@ -80,4 +76,7 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-macos "target_url=${PACKAGE_LINK}" --ignore-stdin
-
+  - stage: Combine Packages
+    os: linux
+    dist: focal
+    script: echo TODO
