@@ -67,8 +67,8 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
     * CMake build (any platform):
 
     ```
-    cmake --build build --config Debug --target install # Optional, recommended for debugging
     cmake --build build --config Release --target install # Can optionally compile with --config RelWithDebInfo or MinSizeRel.
+    cmake --build build --config Debug --target install # Optional, recommended for debugging
     ```
 
 3. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
