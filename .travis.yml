@@ -1,20 +1,16 @@
 language: cpp
-before_script:
-- mkdir -p build
-- cd build
-- cmake ..
-script:
-- cmake --build . --config Release --target install
 jobs:
   include:
-  - name: Check Source Formatting
+  - stage: Static Checks
+    name: Formatting
     os: linux
     dist: focal
     before_script: 
     script:
     - npm install
     - npm run format -- --dry-run -Werror
-  - name: Windows + VS2017
+  - stage: Build OS Packages
+    name: Windows + VS2017
     os: windows
     cache:
       timeout: 1000
@@ -80,4 +76,23 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-macos "target_url=${PACKAGE_LINK}" --ignore-stdin
-
+  - stage: Combine Packages
+    os: linux
+    dist: focal
+    git:
+      submodules: false
+    install:
+    - sudo apt-get update
+    - sudo apt-get install unzip zip awscli httpie
+    script:
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip .
+    - mkdir -p build/package
+    - cd build/package
+    - unzip ../../CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip
+    - zip -r CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
+    - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-combined "target_url=${PACKAGE_LINK}" --ignore-stdin
