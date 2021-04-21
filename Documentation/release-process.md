@@ -31,7 +31,7 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
     5. We need to combined the Windows and MacOS builds into a single file. Download the built packages from GitHub, combine the directories, and create a single zip file named `CesiumForUnreal-vX.Y.Z.zip`. Upload this to AWS S3 bucket for Cesium for Unreal builds. Copy this public link into the **Project File Link** field.
     ![image](https://user-images.githubusercontent.com/2288659/115272024-f0b46b00-a10b-11eb-98ec-c01e40b5e3fb.png)
 6. Click **Submit**.
-7. This should take you back to the product page, and the **Product Files** section should show **View Pending File Update**. The admin will also recieve an email confirming the submission. The release is now pending Epic's review.
+7. This should take you back to the product page, and the **Product Files** section should show **View Pending File Update**. The admin will also recieve an email confirming the submission. The release is now pending Epic's review. If the Marketplace Team reaches out about any issues, those may need resolving, and follow this process again to submit a new zip file for the release.
    ![image](https://user-images.githubusercontent.com/2288659/115330453-140a0500-a162-11eb-95f4-fd7e3f3312b0.png)
 8. Once the new release is approved, it does not automatically go live. Take this opportunity to update the product description, images, and other content as needed (product page changes do not require Epic's review).
 9. To release it to the marketplace, navigate back to the product page and click **Publish**.
