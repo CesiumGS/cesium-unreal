@@ -79,6 +79,9 @@ jobs:
   - stage: Combine Packages
     os: linux
     dist: focal
+    git:
+      depth: 1
+      submodules: false
     install:
     - sudo apt-get update
     - sudo apt-get install unzip zip awscli
