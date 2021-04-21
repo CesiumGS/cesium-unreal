@@ -80,8 +80,8 @@ jobs:
     os: linux
     dist: focal
     install:
-      - sudo apt-get update
-      - sudo apt-get install unzip zip
+    - sudo apt-get update
+    - sudo apt-get install unzip zip
     script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
