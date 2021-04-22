@@ -268,7 +268,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadOnly,
-      Category = "Cesium|Collision",
+      Category = "Collision",
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
