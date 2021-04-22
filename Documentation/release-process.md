@@ -2,19 +2,42 @@
 
 This is the process we follow when releasing a new version of Cesium for Unreal on GitHub and on the Unreal Engine Marketplace.
 
+## Test the release candidate
+
+* Verify that the cesium-native submodule in the `extern` directory references the expected commit of cesium-native. Update it if necessary. Verify that CI has completed successfully for that commit of cesium-native.
+* Wait for CI to complete for the main branch. Verify that it does so successfully.
+* Remove any existing copy of the Cesium for Unreal plugin from the engine plugins directory on your system. On Windows this is usually `C:\Program Files\Epic Games\UE_4.26\Engine\Plugins\Marketplace`.
+* Download the `plugin-package-combined` for the `main` branch of cesium-unreal. Extract it to your Unreal Engine installation's engine plugins directory. 
+* Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory. Launch the Unreal Editor and open `CesiumForUnrealSamples.uproject` from the new cesium-unreal-samples directory.
+* Open each level in Content -> CesiumSamples -> Maps and verify it works correctly:
+  * Does it open without crashing?
+  * Does it look correct?
+  * Press Play. Does it work as expected? The billboard in each level should give you a good idea of what to expect.
+* Test on other platforms if you can. If you can't (e.g., you don't have a Mac), post a message on Slack asking others to give it at least a quick smoke test.
+
+If all of the above goes well, you're ready to release Cesium for Unreal.
+
+## Update CHANGES.md and tag the cesium-native and cesium-unreal releases
+
+While doing the steps below, make sure no new changes are going into either cesium-unreal or cesium-native that may invalidate the testing you did above. If new changes go in, it's ok, but you should either retest with those changes or make sure they are not included in the release.
+
 * Verify that cesium-native's CHANGES.md is complete and accurate.
-* Verify that cesium-native CI has completed successfully on all platforms.
-* Verify that the submodule reference in cesium-unreal references the correction commit of cesium-native.
-* Verify that cesium-unreal builds against the nominated cesium-native version and that everything works as expected.
+* Verify that cesium-unreal's CHANGES.md is complete and accurate.
+* Verify again that cesium-native CI has completed successfully on all platforms.
+* Verify again that the submodule reference in cesium-unreal references the correction commit of cesium-native.
+* Verify again that cesium-unreal CI has completed successfully on all platforms.
 * Tag the cesium-native release, e.g., `git tag -a v0.2.0 -m "0.2.0 release"`
 * Push the tag to github: `git push origin v0.2.0`
-* Verify that cesium-unreal's CHANGES.md is complete and accurate.
 * Tag the cesium-unreal release, e.g., `git tag -a v1.1.0 -m "1.1.0 release"`
 * Push the tag to github: `git push origin v1.1.0`
-* Wait for the tag CI build to complete, then download its `plugin-package-combined`. You can find it by switching to the tag in the GitHub UI, clicking the green tick in the header, and then clicking the Details button next to `plugin-package-combined`. While you're here, copy the download URL because you'll need it later.
-* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Upload the release ZIP above.
 
-## Updating the Release on Marketplace
+# Publish the release on GitHub
+
+* Wait for the release tag CI build to complete.
+* Download the tag's `plugin-package-combined`. You can find it by switching to the tag in the GitHub UI, clicking the green tick in the header, and then clicking the Details button next to `plugin-package-combined`. While you're here, copy the download URL because you'll need it later.
+* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Copy the changelog into it. Follow the format used in previous release. Upload the release ZIP that you downloaded above.
+
+## Publish the Release on Marketplace
 
 1. Open https://publish.unrealengine.com/v2/products. Login with the admin credentials.
 2. Navigate to **Products -> Published**.
