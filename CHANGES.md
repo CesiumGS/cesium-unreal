@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.1.1 - ?
+
+##### Fixes :wrench:
+
+- Moved the `BodyInstance` property on `Cesium3DTileset` to the `Collision` category so that it can be modified in the Editor.
+
 ### v1.1.0 - 2021-04-19
 
 ##### Additions :tada:
