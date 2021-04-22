@@ -857,30 +857,15 @@ static void loadPrimitive(
     if (!onlyWater && !onlyLand) {
       // We have to use the water mask
       auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
-      auto waterMaskTextureCoordsIdIt =
-          primitive.extras.find("WaterMaskTexCoords");
-      if (waterMaskTextureIdIt != primitive.extras.end() &&
-          waterMaskTextureCoordsIdIt != primitive.extras.end()) {
+      if (waterMaskTextureIdIt != primitive.extras.end()) {
         int32_t waterMaskTextureId =
             static_cast<int32_t>(waterMaskTextureIdIt->second.getNumber(-1.0));
-        int64_t waterMaskTextureCoordsId = static_cast<int64_t>(
-            waterMaskTextureCoordsIdIt->second.getNumber(-1.0));
         CesiumGltf::TextureInfo waterMaskInfo;
         waterMaskInfo.index = waterMaskTextureId;
-        waterMaskInfo.texCoord = waterMaskTextureCoordsId;
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
           primitiveResult.waterMaskTexture =
               loadTexture(model, std::make_optional(waterMaskInfo));
-          primitiveResult
-              .textureCoordinateParameters["waterMaskTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  StaticMeshBuildVertices,
-                  indices,
-                  "TEXCOORD_" + std::to_string(waterMaskTextureCoordsId),
-                  textureCoordinateMap);
         }
       }
     }
