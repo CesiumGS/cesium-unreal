@@ -12,6 +12,9 @@ else()
     set(CESIUM_ARCHITECTURE "32")
 endif()
 
+# uriparser is detecting that `reallocarray` is available, even though libc++ doesn't have it.
+# Would be good to figure out why, but for now we're just forcing it to think otherwise.
+set(HAVE_REALLOCARRAY OFF)
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
 set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CESIUM_ARCHITECTURE})
