@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.1.1 - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused `ACesiumGeoreference::TransformEcefToUe` to be much less precise than expected.
+
 ### v1.1.0 - 2021-04-19
 
 ##### Additions :tada:
