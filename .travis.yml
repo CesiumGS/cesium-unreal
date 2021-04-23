@@ -102,7 +102,7 @@ jobs:
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
     - cd "$CLONEDIR/../packages"
-    - zip ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - zip -r ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-linux "target_url=${PACKAGE_LINK}" --ignore-stdin
@@ -116,6 +116,7 @@ jobs:
     - sudo apt-get install unzip zip awscli httpie
     script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip .
     - mkdir -p build/package
