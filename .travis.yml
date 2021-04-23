@@ -5,6 +5,8 @@ jobs:
     name: Formatting
     os: linux
     dist: focal
+    git:
+      submodules: false
     before_script: 
     script:
     - npm install
