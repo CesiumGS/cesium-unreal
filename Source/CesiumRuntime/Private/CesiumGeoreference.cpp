@@ -622,7 +622,7 @@ FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
 
 glm::dvec3
 ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
-  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::vec4(ecef, 1.0);
+  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   return ueAbs -
