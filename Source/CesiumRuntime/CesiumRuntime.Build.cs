@@ -164,5 +164,6 @@ public class CesiumRuntime : ModuleRules
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
+        bEnableExceptions = true;
     }
 }
