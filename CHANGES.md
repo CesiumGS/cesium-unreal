@@ -1,10 +1,10 @@
 # Change Log
 
-### v1.1.1 - ?
+### v1.1.1 - 2021-04-23
 
 ##### Fixes :wrench:
 
-- Fixed a bug that caused blank tilesets to cause error during PIE.
+- Fixed a bug that caused tilesets added with the "Add Blank" button to cause an error during Play-In-Editor.
 - Fixed a bug that caused `ACesiumGeoreference::TransformEcefToUe` to be much less precise than expected.
 - Moved the `BodyInstance` property on `Cesium3DTileset` to the `Collision` category so that it can be modified in the Editor.
 

@@ -21,6 +21,9 @@ If all of the above goes well, you're ready to release Cesium for Unreal.
 
 While doing the steps below, make sure no new changes are going into either cesium-unreal or cesium-native that may invalidate the testing you did above. If new changes go in, it's ok, but you should either retest with those changes or make sure they are not included in the release.
 
+* Change the version in `CesiumForUnreal.uplugin`:
+  * Increment the `Version` integer property.
+  * Change the `VersionName` property to the new three digit, dot-delimited version number. Use [Semantic Versioning](https://semver.org/) to pick the version number.
 * Verify that cesium-native's CHANGES.md is complete and accurate.
 * Verify that cesium-unreal's CHANGES.md is complete and accurate.
 * Verify again that cesium-native CI has completed successfully on all platforms.
