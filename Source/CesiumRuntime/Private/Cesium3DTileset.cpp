@@ -66,6 +66,12 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true} {
 
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called Cesium3DTileset constructor on actor %s"),
+      *this->GetName());
+
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
@@ -77,6 +83,37 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+
+void ACesium3DTileset::AddFocusViewportDelegate() {
+#if WITH_EDITOR
+  FEditorDelegates::OnFocusViewportOnActors.AddLambda(
+      [this](const TArray<AActor*>& actors) {
+        if (actors.Num() == 1 && actors[0] == this) {
+          this->OnFocusEditorViewportOnThis();
+        }
+      });
+#endif // WITH_EDITOR
+}
+
+void ACesium3DTileset::PostActorCreated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostActorCreated on actor %s"),
+      *this->GetName());
+  Super::PostActorCreated();
+}
+
+void ACesium3DTileset::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+
+  Super::PostInitProperties();
+  AddFocusViewportDelegate();
+}
 
 void ACesium3DTileset::PlayMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
@@ -109,7 +146,14 @@ void ACesium3DTileset::StopMovieSequencer() {
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
 
 #if WITH_EDITOR
-void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
+void ACesium3DTileset::OnFocusEditorViewportOnThis() {
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnFocusEditorViewportOnThis on actor %s"),
+      *this->GetName());
+
   struct CalculateECEFCameraPosition {
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
@@ -145,10 +189,6 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
                          .getBoundingBox());
     }
   };
-
-  if (actor != this) {
-    return;
-  }
 
   const Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
   if (!pRootTile) {
@@ -255,6 +295,13 @@ void ACesium3DTileset::NotifyGeoreferenceUpdated() {
 
 // Called when the game starts or when spawned
 void ACesium3DTileset::BeginPlay() {
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called BeginPlay on actor %s"),
+      *this->GetName());
+
   Super::BeginPlay();
 
   this->LoadTileset();
@@ -283,14 +330,13 @@ void ACesium3DTileset::BeginPlay() {
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
-#if WITH_EDITOR
-  FEditorDelegates::OnFocusViewportOnActors.AddLambda(
-      [this](const TArray<AActor*>& actors) {
-        if (actors.Num() == 1) {
-          this->OnFocusEditorViewportOnActors(actors[0]);
-        }
-      });
-#endif // EDITOR
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnConstruction on actor %s"),
+      *this->GetName());
+
+  Super::OnConstruction(Transform);
 
   this->LoadTileset();
 
@@ -554,16 +600,6 @@ static std::string getCacheDatabaseName() {
 }
 
 void ACesium3DTileset::LoadTileset() {
-  if (this->Url.Len() > 0) {
-    UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-  } else {
-    UE_LOG(
-        LogCesium,
-        Log,
-        TEXT("Loading tileset for asset ID %d"),
-        this->IonAssetID);
-  }
-
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),
@@ -571,8 +607,6 @@ void ACesium3DTileset::LoadTileset() {
           std::make_shared<CesiumAsync::SqliteCache>(
               spdlog::default_logger(),
               getCacheDatabaseName()));
-
-  this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
@@ -623,9 +657,17 @@ void ACesium3DTileset::LoadTileset() {
                          : nullptr,
       spdlog::default_logger()};
 
+  this->_startTime = std::chrono::high_resolution_clock::now();
+
   if (this->Url.Len() > 0) {
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
     pTileset = new Cesium3DTiles::Tileset(externals, TCHAR_TO_UTF8(*this->Url));
   } else {
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d"),
+        this->IonAssetID);
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         this->IonAssetID,
@@ -894,7 +936,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
     UE_LOG(
         LogCesium,
-        Verbose,
+        VeryVerbose,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
@@ -1016,6 +1058,12 @@ void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 }
 
 void ACesium3DTileset::PostLoad() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostLoad on actor %s"),
+      *this->GetName());
+
   BodyInstance.FixupData(this); // We need to call this one after Loading the
                                 // actor to have correct BodyInstance values.
 

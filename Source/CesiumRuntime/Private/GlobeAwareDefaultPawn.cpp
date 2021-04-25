@@ -6,6 +6,7 @@
 #include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/World.h"
@@ -21,7 +22,56 @@
 #include <glm/ext/vector_double3.hpp>
 
 AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called GlobeAwareDefaultPawn constructor on actor %s"),
+      *this->GetName());
   PrimaryActorTick.bCanEverTick = true;
+}
+
+void AGlobeAwareDefaultPawn::PostActorCreated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostActorCreated on actor %s"),
+      *this->GetName());
+
+  Super::PostActorCreated();
+  /*/
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+  }
+  this->_currentEcef = this->GetECEFCameraLocation();
+  this->Georeference->AddGeoreferencedObject(this);
+  //*/
+}
+
+void AGlobeAwareDefaultPawn::PostLoad() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostLoad on actor %s"),
+      *this->GetName());
+
+  Super::PostLoad();
+  /*/
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+  }
+  this->_currentEcef = this->GetECEFCameraLocation();
+  this->Georeference->AddGeoreferencedObject(this);
+  //*/
+}
+
+void AGlobeAwareDefaultPawn::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+
+  Super::PostInitProperties();
 }
 
 void AGlobeAwareDefaultPawn::MoveRight(float Val) {
@@ -397,15 +447,31 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
 }
 
 void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnConstruction on actor %s"),
+      *this->GetName());
+
+  Super::OnConstruction(Transform);
+
+  //*/
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
   }
 
   this->_currentEcef = this->GetECEFCameraLocation();
   this->Georeference->AddGeoreferencedObject(this);
+  //*/
 }
 
 void AGlobeAwareDefaultPawn::BeginPlay() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called BeginPlay on actor %s"),
+      *this->GetName());
+
   Super::BeginPlay();
 
   if (!this->Georeference) {

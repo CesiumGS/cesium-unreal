@@ -535,6 +535,19 @@ protected:
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
 
+  /**
+   * Called for spawned Actors after its creation. Constructor like behavior
+   * should go here.
+   */
+  virtual void PostActorCreated() override;
+
+  /**
+   * Called by serialized Actor after they have finished loading from disk. Any
+   * custom versioning and fixup behavior should go here. PostLoad is mutually
+   * exclusive with PostActorCreated.
+   */
+  virtual void PostLoad() override;
+
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

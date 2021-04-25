@@ -300,12 +300,33 @@ public:
   virtual void BeginDestroy() override;
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+  /**
+   * Called by serialized Actor after they have finished loading from disk.
+   */
   virtual void PostLoad() override;
 
 protected:
+  /**
+   * Called for spawned Actors after its creation. Constructor like behavior
+   * should go here.
+   */
+  virtual void PostActorCreated() override;
+
+  /**
+   * Called when an instance of this class is placed (in editor) or spawned,
+   * AND when any property of this instance changes.
+   */
+  virtual void OnConstruction(const FTransform& Transform) override;
+
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
-  virtual void OnConstruction(const FTransform& Transform) override;
+
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  virtual void PostInitProperties() override;
 
   virtual void NotifyHit(
       class UPrimitiveComponent* MyComp,
@@ -336,9 +357,26 @@ private:
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
 
+  /**
+   * Will be called after the tileset is loaded or spawned, to register
+   * a delegate that calls OnFocusEditorViewportOnThis when this
+   * tileset is double-clicked
+   */
+  void AddFocusViewportDelegate();
+
 #if WITH_EDITOR
   std::optional<UnrealCameraParameters> GetEditorCamera() const;
-  void OnFocusEditorViewportOnActors(const AActor* actor);
+
+  /**
+   * Will focus all viewports on this tileset.
+   *
+   * This is called when double-clicking the tileset in the World Outliner.
+   * It will move the tileset into the center of the view, *even if* the
+   * tileset was not visible before, and no geometry has been created yet
+   * for the tileset: It solely operates on the tile bounding volume that
+   * was given in the root tile.
+   */
+  void OnFocusEditorViewportOnThis();
 #endif
 
 private:

@@ -64,7 +64,32 @@ ACesiumGeoreference::ACesiumGeoreference()
       _ueAbsToEcef(1.0),
       _ecefToUeAbs(1.0),
       _insideSublevel(false) {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called CesiumGeoreference constructor on actor %s"),
+      *this->GetName());
   PrimaryActorTick.bCanEverTick = true;
+}
+
+void ACesiumGeoreference::PostActorCreated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostActorCreated on actor %s"),
+      *this->GetName());
+
+  Super::PostActorCreated();
+}
+
+void ACesiumGeoreference::PostLoad() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostLoad on actor %s"),
+      *this->GetName());
+
+  Super::PostLoad();
 }
 
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
@@ -255,6 +280,12 @@ void ACesiumGeoreference::AddGeoreferencedObject(
 
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called BeginPlay on actor %s"),
+      *this->GetName());
+
   Super::BeginPlay();
 
   if (!this->WorldOriginCamera) {
@@ -272,7 +303,14 @@ void ACesiumGeoreference::BeginPlay() {
   }
 }
 
-void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {}
+void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnConstruction on actor %s"),
+      *this->GetName());
+  Super::OnConstruction(Transform);
+}
 
 void ACesiumGeoreference::UpdateGeoreference() {
   // update georeferenced -> ECEF
