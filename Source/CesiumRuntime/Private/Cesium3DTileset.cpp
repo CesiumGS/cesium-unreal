@@ -33,6 +33,9 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include "Engine/TextureRenderTarget2D.h"
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -323,6 +326,10 @@ public:
         _pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
 #endif
   {
+    RenderTarget = NewObject<UTextureRenderTarget2D>();
+    RenderTarget->AddToRoot();
+    RenderTarget->InitCustomFormat(256, 256, PF_B8G8R8A8, true);
+    RenderTarget->UpdateResourceImmediate();
   }
 
   virtual void* prepareInLoadThread(
@@ -392,16 +399,6 @@ public:
     pTexture->AddressX = TextureAddress::TA_Clamp;
     pTexture->AddressY = TextureAddress::TA_Clamp;
 
-    unsigned char* pTextureData = static_cast<unsigned char*>(
-        pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-    FMemory::Memcpy(
-        pTextureData,
-        image.pixelData.data(),
-        image.pixelData.size());
-    pTexture->PlatformData->Mips[0].BulkData.Unlock();
-
-    pTexture->UpdateResource();
-
     return pTexture;
   }
 
@@ -430,10 +427,59 @@ public:
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
       if (pGltfContent) {
+        const CesiumGeometry::QuadtreeTileID *tileID =
+            std::get_if<CesiumGeometry::QuadtreeTileID>(&tile.getTileID());
+        if (!tileID) {
+          tileID = &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&tile.getTileID())->tileID;
+        }
+        UTexture2D* pTexture =
+            static_cast<UTexture2D*>(pMainThreadRendererResources); 
+        FString level = FString::FromInt(tileID->level);
+        FString x = FString::FromInt(tileID->x);
+        FString y = FString::FromInt(tileID->y);
+		FText txt = FText::FromString(TEXT("Level: ") + level + "\n" + TEXT("X: ") + x + "\n" + TEXT("Y: ") + y);
+		FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
+		boxItem.LineThickness = 4.0f;
+		boxItem.SetColor(FLinearColor::Black);
+
+		FCanvasTextItem txtItem(
+			FVector2D(0.0f, 0.0f),
+			txt,
+			GEngine->GetLargeFont(),
+			FLinearColor::Black);
+		txtItem.Scale.Set(4.0f, 4.0f);
+
+		FCanvas Canvas(
+			RenderTarget->GameThread_GetRenderTargetResource(),
+			NULL,
+			0.0f,
+			0.0f,
+			0.0f,
+			GMaxRHIFeatureLevel); // UE4.5 GMaxRHIFeatureLevelValue);
+		Canvas.Clear(FLinearColor::White);
+		Canvas.DrawItem(txtItem, FVector2D(1.0, 1.0));
+		Canvas.DrawItem(boxItem);
+		Canvas.Flush_GameThread(true);
+
+		TArray<FColor> SurfData;
+		auto RenderResource = RenderTarget->GameThread_GetRenderTargetResource();
+		RenderResource->ReadPixels(SurfData);
+		pTexture->AddressX = TextureAddress::TA_Clamp;
+		pTexture->AddressY = TextureAddress::TA_Clamp;
+
+		unsigned char* pTextureData = static_cast<unsigned char*>(
+			pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+		FMemory::Memcpy(
+			pTextureData,
+			SurfData.GetData(),
+			SurfData.Num() * SurfData.GetTypeSize());
+		pTexture->PlatformData->Mips[0].BulkData.Unlock();
+		pTexture->UpdateResource();
+
         pGltfContent->AttachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources),
+            pTexture,
             textureCoordinateRectangle,
             translation,
             scale);
@@ -525,7 +571,8 @@ private:
 
     UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
   }
-
+  
+  UTextureRenderTarget2D* RenderTarget;
   ACesium3DTileset* _pActor;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCooking* _pPhysXCooking;
