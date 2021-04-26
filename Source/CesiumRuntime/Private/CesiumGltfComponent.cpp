@@ -394,11 +394,27 @@ static std::optional<LoadTextureResult> loadTexture(
   }
 
   const CesiumGltf::Image& image = model.images[texture.source];
+  
+  // TODO: Use correct bytesPerChannel? Does gltf support unnormalized pixel formats?
+  EPixelFormat pixelFormat;
+  switch(image.cesium.channels) { 
+    case 1:
+      pixelFormat = PF_R8;
+      break;
+    case 2:
+      pixelFormat = PF_R8G8;
+      break;
+    case 3:
+    case 4:
+    default:
+      pixelFormat = PF_R8G8B8A8;
+  };
+
   LoadTextureResult result{};
   result.pTextureData = createTexturePlatformData(
       image.cesium.width,
       image.cesium.height,
-      PF_R8G8B8A8);
+      pixelFormat);
   if (!result.pTextureData) {
     return std::nullopt;
   }
@@ -479,6 +495,7 @@ static std::optional<LoadTextureResult> loadTexture(
     // TODO: do this on the GPU?
     int32_t width = image.cesium.width;
     int32_t height = image.cesium.height;
+    int32_t channels = image.cesium.channels;
 
     while (width > 1 || height > 1) {
       FTexture2DMipMap* pLevel = new FTexture2DMipMap();
@@ -495,6 +512,8 @@ static std::optional<LoadTextureResult> loadTexture(
 
       void* pMipData =
           pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+
+      // TODO: Premultiplied alpha? Cases with more than one byte per channel? Non-normalzied pixel formats?
       if (!stbir_resize_uint8(
               static_cast<const unsigned char*>(pTextureData),
               width,
@@ -504,7 +523,7 @@ static std::optional<LoadTextureResult> loadTexture(
               pLevel->SizeX,
               pLevel->SizeY,
               0,
-              4)) {
+              channels)) {
         // Failed to generate mip level, use bilinear filtering instead.
         result.filter = TextureFilter::TF_Bilinear;
         for (int32_t i = 1; i < result.pTextureData->Mips.Num(); ++i) {
