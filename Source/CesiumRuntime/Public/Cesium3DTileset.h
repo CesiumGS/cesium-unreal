@@ -249,6 +249,15 @@ public:
   UMaterialInterface* Material = nullptr;
 
   /**
+   * Whether to request and render the water mask.
+   *
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  bool EnableWaterMask = true;
+
+  /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")

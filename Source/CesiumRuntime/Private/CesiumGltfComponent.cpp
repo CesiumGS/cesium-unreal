@@ -879,7 +879,7 @@ static void loadPrimitive(
     primitiveResult.waterMaskScale =
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
-  /**/
+ 
   RenderData->Bounds = BoundingBoxAndSphere;
 
   LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);

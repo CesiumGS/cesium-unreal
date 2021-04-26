@@ -856,6 +856,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError = this->CulledScreenSpaceError;
 
+  options.enableWaterMask = this->EnableWaterMask;
+
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {
     return;
