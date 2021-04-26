@@ -26,7 +26,7 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
-#include "CesiumGltf/Reader.h"
+#include "CesiumGltf/GltfReader.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
@@ -838,16 +838,17 @@ static void loadPrimitive(
   auto onlyLandIt = primitive.extras.find("OnlyLand");
   if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
       onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
-    bool onlyWater = onlyWaterIt->second.getBool(false);
-    bool onlyLand = onlyLandIt->second.getBool(true);
+    bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
+    bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
     primitiveResult.onlyWater = onlyWater;
     primitiveResult.onlyLand = onlyLand;
     if (!onlyWater && !onlyLand) {
       // We have to use the water mask
       auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
-      if (waterMaskTextureIdIt != primitive.extras.end()) {
-        int32_t waterMaskTextureId =
-            static_cast<int32_t>(waterMaskTextureIdIt->second.getNumber(-1.0));
+      if (waterMaskTextureIdIt != primitive.extras.end() &&
+          waterMaskTextureIdIt->second.isInt64()) {
+        int32_t waterMaskTextureId = static_cast<int32_t>(
+            waterMaskTextureIdIt->second.getInt64OrDefault(-1));
         CesiumGltf::TextureInfo waterMaskInfo;
         waterMaskInfo.index = waterMaskTextureId;
         if (waterMaskTextureId >= 0 &&
@@ -861,24 +862,24 @@ static void loadPrimitive(
     primitiveResult.onlyWater = false;
     primitiveResult.onlyLand = true;
   }
-
   auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
   auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
   auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
 
   if (waterMaskTranslationXIt != primitive.extras.end() &&
-      waterMaskTranslationXIt->second.isNumber() &&
+      waterMaskTranslationXIt->second.isDouble() &&
       waterMaskTranslationYIt != primitive.extras.end() &&
-      waterMaskTranslationYIt->second.isNumber() &&
+      waterMaskTranslationYIt->second.isDouble() &&
       waterMaskScaleIt != primitive.extras.end() &&
-      waterMaskScaleIt->second.isNumber()) {
+      waterMaskScaleIt->second.isDouble()) {
     primitiveResult.waterMaskTranslationX =
-        waterMaskTranslationXIt->second.getNumber(0.0);
+        waterMaskTranslationXIt->second.getDoubleOrDefault(0.0);
     primitiveResult.waterMaskTranslationY =
-        waterMaskTranslationYIt->second.getNumber(0.0);
-    primitiveResult.waterMaskScale = waterMaskScaleIt->second.getNumber(1.0);
+        waterMaskTranslationYIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskScale =
+        waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
-
+  /**/
   RenderData->Bounds = BoundingBoxAndSphere;
 
   LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
