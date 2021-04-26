@@ -73,7 +73,6 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
-  // TODO: does this belong here?
   bool onlyLand;
   bool onlyWater;
 
@@ -851,7 +850,7 @@ static void loadPrimitive(
   if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
       onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
     bool onlyWater = onlyWaterIt->second.getBool(false);
-    bool onlyLand = onlyLandIt->second.getBool(false);
+    bool onlyLand = onlyLandIt->second.getBool(true);
     primitiveResult.onlyWater = onlyWater;
     primitiveResult.onlyLand = onlyLand;
     if (!onlyWater && !onlyLand) {
@@ -1355,7 +1354,9 @@ static void loadModelGameThreadPart(
   case CesiumGltf::Material::AlphaMode::OPAQUE:
   default:
     pMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->BaseMaterial,
+        (loadResult.onlyWater || !loadResult.onlyLand) ? 
+          pGltf->BaseMaterialWithWater : 
+          pGltf->BaseMaterial,
         nullptr,
         ImportedSlotName);
     break;
@@ -1519,9 +1520,12 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterialWithWater;
     ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
     FConstructorStatics()
         : BaseMaterial(TEXT(
+              "/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+          BaseMaterialWithWater(TEXT(
               "/CesiumForUnreal/GltfMaterialWithOverlaysAndWater.GltfMaterialWithOverlaysAndWater")),
           OpacityMaskMaterial(TEXT(
               "/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask")) {
@@ -1530,6 +1534,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+  this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
   this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
