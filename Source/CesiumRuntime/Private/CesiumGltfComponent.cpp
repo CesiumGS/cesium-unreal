@@ -1354,9 +1354,9 @@ static void loadModelGameThreadPart(
   case CesiumGltf::Material::AlphaMode::OPAQUE:
   default:
     pMaterial = UMaterialInstanceDynamic::Create(
-        (loadResult.onlyWater || !loadResult.onlyLand) ? 
-          pGltf->BaseMaterialWithWater : 
-          pGltf->BaseMaterial,
+        (loadResult.onlyWater || !loadResult.onlyLand)
+            ? pGltf->BaseMaterialWithWater
+            : pGltf->BaseMaterial,
         nullptr,
         ImportedSlotName);
     break;
