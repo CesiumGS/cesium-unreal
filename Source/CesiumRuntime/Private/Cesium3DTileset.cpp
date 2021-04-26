@@ -906,7 +906,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
     UE_LOG(
         LogCesium,
-        VeryVerbose,
+        Verbose,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
