@@ -9,7 +9,7 @@
 #include <memory>
 #include "CesiumGltfComponent.generated.h"
 
-class UMaterial;
+class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
 
@@ -64,19 +64,19 @@ public:
       AActor* ParentActor,
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
-      UMaterial* BaseMaterial);
+      UMaterialInterface* BaseMaterial);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterial* BaseMaterial;
+  UMaterialInterface* BaseMaterial;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterial* BaseMaterialWithWater;
+  UMaterialInterface* BaseMaterialWithWater;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterial* OpacityMaskMaterial;
+  UMaterialInterface* OpacityMaskMaterial;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

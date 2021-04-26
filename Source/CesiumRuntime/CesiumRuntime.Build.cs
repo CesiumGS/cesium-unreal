@@ -61,6 +61,7 @@ public class CesiumRuntime : ModuleRules
             "CesiumGeospatial",
             "CesiumGltfReader",
             "CesiumGltf",
+            "CesiumJsonReader",
             "CesiumUtility",
             "draco",
             "modp_b64",
@@ -107,7 +108,8 @@ public class CesiumRuntime : ModuleRules
                 "StaticMeshDescription",
                 "HTTP",
                 "MikkTSpace",
-                "LevelSequence"
+                "LevelSequence",
+                "Projects"
             }
         );
 

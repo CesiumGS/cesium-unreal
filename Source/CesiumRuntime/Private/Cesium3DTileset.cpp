@@ -14,6 +14,7 @@
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -26,6 +27,7 @@
 #include "IPhysXCookingModule.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
+#include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -291,6 +293,18 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
 #endif // EDITOR
 
   this->LoadTileset();
+
+  // Hide all existing tiles. The still-visible ones will be shown next time we
+  // tick.
+  TArray<UCesiumGltfComponent*> gltfComponents;
+  this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+  for (UCesiumGltfComponent* pGltf : gltfComponents) {
+    if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
+      pGltf->SetVisibility(false, true);
+      pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+  }
 }
 
 void ACesium3DTileset::NotifyHit(
@@ -462,8 +476,8 @@ public:
             textureCoordinateRectangle);
       }
     }
-    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for detaching raster from
-    // tile"));
+    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for detaching raster
+    // from tile"));
   }
 
 private:
@@ -659,7 +673,8 @@ void ACesium3DTileset::DestroyTileset() {
 
   // The way CesiumRasterOverlay::add is currently implemented, destroying the
   // tileset without removing overlays will make it impossible to add it again
-  // once a new tileset is created (e.g. when switching between terrain assets)
+  // once a new tileset is created (e.g. when switching between terrain
+  // assets)
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
@@ -815,7 +830,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     this->_updateGeoreferenceOnBoundingVolumeReady = false;
     // Need to potentially recalculate the transform for all georeferenced
     // objects, not just for this tileset
-    this->Georeference->UpdateGeoreference();
+    if (IsValid(this->Georeference)) {
+      this->Georeference->UpdateGeoreference();
+    }
   }
 
   if (this->SuspendUpdate) {
@@ -877,7 +894,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
     UE_LOG(
         LogCesium,
-        Display,
+        Verbose,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
@@ -917,6 +934,35 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       continue;
     }
 
+    // Consider Exclusion zone to drop this tile... Ideally, should be
+    // considered in Cesium3DTiles::ViewState to avoid loading the tile
+    // first...
+    if (ExclusionZones.Num() > 0) {
+      const CesiumGeospatial::BoundingRegion* pRegion =
+          std::get_if<CesiumGeospatial::BoundingRegion>(
+              &pTile->getBoundingVolume());
+      if (pRegion) {
+        bool culled = false;
+
+        for (FCesiumExclusionZone ExclusionZone : ExclusionZones) {
+          CesiumGeospatial::GlobeRectangle cgExclusionZone =
+              CesiumGeospatial::GlobeRectangle::fromDegrees(
+                  ExclusionZone.West,
+                  ExclusionZone.South,
+                  ExclusionZone.East,
+                  ExclusionZone.North);
+          if (cgExclusionZone.intersect(pRegion->getRectangle())) {
+            culled = true;
+            continue;
+          }
+        }
+
+        if (culled) {
+          continue;
+        }
+      }
+    }
+
     // const Cesium3DTiles::TileID& id = pTile->getTileID();
     // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
     // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
@@ -931,6 +977,24 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       // UE_LOG(LogCesium, VeryVerbose, TEXT("Tile to render does not have a
       // Gltf"));
       continue;
+    }
+
+    // Apply Actor-defined collision settings to the newly-created component.
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+    if (PrimitiveComponent != nullptr) {
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX;
+             ChannelValue++) {
+          ECollisionResponse response =
+              BodyInstance.GetCollisionResponse().GetResponse(
+                  ECollisionChannel(ChannelValue));
+          PrimitiveComponent->SetCollisionResponseToChannel(
+              ECollisionChannel(ChannelValue),
+              response);
+        }
+      }
     }
 
     if (Gltf->GetAttachParent() == nullptr) {
@@ -949,6 +1013,13 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
   this->DestroyTileset();
   AActor::EndPlay(EndPlayReason);
+}
+
+void ACesium3DTileset::PostLoad() {
+  BodyInstance.FixupData(this); // We need to call this one after Loading the
+                                // actor to have correct BodyInstance values.
+
+  Super::PostLoad();
 }
 
 void ACesium3DTileset::BeginDestroy() {

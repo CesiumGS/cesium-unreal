@@ -1,20 +1,16 @@
 language: cpp
-before_script:
-- mkdir -p build
-- cd build
-- cmake ..
-script:
-- cmake --build . --config Release --target install
 jobs:
   include:
-  - name: Check Source Formatting
+  - stage: Static Checks
+    name: Formatting
     os: linux
     dist: focal
     before_script: 
     script:
     - npm install
     - npm run format -- --dry-run -Werror
-  - name: Windows + VS2017
+  - stage: Build OS Packages
+    name: Windows + VS2017
     os: windows
     cache:
       timeout: 1000
@@ -31,6 +27,7 @@ jobs:
     - "./travis/travis-get-ue.sh"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -A x64
@@ -42,8 +39,60 @@ jobs:
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
     - cd "$CLONEDIR/../packages"
-    - 7z a CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal/
+    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-windows "target_url=${PACKAGE_LINK}" --ignore-stdin
+    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+  - name: MacOS
+    os: osx
+    osx_image: xcode11.3
+    addons:
+      homebrew:
+        packages:
+        - p7zip
+    install:
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
+    - pip3 install httpie
+    - chmod +x "./travis/travis-get-ue.sh"
+    - "./travis/travis-get-ue.sh"
+    before_script:
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
+    - mkdir -p extern/build
+    - cd extern/build
+    - cmake .. -DCMAKE_BUILD_TYPE=Release
+    script:
+    - cmake --build . -j 4 --target install 
+    - cd ../..
+    - rm -rf extern
+    - export CLONEDIR=$PWD
+    - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
+    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
+    - cd "$CLONEDIR/../packages"
+    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-macos "target_url=${PACKAGE_LINK}" --ignore-stdin
+  - stage: Combine Packages
+    os: linux
+    dist: focal
+    git:
+      submodules: false
+    install:
+    - sudo apt-get update
+    - sudo apt-get install unzip zip awscli httpie
+    script:
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip .
+    - mkdir -p build/package
+    - cd build/package
+    - unzip ../../CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip
+    - zip -r CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
     - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
-    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package "target_url=${PACKAGE_LINK}" --ignore-stdin
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-combined "target_url=${PACKAGE_LINK}" --ignore-stdin

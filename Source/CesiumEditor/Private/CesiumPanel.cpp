@@ -154,7 +154,7 @@ void CesiumPanel::addBlankTileset() {
       ACesium3DTileset::StaticClass(),
       FTransform(),
       false,
-      RF_Public | RF_Standalone | RF_Transactional);
+      RF_Public | RF_Transactional);
 }
 
 void CesiumPanel::accessToken() {}
