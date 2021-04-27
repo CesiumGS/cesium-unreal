@@ -287,7 +287,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
       //       rather than averaging the centers.
       size_t numberOfPositions = 0;
 
-      for (const TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
+      for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
            this->_georeferencedObjects) {
         if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
           std::optional<Cesium3DTiles::BoundingVolume> bv =
@@ -847,7 +847,7 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
   const FVector& viewLoc = cursor.GetOrigin();
   const FVector& viewDir = cursor.GetDirection();
 
-  FVector lineEnd = viewLoc + viewDir * 637100000;
+  FVector lineEnd = viewLoc + viewDir * 637100000.0;
 
   static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
   if (ShowTrace) {
