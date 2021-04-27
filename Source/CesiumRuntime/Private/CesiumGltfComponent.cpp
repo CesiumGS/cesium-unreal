@@ -84,6 +84,7 @@ struct LoadModelResult {
 };
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
+static const std::string rasterOverlay1 = "_CESIUMOVERLAY_1";
 
 template <class... T> struct IsAccessorView;
 
@@ -844,13 +845,22 @@ static void loadPrimitive(
   // Currently only one set of raster overlay texture coordinates is supported.
   // TODO: Support more texture coordinate sets (e.g. web mercator and
   // geographic)
-  primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] =
+  primitiveResult.textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
       updateTextureCoordinates(
           model,
           primitive,
           StaticMeshBuildVertices,
           indices,
           rasterOverlay0,
+          textureCoordinateMap);
+
+  primitiveResult.textureCoordinateParameters["geographicTextureCoordinateIndex"] =
+      updateTextureCoordinates(
+          model,
+          primitive,
+          StaticMeshBuildVertices,
+          indices,
+          rasterOverlay1,
           textureCoordinateMap);
 
   // TODO: add option to disable this
@@ -866,32 +876,16 @@ static void loadPrimitive(
     if (!onlyWater && !onlyLand) {
       // We have to use the water mask
       auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
-      auto waterMaskTextureCoordsIdIt =
-          primitive.extras.find("WaterMaskTexCoords");
       if (waterMaskTextureIdIt != primitive.extras.end() &&
-          waterMaskTextureIdIt->second.isInt64() &&
-          waterMaskTextureCoordsIdIt != primitive.extras.end() &&
-          waterMaskTextureCoordsIdIt->second.isInt64()) {
+          waterMaskTextureIdIt->second.isInt64()) {
         int32_t waterMaskTextureId = static_cast<int32_t>(
             waterMaskTextureIdIt->second.getInt64OrDefault(-1));
-        int64_t waterMaskTextureCoordsId =
-            waterMaskTextureCoordsIdIt->second.getInt64OrDefault(-1);
         CesiumGltf::TextureInfo waterMaskInfo;
         waterMaskInfo.index = waterMaskTextureId;
-        waterMaskInfo.texCoord = waterMaskTextureCoordsId;
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
           primitiveResult.waterMaskTexture =
               loadTexture(model, std::make_optional(waterMaskInfo));
-          primitiveResult
-              .textureCoordinateParameters["waterMaskTextureCoordinateIndex"] =
-              updateTextureCoordinates(
-                  model,
-                  primitive,
-                  StaticMeshBuildVertices,
-                  indices,
-                  "TEXCOORD_" + std::to_string(waterMaskTextureCoordsId),
-                  textureCoordinateMap);
         }
       }
     }
