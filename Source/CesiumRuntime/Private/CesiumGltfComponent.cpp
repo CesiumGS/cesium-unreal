@@ -845,7 +845,8 @@ static void loadPrimitive(
   // Currently only one set of raster overlay texture coordinates is supported.
   // TODO: Support more texture coordinate sets (e.g. web mercator and
   // geographic)
-  primitiveResult.textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
+  primitiveResult
+      .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
       updateTextureCoordinates(
           model,
           primitive,
@@ -854,7 +855,8 @@ static void loadPrimitive(
           rasterOverlay0,
           textureCoordinateMap);
 
-  primitiveResult.textureCoordinateParameters["geographicTextureCoordinateIndex"] =
+  primitiveResult
+      .textureCoordinateParameters["geographicTextureCoordinateIndex"] =
       updateTextureCoordinates(
           model,
           primitive,
