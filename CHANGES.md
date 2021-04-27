@@ -1,5 +1,10 @@
 # Change Log
 
+### v1.2.0 - 2021-05-03
+
+##### Additions  :tada:
+- Added dynamic camera that adapts to height above terrain.
+
 ### v1.0.0 - 2021-03-30 - Initial Release
 
 ##### Features  :tada:
