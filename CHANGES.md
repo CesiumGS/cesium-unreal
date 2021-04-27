@@ -6,6 +6,11 @@
 
 - Added Linux support.
 
+##### Fixes :wrench:
+
+* `FEditorDelegates::OnFocusViewportOnActors` is no longer unnecessarily subscribed to multiple times.
+* `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
+
 ### v1.1.1 - 2021-04-23
 
 ##### Fixes :wrench:
