@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.2.0 - 2021-05-03
+
+##### Additions :tada:
+
+- Added Linux support.
+
 ### v1.1.1 - 2021-04-23
 
 ##### Fixes :wrench:
