@@ -23,6 +23,7 @@
 #include "ChaosDerivedDataUtil.h"
 #endif
 #include "Cesium3DTiles/RasterOverlayTile.h"
+#include "Cesium3DTiles/Tile.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -136,6 +137,8 @@ uint32_t updateTextureCoordinates(
     uint32 vertexIndex = indices[i];
     if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
       vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+      vertex.UVs[textureCoordinateIndex].X =
+          1.0 - vertex.UVs[textureCoordinateIndex].X; 
     } else {
       vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
     }
@@ -1309,6 +1312,8 @@ bool applyTexture(
 }
 
 static void loadModelGameThreadPart(
+    Cesium3DTiles::Tile& tile,
+    UTextureRenderTarget2D* RenderTarget,
     UCesiumGltfComponent* pGltf,
     LoadModelResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
@@ -1387,7 +1392,58 @@ static void loadModelGameThreadPart(
   pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
   pMaterial->SetScalarParameterValue("opacityMask", 1.0);
 
-  applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
+	const CesiumGeometry::QuadtreeTileID *tileID =
+		std::get_if<CesiumGeometry::QuadtreeTileID>(&tile.getTileID());
+	if (!tileID) {
+	  tileID = &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&tile.getTileID())->tileID;
+	}
+
+    UTexture2D* pTexture =
+        UTexture2D::CreateTransient(256, 256, PF_R8G8B8A8);
+	FString level = FString::FromInt(tileID->level);
+	FString x = FString::FromInt(tileID->x);
+	FString y = FString::FromInt(tileID->y);
+	FText txt = FText::FromString(TEXT("Level: ") + level + "\n" + TEXT("X: ") + x + "\n" + TEXT("Y: ") + y);
+	FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
+	boxItem.LineThickness = 4.0f;
+	boxItem.SetColor(FLinearColor::Black);
+
+	FCanvasTextItem txtItem(
+		FVector2D(0.0f, 0.0f),
+		txt,
+		GEngine->GetLargeFont(),
+		FLinearColor::Black);
+	txtItem.Scale.Set(4.0f, 4.0f);
+
+	FCanvas Canvas(
+		RenderTarget->GameThread_GetRenderTargetResource(),
+		NULL,
+		0.0f,
+		0.0f,
+		0.0f,
+		GMaxRHIFeatureLevel); // UE4.5 GMaxRHIFeatureLevelValue);
+	Canvas.Clear(FLinearColor::White);
+	Canvas.DrawItem(txtItem, FVector2D(1.0, 1.0));
+	Canvas.DrawItem(boxItem);
+	Canvas.Flush_GameThread(true);
+
+	TArray<FColor> SurfData;
+	auto RenderResource = RenderTarget->GameThread_GetRenderTargetResource();
+	RenderResource->ReadPixels(SurfData);
+	pTexture->AddressX = TextureAddress::TA_Mirror;
+	pTexture->AddressY = TextureAddress::TA_Mirror;
+
+	unsigned char* pTextureData = static_cast<unsigned char*>(
+		pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	FMemory::Memcpy(
+		pTextureData,
+		SurfData.GetData(),
+		SurfData.Num() * SurfData.GetTypeSize());
+	pTexture->PlatformData->Mips[0].BulkData.Unlock();
+	pTexture->UpdateResource();
+  pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
+
+  //applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
   applyTexture(
       pMaterial,
       "metallicRoughnessTexture",
@@ -1476,6 +1532,8 @@ UCesiumGltfComponent::CreateOffGameThread(
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
+    Cesium3DTiles::Tile& tile,
+    UTextureRenderTarget2D* RenderTarget,
     AActor* pParentActor,
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
@@ -1496,7 +1554,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
 
   for (LoadModelResult& model : result) {
-    loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
+    loadModelGameThreadPart(tile, RenderTarget, Gltf, model, cesiumToUnrealTransform);
   }
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -1632,7 +1690,7 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
         continue;
       }
 
-      for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
+      for (size_t i = 1; i < this->OverlayTiles.Num(); ++i) {
         FRasterOverlayTile& overlayTile = this->OverlayTiles[i];
         std::string is = std::to_string(i + 1);
         pMaterial->SetTextureParameterValue(

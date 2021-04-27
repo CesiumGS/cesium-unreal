@@ -355,6 +355,8 @@ public:
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
       return UCesiumGltfComponent::CreateOnGameThread(
+          tile,
+          RenderTarget,
           this->_pActor,
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
@@ -426,7 +428,7 @@ public:
     if (pContent && pContent->model) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
-      if (pGltfContent) {
+      if (pGltfContent && false) {
         const CesiumGeometry::QuadtreeTileID *tileID =
             std::get_if<CesiumGeometry::QuadtreeTileID>(&tile.getTileID());
         if (!tileID) {

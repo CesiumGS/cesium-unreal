@@ -7,6 +7,9 @@
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
+#include "Engine/TextureRenderTarget2D.h"
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterialInterface;
@@ -61,6 +64,8 @@ public:
   );
 
   static UCesiumGltfComponent* CreateOnGameThread(
+      Cesium3DTiles::Tile &tile,
+	  UTextureRenderTarget2D* RenderTarget,
       AActor* ParentActor,
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
