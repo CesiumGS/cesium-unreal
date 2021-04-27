@@ -131,7 +131,6 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 
 glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
   FVector ueLocation = this->GetPawnViewLocation();
-  UE_LOG(LogTemp, Warning, TEXT("UE GetPawnViewLocation: %s"), *ueLocation.ToString());
 
   return this->Georeference->TransformUeToEcef(
       glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
@@ -381,8 +380,6 @@ void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
   }
 
   this->_currentEcef = this->GetECEFCameraLocation();
-  UE_LOG(LogTemp, Warning, TEXT("UE ECEF: %f, %f, %f"), (float)_currentEcef.x, (float)_currentEcef.y, (float)_currentEcef.z);
-  
   this->Georeference->AddGeoreferencedObject(this);
 }
 
