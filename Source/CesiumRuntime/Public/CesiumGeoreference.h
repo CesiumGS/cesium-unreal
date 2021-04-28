@@ -541,7 +541,6 @@ protected:
 #endif
 
 private:
-
   UPROPERTY()
   double _georeferencedToEcef_Array[16];
   glm::dmat4& _georeferencedToEcef = *(glm::dmat4*)_georeferencedToEcef_Array;
@@ -552,7 +551,7 @@ private:
 
   UPROPERTY()
   double _ueAbsToEcef_Array[16];
-  glm::dmat4& _ueAbsToEcef =  *(glm::dmat4*)_ueAbsToEcef_Array;
+  glm::dmat4& _ueAbsToEcef = *(glm::dmat4*)_ueAbsToEcef_Array;
 
   UPROPERTY()
   double _ecefToUeAbs_Array[16];
