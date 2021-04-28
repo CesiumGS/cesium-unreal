@@ -2,8 +2,9 @@
 
 ### v1.2.0 - 2021-05-03
 
-##### Additions :tada:
+##### Additions  :tada:
 
+- Added dynamic camera that adapts to height above terrain.
 - Added Linux support.
 
 ##### Fixes :wrench:
