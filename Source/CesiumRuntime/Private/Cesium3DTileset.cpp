@@ -591,28 +591,24 @@ void ACesium3DTileset::LoadTileset() {
     // the tileset to be destroyed and recreated when changed.
 
     // check if the tileset source selection itself changed
-    bool tilesetSourceChanged = 
-      this->TilesetSource != this->_lastTilesetSource;
+    bool tilesetSourceChanged = this->TilesetSource != this->_lastTilesetSource;
     this->_lastTilesetSource = this->TilesetSource;
 
     // check if the current tileset changed
     switch (this->TilesetSource) {
-      case ETilesetSource::FromUrl:
-        tilesetSourceChanged = 
-            pTileset->getUrl() ? 
-            TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl() :
-            this->Url.Len() > 0;
-        break;
-      case ETilesetSource::FromCesiumIon:
-        tilesetSourceChanged =
-            !pTileset->getIonAssetID() || 
-            !pTileset->getIonAccessToken() ||
-            this->IonAssetID != pTileset->getIonAssetID() || 
-            TCHAR_TO_UTF8(*this->IonAccessToken) != 
-              pTileset->getIonAccessToken();
-        break;
+    case ETilesetSource::FromUrl:
+      tilesetSourceChanged =
+          pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
+                             : this->Url.Len() > 0;
+      break;
+    case ETilesetSource::FromCesiumIon:
+      tilesetSourceChanged =
+          !pTileset->getIonAssetID() || !pTileset->getIonAccessToken() ||
+          this->IonAssetID != pTileset->getIonAssetID() ||
+          TCHAR_TO_UTF8(*this->IonAccessToken) != pTileset->getIonAccessToken();
+      break;
     }
-    
+
     bool waterMaskEnabledChanged =
         this->EnableWaterMask != pTileset->getOptions().enableWaterMask;
 
@@ -648,19 +644,19 @@ void ACesium3DTileset::LoadTileset() {
   options.enableWaterMask = this->EnableWaterMask;
 
   switch (this->TilesetSource) {
-    case ETilesetSource::FromUrl:
-      pTileset = new Cesium3DTiles::Tileset(
-          externals,
-          TCHAR_TO_UTF8(*this->Url),
-          options);
-      break;
-    case ETilesetSource::FromCesiumIon:
-      pTileset = new Cesium3DTiles::Tileset(
-          externals,
-          this->IonAssetID,
-          TCHAR_TO_UTF8(*this->IonAccessToken),
-          options);
-      break;
+  case ETilesetSource::FromUrl:
+    pTileset = new Cesium3DTiles::Tileset(
+        externals,
+        TCHAR_TO_UTF8(*this->Url),
+        options);
+    break;
+  case ETilesetSource::FromCesiumIon:
+    pTileset = new Cesium3DTiles::Tileset(
+        externals,
+        this->IonAssetID,
+        TCHAR_TO_UTF8(*this->IonAccessToken),
+        options);
+    break;
   }
 
   this->_pTileset = pTileset;

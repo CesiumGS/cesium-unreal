@@ -25,13 +25,13 @@ class TilesetView;
 UENUM()
 enum class ETilesetSource : uint8 {
   /**
-   * The tileset will be loaded from Cesium Ion using the provided IonAssetID 
-   * and IonAccessToken. 
+   * The tileset will be loaded from Cesium Ion using the provided IonAssetID
+   * and IonAccessToken.
    */
   FromCesiumIon UMETA(DisplayName = "From Cesium Ion"),
 
   /**
-   * The tileset will be loaded from the specified Url. 
+   * The tileset will be loaded from the specified Url.
    */
   FromUrl UMETA(DisplayName = "From Url")
 };
@@ -56,7 +56,10 @@ public:
    *
    * If this property is specified, the ion asset ID and token are ignored.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
   FString Url;
 
   /**
@@ -64,7 +67,10 @@ public:
    *
    * This property is ignored if the Url is specified.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   uint32 IonAssetID;
 
   /**
