@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
+	"Version": 3,
+	"VersionName": "1.1.1",
 	"FriendlyName": "Cesium for Unreal",
 	"Description": "Unlock the 3D geospatial ecosystem in Unreal Engine with real-world 3D content and a high accuracy full-scale WGS84 globe.",
 	"Category": "Geospatial",
@@ -20,13 +20,13 @@
 			"Name": "CesiumRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [ "Win64", "Mac" ]
+			"WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
 		},
 		{
 			"Name": "CesiumEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit",
-			"WhitelistPlatforms": [ "Win64", "Mac" ]
+			"WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
 		}
 	],
 	"Plugins": [

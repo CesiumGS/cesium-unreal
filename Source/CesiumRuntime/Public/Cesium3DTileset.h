@@ -4,16 +4,18 @@
 
 #include "Cesium3DTiles/ViewState.h"
 #include "CesiumCreditSystem.h"
+#include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceable.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include "Cesium3DTileset.generated.h"
 
-class UMaterial;
+class UMaterialInterface;
 
 namespace Cesium3DTiles {
 class Tileset;
@@ -50,6 +52,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      BlueprintReadOnly,
       Category = "Cesium",
       meta = (EditCondition = "IonAssetID"))
   FString IonAccessToken;
@@ -192,6 +195,25 @@ public:
   bool EnforceCulledScreenSpaceError = false;
 
   /**
+   * A list of rectangles that are excluded from this tileset. Any tiles that
+   * overlap any of these rectangles are not shown. This is a crude method to
+   * avoid overlapping geometry coming from different tilesets. For example, to
+   * exclude Cesium OSM Buildings where there are photogrammetry assets.
+   *
+   * Note that in the current version, excluded tiles are still loaded, they're
+   * just not displayed. Also, because the tiles shown when zoomed out cover a
+   * large area, using an exclusion zone often means the tileset won't be shown
+   * at all when zoomed out.
+   *
+   * This property is currently only supported for 3D Tiles that use "region"
+   * for their bounding volumes. For other tilesets it is silently ignored.
+   *
+   * This is an experimental feature and may change in future versions.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Experimental")
+  TArray<FCesiumExclusionZone> ExclusionZones;
+
+  /**
    * The screen-space error to be enforced for tiles that are outside the view
    * frustum or hidden in fog.
    *
@@ -224,7 +246,7 @@ public:
    * "GltfMaterialWithOverlays" material and customizing it as desired.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  UMaterial* Material = nullptr;
+  UMaterialInterface* Material = nullptr;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.
@@ -238,6 +260,17 @@ public:
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
   bool UpdateInEditor = true;
+
+  /**
+   * Define the collision profile for all the 3D tiles created inside this
+   * actor.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      Category = "Collision",
+      meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
+  FBodyInstance BodyInstance;
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
@@ -267,11 +300,18 @@ public:
   virtual void BeginDestroy() override;
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+  virtual void PostLoad() override;
 
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
+
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  virtual void PostInitProperties() override;
 
   virtual void NotifyHit(
       class UPrimitiveComponent* MyComp,
@@ -302,15 +342,32 @@ private:
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
 
+  /**
+   * Will be called after the tileset is loaded or spawned, to register
+   * a delegate that calls OnFocusEditorViewportOnThis when this
+   * tileset is double-clicked
+   */
+  void AddFocusViewportDelegate();
+
 #if WITH_EDITOR
   std::optional<UnrealCameraParameters> GetEditorCamera() const;
-  void OnFocusEditorViewportOnActors(const AActor* actor);
+
+  /**
+   * Will focus all viewports on this tileset.
+   *
+   * This is called when double-clicking the tileset in the World Outliner.
+   * It will move the tileset into the center of the view, *even if* the
+   * tileset was not visible before, and no geometry has been created yet
+   * for the tileset: It solely operates on the tile bounding volume that
+   * was given in the root tile.
+   */
+  void OnFocusEditorViewportOnThis();
 #endif
 
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
-  UMaterial* _lastMaterial = nullptr;
+  UMaterialInterface* _lastMaterial = nullptr;
 
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;

@@ -38,6 +38,11 @@ public class CesiumRuntime : ModuleRules
             libPostfix = ".a";
             libPrefix = "lib";
         }
+        else if(Target.Platform == UnrealTargetPlatform.Linux) {
+            platform = "Linux-x64";
+            libPostfix = ".a";
+            libPrefix = "lib";
+        }
         else {
             platform = "Unknown";
             libPostfix = ".Unknown";
@@ -61,6 +66,7 @@ public class CesiumRuntime : ModuleRules
             "CesiumGeospatial",
             "CesiumGltfReader",
             "CesiumGltf",
+            "CesiumJsonReader",
             "CesiumUtility",
             "draco",
             "modp_b64",
@@ -107,7 +113,8 @@ public class CesiumRuntime : ModuleRules
                 "StaticMeshDescription",
                 "HTTP",
                 "MikkTSpace",
-                "LevelSequence"
+                "LevelSequence",
+                "Projects"
             }
         );
 
@@ -150,5 +157,6 @@ public class CesiumRuntime : ModuleRules
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
+        bEnableExceptions = true;
     }
 }
