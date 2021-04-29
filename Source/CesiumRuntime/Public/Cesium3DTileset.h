@@ -380,7 +380,6 @@ private:
   Cesium3DTiles::Tileset* _pTileset;
 
   ETilesetSource _lastTilesetSource;
-  bool _lastEnableWaterMask;
   UMaterialInterface* _lastMaterial;
 
   uint32_t _lastTilesRendered;

@@ -50,7 +50,6 @@ ACesium3DTileset::ACesium3DTileset()
       _pTileset(nullptr),
 
       _lastTilesetSource(ETilesetSource::FromCesiumIon),
-      _lastEnableWaterMask(false),
       _lastMaterial(nullptr),
 
       _lastTilesRendered(0),
