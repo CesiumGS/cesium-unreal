@@ -866,18 +866,21 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  Cesium3DTiles::TilesetStreamingOptions& streamingOptions = this->_pTileset->getStreamingOptions();
+  Cesium3DTiles::TilesetStreamingOptions& streamingOptions =
+      this->_pTileset->getStreamingOptions();
   streamingOptions.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 
   streamingOptions.preloadAncestors = this->PreloadAncestors;
   streamingOptions.preloadSiblings = this->PreloadSiblings;
   streamingOptions.forbidHoles = this->ForbidHoles;
-  streamingOptions.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+  streamingOptions.maximumSimultaneousTileLoads =
+      this->MaximumSimultaneousTileLoads;
   streamingOptions.loadingDescendantLimit = this->LoadingDescendantLimit;
 
   streamingOptions.enableFrustumCulling = this->EnableFrustumCulling;
   streamingOptions.enableFogCulling = this->EnableFogCulling;
-  streamingOptions.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
+  streamingOptions.enforceCulledScreenSpaceError =
+      this->EnforceCulledScreenSpaceError;
   streamingOptions.culledScreenSpaceError = this->CulledScreenSpaceError;
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
