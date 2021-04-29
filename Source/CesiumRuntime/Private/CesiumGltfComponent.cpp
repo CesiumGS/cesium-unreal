@@ -138,7 +138,7 @@ uint32_t updateTextureCoordinates(
     if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
       vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
       vertex.UVs[textureCoordinateIndex].X =
-          1.0 - vertex.UVs[textureCoordinateIndex].X; 
+          1.0 - vertex.UVs[textureCoordinateIndex].X;
     } else {
       vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
     }
@@ -246,6 +246,109 @@ static void computeFlatNormals(
     v1.TangentZ = v0.TangentZ;
     v2.TangentZ = v0.TangentZ;
   }
+}
+
+static FString fromSelectionState(Cesium3DTiles::TileSelectionState::Result result) {
+  FString lastResult;
+  switch (result) {
+  case Cesium3DTiles::TileSelectionState::Result::None:
+    lastResult = "None";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::Culled:
+    lastResult = "Culled";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::Rendered:
+    lastResult = "Rendered";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::Refined:
+    lastResult = "Refined";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::RenderedAndKicked:
+    lastResult = "Rendered Ki";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::RefinedAndKicked:
+    lastResult = "Refined Ki";
+    break;
+  default:
+    break;
+  }
+
+  return lastResult;
+}
+
+static void drawDebugTexture(const Cesium3DTiles::Tile *tile, UTextureRenderTarget2D* RenderTarget, UMaterialInstanceDynamic *pMaterial, UTexture2D *pTexture) {
+  const CesiumGeometry::QuadtreeTileID* tileID =
+      std::get_if<CesiumGeometry::QuadtreeTileID>(&tile->getTileID());
+  if (!tileID) {
+    tileID =
+        &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&tile->getTileID())
+             ->tileID;
+  }
+  Cesium3DTiles::TileSelectionState prevLastSelection =
+      tile->getPrevLastSelectionState();
+  Cesium3DTiles::TileSelectionState lastSelection =
+      tile->getLastSelectionState();
+  uint32_t frameNumber = lastSelection.getFrameNumber();
+  FString lastResult = fromSelectionState(lastSelection.getResult(frameNumber));
+
+  uint32_t prevFrameNumber = prevLastSelection.getFrameNumber();
+  FString prevLastResult =
+      fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
+  FString prevLine = FString::FromInt(prevLastSelection.getLine());
+
+  FString level = FString::FromInt(tileID->level);
+  FString x = FString::FromInt(tileID->x);
+  FString y = FString::FromInt(tileID->y);
+  FString frameStr = FString::FromInt(frameNumber);
+  FString prevFrameStr = FString::FromInt(prevFrameNumber);
+  FText txt = FText::FromString(
+      TEXT("Level: ") + level + "\n" + 
+      TEXT("X: ") + x + "\n" + 
+      TEXT("Y: ") + y + "\n" +
+      TEXT("Curr: ") + lastResult + "\n" + 
+      TEXT("Frame: ") + frameStr + "\n" +
+      TEXT("Last: ") + prevLastResult + "\n" + 
+      TEXT("PrevFrame: ") + prevFrameStr + "\n" +
+      TEXT("Line: " + prevLine)
+  );
+  FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
+  boxItem.LineThickness = 4.0f;
+  boxItem.SetColor(FLinearColor::Black);
+
+  FCanvasTextItem txtItem(
+      FVector2D(0.0f, 0.0f),
+      txt,
+      GEngine->GetLargeFont(),
+      FLinearColor::Black);
+  txtItem.Scale.Set(2.0f, 2.0f);
+
+  FCanvas Canvas(
+      RenderTarget->GameThread_GetRenderTargetResource(),
+      NULL,
+      0.0f,
+      0.0f,
+      0.0f,
+      GMaxRHIFeatureLevel); // UE4.5 GMaxRHIFeatureLevelValue);
+  Canvas.Clear(FLinearColor::White);
+  Canvas.DrawItem(txtItem, FVector2D(1.0, 1.0));
+  Canvas.DrawItem(boxItem);
+  Canvas.Flush_GameThread(true);
+
+  TArray<FColor> SurfData;
+  auto RenderResource = RenderTarget->GameThread_GetRenderTargetResource();
+  RenderResource->ReadPixels(SurfData);
+  pTexture->AddressX = TextureAddress::TA_Mirror;
+  pTexture->AddressY = TextureAddress::TA_Mirror;
+
+  unsigned char* pTextureData = static_cast<unsigned char*>(
+      pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+  FMemory::Memcpy(
+      pTextureData,
+      SurfData.GetData(),
+      SurfData.Num() * SurfData.GetTypeSize());
+  pTexture->PlatformData->Mips[0].BulkData.Unlock();
+  pTexture->UpdateResource();
+  pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
 }
 
 #if !PHYSICS_INTERFACE_PHYSX
@@ -1392,58 +1495,99 @@ static void loadModelGameThreadPart(
   pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
   pMaterial->SetScalarParameterValue("opacityMask", 1.0);
 
-	const CesiumGeometry::QuadtreeTileID *tileID =
-		std::get_if<CesiumGeometry::QuadtreeTileID>(&tile.getTileID());
-	if (!tileID) {
-	  tileID = &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&tile.getTileID())->tileID;
-	}
+  bool upsample = false;
+  const CesiumGeometry::QuadtreeTileID* tileID =
+      std::get_if<CesiumGeometry::QuadtreeTileID>(&tile.getTileID());
+  if (!tileID) {
+    upsample = true;
+    tileID =
+        &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&tile.getTileID())
+             ->tileID;
+  }
+  Cesium3DTiles::TileSelectionState lastSelection =
+      tile.getLastSelectionState();
+  uint32_t frameNumber = lastSelection.getFrameNumber();
+  FString lastResult;
+  switch (lastSelection.getResult(frameNumber)) {
+  case Cesium3DTiles::TileSelectionState::Result::None:
+    lastResult = "None";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::Culled:
+    lastResult = "Culled";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::Rendered:
+    lastResult = "Rendered";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::Refined:
+    lastResult = "Refined";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::RenderedAndKicked:
+    lastResult = "Rendered Ki";
+    break;
+  case Cesium3DTiles::TileSelectionState::Result::RefinedAndKicked:
+    lastResult = "Refined Ki";
+    break;
+  default:
+    break;
+  }
 
-    UTexture2D* pTexture =
-        UTexture2D::CreateTransient(256, 256, PF_R8G8B8A8);
-	FString level = FString::FromInt(tileID->level);
-	FString x = FString::FromInt(tileID->x);
-	FString y = FString::FromInt(tileID->y);
-	FText txt = FText::FromString(TEXT("Level: ") + level + "\n" + TEXT("X: ") + x + "\n" + TEXT("Y: ") + y);
-	FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
-	boxItem.LineThickness = 4.0f;
-	boxItem.SetColor(FLinearColor::Black);
+  pGltf->DebugMaterial = pMaterial;
+  pGltf->DebugTile = &tile;
+  pGltf->RenderTarget = RenderTarget;
 
-	FCanvasTextItem txtItem(
-		FVector2D(0.0f, 0.0f),
-		txt,
-		GEngine->GetLargeFont(),
-		FLinearColor::Black);
-	txtItem.Scale.Set(4.0f, 4.0f);
+  UTexture2D* pTexture = UTexture2D::CreateTransient(256, 256, PF_R8G8B8A8);
+  FString level = FString::FromInt(tileID->level);
+  FString x = FString::FromInt(tileID->x);
+  FString y = FString::FromInt(tileID->y);
+  FString frameStr = FString::FromInt(frameNumber);
+  FText txt = FText::FromString(
+      TEXT("Level: ") + level + "\n" + 
+      TEXT("X: ") + x + "\n" + 
+      TEXT("Y: ") + y + "\n" +
+      TEXT("Created: ") + lastResult + "\n"
+  );
+  FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
+  boxItem.LineThickness = 4.0f;
+  boxItem.SetColor(FLinearColor::Black);
 
-	FCanvas Canvas(
-		RenderTarget->GameThread_GetRenderTargetResource(),
-		NULL,
-		0.0f,
-		0.0f,
-		0.0f,
-		GMaxRHIFeatureLevel); // UE4.5 GMaxRHIFeatureLevelValue);
-	Canvas.Clear(FLinearColor::White);
-	Canvas.DrawItem(txtItem, FVector2D(1.0, 1.0));
-	Canvas.DrawItem(boxItem);
-	Canvas.Flush_GameThread(true);
+  FCanvasTextItem txtItem(
+      FVector2D(0.0f, 0.0f),
+      txt,
+      GEngine->GetLargeFont(),
+      FLinearColor::Black);
+  txtItem.Scale.Set(2.0f, 2.0f);
 
-	TArray<FColor> SurfData;
-	auto RenderResource = RenderTarget->GameThread_GetRenderTargetResource();
-	RenderResource->ReadPixels(SurfData);
-	pTexture->AddressX = TextureAddress::TA_Mirror;
-	pTexture->AddressY = TextureAddress::TA_Mirror;
+  FCanvas Canvas(
+      RenderTarget->GameThread_GetRenderTargetResource(),
+      NULL,
+      0.0f,
+      0.0f,
+      0.0f,
+      GMaxRHIFeatureLevel); // UE4.5 GMaxRHIFeatureLevelValue);
+  Canvas.Clear(upsample ? FLinearColor::Red : FLinearColor::White);
+  Canvas.DrawItem(txtItem, FVector2D(1.0, 1.0));
+  Canvas.DrawItem(boxItem);
+  Canvas.Flush_GameThread(true);
 
-	unsigned char* pTextureData = static_cast<unsigned char*>(
-		pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-	FMemory::Memcpy(
-		pTextureData,
-		SurfData.GetData(),
-		SurfData.Num() * SurfData.GetTypeSize());
-	pTexture->PlatformData->Mips[0].BulkData.Unlock();
-	pTexture->UpdateResource();
+  TArray<FColor> SurfData;
+  auto RenderResource = RenderTarget->GameThread_GetRenderTargetResource();
+  RenderResource->ReadPixels(SurfData);
+  pTexture->AddressX = TextureAddress::TA_Mirror;
+  pTexture->AddressY = TextureAddress::TA_Mirror;
+
+  unsigned char* pTextureData = static_cast<unsigned char*>(
+      pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+  FMemory::Memcpy(
+      pTextureData,
+      SurfData.GetData(),
+      SurfData.Num() * SurfData.GetTypeSize());
+  pTexture->PlatformData->Mips[0].BulkData.Unlock();
+  pTexture->UpdateResource();
   pMaterial->SetTextureParameterValue("baseColorTexture", pTexture);
 
-  //applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
+  pGltf->DebugTexture = pTexture;
+
+  // applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
   applyTexture(
       pMaterial,
       "metallicRoughnessTexture",
@@ -1554,7 +1698,12 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
 
   for (LoadModelResult& model : result) {
-    loadModelGameThreadPart(tile, RenderTarget, Gltf, model, cesiumToUnrealTransform);
+    loadModelGameThreadPart(
+        tile,
+        RenderTarget,
+        Gltf,
+        model,
+        cesiumToUnrealTransform);
   }
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -1583,6 +1732,44 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
 
 UCesiumGltfComponent::~UCesiumGltfComponent() {
   UE_LOG(LogCesium, VeryVerbose, TEXT("~UCesiumGltfComponent"));
+}
+
+void UCesiumGltfComponent::SetRender(bool rendered) {
+  const CesiumGeometry::QuadtreeTileID* tileID =
+	  std::get_if<CesiumGeometry::QuadtreeTileID>(&DebugTile->getTileID());
+  if (!tileID) {
+	tileID =
+		&std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&DebugTile->getTileID())
+			 ->tileID;
+  }
+  Cesium3DTiles::TileSelectionState prevLastSelection =
+	  DebugTile->getPrevLastSelectionState();
+  Cesium3DTiles::TileSelectionState lastSelection =
+	  DebugTile->getLastSelectionState();
+  uint32_t frameNumber = lastSelection.getFrameNumber();
+  FString lastResult = fromSelectionState(lastSelection.getResult(frameNumber));
+
+  uint32_t prevFrameNumber = prevLastSelection.getFrameNumber();
+  FString prevLastResult =
+	  fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
+
+  UE_LOG(LogCesium, 
+	  Display, 
+	  TEXT("Frame %d: Id(level: %d, x: %d, y: %d) CurrState(%s) PrevState(%s, frame %d)"), 
+	  frameNumber,
+	  tileID->level, tileID->x, tileID->y,
+      *lastResult,
+	  *prevLastResult, prevFrameNumber
+	  );
+
+  if (rendered) {
+      drawDebugTexture(DebugTile, RenderTarget, DebugMaterial, DebugTexture);
+	  this->SetVisibility(true, true);
+	  this->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+  } else {
+      this->SetVisibility(false, true);
+      this->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  }
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(

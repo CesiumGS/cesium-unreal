@@ -2,14 +2,14 @@
 
 #pragma once
 
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
-#include "Engine/TextureRenderTarget2D.h"
-#include "CanvasItem.h"
-#include "CanvasTypes.h"
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterialInterface;
@@ -64,8 +64,8 @@ public:
   );
 
   static UCesiumGltfComponent* CreateOnGameThread(
-      Cesium3DTiles::Tile &tile,
-	  UTextureRenderTarget2D* RenderTarget,
+      Cesium3DTiles::Tile& tile,
+      UTextureRenderTarget2D* RenderTarget,
       AActor* ParentActor,
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
@@ -79,6 +79,13 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* OpacityMaskMaterial;
+
+  UMaterialInstanceDynamic* DebugMaterial = nullptr;
+  UTexture2D* DebugTexture = nullptr;
+  UTextureRenderTarget2D* RenderTarget = nullptr;
+  Cesium3DTiles::Tile* DebugTile = nullptr;
+
+  void SetRender(bool rendered);
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
