@@ -1,6 +1,5 @@
 ﻿// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-
 #include "CesiumTMSRasterOverlay.h"
 
 #include "CesiumRuntime.h"
@@ -14,7 +13,7 @@ UCesiumTMSRasterOverlay::CreateOverlay() {
     Options.maximumLevel = MaximumLevel;
   }
   return std::make_unique<Cesium3DTiles::TileMapServiceRasterOverlay>(
-    TCHAR_TO_UTF8(*this->SourceURL),
-    std::vector<CesiumAsync::IAssetAccessor::THeader>(),
-    Options);
+      TCHAR_TO_UTF8(*this->SourceURL),
+      std::vector<CesiumAsync::IAssetAccessor::THeader>(),
+      Options);
 }
