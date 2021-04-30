@@ -12,7 +12,6 @@
 
 ##### Additions :tada:
 
-- Updated to use the new `Cesium3DTiles::TilesetStreamingOptions` and `Cesium3DTiles::TilesetContentOptions`.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`. 
 - Added macOS support.
 - Added support for the legacy `gltfUpAxis` property in a tileset `asset` dictionary. Although this property is **not** part of the specification, there are many existing assets that use this property and had been shown with a wrong rotation otherwise.
