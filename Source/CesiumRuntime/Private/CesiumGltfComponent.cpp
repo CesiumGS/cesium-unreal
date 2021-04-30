@@ -1042,8 +1042,23 @@ static void loadNode(
     IPhysXCooking* pPhysXCooking
 #endif
 ) {
-  static constexpr std::array<double, 16> identityMatrix =
-      {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  static constexpr std::array<double, 16> identityMatrix = {
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0};
 
   glm::dmat4x4 nodeTransform = transform;
 
