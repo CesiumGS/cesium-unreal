@@ -2,7 +2,7 @@
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
-#include "CesiumListener.h"
+#include "CesiumGeoreferenceListener.h"
 #include "CesiumBoundingVolumeProvider.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"

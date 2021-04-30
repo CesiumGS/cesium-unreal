@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTiles/BoundingVolume.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceable.h"
+#include "CesiumGeoreferenceListener.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -25,7 +24,7 @@
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
     : public USceneComponent,
-      public ICesiumGeoreferenceable {
+      public ICesiumGeoreferenceListener {
   GENERATED_BODY()
 
 public:
@@ -160,10 +159,6 @@ public:
 
   virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
-  // ICesiumGeoreferenceable virtual functions
-  virtual bool IsBoundingVolumeReady() const override;
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
-  GetBoundingVolume() const override;
   virtual void NotifyGeoreferenceUpdated() override;
 
 protected:

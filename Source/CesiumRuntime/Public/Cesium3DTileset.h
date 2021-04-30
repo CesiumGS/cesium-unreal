@@ -288,8 +288,7 @@ public:
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
-  // ICesiumGeoreferenceable implementation
-  virtual Cesium3DTiles::BoundingVolume GetBoundingVolume() const override;
+  virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
   virtual void NotifyGeoreferenceUpdated();
 
   // AActor overrides
@@ -364,7 +363,7 @@ private:
 
 private:
 
-  bool _isBoundingVolumeReady();
+  bool _isBoundingVolumeReady() const;
 
   Cesium3DTiles::Tileset* _pTileset;
 

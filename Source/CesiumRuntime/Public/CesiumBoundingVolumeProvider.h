@@ -27,5 +27,5 @@ public:
    * will be returned. Use
    * {@see IsBoundingVolumeReady} to determine which of these is the case.
    */
-  virtual Cesium3DTiles::BoundingVolume GetBoundingVolume() const = 0;
+  virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const = 0;
 };

@@ -37,8 +37,8 @@ void UCesium3DTilesetRoot::RecalculateTransform() {
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
-void NotifyGeoreferenceUpdated() {
-  this->_updateTiletToUnrealRelativeWorldTransform();
+void UCesium3DTilesetRoot::NotifyGeoreferenceUpdated() {
+  this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
 const glm::dmat4&

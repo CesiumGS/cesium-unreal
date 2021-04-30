@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Cesium3DTiles/BoundingVolume.h"
-#include "CesiumGeoreferenceable.h"
+#include "CesiumGeoreferenceListener.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
 #include <glm/mat3x3.hpp>
@@ -22,7 +21,7 @@ class UCurveFloat;
 UCLASS()
 class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
     : public ADefaultPawn,
-      public ICesiumGeoreferenceable {
+      public ICesiumGeoreferenceListener {
   GENERATED_BODY()
 
 public:
@@ -186,15 +185,6 @@ public:
       float YawAtDestination,
       float PitchAtDestination,
       bool CanInterruptByMoving);
-
-  // ICesiumGeoreferenceable functions
-
-  virtual bool IsBoundingVolumeReady() const override { return false; }
-
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
-  GetBoundingVolume() const override {
-    return std::nullopt;
-  }
 
   virtual void NotifyGeoreferenceUpdated() override;
 

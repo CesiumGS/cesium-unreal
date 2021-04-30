@@ -233,15 +233,6 @@ void UCesiumGeoreferenceComponent::OnComponentDestroyed(
   Super::OnComponentDestroyed(bDestroyingHierarchy);
 }
 
-bool UCesiumGeoreferenceComponent::IsBoundingVolumeReady() const {
-  return false;
-}
-
-std::optional<Cesium3DTiles::BoundingVolume>
-UCesiumGeoreferenceComponent::GetBoundingVolume() const {
-  return std::nullopt;
-}
-
 void UCesiumGeoreferenceComponent::NotifyGeoreferenceUpdated() {
   this->_updateActorToUnrealRelativeWorldTransform();
   this->_setTransform(this->_actorToUnrealRelativeWorld);
