@@ -7,6 +7,7 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
@@ -609,7 +610,8 @@ void ACesium3DTileset::LoadTileset() {
     }
 
     bool waterMaskEnabledChanged =
-        this->EnableWaterMask != pTileset->getContentOptions().enableWaterMask;
+        this->EnableWaterMask !=
+        pTileset->getOptions().contentOptions.enableWaterMask;
 
     bool materialChanged = this->Material != this->_lastMaterial;
     this->_lastMaterial = this->Material;
@@ -639,22 +641,22 @@ void ACesium3DTileset::LoadTileset() {
                          : nullptr,
       spdlog::default_logger()};
 
-  Cesium3DTiles::TilesetContentOptions contentOptions;
-  contentOptions.enableWaterMask = this->EnableWaterMask;
+  Cesium3DTiles::TilesetOptions options;
+  options.contentOptions.enableWaterMask = this->EnableWaterMask;
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         TCHAR_TO_UTF8(*this->Url),
-        contentOptions);
+        options);
     break;
   case ETilesetSource::FromCesiumIon:
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         this->IonAssetID,
         TCHAR_TO_UTF8(*this->IonAccessToken),
-        contentOptions);
+        options);
     break;
   }
 
@@ -865,22 +867,19 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  Cesium3DTiles::TilesetStreamingOptions& streamingOptions =
-      this->_pTileset->getStreamingOptions();
-  streamingOptions.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+  Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
+  options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 
-  streamingOptions.preloadAncestors = this->PreloadAncestors;
-  streamingOptions.preloadSiblings = this->PreloadSiblings;
-  streamingOptions.forbidHoles = this->ForbidHoles;
-  streamingOptions.maximumSimultaneousTileLoads =
-      this->MaximumSimultaneousTileLoads;
-  streamingOptions.loadingDescendantLimit = this->LoadingDescendantLimit;
+  options.preloadAncestors = this->PreloadAncestors;
+  options.preloadSiblings = this->PreloadSiblings;
+  options.forbidHoles = this->ForbidHoles;
+  options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+  options.loadingDescendantLimit = this->LoadingDescendantLimit;
 
-  streamingOptions.enableFrustumCulling = this->EnableFrustumCulling;
-  streamingOptions.enableFogCulling = this->EnableFogCulling;
-  streamingOptions.enforceCulledScreenSpaceError =
-      this->EnforceCulledScreenSpaceError;
-  streamingOptions.culledScreenSpaceError = this->CulledScreenSpaceError;
+  options.enableFrustumCulling = this->EnableFrustumCulling;
+  options.enableFogCulling = this->EnableFogCulling;
+  options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
+  options.culledScreenSpaceError = this->CulledScreenSpaceError;
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {
