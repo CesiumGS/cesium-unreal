@@ -306,7 +306,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
   // to update it
   if (this->Georeference) {
     if (!this->_georeferenced) {
-      this->Georeference->AddGeoreferencedObject(this);
+      this->Georeference->AddGeoreferenceListener(this);
       this->_georeferenced = true;
       return;
     }
@@ -320,7 +320,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
       ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
   if (this->Georeference) {
     this->_updateActorToECEF();
-    this->Georeference->AddGeoreferencedObject(this);
+    this->Georeference->AddGeoreferenceListener(this);
     this->_georeferenced = true;
   }
 

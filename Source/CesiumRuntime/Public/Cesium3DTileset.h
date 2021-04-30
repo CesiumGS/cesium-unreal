@@ -289,7 +289,6 @@ public:
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
   virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
-  virtual void NotifyGeoreferenceUpdated();
 
   // AActor overrides
   virtual bool ShouldTickIfViewportsOnly() const override;

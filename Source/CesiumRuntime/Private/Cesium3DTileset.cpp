@@ -245,7 +245,11 @@ bool ACesium3DTileset::_isBoundingVolumeReady() const {
   return this->_pTileset && this->_pTileset->getRootTile();
 }
 
-Cesium3DTiles::BoundingVolume ACesium3DTileset::GetBoundingVolume() const {
+std::optional<Cesium3DTiles::BoundingVolume> ACesium3DTileset::GetBoundingVolume() const {
+  if (!this->_isBoundingVolumeReady()) {
+    return std::nullopt;
+  }
+
   return this->_pTileset->getRootTile()->getBoundingVolume();
 }
 

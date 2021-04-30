@@ -300,7 +300,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
 
       for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
            this->_boundingVolumeProviders) {
-        if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
+        if (pObject.IsValid()) {
           std::optional<Cesium3DTiles::BoundingVolume> bv =
               pObject->GetBoundingVolume();
           if (bv) {

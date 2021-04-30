@@ -404,7 +404,7 @@ void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
   }
 
   this->_currentEcef = this->GetECEFCameraLocation();
-  this->Georeference->AddGeoreferencedObject(this);
+  this->Georeference->AddGeoreferenceListener(this);
 }
 
 void AGlobeAwareDefaultPawn::BeginPlay() {
