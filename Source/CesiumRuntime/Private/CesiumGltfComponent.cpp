@@ -865,7 +865,6 @@ static void loadPrimitive(
           rasterOverlay1,
           textureCoordinateMap);
 
-  // TODO: add option to disable this
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");

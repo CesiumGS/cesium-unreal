@@ -7,6 +7,7 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
@@ -48,6 +49,9 @@ ACesium3DTileset::ACesium3DTileset()
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
+
+      _lastTilesetSource(ETilesetSource::FromCesiumIon),
+      _lastMaterial(nullptr),
 
       _lastTilesRendered(0),
       _lastTilesLoadingLowPriority(0),
@@ -580,29 +584,43 @@ void ACesium3DTileset::LoadTileset() {
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
   if (pTileset) {
-    if (this->Material == _lastMaterial) {
-      // The material hasn't been changed, check for changes in the url or Ion
-      // asset ID / access token
-      if (this->Url.Len() > 0) {
-        if (pTileset->getUrl() &&
-            TCHAR_TO_UTF8(*this->Url) == pTileset->getUrl()) {
-          // Already using this URL.
-          return;
-        }
-      } else {
-        if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() &&
-            this->IonAssetID == pTileset->getIonAssetID() &&
-            TCHAR_TO_UTF8(*this->IonAccessToken) ==
-                pTileset->getIonAccessToken()) {
-          // Already using this asset ID and access token.
-          return;
-        }
-      }
-    } else {
-      _lastMaterial = this->Material;
+    // The tileset already exists, check if any properties were changed. If
+    // none were changed we can ignore this LoadTileset call.
+
+    // Unlike the set of properties checked in Tick, these properties require
+    // the tileset to be destroyed and recreated when changed.
+
+    // check if the tileset source selection itself changed
+    bool tilesetSourceChanged = this->TilesetSource != this->_lastTilesetSource;
+    this->_lastTilesetSource = this->TilesetSource;
+
+    // check if the current tileset changed
+    switch (this->TilesetSource) {
+    case ETilesetSource::FromUrl:
+      tilesetSourceChanged =
+          pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
+                             : this->Url.Len() > 0;
+      break;
+    case ETilesetSource::FromCesiumIon:
+      tilesetSourceChanged =
+          !pTileset->getIonAssetID() || !pTileset->getIonAccessToken() ||
+          this->IonAssetID != pTileset->getIonAssetID() ||
+          TCHAR_TO_UTF8(*this->IonAccessToken) != pTileset->getIonAccessToken();
+      break;
     }
 
-    this->DestroyTileset();
+    bool waterMaskEnabledChanged =
+        this->EnableWaterMask !=
+        pTileset->getOptions().contentOptions.enableWaterMask;
+
+    bool materialChanged = this->Material != this->_lastMaterial;
+    this->_lastMaterial = this->Material;
+
+    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged) {
+      this->DestroyTileset();
+    } else {
+      return;
+    }
   }
 
   if (!this->Georeference) {
@@ -623,13 +641,23 @@ void ACesium3DTileset::LoadTileset() {
                          : nullptr,
       spdlog::default_logger()};
 
-  if (this->Url.Len() > 0) {
-    pTileset = new Cesium3DTiles::Tileset(externals, TCHAR_TO_UTF8(*this->Url));
-  } else {
+  Cesium3DTiles::TilesetOptions options;
+  options.contentOptions.enableWaterMask = this->EnableWaterMask;
+
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
+    pTileset = new Cesium3DTiles::Tileset(
+        externals,
+        TCHAR_TO_UTF8(*this->Url),
+        options);
+    break;
+  case ETilesetSource::FromCesiumIon:
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         this->IonAssetID,
-        TCHAR_TO_UTF8(*this->IonAccessToken));
+        TCHAR_TO_UTF8(*this->IonAccessToken),
+        options);
+    break;
   }
 
   this->_pTileset = pTileset;
@@ -839,9 +867,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  // TODO: updating the options should probably happen in OnConstruction or
-  // PostEditChangeProperty, no need to have it happen every frame when the
-  // options haven't been changed
   Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
   options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 
@@ -855,8 +880,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError = this->CulledScreenSpaceError;
-
-  options.enableWaterMask = this->EnableWaterMask;
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {
