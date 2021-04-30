@@ -311,14 +311,16 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
   this->LoadTileset();
 
   // Hide all existing tiles. The still-visible ones will be shown next time we
-  // tick.
-  TArray<UCesiumGltfComponent*> gltfComponents;
-  this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+  // tick. But if update is suspended, leave the components in their current state.
+  if (!this->SuspendUpdate) {
+    TArray<UCesiumGltfComponent*> gltfComponents;
+    this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
-  for (UCesiumGltfComponent* pGltf : gltfComponents) {
-    if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
-      pGltf->SetVisibility(false, true);
-      pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    for (UCesiumGltfComponent* pGltf : gltfComponents) {
+      if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
+        pGltf->SetVisibility(false, true);
+        pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      }
     }
   }
 }
