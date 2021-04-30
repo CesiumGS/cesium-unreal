@@ -16,12 +16,22 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString SourceURL;
 
-  // Minimum zoom level of the raster tiles. If MaximumLevel <= MinimumLevel,
-  // the provider will attempt to determine these values.
+  /**
+  * Whether to clamp zoom levels between MinimumLevel and MaximumLevel or
+  automatically determine them from the source.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  bool bClampWithDefinedZoomLevels = false;
+
+  /**
+   * Minimum zoom level.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   int32 MinimumLevel = 0;
 
-  // Maximum zoom level of the raster tiles.
+  /**
+   * Maximum zoom level.
+   */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   int32 MaximumLevel = 10;
 

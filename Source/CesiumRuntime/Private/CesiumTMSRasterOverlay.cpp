@@ -8,7 +8,7 @@
 std::unique_ptr<Cesium3DTiles::RasterOverlay>
 UCesiumTMSRasterOverlay::CreateOverlay() {
   Cesium3DTiles::TileMapServiceRasterOverlayOptions Options;
-  if (MaximumLevel > MinimumLevel) {
+  if (MaximumLevel > MinimumLevel && bClampWithDefinedZoomLevels) {
     Options.minimumLevel = MinimumLevel;
     Options.maximumLevel = MaximumLevel;
   }
