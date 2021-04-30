@@ -311,7 +311,8 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
   this->LoadTileset();
 
   // Hide all existing tiles. The still-visible ones will be shown next time we
-  // tick. But if update is suspended, leave the components in their current state.
+  // tick. But if update is suspended, leave the components in their current
+  // state.
   if (!this->SuspendUpdate) {
     TArray<UCesiumGltfComponent*> gltfComponents;
     this->GetComponents<UCesiumGltfComponent>(gltfComponents);
