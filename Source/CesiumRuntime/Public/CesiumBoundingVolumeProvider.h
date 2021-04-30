@@ -20,12 +20,12 @@ class CESIUMRUNTIME_API ICesiumBoundingVolumeProvider {
   GENERATED_BODY()
 
 public:
-
   /**
    * Gets the bounding volume of this georeferenceable object. If the bounding
    * volume is not yet ready or if the object has no bounding volume, nullopt
    * will be returned. Use
    * {@see IsBoundingVolumeReady} to determine which of these is the case.
    */
-  virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const = 0;
+  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  GetBoundingVolume() const = 0;
 };

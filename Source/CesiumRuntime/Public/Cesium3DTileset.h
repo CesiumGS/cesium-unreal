@@ -3,10 +3,10 @@
 #pragma once
 
 #include "Cesium3DTiles/ViewState.h"
+#include "CesiumBoundingVolumeProvider.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
-#include "CesiumBoundingVolumeProvider.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
@@ -23,8 +23,9 @@ class TilesetView;
 } // namespace Cesium3DTiles
 
 UCLASS()
-class CESIUMRUNTIME_API ACesium3DTileset : public AActor,
-                                           public ICesiumBoundingVolumeProvider {
+class CESIUMRUNTIME_API ACesium3DTileset
+    : public AActor,
+      public ICesiumBoundingVolumeProvider {
   GENERATED_BODY()
 
 public:
@@ -288,7 +289,8 @@ public:
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
-  virtual std::optional<Cesium3DTiles::BoundingVolume> GetBoundingVolume() const override;
+  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  GetBoundingVolume() const override;
 
   // AActor overrides
   virtual bool ShouldTickIfViewportsOnly() const override;
@@ -361,7 +363,6 @@ private:
 #endif
 
 private:
-
   bool _isBoundingVolumeReady() const;
 
   Cesium3DTiles::Tileset* _pTileset;

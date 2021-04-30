@@ -513,16 +513,16 @@ public:
   }
 
   /**
-   * Adds a ICesiumGeoreferenceListener to be notified on changes to the world 
+   * Adds a ICesiumGeoreferenceListener to be notified on changes to the world
    * georeference transforms.
    */
   void AddGeoreferenceListener(ICesiumGeoreferenceListener* Object);
 
   /**
-   * Adds a ICesiumBoundingVolumeProvider that will contribute to the 
-   * georeference origin placement when OriginPlacement = 
+   * Adds a ICesiumBoundingVolumeProvider that will contribute to the
+   * georeference origin placement when OriginPlacement =
    * EOriginPlacement::BoundingVolumeOrigin. Other origin placement modes will
-   * be unaffected by bounding volume providers. 
+   * be unaffected by bounding volume providers.
    */
   void AddBoundingVolumeProvider(ICesiumBoundingVolumeProvider* Object);
 
@@ -580,5 +580,6 @@ private:
       FHitResult& HitResult);
 #endif
   TArray<TWeakInterfacePtr<ICesiumGeoreferenceListener>> _georeferenceListeners;
-  TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>> _boundingVolumeProviders;
+  TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>>
+      _boundingVolumeProviders;
 };

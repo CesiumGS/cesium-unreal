@@ -2,8 +2,8 @@
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
-#include "CesiumGeoreferenceListener.h"
 #include "CesiumBoundingVolumeProvider.h"
+#include "CesiumGeoreferenceListener.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -252,7 +252,7 @@ void ACesiumGeoreference::AddGeoreferenceListener(
 
 void ACesiumGeoreference::AddBoundingVolumeProvider(
     ICesiumBoundingVolumeProvider* Object) {
-  
+
   this->_boundingVolumeProviders.Add(*Object);
 
   if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {

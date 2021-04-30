@@ -245,7 +245,8 @@ bool ACesium3DTileset::_isBoundingVolumeReady() const {
   return this->_pTileset && this->_pTileset->getRootTile();
 }
 
-std::optional<Cesium3DTiles::BoundingVolume> ACesium3DTileset::GetBoundingVolume() const {
+std::optional<Cesium3DTiles::BoundingVolume>
+ACesium3DTileset::GetBoundingVolume() const {
   if (!this->_isBoundingVolumeReady()) {
     return std::nullopt;
   }
@@ -602,7 +603,7 @@ void ACesium3DTileset::LoadTileset() {
   if (pRoot) {
     this->Georeference->AddGeoreferenceListener(pRoot);
   }
-  // Add this as a ICesiumBoundingVolumeProvider once the bounding volume is 
+  // Add this as a ICesiumBoundingVolumeProvider once the bounding volume is
   // ready.
   this->_waitingForBoundingVolume = true;
 
@@ -830,7 +831,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   // update when ready
   if (this->_waitingForBoundingVolume && this->_isBoundingVolumeReady()) {
     this->_waitingForBoundingVolume = false;
-    // The bounding volume is ready so register as a 
+    // The bounding volume is ready so register as a
     // ICesiumBoundingVolumeProvider
     if (IsValid(this->Georeference)) {
       this->Georeference->AddBoundingVolumeProvider(this);
