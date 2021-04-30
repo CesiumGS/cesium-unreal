@@ -4,13 +4,14 @@
 
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
+#include "CesiumGeoreferenceListener.h"
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <optional>
 #include "Cesium3DTilesetRoot.generated.h"
 
 UCLASS()
-class UCesium3DTilesetRoot : public USceneComponent {
+class UCesium3DTilesetRoot : public USceneComponent,
+                             public ICesiumGeoreferenceListener {
   GENERATED_BODY()
 
 public:
@@ -40,6 +41,8 @@ public:
    * and marks it changed.
    */
   void RecalculateTransform();
+
+  virtual void NotifyGeoreferenceUpdated() override;
 
   /**
    * @brief Gets the transform from the "Cesium Tileset" reference frame to the

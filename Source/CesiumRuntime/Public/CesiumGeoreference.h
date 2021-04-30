@@ -10,7 +10,8 @@
 #include <glm/mat3x3.hpp>
 #include "CesiumGeoreference.generated.h"
 
-class ICesiumGeoreferenceable;
+class ICesiumGeoreferenceListener;
+class ICesiumBoundingVolumeProvider;
 
 UENUM(BlueprintType)
 enum class EOriginPlacement : uint8 {
@@ -512,13 +513,18 @@ public:
   }
 
   /**
-   * Add objects inheriting from ICesiumGeoreferenceable to be notified on
-   * changes to the world georeference transforms. Additionally, if
-   * OriginPlacement = EOriginPlacement::BoundingVolumeOrigin, georeferenced
-   * objects added here can optionally contribute to the bounding
-   * volume center calculation.
+   * Adds a ICesiumGeoreferenceListener to be notified on changes to the world 
+   * georeference transforms.
    */
-  void AddGeoreferencedObject(ICesiumGeoreferenceable* Object);
+  void AddGeoreferenceListener(ICesiumGeoreferenceListener* Object);
+
+  /**
+   * Adds a ICesiumBoundingVolumeProvider that will contribute to the 
+   * georeference origin placement when OriginPlacement = 
+   * EOriginPlacement::BoundingVolumeOrigin. Other origin placement modes will
+   * be unaffected by bounding volume providers. 
+   */
+  void AddBoundingVolumeProvider(ICesiumBoundingVolumeProvider* Object);
 
   /**
    * Recomputes all world georeference transforms. Usually there is no need to
@@ -573,5 +579,6 @@ private:
       bool& Success,
       FHitResult& HitResult);
 #endif
-  TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
+  TArray<TWeakInterfacePtr<ICesiumGeoreferenceListener>> _georeferenceListeners;
+  TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>> _boundingVolumeProviders;
 };

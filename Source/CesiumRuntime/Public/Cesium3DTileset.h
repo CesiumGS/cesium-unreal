@@ -6,7 +6,7 @@
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceable.h"
+#include "CesiumBoundingVolumeProvider.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
@@ -24,7 +24,7 @@ class TilesetView;
 
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor,
-                                           public ICesiumGeoreferenceable {
+                                           public ICesiumBoundingVolumeProvider {
   GENERATED_BODY()
 
 public:
@@ -289,9 +289,7 @@ public:
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
   // ICesiumGeoreferenceable implementation
-  virtual bool IsBoundingVolumeReady() const override;
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
-  GetBoundingVolume() const override;
+  virtual Cesium3DTiles::BoundingVolume GetBoundingVolume() const override;
   virtual void NotifyGeoreferenceUpdated();
 
   // AActor overrides
@@ -365,6 +363,9 @@ private:
 #endif
 
 private:
+
+  bool _isBoundingVolumeReady();
+
   Cesium3DTiles::Tileset* _pTileset;
 
   UMaterialInterface* _lastMaterial = nullptr;
@@ -379,7 +380,7 @@ private:
   uint32_t _lastTilesCulled;
   uint32_t _lastMaxDepthVisited;
 
-  bool _updateGeoreferenceOnBoundingVolumeReady;
+  bool _waitingForBoundingVolume;
   std::chrono::high_resolution_clock::time_point _startTime;
 
   bool _captureMovieMode;

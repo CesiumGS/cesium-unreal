@@ -2,7 +2,8 @@
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
-#include "CesiumGeoreferenceable.h"
+#include "CesiumListener.h"
+#include "CesiumBoundingVolumeProvider.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -222,18 +223,18 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.Z));
 }
 
-void ACesiumGeoreference::AddGeoreferencedObject(
-    ICesiumGeoreferenceable* Object) {
+void ACesiumGeoreference::AddGeoreferenceListener(
+    ICesiumGeoreferenceListener* Object) {
 
   // avoid adding duplicates
-  for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
-       this->_georeferencedObjects) {
-    if (Cast<ICesiumGeoreferenceable>(pObject.GetObject()) == Object) {
+  for (TWeakInterfacePtr<ICesiumGeoreferenceListener> pObject :
+       this->_georeferenceListeners) {
+    if (Cast<ICesiumGeoreferenceListener>(pObject.GetObject()) == Object) {
       return;
     }
   }
 
-  this->_georeferencedObjects.Add(*Object);
+  this->_georeferenceListeners.Add(*Object);
 
   // If this object is an Actor or UActorComponent, make sure it ticks _after_
   // the CesiumGeoreference.
@@ -245,7 +246,18 @@ void ACesiumGeoreference::AddGeoreferencedObject(
     pActorComponent->AddTickPrerequisiteActor(this);
   }
 
+  // TODO: try commenting this out, it shouldn't be needed
   this->UpdateGeoreference();
+}
+
+void ACesiumGeoreference::AddBoundingVolumeProvider(
+    ICesiumBoundingVolumeProvider* Object) {
+  
+  this->_boundingVolumeProviders.Add(*Object);
+
+  if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
+    this->UpdateGeoreference();
+  }
 }
 
 // Called when the game starts or when spawned
@@ -286,8 +298,8 @@ void ACesiumGeoreference::UpdateGeoreference() {
       //       rather than averaging the centers.
       size_t numberOfPositions = 0;
 
-      for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
-           this->_georeferencedObjects) {
+      for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
+           this->_boundingVolumeProviders) {
         if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
           std::optional<Cesium3DTiles::BoundingVolume> bv =
               pObject->GetBoundingVolume();
@@ -328,8 +340,8 @@ void ACesiumGeoreference::UpdateGeoreference() {
                        CesiumTransforms::scaleToUnrealWorld *
                        this->_ecefToGeoreferenced;
 
-  for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
-       this->_georeferencedObjects) {
+  for (TWeakInterfacePtr<ICesiumGeoreferenceListener> pObject :
+       this->_georeferenceListeners) {
     if (pObject.IsValid()) {
       pObject->NotifyGeoreferenceUpdated();
     }

@@ -58,7 +58,7 @@ ACesium3DTileset::ACesium3DTileset()
       _lastTilesCulled(0),
       _lastMaxDepthVisited(0),
 
-      _updateGeoreferenceOnBoundingVolumeReady(false),
+      _waitingForBoundingVolume(false),
 
       _captureMovieMode{false},
       _beforeMoviePreloadAncestors{PreloadAncestors},
@@ -239,18 +239,13 @@ ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
       ->GetCesiumTilesetToUnrealRelativeWorldTransform();
 }
 
-bool ACesium3DTileset::IsBoundingVolumeReady() const {
+bool ACesium3DTileset::_isBoundingVolumeReady() const {
   // TODO: detect failures that will cause the root tile to never exist.
   // That counts as "ready" too.
   return this->_pTileset && this->_pTileset->getRootTile();
 }
 
-std::optional<Cesium3DTiles::BoundingVolume>
-ACesium3DTileset::GetBoundingVolume() const {
-  if (!this->IsBoundingVolumeReady()) {
-    return std::nullopt;
-  }
-
+Cesium3DTiles::BoundingVolume ACesium3DTileset::GetBoundingVolume() const {
   return this->_pTileset->getRootTile()->getBoundingVolume();
 }
 
@@ -261,20 +256,6 @@ void ACesium3DTileset::UpdateTransformFromCesium(
 
   for (UCesiumGltfComponent* pGltf : gltfComponents) {
     pGltf->UpdateTransformFromCesium(CesiumToUnreal);
-  }
-}
-
-void ACesium3DTileset::NotifyGeoreferenceUpdated() {
-  // If the bounding volume is ready, we can update the georeference transform
-  // as wanted
-  if (IsBoundingVolumeReady()) {
-    UCesium3DTilesetRoot* pRoot =
-        Cast<UCesium3DTilesetRoot>(this->RootComponent);
-    pRoot->RecalculateTransform();
-  } else {
-    // Otherwise, update the transform later in Tick when the bounding volume is
-    // ready
-    this->_updateGeoreferenceOnBoundingVolumeReady = true;
   }
 }
 
@@ -613,7 +594,13 @@ void ACesium3DTileset::LoadTileset() {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
   }
 
-  this->Georeference->AddGeoreferencedObject(this);
+  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+  if (pRoot) {
+    this->Georeference->AddGeoreferenceListener(pRoot);
+  }
+  // Add this as a ICesiumBoundingVolumeProvider once the bounding volume is 
+  // ready.
+  this->_waitingForBoundingVolume = true;
 
   if (!this->CreditSystem) {
     this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
@@ -837,13 +824,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   // If a georeference update is waiting on the bounding volume being ready,
   // update when ready
-  if (this->_updateGeoreferenceOnBoundingVolumeReady &&
-      this->IsBoundingVolumeReady()) {
-    this->_updateGeoreferenceOnBoundingVolumeReady = false;
-    // Need to potentially recalculate the transform for all georeferenced
-    // objects, not just for this tileset
+  if (this->_waitingForBoundingVolume && this->_isBoundingVolumeReady()) {
+    this->_waitingForBoundingVolume = false;
+    // The bounding volume is ready so register as a 
+    // ICesiumBoundingVolumeProvider
     if (IsValid(this->Georeference)) {
-      this->Georeference->UpdateGeoreference();
+      this->Georeference->AddBoundingVolumeProvider(this);
     }
   }
 
