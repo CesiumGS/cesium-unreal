@@ -6,10 +6,15 @@ project(
     LANGUAGES CXX
 )
 
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(CESIUM_ARCHITECTURE "64")
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    set(CESIUM_ARCHITECTURE "aarch64")
+    set(HTTPLIB_USE_OPENSSL_IF_AVAILABLE OFF)
 else()
-    set(CESIUM_ARCHITECTURE "32")
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(CESIUM_ARCHITECTURE "64")
+    else()
+        set(CESIUM_ARCHITECTURE "32")
+    endif()
 endif()
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
