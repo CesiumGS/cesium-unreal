@@ -513,7 +513,7 @@ static std::optional<LoadTextureResult> loadTexture(
       pLevel->BulkData.Lock(LOCK_READ_WRITE);
 
       void* pMipData =
-          pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+          pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * channels);
 
       // TODO: Premultiplied alpha? Cases with more than one byte per channel?
       // Non-normalzied pixel formats?
