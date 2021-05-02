@@ -115,7 +115,7 @@ jobs:
     - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh"
     - wget -q https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip
-    - unzip -qq -d $HOME/android-ndk-r21e android-ndk-r21e-linux-x86_64.zip
+    - unzip -qq -d $HOME/ android-ndk-r21e-linux-x86_64.zip
     script:
     - export ANDROID_NDK_ROOT=$HOME/android-ndk-r21e
     - export CESIUM_UNREAL_VERSION=$(git describe)
