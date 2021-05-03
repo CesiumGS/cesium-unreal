@@ -6,6 +6,7 @@
 
 - Added dynamic camera that adapts to height above terrain.
 - Added Linux support.
+- Added support for Tile Map Service (TMS) raster overlays.
 
 ##### Fixes :wrench:
 
