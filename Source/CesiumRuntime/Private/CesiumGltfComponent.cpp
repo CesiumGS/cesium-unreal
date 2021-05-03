@@ -1753,15 +1753,6 @@ void UCesiumGltfComponent::SetRender(bool rendered) {
   FString prevLastResult =
 	  fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
 
-  UE_LOG(LogCesium, 
-	  Display, 
-	  TEXT("Frame %d: Id(level: %d, x: %d, y: %d) CurrState(%s) PrevState(%s, frame %d)"), 
-	  frameNumber,
-	  tileID->level, tileID->x, tileID->y,
-      *lastResult,
-	  *prevLastResult, prevFrameNumber
-	  );
-
   if (rendered) {
       drawDebugTexture(DebugTile, RenderTarget, DebugMaterial, DebugTexture);
 	  this->SetVisibility(true, true);

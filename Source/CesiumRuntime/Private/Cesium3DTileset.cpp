@@ -847,6 +847,67 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
   return this->UpdateInEditor;
 }
 
+void ACesium3DTileset::log(const Cesium3DTiles::Tile* pTile, bool off) {
+  const CesiumGeometry::QuadtreeTileID* tileID =
+	  std::get_if<CesiumGeometry::QuadtreeTileID>(&pTile->getTileID());
+  if (!tileID) {
+	tileID =
+		&std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&pTile->getTileID())
+			 ->tileID;
+  }
+
+  if (!tileID) {
+    return;
+  }
+
+  Cesium3DTiles::TileSelectionState prevLastSelection =
+	  pTile->getPrevLastSelectionState();
+  Cesium3DTiles::TileSelectionState lastSelection =
+	  pTile->getLastSelectionState();
+  uint32_t frameNumber = lastSelection.getFrameNumber();
+  FString lastResult = fromSelectionState(lastSelection.getResult(frameNumber));
+
+  uint32_t prevFrameNumber = prevLastSelection.getFrameNumber();
+  FString prevLastResult =
+	  fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
+
+  if (off) {
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT(
+            "Frame %d: OFF Id(level: %d, x: %d, y: %d) CurrState(%s, line %d) isRenderable(%d) hasContent(%d) PrevState(%s, frame %d, line %d)"),
+        frameNumber,
+        tileID->level,
+        tileID->x,
+        tileID->y,
+        *lastResult,
+        lastSelection.getLine(),
+        pTile->isRenderable(),
+        pTile->getContent() != nullptr,
+        *prevLastResult,
+        prevFrameNumber,
+        prevLastSelection.getLine());
+  } else {
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT(
+            "Frame %d: ON Id(level: %d, x: %d, y: %d) CurrState(%s, line %d) isRenderable(%d) hasContent(%d) PrevState(%s, frame %d, line %d)"),
+        frameNumber,
+        tileID->level,
+        tileID->x,
+        tileID->y,
+        *lastResult,
+        lastSelection.getLine(),
+        pTile->isRenderable(),
+        pTile->getContent() != nullptr,
+        *prevLastResult,
+        prevFrameNumber,
+        prevLastSelection.getLine());
+  }
+}
+
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
@@ -960,18 +1021,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
+    log(pTile, true);
     if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
       continue;
     }
-
-	if (pTile->getLastSelectionState().getResult(pTile->getLastSelectionState().getFrameNumber()) ==
-        Cesium3DTiles::TileSelectionState::Result::Rendered) {
-      if (pTile->getPrevLastSelectionState().getResult(pTile->getPrevLastSelectionState().getFrameNumber()) ==
-        Cesium3DTiles::TileSelectionState::Result::Rendered) {
-        printf("asas");
-      }
-    }
-
 
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
@@ -989,6 +1042,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
+    log(pTile, false);
     if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
       continue;
     }

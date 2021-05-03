@@ -11,6 +11,8 @@
 #include "Interfaces/IHttpRequest.h"
 #include <chrono>
 #include <glm/mat4x4.hpp>
+#include "Cesium3DTiles/Tile.h"
+#include "Cesium3DTiles/TileSelectionState.h"
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -284,6 +286,35 @@ protected:
       const FHitResult& Hit) override;
 
 private:
+  static void log(const Cesium3DTiles::Tile* pTile, bool off);
+  static FString
+  fromSelectionState(Cesium3DTiles::TileSelectionState::Result result) {
+    FString lastResult;
+    switch (result) {
+    case Cesium3DTiles::TileSelectionState::Result::None:
+      lastResult = "None";
+      break;
+    case Cesium3DTiles::TileSelectionState::Result::Culled:
+      lastResult = "Culled";
+      break;
+    case Cesium3DTiles::TileSelectionState::Result::Rendered:
+      lastResult = "Rendered";
+      break;
+    case Cesium3DTiles::TileSelectionState::Result::Refined:
+      lastResult = "Refined";
+      break;
+    case Cesium3DTiles::TileSelectionState::Result::RenderedAndKicked:
+      lastResult = "Rendered Ki";
+      break;
+    case Cesium3DTiles::TileSelectionState::Result::RefinedAndKicked:
+      lastResult = "Refined Ki";
+      break;
+    default:
+      break;
+    }
+
+    return lastResult;
+  }
   void LoadTileset();
   void DestroyTileset();
   Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
