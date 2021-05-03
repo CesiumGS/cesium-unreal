@@ -336,6 +336,7 @@ public:
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void PostLoad() override;
+  virtual void Serialize(FArchive& Ar) override;
 
 protected:
   // Called when the game starts or when spawned

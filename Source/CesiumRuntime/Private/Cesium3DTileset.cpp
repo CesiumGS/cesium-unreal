@@ -11,6 +11,7 @@
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -1060,6 +1061,24 @@ void ACesium3DTileset::PostLoad() {
                                 // actor to have correct BodyInstance values.
 
   Super::PostLoad();
+}
+
+void ACesium3DTileset::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+  const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::TilesetExplicitSource) {
+    // In previous versions, the tileset source was inferred from the presence
+    // of a non-empty URL property, rather than being explicitly specified.
+    if (this->Url.Len() > 0) {
+      this->TilesetSource = ETilesetSource::FromUrl;
+    } else {
+      this->TilesetSource = ETilesetSource::FromCesiumIon;
+    }
+  }
 }
 
 void ACesium3DTileset::BeginDestroy() {
