@@ -4,7 +4,8 @@
 
 ##### Additions  :tada:
 
-- Added dynamic camera that adapts to height above terrain.
+- Added a dynamic camera that adapts to height above terrain.
+- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Added Linux support.
 
 ##### Fixes :wrench:
@@ -25,7 +26,6 @@
 
 ##### Additions :tada:
 
-- Added water mask support (only quantized-mesh for now).
 - Improved property change checks in `Cesium3DTileset::LoadTileset`. 
 - Added macOS support.
 - Added support for the legacy `gltfUpAxis` property in a tileset `asset` dictionary. Although this property is **not** part of the specification, there are many existing assets that use this property and had been shown with a wrong rotation otherwise.
