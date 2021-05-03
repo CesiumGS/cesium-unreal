@@ -1,5 +1,18 @@
 # Change Log
 
+### v1.2.0 - 2021-05-03
+
+##### Additions  :tada:
+
+- Added dynamic camera that adapts to height above terrain.
+- Added Linux support.
+
+##### Fixes :wrench:
+
+* `FEditorDelegates::OnFocusViewportOnActors` is no longer unnecessarily subscribed to multiple times.
+* `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
+* Fixed a bug where collision does not update correctly when changing Screen Space Error of a tileset. 
+
 ### v1.1.1 - 2021-04-23
 
 ##### Fixes :wrench:

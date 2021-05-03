@@ -1409,12 +1409,11 @@ static void loadModelGameThreadPart(
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
-  pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-  pMesh->bUseDefaultCollision = true;
-  // pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+  pMesh->bUseDefaultCollision = false;
   pMesh->SetFlags(RF_Transient);
 
-  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
+  UStaticMesh* pStaticMesh =
+      NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->bIsBuiltAtRuntime = true;

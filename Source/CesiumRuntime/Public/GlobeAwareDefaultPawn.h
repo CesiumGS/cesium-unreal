@@ -32,7 +32,7 @@ public:
    * The actor controlling how this camera's location in the Cesium world
    * relates to the coordinate system in this Unreal Engine level.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium")
   ACesiumGeoreference* Georeference;
 
   /**
