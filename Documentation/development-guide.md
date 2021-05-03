@@ -79,27 +79,28 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 
 ### Android
 
-#### Prerequisites for Cross Compiling on Linux
+#### Prerequisites for Cross Compiling on Windows
 
-* Unreal Engine 4.26 or newer. Follow the [Unreal Engine Linux Quikstart Guide](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html) to compile Unreal Engine on Linux.
-* Android NDK r21 (r21e recommended), download from https://developer.android.com/ndk/downloads.
+* Unreal Engine 4.26 or newer.
+* Visual Studio 2017 or newer.
 * Common development tools like Git and CMake.
+* Android NDK r21, download from https://developer.android.com/ndk/downloads.
 
-#### Cross Compiling on Linux
+#### Cross Compiling on Windows
 
-1. Compile Unreal Engine and set the following environment variables either temporary in your terminal or in `.bashrc`.
-
+1. Download and extract the Android NDK zip. Then set the environment variable either in command line or system variables.
     ```cmd
     export ANDROID_NDK_ROOT=<path_to_android_ndk>
     ```
 
-2. Clone the repository using `git clone --recursive git@github.com:CesiumGS/cesium-unreal.git`.
+2. Follow the steps for [Windows](#windows) above.
 3. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
 
     ```bash
-    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release # or Debug, RelWithDebInfo
+    cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release # or Debug, RelWithDebInfo
     ```
 
-4. Compile Cesium Native using `cmake --build build --target install`.
+4. Compile Cesium Native using `cmake --build build-android --config Release --target install`.
 
 5. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
+6. To package the plugin, run the `RunUAT.bat` command with options `-TargetPlatform=Win64+Android -Platform=Win64`.
