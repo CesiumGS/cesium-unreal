@@ -1,19 +1,18 @@
 ﻿// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumTMSRasterOverlay.h"
-
+#include "CesiumTileMapServiceRasterOverlay.h"
+#include "Cesium3DTiles/TileMapServiceRasterOverlay.h"
 #include "CesiumRuntime.h"
-#include <Cesium3DTiles/TileMapServiceRasterOverlay.h>
 
 std::unique_ptr<Cesium3DTiles::RasterOverlay>
-UCesiumTMSRasterOverlay::CreateOverlay() {
+UCesiumTileMapServiceRasterOverlay::CreateOverlay() {
   Cesium3DTiles::TileMapServiceRasterOverlayOptions Options;
-  if (MaximumLevel > MinimumLevel && bClampWithDefinedZoomLevels) {
+  if (MaximumLevel > MinimumLevel && bSpecifyZoomLevels) {
     Options.minimumLevel = MinimumLevel;
     Options.maximumLevel = MaximumLevel;
   }
   return std::make_unique<Cesium3DTiles::TileMapServiceRasterOverlay>(
-      TCHAR_TO_UTF8(*this->SourceURL),
+      TCHAR_TO_UTF8(*this->Url),
       std::vector<CesiumAsync::IAssetAccessor::THeader>(),
       Options);
 }
