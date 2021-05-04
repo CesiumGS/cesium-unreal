@@ -603,6 +603,8 @@ private:
    */
   void _handleViewportOriginEditing();
 
+#endif
+
   /**
    * @brief Perform the origin-rebasing.
    *
@@ -614,6 +616,5 @@ private:
    */
   void _performOriginRebasing();
 
-#endif
   TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };
