@@ -370,19 +370,137 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
 }
 #endif
 
-// Called every frame
 bool ACesiumGeoreference::ShouldTickIfViewportsOnly() const { return true; }
 
-void ACesiumGeoreference::Tick(float DeltaTime) {
-  Super::Tick(DeltaTime);
-
+#if WITH_EDITOR
+void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   bool isGame = this->GetWorld()->IsGameWorld();
+  if (isGame) {
+    return;
+  }
+  if (!this->ShowLoadRadii) {
+    return;
+  }
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
+    glm::dvec3 levelECEF =
+        CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+            CesiumGeospatial::Cartographic::fromDegrees(
+                level.LevelLongitude,
+                level.LevelLatitude,
+                level.LevelHeight));
+
+    glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
+    FVector levelRelative = FVector(levelAbs.x, levelAbs.y, levelAbs.z) -
+                            FVector(originLocation);
+    DrawDebugSphere(
+        this->GetWorld(),
+        levelRelative,
+        100.0 * level.LoadRadius,
+        100,
+        FColor::Blue);
+  }
+}
+#endif // WITH_EDITOR
+
 
 #if WITH_EDITOR
+void ACesiumGeoreference::_handleViewportOriginEditing() {
+  if (!this->EditOriginInViewport) {
+    return;
+  }
+  FHitResult mouseRayResults;
+  bool mouseRaySuccess;
+
+  this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
+
+  if (!mouseRaySuccess) {
+    return;
+  }
+  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+
+  FVector grabbedLocation = mouseRayResults.Location;
+  // convert from UE to ECEF to LongitudeLatitudeHeight
+  glm::dvec4 grabbedLocationAbs(
+      static_cast<double>(grabbedLocation.X) +
+          static_cast<double>(originLocation.X),
+      static_cast<double>(grabbedLocation.Y) +
+          static_cast<double>(originLocation.Y),
+      static_cast<double>(grabbedLocation.Z) +
+          static_cast<double>(originLocation.Z),
+      1.0);
+
+  glm::dvec3 grabbedLocationECEF =
+      this->_ueAbsToEcef * grabbedLocationAbs;
+  std::optional<CesiumGeospatial::Cartographic> optCartographic =
+      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
+          grabbedLocationECEF);
+
+  if (optCartographic) {
+    CesiumGeospatial::Cartographic cartographic = *optCartographic;
+    UE_LOG(
+        LogActor,
+        Warning,
+        TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
+        glm::degrees(cartographic.longitude),
+        glm::degrees(cartographic.latitude),
+        cartographic.height);
+
+    // TODO: find editor viewport mouse click event
+    // if (mouseDown) {
+    // this->_setGeoreferenceOrigin()
+    //	this->EditOriginInViewport = false;
+    //}
+  }
+}
+#endif // WITH_EDITOR
+
+
+void ACesiumGeoreference::_performOriginRebasing()
+{
+  bool isGame = this->GetWorld()->IsGameWorld();
   if (!isGame) {
-    if (this->ShowLoadRadii) {
-      for (FCesiumSubLevel& level : this->CesiumSubLevels) {
+    return;
+  }
+   if (!this->WorldOriginCamera)
+   {
+     return;
+   }
+
+  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
+  const FVector& cameraLocation = pov.Location;
+
+  glm::dvec4 cameraAbsolute(
+      static_cast<double>(cameraLocation.X) +
+          static_cast<double>(originLocation.X),
+      static_cast<double>(cameraLocation.Y) +
+          static_cast<double>(originLocation.Y),
+      static_cast<double>(cameraLocation.Z) +
+          static_cast<double>(originLocation.Z),
+      1.0);
+
+  glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
+
+  this->_insideSublevel = false;
+
+  // TODO Describe how the state of sublevels is changed here,
+  // in terms of `CurrentlyLoaded`. Could all this be skipped
+  // with an `if(!KeepWorldOriginNearCamera) return;` at the
+  // beginning of this function?
+  const TArray<ULevelStreaming*>& streamedLevels =
+      this->GetWorld()->GetStreamingLevels();
+  for (ULevelStreaming* streamedLevel : streamedLevels) {
+    FString levelName =
+        FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
+    levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
+    // TODO: maybe we should precalculate the level ECEF from level
+    // long/lat/height
+    // TODO: consider the case where we're intersecting multiple level radii
+    for (FCesiumSubLevel& level : this->CesiumSubLevels) {
+      // if this is a known level, we need to tell it whether or not it should
+      // be loaded
+      if (levelName.Equals(level.LevelName)) {
         glm::dvec3 levelECEF =
             CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
                 CesiumGeospatial::Cartographic::fromDegrees(
@@ -390,159 +508,86 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
                     level.LevelLatitude,
                     level.LevelHeight));
 
-        glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
-        FVector levelRelative = FVector(levelAbs.x, levelAbs.y, levelAbs.z) -
-                                FVector(originLocation);
-        DrawDebugSphere(
-            this->GetWorld(),
-            levelRelative,
-            100.0 * level.LoadRadius,
-            100,
-            FColor::Blue);
-      }
-    }
+        if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
+          this->_insideSublevel = true;
+          if (!level.CurrentlyLoaded) {
+            this->_jumpToLevel(level);
+            streamedLevel->SetShouldBeLoaded(true);
+            streamedLevel->SetShouldBeVisible(true);
+            level.CurrentlyLoaded = true;
 
-    if (this->EditOriginInViewport) {
-      FHitResult mouseRayResults;
-      bool mouseRaySuccess;
-
-      this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
-
-      if (mouseRaySuccess) {
-        FVector grabbedLocation = mouseRayResults.Location;
-        // convert from UE to ECEF to LongitudeLatitudeHeight
-        glm::dvec4 grabbedLocationAbs(
-            static_cast<double>(grabbedLocation.X) +
-                static_cast<double>(originLocation.X),
-            static_cast<double>(grabbedLocation.Y) +
-                static_cast<double>(originLocation.Y),
-            static_cast<double>(grabbedLocation.Z) +
-                static_cast<double>(originLocation.Z),
-            1.0);
-
-        glm::dvec3 grabbedLocationECEF =
-            this->_ueAbsToEcef * grabbedLocationAbs;
-        std::optional<CesiumGeospatial::Cartographic> optCartographic =
-            CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
-                grabbedLocationECEF);
-
-        if (optCartographic) {
-          CesiumGeospatial::Cartographic cartographic = *optCartographic;
-          UE_LOG(
-              LogActor,
-              Warning,
-              TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
-              glm::degrees(cartographic.longitude),
-              glm::degrees(cartographic.latitude),
-              cartographic.height);
-
-          // TODO: find editor viewport mouse click event
-          // if (mouseDown) {
-          // this->_setGeoreferenceOrigin()
-          //	this->EditOriginInViewport = false;
-          //}
-        }
-      }
-    }
-  }
-#endif
-
-  if (isGame && this->WorldOriginCamera) {
-    const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
-    const FVector& cameraLocation = pov.Location;
-
-    glm::dvec4 cameraAbsolute(
-        static_cast<double>(cameraLocation.X) +
-            static_cast<double>(originLocation.X),
-        static_cast<double>(cameraLocation.Y) +
-            static_cast<double>(originLocation.Y),
-        static_cast<double>(cameraLocation.Z) +
-            static_cast<double>(originLocation.Z),
-        1.0);
-
-    glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
-
-    this->_insideSublevel = false;
-
-    const TArray<ULevelStreaming*>& streamedLevels =
-        this->GetWorld()->GetStreamingLevels();
-    for (ULevelStreaming* streamedLevel : streamedLevels) {
-      FString levelName =
-          FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-      levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
-      // TODO: maybe we should precalculate the level ECEF from level
-      // long/lat/height
-      // TODO: consider the case where we're intersecting multiple level radii
-      for (FCesiumSubLevel& level : this->CesiumSubLevels) {
-        // if this is a known level, we need to tell it whether or not it should
-        // be loaded
-        if (levelName.Equals(level.LevelName)) {
-          glm::dvec3 levelECEF =
-              CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-                  CesiumGeospatial::Cartographic::fromDegrees(
-                      level.LevelLongitude,
-                      level.LevelLatitude,
-                      level.LevelHeight));
-
-          if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
-            this->_insideSublevel = true;
-            if (!level.CurrentlyLoaded) {
-              this->_jumpToLevel(level);
-              streamedLevel->SetShouldBeLoaded(true);
-              streamedLevel->SetShouldBeVisible(true);
-              level.CurrentlyLoaded = true;
-
-              // If we are not going to continue origin rebasing inside the
-              // sublevel, just set the origin back to zero since the sublevel
-              // will be centered around zero anyways.
-              if (this->KeepWorldOriginNearCamera &&
-                  !this->OriginRebaseInsideSublevels) {
-                this->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
-              }
-            }
-          } else {
-            if (level.CurrentlyLoaded) {
-              streamedLevel->SetShouldBeLoaded(false);
-              streamedLevel->SetShouldBeVisible(false);
-              level.CurrentlyLoaded = false;
+            // If we are not going to continue origin rebasing inside the
+            // sublevel, just set the origin back to zero since the sublevel
+            // will be centered around zero anyways.
+            if (this->KeepWorldOriginNearCamera &&
+                !this->OriginRebaseInsideSublevels) {
+              this->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
             }
           }
-
-          break;
+        } else {
+          if (level.CurrentlyLoaded) {
+            streamedLevel->SetShouldBeLoaded(false);
+            streamedLevel->SetShouldBeVisible(false);
+            level.CurrentlyLoaded = false;
+          }
         }
+
+        break;
       }
     }
-
-    /*
-    // EXPERIMENTAL GEOREFERENCE REBASING
-    if (!this->_insideSublevel && glm::length(cameraECEF -
-    glm::dvec3(this->_ueAbsToEcef[3])) > 1000000.0) {
-            std::optional<CesiumGeospatial::Cartographic>
-    targetGeoreferenceOrigin =
-    CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF); if
-    (targetGeoreferenceOrigin) {
-                    this->_setGeoreferenceOrigin(glm::degrees(targetGeoreferenceOrigin->longitude),
-    glm::degrees(targetGeoreferenceOrigin->latitude),
-    targetGeoreferenceOrigin->height);
-            }
-    }
-    */
-
-    if (this->KeepWorldOriginNearCamera &&
-        (!this->_insideSublevel || this->OriginRebaseInsideSublevels) &&
-        !cameraLocation.Equals(
-            FVector(0.0f, 0.0f, 0.0f),
-            this->MaximumWorldOriginDistanceFromCamera)) {
-      // Camera has moved too far from the origin, move the origin.
-      this->GetWorld()->SetNewWorldOrigin(FIntVector(
-          static_cast<int32>(cameraLocation.X) +
-              static_cast<int32>(originLocation.X),
-          static_cast<int32>(cameraLocation.Y) +
-              static_cast<int32>(originLocation.Y),
-          static_cast<int32>(cameraLocation.Z) +
-              static_cast<int32>(originLocation.Z)));
-    }
   }
+
+  /*
+  // EXPERIMENTAL GEOREFERENCE REBASING
+  if (!this->_insideSublevel && glm::length(cameraECEF -
+  glm::dvec3(this->_ueAbsToEcef[3])) > 1000000.0) {
+          std::optional<CesiumGeospatial::Cartographic>
+  targetGeoreferenceOrigin =
+  CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF); if
+  (targetGeoreferenceOrigin) {
+                  this->_setGeoreferenceOrigin(glm::degrees(targetGeoreferenceOrigin->longitude),
+  glm::degrees(targetGeoreferenceOrigin->latitude),
+  targetGeoreferenceOrigin->height);
+          }
+  }
+  */
+
+  if (this->KeepWorldOriginNearCamera &&
+      (!this->_insideSublevel || this->OriginRebaseInsideSublevels) &&
+      !cameraLocation.Equals(
+          FVector(0.0f, 0.0f, 0.0f),
+          this->MaximumWorldOriginDistanceFromCamera)) {
+    // Camera has moved too far from the origin, move the origin.
+
+    int32 newX = static_cast<int32>(cameraLocation.X) +
+            static_cast<int32>(originLocation.X);
+    int32 newY = static_cast<int32>(cameraLocation.Y) +
+            static_cast<int32>(originLocation.Y);
+    int32 newZ = static_cast<int32>(cameraLocation.Z) +
+            static_cast<int32>(originLocation.Z);
+
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Camera at %f %f %f origin at %f %f %f move to %d %d %d"),
+        cameraLocation.X, cameraLocation.Y, cameraLocation.Z,
+        originLocation.X, originLocation.Y, originLocation.Z,
+        newX, newY, newZ
+      );
+
+    this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
+  }
+}
+
+void ACesiumGeoreference::Tick(float DeltaTime) {
+  Super::Tick(DeltaTime);
+
+#if WITH_EDITOR
+  _showSubLevelLoadRadii();
+  _handleViewportOriginEditing();
+#endif
+
+  _performOriginRebasing();
 }
 
 /**
@@ -824,7 +869,7 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
 void ACesiumGeoreference::_lineTraceViewportMouse(
     const bool ShowTrace,
     bool& Success,
-    FHitResult& HitResult) {
+    FHitResult& HitResult) const {
   HitResult = FHitResult();
   Success = false;
 

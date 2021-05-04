@@ -526,8 +526,19 @@ public:
    */
   void UpdateGeoreference();
 
-  // Called every frame
+  /**
+   * @brief Returns whether `Tìck` should be called in viewports-only mode.
+   *
+   * "If `true`, actor is ticked even if TickType==LEVELTICK_ViewportsOnly."
+   * (The TickType is determined by the unreal engine internally).
+   */
   virtual bool ShouldTickIfViewportsOnly() const override;
+
+  /**
+   * @brief Function called every frame on this Actor.
+   * 
+   * @param DeltaTime Game time elapsed during last frame modified by the time dilation
+   */
   virtual void Tick(float DeltaTime) override;
 
 protected:
@@ -571,7 +582,37 @@ private:
   void _lineTraceViewportMouse(
       const bool ShowTrace,
       bool& Success,
-      FHitResult& HitResult);
+      FHitResult& HitResult) const;
+
+  /**
+   * @brief Show the load radius of each sub-level as a sphere.
+   * 
+   * If this is not called "in-game", and `ShowLoadRadii` is `true`,
+   * then it will show a sphere indicating the load radius of each
+   * sub-level.
+   */
+  void _showSubLevelLoadRadii() const;
+
+  /**
+   * @brief Allow editing the origin with the mouse.
+   * 
+   * If `EditOriginInViewport` is true, this will trace the mouse
+   * position, and update the origin based on the point that was
+   * hit.
+   */
+  void _handleViewportOriginEditing();
+
+  /**
+   * @brief Perform the origin-rebasing.
+   * 
+   * If this actor is currently "in-game", and has an associated
+   * `WorldOriginCamera`, then (depending on some conditions related
+   * to `KeepWorldOriginNearCamera`, sublevels, and `OriginRebaseInsideSublevels`)
+   * this may set a new world origin by calling `GetWorld()->SetNewWorldOrigin`
+   * with a new position.
+   */
+  void _performOriginRebasing();
+
 #endif
   TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };
