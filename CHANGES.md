@@ -9,6 +9,7 @@
 
 ##### Fixes :wrench:
 
+* Fixed issue where displayed longitude-latitude-height in `CesiumGeoreferenceComponent` wasn't updating in certain cases.
 * `FEditorDelegates::OnFocusViewportOnActors` is no longer unnecessarily subscribed to multiple times.
 * `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
 
