@@ -149,7 +149,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           FVector(cameraFront.x, cameraFront.y, cameraFront.z),
           FVector(cameraRight.x, cameraRight.y, cameraRight.z),
           FVector(cameraUp.x, cameraUp.y, cameraUp.z),
-          FVector(0.0f, 0.0f, 0.0f))
+          FVector::ZeroVector)
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
@@ -391,8 +391,8 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
                 level.LevelHeight));
 
     glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
-    FVector levelRelative = FVector(levelAbs.x, levelAbs.y, levelAbs.z) -
-                            FVector(originLocation);
+    FVector levelRelative =
+        FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
     DrawDebugSphere(
         this->GetWorld(),
         levelRelative,
@@ -402,7 +402,6 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   }
 }
 #endif // WITH_EDITOR
-
 
 #if WITH_EDITOR
 void ACesiumGeoreference::_handleViewportOriginEditing() {
@@ -430,8 +429,7 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
           static_cast<double>(originLocation.Z),
       1.0);
 
-  glm::dvec3 grabbedLocationECEF =
-      this->_ueAbsToEcef * grabbedLocationAbs;
+  glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
   std::optional<CesiumGeospatial::Cartographic> optCartographic =
       CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
           grabbedLocationECEF);
@@ -455,17 +453,35 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
 }
 #endif // WITH_EDITOR
 
+namespace {
+/**
+ * @brief Clamping addition.
+ *
+ * Returns the sum of the given values, clamping the result to
+ * the minimum/maximum value that can be represented as a 32 bit
+ * signed integer.
+ *
+ * @param f The floating point value
+ * @param i The integer value
+ * @return The clamped result
+ */
+int32 clampedAdd(float f, int32 i) {
+  int64 sum = static_cast<int64>(f) + static_cast<int64>(i);
+  int64 min = static_cast<int64>(TNumericLimits<int32>::Min());
+  int64 max = static_cast<int64>(TNumericLimits<int32>::Max());
+  int64 clamped = FMath::Max(min, FMath::Min(max, sum));
+  return static_cast<int32>(clamped);
+}
+} // namespace
 
-void ACesiumGeoreference::_performOriginRebasing()
-{
+void ACesiumGeoreference::_performOriginRebasing() {
   bool isGame = this->GetWorld()->IsGameWorld();
   if (!isGame) {
     return;
   }
-   if (!this->WorldOriginCamera)
-   {
-     return;
-   }
+  if (!this->WorldOriginCamera) {
+    return;
+  }
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
@@ -555,26 +571,28 @@ void ACesiumGeoreference::_performOriginRebasing()
   if (this->KeepWorldOriginNearCamera &&
       (!this->_insideSublevel || this->OriginRebaseInsideSublevels) &&
       !cameraLocation.Equals(
-          FVector(0.0f, 0.0f, 0.0f),
+          FVector::ZeroVector,
           this->MaximumWorldOriginDistanceFromCamera)) {
-    // Camera has moved too far from the origin, move the origin.
+    // Camera has moved too far from the origin, move the origin,
+    // but make sure that no component exceeds the maximum value
+    // that can be represented as a 32bit signed integer.
 
-    int32 newX = static_cast<int32>(cameraLocation.X) +
-            static_cast<int32>(originLocation.X);
-    int32 newY = static_cast<int32>(cameraLocation.Y) +
-            static_cast<int32>(originLocation.Y);
-    int32 newZ = static_cast<int32>(cameraLocation.Z) +
-            static_cast<int32>(originLocation.Z);
-
+    int64 newX = clampedAdd(cameraLocation.X, originLocation.X);
+    int64 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
+    int64 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
     UE_LOG(
         LogCesium,
         Warning,
-        TEXT("Camera at %f %f %f origin at %f %f %f move to %d %d %d"),
-        cameraLocation.X, cameraLocation.Y, cameraLocation.Z,
-        originLocation.X, originLocation.Y, originLocation.Z,
-        newX, newY, newZ
-      );
-
+        TEXT("Camera at %f %f %f origin at %d %d %d move to %d %d %d"),
+        cameraLocation.X,
+        cameraLocation.Y,
+        cameraLocation.Z,
+        originLocation.X,
+        originLocation.Y,
+        originLocation.Z,
+        newX,
+        newY,
+        newZ);
     this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
   }
 }
@@ -712,7 +730,7 @@ FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
       FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
       FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 
   return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
 }
@@ -733,7 +751,7 @@ FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
       FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
       FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 
   FMatrix inverse = enuAdjustmentMatrix.InverseFast();
 
@@ -771,7 +789,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
       FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
       FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
       FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 }
 
 glm::dmat3
@@ -789,7 +807,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
       FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
       FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
       FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 }
 
 /**
