@@ -603,18 +603,21 @@ void ACesium3DTileset::LoadTileset() {
     this->_lastTilesetSource = this->TilesetSource;
 
     // check if the current tileset changed
-    switch (this->TilesetSource) {
-    case ETilesetSource::FromUrl:
-      tilesetSourceChanged =
-          pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
-                             : this->Url.Len() > 0;
-      break;
-    case ETilesetSource::FromCesiumIon:
-      tilesetSourceChanged =
-          !pTileset->getIonAssetID() || !pTileset->getIonAccessToken() ||
-          this->IonAssetID != pTileset->getIonAssetID() ||
-          TCHAR_TO_UTF8(*this->IonAccessToken) != pTileset->getIonAccessToken();
-      break;
+    if (!tilesetSourceChanged) {
+      switch (this->TilesetSource) {
+      case ETilesetSource::FromUrl:
+        tilesetSourceChanged =
+            pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
+                               : this->Url.Len() > 0;
+        break;
+      case ETilesetSource::FromCesiumIon:
+        tilesetSourceChanged = !pTileset->getIonAssetID() ||
+                               !pTileset->getIonAccessToken() ||
+                               this->IonAssetID != pTileset->getIonAssetID() ||
+                               TCHAR_TO_UTF8(*this->IonAccessToken) !=
+                                   pTileset->getIonAccessToken();
+        break;
+      }
     }
 
     bool waterMaskEnabledChanged =
