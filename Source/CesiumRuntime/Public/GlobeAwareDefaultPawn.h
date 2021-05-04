@@ -119,14 +119,14 @@ public:
   /**
    * The length in seconds that the flight should last.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0))
   double FlyToDuration = 5;
 
   /**
    * The granularity in degrees with which keypoints should be generated for
    * the flight interpolation.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0))
   double FlyToGranularityDegrees = 0.01;
 
   /**

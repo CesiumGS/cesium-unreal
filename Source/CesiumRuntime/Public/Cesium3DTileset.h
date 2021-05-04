@@ -85,7 +85,10 @@ public:
    * value of 16.0 corresponds to the standard value for quantized-mesh terrain
    * of 2.0.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Level of Detail",
+      meta = (ClampMin = 0))
   double MaximumScreenSpaceError = 16.0;
 
   /**
@@ -129,7 +132,10 @@ public:
    * may cause the tiles to be loaded and rendered more quickly, at the
    * cost of a higher network- and processing load.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Tile Loading",
+      meta = (ClampMin = 0))
   int MaximumSimultaneousTileLoads = 20;
 
   /**
@@ -143,7 +149,10 @@ public:
    * is achieved, but this high-detail representation will appear at once, as
    * soon as it is loaded completely.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Tile Loading",
+      meta = (ClampMin = 0))
   int LoadingDescendantLimit = 20;
 
   /**
@@ -235,7 +244,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium|Tile Culling",
-      meta = (EditCondition = "EnforceCulledScreenSpaceError"))
+      meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0))
   double CulledScreenSpaceError = 64.0;
 
   /**
