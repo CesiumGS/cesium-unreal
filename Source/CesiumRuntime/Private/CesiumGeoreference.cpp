@@ -576,23 +576,9 @@ void ACesiumGeoreference::_performOriginRebasing() {
     // Camera has moved too far from the origin, move the origin,
     // but make sure that no component exceeds the maximum value
     // that can be represented as a 32bit signed integer.
-
     int64 newX = clampedAdd(cameraLocation.X, originLocation.X);
     int64 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
     int64 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Camera at %f %f %f origin at %d %d %d move to %d %d %d"),
-        cameraLocation.X,
-        cameraLocation.Y,
-        cameraLocation.Z,
-        originLocation.X,
-        originLocation.Y,
-        originLocation.Z,
-        newX,
-        newY,
-        newZ);
     this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
   }
 }
