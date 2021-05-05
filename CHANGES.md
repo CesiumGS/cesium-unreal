@@ -1,19 +1,27 @@
 # Change Log
 
+### v1.3.0 - ???
+
+##### Additions  :tada:
+
+- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
+- Improved property change checks in `Cesium3DTileset::LoadTileset`.
+
 ### v1.2.0 - 2021-05-03
 
 ##### Additions  :tada:
 
 - Added a dynamic camera that adapts to height above terrain.
-- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Added Linux support.
-- Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Added support for Tile Map Service (TMS) raster overlays.
 
 ##### Fixes :wrench:
 
+* Fixed issue where displayed longitude-latitude-height in `CesiumGeoreferenceComponent` wasn't updating in certain cases.
 * `FEditorDelegates::OnFocusViewportOnActors` is no longer unnecessarily subscribed to multiple times.
 * `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
-* Fixed a bug where collision does not update correctly when changing Screen Space Error of a tileset. 
+* Fixed a bug where collision does not update correctly when changing properties of a tileset in the editor.
+* Fixed a bug that caused tiles to disappear when "Suspend Update" was enabled.
 
 ### v1.1.1 - 2021-04-23
 
