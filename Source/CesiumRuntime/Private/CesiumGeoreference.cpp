@@ -58,12 +58,7 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
   return pGeoreference;
 }
 
-ACesiumGeoreference::ACesiumGeoreference()
-    : _georeferencedToEcef(1.0),
-      _ecefToGeoreferenced(1.0),
-      _ueAbsToEcef(1.0),
-      _ecefToUeAbs(1.0),
-      _insideSublevel(false) {
+ACesiumGeoreference::ACesiumGeoreference() : _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -272,7 +267,11 @@ void ACesiumGeoreference::BeginPlay() {
   }
 }
 
-void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {}
+/** In case the CesiumGeoreference gets spawned at run time, instead of design
+ *  time, ensure that frames are updated */
+void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
+  this->UpdateGeoreference();
+}
 
 void ACesiumGeoreference::UpdateGeoreference() {
   // update georeferenced -> ECEF
@@ -287,7 +286,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
       //       rather than averaging the centers.
       size_t numberOfPositions = 0;
 
-      for (const TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
+      for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
            this->_georeferencedObjects) {
         if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
           std::optional<Cesium3DTiles::BoundingVolume> bv =
@@ -622,7 +621,7 @@ FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
 
 glm::dvec3
 ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
-  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::vec4(ecef, 1.0);
+  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   return ueAbs -
@@ -847,7 +846,7 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
   const FVector& viewLoc = cursor.GetOrigin();
   const FVector& viewDir = cursor.GetDirection();
 
-  FVector lineEnd = viewLoc + viewDir * 637100000;
+  FVector lineEnd = viewLoc + viewDir * 637100000.0;
 
   static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
   if (ShowTrace) {

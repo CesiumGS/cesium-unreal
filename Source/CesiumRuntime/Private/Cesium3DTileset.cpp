@@ -7,13 +7,16 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -26,6 +29,7 @@
 #include "IPhysXCookingModule.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
+#include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -46,6 +50,9 @@ ACesium3DTileset::ACesium3DTileset()
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
+
+      _lastTilesetSource(ETilesetSource::FromCesiumIon),
+      _lastMaterial(nullptr),
 
       _lastTilesRendered(0),
       _lastTilesLoadingLowPriority(0),
@@ -75,6 +82,28 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+
+void ACesium3DTileset::AddFocusViewportDelegate() {
+#if WITH_EDITOR
+  FEditorDelegates::OnFocusViewportOnActors.AddLambda(
+      [this](const TArray<AActor*>& actors) {
+        if (actors.Num() == 1 && actors[0] == this) {
+          this->OnFocusEditorViewportOnThis();
+        }
+      });
+#endif // WITH_EDITOR
+}
+
+void ACesium3DTileset::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+
+  Super::PostInitProperties();
+  AddFocusViewportDelegate();
+}
 
 void ACesium3DTileset::PlayMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
@@ -107,7 +136,14 @@ void ACesium3DTileset::StopMovieSequencer() {
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
 
 #if WITH_EDITOR
-void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
+void ACesium3DTileset::OnFocusEditorViewportOnThis() {
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnFocusEditorViewportOnThis on actor %s"),
+      *this->GetName());
+
   struct CalculateECEFCameraPosition {
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
@@ -143,10 +179,6 @@ void ACesium3DTileset::OnFocusEditorViewportOnActors(const AActor* actor) {
                          .getBoundingBox());
     }
   };
-
-  if (actor != this) {
-    return;
-  }
 
   const Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
   if (!pRootTile) {
@@ -281,16 +313,22 @@ void ACesium3DTileset::BeginPlay() {
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
-#if WITH_EDITOR
-  FEditorDelegates::OnFocusViewportOnActors.AddLambda(
-      [this](const TArray<AActor*>& actors) {
-        if (actors.Num() == 1) {
-          this->OnFocusEditorViewportOnActors(actors[0]);
-        }
-      });
-#endif // EDITOR
-
   this->LoadTileset();
+
+  // Hide all existing tiles. The still-visible ones will be shown next time we
+  // tick. But if update is suspended, leave the components in their current
+  // state.
+  if (!this->SuspendUpdate) {
+    TArray<UCesiumGltfComponent*> gltfComponents;
+    this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+
+    for (UCesiumGltfComponent* pGltf : gltfComponents) {
+      if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
+        pGltf->SetVisibility(false, true);
+        pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      }
+    }
+  }
 }
 
 void ACesium3DTileset::NotifyHit(
@@ -462,8 +500,8 @@ public:
             textureCoordinateRectangle);
       }
     }
-    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for detaching raster from
-    // tile"));
+    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for detaching raster
+    // from tile"));
   }
 
 private:
@@ -540,16 +578,6 @@ static std::string getCacheDatabaseName() {
 }
 
 void ACesium3DTileset::LoadTileset() {
-  if (this->Url.Len() > 0) {
-    UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-  } else {
-    UE_LOG(
-        LogCesium,
-        Log,
-        TEXT("Loading tileset for asset ID %d"),
-        this->IonAssetID);
-  }
-
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),
@@ -558,37 +586,52 @@ void ACesium3DTileset::LoadTileset() {
               spdlog::default_logger(),
               getCacheDatabaseName()));
 
-  this->_startTime = std::chrono::high_resolution_clock::now();
-
   Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
   if (pTileset) {
-    if (this->Material == _lastMaterial) {
-      // The material hasn't been changed, check for changes in the url or Ion
-      // asset ID / access token
-      if (this->Url.Len() > 0) {
-        if (pTileset->getUrl() &&
-            TCHAR_TO_UTF8(*this->Url) == pTileset->getUrl()) {
-          // Already using this URL.
-          return;
-        }
-      } else {
-        if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() &&
-            this->IonAssetID == pTileset->getIonAssetID() &&
-            TCHAR_TO_UTF8(*this->IonAccessToken) ==
-                pTileset->getIonAccessToken()) {
-          // Already using this asset ID and access token.
-          return;
-        }
+    // The tileset already exists, check if any properties were changed. If
+    // none were changed we can ignore this LoadTileset call.
+
+    // Unlike the set of properties checked in Tick, these properties require
+    // the tileset to be destroyed and recreated when changed.
+
+    // check if the tileset source selection itself changed
+    bool tilesetSourceChanged = this->TilesetSource != this->_lastTilesetSource;
+    this->_lastTilesetSource = this->TilesetSource;
+
+    // check if the current tileset changed
+    if (!tilesetSourceChanged) {
+      switch (this->TilesetSource) {
+      case ETilesetSource::FromUrl:
+        tilesetSourceChanged =
+            pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
+                               : this->Url.Len() > 0;
+        break;
+      case ETilesetSource::FromCesiumIon:
+        tilesetSourceChanged = !pTileset->getIonAssetID() ||
+                               !pTileset->getIonAccessToken() ||
+                               this->IonAssetID != pTileset->getIonAssetID() ||
+                               TCHAR_TO_UTF8(*this->IonAccessToken) !=
+                                   pTileset->getIonAccessToken();
+        break;
       }
-    } else {
-      _lastMaterial = this->Material;
     }
 
-    this->DestroyTileset();
+    bool waterMaskEnabledChanged =
+        this->EnableWaterMask !=
+        pTileset->getOptions().contentOptions.enableWaterMask;
+
+    bool materialChanged = this->Material != this->_lastMaterial;
+    this->_lastMaterial = this->Material;
+
+    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged) {
+      this->DestroyTileset();
+    } else {
+      return;
+    }
   }
 
   if (!this->Georeference) {
@@ -609,13 +652,31 @@ void ACesium3DTileset::LoadTileset() {
                          : nullptr,
       spdlog::default_logger()};
 
-  if (this->Url.Len() > 0) {
-    pTileset = new Cesium3DTiles::Tileset(externals, TCHAR_TO_UTF8(*this->Url));
-  } else {
+  this->_startTime = std::chrono::high_resolution_clock::now();
+
+  Cesium3DTiles::TilesetOptions options;
+  options.contentOptions.enableWaterMask = this->EnableWaterMask;
+
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
+    UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
+    pTileset = new Cesium3DTiles::Tileset(
+        externals,
+        TCHAR_TO_UTF8(*this->Url),
+        options);
+    break;
+  case ETilesetSource::FromCesiumIon:
+    UE_LOG(
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d"),
+        this->IonAssetID);
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         this->IonAssetID,
-        TCHAR_TO_UTF8(*this->IonAccessToken));
+        TCHAR_TO_UTF8(*this->IonAccessToken),
+        options);
+    break;
   }
 
   this->_pTileset = pTileset;
@@ -659,7 +720,8 @@ void ACesium3DTileset::DestroyTileset() {
 
   // The way CesiumRasterOverlay::add is currently implemented, destroying the
   // tileset without removing overlays will make it impossible to add it again
-  // once a new tileset is created (e.g. when switching between terrain assets)
+  // once a new tileset is created (e.g. when switching between terrain
+  // assets)
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
@@ -824,9 +886,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  // TODO: updating the options should probably happen in OnConstruction or
-  // PostEditChangeProperty, no need to have it happen every frame when the
-  // options haven't been changed
   Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
   options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 
@@ -919,6 +978,35 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       continue;
     }
 
+    // Consider Exclusion zone to drop this tile... Ideally, should be
+    // considered in Cesium3DTiles::ViewState to avoid loading the tile
+    // first...
+    if (ExclusionZones.Num() > 0) {
+      const CesiumGeospatial::BoundingRegion* pRegion =
+          std::get_if<CesiumGeospatial::BoundingRegion>(
+              &pTile->getBoundingVolume());
+      if (pRegion) {
+        bool culled = false;
+
+        for (FCesiumExclusionZone ExclusionZone : ExclusionZones) {
+          CesiumGeospatial::GlobeRectangle cgExclusionZone =
+              CesiumGeospatial::GlobeRectangle::fromDegrees(
+                  ExclusionZone.West,
+                  ExclusionZone.South,
+                  ExclusionZone.East,
+                  ExclusionZone.North);
+          if (cgExclusionZone.intersect(pRegion->getRectangle())) {
+            culled = true;
+            continue;
+          }
+        }
+
+        if (culled) {
+          continue;
+        }
+      }
+    }
+
     // const Cesium3DTiles::TileID& id = pTile->getTileID();
     // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
     // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
@@ -933,6 +1021,24 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       // UE_LOG(LogCesium, VeryVerbose, TEXT("Tile to render does not have a
       // Gltf"));
       continue;
+    }
+
+    // Apply Actor-defined collision settings to the newly-created component.
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+    if (PrimitiveComponent != nullptr) {
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX;
+             ChannelValue++) {
+          ECollisionResponse response =
+              BodyInstance.GetCollisionResponse().GetResponse(
+                  ECollisionChannel(ChannelValue));
+          PrimitiveComponent->SetCollisionResponseToChannel(
+              ECollisionChannel(ChannelValue),
+              response);
+        }
+      }
     }
 
     if (Gltf->GetAttachParent() == nullptr) {
@@ -951,6 +1057,31 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
   this->DestroyTileset();
   AActor::EndPlay(EndPlayReason);
+}
+
+void ACesium3DTileset::PostLoad() {
+  BodyInstance.FixupData(this); // We need to call this one after Loading the
+                                // actor to have correct BodyInstance values.
+
+  Super::PostLoad();
+}
+
+void ACesium3DTileset::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+  const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::TilesetExplicitSource) {
+    // In previous versions, the tileset source was inferred from the presence
+    // of a non-empty URL property, rather than being explicitly specified.
+    if (this->Url.Len() > 0) {
+      this->TilesetSource = ETilesetSource::FromUrl;
+    } else {
+      this->TilesetSource = ETilesetSource::FromCesiumIon;
+    }
+  }
 }
 
 void ACesium3DTileset::BeginDestroy() {
