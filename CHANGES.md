@@ -7,6 +7,10 @@
 - Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
 
+##### Fixes :wrench:
+
+- Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
+
 ### v1.2.0 - 2021-05-03
 
 ##### Additions  :tada:

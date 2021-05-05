@@ -1132,11 +1132,34 @@ static void loadNode(
     IPhysXCooking* pPhysXCooking
 #endif
 ) {
+  static constexpr std::array<double, 16> identityMatrix = {
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0};
+
   glm::dmat4x4 nodeTransform = transform;
 
-  if (node.matrix.size() > 0) {
-    const std::vector<double>& matrix = node.matrix;
+  const std::vector<double>& matrix = node.matrix;
+  bool isIdentityMatrix = false;
+  if (matrix.size() == 16) {
+    isIdentityMatrix =
+        std::equal(matrix.begin(), matrix.end(), identityMatrix.begin());
+  }
 
+  if (matrix.size() == 16 && !isIdentityMatrix) {
     glm::dmat4x4 nodeTransformGltf(
         glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
         glm::dvec4(matrix[4], matrix[5], matrix[6], matrix[7]),
@@ -1144,9 +1167,7 @@ static void loadNode(
         glm::dvec4(matrix[12], matrix[13], matrix[14], matrix[15]));
 
     nodeTransform = nodeTransform * nodeTransformGltf;
-  } else if (
-      node.translation.size() > 0 || node.rotation.size() > 0 ||
-      node.scale.size() > 0) {
+  } else {
     glm::dmat4 translation(1.0);
     if (node.translation.size() == 3) {
       translation[3] = glm::dvec4(
@@ -1165,7 +1186,6 @@ static void loadNode(
     }
 
     glm::dmat4 scale(1.0);
-
     if (node.scale.size() == 3) {
       scale[0].x = node.scale[0];
       scale[1].y = node.scale[1];
