@@ -572,14 +572,26 @@ static std::string getCacheDatabaseName() {
   return TCHAR_TO_UTF8(*filename);
 }
 
+static std::shared_ptr<CesiumAsync::IAssetAccessor> getAssetAccessor() {
+  // create cache and see if it's available for use
+  std::unique_ptr<CesiumAsync::SqliteCache> pCache =
+      CesiumAsync::SqliteCache::create(
+          spdlog::default_logger(),
+          getCacheDatabaseName());
+  if (pCache) {
+    return std::make_shared<CesiumAsync::CachingAssetAccessor>(
+        spdlog::default_logger(),
+        std::make_shared<UnrealAssetAccessor>(),
+        std::move(pCache));
+  }
+
+  // cache is not available, so let use default unreal asset accessor
+  return std::make_shared<UnrealAssetAccessor>();
+}
+
 void ACesium3DTileset::LoadTileset() {
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
-      std::make_shared<CesiumAsync::CachingAssetAccessor>(
-          spdlog::default_logger(),
-          std::make_shared<UnrealAssetAccessor>(),
-          std::make_shared<CesiumAsync::SqliteCache>(
-              spdlog::default_logger(),
-              getCacheDatabaseName()));
+      getAssetAccessor();
 
   Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
