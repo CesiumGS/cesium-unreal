@@ -14,6 +14,7 @@
 * `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
 * Fixed a bug where collision does not update correctly when changing properties of a tileset in the editor.
 * Fixed a bug that caused tiles to disappear when "Suspend Update" was enabled.
+* Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
 
 ### v1.1.1 - 2021-04-23
 
