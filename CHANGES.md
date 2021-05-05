@@ -1,10 +1,17 @@
 # Change Log
 
+### v1.3.0 - ???
+
+##### Additions  :tada:
+
+- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
+- Improved property change checks in `Cesium3DTileset::LoadTileset`.
+
 ### v1.2.0 - 2021-05-03
 
 ##### Additions  :tada:
 
-- Added dynamic camera that adapts to height above terrain.
+- Added a dynamic camera that adapts to height above terrain.
 - Added Linux support.
 - Added support for Tile Map Service (TMS) raster overlays.
 
