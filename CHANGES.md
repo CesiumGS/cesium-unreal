@@ -1,5 +1,13 @@
 # Change Log
 
+### v?.?.? - ????-??-??
+
+##### Additions  :tada:
+
+##### Fixes :wrench:
+
+* Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
+
 ### v1.2.0 - 2021-05-03
 
 ##### Additions  :tada:
