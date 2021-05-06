@@ -9,6 +9,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
 
 ### v1.2.0 - 2021-05-03
