@@ -1320,6 +1320,7 @@ static void loadModelGameThreadPart(
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
   pMesh->bUseDefaultCollision = false;
+  pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
   pMesh->SetFlags(RF_Transient);
 
   UStaticMesh* pStaticMesh =
