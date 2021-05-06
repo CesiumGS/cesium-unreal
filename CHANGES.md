@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.2.1 - 2021-05-13
+
+##### Fixes :wrench:
+
+- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
+
 ### v1.2.0 - 2021-05-03
 
 ##### Additions  :tada:
