@@ -39,7 +39,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatform=Win64 -Platform=Win64
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -85,7 +85,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatform=Win64+Android -Platform=Win64
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64+Android
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -118,7 +118,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatform=Mac -Platform=Mac
+    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -146,7 +146,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatform=Linux -Platform=Linux
+    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
     - cd "$CLONEDIR/../packages"
     - zip -r ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
