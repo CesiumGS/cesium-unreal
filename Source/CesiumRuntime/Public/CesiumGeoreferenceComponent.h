@@ -47,7 +47,7 @@ public:
    * Unreal transform is to be treated as the ground truth, e.g. Unreal physics
    * objects, cameras, etc.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool FixTransformOnOriginRebase = true;
 
   /**
