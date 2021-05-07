@@ -15,7 +15,7 @@ jobs:
     name: Windows + VS2017
     os: windows
     cache:
-      timeout: 1000
+      timeout: 1800
       directories:
       - "/C/Program Files/Epic Games/UE_4.26"
       - "/C/Program Files (x86)/Epic Games/Launcher"
@@ -49,6 +49,10 @@ jobs:
   - name: MacOS
     os: osx
     osx_image: xcode11.3
+    cache:
+      timeout: 1800
+      directories:
+      - $HOME/UE_4.26
     addons:
       homebrew:
         packages:
@@ -81,6 +85,10 @@ jobs:
   - name: Linux
     os: linux
     dist: focal
+    cache:
+      timeout: 1800
+      directories:
+      - $HOME/UE_4.26
     install:
     - sudo apt-get update
     - sudo apt-get install unzip zip awscli httpie
