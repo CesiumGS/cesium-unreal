@@ -629,6 +629,35 @@ static void loadPrimitive(
     }
   }
 
+  TArray<uint32> indices;
+  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
+    if (indicesView.size() % 3 != 0) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s: Indices accessor count is not a multiple of 3"),
+          UTF8_TO_TCHAR(name.c_str()));
+      return;
+    }
+    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
+
+    for (int32 i = 0; i < indicesView.size(); ++i) {
+      indices[i] = indicesView[i];
+    }
+  } else {
+    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
+      if (i % 2) {
+        indices.Add(indicesView[i]);
+        indices.Add(indicesView[i + 2]);
+        indices.Add(indicesView[i + 1]);
+      } else {
+        indices.Add(indicesView[i]);
+        indices.Add(indicesView[i + 1]);
+        indices.Add(indicesView[i + 2]);
+      }
+    }
+  }
+
   FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
   RenderData->AllocateLODResources(1);
 
@@ -662,27 +691,6 @@ static void loadPrimitive(
       BoundingBoxAndSphere.Origin,
       BoundingBoxAndSphere.BoxExtent);
   BoundingBoxAndSphere.SphereRadius = 0.0f;
-
-  TArray<uint32> indices;
-  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
-    indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
-
-    for (int32 i = 0; i < indicesView.size(); ++i) {
-      indices[i] = indicesView[i];
-    }
-  } else {
-    for (int32 i = 0; i < indicesView.size() - 2; ++i) {
-      if (i % 2) {
-        indices.Add(indicesView[i]);
-        indices.Add(indicesView[i + 2]);
-        indices.Add(indicesView[i + 1]);
-      } else {
-        indices.Add(indicesView[i]);
-        indices.Add(indicesView[i + 1]);
-        indices.Add(indicesView[i + 2]);
-      }
-    }
-  }
 
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
   StaticMeshBuildVertices.SetNum(indices.Num());
