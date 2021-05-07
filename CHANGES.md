@@ -6,6 +6,7 @@
 
 - Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
 
 ##### Fixes :wrench:
 
