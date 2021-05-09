@@ -20,6 +20,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <optional>
+#include <string>
 
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
@@ -28,11 +29,72 @@
 #include "Slate/SceneViewport.h"
 #endif
 
+namespace {
+  void logName(const std::string& name, UObjectBaseUtility* object) {
+    const FString printedName(name.c_str());
+    if (!object) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Object %s is nullptr"), *printedName);
+    }
+    else {
+      const FString objectName = object->GetName();
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Object %s is %s"), *printedName, *objectName);
+    }
+  }
+}
+
+namespace {
+
+  /**
+   * @brief Tries to find the default geo reference in the given level.
+   * 
+   * This will search all actors of the given level for a `ACesiumGeoreference`
+   * whose name starts with `"CesiumGeoreferenceDefault"` that is *valid* 
+   * (i.e. not pending kill). 
+   * 
+   * @param Level The level
+   * @return The default geo reference, or `nullptr` if there is none.
+   */
+  ACesiumGeoreference* findValidDefaultGeoreference(ULevel* Level) {
+    if (!IsValid(Level)) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("No valid level for findDefaultGeoreference"));
+      return nullptr;
+    }
+    TArray<AActor*>& Actors = Level->Actors;
+    AActor** DefaultGeoreferencePtr = Actors.FindByPredicate([](AActor* const & InItem)
+    {
+        if (!IsValid(InItem)) {
+          logName("An invalid item:", InItem);
+          return false;
+        }
+        if (!InItem->IsA(ACesiumGeoreference::StaticClass()))
+        {
+          return false;
+        }
+        if (!InItem->GetName().StartsWith("CesiumGeoreferenceDefault")) {
+          return false;
+        }
+        return true;
+    });
+    if (!DefaultGeoreferencePtr) {
+      return nullptr;
+    }
+    AActor* DefaultGeoreference = *DefaultGeoreferencePtr;
+    return Cast<ACesiumGeoreference>(DefaultGeoreference);
+  }
+}
+
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
-  ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
-      Actor->GetLevel(),
-      TEXT("CesiumGeoreferenceDefault"));
+  ACesiumGeoreference* pGeoreference = findValidDefaultGeoreference(Actor->GetLevel());
   if (!pGeoreference) {
     const FString actorName = Actor->GetName();
     UE_LOG(
@@ -43,6 +105,7 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
     spawnParameters.OverrideLevel = Actor->GetLevel();
+    spawnParameters.NameMode = FActorSpawnParameters::ESpawnActorNameMode::Requested;
     pGeoreference =
         Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
   } else {
