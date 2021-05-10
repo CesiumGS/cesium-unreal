@@ -47,7 +47,7 @@ If you would like to access pre-release, development versions of the plugin, Ces
 
 ### :computer: Developing with Unreal Engine
 
-See the [Developer Setup Guide](developer-setup.md) to learn how to set up a development environment for Cesium for Unreal, allowing you to compile it, customize it, and contribute to its development.
+See the [Developer Setup Guide](Documentation/developer-setup.md) to learn how to set up a development environment for Cesium for Unreal, allowing you to compile it, customize it, and contribute to its development.
 
 <!-- #### :hammer_and_wrench: Compiling Cesium for Unreal
 
