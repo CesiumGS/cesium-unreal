@@ -14,7 +14,6 @@ This is a summary of a setup and workflows for developers who want to work with 
 - Install Microsoft Visual Studio 2019 from https://visualstudio.microsoft.com/en/downloads/ 
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
 
-
 ## Initial setup 
 
 ### Setting up the directories
@@ -32,7 +31,7 @@ This can be set up with the following sequence of commands, on the console, star
 
     git clone https://github.com/CesiumGS/cesium-unreal-samples.git
     cd cesium-unreal-samples
-    md Plugins
+    mkdir Plugins
     cd Plugins
     git clone --recursive https://github.com/CesiumGS/cesium-unreal.git
 
