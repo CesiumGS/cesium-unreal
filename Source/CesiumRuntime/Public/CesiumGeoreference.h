@@ -52,15 +52,22 @@ struct FCesiumSubLevel {
 
   /**
    * The WGS84 longitude in degrees of where this level should sit on the
-   * globe.
+   * globe, in the range [-180, 180]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
   double LevelLongitude = 0.0;
 
   /**
-   * The WGS84 latitude in degrees of where this level should sit on the globe.
+   * The WGS84 latitude in degrees of where this level should sit on the globe,
+   * in the range [-90, 90]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -90.0, ClampMax = 90.0))
   double LevelLatitude = 0.0;
 
   /**
@@ -190,25 +197,31 @@ public:
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
   /**
-   * The longitude of the custom origin placement in degrees.
+   * The longitude of the custom origin placement in degrees, in the range
+   * [-180, 180]
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       meta =
           (EditCondition =
-               "OriginPlacement==EOriginPlacement::CartographicOrigin"))
+               "OriginPlacement==EOriginPlacement::CartographicOrigin",
+           ClampMin = -180.0,
+           ClampMax = 180.0))
   double OriginLongitude = -105.25737;
 
   /**
-   * The latitude of the custom origin placement in degrees.
+   * The latitude of the custom origin placement in degrees, in the range [-90,
+   * 90]
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       meta =
           (EditCondition =
-               "OriginPlacement==EOriginPlacement::CartographicOrigin"))
+               "OriginPlacement==EOriginPlacement::CartographicOrigin",
+           ClampMin = -90.0,
+           ClampMax = 90.0))
   double OriginLatitude = 39.736401;
 
   /**

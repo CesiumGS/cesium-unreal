@@ -88,7 +88,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium|Level of Detail",
-      meta = (ClampMin = 0))
+      meta = (ClampMin = 0.0))
   double MaximumScreenSpaceError = 16.0;
 
   /**
@@ -244,7 +244,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium|Tile Culling",
-      meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0))
+      meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
   double CulledScreenSpaceError = 64.0;
 
   /**
