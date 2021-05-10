@@ -1643,7 +1643,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
         : BaseMaterial(TEXT(
               "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlayWatermasked.M_CesiumOverlayWater")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlayWater.M_CesiumOverlayWater")),
           OpacityMaskMaterial(TEXT(
               "/CesiumForUnreal/Materials/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
     }
