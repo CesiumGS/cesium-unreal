@@ -1641,11 +1641,11 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlaysAndWater.GltfMaterialWithOverlaysAndWater")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlayWatermasked.M_CesiumOverlayWatermasked")),
           OpacityMaskMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask")) {
+              "/CesiumForUnreal/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
     }
   };
   static FConstructorStatics ConstructorStatics;

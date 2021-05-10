@@ -269,7 +269,7 @@ public:
    * custom visual effects.
    *
    * The custom material should generally be created by copying the
-   * "GltfMaterialWithOverlays" material and customizing it as desired.
+   * "M_CesiumOverlay" material and customizing it as desired.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   UMaterialInterface* Material = nullptr;
