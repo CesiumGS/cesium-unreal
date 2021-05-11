@@ -26,6 +26,8 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGltf/GltfReader.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -684,6 +686,19 @@ static void loadPrimitive(
     }
   }
 
+  // EXPERIMENTAL - probably should do with compute shader or geometry shader
+  // with transform feedback
+  for (int64_t i = 0; i < indices.Num(); ++i) {
+    uint32 vertexIndex = indices[i];
+    const FVector& position = positionView[vertexIndex];
+    glm::dvec4 ecef =
+        transform * glm::dvec4(position.X, position.Y, position.Z, 1.0);
+    std::optional<CesiumGeospatial::Cartographic> cartographic =
+        CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
+    if (cartographic) {
+    }
+  }
+
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
   StaticMeshBuildVertices.SetNum(indices.Num());
 
@@ -702,6 +717,20 @@ static void loadPrimitive(
     BoundingBoxAndSphere.SphereRadius = FMath::Max(
         (vertex.Position - BoundingBoxAndSphere.Origin).Size(),
         BoundingBoxAndSphere.SphereRadius);
+
+    glm::dvec4 ecef = transform * glm::dvec4(
+                                      vertex.Position.X,
+                                      vertex.Position.Y,
+                                      vertex.Position.Z,
+                                      1.0);
+
+    std::optional<CesiumGeospatial::Cartographic> cartographic =
+        CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
+    if (cartographic && cartographic->latitude > 0.0) {
+      vertex.Color = FColor::Red;
+    } else {
+      vertex.Color = FColor::White;
+    }
   }
 
   // TangentX: Tangent
@@ -772,6 +801,7 @@ static void loadPrimitive(
         ColorVisitor{StaticMeshBuildVertices, indices});
   }
 
+  hasVertexColors = true;
   LODResources.bHasColorVertexData = hasVertexColors;
 
   // We need to copy the texture coordinates associated with each texture (if
