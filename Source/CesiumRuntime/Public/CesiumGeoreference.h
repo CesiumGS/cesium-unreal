@@ -238,7 +238,7 @@ public:
    * it to false can lead to jiterring artifacts when the camera gets far away
    * from the origin.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool KeepWorldOriginNearCamera = true;
 
   /**
@@ -541,10 +541,21 @@ protected:
 #endif
 
 private:
-  glm::dmat4 _georeferencedToEcef;
-  glm::dmat4 _ecefToGeoreferenced;
-  glm::dmat4 _ueAbsToEcef;
-  glm::dmat4 _ecefToUeAbs;
+  UPROPERTY()
+  double _georeferencedToEcef_Array[16];
+  glm::dmat4& _georeferencedToEcef = *(glm::dmat4*)_georeferencedToEcef_Array;
+
+  UPROPERTY()
+  double _ecefToGeoreferenced_Array[16];
+  glm::dmat4& _ecefToGeoreferenced = *(glm::dmat4*)_ecefToGeoreferenced_Array;
+
+  UPROPERTY()
+  double _ueAbsToEcef_Array[16];
+  glm::dmat4& _ueAbsToEcef = *(glm::dmat4*)_ueAbsToEcef_Array;
+
+  UPROPERTY()
+  double _ecefToUeAbs_Array[16];
+  glm::dmat4& _ecefToUeAbs = *(glm::dmat4*)_ecefToUeAbs_Array;
 
   bool _insideSublevel;
 

@@ -22,6 +22,20 @@ class Tileset;
 class TilesetView;
 } // namespace Cesium3DTiles
 
+UENUM()
+enum class ETilesetSource : uint8 {
+  /**
+   * The tileset will be loaded from Cesium Ion using the provided IonAssetID
+   * and IonAccessToken.
+   */
+  FromCesiumIon UMETA(DisplayName = "From Cesium Ion"),
+
+  /**
+   * The tileset will be loaded from the specified Url.
+   */
+  FromUrl UMETA(DisplayName = "From Url")
+};
+
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor,
                                            public ICesiumGeoreferenceable {
@@ -32,11 +46,20 @@ public:
   virtual ~ACesium3DTileset();
 
   /**
+   * The type of source from which to load this tileset.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (DisplayName = "Source"))
+  ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
+
+  /**
    * The URL of this tileset's "tileset.json" file.
    *
    * If this property is specified, the ion asset ID and token are ignored.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
   FString Url;
 
   /**
@@ -44,7 +67,10 @@ public:
    *
    * This property is ignored if the Url is specified.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   uint32 IonAssetID;
 
   /**
@@ -54,7 +80,7 @@ public:
       EditAnywhere,
       BlueprintReadOnly,
       Category = "Cesium",
-      meta = (EditCondition = "IonAssetID"))
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
 
   /**
@@ -249,6 +275,15 @@ public:
   UMaterialInterface* Material = nullptr;
 
   /**
+   * Whether to request and render the water mask.
+   *
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  bool EnableWaterMask = false;
+
+  /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
@@ -301,11 +336,18 @@ public:
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void PostLoad() override;
+  virtual void Serialize(FArchive& Ar) override;
 
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
+
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  virtual void PostInitProperties() override;
 
   virtual void NotifyHit(
       class UPrimitiveComponent* MyComp,
@@ -336,15 +378,33 @@ private:
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
 
+  /**
+   * Will be called after the tileset is loaded or spawned, to register
+   * a delegate that calls OnFocusEditorViewportOnThis when this
+   * tileset is double-clicked
+   */
+  void AddFocusViewportDelegate();
+
 #if WITH_EDITOR
   std::optional<UnrealCameraParameters> GetEditorCamera() const;
-  void OnFocusEditorViewportOnActors(const AActor* actor);
+
+  /**
+   * Will focus all viewports on this tileset.
+   *
+   * This is called when double-clicking the tileset in the World Outliner.
+   * It will move the tileset into the center of the view, *even if* the
+   * tileset was not visible before, and no geometry has been created yet
+   * for the tileset: It solely operates on the tile bounding volume that
+   * was given in the root tile.
+   */
+  void OnFocusEditorViewportOnThis();
 #endif
 
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
-  UMaterialInterface* _lastMaterial = nullptr;
+  ETilesetSource _lastTilesetSource;
+  UMaterialInterface* _lastMaterial;
 
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;
