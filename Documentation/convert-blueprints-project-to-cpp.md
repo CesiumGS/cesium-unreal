@@ -43,7 +43,7 @@ Unreal Engine does not allow a Blueprints-only project to have an embedded C++ p
             }
       }
 
-Finally, create a new file called `dev.cpp` in the same `dev` subdirectory, with this content:
+* Finally, create a new file called `dev.cpp` in the same `dev` subdirectory, with this content:
 
       #include "Modules/ModuleManager.h"
 
