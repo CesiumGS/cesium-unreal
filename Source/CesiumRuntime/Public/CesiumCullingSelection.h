@@ -2,17 +2,17 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-#include "Engine/StaticMesh.h"
-#include "Components/SplineComponent.h"
 #include "CesiumGeoreference.h"
+#include "Components/SplineComponent.h"
+#include "CoreMinimal.h"
+#include "Engine/StaticMesh.h"
+#include "GameFramework/Actor.h"
 #include <vector>
 
 #include "CesiumCullingSelection.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API ACesiumCullingSelection : public AActor {
@@ -20,28 +20,27 @@ class CESIUMRUNTIME_API ACesiumCullingSelection : public AActor {
   GENERATED_BODY()
 
 public:
-    ACesiumCullingSelection();
+  ACesiumCullingSelection();
 
-    UPROPERTY(EditAnywhere, Category = "Cesium")
-    ACesiumGeoreference* Georeference;
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ACesiumGeoreference* Georeference;
 
-    // TODO: maybe EditAnywhere is wrong here
-    UPROPERTY(EditAnywhere, Category = "Cesium")
-    USplineComponent* Selection;
+  // TODO: maybe EditAnywhere is wrong here
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  USplineComponent* Selection;
 
-    // TODO: triangulated vertices (and indices??) for closed-loop-splines
+  // TODO: triangulated vertices (and indices??) for closed-loop-splines
 
-    // TODO: may be able to just do this onconstruction or posteditproperties 
-    // (when the spline has changed)
-    UFUNCTION(CallInEditor, Category = "Cesium")
-    void UpdateCullingSelection();
+  // TODO: may be able to just do this onconstruction or posteditproperties
+  // (when the spline has changed)
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void UpdateCullingSelection();
 
-    virtual void OnConstruction(const FTransform& Transform) override;
-    virtual bool ShouldTickIfViewportsOnly() const override;
-    virtual void Tick(float DeltaTime) override;
-    
+  virtual void OnConstruction(const FTransform& Transform) override;
+  virtual bool ShouldTickIfViewportsOnly() const override;
+  virtual void Tick(float DeltaTime) override;
+
 protected:
-
   virtual void BeginPlay() override;
 
 private:
@@ -55,6 +54,10 @@ private:
   std::vector<uint32_t> indices;
 
 #if WITH_EDITOR
-  void _drawDebugLine(const glm::dvec2& point0, const glm::dvec2& point1, double height = 1000.0, FColor color = FColor::Red) const;
- #endif
+  void _drawDebugLine(
+      const glm::dvec2& point0,
+      const glm::dvec2& point1,
+      double height = 1000.0,
+      FColor color = FColor::Red) const;
+#endif
 };

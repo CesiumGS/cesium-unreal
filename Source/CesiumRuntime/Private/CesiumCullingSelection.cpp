@@ -1,13 +1,13 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumCullingSelection.h"
-#include "StaticMeshResources.h"
 #include "CesiumUtility/Math.h"
+#include "StaticMeshResources.h"
 #include <algorithm>
-#include <numeric>
+#include <array>
 #include <earcut.hpp>
 #include <glm/glm.hpp>
-#include <array>
+#include <numeric>
 
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
@@ -15,10 +15,9 @@
 
 ACesiumCullingSelection::ACesiumCullingSelection() {
   PrimaryActorTick.bCanEverTick = true;
-  
-  this->Selection = 
-    CreateDefaultSubobject<USplineComponent>(TEXT("CullingSelection"));
-  
+
+  this->Selection =
+      CreateDefaultSubobject<USplineComponent>(TEXT("CullingSelection"));
 }
 
 void ACesiumCullingSelection::OnConstruction(const FTransform& Transform) {
@@ -35,19 +34,25 @@ void ACesiumCullingSelection::BeginPlay() {
 
 void ACesiumCullingSelection::UpdateCullingSelection() {
   int32 splinePointsCount = this->Selection->GetNumberOfSplinePoints();
-  UE_LOG(LogCesium, Warning, TEXT("SPLINE POINTS COUNT: %d"), splinePointsCount);
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT("SPLINE POINTS COUNT: %d"),
+      splinePointsCount);
   if (splinePointsCount < 3) {
     return;
   }
   cartographicSelection.clear();
   cartographicSelection.resize(splinePointsCount);
   for (size_t i = 0; i < splinePointsCount; ++i) {
-    const FVector& unrealPosition =
-        this->Selection->GetLocationAtSplinePoint(i, ESplineCoordinateSpace::World);
+    const FVector& unrealPosition = this->Selection->GetLocationAtSplinePoint(
+        i,
+        ESplineCoordinateSpace::World);
     glm::dvec3 cartographic =
         this->Georeference->TransformUeToLongitudeLatitudeHeight(
             glm::dvec3(unrealPosition.X, unrealPosition.Y, unrealPosition.Z));
-    cartographicSelection[i] = glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
+    cartographicSelection[i] =
+        glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
   }
 
   const glm::dvec2& point0 = cartographicSelection[0];
@@ -60,11 +65,10 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
 
   for (size_t i = 1; i < splinePointsCount; ++i) {
     const glm::dvec2& point1 = cartographicSelection[i];
-    
+
     if (point1.y > north) {
       north = point1.y;
-    }
-    else if (point1.y < south) {
+    } else if (point1.y < south) {
       south = point1.y;
     }
 
@@ -100,7 +104,8 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
       LogCesium,
       Warning,
       TEXT("SPLINE BOUNDS: (%f north, %f east, %f south, %f west)"),
-      glm::degrees(north), glm::degrees(east), glm::degrees(south), glm::degrees(west));
+      glm::degrees(north), glm::degrees(east), glm::degrees(south),
+  glm::degrees(west));
   */
 
   using Coord = double;
@@ -138,9 +143,7 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
       indices.size());*/
 }
 
-bool ACesiumCullingSelection::ShouldTickIfViewportsOnly() const {
-  return true;
-}
+bool ACesiumCullingSelection::ShouldTickIfViewportsOnly() const { return true; }
 
 void ACesiumCullingSelection::Tick(float DeltaTime) {
 #if WITH_EDITOR
@@ -150,7 +153,7 @@ void ACesiumCullingSelection::Tick(float DeltaTime) {
   this->_drawDebugLine(glm::dvec2(east, north), glm::dvec2(east, south));
   this->_drawDebugLine(glm::dvec2(east, south), glm::dvec2(west, south));
 
-  //UE_LOG(LogCesium, Warning, TEXT("INDICES COUNT: %d"), indices.size());
+  // UE_LOG(LogCesium, Warning, TEXT("INDICES COUNT: %d"), indices.size());
   for (size_t i = 0; i < indices.size(); ++i) {
     const glm::dvec2& a = cartographicSelection[indices[i]];
     const glm::dvec2& b =
@@ -161,13 +164,16 @@ void ACesiumCullingSelection::Tick(float DeltaTime) {
 }
 
 #if WITH_EDITOR
-void ACesiumCullingSelection::_drawDebugLine(const glm::dvec2& point0, const glm::dvec2& point1, double height, FColor color) const {
+void ACesiumCullingSelection::_drawDebugLine(
+    const glm::dvec2& point0,
+    const glm::dvec2& point1,
+    double height,
+    FColor color) const {
   glm::dvec3 a = this->Georeference->TransformLongitudeLatitudeHeightToUe(
       glm::dvec3(glm::degrees(point0.x), glm::degrees(point0.y), height));
   glm::dvec3 b = this->Georeference->TransformLongitudeLatitudeHeightToUe(
       glm::dvec3(glm::degrees(point1.x), glm::degrees(point1.y), height));
 
-  
   DrawDebugLine(
       this->GetWorld(),
       FVector(a.x, a.y, a.z),
