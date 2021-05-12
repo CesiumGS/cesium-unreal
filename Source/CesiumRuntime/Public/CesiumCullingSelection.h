@@ -22,12 +22,6 @@ class CESIUMRUNTIME_API ACesiumCullingSelection : public AActor {
 public:
     ACesiumCullingSelection();
 
-    /**
-     * The shape to be culled out from the owning Cesium3DTileset.
-     */
-    UPROPERTY(EditAnywhere, Category="Cesium")
-    UStaticMesh* CullingShape;
-
     UPROPERTY(EditAnywhere, Category = "Cesium")
     ACesiumGeoreference* Georeference;
 
@@ -43,10 +37,24 @@ public:
     void UpdateCullingSelection();
 
     virtual void OnConstruction(const FTransform& Transform) override;
+    virtual bool ShouldTickIfViewportsOnly() const override;
+    virtual void Tick(float DeltaTime) override;
     
 protected:
 
   virtual void BeginPlay() override;
 
 private:
+  // TEMP
+  double west = 0.0;
+  double east = 0.0;
+  double south = 0.0;
+  double north = 0.0;
+
+  std::vector<glm::dvec2> cartographicSelection;
+  std::vector<uint32_t> indices;
+
+#if WITH_EDITOR
+  void _drawDebugLine(const glm::dvec2& point0, const glm::dvec2& point1, double height = 1000.0, FColor color = FColor::Red) const;
+ #endif
 };
