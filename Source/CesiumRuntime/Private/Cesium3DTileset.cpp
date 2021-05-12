@@ -105,6 +105,21 @@ void ACesium3DTileset::PostInitProperties() {
   AddFocusViewportDelegate();
 }
 
+
+void ACesium3DTileset::SetUrl(FString InUrl) {
+  if(this->TilesetSource==ETilesetSource::FromUrl && InUrl != this->Url) {
+    this->Url = InUrl;
+    LoadTileset();
+  }
+}
+
+void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
+  if(this->TilesetSource==ETilesetSource::FromCesiumIon && InAssetID >= 0 && InAssetID != this->IonAssetID) {
+    this->IonAssetID=(uint32)InAssetID;
+    LoadTileset();
+  }
+}
+
 void ACesium3DTileset::PlayMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
       ACesiumGeoreference::GetDefaultForActor(this);
@@ -887,7 +902,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
-  options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+  options.maximumScreenSpaceError = (double)this->MaximumScreenSpaceError;
 
   options.preloadAncestors = this->PreloadAncestors;
   options.preloadSiblings = this->PreloadSiblings;

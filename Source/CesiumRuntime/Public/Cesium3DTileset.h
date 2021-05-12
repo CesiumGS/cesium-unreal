@@ -111,8 +111,8 @@ public:
    * value of 16.0 corresponds to the standard value for quantized-mesh terrain
    * of 2.0.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
-  double MaximumScreenSpaceError = 16.0;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Level of Detail")
+  float MaximumScreenSpaceError = 16.0;
 
   /**
    * Whether to preload ancestor tiles.
@@ -183,7 +183,7 @@ public:
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnableFrustumCulling = true;
 
   /**
@@ -306,6 +306,12 @@ public:
       Category = "Collision",
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetUrl(FString InUrl);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetIonAssetID(int32 InAssetID);                                            
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
