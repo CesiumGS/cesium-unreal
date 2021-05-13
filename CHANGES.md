@@ -8,9 +8,11 @@
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
 - Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
 - Make 3D Tiles culling properties blueprint editable and expose URL and Ion Asset ID via setter functions.
+- Improvements to dynamic camera, created altitude curves for FlyTo behavior.
 
 ##### Fixes :wrench:
 
+- Fixed regression in Cesium for Unreal v1.2.0 where `GlobeAwareDefaultPawn` lost its georeference during playmode.
 - Fixed a regression in Cesium for Unreal v1.2.0 where the matrices in `CesiumGeoreference` were being initialized to zero instead of identity.
 - Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
