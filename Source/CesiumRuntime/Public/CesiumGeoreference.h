@@ -80,7 +80,7 @@ struct FCesiumSubLevel {
    * How far in meters from the sublevel local origin the camera needs to be to
    * load the level.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0))
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
   double LoadRadius = 0.0;
 
   /**
@@ -275,7 +275,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      meta = (EditCondition = "KeepWorldOriginNearCamera", ClampMin = 0))
+      meta = (EditCondition = "KeepWorldOriginNearCamera", ClampMin = 0.0))
   double MaximumWorldOriginDistanceFromCamera = 10000.0;
 
   /**
