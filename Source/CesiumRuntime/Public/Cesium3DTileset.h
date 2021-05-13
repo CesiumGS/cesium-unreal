@@ -50,7 +50,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintReadOnly,
+      BlueprintGetter = GetTilesetSource,
+      BlueprintSetter = SetTilesetSource,
       Category = "Cesium",
       meta = (DisplayName = "Source"))
   ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
@@ -62,7 +63,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintReadOnly,
+      BlueprintGetter = GetUrl,
+      BlueprintSetter = SetUrl,
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
   FString Url;
@@ -74,7 +76,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintReadOnly,
+      BlueprintGetter = GetIonAssetID,
+      BlueprintSetter = SetIonAssetID,
       Category = "Cesium",
       meta =
           (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
@@ -329,14 +332,29 @@ public:
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(BlueprintGetter)
+  ETilesetSource GetTilesetSource() const { return TilesetSource; }
+
+  UFUNCTION(BlueprintSetter)
   void SetTilesetSource(ETilesetSource InSource);
 
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(BlueprintGetter)
+  FString GetUrl() const { return Url; }
+
+  UFUNCTION(BlueprintSetter)
   void SetUrl(FString InUrl);
 
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(BlueprintGetter)
+  int32 GetIonAssetID() const { return IonAssetID; }
+
+  UFUNCTION(BlueprintSetter)
   void SetIonAssetID(int32 InAssetID);
+
+  UFUNCTION(BlueprintGetter)
+  FString GetIonAccessToken() const { return IonAccessToken; }
+
+  UFUNCTION(BlueprintSetter)
+  void SetIonAccessToken(FString InAccessToken);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
@@ -393,6 +411,7 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
+  void MarkTilesetDirty() { _tilesetDirty = true; }
   Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
       const FVector2D& viewportSize,
       const FVector& location,
@@ -434,6 +453,7 @@ private:
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
+  bool _tilesetDirty;
   ETilesetSource _lastTilesetSource;
   UMaterialInterface* _lastMaterial;
 

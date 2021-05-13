@@ -130,6 +130,12 @@ void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
   }
 }
 
+void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
+  if (this->IonAccessToken != InAccessToken) {
+    this->IonAccessToken = InAccessToken;
+  }
+}
+
 void ACesium3DTileset::PlayMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
       ACesiumGeoreference::GetDefaultForActor(this);
@@ -698,7 +704,7 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
     pTileset = new Cesium3DTiles::Tileset(
         externals,
-        (uint32_t)this->IonAssetID,
+        static_cast<uint32_t>(this->IonAssetID),
         TCHAR_TO_UTF8(*this->IonAccessToken),
         options);
     break;
@@ -912,7 +918,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
-  options.maximumScreenSpaceError = (double)this->MaximumScreenSpaceError;
+  options.maximumScreenSpaceError =
+      static_cast<double>(this->MaximumScreenSpaceError);
 
   options.preloadAncestors = this->PreloadAncestors;
   options.preloadSiblings = this->PreloadSiblings;
@@ -923,7 +930,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
-  options.culledScreenSpaceError = (double)this->CulledScreenSpaceError;
+  options.culledScreenSpaceError =
+      static_cast<double>(this->CulledScreenSpaceError);
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {
