@@ -81,7 +81,7 @@ public:
       Category = "Cesium",
       meta =
           (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
-           ClampMin = "0"))
+           ClampMin = 0))
   int32 IonAssetID;
 
   /**
@@ -126,7 +126,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Level of Detail",
-      meta = (ClampMin = "0.0"))
+      meta = (ClampMin = 0.0))
   float MaximumScreenSpaceError = 16.0;
 
   /**
@@ -174,7 +174,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Loading",
-      meta = (ClampMin = "0"))
+      meta = (ClampMin = 0))
   int32 MaximumSimultaneousTileLoads = 20;
 
   /**
@@ -192,7 +192,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Loading",
-      meta = (ClampMin = "0"))
+      meta = (ClampMin = 0))
   int32 LoadingDescendantLimit = 20;
 
   /**
@@ -286,7 +286,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
       meta =
-          (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = "0.0"))
+          (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
   float CulledScreenSpaceError = 64.0;
 
   /**
