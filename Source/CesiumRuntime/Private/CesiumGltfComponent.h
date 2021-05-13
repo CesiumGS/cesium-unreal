@@ -73,6 +73,9 @@ public:
   UMaterialInterface* BaseMaterial;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterialInterface* BaseMaterialWithWater;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* OpacityMaskMaterial;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);

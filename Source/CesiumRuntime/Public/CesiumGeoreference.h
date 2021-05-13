@@ -251,7 +251,7 @@ public:
    * it to false can lead to jiterring artifacts when the camera gets far away
    * from the origin.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool KeepWorldOriginNearCamera = true;
 
   /**

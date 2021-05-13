@@ -82,7 +82,6 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
           targetLongitudeLatitudeHeight.z));
 
   this->_setECEF(ecef, maintainRelativeOrientation);
-  this->_updateDisplayECEF();
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
@@ -100,7 +99,6 @@ void UCesiumGeoreferenceComponent::MoveToECEF(
     const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
   this->_setECEF(targetEcef, maintainRelativeOrientation);
-  this->_updateDisplayLongitudeLatitudeHeight();
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
@@ -451,6 +449,10 @@ void UCesiumGeoreferenceComponent::_setECEF(
   if (this->_autoSnapToEastSouthUp) {
     this->SnapToEastSouthUp();
   }
+
+  // Update component properties
+  this->_updateDisplayECEF();
+  this->_updateDisplayLongitudeLatitudeHeight();
 }
 
 void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
