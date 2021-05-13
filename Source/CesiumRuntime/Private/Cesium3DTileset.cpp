@@ -105,18 +105,28 @@ void ACesium3DTileset::PostInitProperties() {
   AddFocusViewportDelegate();
 }
 
+void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
+  if (InSource != this->TilesetSource) {
+    this->TilesetSource = InSource;
+    this->LoadTileset();
+  }
+}
 
 void ACesium3DTileset::SetUrl(FString InUrl) {
-  if(this->TilesetSource==ETilesetSource::FromUrl && InUrl != this->Url) {
+  if (InUrl != this->Url) {
     this->Url = InUrl;
-    LoadTileset();
+    if (this->TilesetSource == ETilesetSource::FromUrl) {
+      this->LoadTileset();
+    }
   }
 }
 
 void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
-  if(this->TilesetSource==ETilesetSource::FromCesiumIon && InAssetID >= 0 && InAssetID != this->IonAssetID) {
-    this->IonAssetID=(uint32)InAssetID;
-    LoadTileset();
+  if (InAssetID >= 0 && InAssetID != this->IonAssetID) {
+    this->IonAssetID = InAssetID;
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->LoadTileset();
+    }
   }
 }
 
@@ -913,7 +923,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
-  options.culledScreenSpaceError = this->CulledScreenSpaceError;
+  options.culledScreenSpaceError = (double)this->CulledScreenSpaceError;
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {

@@ -22,7 +22,7 @@ class Tileset;
 class TilesetView;
 } // namespace Cesium3DTiles
 
-UENUM()
+UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from Cesium Ion using the provided IonAssetID
@@ -48,7 +48,11 @@ public:
   /**
    * The type of source from which to load this tileset.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (DisplayName = "Source"))
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      Category = "Cesium",
+      meta = (DisplayName = "Source"))
   ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
 
   /**
@@ -58,6 +62,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      BlueprintReadOnly,
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
   FString Url;
@@ -69,9 +74,12 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      BlueprintReadOnly,
       Category = "Cesium",
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
-  uint32 IonAssetID;
+      meta =
+          (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
+           ClampMin = "0"))
+  int32 IonAssetID;
 
   /**
    * The access token to use to access the Cesium ion resource.
@@ -87,7 +95,7 @@ public:
    * The actor controlling how this tileset's coordinate system relates to the
    * coordinate system in this Unreal Engine level.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ACesiumGeoreference* Georeference;
 
   /**
@@ -111,7 +119,11 @@ public:
    * value of 16.0 corresponds to the standard value for quantized-mesh terrain
    * of 2.0.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Level of Detail")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Level of Detail",
+      meta = (ClampMin = "0.0"))
   float MaximumScreenSpaceError = 16.0;
 
   /**
@@ -121,7 +133,7 @@ public:
    * detail in newly-exposed areas when panning. The down side is that it
    * requires loading more tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool PreloadAncestors = true;
 
   /**
@@ -131,7 +143,7 @@ public:
    * to be loaded, even if they are culled. Setting this to true may provide a
    * better panning experience at the cost of loading more tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool PreloadSiblings = true;
 
   /**
@@ -143,7 +155,7 @@ public:
    * false, overall loading will be faster, but newly-visible parts of the
    * tileset may initially be blank.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool ForbidHoles = false;
 
   /**
@@ -155,8 +167,12 @@ public:
    * may cause the tiles to be loaded and rendered more quickly, at the
    * cost of a higher network- and processing load.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
-  int MaximumSimultaneousTileLoads = 20;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Loading",
+      meta = (ClampMin = "0"))
+  int32 MaximumSimultaneousTileLoads = 20;
 
   /**
    * The number of loading descendents a tile should allow before deciding to
@@ -169,8 +185,12 @@ public:
    * is achieved, but this high-detail representation will appear at once, as
    * soon as it is loaded completely.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
-  int LoadingDescendantLimit = 20;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Loading",
+      meta = (ClampMin = "0"))
+  int32 LoadingDescendantLimit = 20;
 
   /**
    * Whether to cull tiles that are outside the frustum.
@@ -194,7 +214,7 @@ public:
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnableFogCulling = true;
 
   /**
@@ -217,7 +237,7 @@ public:
    * "Culled Screen Space Error". This allows control over the minimum quality
    * of these would-be-culled tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
   /**
@@ -260,9 +280,11 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      meta = (EditCondition = "EnforceCulledScreenSpaceError"))
-  double CulledScreenSpaceError = 64.0;
+      meta =
+          (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = "0.0"))
+  float CulledScreenSpaceError = 64.0;
 
   /**
    * A custom Material to use to render this tileset, in order to implement
@@ -286,7 +308,7 @@ public:
   /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
   bool SuspendUpdate;
 
   /**
@@ -308,10 +330,13 @@ public:
   FBodyInstance BodyInstance;
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetTilesetSource(ETilesetSource InSource);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetUrl(FString InUrl);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetIonAssetID(int32 InAssetID);                                            
+  void SetIonAssetID(int32 InAssetID);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
