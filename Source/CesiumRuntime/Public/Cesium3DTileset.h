@@ -46,55 +46,6 @@ public:
   virtual ~ACesium3DTileset();
 
   /**
-   * The type of source from which to load this tileset.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetTilesetSource,
-      BlueprintSetter = SetTilesetSource,
-      Category = "Cesium",
-      meta = (DisplayName = "Source"))
-  ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
-
-  /**
-   * The URL of this tileset's "tileset.json" file.
-   *
-   * If this property is specified, the ion asset ID and token are ignored.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetUrl,
-      BlueprintSetter = SetUrl,
-      Category = "Cesium",
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
-  FString Url;
-
-  /**
-   * The ID of the Cesium ion asset to use.
-   *
-   * This property is ignored if the Url is specified.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetIonAssetID,
-      BlueprintSetter = SetIonAssetID,
-      Category = "Cesium",
-      meta =
-          (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
-           ClampMin = 0))
-  int32 IonAssetID;
-
-  /**
-   * The access token to use to access the Cesium ion resource.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      Category = "Cesium",
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
-  FString IonAccessToken;
-
-  /**
    * The actor controlling how this tileset's coordinate system relates to the
    * coordinate system in this Unreal Engine level.
    */
@@ -285,28 +236,8 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      meta =
-          (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
+      meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
   float CulledScreenSpaceError = 64.0;
-
-  /**
-   * A custom Material to use to render this tileset, in order to implement
-   * custom visual effects.
-   *
-   * The custom material should generally be created by copying the
-   * "GltfMaterialWithOverlays" material and customizing it as desired.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  UMaterialInterface* Material = nullptr;
-
-  /**
-   * Whether to request and render the water mask.
-   *
-   * Currently only applicable for quantized-mesh tilesets that support the
-   * water mask extension.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  bool EnableWaterMask = false;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.
@@ -332,6 +263,85 @@ public:
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
+private:
+  /**
+   * The type of source from which to load this tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetTilesetSource,
+      BlueprintSetter = SetTilesetSource,
+      Category = "Cesium",
+      meta = (DisplayName = "Source"))
+  ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
+
+  /**
+   * The URL of this tileset's "tileset.json" file.
+   *
+   * If this property is specified, the ion asset ID and token are ignored.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetUrl,
+      BlueprintSetter = SetUrl,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
+  FString Url;
+
+  /**
+   * The ID of the Cesium ion asset to use.
+   *
+   * This property is ignored if the Url is specified.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIonAssetID,
+      BlueprintSetter = SetIonAssetID,
+      Category = "Cesium",
+      meta =
+          (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
+           ClampMin = 0))
+  int32 IonAssetID;
+
+  /**
+   * The access token to use to access the Cesium ion resource.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIonAccessToken,
+      BlueprintSetter = SetIonAccessToken,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
+  FString IonAccessToken;
+
+  /**
+   * Whether to request and render the water mask.
+   *
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableWaterMask,
+      BlueprintSetter = SetEnableWaterMask,
+      Category = "Cesium|Rendering")
+  bool EnableWaterMask = false;
+
+  /**
+   * A custom Material to use to render this tileset, in order to implement
+   * custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "GltfMaterialWithOverlays" material and customizing it as desired.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetMaterial,
+      BlueprintSetter = SetMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* Material = nullptr;
+
+public:
   UFUNCTION(BlueprintGetter)
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
 
@@ -355,6 +365,18 @@ public:
 
   UFUNCTION(BlueprintSetter)
   void SetIonAccessToken(FString InAccessToken);
+
+  UFUNCTION(BlueprintGetter)
+  bool GetEnableWaterMask() const { return EnableWaterMask; }
+
+  UFUNCTION(BlueprintSetter)
+  void SetEnableWaterMask(bool bEnableMask);
+
+  UFUNCTION(BlueprintGetter)
+  UMaterialInterface* GetMaterial() const { return Material; }
+
+  UFUNCTION(BlueprintSetter)
+  void SetMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
@@ -387,6 +409,12 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
+  // UObject overrides
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
@@ -411,7 +439,7 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
-  void MarkTilesetDirty() { _tilesetDirty = true; }
+  void MarkTilesetDirty();
   Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
       const FVector2D& viewportSize,
       const FVector& location,
@@ -453,10 +481,15 @@ private:
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
-  bool _tilesetDirty;
-  ETilesetSource _lastTilesetSource;
-  UMaterialInterface* _lastMaterial;
+  /**
+   * Marks whether tileset should be updated in LoadTileset.
+   * Default to true so that tileset is created on construction.
+   */
+  bool _tilesetIsDirty = true;
+  // ETilesetSource _lastTilesetSource;
+  // UMaterialInterface* _lastMaterial;
 
+  // For debug output
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;
   uint32_t _lastTilesLoadingMediumPriority;
