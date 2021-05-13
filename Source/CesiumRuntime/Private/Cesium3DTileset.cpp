@@ -698,7 +698,7 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
     pTileset = new Cesium3DTiles::Tileset(
         externals,
-        this->IonAssetID,
+        (uint32_t)this->IonAssetID,
         TCHAR_TO_UTF8(*this->IonAccessToken),
         options);
     break;
