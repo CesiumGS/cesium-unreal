@@ -56,6 +56,13 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
     cmake --build build --config Debug --target install # Optional, recommended for debugging
     ```
 
+    * CMake configuration and build on MacOS platform:
+
+    ```cmd
+    cmake -B build -S . -DCMAKE_BUILD_TYPE=Release # Can optionally compile with RelWithDebInfo or MinSizeRel.
+    cmake --build build --target install 
+    ```
+
     * CMake configuration and build on Linux platform:
     
     ```cmd
