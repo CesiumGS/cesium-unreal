@@ -1160,6 +1160,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material)) {
     MarkTilesetDirty();
   }
+  Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 #endif
 
