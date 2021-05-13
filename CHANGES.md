@@ -8,6 +8,7 @@
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
 - Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
 - Improvements to dynamic camera, created altitude curves for FlyTo behavior.
+- Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
 
 ##### Fixes :wrench:
 
