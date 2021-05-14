@@ -634,10 +634,10 @@ void ACesium3DTileset::LoadTileset() {
     bool waterMaterialChanged = this->WaterMaterial != this->_lastWaterMaterial;
     this->_lastWaterMaterial = this->WaterMaterial;
 
-    bool OpacityMaterialChanged = this->OpacityMaskMaterial != this->_lastOpacityMaterial;
+    bool opacityMaterialChanged = this->OpacityMaskMaterial != this->_lastOpacityMaterial;
     this->_lastOpacityMaterial = this->OpacityMaskMaterial;
 
-    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged || waterMaterialChanged) {
+    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged || waterMaterialChanged || opacityMaterialChanged) {
       this->DestroyTileset();
     } else {
       return;
