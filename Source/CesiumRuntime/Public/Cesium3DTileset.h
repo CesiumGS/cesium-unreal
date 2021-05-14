@@ -486,8 +486,6 @@ private:
    * Default to true so that tileset is created on construction.
    */
   bool _tilesetIsDirty = true;
-  // ETilesetSource _lastTilesetSource;
-  // UMaterialInterface* _lastMaterial;
 
   // For debug output
   uint32_t _lastTilesRendered;

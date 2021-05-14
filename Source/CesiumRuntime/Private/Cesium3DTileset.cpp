@@ -51,9 +51,6 @@ ACesium3DTileset::ACesium3DTileset()
 
       _pTileset(nullptr),
 
-      // _lastTilesetSource(ETilesetSource::FromCesiumIon),
-      // _lastMaterial(nullptr),
-
       _lastTilesRendered(0),
       _lastTilesLoadingLowPriority(0),
       _lastTilesLoadingMediumPriority(0),
@@ -638,46 +635,11 @@ void ACesium3DTileset::LoadTileset() {
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
+  /**
+   * The tileset already exists. If properties have been changed that require
+   * the tileset to be recreated, then destroy the tileset. Otherwise, ignore.
+   */
   if (pTileset) {
-    /**
-    // The tileset already exists, check if any properties were changed. If
-    // none were changed we can ignore this LoadTileset call.
-
-    // Unlike the set of properties checked in Tick, these properties require
-    // the tileset to be destroyed and recreated when changed.
-
-    // check if the tileset source selection itself changed
-    bool tilesetSourceChanged = this->TilesetSource != this->_lastTilesetSource;
-    this->_lastTilesetSource = this->TilesetSource;
-
-    // check if the current tileset changed
-    if (!tilesetSourceChanged) {
-      switch (this->TilesetSource) {
-      case ETilesetSource::FromUrl:
-        tilesetSourceChanged =
-            pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
-                               : this->Url.Len() > 0;
-        break;
-      case ETilesetSource::FromCesiumIon:
-        tilesetSourceChanged = !pTileset->getIonAssetID() ||
-                               !pTileset->getIonAccessToken() ||
-                               this->IonAssetID != pTileset->getIonAssetID() ||
-                               TCHAR_TO_UTF8(*this->IonAccessToken) !=
-                                   pTileset->getIonAccessToken();
-        break;
-      }
-    }
-
-    bool waterMaskEnabledChanged =
-        this->EnableWaterMask !=
-        pTileset->getOptions().contentOptions.enableWaterMask;
-
-    bool materialChanged = this->Material != this->_lastMaterial;
-    this->_lastMaterial = this->Material;
-
-    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged) {
-    **/
     if (_tilesetIsDirty) {
       this->DestroyTileset();
       _tilesetIsDirty = false;
