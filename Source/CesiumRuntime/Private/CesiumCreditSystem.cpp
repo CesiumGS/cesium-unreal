@@ -3,6 +3,8 @@
 #include "CesiumCreditSystem.h"
 #include "Cesium3DTiles/CreditSystem.h"
 #include "CesiumCreditSystemBPLoader.h"
+#include "CesiumRuntime.h"
+#include "Engine/World.h"
 #include <string>
 #include <vector>
 

@@ -9,6 +9,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/App.h"
 #include "Misc/EngineVersion.h"
 #include <cstddef>
 #include <optional>
