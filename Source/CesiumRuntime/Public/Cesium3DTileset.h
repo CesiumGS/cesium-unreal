@@ -275,6 +275,30 @@ public:
   UMaterialInterface* Material = nullptr;
 
   /**
+   * A custom Material to use to render this tileset in areas where the 
+   * watermask is, in order to implement custom visual effects.
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumOverlayWater" material and customizing it as desired. For best 
+   * results, any changes to the above material should also be duplicated in the 
+   * Water Material.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  UMaterialInterface* WaterMaterial = nullptr;
+
+  /**
+   * A custom Material to use to render this tileset in areas using opacity 
+   * masks, in order to implement custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumDefaultMasked" material and customizing it as desired. 
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  UMaterialInterface* OpacityMaskMaterial = nullptr;
+
+  /**
    * Whether to request and render the water mask.
    *
    * Currently only applicable for quantized-mesh tilesets that support the
@@ -405,6 +429,8 @@ private:
 
   ETilesetSource _lastTilesetSource;
   UMaterialInterface* _lastMaterial;
+  UMaterialInterface* _lastWaterMaterial;
+  UMaterialInterface* _lastOpacityMaterial;
 
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;

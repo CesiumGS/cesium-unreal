@@ -64,7 +64,9 @@ public:
       AActor* ParentActor,
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
-      UMaterialInterface* BaseMaterial);
+      UMaterialInterface* BaseMaterial,
+      UMaterialInterface* BaseWaterMaterial,
+      UMaterialInterface* BaseOpacityMaterial);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
