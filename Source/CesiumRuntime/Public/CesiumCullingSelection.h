@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CesiumGeoreference.h"
+#include "CesiumGeospatial/GlobeRectangle.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Actor.h"
+#include <optional>
 #include <vector>
 
 #include "CesiumCullingSelection.generated.h"
@@ -22,11 +24,11 @@ class CESIUMRUNTIME_API ACesiumCullingSelection : public AActor {
 public:
   ACesiumCullingSelection();
 
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY()
   ACesiumGeoreference* Georeference;
 
   // TODO: maybe EditAnywhere is wrong here
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY()
   USplineComponent* Selection;
 
   // TODO: triangulated vertices (and indices??) for closed-loop-splines
@@ -40,18 +42,26 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
 
+  const std::optional<CesiumGeospatial::GlobeRectangle>& GetBoundingRegion() const {
+    return this->_boundingRegion;
+  }
+
+  const std::vector<glm::dvec2>& GetCartographicSelection() const {
+    return this->_cartographicSelection;
+  }
+
+  const std::vector<uint32_t>& GetTriangulatedIndices() const {
+    return this->_indices;
+  }
+
 protected:
   virtual void BeginPlay() override;
 
 private:
-  // TEMP
-  double west = 0.0;
-  double east = 0.0;
-  double south = 0.0;
-  double north = 0.0;
+  std::optional<CesiumGeospatial::GlobeRectangle> _boundingRegion;
 
-  std::vector<glm::dvec2> cartographicSelection;
-  std::vector<uint32_t> indices;
+  std::vector<glm::dvec2> _cartographicSelection;
+  std::vector<uint32_t> _indices;
 
 #if WITH_EDITOR
   void _drawDebugLine(

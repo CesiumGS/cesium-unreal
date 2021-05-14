@@ -18,32 +18,37 @@ ACesiumCullingSelection::ACesiumCullingSelection() {
 
   this->Selection =
       CreateDefaultSubobject<USplineComponent>(TEXT("CullingSelection"));
+  this->Selection->SetClosedLoop(true);
 }
 
 void ACesiumCullingSelection::OnConstruction(const FTransform& Transform) {
   if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference =
+        ACesiumGeoreference::GetDefaultForActor(this);
   }
 }
 
 void ACesiumCullingSelection::BeginPlay() {
   if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference =
+        ACesiumGeoreference::GetDefaultForActor(this);
   }
 }
 
 void ACesiumCullingSelection::UpdateCullingSelection() {
   int32 splinePointsCount = this->Selection->GetNumberOfSplinePoints();
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT("SPLINE POINTS COUNT: %d"),
-      splinePointsCount);
+
   if (splinePointsCount < 3) {
     return;
   }
-  cartographicSelection.clear();
-  cartographicSelection.resize(splinePointsCount);
+
+  // set spline point types to linear for all points.
+  for (size_t i = 0; i < splinePointsCount; ++i) {
+    this->Selection->SetSplinePointType(i, ESplinePointType::Linear);
+  }
+
+  this->_cartographicSelection.clear();
+  this->_cartographicSelection.resize(splinePointsCount);
   for (size_t i = 0; i < splinePointsCount; ++i) {
     const FVector& unrealPosition = this->Selection->GetLocationAtSplinePoint(
         i,
@@ -51,20 +56,20 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
     glm::dvec3 cartographic =
         this->Georeference->TransformUeToLongitudeLatitudeHeight(
             glm::dvec3(unrealPosition.X, unrealPosition.Y, unrealPosition.Z));
-    cartographicSelection[i] =
+    this->_cartographicSelection[i] =
         glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
   }
 
-  const glm::dvec2& point0 = cartographicSelection[0];
+  const glm::dvec2& point0 = this->_cartographicSelection[0];
 
   // the bounding globe rectangle
-  west = point0.x;
-  east = point0.x;
-  south = point0.y;
-  north = point0.y;
+  double west = point0.x;
+  double east = point0.x;
+  double south = point0.y;
+  double north = point0.y;
 
   for (size_t i = 1; i < splinePointsCount; ++i) {
-    const glm::dvec2& point1 = cartographicSelection[i];
+    const glm::dvec2& point1 = this->_cartographicSelection[i];
 
     if (point1.y > north) {
       north = point1.y;
@@ -99,14 +104,8 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
     }
   }
 
-  /*
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT("SPLINE BOUNDS: (%f north, %f east, %f south, %f west)"),
-      glm::degrees(north), glm::degrees(east), glm::degrees(south),
-  glm::degrees(west));
-  */
+  this->_boundingRegion =
+      CesiumGeospatial::GlobeRectangle(west, south, east, north);
 
   using Coord = double;
   using N = uint32_t;
@@ -118,7 +117,7 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
   std::vector<Point> polygon(splinePointsCount);
   polygon[0] = {0.0, point0.y};
   for (size_t i = 1; i < splinePointsCount; ++i) {
-    const glm::dvec2& cartographic = cartographicSelection[i];
+    const glm::dvec2& cartographic = this->_cartographicSelection[i];
     Point& point = polygon[i];
     point[0] = cartographic.x - point0.x;
     point[1] = cartographic.y;
@@ -134,30 +133,49 @@ void ACesiumCullingSelection::UpdateCullingSelection() {
   }
   polygons.push_back(polygon);
 
-  indices = mapbox::earcut<N>(polygons);
-  /*
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT("TRIANGULATED INDICE COUNT: %d"),
-      indices.size());*/
+  this->_indices = mapbox::earcut<N>(polygons);
 }
 
 bool ACesiumCullingSelection::ShouldTickIfViewportsOnly() const { return true; }
 
 void ACesiumCullingSelection::Tick(float DeltaTime) {
 #if WITH_EDITOR
-  // draw globe rectangle bounds
-  this->_drawDebugLine(glm::dvec2(west, south), glm::dvec2(west, north));
-  this->_drawDebugLine(glm::dvec2(west, north), glm::dvec2(east, north));
-  this->_drawDebugLine(glm::dvec2(east, north), glm::dvec2(east, south));
-  this->_drawDebugLine(glm::dvec2(east, south), glm::dvec2(west, south));
+  if (this->_boundingRegion) {
+    // draw globe rectangle bounds
+    this->_drawDebugLine(
+        glm::dvec2(
+            this->_boundingRegion->getWest(),
+            this->_boundingRegion->getSouth()),
+        glm::dvec2(
+            this->_boundingRegion->getWest(),
+            this->_boundingRegion->getNorth()));
+    this->_drawDebugLine(
+        glm::dvec2(
+            this->_boundingRegion->getWest(),
+            this->_boundingRegion->getNorth()),
+        glm::dvec2(
+            this->_boundingRegion->getEast(),
+            this->_boundingRegion->getNorth()));
+    this->_drawDebugLine(
+        glm::dvec2(
+            this->_boundingRegion->getEast(),
+            this->_boundingRegion->getNorth()),
+        glm::dvec2(
+            this->_boundingRegion->getEast(),
+            this->_boundingRegion->getSouth()));
+    this->_drawDebugLine(
+        glm::dvec2(
+            this->_boundingRegion->getEast(),
+            this->_boundingRegion->getSouth()),
+        glm::dvec2(
+            this->_boundingRegion->getWest(),
+            this->_boundingRegion->getSouth()));
+  }
 
-  // UE_LOG(LogCesium, Warning, TEXT("INDICES COUNT: %d"), indices.size());
-  for (size_t i = 0; i < indices.size(); ++i) {
-    const glm::dvec2& a = cartographicSelection[indices[i]];
-    const glm::dvec2& b =
-        cartographicSelection[indices[(i % 3 == 2) ? i - 2 : i + 1]];
+  for (size_t i = 0; i < this->_indices.size(); ++i) {
+    const glm::dvec2& a = this->_cartographicSelection[this->_indices[i]];
+    const glm::dvec2& b = this->_cartographicSelection
+                              [this->_indices[(i % 3 == 2) ? i - 2 : i + 1]];
     this->_drawDebugLine(a, b, 900.0, FColor::Blue);
   }
 #endif

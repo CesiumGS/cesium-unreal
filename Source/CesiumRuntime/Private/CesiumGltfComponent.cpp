@@ -73,6 +73,7 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> emissiveTexture;
   std::optional<LoadTextureResult> occlusionTexture;
   std::optional<LoadTextureResult> waterMaskTexture;
+  std::optional<LoadTextureResult> clippingMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand;
@@ -81,6 +82,10 @@ struct LoadModelResult {
   double waterMaskTranslationX;
   double waterMaskTranslationY;
   double waterMaskScale;
+
+  double clippingMaskTranslationX;
+  double clippingMaskTranslationY;
+  double clippingMaskScale;
 };
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
@@ -843,8 +848,8 @@ static void loadPrimitive(
           textureCoordinateMap);
 
   // Currently only one set of raster overlay texture coordinates is supported.
-  // TODO: Support more texture coordinate sets (e.g. web mercator and
-  // geographic)
+  // TODO: convey through gltf which texture coordinates correspond to which
+  // projection. this is currently hardcoded
   primitiveResult
       .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
       updateTextureCoordinates(
@@ -865,6 +870,7 @@ static void loadPrimitive(
           rasterOverlay1,
           textureCoordinateMap);
 
+  // TODO: put watermask related code in helper function
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
@@ -911,6 +917,8 @@ static void loadPrimitive(
     primitiveResult.waterMaskScale =
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
+
+  applyClippingMask(model, primitiveResult);
 
   RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -1321,6 +1329,39 @@ void applyGltfUpAxisTransform(
   }
 }
 
+/**
+ *
+ */
+void applyClippingMask(
+    const CesiumGltf::Model& model,
+    LoadModelResult& modelResult) {
+  auto textureIdIt = model.extras.find("ClippingMaskTex");
+  if (textureIdIt != model.extras.end() && textureIdIt->second.isInt64()) {
+    CesiumGltf::TextureInfo textureInfo;
+    textureInfo.index =
+        static_cast<int32_t>(textureIdIt->second.getInt64OrDefault(-1));
+    modelResult.clippingMaskTexture =
+        loadTexture(model, std::make_optional(textureInfo));
+  }
+
+  auto clippingMaskTranslationXIt = model.extras.find("ClippingMaskTranslationX");
+  auto clippingMaskTranslationYIt = model.extras.find("ClippingMaskTranslationY");
+  auto clippingMaskScaleIt = model.extras.find("ClippingMaskScale");
+
+  if (clippingMaskTranslationXIt != model.extras.end() &&
+      clippingMaskTranslationXIt->second.isDouble() &&
+      clippingMaskTranslationYIt != model.extras.end() &&
+      clippingMaskTranslationYIt->second.isDouble() &&
+      clippingMaskScaleIt != model.extras.end() &&
+      clippingMaskScaleIt->second.isDouble()) {
+    modelResult.clippingMaskTranslationX =
+        clippingMaskTranslationXIt->second.getDoubleOrDefault(0.0);
+    modelResult.clippingMaskTranslationY =
+        clippingMaskTranslationYIt->second.getDoubleOrDefault(0.0);
+    modelResult.clippingMaskScale =
+        clippingMaskScaleIt->second.getDoubleOrDefault(1.0);
+  }
+}
 } // namespace
 
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
@@ -1543,6 +1584,15 @@ static void loadModelGameThreadPart(
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
 
+  applyTexture(pMaterial, "ClippingMask", loadResult.clippingMaskTexture);
+
+  pMaterial->SetVectorParameterValue(
+      "ClippingMaskTranslationScale",
+      FLinearColor(
+          loadResult.clippingMaskTranslationX,
+          loadResult.clippingMaskTranslationY,
+          loadResult.clippingMaskScale));
+  
   pMaterial->TwoSided = true;
 
   pStaticMesh->AddMaterial(pMaterial);

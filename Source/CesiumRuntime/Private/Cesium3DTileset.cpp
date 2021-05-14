@@ -18,6 +18,7 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
+#include "CesiumCullingSelection.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "Engine/GameViewportClient.h"
@@ -82,6 +83,16 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+
+void ACesium3DTileset::UpdateCullingSelections() {
+  for (ACesiumCullingSelection* cullingSelection :
+       this->CullingSelections) {
+    cullingSelection->UpdateCullingSelection();
+  }
+
+  this->DestroyTileset();
+  this->LoadTileset();
+}
 
 void ACesium3DTileset::AddFocusViewportDelegate() {
 #if WITH_EDITOR
@@ -655,6 +666,12 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::TilesetOptions options;
+  for (const ACesiumCullingSelection* cullingSelection : this->CullingSelections) {
+    options.cullingPolygons.push_back(cullingSelection->GetCartographicSelection());
+    options.cullingPolygonsIndices.push_back(cullingSelection->GetTriangulatedIndices());
+    options.cullingPolygonsBoundingBoxes.push_back(
+        cullingSelection->GetBoundingRegion());
+  }
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 
   switch (this->TilesetSource) {

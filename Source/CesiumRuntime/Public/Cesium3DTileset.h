@@ -16,6 +16,7 @@
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
+class ACesiumCullingSelection;
 
 namespace Cesium3DTiles {
 class Tileset;
@@ -282,6 +283,18 @@ public:
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   bool EnableWaterMask = false;
+
+  /**
+   *
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium|Rendering")
+  void UpdateCullingSelections();
+
+  /**
+   * 
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  TArray<ACesiumCullingSelection*> CullingSelections;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.
