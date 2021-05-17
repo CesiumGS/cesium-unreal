@@ -272,28 +272,35 @@ public:
    * "M_CesiumOverlay" material and customizing it as desired.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  UMaterialInterface* Material = nullptr;
+  UMaterialInterface* Material;
+  ACesium3DTileset(const FObjectInitializer& ObjectInitializer)
+      : Super(ObjectInitializer) {
+
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BaseMaterial(
+        TEXT("/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay"));
+    Material = BaseMaterial.Object;
+  }
 
   /**
-   * A custom Material to use to render this tileset in areas where the 
+   * A custom Material to use to render this tileset in areas where the
    * watermask is, in order to implement custom visual effects.
    * Currently only applicable for quantized-mesh tilesets that support the
    * water mask extension.
    *
    * The custom material should generally be created by copying the
-   * "M_CesiumOverlayWater" material and customizing it as desired. For best 
-   * results, any changes to the above material should also be duplicated in the 
+   * "M_CesiumOverlayWater" material and customizing it as desired. For best
+   * results, any changes to the above material should also be duplicated in the
    * Water Material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   UMaterialInterface* WaterMaterial = nullptr;
 
   /**
-   * A custom Material to use to render this tileset in areas using opacity 
+   * A custom Material to use to render this tileset in areas using opacity
    * masks, in order to implement custom visual effects.
    *
    * The custom material should generally be created by copying the
-   * "M_CesiumDefaultMasked" material and customizing it as desired. 
+   * "M_CesiumDefaultMasked" material and customizing it as desired.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   UMaterialInterface* OpacityMaskMaterial = nullptr;

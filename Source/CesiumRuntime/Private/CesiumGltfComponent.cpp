@@ -1611,7 +1611,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
     UMaterialInterface* pBaseWaterMaterial,
-    UMaterialInterface* pBaseOpacityMaterial){
+    UMaterialInterface* pBaseOpacityMaterial) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
