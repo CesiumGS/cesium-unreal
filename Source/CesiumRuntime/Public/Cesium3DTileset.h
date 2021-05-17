@@ -272,14 +272,7 @@ public:
    * "M_CesiumOverlay" material and customizing it as desired.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  UMaterialInterface* Material;
-  ACesium3DTileset(const FObjectInitializer& ObjectInitializer)
-      : Super(ObjectInitializer) {
-
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BaseMaterial(
-        TEXT("/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay"));
-    Material = BaseMaterial.Object;
-  }
+  UMaterialInterface* Material = nullptr;
 
   /**
    * A custom Material to use to render this tileset in areas where the
