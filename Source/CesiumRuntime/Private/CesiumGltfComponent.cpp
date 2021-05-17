@@ -57,6 +57,7 @@ struct LoadTextureResult {
 struct LoadModelResult {
   FStaticMeshRenderData* RenderData;
   const CesiumGltf::Model* pModel;
+  const CesiumGltf::MeshPrimitive* pPrimitive;
   const CesiumGltf::Material* pMaterial;
   glm::dmat4x4 transform;
 #if PHYSICS_INTERFACE_PHYSX
@@ -959,6 +960,7 @@ static void loadPrimitive(
   LODResources.bHasAdjacencyInfo = false;
 
   primitiveResult.pModel = &model;
+  primitiveResult.pPrimitive = &primitive;
   primitiveResult.RenderData = RenderData;
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
@@ -1426,6 +1428,8 @@ static void loadModelGameThreadPart(
       NewObject<UCesiumGltfPrimitiveComponent>(
           pGltf,
           FName(loadResult.name.c_str()));
+  pMesh->pModel = loadResult.pModel;
+  pMesh->pPrimitive = loadResult.pPrimitive;
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 

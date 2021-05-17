@@ -15,6 +15,9 @@
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
+#include "CesiumGltf/ModelEXT_feature_metadata.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
@@ -237,6 +240,203 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   }
 }
 #endif
+
+struct IndexCallback {
+  int32 faceID;
+  int32 v0 = -1;
+  int32 v1 = -1;
+  int32 v2 = -1;
+
+  void operator()(const CesiumGltf::AccessorView<nullptr_t>& accessorView) {
+    // Do nothing with unsupported / unknown index type.
+  }
+
+  template <typename T>
+  void operator()(
+      const CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<T>>&
+          accessorView) {
+    v0 = int32_t(accessorView[faceID * 3].value[0]);
+    v1 = int32_t(accessorView[faceID * 3 + 1].value[0]);
+    v2 = int32_t(accessorView[faceID * 3 + 2].value[0]);
+  }
+
+  template <typename T>
+  void operator()(const CesiumGltf::AccessorView<T>& accessorView) {
+    // Do nothing with unsupported / unknown index type.
+  }
+};
+
+struct FeatureIDCallback {
+  int32_t vertexIndex;
+
+  int32_t operator()(const CesiumGltf::AccessorView<nullptr_t>& accessorView) {
+    return -1;
+  }
+
+  template <typename T>
+  int32_t operator()(
+      const CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<T>>&
+          accessorView) {
+    return int32_t(accessorView[vertexIndex].value[0]);
+  }
+
+  template <typename T>
+  int32_t operator()(const CesiumGltf::AccessorView<T>& accessorView) {
+    return -1;
+  }
+};
+
+TMap<FString, FString> ACesium3DTileset::GetMetadataForFaceID(
+    UPrimitiveComponent* pComponent,
+    int32 faceID) {
+  using namespace CesiumGltf;
+
+  TMap<FString, FString> result;
+
+  UCesiumGltfPrimitiveComponent* pGltf =
+      Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+  if (!pGltf) {
+    return result;
+  }
+
+  const Model* pModel = pGltf->pModel;
+  const MeshPrimitive* pPrimitive = pGltf->pPrimitive;
+
+  if (!pModel || !pPrimitive) {
+    return result;
+  }
+
+  const MeshPrimitiveEXT_feature_metadata* pPrimitiveExtension =
+      pPrimitive->getExtension<MeshPrimitiveEXT_feature_metadata>();
+  if (!pPrimitiveExtension) {
+    return result;
+  }
+
+  const ModelEXT_feature_metadata* pModelExtension =
+      pModel->getExtension<ModelEXT_feature_metadata>();
+  if (!pModelExtension) {
+    return result;
+  }
+
+  if (pPrimitiveExtension->featureIdAttributes.empty()) {
+    return result;
+  }
+
+  // Get the indices of the three vertices of this face.
+  IndexCallback indexCallback;
+  indexCallback.faceID = faceID;
+
+  createAccessorView(*pModel, pPrimitive->indices, indexCallback);
+  if (indexCallback.v0 < 0 || indexCallback.v1 < 0 || indexCallback.v2 < 0) {
+    return result;
+  }
+
+  auto featureIdIt = pPrimitive->attributes.find("_FEATURE_ID_0");
+  if (featureIdIt == pPrimitive->attributes.end()) {
+    return result;
+  }
+
+  int32_t featureIDAccessorIndex = featureIdIt->second;
+
+  // Get the feature ID of each vertex and make sure they're the same.
+  FeatureIDCallback featureIDCallback;
+
+  featureIDCallback.vertexIndex = indexCallback.v0;
+  int32_t featureID =
+      createAccessorView(*pModel, featureIDAccessorIndex, featureIDCallback);
+  featureIDCallback.vertexIndex = indexCallback.v1;
+  int32_t featureID1 =
+      createAccessorView(*pModel, featureIDAccessorIndex, featureIDCallback);
+  featureIDCallback.vertexIndex = indexCallback.v2;
+  int32_t featureID2 =
+      createAccessorView(*pModel, featureIDAccessorIndex, featureIDCallback);
+
+  if (featureID < 0 || featureID != featureID1 || featureID != featureID2) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "glTF has a face for which all vertices do not have the same feature ID."));
+    return result;
+  }
+
+  // Get the property values for this feature ID.
+  const FeatureIDAttribute& featureIDAttribute =
+      pPrimitiveExtension->featureIdAttributes[0];
+  auto featureTableIt =
+      pModelExtension->featureTables.find(featureIDAttribute.featureTable);
+  if (featureTableIt == pModelExtension->featureTables.end()) {
+    return result;
+  }
+
+  if (!featureTableIt->second.classProperty) {
+    return result;
+  }
+
+  if (!pModelExtension->schema) {
+    return result;
+  }
+
+  auto classIt = pModelExtension->schema->classes.find(
+      *featureTableIt->second.classProperty);
+  if (classIt == pModelExtension->schema->classes.end()) {
+    return result;
+  }
+
+  const Class& schemaClass = classIt->second;
+  const std::unordered_map<std::string, ClassProperty>& properties =
+      schemaClass.properties;
+
+  for (const auto& property : featureTableIt->second.properties) {
+    const std::string& name = property.first;
+
+    auto classPropertyIt = properties.find(name);
+    if (classPropertyIt == properties.end()) {
+      continue;
+    }
+
+    Accessor accessor;
+    accessor.count = featureTableIt->second.count;
+    accessor.bufferView = property.second.bufferView;
+
+    const std::string& type = classPropertyIt->second.type;
+    if (type == "INT8") {
+      accessor.componentType = Accessor::ComponentType::BYTE;
+      AccessorView<int8_t> view(*pModel, accessor);
+      result.Add(
+          name.c_str(),
+          featureID < view.size() ? std::to_string(view[featureID]).c_str()
+                                  : "");
+    } else if (type == "FLOAT64") {
+      // TODO: can't use AccessorView with FLOAT64
+      // TODO: fix invalid memory accesses on bad indices.
+      const BufferView& bufferView = pModel->bufferViews[accessor.bufferView];
+      const Buffer& buffer = pModel->buffers[bufferView.buffer];
+      gsl::span<const double> data(reinterpret_cast<const double*>(buffer.cesium.data.data()), buffer.cesium.data.size() / sizeof(double));
+      result.Add(
+          name.c_str(),
+          featureID < data.size() ? std::to_string(data[featureID]).c_str()
+                                  : "");
+    }
+  }
+
+  return result;
+}
+
+void ACesium3DTileset::LogMetadataForFaceID(
+    UPrimitiveComponent* pComponent,
+    int32 faceID) {
+  FString result = pComponent->GetName() + " face ID " +
+                   FString::FromInt(faceID) + TEXT("\n");
+
+  TMap<FString, FString> metadata =
+      this->GetMetadataForFaceID(pComponent, faceID);
+  for (const TPair<FString, FString>& property : metadata) {
+    result += property.Key + TEXT(": ") + property.Value + TEXT("\n");
+  }
+
+  UE_LOG(LogCesium, Warning, TEXT("%s"), *result);
+}
 
 const glm::dmat4&
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {

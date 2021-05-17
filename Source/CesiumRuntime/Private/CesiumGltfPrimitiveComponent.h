@@ -7,6 +7,11 @@
 #include <glm/mat4x4.hpp>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
+namespace CesiumGltf {
+struct Model;
+struct MeshPrimitive;
+}
+
 UCLASS()
 class CESIUMRUNTIME_API UCesiumGltfPrimitiveComponent
     : public UStaticMeshComponent {
@@ -30,4 +35,7 @@ public:
    * @param CesiumToUnrealTransform The new transformation.
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+
+  const CesiumGltf::Model* pModel = nullptr;
+  const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
 };

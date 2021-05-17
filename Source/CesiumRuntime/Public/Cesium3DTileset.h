@@ -316,6 +316,13 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PauseMovieSequencer();
 
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Picking")
+  TMap<FString, FString>
+  GetMetadataForFaceID(UPrimitiveComponent* pComponent, int32 faceID);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Picking")
+  void LogMetadataForFaceID(UPrimitiveComponent* pComponent, int32 faceID);
+
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
   Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
