@@ -41,7 +41,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -Verbose -SkipRulesCompile -ubtargs=-SkipRulesCompile
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -Verbose -SkipRulesCompile -ubtargs="-SkipRulesCompile"
     - cat /c/Users/travis/AppData/Roaming/Unreal\ Engine/AutomationTool/Logs/C+Program+Files+Epic+Games+UE_4.26/UBT-UE4Editor-Win64-Development.txt
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
