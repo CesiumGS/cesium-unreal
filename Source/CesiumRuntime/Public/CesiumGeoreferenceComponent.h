@@ -47,19 +47,25 @@ public:
    * Unreal transform is to be treated as the ground truth, e.g. Unreal physics
    * objects, cameras, etc.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool FixTransformOnOriginRebase = true;
 
   /**
-   * The WGS84 longitude in degrees of this actor.
+   * The WGS84 longitude in degrees of this actor, in the range [-180, 180]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
   /**
-   * The WGS84 latitude in degrees of this actor.
+   * The WGS84 latitude in degrees of this actor, in the range [-90, 90]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
   /**

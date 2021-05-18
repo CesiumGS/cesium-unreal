@@ -7,9 +7,11 @@
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
 #include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTiles/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -48,6 +50,9 @@ ACesium3DTileset::ACesium3DTileset()
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
+
+      _lastTilesetSource(ETilesetSource::FromCesiumIon),
+      _lastMaterial(nullptr),
 
       _lastTilesRendered(0),
       _lastTilesLoadingLowPriority(0),
@@ -311,14 +316,17 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
   this->LoadTileset();
 
   // Hide all existing tiles. The still-visible ones will be shown next time we
-  // tick.
-  TArray<UCesiumGltfComponent*> gltfComponents;
-  this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+  // tick. But if update is suspended, leave the components in their current
+  // state.
+  if (!this->SuspendUpdate) {
+    TArray<UCesiumGltfComponent*> gltfComponents;
+    this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
-  for (UCesiumGltfComponent* pGltf : gltfComponents) {
-    if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
-      pGltf->SetVisibility(false, true);
-      pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    for (UCesiumGltfComponent* pGltf : gltfComponents) {
+      if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
+        pGltf->SetVisibility(false, true);
+        pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      }
     }
   }
 }
@@ -584,29 +592,46 @@ void ACesium3DTileset::LoadTileset() {
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
   if (pTileset) {
-    if (this->Material == _lastMaterial) {
-      // The material hasn't been changed, check for changes in the url or Ion
-      // asset ID / access token
-      if (this->Url.Len() > 0) {
-        if (pTileset->getUrl() &&
-            TCHAR_TO_UTF8(*this->Url) == pTileset->getUrl()) {
-          // Already using this URL.
-          return;
-        }
-      } else {
-        if (pTileset->getIonAssetID() && pTileset->getIonAccessToken() &&
-            this->IonAssetID == pTileset->getIonAssetID() &&
-            TCHAR_TO_UTF8(*this->IonAccessToken) ==
-                pTileset->getIonAccessToken()) {
-          // Already using this asset ID and access token.
-          return;
-        }
+    // The tileset already exists, check if any properties were changed. If
+    // none were changed we can ignore this LoadTileset call.
+
+    // Unlike the set of properties checked in Tick, these properties require
+    // the tileset to be destroyed and recreated when changed.
+
+    // check if the tileset source selection itself changed
+    bool tilesetSourceChanged = this->TilesetSource != this->_lastTilesetSource;
+    this->_lastTilesetSource = this->TilesetSource;
+
+    // check if the current tileset changed
+    if (!tilesetSourceChanged) {
+      switch (this->TilesetSource) {
+      case ETilesetSource::FromUrl:
+        tilesetSourceChanged =
+            pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
+                               : this->Url.Len() > 0;
+        break;
+      case ETilesetSource::FromCesiumIon:
+        tilesetSourceChanged = !pTileset->getIonAssetID() ||
+                               !pTileset->getIonAccessToken() ||
+                               this->IonAssetID != pTileset->getIonAssetID() ||
+                               TCHAR_TO_UTF8(*this->IonAccessToken) !=
+                                   pTileset->getIonAccessToken();
+        break;
       }
-    } else {
-      _lastMaterial = this->Material;
     }
 
-    this->DestroyTileset();
+    bool waterMaskEnabledChanged =
+        this->EnableWaterMask !=
+        pTileset->getOptions().contentOptions.enableWaterMask;
+
+    bool materialChanged = this->Material != this->_lastMaterial;
+    this->_lastMaterial = this->Material;
+
+    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged) {
+      this->DestroyTileset();
+    } else {
+      return;
+    }
   }
 
   if (!this->Georeference) {
@@ -629,10 +654,18 @@ void ACesium3DTileset::LoadTileset() {
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
-  if (this->Url.Len() > 0) {
+  Cesium3DTiles::TilesetOptions options;
+  options.contentOptions.enableWaterMask = this->EnableWaterMask;
+
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-    pTileset = new Cesium3DTiles::Tileset(externals, TCHAR_TO_UTF8(*this->Url));
-  } else {
+    pTileset = new Cesium3DTiles::Tileset(
+        externals,
+        TCHAR_TO_UTF8(*this->Url),
+        options);
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
         LogCesium,
         Log,
@@ -641,7 +674,9 @@ void ACesium3DTileset::LoadTileset() {
     pTileset = new Cesium3DTiles::Tileset(
         externals,
         this->IonAssetID,
-        TCHAR_TO_UTF8(*this->IonAccessToken));
+        TCHAR_TO_UTF8(*this->IonAccessToken),
+        options);
+    break;
   }
 
   this->_pTileset = pTileset;
@@ -851,9 +886,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  // TODO: updating the options should probably happen in OnConstruction or
-  // PostEditChangeProperty, no need to have it happen every frame when the
-  // options haven't been changed
   Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
   options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
 
@@ -1032,6 +1064,24 @@ void ACesium3DTileset::PostLoad() {
                                 // actor to have correct BodyInstance values.
 
   Super::PostLoad();
+}
+
+void ACesium3DTileset::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+  const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::TilesetExplicitSource) {
+    // In previous versions, the tileset source was inferred from the presence
+    // of a non-empty URL property, rather than being explicitly specified.
+    if (this->Url.Len() > 0) {
+      this->TilesetSource = ETilesetSource::FromUrl;
+    } else {
+      this->TilesetSource = ETilesetSource::FromCesiumIon;
+    }
+  }
 }
 
 void ACesium3DTileset::BeginDestroy() {

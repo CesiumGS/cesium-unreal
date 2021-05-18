@@ -43,8 +43,8 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 2. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
 
     ```bash
-    cmake -B build -S . -DCMAKE_BUILD_TYPE=Release # or Debug, RelWithDebInfo
-    cmake --build build --target install # Can optionally compile with --config RelWithDebInfo or MinSizeRel.
+    cmake -B build -S . -DCMAKE_BUILD_TYPE=Release # Can optionally compile with RelWithDebInfo or MinSizeRel.
+    cmake --build build --target install
     ```
 
 3. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
@@ -70,7 +70,11 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 3. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
 
     ```bash
-    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release # or Debug, RelWithDebInfo
+    # Release build
+    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+
+    # Debug build
+    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Debug
     ```
 
 4. Compile Cesium Native using `cmake --build build --target install`.

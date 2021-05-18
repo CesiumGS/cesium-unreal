@@ -26,6 +26,8 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGltf/GltfReader.h"
+#include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -70,10 +72,19 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> normalTexture;
   std::optional<LoadTextureResult> emissiveTexture;
   std::optional<LoadTextureResult> occlusionTexture;
+  std::optional<LoadTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
+
+  bool onlyLand;
+  bool onlyWater;
+
+  double waterMaskTranslationX;
+  double waterMaskTranslationY;
+  double waterMaskScale;
 };
 
 static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
+static const std::string rasterOverlay1 = "_CESIUMOVERLAY_1";
 
 template <class... T> struct IsAccessorView;
 
@@ -384,11 +395,28 @@ static std::optional<LoadTextureResult> loadTexture(
   }
 
   const CesiumGltf::Image& image = model.images[texture.source];
+
+  // TODO: Use correct bytesPerChannel? Does gltf support unnormalized pixel
+  // formats?
+  EPixelFormat pixelFormat;
+  switch (image.cesium.channels) {
+  case 1:
+    pixelFormat = PF_R8;
+    break;
+  case 2:
+    pixelFormat = PF_R8G8;
+    break;
+  case 3:
+  case 4:
+  default:
+    pixelFormat = PF_R8G8B8A8;
+  };
+
   LoadTextureResult result{};
   result.pTextureData = createTexturePlatformData(
       image.cesium.width,
       image.cesium.height,
-      PF_R8G8B8A8);
+      pixelFormat);
   if (!result.pTextureData) {
     return std::nullopt;
   }
@@ -469,6 +497,7 @@ static std::optional<LoadTextureResult> loadTexture(
     // TODO: do this on the GPU?
     int32_t width = image.cesium.width;
     int32_t height = image.cesium.height;
+    int32_t channels = image.cesium.channels;
 
     while (width > 1 || height > 1) {
       FTexture2DMipMap* pLevel = new FTexture2DMipMap();
@@ -484,7 +513,10 @@ static std::optional<LoadTextureResult> loadTexture(
       pLevel->BulkData.Lock(LOCK_READ_WRITE);
 
       void* pMipData =
-          pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * 4);
+          pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * channels);
+
+      // TODO: Premultiplied alpha? Cases with more than one byte per channel?
+      // Non-normalzied pixel formats?
       if (!stbir_resize_uint8(
               static_cast<const unsigned char*>(pTextureData),
               width,
@@ -494,7 +526,7 @@ static std::optional<LoadTextureResult> loadTexture(
               pLevel->SizeX,
               pLevel->SizeY,
               0,
-              4)) {
+              channels)) {
         // Failed to generate mip level, use bilinear filtering instead.
         result.filter = TextureFilter::TF_Bilinear;
         for (int32_t i = 1; i < result.pTextureData->Mips.Num(); ++i) {
@@ -813,7 +845,8 @@ static void loadPrimitive(
   // Currently only one set of raster overlay texture coordinates is supported.
   // TODO: Support more texture coordinate sets (e.g. web mercator and
   // geographic)
-  primitiveResult.textureCoordinateParameters["overlayTextureCoordinateIndex"] =
+  primitiveResult
+      .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
       updateTextureCoordinates(
           model,
           primitive,
@@ -821,6 +854,63 @@ static void loadPrimitive(
           indices,
           rasterOverlay0,
           textureCoordinateMap);
+
+  primitiveResult
+      .textureCoordinateParameters["geographicTextureCoordinateIndex"] =
+      updateTextureCoordinates(
+          model,
+          primitive,
+          StaticMeshBuildVertices,
+          indices,
+          rasterOverlay1,
+          textureCoordinateMap);
+
+  // Initialize water mask if needed.
+  auto onlyWaterIt = primitive.extras.find("OnlyWater");
+  auto onlyLandIt = primitive.extras.find("OnlyLand");
+  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
+      onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
+    bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
+    bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
+    primitiveResult.onlyWater = onlyWater;
+    primitiveResult.onlyLand = onlyLand;
+    if (!onlyWater && !onlyLand) {
+      // We have to use the water mask
+      auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
+      if (waterMaskTextureIdIt != primitive.extras.end() &&
+          waterMaskTextureIdIt->second.isInt64()) {
+        int32_t waterMaskTextureId = static_cast<int32_t>(
+            waterMaskTextureIdIt->second.getInt64OrDefault(-1));
+        CesiumGltf::TextureInfo waterMaskInfo;
+        waterMaskInfo.index = waterMaskTextureId;
+        if (waterMaskTextureId >= 0 &&
+            waterMaskTextureId < model.textures.size()) {
+          primitiveResult.waterMaskTexture =
+              loadTexture(model, std::make_optional(waterMaskInfo));
+        }
+      }
+    }
+  } else {
+    primitiveResult.onlyWater = false;
+    primitiveResult.onlyLand = true;
+  }
+  auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
+  auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
+  auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
+
+  if (waterMaskTranslationXIt != primitive.extras.end() &&
+      waterMaskTranslationXIt->second.isDouble() &&
+      waterMaskTranslationYIt != primitive.extras.end() &&
+      waterMaskTranslationYIt->second.isDouble() &&
+      waterMaskScaleIt != primitive.extras.end() &&
+      waterMaskScaleIt->second.isDouble()) {
+    primitiveResult.waterMaskTranslationX =
+        waterMaskTranslationXIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskTranslationY =
+        waterMaskTranslationYIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskScale =
+        waterMaskScaleIt->second.getDoubleOrDefault(1.0);
+  }
 
   RenderData->Bounds = BoundingBoxAndSphere;
 
@@ -1042,11 +1132,34 @@ static void loadNode(
     IPhysXCooking* pPhysXCooking
 #endif
 ) {
+  static constexpr std::array<double, 16> identityMatrix = {
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0};
+
   glm::dmat4x4 nodeTransform = transform;
 
-  if (node.matrix.size() > 0) {
-    const std::vector<double>& matrix = node.matrix;
+  const std::vector<double>& matrix = node.matrix;
+  bool isIdentityMatrix = false;
+  if (matrix.size() == 16) {
+    isIdentityMatrix =
+        std::equal(matrix.begin(), matrix.end(), identityMatrix.begin());
+  }
 
+  if (matrix.size() == 16 && !isIdentityMatrix) {
     glm::dmat4x4 nodeTransformGltf(
         glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
         glm::dvec4(matrix[4], matrix[5], matrix[6], matrix[7]),
@@ -1054,9 +1167,7 @@ static void loadNode(
         glm::dvec4(matrix[12], matrix[13], matrix[14], matrix[15]));
 
     nodeTransform = nodeTransform * nodeTransformGltf;
-  } else if (
-      node.translation.size() > 0 || node.rotation.size() > 0 ||
-      node.scale.size() > 0) {
+  } else {
     glm::dmat4 translation(1.0);
     if (node.translation.size() == 3) {
       translation[3] = glm::dvec4(
@@ -1075,7 +1186,6 @@ static void loadNode(
     }
 
     glm::dmat4 scale(1.0);
-
     if (node.scale.size() == 3) {
       scale[0].x = node.scale[0];
       scale[1].y = node.scale[1];
@@ -1319,12 +1429,12 @@ static void loadModelGameThreadPart(
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
-  pMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-  pMesh->bUseDefaultCollision = true;
-  // pMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+  pMesh->bUseDefaultCollision = false;
+  pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
   pMesh->SetFlags(RF_Transient);
 
-  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>();
+  UStaticMesh* pStaticMesh =
+      NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->bIsBuiltAtRuntime = true;
@@ -1361,7 +1471,9 @@ static void loadModelGameThreadPart(
   case CesiumGltf::Material::AlphaMode::OPAQUE:
   default:
     pMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->BaseMaterial,
+        (loadResult.onlyWater || !loadResult.onlyLand)
+            ? pGltf->BaseMaterialWithWater
+            : pGltf->BaseMaterial,
         nullptr,
         ImportedSlotName);
     break;
@@ -1412,6 +1524,24 @@ static void loadModelGameThreadPart(
         "emissiveFactor",
         FVector(1.0f, 1.0f, 1.0f));
   }
+
+  pMaterial->SetScalarParameterValue(
+      "OnlyLand",
+      static_cast<float>(loadResult.onlyLand));
+  pMaterial->SetScalarParameterValue(
+      "OnlyWater",
+      static_cast<float>(loadResult.onlyWater));
+
+  if (!loadResult.onlyLand && !loadResult.onlyWater) {
+    applyTexture(pMaterial, "WaterMask", loadResult.waterMaskTexture);
+  }
+
+  pMaterial->SetVectorParameterValue(
+      "WaterMaskTranslationScale",
+      FLinearColor(
+          loadResult.waterMaskTranslationX,
+          loadResult.waterMaskTranslationY,
+          loadResult.waterMaskScale));
 
   pMaterial->TwoSided = true;
 
@@ -1507,10 +1637,13 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterialWithWater;
     ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
     FConstructorStatics()
         : BaseMaterial(TEXT(
               "/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+          BaseMaterialWithWater(TEXT(
+              "/CesiumForUnreal/GltfMaterialWithOverlaysAndWater.GltfMaterialWithOverlaysAndWater")),
           OpacityMaskMaterial(TEXT(
               "/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask")) {
     }
@@ -1518,6 +1651,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+  this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
   this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
