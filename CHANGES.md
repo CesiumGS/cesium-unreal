@@ -6,11 +6,23 @@
 
 - Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
+- Improvements to dynamic camera, created altitude curves for FlyTo behavior.
+- Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
 
 ##### Fixes :wrench:
 
-- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
+
+### v1.2.1 - 2021-05-13
+
+##### Fixes :wrench:
+
+- Fixed a regression in Cesium for Unreal v1.2.0 where `GlobeAwareDefaultPawn` lost its georeference during playmode.
+- Fixed a regression in Cesium for Unreal v1.2.0 where the matrices in `CesiumGeoreference` were being initialized to zero instead of identity.
+- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.3.0 to v0.3.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.2.0 - 2021-05-03
 
