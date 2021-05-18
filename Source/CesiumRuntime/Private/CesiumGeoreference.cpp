@@ -28,6 +28,9 @@
 #include "Slate/SceneViewport.h"
 #endif
 
+#define IDENTITY_MAT4x4_ARRAY                                                  \
+  1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0
+
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
   ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
@@ -58,7 +61,12 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
   return pGeoreference;
 }
 
-ACesiumGeoreference::ACesiumGeoreference() : _insideSublevel(false) {
+ACesiumGeoreference::ACesiumGeoreference()
+    : _georeferencedToEcef_Array{IDENTITY_MAT4x4_ARRAY},
+      _ecefToGeoreferenced_Array{IDENTITY_MAT4x4_ARRAY},
+      _ueAbsToEcef_Array{IDENTITY_MAT4x4_ARRAY},
+      _ecefToUeAbs_Array{IDENTITY_MAT4x4_ARRAY},
+      _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
 
