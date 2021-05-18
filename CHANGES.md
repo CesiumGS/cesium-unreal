@@ -11,12 +11,12 @@
 - Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
 - Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
 - Exposed all tileset materials to allow for changes in editor.
+- Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
 
 ##### Fixes :wrench:
 
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
-- Standardized material and material function naming.
-- Cleaned up and commented materials and material functions.
+- Cleaned up, standardized, and commented material and material functions.
 - Moved all materials and material functions to the `Materials` subfolder.
 
 
