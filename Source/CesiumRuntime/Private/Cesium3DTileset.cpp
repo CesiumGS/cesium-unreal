@@ -53,6 +53,8 @@ ACesium3DTileset::ACesium3DTileset()
 
       _lastTilesetSource(ETilesetSource::FromCesiumIon),
       _lastMaterial(nullptr),
+      _lastWaterMaterial(nullptr),
+      _lastOpacityMaterial(nullptr),
 
       _lastTilesRendered(0),
       _lastTilesLoadingLowPriority(0),
@@ -389,7 +391,9 @@ public:
           this->_pActor,
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
-          this->_pActor->Material);
+          this->_pActor->Material,
+          this->_pActor->WaterMaterial,
+          this->_pActor->OpacityMaskMaterial);
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -627,7 +631,15 @@ void ACesium3DTileset::LoadTileset() {
     bool materialChanged = this->Material != this->_lastMaterial;
     this->_lastMaterial = this->Material;
 
-    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged) {
+    bool waterMaterialChanged = this->WaterMaterial != this->_lastWaterMaterial;
+    this->_lastWaterMaterial = this->WaterMaterial;
+
+    bool opacityMaterialChanged =
+        this->OpacityMaskMaterial != this->_lastOpacityMaterial;
+    this->_lastOpacityMaterial = this->OpacityMaskMaterial;
+
+    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged ||
+        waterMaterialChanged || opacityMaterialChanged) {
       this->DestroyTileset();
     } else {
       return;
