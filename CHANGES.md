@@ -9,6 +9,7 @@
 - Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
 - Improvements to dynamic camera, created altitude curves for FlyTo behavior.
 - Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
+- Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
 
 ##### Fixes :wrench:
 
