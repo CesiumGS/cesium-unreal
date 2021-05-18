@@ -20,6 +20,7 @@ jobs:
       - /C/Program\ Files/Epic\ Games/UE_4.26
       - /C/Program\ Files\ \(x86\)/Epic\ Games/Launcher
     install:
+    - choco install netfx-4.6.2-devpack
     - choco install 7zip.portable
     - choco install python --version 3.9.2
     - python -m pip install --upgrade pip
