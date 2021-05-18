@@ -103,4 +103,4 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 4. Compile Cesium Native using `cmake --build build-android --config Release --target install`.
 
 5. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
-6. To package the plugin, run the `RunUAT.bat` command with options `-TargetPlatform=Win64+Android -Platform=Win64`.
+6. To package the plugin, run the `RunUAT.bat` command with options `-TargetPlatforms=Win64+Android`.
