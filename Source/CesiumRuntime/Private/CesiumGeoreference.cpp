@@ -565,9 +565,9 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
       // Camera has moved too far from the origin, move the origin,
       // but make sure that no component exceeds the maximum value
       // that can be represented as a 32bit signed integer.
-      int64 newX = clampedAdd(cameraLocation.X, originLocation.X);
-      int64 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
-      int64 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
+      int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
+      int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
+      int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
       this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
     }
   }
