@@ -332,7 +332,7 @@ private:
    * custom visual effects.
    *
    * The custom material should generally be created by copying the
-   * "GltfMaterialWithOverlays" material and customizing it as desired.
+   * "M_CesiumOverlay" material and customizing it as desired.
    */
   UPROPERTY(
       EditAnywhere,
@@ -341,42 +341,88 @@ private:
       Category = "Cesium|Rendering")
   UMaterialInterface* Material = nullptr;
 
+  /**
+   * A custom Material to use to render this tileset in areas where the
+   * watermask is, in order to implement custom visual effects.
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumOverlayWater" material and customizing it as desired. For best
+   * results, any changes to the above material should also be duplicated in the
+   * Water Material.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetWaterMaterial,
+      BlueprintSetter = SetWaterMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* WaterMaterial = nullptr;
+
+  /**
+   * A custom Material to use to render this tileset in areas using opacity
+   * masks, in order to implement custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumDefaultMasked" material and customizing it as desired.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetOpacityMaskMaterial,
+      BlueprintSetter = SetOpacityMaskMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* OpacityMaskMaterial = nullptr;
+
 public:
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
 
-  UFUNCTION(BlueprintSetter)
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetTilesetSource(ETilesetSource InSource);
 
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetUrl() const { return Url; }
 
-  UFUNCTION(BlueprintSetter)
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetUrl(FString InUrl);
 
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   int32 GetIonAssetID() const { return IonAssetID; }
 
-  UFUNCTION(BlueprintSetter)
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetID(int32 InAssetID);
 
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetIonAccessToken() const { return IonAccessToken; }
 
-  UFUNCTION(BlueprintSetter)
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
 
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }
 
-  UFUNCTION(BlueprintSetter)
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetEnableWaterMask(bool bEnableMask);
 
-  UFUNCTION(BlueprintGetter)
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }
 
-  UFUNCTION(BlueprintSetter)
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetMaterial(UMaterialInterface* InMaterial);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  UMaterialInterface* GetWaterMaterial() const { return WaterMaterial; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetWaterMaterial(UMaterialInterface* InMaterial);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  UMaterialInterface* GetOpacityMaskMaterial() const {
+    return OpacityMaskMaterial;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetOpacityMaskMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();

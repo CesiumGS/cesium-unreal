@@ -378,6 +378,27 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
 }
 #endif
 
+namespace {
+/**
+ * @brief Clamping addition.
+ *
+ * Returns the sum of the given values, clamping the result to
+ * the minimum/maximum value that can be represented as a 32 bit
+ * signed integer.
+ *
+ * @param f The floating point value
+ * @param i The integer value
+ * @return The clamped result
+ */
+int32 clampedAdd(float f, int32 i) {
+  int64 sum = static_cast<int64>(f) + static_cast<int64>(i);
+  int64 min = static_cast<int64>(TNumericLimits<int32>::Min());
+  int64 max = static_cast<int64>(TNumericLimits<int32>::Max());
+  int64 clamped = FMath::Max(min, FMath::Min(max, sum));
+  return static_cast<int32>(clamped);
+}
+} // namespace
+
 // Called every frame
 bool ACesiumGeoreference::ShouldTickIfViewportsOnly() const { return true; }
 
@@ -541,14 +562,13 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
         !cameraLocation.Equals(
             FVector(0.0f, 0.0f, 0.0f),
             this->MaximumWorldOriginDistanceFromCamera)) {
-      // Camera has moved too far from the origin, move the origin.
-      this->GetWorld()->SetNewWorldOrigin(FIntVector(
-          static_cast<int32>(cameraLocation.X) +
-              static_cast<int32>(originLocation.X),
-          static_cast<int32>(cameraLocation.Y) +
-              static_cast<int32>(originLocation.Y),
-          static_cast<int32>(cameraLocation.Z) +
-              static_cast<int32>(originLocation.Z)));
+      // Camera has moved too far from the origin, move the origin,
+      // but make sure that no component exceeds the maximum value
+      // that can be represented as a 32bit signed integer.
+      int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
+      int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
+      int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
+      this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
     }
   }
 }
