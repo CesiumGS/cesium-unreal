@@ -578,9 +578,9 @@ void ACesiumGeoreference::_performOriginRebasing() {
     // Camera has moved too far from the origin, move the origin,
     // but make sure that no component exceeds the maximum value
     // that can be represented as a 32bit signed integer.
-      int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
-      int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
-      int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
+    int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
+    int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
+    int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
     this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
   }
 }
