@@ -1609,7 +1609,9 @@ UCesiumGltfComponent::CreateOffGameThread(
     AActor* pParentActor,
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
-    UMaterialInterface* pBaseMaterial) {
+    UMaterialInterface* pBaseMaterial,
+    UMaterialInterface* pBaseWaterMaterial,
+    UMaterialInterface* pBaseOpacityMaterial) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -1623,6 +1625,14 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   if (pBaseMaterial) {
     Gltf->BaseMaterial = pBaseMaterial;
+  }
+
+  if (pBaseWaterMaterial) {
+    Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
+  }
+
+  if (pBaseOpacityMaterial) {
+    Gltf->OpacityMaskMaterial = pBaseOpacityMaterial;
   }
 
   for (LoadModelResult& model : result) {
@@ -1641,11 +1651,11 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlaysAndWater.GltfMaterialWithOverlaysAndWater")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlayWater.M_CesiumOverlayWater")),
           OpacityMaskMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask")) {
+              "/CesiumForUnreal/Materials/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
     }
   };
   static FConstructorStatics ConstructorStatics;
