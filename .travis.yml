@@ -16,9 +16,10 @@ jobs:
     os: windows
     cache:
       timeout: 1000
-      directories:
-      - /C/Program\ Files/Epic\ Games/UE_4.26
-      - /C/Program\ Files\ \(x86\)/Epic\ Games/Launcher
+      directories: [
+        "/C/Program\ Files/Epic\ Games/UE_4.26"
+        "/C/Program\ Files\ \(x86\)/Epic\ Games/Launcher"
+      ]
     install:
     - choco install 7zip.portable
     - choco install python --version 3.9.2
