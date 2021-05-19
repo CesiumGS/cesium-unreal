@@ -15,6 +15,7 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
+	"SupportedTargetPlatforms": [ "Win64", "Mac", "Linux", "Android" ],
 	"Modules": [
 		{
 			"Name": "CesiumRuntime",
