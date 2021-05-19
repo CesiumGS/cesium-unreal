@@ -12,6 +12,7 @@
 - Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
 - Exposed all tileset materials to allow for changes in editor.
 - Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
+- Added teleport boolean property to CesiumGeoreferenceComponent.
 
 ##### Fixes :wrench:
 
