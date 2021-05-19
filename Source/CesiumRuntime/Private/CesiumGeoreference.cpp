@@ -560,9 +560,11 @@ void ACesiumGeoreference::_performOriginRebasing() {
   }
   if (this->_insideSublevel && !this->OriginRebaseInsideSublevels) {
     // If we are not going to continue origin rebasing inside the
-    // sublevel, just set the origin back to zero since the sublevel
-    // will be centered around zero anyways.
-    this->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
+    // sublevel, just set the origin back to zero if necessary,
+    // since the sublevel will be centered around zero anyways.
+    if (!this->GetWorld()->OriginLocation.IsZero()) {
+      this->GetWorld()->SetNewWorldOrigin(FIntVector::ZeroValue);
+    }
     return;
   }
 
