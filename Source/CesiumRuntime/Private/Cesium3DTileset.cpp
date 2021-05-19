@@ -655,13 +655,11 @@ void ACesium3DTileset::LoadTileset() {
    * The tileset already exists. If properties have been changed that require
    * the tileset to be recreated, then destroy the tileset. Otherwise, ignore.
    */
-  if (pTileset) {
-    if (_tilesetIsDirty) {
-      this->DestroyTileset();
-      _tilesetIsDirty = false;
-    } else {
-      return;
-    }
+  if (_tilesetIsDirty) {
+    this->DestroyTileset();
+    _tilesetIsDirty = false;
+  } else {
+    return;
   }
 
   if (!this->Georeference) {

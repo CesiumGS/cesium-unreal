@@ -7,7 +7,7 @@
 - Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
 - Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
-- Make 3D Tiles culling properties blueprint editable and expose URL and Ion Asset ID via setter functions.
+- Make 3D Tiles properties editable in C++ and blueprints via getter/setter functions. Tileset now reloads at runtime when these properties are changed.
 - Improvements to dynamic camera, created altitude curves for FlyTo behavior.
 - Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
 - Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
@@ -19,6 +19,10 @@
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
 - Cleaned up, standardized, and commented material and material functions.
 - Moved all materials and material functions to the `Materials` subfolder.
+
+##### Breaking :x:
+
+- Tileset properties that require a tileset reload (URL, Source, IonAssetID, IonAccessToken, Materials) have been moved to `private`. Setter and getter methods are now provided for modifying them in Blueprints and C++.
 
 
 ### v1.2.1 - 2021-05-13
