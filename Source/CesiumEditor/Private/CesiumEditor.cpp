@@ -282,9 +282,9 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
-  pTilesetActor->IonAssetID = assetID;
-  pTilesetActor->IonAccessToken = UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
+  pTilesetActor->SetIonAssetID(assetID);
+  pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
+      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
 
   return pTilesetActor;
 }

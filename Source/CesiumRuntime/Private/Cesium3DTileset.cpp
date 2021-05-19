@@ -51,11 +51,6 @@ ACesium3DTileset::ACesium3DTileset()
 
       _pTileset(nullptr),
 
-      _lastTilesetSource(ETilesetSource::FromCesiumIon),
-      _lastMaterial(nullptr),
-      _lastWaterMaterial(nullptr),
-      _lastOpacityMaterial(nullptr),
-
       _lastTilesRendered(0),
       _lastTilesLoadingLowPriority(0),
       _lastTilesLoadingMediumPriority(0),
@@ -105,6 +100,68 @@ void ACesium3DTileset::PostInitProperties() {
 
   Super::PostInitProperties();
   AddFocusViewportDelegate();
+}
+
+void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
+  if (InSource != this->TilesetSource) {
+    this->TilesetSource = InSource;
+    this->MarkTilesetDirty();
+  }
+}
+
+void ACesium3DTileset::SetUrl(FString InUrl) {
+  if (InUrl != this->Url) {
+    this->Url = InUrl;
+    if (this->TilesetSource == ETilesetSource::FromUrl) {
+      this->MarkTilesetDirty();
+    }
+  }
+}
+
+void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
+  if (InAssetID >= 0 && InAssetID != this->IonAssetID) {
+    this->IonAssetID = InAssetID;
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->MarkTilesetDirty();
+    }
+  }
+}
+
+void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
+  if (this->IonAccessToken != InAccessToken) {
+    this->IonAccessToken = InAccessToken;
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->MarkTilesetDirty();
+    }
+  }
+}
+
+void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
+  if (this->EnableWaterMask != bEnableMask) {
+    this->EnableWaterMask = bEnableMask;
+    this->MarkTilesetDirty();
+  }
+}
+
+void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
+  if (this->Material != InMaterial) {
+    this->Material = InMaterial;
+    this->MarkTilesetDirty();
+  }
+}
+
+void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
+  if (this->WaterMaterial != InMaterial) {
+    this->WaterMaterial = InMaterial;
+    this->MarkTilesetDirty();
+  }
+}
+
+void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
+  if (this->OpacityMaskMaterial != InMaterial) {
+    this->OpacityMaskMaterial = InMaterial;
+    this->MarkTilesetDirty();
+  }
 }
 
 void ACesium3DTileset::PlayMovieSequencer() {
@@ -391,9 +448,9 @@ public:
           this->_pActor,
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
-          this->_pActor->Material,
-          this->_pActor->WaterMaterial,
-          this->_pActor->OpacityMaskMaterial);
+          this->_pActor->GetMaterial(),
+          this->_pActor->GetWaterMaterial(),
+          this->_pActor->GetOpacityMaskMaterial());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -595,55 +652,13 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  if (pTileset) {
-    // The tileset already exists, check if any properties were changed. If
-    // none were changed we can ignore this LoadTileset call.
-
-    // Unlike the set of properties checked in Tick, these properties require
-    // the tileset to be destroyed and recreated when changed.
-
-    // check if the tileset source selection itself changed
-    bool tilesetSourceChanged = this->TilesetSource != this->_lastTilesetSource;
-    this->_lastTilesetSource = this->TilesetSource;
-
-    // check if the current tileset changed
-    if (!tilesetSourceChanged) {
-      switch (this->TilesetSource) {
-      case ETilesetSource::FromUrl:
-        tilesetSourceChanged =
-            pTileset->getUrl() ? TCHAR_TO_UTF8(*this->Url) != pTileset->getUrl()
-                               : this->Url.Len() > 0;
-        break;
-      case ETilesetSource::FromCesiumIon:
-        tilesetSourceChanged = !pTileset->getIonAssetID() ||
-                               !pTileset->getIonAccessToken() ||
-                               this->IonAssetID != pTileset->getIonAssetID() ||
-                               TCHAR_TO_UTF8(*this->IonAccessToken) !=
-                                   pTileset->getIonAccessToken();
-        break;
-      }
-    }
-
-    bool waterMaskEnabledChanged =
-        this->EnableWaterMask !=
-        pTileset->getOptions().contentOptions.enableWaterMask;
-
-    bool materialChanged = this->Material != this->_lastMaterial;
-    this->_lastMaterial = this->Material;
-
-    bool waterMaterialChanged = this->WaterMaterial != this->_lastWaterMaterial;
-    this->_lastWaterMaterial = this->WaterMaterial;
-
-    bool opacityMaterialChanged =
-        this->OpacityMaskMaterial != this->_lastOpacityMaterial;
-    this->_lastOpacityMaterial = this->OpacityMaskMaterial;
-
-    if (tilesetSourceChanged || waterMaskEnabledChanged || materialChanged ||
-        waterMaterialChanged || opacityMaterialChanged) {
-      this->DestroyTileset();
-    } else {
-      return;
-    }
+  // The tileset already exists. If properties have been changed that require
+  // the tileset to be recreated, then destroy the tileset. Otherwise, ignore.
+  if (_tilesetIsDirty) {
+    this->DestroyTileset();
+    _tilesetIsDirty = false;
+  } else {
+    return;
   }
 
   if (!this->Georeference) {
@@ -685,7 +700,7 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
     pTileset = new Cesium3DTiles::Tileset(
         externals,
-        this->IonAssetID,
+        static_cast<uint32_t>(this->IonAssetID),
         TCHAR_TO_UTF8(*this->IonAccessToken),
         options);
     break;
@@ -762,6 +777,11 @@ void ACesium3DTileset::DestroyTileset() {
         TEXT("Destroying tileset for asset ID %d done"),
         this->IonAssetID);
   }
+}
+
+void ACesium3DTileset::MarkTilesetDirty() {
+  _tilesetIsDirty = true;
+  UE_LOG(LogCesium, Verbose, TEXT("Tileset marked Dirty"));
 }
 
 std::optional<ACesium3DTileset::UnrealCameraParameters>
@@ -899,7 +919,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
-  options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+  options.maximumScreenSpaceError =
+      static_cast<double>(this->MaximumScreenSpaceError);
 
   options.preloadAncestors = this->PreloadAncestors;
   options.preloadSiblings = this->PreloadSiblings;
@@ -910,7 +931,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
-  options.culledScreenSpaceError = this->CulledScreenSpaceError;
+  options.culledScreenSpaceError =
+      static_cast<double>(this->CulledScreenSpaceError);
+
+  if (_tilesetIsDirty) {
+    LoadTileset();
+  }
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {
@@ -1095,6 +1121,26 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
     }
   }
 }
+
+#if WITH_EDITOR
+void ACesium3DTileset::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  const FName PropName = (PropertyChangedEvent.Property)
+                             ? PropertyChangedEvent.Property->GetFName()
+                             : NAME_None;
+  if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, OpacityMaskMaterial)) {
+    MarkTilesetDirty();
+  }
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+#endif
 
 void ACesium3DTileset::BeginDestroy() {
   this->DestroyTileset();
