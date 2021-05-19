@@ -651,10 +651,9 @@ void ACesium3DTileset::LoadTileset() {
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-  /**
-   * The tileset already exists. If properties have been changed that require
-   * the tileset to be recreated, then destroy the tileset. Otherwise, ignore.
-   */
+  
+  // The tileset already exists. If properties have been changed that require
+  // the tileset to be recreated, then destroy the tileset. Otherwise, ignore.
   if (_tilesetIsDirty) {
     this->DestroyTileset();
     _tilesetIsDirty = false;
