@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGeoreferenceComponent.h"
 #include "GameFramework/Actor.h"
 
 #include "CesiumGlobeAnchorParent.generated.h"
