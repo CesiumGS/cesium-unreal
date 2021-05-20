@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 project(
     cesium-unreal-extern
     VERSION 0.1.0
-    LANGUAGES CXX
+    LANGUAGES CXX C
 )
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
