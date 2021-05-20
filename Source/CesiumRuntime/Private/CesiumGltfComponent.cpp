@@ -88,8 +88,8 @@ struct LoadModelResult {
   double clippingMaskScale;
 };
 
-static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
-static const std::string rasterOverlay1 = "_CESIUMOVERLAY_1";
+static const std::string rasterOverlayWebMercator = "_CESIUMOVERLAY_WEB_MERCATOR";
+static const std::string rasterOverlayGeographic = "_CESIUMOVERLAY_GEOGRAPHIC";
 
 template <class... T> struct IsAccessorView;
 
@@ -847,9 +847,6 @@ static void loadPrimitive(
           material.emissiveTexture,
           textureCoordinateMap);
 
-  // Currently only one set of raster overlay texture coordinates is supported.
-  // TODO: convey through gltf which texture coordinates correspond to which
-  // projection. this is currently hardcoded
   primitiveResult
       .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
       updateTextureCoordinates(
@@ -857,7 +854,7 @@ static void loadPrimitive(
           primitive,
           StaticMeshBuildVertices,
           indices,
-          rasterOverlay0,
+          rasterOverlayWebMercator,
           textureCoordinateMap);
 
   primitiveResult
@@ -867,7 +864,7 @@ static void loadPrimitive(
           primitive,
           StaticMeshBuildVertices,
           indices,
-          rasterOverlay1,
+          rasterOverlayGeographic,
           textureCoordinateMap);
 
   // TODO: put watermask related code in helper function
