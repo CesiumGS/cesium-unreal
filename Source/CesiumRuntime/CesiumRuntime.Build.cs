@@ -69,6 +69,7 @@ public class CesiumRuntime : ModuleRules
             "CesiumJsonReader",
             "CesiumUtility",
             "draco",
+            "MikkTSpace",
             "modp_b64",
             "spdlog",
             "sqlite3",
@@ -112,7 +113,6 @@ public class CesiumRuntime : ModuleRules
                 "MeshDescription",
                 "StaticMeshDescription",
                 "HTTP",
-                "MikkTSpace",
                 "LevelSequence",
                 "Projects"
             }

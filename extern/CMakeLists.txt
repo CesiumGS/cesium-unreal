@@ -21,6 +21,14 @@ add_subdirectory(cesium-native)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
 
 # Build and install MikkTSpace because we need it on Android.
+set(CESIUM_DEBUG_POSTFIX "d")
+set(CESIUM_RELEASE_POSTFIX "")
+
+set(CMAKE_DEBUG_POSTFIX ${CESIUM_DEBUG_POSTFIX})
+set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
+set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
+set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
+
 add_library(MikkTSpace MikkTSpace/mikktspace.c)
 set_target_properties(MikkTSpace PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/MikkTSpace/mikktspace.h")
 target_include_directories(MikkTSpace PUBLIC MikkTSpace)
