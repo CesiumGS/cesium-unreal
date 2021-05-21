@@ -1,7 +1,7 @@
 if [[ $TRAVIS_OS_NAME == "windows" ]]
 then
     echo "Setting up Android NDK"
-    if [[ ! -d "$HOME/android-ndk-r21e" ]]
+    if [[ ! -d "$HOME/android-ndk-r21e/platforms" ]]
     then
         echo "Downloading Android NDK"
         wget -q https://dl.google.com/android/repository/android-ndk-r21e-windows-x86_64.zip

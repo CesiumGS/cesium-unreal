@@ -87,12 +87,12 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 
 * Unreal Engine 4.26 or newer.
 * Visual Studio 2017 or newer.
-* Common development tools like Git and CMake.
+* Common development tools like Git, CMake, and Ninja.
 * Android NDK r21, download from https://developer.android.com/ndk/downloads.
 
 #### Cross Compiling on Windows
 
-1. Download and extract the Android NDK zip. Then set the environment variable either in command line or system variables.
+1. Download and extract the Android NDK zip. Then set the environment variable either in command line or system variables. Note that you must used forward-slashes, i.e. `c:/android` not `c:\android`.
     ```cmd
     export ANDROID_NDK_ROOT=<path_to_android_ndk>
     ```

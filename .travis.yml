@@ -67,6 +67,7 @@ jobs:
     - travis_wait 30 "./travis/travis-get-android-ndk.sh"
     before_script:
     - export ANDROID_NDK_ROOT=$HOME/android-ndk-r21e
+    - export NDKROOT=$ANDROID_NDK_ROOT
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-android-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build-win64
