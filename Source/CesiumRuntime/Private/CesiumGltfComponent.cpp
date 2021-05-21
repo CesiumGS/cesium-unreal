@@ -233,7 +233,7 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   SMikkTSpaceContext MikkTContext;
   MikkTContext.m_pInterface = &MikkTInterface;
   MikkTContext.m_pUserData = (void*)(&vertices);
-  MikkTContext.m_bIgnoreDegenerates = false;
+  // MikkTContext.m_bIgnoreDegenerates = false;
   genTangSpaceDefault(&MikkTContext);
 }
 
