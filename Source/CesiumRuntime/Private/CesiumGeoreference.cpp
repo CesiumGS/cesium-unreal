@@ -29,6 +29,9 @@
 #include "Slate/SceneViewport.h"
 #endif
 
+#define IDENTITY_MAT4x4_ARRAY                                                  \
+  1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0
+
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
   ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
@@ -59,7 +62,12 @@ ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
   return pGeoreference;
 }
 
-ACesiumGeoreference::ACesiumGeoreference() : _insideSublevel(false) {
+ACesiumGeoreference::ACesiumGeoreference()
+    : _georeferencedToEcef_Array{IDENTITY_MAT4x4_ARRAY},
+      _ecefToGeoreferenced_Array{IDENTITY_MAT4x4_ARRAY},
+      _ueAbsToEcef_Array{IDENTITY_MAT4x4_ARRAY},
+      _ecefToUeAbs_Array{IDENTITY_MAT4x4_ARRAY},
+      _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -150,7 +158,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           FVector(cameraFront.x, cameraFront.y, cameraFront.z),
           FVector(cameraRight.x, cameraRight.y, cameraRight.z),
           FVector(cameraUp.x, cameraUp.y, cameraUp.z),
-          FVector(0.0f, 0.0f, 0.0f))
+          FVector::ZeroVector)
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
@@ -382,19 +390,146 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
 }
 #endif
 
-// Called every frame
 bool ACesiumGeoreference::ShouldTickIfViewportsOnly() const { return true; }
 
-void ACesiumGeoreference::Tick(float DeltaTime) {
-  Super::Tick(DeltaTime);
-
+#if WITH_EDITOR
+void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   bool isGame = this->GetWorld()->IsGameWorld();
+  if (isGame) {
+    return;
+  }
+  if (!this->ShowLoadRadii) {
+    return;
+  }
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
+    glm::dvec3 levelECEF =
+        CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+            CesiumGeospatial::Cartographic::fromDegrees(
+                level.LevelLongitude,
+                level.LevelLatitude,
+                level.LevelHeight));
+
+    glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
+    FVector levelRelative =
+        FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
+    DrawDebugSphere(
+        this->GetWorld(),
+        levelRelative,
+        100.0 * level.LoadRadius,
+        100,
+        FColor::Blue);
+  }
+}
+#endif // WITH_EDITOR
 
 #if WITH_EDITOR
-  if (!isGame) {
-    if (this->ShowLoadRadii) {
-      for (FCesiumSubLevel& level : this->CesiumSubLevels) {
+void ACesiumGeoreference::_handleViewportOriginEditing() {
+  if (!this->EditOriginInViewport) {
+    return;
+  }
+  FHitResult mouseRayResults;
+  bool mouseRaySuccess;
+
+  this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
+
+  if (!mouseRaySuccess) {
+    return;
+  }
+  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+
+  FVector grabbedLocation = mouseRayResults.Location;
+  // convert from UE to ECEF to LongitudeLatitudeHeight
+  glm::dvec4 grabbedLocationAbs(
+      static_cast<double>(grabbedLocation.X) +
+          static_cast<double>(originLocation.X),
+      static_cast<double>(grabbedLocation.Y) +
+          static_cast<double>(originLocation.Y),
+      static_cast<double>(grabbedLocation.Z) +
+          static_cast<double>(originLocation.Z),
+      1.0);
+
+  glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
+  std::optional<CesiumGeospatial::Cartographic> optCartographic =
+      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
+          grabbedLocationECEF);
+
+  if (optCartographic) {
+    CesiumGeospatial::Cartographic cartographic = *optCartographic;
+    UE_LOG(
+        LogActor,
+        Warning,
+        TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
+        glm::degrees(cartographic.longitude),
+        glm::degrees(cartographic.latitude),
+        cartographic.height);
+
+    // TODO: find editor viewport mouse click event
+    // if (mouseDown) {
+    // this->_setGeoreferenceOrigin()
+    //	this->EditOriginInViewport = false;
+    //}
+  }
+}
+#endif // WITH_EDITOR
+
+namespace {
+/**
+ * @brief Clamping addition.
+ *
+ * Returns the sum of the given values, clamping the result to
+ * the minimum/maximum value that can be represented as a 32 bit
+ * signed integer.
+ *
+ * @param f The floating point value
+ * @param i The integer value
+ * @return The clamped result
+ */
+int32 clampedAdd(float f, int32 i) {
+  int64 sum = static_cast<int64>(f) + static_cast<int64>(i);
+  int64 min = static_cast<int64>(TNumericLimits<int32>::Min());
+  int64 max = static_cast<int64>(TNumericLimits<int32>::Max());
+  int64 clamped = FMath::Max(min, FMath::Min(max, sum));
+  return static_cast<int32>(clamped);
+}
+} // namespace
+
+bool ACesiumGeoreference::_updateSublevelState() {
+
+  if (!IsValid(WorldOriginCamera)) {
+    return false;
+  }
+
+  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
+  const FVector& cameraLocation = pov.Location;
+
+  glm::dvec4 cameraAbsolute(
+      static_cast<double>(cameraLocation.X) +
+          static_cast<double>(originLocation.X),
+      static_cast<double>(cameraLocation.Y) +
+          static_cast<double>(originLocation.Y),
+      static_cast<double>(cameraLocation.Z) +
+          static_cast<double>(originLocation.Z),
+      1.0);
+
+  glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
+
+  bool isInsideSublevel = false;
+
+  const TArray<ULevelStreaming*>& streamedLevels =
+      this->GetWorld()->GetStreamingLevels();
+  for (ULevelStreaming* streamedLevel : streamedLevels) {
+    FString levelName =
+        FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
+    levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
+    // TODO: maybe we should precalculate the level ECEF from level
+    // long/lat/height
+    // TODO: consider the case where we're intersecting multiple level radii
+    for (FCesiumSubLevel& level : this->CesiumSubLevels) {
+      // if this is a known level, we need to tell it whether or not it should
+      // be loaded
+      if (levelName.Equals(level.LevelName)) {
         glm::dvec3 levelECEF =
             CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
                 CesiumGeospatial::Cartographic::fromDegrees(
@@ -402,159 +537,78 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
                     level.LevelLatitude,
                     level.LevelHeight));
 
-        glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
-        FVector levelRelative = FVector(levelAbs.x, levelAbs.y, levelAbs.z) -
-                                FVector(originLocation);
-        DrawDebugSphere(
-            this->GetWorld(),
-            levelRelative,
-            100.0 * level.LoadRadius,
-            100,
-            FColor::Blue);
-      }
-    }
-
-    if (this->EditOriginInViewport) {
-      FHitResult mouseRayResults;
-      bool mouseRaySuccess;
-
-      this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
-
-      if (mouseRaySuccess) {
-        FVector grabbedLocation = mouseRayResults.Location;
-        // convert from UE to ECEF to LongitudeLatitudeHeight
-        glm::dvec4 grabbedLocationAbs(
-            static_cast<double>(grabbedLocation.X) +
-                static_cast<double>(originLocation.X),
-            static_cast<double>(grabbedLocation.Y) +
-                static_cast<double>(originLocation.Y),
-            static_cast<double>(grabbedLocation.Z) +
-                static_cast<double>(originLocation.Z),
-            1.0);
-
-        glm::dvec3 grabbedLocationECEF =
-            this->_ueAbsToEcef * grabbedLocationAbs;
-        std::optional<CesiumGeospatial::Cartographic> optCartographic =
-            CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
-                grabbedLocationECEF);
-
-        if (optCartographic) {
-          CesiumGeospatial::Cartographic cartographic = *optCartographic;
-          UE_LOG(
-              LogActor,
-              Warning,
-              TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
-              glm::degrees(cartographic.longitude),
-              glm::degrees(cartographic.latitude),
-              cartographic.height);
-
-          // TODO: find editor viewport mouse click event
-          // if (mouseDown) {
-          // this->_setGeoreferenceOrigin()
-          //	this->EditOriginInViewport = false;
-          //}
+        if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
+          isInsideSublevel = true;
+          if (!level.CurrentlyLoaded) {
+            this->_jumpToLevel(level);
+            streamedLevel->SetShouldBeLoaded(true);
+            streamedLevel->SetShouldBeVisible(true);
+            level.CurrentlyLoaded = true;
+          }
+        } else {
+          if (level.CurrentlyLoaded) {
+            streamedLevel->SetShouldBeLoaded(false);
+            streamedLevel->SetShouldBeVisible(false);
+            level.CurrentlyLoaded = false;
+          }
         }
+        break;
       }
     }
   }
+  return isInsideSublevel;
+}
+
+void ACesiumGeoreference::_performOriginRebasing() {
+  bool isGame = this->GetWorld()->IsGameWorld();
+  if (!isGame) {
+    return;
+  }
+  if (!IsValid(WorldOriginCamera)) {
+    return;
+  }
+  if (!this->KeepWorldOriginNearCamera) {
+    return;
+  }
+  if (this->_insideSublevel && !this->OriginRebaseInsideSublevels) {
+    // If we are not going to continue origin rebasing inside the
+    // sublevel, just set the origin back to zero if necessary,
+    // since the sublevel will be centered around zero anyways.
+    if (!this->GetWorld()->OriginLocation.IsZero()) {
+      this->GetWorld()->SetNewWorldOrigin(FIntVector::ZeroValue);
+    }
+    return;
+  }
+
+  // We're either not in a sublevel, or OriginRebaseInsideSublevels is true.
+  // Check whether a rebasing is necessary.
+  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
+  const FVector& cameraLocation = pov.Location;
+  bool distanceTooLarge = !cameraLocation.Equals(
+      FVector::ZeroVector,
+      this->MaximumWorldOriginDistanceFromCamera);
+  if (distanceTooLarge) {
+    // Camera has moved too far from the origin, move the origin,
+    // but make sure that no component exceeds the maximum value
+    // that can be represented as a 32bit signed integer.
+    int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
+    int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
+    int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
+    this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
+  }
+}
+
+void ACesiumGeoreference::Tick(float DeltaTime) {
+  Super::Tick(DeltaTime);
+
+#if WITH_EDITOR
+  _showSubLevelLoadRadii();
+  _handleViewportOriginEditing();
 #endif
 
-  if (isGame && this->WorldOriginCamera) {
-    const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
-    const FVector& cameraLocation = pov.Location;
-
-    glm::dvec4 cameraAbsolute(
-        static_cast<double>(cameraLocation.X) +
-            static_cast<double>(originLocation.X),
-        static_cast<double>(cameraLocation.Y) +
-            static_cast<double>(originLocation.Y),
-        static_cast<double>(cameraLocation.Z) +
-            static_cast<double>(originLocation.Z),
-        1.0);
-
-    glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
-
-    this->_insideSublevel = false;
-
-    const TArray<ULevelStreaming*>& streamedLevels =
-        this->GetWorld()->GetStreamingLevels();
-    for (ULevelStreaming* streamedLevel : streamedLevels) {
-      FString levelName =
-          FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-      levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
-      // TODO: maybe we should precalculate the level ECEF from level
-      // long/lat/height
-      // TODO: consider the case where we're intersecting multiple level radii
-      for (FCesiumSubLevel& level : this->CesiumSubLevels) {
-        // if this is a known level, we need to tell it whether or not it should
-        // be loaded
-        if (levelName.Equals(level.LevelName)) {
-          glm::dvec3 levelECEF =
-              CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-                  CesiumGeospatial::Cartographic::fromDegrees(
-                      level.LevelLongitude,
-                      level.LevelLatitude,
-                      level.LevelHeight));
-
-          if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
-            this->_insideSublevel = true;
-            if (!level.CurrentlyLoaded) {
-              this->_jumpToLevel(level);
-              streamedLevel->SetShouldBeLoaded(true);
-              streamedLevel->SetShouldBeVisible(true);
-              level.CurrentlyLoaded = true;
-
-              // If we are not going to continue origin rebasing inside the
-              // sublevel, just set the origin back to zero since the sublevel
-              // will be centered around zero anyways.
-              if (this->KeepWorldOriginNearCamera &&
-                  !this->OriginRebaseInsideSublevels) {
-                this->GetWorld()->SetNewWorldOrigin(FIntVector(0, 0, 0));
-              }
-            }
-          } else {
-            if (level.CurrentlyLoaded) {
-              streamedLevel->SetShouldBeLoaded(false);
-              streamedLevel->SetShouldBeVisible(false);
-              level.CurrentlyLoaded = false;
-            }
-          }
-
-          break;
-        }
-      }
-    }
-
-    /*
-    // EXPERIMENTAL GEOREFERENCE REBASING
-    if (!this->_insideSublevel && glm::length(cameraECEF -
-    glm::dvec3(this->_ueAbsToEcef[3])) > 1000000.0) {
-            std::optional<CesiumGeospatial::Cartographic>
-    targetGeoreferenceOrigin =
-    CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(cameraECEF); if
-    (targetGeoreferenceOrigin) {
-                    this->_setGeoreferenceOrigin(glm::degrees(targetGeoreferenceOrigin->longitude),
-    glm::degrees(targetGeoreferenceOrigin->latitude),
-    targetGeoreferenceOrigin->height);
-            }
-    }
-    */
-
-    if (this->KeepWorldOriginNearCamera &&
-        (!this->_insideSublevel || this->OriginRebaseInsideSublevels) &&
-        !cameraLocation.Equals(
-            FVector(0.0f, 0.0f, 0.0f),
-            this->MaximumWorldOriginDistanceFromCamera)) {
-      // Camera has moved too far from the origin, move the origin.
-      this->GetWorld()->SetNewWorldOrigin(FIntVector(
-          static_cast<int32>(cameraLocation.X) +
-              static_cast<int32>(originLocation.X),
-          static_cast<int32>(cameraLocation.Y) +
-              static_cast<int32>(originLocation.Y),
-          static_cast<int32>(cameraLocation.Z) +
-              static_cast<int32>(originLocation.Z)));
-    }
-  }
+  this->_insideSublevel = _updateSublevelState();
+  _performOriginRebasing();
 }
 
 /**
@@ -679,7 +733,7 @@ FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
       FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
       FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 
   return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
 }
@@ -700,7 +754,7 @@ FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
       FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
       FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
       FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 
   FMatrix inverse = enuAdjustmentMatrix.InverseFast();
 
@@ -738,7 +792,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
       FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
       FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
       FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 }
 
 glm::dmat3
@@ -756,7 +810,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
       FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
       FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
       FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
-      FVector(0.0, 0.0, 0.0));
+      FVector::ZeroVector);
 }
 
 /**
@@ -836,7 +890,7 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
 void ACesiumGeoreference::_lineTraceViewportMouse(
     const bool ShowTrace,
     bool& Success,
-    FHitResult& HitResult) {
+    FHitResult& HitResult) const {
   HitResult = FHitResult();
   Success = false;
 

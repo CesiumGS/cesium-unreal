@@ -4,6 +4,7 @@
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/EngineTypes.h"
@@ -82,7 +83,6 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
           targetLongitudeLatitudeHeight.z));
 
   this->_setECEF(ecef, maintainRelativeOrientation);
-  this->_updateDisplayECEF();
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
@@ -100,7 +100,6 @@ void UCesiumGeoreferenceComponent::MoveToECEF(
     const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
   this->_setECEF(targetEcef, maintainRelativeOrientation);
-  this->_updateDisplayLongitudeLatitudeHeight();
 }
 
 void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
@@ -388,12 +387,16 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
   // preemptively mark down to ignore it.
   _ignoreOnUpdateTransform = true;
 
-  this->_ownerRoot->SetWorldTransform(FTransform(FMatrix(
-      FVector(transform[0].x, transform[0].y, transform[0].z),
-      FVector(transform[1].x, transform[1].y, transform[1].z),
-      FVector(transform[2].x, transform[2].y, transform[2].z),
-      FVector(transform[3].x, transform[3].y, transform[3].z))));
-
+  this->_ownerRoot->SetWorldTransform(
+      FTransform(FMatrix(
+          FVector(transform[0].x, transform[0].y, transform[0].z),
+          FVector(transform[1].x, transform[1].y, transform[1].z),
+          FVector(transform[2].x, transform[2].y, transform[2].z),
+          FVector(transform[3].x, transform[3].y, transform[3].z))),
+      false,
+      nullptr,
+      TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
+                                    : ETeleportType::None);
   // TODO: try direct setting of transformation, may work for static objects on
   // origin rebase
   /*
@@ -442,6 +445,10 @@ void UCesiumGeoreferenceComponent::_setECEF(
   if (this->_autoSnapToEastSouthUp) {
     this->SnapToEastSouthUp();
   }
+
+  // Update component properties
+  this->_updateDisplayECEF();
+  this->_updateDisplayLongitudeLatitudeHeight();
 }
 
 void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
