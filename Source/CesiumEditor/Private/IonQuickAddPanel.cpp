@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "IonQuickAddPanel.h"
+#include "AssetDataList.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
@@ -35,7 +36,20 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
        SVerticalBox::Slot()
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Fill)
-           .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))[this->QuickAddList()]];
+           .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))[this->QuickAddList()] +
+       SVerticalBox::Slot()
+           .VAlign(VAlign_Top)
+           .HAlign(HAlign_Fill)
+           .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))
+               [SAssignNew(_assetDataList, AssetDataList)]];
+
+  this->_assetDataList->AddAsset("/Script/CesiumRuntime.Cesium3DTileset");
+  this->_assetDataList->AddAsset("/Script/CesiumRuntime.CesiumGeoreference");
+  this->_assetDataList->AddAsset("/CesiumForUnreal/CesiumSunSky.CesiumSunSky");
+  this->_assetDataList->AddAsset("/CesiumForUnreal/FloatingPawn.FloatingPawn");
+  this->_assetDataList->AddAsset("/CesiumForUnreal/DynamicPawn.DynamicPawn");
+  this->_assetDataList->AddAsset(
+      "/Script/CesiumRuntime.CesiumIonRasterOverlay");
 }
 
 TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {

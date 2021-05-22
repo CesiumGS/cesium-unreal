@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AssetDataList.h"
 #include "Dialogs/CustomDialog.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/STableRow.h"
@@ -30,6 +31,8 @@ private:
       TSharedRef<QuickAddItem> item,
       const TSharedRef<STableViewBase>& list);
   void AddItemToLevel(TSharedRef<QuickAddItem> item);
+
+  TSharedPtr<AssetDataList> _assetDataList;
 
   std::unordered_set<std::string> _itemsBeingAdded;
 };
