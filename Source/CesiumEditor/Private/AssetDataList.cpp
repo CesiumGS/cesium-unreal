@@ -124,6 +124,30 @@ void AssetDataList::_AddAssetInternal(const std::string& objectPath) {
 namespace {
 
 /**
+ * Tries to obtain the tooltip text for the given asset data.
+ *
+ * If no suitable tooltip text can be obtained, then the full
+ * name of the asset data will be returned.
+ *
+ * @param assetData The asset data
+ * @return The tooltip text
+ */
+FText obtainToolTipText(TSharedPtr<FAssetData> assetData) {
+
+  FString blueprintDescription = assetData->GetTagValueRef<FString>(
+      GET_MEMBER_NAME_CHECKED(UBlueprint, BlueprintDescription));
+  if (!blueprintDescription.IsEmpty()) {
+    return FText::FromString(blueprintDescription);
+  }
+  UClass* cls =
+      FindObject<UClass>(ANY_PACKAGE, *assetData->ObjectPath.ToString());
+  if (!cls) {
+    return FText::FromString(assetData->GetFullName());
+  }
+  return cls->GetToolTipText();
+}
+
+/**
  * @brief An internal class representing a single row in the asset list.
  *
  * It creates a visual representation of the `FAssetData` that was
@@ -159,11 +183,8 @@ public:
                         .Text(FText::FromString(_pItem->AssetName.ToString()))];
 
       // The tooltip for the row.
-      // Would like to show the /* comments */ here, but no avail...
-      overlay->SetToolTip(
-          SNew(SToolTip)[SNew(STextBlock)
-                             .Text(FText::FromString(
-                                 _pItem->AssetName.ToString()))]);
+      FText toolTipText = obtainToolTipText(_pItem);
+      overlay->SetToolTip(SNew(SToolTip)[SNew(STextBlock).Text(toolTipText)]);
     }
     return overlay;
   }
