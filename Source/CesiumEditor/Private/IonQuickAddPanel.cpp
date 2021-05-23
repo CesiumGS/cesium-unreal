@@ -41,7 +41,8 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Fill)
            .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))
-               [SAssignNew(_assetDataList, AssetDataList)]];
+               [SAssignNew(_assetDataList, AssetDataList)
+                    .Title(FText::FromString("Cesium assets:"))]];
 
   this->_assetDataList->AddAsset("/Script/CesiumRuntime.Cesium3DTileset");
   this->_assetDataList->AddAsset("/Script/CesiumRuntime.CesiumGeoreference");

@@ -44,23 +44,18 @@ void AssetDataList::_HandleFilesLoaded() {
 }
 
 void AssetDataList::Construct(const FArguments& Args) {
-  ChildSlot
-      [SNew(SScrollBox) +
-       SScrollBox::Slot()
-           [SAssignNew(_listView, SListView<TSharedPtr<FAssetData>>)
-                .ItemHeight(24)
-                .ListItemsSource(&_items)
-                .OnGenerateRow(this, &AssetDataList::_CreateRow)
-                .HeaderRow(
-                    SNew(SHeaderRow) + SHeaderRow::Column("MainColumn")
-                                           .DefaultLabel(FText::FromString(
-                                               TEXT("Cesium Assets:"))))]];
-}
 
-void AssetDataList::ClearList() {
-  this->_pendingObjectPaths.clear();
-  this->_items.SetNum(0);
-  this->_listView->RequestListRefresh();
+  TSharedPtr<SHeaderRow> headerRow =
+      SNew(SHeaderRow) +
+      SHeaderRow::Column("MainColumn").DefaultLabel(Args._Title);
+
+  this->_listView = SNew(SListView<TSharedPtr<FAssetData>>)
+                        .ItemHeight(24)
+                        .ListItemsSource(&_items)
+                        .OnGenerateRow(this, &AssetDataList::_CreateRow)
+                        .HeaderRow(headerRow);
+  ChildSlot
+      [SNew(SScrollBox) + SScrollBox::Slot()[this->_listView.ToSharedRef()]];
 }
 
 void AssetDataList::AddAsset(const std::string& objectPath) {

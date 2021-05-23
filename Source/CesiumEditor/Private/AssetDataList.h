@@ -28,6 +28,12 @@ class STableViewBase;
 class AssetDataList : public SCompoundWidget {
 public:
   SLATE_BEGIN_ARGS(AssetDataList) {}
+
+  /**
+   * The tile in the header of the list
+   */
+  SLATE_ARGUMENT(FText, Title)
+
   SLATE_END_ARGS()
 
   AssetDataList();
@@ -36,18 +42,14 @@ public:
   void Construct(const FArguments& Args);
 
   /**
-   * Removes all elements from this list.
-   */
-  void ClearList();
-
-  /**
    * @brief Add the specified asset to be displayed in this list.
    *
    * The given path is the "object path", as required my the Unreal Asset
    * Registry, in the form `Package.GroupNames.AssetName`.
    *
    * Adding the actual item in the list may be deferred until all assets
-   * have been loaded.
+   * have been loaded. This function is supposed to be called during the
+   * usual UI construction, on the game thread.
    *
    * @param objectPath The object path.
    */
@@ -58,7 +60,7 @@ private:
    * @brief The actual items that are displayed in the list.
    *
    * These are stored as `FAssetData` objects, as obtained from
-   * the Unreal Asset registry, which provide all sorty of
+   * the Unreal Asset registry, which provide all sorts of
    * (meta) information about an asset, and can be consumed
    * by certain target widgets (like the viewport) during
    * drag-and-drop operations.
@@ -103,8 +105,8 @@ private:
   _OnDragging(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
 
   /**
-   * @brief Will be called after all assets have been loaded in
-   * the asset registry.
+   * @brief Will be called (on the game thread) after all assets have
+   * been loaded in the asset registry.
    *
    * This will obtain the `FAssetData` for all `_pendingObjectPaths`,
    * and populate the list with the corresponding items.
