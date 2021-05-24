@@ -652,6 +652,4 @@ private:
    * or `OriginRebaseInsideSublevels` is enabled.
    */
   void _performOriginRebasing();
-
-  TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };
