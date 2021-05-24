@@ -86,7 +86,9 @@ ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
 void ACesium3DTileset::UpdateCullingSelections() {
   for (ACesiumCullingSelection* cullingSelection : this->CullingSelections) {
-    cullingSelection->UpdateCullingSelection();
+    if (cullingSelection) {
+      cullingSelection->UpdateCullingSelection();
+    }
   }
 
   this->DestroyTileset();
