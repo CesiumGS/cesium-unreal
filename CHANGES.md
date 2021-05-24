@@ -6,11 +6,35 @@
 
 - Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
+- Make 3D Tiles properties editable in C++ and blueprints via getter/setter functions. Tileset now reloads at runtime when these properties are changed.
+- Improvements to dynamic camera, created altitude curves for FlyTo behavior.
+- Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
+- Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
+- Exposed all tileset materials to allow for changes in editor.
+- Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
+- Added teleport boolean property to CesiumGeoreferenceComponent.
 
 ##### Fixes :wrench:
 
-- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
+- Cleaned up, standardized, and commented material and material functions.
+- Moved all materials and material functions to the `Materials` subfolder.
+
+##### Breaking :x:
+
+- Tileset properties that require a tileset reload (URL, Source, IonAssetID, IonAccessToken, Materials) have been moved to `private`. Setter and getter methods are now provided for modifying them in Blueprints and C++.
+
+
+### v1.2.1 - 2021-05-13
+
+##### Fixes :wrench:
+
+- Fixed a regression in Cesium for Unreal v1.2.0 where `GlobeAwareDefaultPawn` lost its georeference during playmode.
+- Fixed a regression in Cesium for Unreal v1.2.0 where the matrices in `CesiumGeoreference` were being initialized to zero instead of identity.
+- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.3.0 to v0.3.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.2.0 - 2021-05-03
 

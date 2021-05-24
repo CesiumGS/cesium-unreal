@@ -38,7 +38,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      meta = (EditCondition = "bSpecifyZoomLevels"))
+      meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
   int32 MinimumLevel = 0;
 
   /**
@@ -47,7 +47,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      meta = (EditCondition = "bSpecifyZoomLevels"))
+      meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
   int32 MaximumLevel = 10;
 
 protected:
