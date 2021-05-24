@@ -11,7 +11,7 @@
  * DEPRECATED: Please create an empty actor, add a
  * CesiumGeoreferenceComponent, and attach child actors to mimic the
  * functionality of this class.
- * 
+ *
  * This actor defines a local East-South-Up reference frame in centimeters
  * wherever on the globe it is placed. Actors can be attached as children of
  * this actor and operate in the local space. This local reference frame is

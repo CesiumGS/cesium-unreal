@@ -17,7 +17,8 @@ ADEPRECATED_CesiumGlobeAnchorParent::ADEPRECATED_CesiumGlobeAnchorParent() {
           TEXT("GeoreferenceComponent"));
 }
 
-void ADEPRECATED_CesiumGlobeAnchorParent::OnConstruction(const FTransform& Transform) {
+void ADEPRECATED_CesiumGlobeAnchorParent::OnConstruction(
+    const FTransform& Transform) {
   Super::OnConstruction(Transform);
   this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
 }
@@ -52,22 +53,28 @@ void ADEPRECATED_CesiumGlobeAnchorParent::PostEditChangeProperty(
 
   FName propertyName = event.Property->GetFName();
 
-  if (propertyName ==
-          GET_MEMBER_NAME_CHECKED(ADEPRECATED_CesiumGlobeAnchorParent, Longitude) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(ADEPRECATED_CesiumGlobeAnchorParent, Latitude) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(ADEPRECATED_CesiumGlobeAnchorParent, Height)) {
+  if (propertyName == GET_MEMBER_NAME_CHECKED(
+                          ADEPRECATED_CesiumGlobeAnchorParent,
+                          Longitude) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          ADEPRECATED_CesiumGlobeAnchorParent,
+                          Latitude) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          ADEPRECATED_CesiumGlobeAnchorParent,
+                          Height)) {
     this->GeoreferenceComponent->MoveToLongitudeLatitudeHeight(
         glm::dvec3(this->Longitude, this->Latitude, this->Height));
     return;
   } else if (
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(ADEPRECATED_CesiumGlobeAnchorParent, ECEF_X) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(ADEPRECATED_CesiumGlobeAnchorParent, ECEF_Y) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(ADEPRECATED_CesiumGlobeAnchorParent, ECEF_Z)) {
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          ADEPRECATED_CesiumGlobeAnchorParent,
+                          ECEF_X) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          ADEPRECATED_CesiumGlobeAnchorParent,
+                          ECEF_Y) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          ADEPRECATED_CesiumGlobeAnchorParent,
+                          ECEF_Z)) {
     this->GeoreferenceComponent->MoveToECEF(
         glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
