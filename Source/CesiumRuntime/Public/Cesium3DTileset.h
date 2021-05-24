@@ -291,7 +291,7 @@ public:
   void UpdateCullingSelections();
 
   /**
-   * 
+   *
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
   TArray<ACesiumCullingSelection*> CullingSelections;

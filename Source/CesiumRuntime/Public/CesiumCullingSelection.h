@@ -42,7 +42,8 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
 
-  const std::optional<CesiumGeospatial::GlobeRectangle>& GetBoundingRegion() const {
+  const std::optional<CesiumGeospatial::GlobeRectangle>&
+  GetBoundingRegion() const {
     return this->_boundingRegion;
   }
 

@@ -23,15 +23,13 @@ ACesiumCullingSelection::ACesiumCullingSelection() {
 
 void ACesiumCullingSelection::OnConstruction(const FTransform& Transform) {
   if (!this->Georeference) {
-    this->Georeference =
-        ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
   }
 }
 
 void ACesiumCullingSelection::BeginPlay() {
   if (!this->Georeference) {
-    this->Georeference =
-        ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
   }
 }
 

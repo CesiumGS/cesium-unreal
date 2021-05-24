@@ -88,7 +88,8 @@ struct LoadModelResult {
   double clippingMaskScale;
 };
 
-static const std::string rasterOverlayWebMercator = "_CESIUMOVERLAY_WEB_MERCATOR";
+static const std::string rasterOverlayWebMercator =
+    "_CESIUMOVERLAY_WEB_MERCATOR";
 static const std::string rasterOverlayGeographic = "_CESIUMOVERLAY_GEOGRAPHIC";
 
 template <class... T> struct IsAccessorView;
@@ -1341,8 +1342,10 @@ void applyClippingMask(
         loadTexture(model, std::make_optional(textureInfo));
   }
 
-  auto clippingMaskTranslationXIt = model.extras.find("ClippingMaskTranslationX");
-  auto clippingMaskTranslationYIt = model.extras.find("ClippingMaskTranslationY");
+  auto clippingMaskTranslationXIt =
+      model.extras.find("ClippingMaskTranslationX");
+  auto clippingMaskTranslationYIt =
+      model.extras.find("ClippingMaskTranslationY");
   auto clippingMaskScaleIt = model.extras.find("ClippingMaskScale");
 
   if (clippingMaskTranslationXIt != model.extras.end() &&
@@ -1589,7 +1592,7 @@ static void loadModelGameThreadPart(
           loadResult.clippingMaskTranslationX,
           loadResult.clippingMaskTranslationY,
           loadResult.clippingMaskScale));
-  
+
   pMaterial->TwoSided = true;
 
   pStaticMesh->AddMaterial(pMaterial);
