@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGeoreference.h"
+#include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
@@ -30,6 +31,9 @@ public:
   // TODO: maybe EditAnywhere is wrong here
   UPROPERTY()
   USplineComponent* Selection;
+
+  UPROPERTY()
+  UCesiumGeoreferenceComponent* GeoreferenceComponent;
 
   // TODO: triangulated vertices (and indices??) for closed-loop-splines
 

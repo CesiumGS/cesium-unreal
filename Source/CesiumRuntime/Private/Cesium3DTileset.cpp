@@ -669,12 +669,14 @@ void ACesium3DTileset::LoadTileset() {
   Cesium3DTiles::TilesetOptions options;
   for (const ACesiumCullingSelection* cullingSelection :
        this->CullingSelections) {
-    options.cullingPolygons.push_back(
-        cullingSelection->GetCartographicSelection());
-    options.cullingPolygonsIndices.push_back(
-        cullingSelection->GetTriangulatedIndices());
-    options.cullingPolygonsBoundingBoxes.push_back(
-        cullingSelection->GetBoundingRegion());
+    if (cullingSelection) {
+      options.cullingPolygons.push_back(
+          cullingSelection->GetCartographicSelection());
+      options.cullingPolygonsIndices.push_back(
+          cullingSelection->GetTriangulatedIndices());
+      options.cullingPolygonsBoundingBoxes.push_back(
+          cullingSelection->GetBoundingRegion());
+    }
   }
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 

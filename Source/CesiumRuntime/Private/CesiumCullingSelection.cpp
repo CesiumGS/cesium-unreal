@@ -3,6 +3,7 @@
 #include "CesiumCullingSelection.h"
 #include "CesiumUtility/Math.h"
 #include "StaticMeshResources.h"
+#include "Components/SceneComponent.h"
 #include <algorithm>
 #include <array>
 #include <earcut.hpp>
@@ -16,9 +17,18 @@
 ACesiumCullingSelection::ACesiumCullingSelection() {
   PrimaryActorTick.bCanEverTick = true;
 
+  this->SetRootComponent(
+      CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent")));
+  this->RootComponent->SetMobility(EComponentMobility::Movable);
+
   this->Selection =
       CreateDefaultSubobject<USplineComponent>(TEXT("CullingSelection"));
   this->Selection->SetClosedLoop(true);
+  this->Selection->SetMobility(EComponentMobility::Movable);
+
+  this->GeoreferenceComponent =
+      CreateDefaultSubobject<UCesiumGeoreferenceComponent>(
+          TEXT("GeoreferenceComponent"));
 }
 
 void ACesiumCullingSelection::OnConstruction(const FTransform& Transform) {
