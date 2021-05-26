@@ -11,7 +11,7 @@
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
-#include "CesiumCullingSelection.h"
+#include "CesiumCartographicSelection.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -686,19 +686,13 @@ void ACesium3DTileset::LoadTileset() {
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
-
-
   Cesium3DTiles::TilesetOptions options;
-  for (ACesiumCullingSelection* cullingSelection :
-       this->CullingSelections) {
-    if (cullingSelection) {
-      cullingSelection->UpdateCullingSelection();
+  for (ACesiumCartographicSelection* cartographicSelection :
+       this->CartographicSelections) {
+    if (cartographicSelection) {
+      cartographicSelection->UpdateSelection();
       options.cullingPolygons.push_back(
-          cullingSelection->GetCartographicSelection());
-      options.cullingPolygonsIndices.push_back(
-          cullingSelection->GetTriangulatedIndices());
-      options.cullingPolygonsBoundingBoxes.push_back(
-          cullingSelection->GetBoundingRegion());
+          cartographicSelection->GetCartographicSelection());
     }
   }
   options.contentOptions.enableWaterMask = this->EnableWaterMask;

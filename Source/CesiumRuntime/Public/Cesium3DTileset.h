@@ -16,7 +16,7 @@
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
-class ACesiumCullingSelection;
+class ACesiumCartographicSelection;
 
 namespace Cesium3DTiles {
 class Tileset;
@@ -250,7 +250,7 @@ public:
    *
    */
   UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  TArray<ACesiumCullingSelection*> CullingSelections;
+  TArray<ACesiumCartographicSelection*> CartographicSelections;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.

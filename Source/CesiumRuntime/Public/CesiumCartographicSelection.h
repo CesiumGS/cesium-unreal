@@ -9,21 +9,20 @@
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Actor.h"
-#include <optional>
 #include <vector>
 
-#include "CesiumCullingSelection.generated.h"
+#include "CesiumCartographicSelection.generated.h"
 
 /**
  *
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API ACesiumCullingSelection : public AActor {
+class CESIUMRUNTIME_API ACesiumCartographicSelection : public AActor {
 
   GENERATED_BODY()
 
 public:
-  ACesiumCullingSelection();
+  ACesiumCartographicSelection();
 
   UPROPERTY()
   ACesiumGeoreference* Georeference;
@@ -34,39 +33,18 @@ public:
   UPROPERTY()
   UCesiumGeoreferenceComponent* GeoreferenceComponent;
 
-  void UpdateCullingSelection();
-
   virtual void OnConstruction(const FTransform& Transform) override;
-  virtual bool ShouldTickIfViewportsOnly() const override;
-  virtual void Tick(float DeltaTime) override;
 
-  const std::optional<CesiumGeospatial::GlobeRectangle>&
-  GetBoundingRegion() const {
-    return this->_boundingRegion;
-  }
+  void UpdateSelection();
 
   const std::vector<glm::dvec2>& GetCartographicSelection() const {
     return this->_cartographicSelection;
-  }
-
-  const std::vector<uint32_t>& GetTriangulatedIndices() const {
-    return this->_indices;
   }
 
 protected:
   virtual void BeginPlay() override;
 
 private:
-  std::optional<CesiumGeospatial::GlobeRectangle> _boundingRegion;
-
   std::vector<glm::dvec2> _cartographicSelection;
-  std::vector<uint32_t> _indices;
 
-#if WITH_EDITOR
-  void _drawDebugLine(
-      const glm::dvec2& point0,
-      const glm::dvec2& point1,
-      double height = 1000.0,
-      FColor color = FColor::Red) const;
-#endif
 };
