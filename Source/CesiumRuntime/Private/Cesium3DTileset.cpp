@@ -81,15 +81,8 @@ ACesium3DTileset::ACesium3DTileset()
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
-void ACesium3DTileset::UpdateCullingSelections() {
-  for (ACesiumCullingSelection* cullingSelection : this->CullingSelections) {
-    if (cullingSelection) {
-      cullingSelection->UpdateCullingSelection();
-    }
-  }
-
-  this->DestroyTileset();
-  this->LoadTileset();
+void ACesium3DTileset::RefreshTileset() {
+  this->MarkTilesetDirty();
 }
 
 void ACesium3DTileset::AddFocusViewportDelegate() {
@@ -693,10 +686,13 @@ void ACesium3DTileset::LoadTileset() {
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
+
+
   Cesium3DTiles::TilesetOptions options;
-  for (const ACesiumCullingSelection* cullingSelection :
+  for (ACesiumCullingSelection* cullingSelection :
        this->CullingSelections) {
     if (cullingSelection) {
+      cullingSelection->UpdateCullingSelection();
       options.cullingPolygons.push_back(
           cullingSelection->GetCartographicSelection());
       options.cullingPolygonsIndices.push_back(
@@ -915,7 +911,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (!pRoot) {
+  if (!this->_pTileset || !pRoot) {
     return;
   }
 

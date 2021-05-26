@@ -28,18 +28,12 @@ public:
   UPROPERTY()
   ACesiumGeoreference* Georeference;
 
-  // TODO: maybe EditAnywhere is wrong here
   UPROPERTY()
   USplineComponent* Selection;
 
   UPROPERTY()
   UCesiumGeoreferenceComponent* GeoreferenceComponent;
 
-  // TODO: triangulated vertices (and indices??) for closed-loop-splines
-
-  // TODO: may be able to just do this onconstruction or posteditproperties
-  // (when the spline has changed)
-  UFUNCTION(CallInEditor, Category = "Cesium")
   void UpdateCullingSelection();
 
   virtual void OnConstruction(const FTransform& Transform) override;

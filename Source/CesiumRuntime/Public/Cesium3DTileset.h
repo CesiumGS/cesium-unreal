@@ -241,10 +241,10 @@ public:
   float CulledScreenSpaceError = 64.0;
 
   /**
-   *
+   *  TODO: should this be under rendering
    */
   UFUNCTION(CallInEditor, Category = "Cesium|Rendering")
-  void UpdateCullingSelections();
+  void RefreshTileset();
 
   /**
    *

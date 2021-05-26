@@ -17,12 +17,9 @@
 ACesiumCullingSelection::ACesiumCullingSelection() {
   PrimaryActorTick.bCanEverTick = true;
 
-  this->SetRootComponent(
-      CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent")));
-  this->RootComponent->SetMobility(EComponentMobility::Movable);
-
   this->Selection =
       CreateDefaultSubobject<USplineComponent>(TEXT("CullingSelection"));
+  this->SetRootComponent(this->Selection);
   this->Selection->SetClosedLoop(true);
   this->Selection->SetMobility(EComponentMobility::Movable);
 
@@ -35,6 +32,8 @@ void ACesiumCullingSelection::OnConstruction(const FTransform& Transform) {
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
   }
+
+  this->UpdateCullingSelection();
 }
 
 void ACesiumCullingSelection::BeginPlay() {
