@@ -17,15 +17,14 @@ else()
     endif()
 endif()
 
+# Rename sqlite3* symbols to cesium_sqlite3* so they don't conflict with UE's sqlite3,
+# which has a bunch of limitations and is not considered public.
+set(PRIVATE_CESIUM_SQLITE ON)
+
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
 set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CESIUM_ARCHITECTURE})
-add_subdirectory(cesium-native)
 
-# cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
-
-# Build and install MikkTSpace because we need it on Android.
 set(CESIUM_DEBUG_POSTFIX "d")
 set(CESIUM_RELEASE_POSTFIX "")
 
@@ -33,6 +32,11 @@ set(CMAKE_DEBUG_POSTFIX ${CESIUM_DEBUG_POSTFIX})
 set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
+
+add_subdirectory(cesium-native)
+
+# cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
