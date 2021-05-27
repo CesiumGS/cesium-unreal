@@ -2,15 +2,14 @@
 
 #include "CesiumCartographicSelection.h"
 #include "CesiumUtility/Math.h"
-#include "StaticMeshResources.h"
 #include "Components/SceneComponent.h"
+#include "StaticMeshResources.h"
 #include <glm/glm.hpp>
 
 ACesiumCartographicSelection::ACesiumCartographicSelection() {
   PrimaryActorTick.bCanEverTick = false;
 
-  this->Selection =
-      CreateDefaultSubobject<USplineComponent>(TEXT("Selection"));
+  this->Selection = CreateDefaultSubobject<USplineComponent>(TEXT("Selection"));
   this->SetRootComponent(this->Selection);
   this->Selection->SetClosedLoop(true);
   this->Selection->SetMobility(EComponentMobility::Movable);

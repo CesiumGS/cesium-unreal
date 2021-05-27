@@ -24,6 +24,15 @@ class CESIUMRUNTIME_API ACesiumCartographicSelection : public AActor {
 public:
   ACesiumCartographicSelection();
 
+  /**
+   * Whether this selection will be used to cull sections of tilesets.
+   *
+   * This options lets the tilesets know whether they should avoid loading
+   * tiles that fall entirely within the selection.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  bool IsForCulling = true;
+
   UPROPERTY()
   ACesiumGeoreference* Georeference;
 
@@ -46,5 +55,4 @@ protected:
 
 private:
   std::vector<glm::dvec2> _cartographicSelection;
-
 };

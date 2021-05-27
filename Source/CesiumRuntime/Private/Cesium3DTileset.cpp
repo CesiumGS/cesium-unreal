@@ -3,6 +3,7 @@
 #include "Cesium3DTileset.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTiles/BingMapsRasterOverlay.h"
+#include "Cesium3DTiles/CartographicSelection.h"
 #include "Cesium3DTiles/CreditSystem.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
@@ -81,9 +82,7 @@ ACesium3DTileset::ACesium3DTileset()
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
-void ACesium3DTileset::RefreshTileset() {
-  this->MarkTilesetDirty();
-}
+void ACesium3DTileset::RefreshTileset() { this->MarkTilesetDirty(); }
 
 void ACesium3DTileset::AddFocusViewportDelegate() {
 #if WITH_EDITOR
@@ -687,12 +686,14 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::TilesetOptions options;
-  for (ACesiumCartographicSelection* cartographicSelection :
+  for (ACesiumCartographicSelection* pCartographicSelection :
        this->CartographicSelections) {
-    if (cartographicSelection) {
-      cartographicSelection->UpdateSelection();
-      options.cullingPolygons.push_back(
-          cartographicSelection->GetCartographicSelection());
+    if (pCartographicSelection) {
+      pCartographicSelection->UpdateSelection();
+      options.cartographicSelections.push_back(
+          Cesium3DTiles::CartographicSelection(
+              pCartographicSelection->GetCartographicSelection(),
+              pCartographicSelection->IsForCulling));
     }
   }
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
