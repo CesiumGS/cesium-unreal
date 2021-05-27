@@ -17,7 +17,10 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 //
+#include "CesiumGeospatialBlueprintLibrary.h"
+#include "CesiumGeospatialLibrary.h"
 #include "DrawDebugHelpers.h"
+#include "VecMath.h"
 #include <glm/ext/vector_double3.hpp>
 
 AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
@@ -281,8 +284,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     float PitchAtDestination,
     bool CanInterruptByMoving) {
 
-  glm::dvec3 ecef = this->Georeference->TransformLongitudeLatitudeHeightToEcef(
-      LongitudeLatitudeHeightDestination);
+  const glm::dvec3& ecef =
+      UCesiumGeospatialLibrary::TransformLongLatHeightToEcef(
+          LongitudeLatitudeHeightDestination);
   this->FlyToLocationECEF(
       ecef,
       YawAtDestination,
@@ -298,10 +302,7 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
     bool CanInterruptByMoving) {
 
   this->FlyToLocationLongitudeLatitudeHeight(
-      glm::dvec3(
-          LongitudeLatitudeHeightDestination.X,
-          LongitudeLatitudeHeightDestination.Y,
-          LongitudeLatitudeHeightDestination.Z),
+      VecMath::createVector3D(LongitudeLatitudeHeightDestination),
       YawAtDestination,
       PitchAtDestination,
       CanInterruptByMoving);
@@ -370,22 +371,38 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   this->SetECEFCameraLocation(currentPosition);
 
   // Interpolate rotation - Computation has to be done at each step because
-  // the ENU CRS is depending on location
-  FQuat currentQuat = FQuat::Slerp(
-      this->Georeference
-          ->TransformRotatorUeToEnu(
-              this->_flyToSourceRotation,
-              this->_keypoints[0])
-          .Quaternion(),
-      this->Georeference
-          ->TransformRotatorUeToEnu(
-              this->_flyToDestinationRotation,
-              this->_keypoints.back())
-          .Quaternion(),
-      flyPercentage);
+  // the ENU CRS is depending on location. Do all calculations in double
+  // precision until the very end.
+
+  const glm::dvec3& ueOriginLocation =
+      VecMath::createVector3D(this->GetWorld()->OriginLocation);
+  const glm::dmat4& ueAbsToEcef =
+      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
+  const glm::dmat4& ecefToGeoreferenced =
+      this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
+
+  glm::dquat startingQuat = glm::quat_cast(
+      UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
+          VecMath::createRotationMatrix4D(this->_flyToSourceRotation),
+          this->_keypoints[0],
+          ueAbsToEcef,
+          ueOriginLocation,
+          ecefToGeoreferenced));
+
+  glm::dquat endingQuat = glm::quat_cast(
+      UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
+          VecMath::createRotationMatrix4D(this->_flyToDestinationRotation),
+          this->_keypoints.back(),
+          ueAbsToEcef,
+          ueOriginLocation,
+          ecefToGeoreferenced));
+
+  const glm::dquat& currentQuat =
+      glm::slerp(startingQuat, endingQuat, flyPercentage);
+
   GetController()->SetControlRotation(
       this->Georeference->TransformRotatorEnuToUe(
-          currentQuat.Rotator(),
+          VecMath::createQuaternion(currentQuat).Rotator(),
           currentPosition));
 }
 

@@ -18,11 +18,13 @@ glm::dvec3 UCesiumGeospatialLibrary::TransformLongLatHeightToUnreal(
 }
 
 glm::dvec3 UCesiumGeospatialLibrary::TransformUnrealToLongLatHeight(
-    const glm::dvec3& Ue,
+    const glm::dvec3& UeLocation,
     const glm::dmat4& UeAbsoluteWorldToEcef,
     const glm::dvec3& UeOriginLocation) {
-  glm::dvec3 ecef =
-      TransformUnrealToEcef(Ue, UeAbsoluteWorldToEcef, UeOriginLocation);
+  glm::dvec3 ecef = TransformUnrealToEcef(
+      UeLocation,
+      UeAbsoluteWorldToEcef,
+      UeOriginLocation);
   return TransformEcefToLongLatHeight(ecef);
 }
 
@@ -85,12 +87,14 @@ glm::dmat3 UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
 }
 
 glm::dmat3 UCesiumGeospatialLibrary::ComputeEastNorthUpToUnreal(
-    const glm::dvec3& Ue,
+    const glm::dvec3& UeLocation,
     const glm::dmat4& UeAbsoluteWorldToEcef,
     const glm::dvec3& UeOriginLocation,
     const glm::dmat3& EcefToGeoreferenced) {
-  glm::dvec3 ecef =
-      TransformUnrealToEcef(Ue, UeAbsoluteWorldToEcef, UeOriginLocation);
+  glm::dvec3 ecef = TransformUnrealToEcef(
+      UeLocation,
+      UeAbsoluteWorldToEcef,
+      UeOriginLocation);
   glm::dmat3 enuToEcef = ComputeEastNorthUpToEcef(ecef);
 
   // Camera Axes = ENU
@@ -108,17 +112,17 @@ UCesiumGeospatialLibrary::ComputeEastNorthUpToEcef(const glm::dvec3& Ecef) {
 }
 
 glm::dvec3 UCesiumGeospatialLibrary::TransformEcefToUnreal(
-    const glm::dvec3& Ecef,
+    const glm::dvec3& EcefLocation,
     const glm::dmat4& EcefToUeAbsoluteWorld,
     const glm::dvec3& UeOriginLocation) {
-  glm::dvec3 ueAbs = EcefToUeAbsoluteWorld * glm::dvec4(Ecef, 1.0);
+  glm::dvec3 ueAbs = EcefToUeAbsoluteWorld * glm::dvec4(EcefLocation, 1.0);
   return ueAbs - UeOriginLocation;
 }
 
 glm::dvec3 UCesiumGeospatialLibrary::TransformUnrealToEcef(
-    const glm::dvec3& Ue,
+    const glm::dvec3& UeLocation,
     const glm::dmat4& UeAbsoluteWorldToEcef,
     const glm::dvec3& UeOriginLocation) {
-  glm::dvec4 ueAbs(Ue + UeOriginLocation, 1.0);
-  return ueAbs * UeAbsoluteWorldToEcef;
+  glm::dvec4 ueAbs(UeLocation + UeOriginLocation, 1.0);
+  return UeAbsoluteWorldToEcef * ueAbs;
 }

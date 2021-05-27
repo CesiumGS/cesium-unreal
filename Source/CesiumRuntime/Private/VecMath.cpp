@@ -99,7 +99,7 @@ inline glm::dmat4 VecMath::createTranslationMatrix4D(
       tw);
 }
 
-inline glm::dmat4 VecMath::createRotationMatrix4D(const FRotator& rot) {
+inline glm::dmat4 VecMath::createRotationMatrix4D(const FRotator& rot) noexcept {
   const FMatrix& m = FRotationMatrix::Make(rot);
   return createMatrix4D(m);
 }
@@ -141,6 +141,14 @@ inline FMatrix VecMath::createMatrix(
       FVector(column1.x, column1.y, column1.z),
       FVector(column2.x, column2.y, column2.z),
       FVector::ZeroVector);
+}
+
+FVector VecMath::createVector(const glm::dvec4& v)  noexcept {
+  return FVector(v.x, v.y, v.z);
+}
+
+FVector VecMath::createVector(const glm::dvec3& v)  noexcept{
+  return FVector(v.x, v.y, v.z);
 }
 
 inline FRotator VecMath::createRotator(const glm::dmat4& m) noexcept {
