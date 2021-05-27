@@ -3,9 +3,9 @@
 #include "CesiumGeospatialBlueprintLibrary.h"
 
 #include "CesiumGeospatialLibrary.h"
+#include "CesiumRuntime.h"
 #include "Engine/World.h"
-#include <glm/fwd.hpp>
-#include <glm/mat3x3.hpp>
+#include "VecMath.h"
 
 ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::GetDefaultGeoref() {
   // TODO
@@ -15,19 +15,18 @@ ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::GetDefaultGeoref() {
 FVector UCesiumGeospatialBlueprintLibrary::TransformLongLatHeightToUnreal(
     const FVector& LongLatHeight,
     const ACesiumGeoreference* Georef) {
-  glm::dvec3 longLatHeight(LongLatHeight.X, LongLatHeight.Y, LongLatHeight.Z);
 
   const glm::dmat4& EcefToUeAbsoluteWorld =
       Georef->GetEllipsoidCenteredToUnrealWorldTransform();
 
-  const FIntVector& originLocation = Georef->GetWorld()->OriginLocation;
-  const glm::dvec3 originLocationGlm =
-      glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
+  const glm::dvec3 originLocation =
+      VecMath::createVector3D(Georef->GetWorld()->OriginLocation);
 
   glm::dvec3 ue = UCesiumGeospatialLibrary::TransformLongLatHeightToUnreal(
-      longLatHeight,
+      VecMath::createVector3D(LongLatHeight),
       EcefToUeAbsoluteWorld,
-      originLocationGlm);
+      originLocation);
+
   return FVector(ue.x, ue.y, ue.z);
 }
 
@@ -41,20 +40,17 @@ FVector UCesiumGeospatialBlueprintLibrary::TransformUnrealToLongLatHeight(
     const FVector& Ue,
     const ACesiumGeoreference* Georef) {
 
-  glm::dvec3 ue(Ue.X, Ue.Y, Ue.Z);
-
   const glm::dmat4& UeAbsoluteWorldToEcef =
       Georef->GetUnrealWorldToEllipsoidCenteredTransform();
 
-  const FIntVector& originLocation = Georef->GetWorld()->OriginLocation;
-  const glm::dvec3 originLocationGlm =
-      glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
+  const glm::dvec3 originLocation =
+      VecMath::createVector3D(Georef->GetWorld()->OriginLocation);
 
   glm::dvec3 longLatHeight =
       UCesiumGeospatialLibrary::TransformUnrealToLongLatHeight(
-          ue,
+          VecMath::createVector3D(Ue),
           UeAbsoluteWorldToEcef,
-          originLocationGlm);
+          originLocation);
   return FVector(longLatHeight.x, longLatHeight.y, longLatHeight.z);
 }
 
@@ -83,36 +79,24 @@ FRotator UCesiumGeospatialBlueprintLibrary::TransformRotatorEastNorthUpToUnreal(
     const FVector& UeLocation,
     ACesiumGeoreference* Georef) {
 
-  const FMatrix enu = FRotationMatrix::Make(EnuRotator);
-
-  // clang-format off
-  const glm::dmat3 enuRotation(
-    enu.M[0][0], enu.M[0][1], enu.M[0][2],
-    enu.M[1][0], enu.M[1][1], enu.M[1][2],
-    enu.M[2][0], enu.M[2][1], enu.M[2][2]);
-  // clang-format on
-
-  glm::dvec3 ueLocation(UeLocation.X, UeLocation.Y, UeLocation.Z);
-
   const glm::dmat4& ueAbsoluteWorldToEcef =
       Georef->GetUnrealWorldToEllipsoidCenteredTransform();
 
-  const FIntVector& originLocationInt = Georef->GetWorld()->OriginLocation;
   const glm::dvec3 originLocation =
-      glm::dvec3(originLocationInt.X, originLocationInt.Y, originLocationInt.Z);
+      VecMath::createVector3D(Georef->GetWorld()->OriginLocation);
 
   const glm::dmat4& ecefToGeoreferenced =
       Georef->GetEllipsoidCenteredToGeoreferencedTransform();
 
   const glm::dmat3 adjustedRotation =
       UCesiumGeospatialLibrary::TransformRotatorEastNorthUpToUnreal(
-          enuRotation,
-          ueLocation,
+          VecMath::createRotationMatrix4D(EnuRotator),
+          VecMath::createVector3D(UeLocation),
           ueAbsoluteWorldToEcef,
           originLocation,
           ecefToGeoreferenced);
 
-  return FRotator(); // TODO: convert from dmat3 back to FRotator here
+  return VecMath::createRotator(adjustedRotation);
 }
 
 FRotator UCesiumGeospatialBlueprintLibrary::
@@ -130,36 +114,32 @@ FRotator UCesiumGeospatialBlueprintLibrary::TransformRotatorUnrealToEastNorthUp(
     const FVector& UeLocation,
     ACesiumGeoreference* Georef) {
 
-  const FMatrix ue = FRotationMatrix::Make(UeRotator);
-
-  // clang-format off
-  const glm::dmat3 enuRotation(
-    ue.M[0][0], ue.M[0][1], ue.M[0][2],
-    ue.M[1][0], ue.M[1][1], ue.M[1][2],
-    ue.M[2][0], ue.M[2][1], ue.M[2][2]);
-  // clang-format on
-
-  glm::dvec3 ueLocation(UeLocation.X, UeLocation.Y, UeLocation.Z);
+  if (!IsValid(Georef)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Georef invalid in TransformRotatorUnrealToEastNorthUp call"));
+    return FRotator::ZeroRotator;
+  }
 
   const glm::dmat4& ueAbsoluteWorldToEcef =
       Georef->GetUnrealWorldToEllipsoidCenteredTransform();
 
-  const FIntVector& originLocationInt = Georef->GetWorld()->OriginLocation;
-  const glm::dvec3 originLocation =
-      glm::dvec3(originLocationInt.X, originLocationInt.Y, originLocationInt.Z);
+  const glm::dvec3& originLocation =
+      VecMath::createVector3D(Georef->GetWorld()->OriginLocation);
 
   const glm::dmat4& ecefToGeoreferenced =
       Georef->GetEllipsoidCenteredToGeoreferencedTransform();
 
-  const glm::dmat3 adjustedRotation =
+  const glm::dmat3& adjustedRotation =
       UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
-          enuRotation,
-          ueLocation,
+          VecMath::createRotationMatrix4D(UeRotator),
+          VecMath::createVector3D(UeLocation),
           ueAbsoluteWorldToEcef,
           originLocation,
           ecefToGeoreferenced);
 
-  return FRotator(); // TODO: convert from dmat3 back to FRotator here
+  return VecMath::createRotator(adjustedRotation);
 }
 
 FRotator UCesiumGeospatialBlueprintLibrary::
@@ -175,32 +155,32 @@ FRotator UCesiumGeospatialBlueprintLibrary::
 FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToUnreal(
     const FVector& Ue,
     ACesiumGeoreference* Georef) {
-  glm::dvec3 ue(Ue.X, Ue.Y, Ue.Z);
+
+  if (!IsValid(Georef)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Georef invalid in ComputeEastNorthUpToUnreal call"));
+    return FMatrix::Identity;
+  }
 
   const glm::dmat4& ueAbsoluteWorldToEcef =
       Georef->GetUnrealWorldToEllipsoidCenteredTransform();
 
-  const FIntVector& originLocationIntVector =
-      Georef->GetWorld()->OriginLocation;
-  const glm::dvec3 originLocation = glm::dvec3(
-      originLocationIntVector.X,
-      originLocationIntVector.Y,
-      originLocationIntVector.Z);
+  const glm::dvec3& originLocation =
+      VecMath::createVector3D(Georef->GetWorld()->OriginLocation);
 
   const glm::dmat3& ecefToGeoreferenced =
       glm::dmat3(Georef->GetEllipsoidCenteredToGeoreferencedTransform());
 
-  glm::dmat3 enuToUnreal = UCesiumGeospatialLibrary::ComputeEastNorthUpToUnreal(
-      ue,
-      ueAbsoluteWorldToEcef,
-      originLocation,
-      ecefToGeoreferenced);
+  const glm::dmat3& enuToUnreal =
+      UCesiumGeospatialLibrary::ComputeEastNorthUpToUnreal(
+          VecMath::createVector3D(Ue),
+          ueAbsoluteWorldToEcef,
+          originLocation,
+          ecefToGeoreferenced);
 
-  return FMatrix(
-      FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
-      FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
-      FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
-      FVector::ZeroVector);
+  return VecMath::createMatrix(enuToUnreal);
 }
 
 FMatrix
@@ -214,9 +194,5 @@ FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToEcef(
   glm::dmat3 enuToEcef = UCesiumGeospatialLibrary::ComputeEastNorthUpToEcef(
       glm::dvec3(Ecef.X, Ecef.Y, Ecef.Z));
 
-  return FMatrix(
-      FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
-      FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
-      FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
-      FVector::ZeroVector);
+  return VecMath::createMatrix(enuToEcef);
 }

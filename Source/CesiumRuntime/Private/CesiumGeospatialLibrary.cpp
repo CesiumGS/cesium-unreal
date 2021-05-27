@@ -66,16 +66,6 @@ glm::dmat3 UCesiumGeospatialLibrary::TransformRotatorEastNorthUpToUnreal(
 
   // Inverse to get East-North-Up To Unreal
   return glm::inverse(enuToFixedUE) * EnuRotation;
-
-  // FMatrix enuAdjustmentMatrix(
-  //     FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-  //     FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-  //     FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-  //     FVector::ZeroVector);
-  //
-  // FMatrix inverseFMatrix = enuAdjustmentMatrix.InverseFast();
-  //
-  // return FRotator(inverse.ToQuat() * EnuRotator.Quaternion());
 }
 
 glm::dmat3 UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
@@ -92,14 +82,6 @@ glm::dmat3 UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
       EcefToGeoreferenced);
 
   return enuToFixedUE * UeRotation;
-
-  // FMatrix enuAdjustmentMatrix(
-  //     FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-  //     FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-  //     FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-  //     FVector::ZeroVector);
-  //
-  // return FRotator(enuAdjustmentMatrix.ToQuat() * UeRotator.Quaternion());
 }
 
 glm::dmat3 UCesiumGeospatialLibrary::ComputeEastNorthUpToUnreal(
