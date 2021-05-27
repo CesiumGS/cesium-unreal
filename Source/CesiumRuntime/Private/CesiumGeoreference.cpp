@@ -33,25 +33,36 @@
   1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0
 
 /*static*/ ACesiumGeoreference*
-ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
+ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
+  // This method can be called by actors even when opening the content browser.
+  if (!WorldContextObject->GetWorld()) {
+    return nullptr;
+  }
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("World name for GetDefaultForActor: %s"),
+      *WorldContextObject->GetWorld()->GetFullName());
   ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
-      Actor->GetLevel(),
+      WorldContextObject->GetWorld()->PersistentLevel,
       TEXT("CesiumGeoreferenceDefault"));
   if (!pGeoreference) {
-    const FString actorName = Actor->GetName();
+    const FString actorName = WorldContextObject->GetName();
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Creating default Georeference for actor %s"),
         *actorName);
+    // Always spawn georeference in the persistent level (OverrideLevel = null)
     FActorSpawnParameters spawnParameters;
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
-    spawnParameters.OverrideLevel = Actor->GetLevel();
+    // spawnParameters.OverrideLevel = WorldContextObject->GetLevel();
     pGeoreference =
-        Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
+        WorldContextObject->GetWorld()->SpawnActor<ACesiumGeoreference>(
+            spawnParameters);
   } else {
     const FString georeferenceName = pGeoreference->GetName();
-    const FString actorName = Actor->GetName();
+    const FString actorName = WorldContextObject->GetName();
     UE_LOG(
         LogCesium,
         Verbose,

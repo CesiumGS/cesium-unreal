@@ -109,8 +109,18 @@ class CESIUMRUNTIME_API ACesiumGeoreference : public AActor {
   GENERATED_BODY()
 
 public:
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  static ACesiumGeoreference* GetDefaultForActor(AActor* Actor);
+  /*
+   * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
+   * persistent level of the calling object's world. If not found, it creates a
+   * new default Georeference.
+   * @param WorldContextObject Any `UObject`.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "CesiumGeoreference",
+      meta = (WorldContext = "WorldContextObject"))
+  static ACesiumGeoreference*
+  GetDefaultForActor(const UObject* WorldContextObject);
 
   ACesiumGeoreference();
 

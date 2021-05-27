@@ -17,9 +17,6 @@ class CESIUMRUNTIME_API UCesiumGeospatialBlueprintLibrary
   GENERATED_BODY()
 
 public:
-  static ACesiumGeoreference* GetDefaultGeoref();
-
-public:
   /**
    * Transforms the given WGS84 longitude in degrees (x), latitude in
    * degrees (y), and height in meters (z) into Unreal world coordinates
@@ -30,8 +27,12 @@ public:
       const FVector& LongLatHeight,
       const ACesiumGeoreference* Georef);
 
-  UFUNCTION(BlueprintCallable, Category = "Cesium Geospatial")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium Geospatial",
+      meta = (WorldContext = "WorldContextObject"))
   static FVector TransformLongLatHeightToUnrealUsingDefaultGeoref(
+      const UObject* WorldContextObject,
       const FVector& LongLatHeight);
 
   /**
@@ -41,12 +42,16 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium Geospatial")
   static FVector TransformUnrealToLongLatHeight(
-      const FVector& Ue,
+      const FVector& UeLocation,
       const ACesiumGeoreference* Georef);
 
-  UFUNCTION(BlueprintCallable, Category = "Cesium Geospatial")
-  static FVector
-  TransformUnrealToLongLatHeightUsingDefaultGeoref(const FVector& Ue);
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium Geospatial",
+      meta = (WorldContext = "WorldContextObject"))
+  static FVector TransformUnrealToLongLatHeightUsingDefaultGeoref(
+      const UObject* WorldContextObject,
+      const FVector& UeLocation);
 
   /**
    * Transforms the given WGS84 longitude in degrees (x), latitude in
@@ -74,8 +79,12 @@ public:
       const FVector& UeLocation,
       ACesiumGeoreference* Georef);
 
-  UFUNCTION(BlueprintCallable, Category = "CesiumGeospatial")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "CesiumGeospatial",
+      meta = (WorldContext = "WorldContextObject"))
   static FRotator TransformRotatorEastNorthUpToUnrealUsingDefaultGeoref(
+      const UObject* WorldContextObject,
       const FRotator& EnuRotator,
       const FVector& UeLocation);
 
@@ -89,8 +98,12 @@ public:
       const FVector& UeLocation,
       ACesiumGeoreference* Georef);
 
-  UFUNCTION(BlueprintCallable, Category = "CesiumGeospatial")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "CesiumGeospatial",
+      meta = (WorldContext = "WorldContextObject"))
   static FRotator TransformRotatorUnrealToEastNorthUpUsingDefaultGeoref(
+      const UObject* WorldContextObject,
       const FRotator& UeRotator,
       const FVector& UeLocation);
 
@@ -102,11 +115,15 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium Geospatial")
   static FMatrix
-  ComputeEastNorthUpToUnreal(const FVector& Ue, ACesiumGeoreference* Georef);
+  ComputeEastNorthUpToUnreal(const FVector& UeLocation, ACesiumGeoreference* Georef);
 
-  UFUNCTION(BlueprintCallable, Category = "Cesium Geospatial")
-  static FMatrix
-  ComputeEastNorthUpToUnrealUsingDefaultGeoref(const FVector& Ue);
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium Geospatial",
+      meta = (WorldContext = "WorldContextObject"))
+  static FMatrix ComputeEastNorthUpToUnrealUsingDefaultGeoref(
+      const UObject* WorldContextObject,
+      const FVector& UeLocation);
 
   /**
    * Computes the rotation matrix from the local East-North-Up to
@@ -116,5 +133,8 @@ public:
   static FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef);
 
 private:
-  static TWeakObjectPtr<ACesiumGeoreference>* _defaultGeoref;
+  static ACesiumGeoreference*
+  _getDefaultGeoref(const UObject* WorldContextObject);
+
+  static TWeakObjectPtr<ACesiumGeoreference> _defaultGeorefPtr;
 };

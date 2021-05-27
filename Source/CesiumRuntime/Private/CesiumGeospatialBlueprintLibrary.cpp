@@ -7,9 +7,14 @@
 #include "Engine/World.h"
 #include "VecMath.h"
 
-ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::GetDefaultGeoref() {
-  // TODO: needs actor for GetDefaultForActor call...
-  return nullptr;
+ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::_getDefaultGeoref(
+    const UObject* WorldContextObject) {
+  if (_defaultGeorefPtr.Get()) {
+    return _defaultGeorefPtr.Get();
+  }
+  _defaultGeorefPtr =
+      ACesiumGeoreference::GetDefaultForActor(WorldContextObject);
+  return _defaultGeorefPtr.Get();
 }
 
 FVector UCesiumGeospatialBlueprintLibrary::TransformLongLatHeightToUnreal(
@@ -33,12 +38,15 @@ FVector UCesiumGeospatialBlueprintLibrary::TransformLongLatHeightToUnreal(
 
 FVector UCesiumGeospatialBlueprintLibrary::
     TransformLongLatHeightToUnrealUsingDefaultGeoref(
+        const UObject* WorldContextObject,
         const FVector& LongLatHeight) {
-  return TransformLongLatHeightToUnreal(LongLatHeight, GetDefaultGeoref());
+  return TransformLongLatHeightToUnreal(
+      LongLatHeight,
+      _getDefaultGeoref(WorldContextObject));
 }
 
 FVector UCesiumGeospatialBlueprintLibrary::TransformUnrealToLongLatHeight(
-    const FVector& Ue,
+    const FVector& UeLocation,
     const ACesiumGeoreference* Georef) {
   if (!IsValid(Georef)) {
     UE_LOG(
@@ -50,15 +58,19 @@ FVector UCesiumGeospatialBlueprintLibrary::TransformUnrealToLongLatHeight(
 
   glm::dvec3 longLatHeight =
       UCesiumGeospatialLibrary::TransformUnrealToLongLatHeight(
-          VecMath::createVector3D(Ue),
+          VecMath::createVector3D(UeLocation),
           Georef->GetUnrealWorldToEllipsoidCenteredTransform(),
           VecMath::createVector3D(Georef->GetWorld()->OriginLocation));
   return FVector(longLatHeight.x, longLatHeight.y, longLatHeight.z);
 }
 
 FVector UCesiumGeospatialBlueprintLibrary::
-    TransformUnrealToLongLatHeightUsingDefaultGeoref(const FVector& Ue) {
-  return TransformUnrealToLongLatHeight(Ue, GetDefaultGeoref());
+    TransformUnrealToLongLatHeightUsingDefaultGeoref(
+        const UObject* WorldContextObject,
+        const FVector& UeLocation) {
+  return TransformUnrealToLongLatHeight(
+      UeLocation,
+      _getDefaultGeoref(WorldContextObject));
 }
 
 FVector UCesiumGeospatialBlueprintLibrary::TransformLongLatHeightToEcef(
@@ -102,12 +114,13 @@ FRotator UCesiumGeospatialBlueprintLibrary::TransformRotatorEastNorthUpToUnreal(
 
 FRotator UCesiumGeospatialBlueprintLibrary::
     TransformRotatorEastNorthUpToUnrealUsingDefaultGeoref(
+        const UObject* WorldContextObject,
         const FRotator& EnuRotator,
         const FVector& UeLocation) {
   return TransformRotatorEastNorthUpToUnreal(
       EnuRotator,
       UeLocation,
-      GetDefaultGeoref());
+      _getDefaultGeoref(WorldContextObject));
 }
 
 FRotator UCesiumGeospatialBlueprintLibrary::TransformRotatorUnrealToEastNorthUp(
@@ -136,16 +149,17 @@ FRotator UCesiumGeospatialBlueprintLibrary::TransformRotatorUnrealToEastNorthUp(
 
 FRotator UCesiumGeospatialBlueprintLibrary::
     TransformRotatorUnrealToEastNorthUpUsingDefaultGeoref(
+        const UObject* WorldContextObject,
         const FRotator& UeRotator,
         const FVector& UeLocation) {
   return TransformRotatorUnrealToEastNorthUp(
       UeRotator,
       UeLocation,
-      GetDefaultGeoref());
+      _getDefaultGeoref(WorldContextObject));
 }
 
 FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToUnreal(
-    const FVector& Ue,
+    const FVector& UeLocation,
     ACesiumGeoreference* Georef) {
 
   if (!IsValid(Georef)) {
@@ -158,7 +172,7 @@ FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToUnreal(
 
   const glm::dmat3& enuToUnreal =
       UCesiumGeospatialLibrary::ComputeEastNorthUpToUnreal(
-          VecMath::createVector3D(Ue),
+          VecMath::createVector3D(UeLocation),
           Georef->GetUnrealWorldToEllipsoidCenteredTransform(),
           VecMath::createVector3D(Georef->GetWorld()->OriginLocation),
           Georef->GetEllipsoidCenteredToGeoreferencedTransform());
@@ -168,8 +182,9 @@ FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToUnreal(
 
 FMatrix
 UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToUnrealUsingDefaultGeoref(
-    const FVector& Ue) {
-  return ComputeEastNorthUpToUnreal(Ue, GetDefaultGeoref());
+    const UObject* WorldContextObject,
+    const FVector& UeLocation) {
+  return ComputeEastNorthUpToUnreal(UeLocation, _getDefaultGeoref(WorldContextObject));
 }
 
 FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToEcef(
