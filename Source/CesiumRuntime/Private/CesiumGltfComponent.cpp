@@ -920,8 +920,6 @@ static void loadPrimitive(
       LODResources.VertexBuffers.ColorVertexBuffer;
   if (hasVertexColors) {
     ColorVertexBuffer.Init(StaticMeshBuildVertices);
-  } else if (indices.Num() > 0) {
-    ColorVertexBuffer.InitFromSingleColor(FColor::White, indices.Num());
   }
 
   LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
