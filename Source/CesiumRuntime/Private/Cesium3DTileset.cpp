@@ -697,7 +697,11 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::TilesetOptions options;
+  // TODO: figure out why water material crashes mac
+#if PLATFORM_MAC
+#else
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
+#endif
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
