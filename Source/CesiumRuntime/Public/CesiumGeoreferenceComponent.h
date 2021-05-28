@@ -51,16 +51,31 @@ public:
   bool FixTransformOnOriginRebase = true;
 
   /**
-   * The WGS84 longitude in degrees of this actor.
+   * Using the teleport flag will move objects to the updated transform
+   * immediately and without affecting their velocity. This is useful when
+   * working with physics actors that maintain an internal velocity which we do
+   * not want to change when updating location.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double Longitude = 0.0;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool TeleportWhenUpdatingTransform = true;
 
   /**
-   * The WGS84 latitude in degrees of this actor.
+   * The WGS84 latitude in degrees of this actor, in the range [-90, 90]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
+
+  /**
+   * The WGS84 longitude in degrees of this actor, in the range [-180, 180]
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
+  double Longitude = 0.0;
 
   /**
    * The height in meters (above the WGS84 ellipsoid) of this actor.
