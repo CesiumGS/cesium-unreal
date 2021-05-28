@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeospatialBlueprintLibrary.h"
 
@@ -6,6 +6,8 @@
 #include "CesiumRuntime.h"
 #include "Engine/World.h"
 #include "VecMath.h"
+
+TWeakObjectPtr<ACesiumGeoreference> UCesiumGeospatialBlueprintLibrary::_defaultGeorefPtr;
 
 ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::_getDefaultGeoref(
     const UObject* WorldContextObject) {
