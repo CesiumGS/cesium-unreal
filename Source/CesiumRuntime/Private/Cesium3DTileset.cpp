@@ -76,6 +76,8 @@ ACesium3DTileset::ACesium3DTileset()
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->RootComponent->SetMobility(EComponentMobility::Static);
+
+  PlatformName = UGameplayStatics::GetPlatformName();
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }

@@ -13,6 +13,7 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -324,7 +325,8 @@ private:
       EditAnywhere,
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
-      Category = "Cesium|Rendering")
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
   bool EnableWaterMask = false;
 
   /**
@@ -372,6 +374,10 @@ private:
       BlueprintSetter = SetOpacityMaskMaterial,
       Category = "Cesium|Rendering")
   UMaterialInterface* OpacityMaskMaterial = nullptr;
+
+protected:
+  UPROPERTY()
+  FString PlatformName;
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
