@@ -632,9 +632,24 @@ private:
 };
 
 static std::string getCacheDatabaseName() {
+  // On Android, EngineUserDir returns a "fake" directory. UE's IPlatformFile
+  // knows how to resolve it, but we can't pass it to cesium-native because
+  // cesium-native expects a real path. IAndroidPlatformFile::FileRootPath
+  // looks like it should be able to resolve it for us, but that's difficult
+  // to call from here.
+
+  // At the same time, apps on Android are isolated from each other and so we
+  // can't really share a cache between them anyway. So we store the cache in a
+  // different directory on Android.
+#if PLATFORM_ANDROID
+  FString baseDirectory = FPaths::ProjectPersistentDownloadDir();
+#else
   FString baseDirectory = FPaths::EngineUserDir();
+#endif
+
   FString filename =
       FPaths::Combine(baseDirectory, TEXT("cesium-request-cache.sqlite"));
+  UE_LOG(LogCesium, Verbose, TEXT("Caching Cesium requests in %s"), *filename);
   return TCHAR_TO_UTF8(*filename);
 }
 

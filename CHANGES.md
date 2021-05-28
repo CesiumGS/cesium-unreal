@@ -4,6 +4,7 @@
 
 ##### Additions  :tada:
 
+- Added support for the Android platform.
 - Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
 - Improved property change checks in `Cesium3DTileset::LoadTileset`.
 - Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
@@ -20,11 +21,13 @@
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
 - Cleaned up, standardized, and commented material and material functions.
 - Moved all materials and material functions to the `Materials` subfolder.
-- Set CesiumSunSky's directional light intensity to a more physically accurate value
+- Set CesiumSunSky's directional light intensity to a more physically accurate value.
+- Moved Latitude before Longitude on the `CesiumGeoreference` and `CesiumGeoreferenceComponent` Details panels.
 
 ##### Breaking :x:
 
 - Tileset properties that require a tileset reload (URL, Source, IonAssetID, IonAccessToken, Materials) have been moved to `private`. Setter and getter methods are now provided for modifying them in Blueprints and C++.
+- Deprecated `CesiumGlobeAnchorParent` and `FloatingPawn`. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGeoreferenceComponent`. The `FloatingPawn` is now replaced by the `DynamicPawn`. In a future release, the `DynamicPawn` will be renamed to `CesiumFloatingPawn`.
 
 
 ### v1.2.1 - 2021-05-13
