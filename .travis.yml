@@ -166,14 +166,14 @@ jobs:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
-    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-android-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip .
     - mkdir -p build/package
     - cd build/package
     - unzip ../../CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip
-    - unzip -o ../../CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-android-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip
     - zip -r CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
     - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
