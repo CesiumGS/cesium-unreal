@@ -27,6 +27,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
+#include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
