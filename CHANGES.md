@@ -20,7 +20,8 @@
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
 - Cleaned up, standardized, and commented material and material functions.
 - Moved all materials and material functions to the `Materials` subfolder.
-- Set CesiumSunSky's directional light intensity to a more physically accurate value
+- Set CesiumSunSky's directional light intensity to a more physically accurate value.
+- Moved Latitude before Longitude on the `CesiumGeoreference` and `CesiumGeoreferenceComponent` Details panels.
 
 ##### Breaking :x:
 

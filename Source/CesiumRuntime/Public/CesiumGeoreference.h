@@ -196,20 +196,6 @@ public:
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
   /**
-   * The longitude of the custom origin placement in degrees, in the range
-   * [-180, 180]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta =
-          (EditCondition =
-               "OriginPlacement==EOriginPlacement::CartographicOrigin",
-           ClampMin = -180.0,
-           ClampMax = 180.0))
-  double OriginLongitude = -105.25737;
-
-  /**
    * The latitude of the custom origin placement in degrees, in the range [-90,
    * 90]
    */
@@ -222,6 +208,20 @@ public:
            ClampMin = -90.0,
            ClampMax = 90.0))
   double OriginLatitude = 39.736401;
+
+  /**
+   * The longitude of the custom origin placement in degrees, in the range
+   * [-180, 180]
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "OriginPlacement==EOriginPlacement::CartographicOrigin",
+           ClampMin = -180.0,
+           ClampMax = 180.0))
+  double OriginLongitude = -105.25737;
 
   /**
    * The height of the custom origin placement in meters above the WGS84
