@@ -6,6 +6,7 @@
 #include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "Components/SplineComponent.h"
+#include "Cesium3DTiles/CartographicSelection.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/Actor.h"
@@ -14,7 +15,8 @@
 #include "CesiumCartographicSelection.generated.h"
 
 /**
- *
+ * A spline-based selection actor used to rasterize 2D texture masks on top of 
+ * ACesium3DTileset actors.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API ACesiumCartographicSelection : public AActor {
@@ -33,6 +35,16 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   bool IsForCulling = true;
 
+  /**
+   * The target texture to rasterize the selection into.
+   * 
+   * This texture name is to be used later in the material to refer to the 
+   * rasterized selection. All other selections included on the tileset with
+   * the same texture name will end up rasterized in the same texture as well.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString TargetTexture = "Clipping";
+
   UPROPERTY()
   ACesiumGeoreference* Georeference;
 
@@ -44,11 +56,17 @@ public:
 
   virtual void OnConstruction(const FTransform& Transform) override;
 
+  /**
+   * Turn the current georeferenced spline selection into a list of 
+   * cartographic coordinates which can be used i
+   */
   void UpdateSelection();
 
-  const std::vector<glm::dvec2>& GetCartographicSelection() const {
-    return this->_cartographicSelection;
-  }
+  /**
+   * Creates and returns a Cesium3DTiles::CartographicSelection object out of
+   * the current spline selection.
+   */
+  Cesium3DTiles::CartographicSelection CreateCesiumCartographicSelection() const;
 
 protected:
   virtual void BeginPlay() override;

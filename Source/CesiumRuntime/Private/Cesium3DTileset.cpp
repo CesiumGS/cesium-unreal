@@ -691,9 +691,7 @@ void ACesium3DTileset::LoadTileset() {
     if (pCartographicSelection) {
       pCartographicSelection->UpdateSelection();
       options.cartographicSelections.push_back(
-          Cesium3DTiles::CartographicSelection(
-              pCartographicSelection->GetCartographicSelection(),
-              pCartographicSelection->IsForCulling));
+          pCartographicSelection->CreateCesiumCartographicSelection());
     }
   }
   options.contentOptions.enableWaterMask = this->EnableWaterMask;

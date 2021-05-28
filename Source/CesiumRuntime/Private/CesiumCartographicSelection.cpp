@@ -58,3 +58,11 @@ void ACesiumCartographicSelection::UpdateSelection() {
         glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
   }
 }
+
+Cesium3DTiles::CartographicSelection ACesiumCartographicSelection::CreateCesiumCartographicSelection() const {
+  return Cesium3DTiles::CartographicSelection(
+    TCHAR_TO_UTF8(*this->TargetTexture),
+    this->_cartographicSelection,
+    this->IsForCulling
+  );
+}
