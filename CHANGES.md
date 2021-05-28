@@ -15,6 +15,8 @@
 - Exposed all tileset materials to allow for changes in editor.
 - Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
 - Added teleport boolean property to CesiumGeoreferenceComponent.
+- Added a "Year" property to `CesiumSunSky`.
+- Added the ability to use an external Directional Light with `CesiumSunSky`, rather than the embedded DirectionalLight component.
 
 ##### Fixes :wrench:
 
