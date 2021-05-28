@@ -143,8 +143,8 @@ public:
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a "CesiumGlobeAnchorParent". Ensure that static actors only
-   * exist in georeferenced sublevels.
+   * or attached to a an actor with that component. Ensure that static actors
+   * only exist in georeferenced sublevels.
    */
   UFUNCTION(CallInEditor, Category = "CesiumSublevels")
   void JumpToCurrentLevel();
@@ -157,8 +157,7 @@ public:
    * Warning: Before changing, ensure the last level you worked on has been
    * properly georeferenced. Ensure all actors are georeferenced, either by
    * inclusion in a georeferenced sublevel, by adding the
-   * "CesiumGeoreferenceComponent", or by attaching to a
-   * "CesiumGlobeAnchorParent".
+   * "CesiumGeoreferenceComponent", or by attaching to an actor with one.
    */
   UPROPERTY(
       EditAnywhere,
@@ -261,7 +260,7 @@ public:
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a "CesiumGlobeAnchorParent". Ensure that static actors only
+   * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sublevels.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
