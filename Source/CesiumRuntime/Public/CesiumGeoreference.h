@@ -488,8 +488,8 @@ public:
    *
    * Gets a matrix that transforms coordinates from the "Georeference" reference
    * frame defined by this instance to the "Ellipsoid-centered" reference frame,
-   * which is usually Earth-centered, Earth-fixed. See {@link
-   * reference-frames.md}.
+   * which is usually Earth-centered, Earth-fixed. 
+   * See {@link reference-frames.md}.
    */
   const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const {
     return this->_georeferencedToEcef;
@@ -502,8 +502,8 @@ public:
    *
    * Gets a matrix that transforms coordinates from the "Ellipsoid-centered"
    * reference frame (which is usually Earth-centered, Earth-fixed) to the
-   * "Georeferenced" reference frame defined by this instance. See {@link
-   * reference-frames.md}.
+   * "Georeferenced" reference frame defined by this instance. 
+   * See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const {
     return this->_ecefToGeoreferenced;
