@@ -242,7 +242,8 @@ void ACesiumGeoreference::AddGeoreferencedObject(
   }
 
 #if ENGINE_MAJOR_VERSION == 5
-  this->_georeferencedObjects.Add(TWeakInterfacePtr<ICesiumGeoreferenceable>(Object));
+  this->_georeferencedObjects.Add(
+      TWeakInterfacePtr<ICesiumGeoreferenceable>(Object));
 #else
   this->_georeferencedObjects.Add(*Object);
 #endif

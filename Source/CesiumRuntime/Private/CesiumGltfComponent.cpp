@@ -1446,10 +1446,12 @@ static void loadModelGameThreadPart(
 
 #if ENGINE_MAJOR_VERSION == 5
   pStaticMesh->SetIsBuiltAtRuntime(true);
-  pStaticMesh->SetRenderData(TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(
+      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
 #else
   pStaticMesh->bIsBuiltAtRuntime = true;
-  pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+  pStaticMesh->RenderData =
+      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
 #endif
   pStaticMesh->NeverStream = true;
 
