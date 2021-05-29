@@ -65,7 +65,7 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 
 void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
   glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-      this->_actorToECEF[3]);
+      this->_actorToECEF[3], CesiumGeospatial::Ellipsoid::WGS84);
   this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium *
                        CesiumTransforms::unrealToOrFromCesium;
   ;
@@ -424,9 +424,9 @@ void UCesiumGeoreferenceComponent::_setECEF(
     // the poles
     glm::dmat4 startEcefToEnu = glm::affineInverse(
         CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-            this->_actorToECEF[3]));
+            this->_actorToECEF[3], CesiumGeospatial::Ellipsoid::WGS84));
     glm::dmat4 endEnuToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(targetEcef);
+        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(targetEcef, CesiumGeospatial::Ellipsoid::WGS84);
     this->_actorToECEF = endEnuToEcef * startEcefToEnu * this->_actorToECEF;
   }
 
