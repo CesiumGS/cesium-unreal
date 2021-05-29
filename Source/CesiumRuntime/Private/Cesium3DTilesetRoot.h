@@ -61,10 +61,6 @@ public:
    *   * `UWorld::OriginLocation`
    *   * The transformation from ellipsoid-centered to georeferenced
    * coordinates, as provided by `CesiumGeoreference`.
-   *
-   * @param newOriginLocation The updated World `OriginLocation`. If this is
-   * `std::nullopt`, the `OriginLocation` is obtained directly from the
-   * `UWorld`.
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
