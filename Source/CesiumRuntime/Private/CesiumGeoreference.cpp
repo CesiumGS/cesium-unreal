@@ -8,6 +8,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "VecMath.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -105,31 +106,11 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // TODO: optimize this, only need to transform the front direction and
   // translation
 
+  const FVector& viewLocation = pEditorViewportClient->GetViewLocation();
+  glm::dvec4 translation = VecMath::add4D(viewLocation, originLocation);
+
   // camera local space to Unreal absolute world
-  glm::dmat4 cameraToAbsolute(
-      glm::dvec4(
-          fCameraTransform.M[0][0],
-          fCameraTransform.M[0][1],
-          fCameraTransform.M[0][2],
-          0.0),
-      glm::dvec4(
-          fCameraTransform.M[1][0],
-          fCameraTransform.M[1][1],
-          fCameraTransform.M[1][2],
-          0.0),
-      glm::dvec4(
-          fCameraTransform.M[2][0],
-          fCameraTransform.M[2][1],
-          fCameraTransform.M[2][2],
-          0.0),
-      glm::dvec4(
-          static_cast<double>(fCameraTransform.M[3][0]) +
-              static_cast<double>(originLocation.X),
-          static_cast<double>(fCameraTransform.M[3][1]) +
-              static_cast<double>(originLocation.Y),
-          static_cast<double>(fCameraTransform.M[3][2]) +
-              static_cast<double>(originLocation.Z),
-          1.0));
+  glm::dmat4 cameraToAbsolute = VecMath::createMatrix4D(fCameraTransform, translation);
 
   // camera local space to ECEF
   glm::dmat4 cameraToECEF = this->_ueAbsToEcef * cameraToAbsolute;
@@ -150,11 +131,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
       glm::degrees(targetGeoreferenceOrigin->latitude),
       targetGeoreferenceOrigin->height);
 
-  glm::dmat4 absoluteToRelativeWorld(
-      glm::dvec4(1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 1.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(-originLocation.X, -originLocation.Y, -originLocation.Z, 1.0));
+  glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
+      -originLocation.X, -originLocation.Y, -originLocation.Z, 1.0);
 
   // TODO: check for degeneracy ?
   glm::dmat4 newCameraTransform =
@@ -451,14 +429,7 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
 
   FVector grabbedLocation = mouseRayResults.Location;
   // convert from UE to ECEF to LongitudeLatitudeHeight
-  glm::dvec4 grabbedLocationAbs(
-      static_cast<double>(grabbedLocation.X) +
-          static_cast<double>(originLocation.X),
-      static_cast<double>(grabbedLocation.Y) +
-          static_cast<double>(originLocation.Y),
-      static_cast<double>(grabbedLocation.Z) +
-          static_cast<double>(originLocation.Z),
-      1.0);
+  glm::dvec4 grabbedLocationAbs = VecMath::add4D(grabbedLocation, originLocation);
 
   glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
   std::optional<CesiumGeospatial::Cartographic> optCartographic =
@@ -515,14 +486,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
 
-  glm::dvec4 cameraAbsolute(
-      static_cast<double>(cameraLocation.X) +
-          static_cast<double>(originLocation.X),
-      static_cast<double>(cameraLocation.Y) +
-          static_cast<double>(originLocation.Y),
-      static_cast<double>(cameraLocation.Z) +
-          static_cast<double>(originLocation.Z),
-      1.0);
+  glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
 
   glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
 
@@ -637,10 +601,7 @@ glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-      longitudeLatitudeHeight.X,
-      longitudeLatitudeHeight.Y,
-      longitudeLatitudeHeight.Z));
+  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
@@ -676,10 +637,7 @@ glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUe(
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUe(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(glm::dvec3(
-      longitudeLatitudeHeight.X,
-      longitudeLatitudeHeight.Y,
-      longitudeLatitudeHeight.Z));
+  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ue.x, ue.y, ue.z);
 }
 
@@ -692,7 +650,7 @@ glm::dvec3 ACesiumGeoreference::TransformUeToLongitudeLatitudeHeight(
 FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
     const FVector& ue) const {
   glm::dvec3 llh =
-      this->TransformUeToLongitudeLatitudeHeight(glm::dvec3(ue.X, ue.Y, ue.Z));
+      this->TransformUeToLongitudeLatitudeHeight(VecMath::createVector3D(ue));
   return FVector(llh.x, llh.y, llh.z);
 }
 
@@ -701,8 +659,7 @@ ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
   glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  return ueAbs -
-         glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
+  return ueAbs - VecMath::createVector3D(originLocation);
 }
 
 FVector
@@ -721,6 +678,7 @@ glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
     return ue;
   }
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+
   glm::dvec4 ueAbs(
       ue.x + static_cast<double>(originLocation.X),
       ue.y + static_cast<double>(originLocation.Y),
@@ -739,13 +697,7 @@ FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
     const FRotator& UERotator,
     const glm::dvec3& ueLocation) const {
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector::ZeroVector);
-
+  FMatrix enuAdjustmentMatrix = VecMath::createMatrix(enuToFixedUE);
   return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
 }
 
@@ -761,14 +713,8 @@ FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
     const FRotator& ENURotator,
     const glm::dvec3& ueLocation) const {
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector::ZeroVector);
-
+  FMatrix enuAdjustmentMatrix = VecMath::createMatrix(enuToFixedUE);
   FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-
   return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
 }
 
@@ -798,12 +744,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
     const FVector& ue) const {
   glm::dmat3 enuToUnreal =
       this->ComputeEastNorthUpToUnreal(glm::dvec3(ue.X, ue.Y, ue.Z));
-
-  return FMatrix(
-      FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
-      FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
-      FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
-      FVector::ZeroVector);
+  return VecMath::createMatrix(enuToUnreal);
 }
 
 glm::dmat3
@@ -816,12 +757,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
     const FVector& ecef) const {
   glm::dmat3 enuToEcef =
       this->ComputeEastNorthUpToEcef(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
-
-  return FMatrix(
-      FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
-      FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
-      FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
-      FVector::ZeroVector);
+  return VecMath::createMatrix(enuToEcef);
 }
 
 /**
