@@ -20,7 +20,9 @@
 #else
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
+#if ENGINE_MAJOR_VERSION == 4
 #include "ChaosDerivedDataUtil.h"
+#endif
 #endif
 #include "Cesium3DTiles/RasterOverlayTile.h"
 #include "CesiumGeometry/Axis.h"
@@ -926,8 +928,13 @@ static void loadPrimitive(
       StaticMeshBuildVertices,
       textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
 
+#if ENGINE_MAJOR_VERSION == 5
+  FStaticMeshSectionArray& Sections = LODResources.Sections;
+#else
   FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
       LODResources.Sections;
+#endif
+
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
   section.bEnableCollision = true;
 
@@ -954,7 +961,9 @@ static void loadPrimitive(
   LODResources.bHasDepthOnlyIndices = false;
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
+#if ENGINE_MAJOR_VERSION < 5
   LODResources.bHasAdjacencyInfo = false;
+#endif
 
   primitiveResult.pModel = &model;
   primitiveResult.RenderData = RenderData;
@@ -1435,10 +1444,14 @@ static void loadModelGameThreadPart(
       NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
   pMesh->SetStaticMesh(pStaticMesh);
 
+#if ENGINE_MAJOR_VERSION == 5
+  pStaticMesh->SetIsBuiltAtRuntime(true);
+  pStaticMesh->SetRenderData(TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+#else
   pStaticMesh->bIsBuiltAtRuntime = true;
+  pStaticMesh->RenderData = TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+#endif
   pStaticMesh->NeverStream = true;
-  pStaticMesh->RenderData =
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
 
   const CesiumGltf::Model& model = *loadResult.pModel;
   const CesiumGltf::Material& material =
@@ -1550,7 +1563,11 @@ static void loadModelGameThreadPart(
   // Set up RenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
 
+#if ENGINE_MAJOR_VERSION == 5
+  pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+#else
   pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
+#endif
   pStaticMesh->CreateBodySetup();
 
   // pMesh->UpdateCollisionFromStaticMesh();
