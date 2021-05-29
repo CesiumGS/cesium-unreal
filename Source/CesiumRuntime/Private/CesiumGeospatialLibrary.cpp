@@ -42,7 +42,7 @@ glm::dvec3 UCesiumGeospatialLibrary::TransformLongLatHeightToEcef(
 glm::dvec3
 UCesiumGeospatialLibrary::TransformEcefToLongLatHeight(const glm::dvec3& Ecef) {
   std::optional<CesiumGeospatial::Cartographic> llh =
-      CesiumGeospatial::_ellipsoid.cartesianToCartographic(Ecef);
+      _ellipsoid.cartesianToCartographic(Ecef);
   if (!llh) {
     // TODO: since degenerate cases only happen close to Earth's center
     // would it make more sense to assign an arbitrary but correct LLH
