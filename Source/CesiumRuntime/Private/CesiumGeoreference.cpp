@@ -343,7 +343,7 @@ void ACesiumGeoreference::UpdateGeoreference() {
     }
 
     this->_georeferencedToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, CesiumGeospatial::Ellipsoid::WGS84);
   }
 
   // update ECEF -> georeferenced
@@ -809,7 +809,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
   return glm::dmat3(
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef));
+      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef, CesiumGeospatial::Ellipsoid::WGS84));
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(

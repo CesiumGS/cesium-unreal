@@ -7,6 +7,8 @@
 #include <CesiumGeospatial/Transforms.h>
 #include <glm/trigonometric.hpp>
 
+CesiumGeospatial::Ellipsoid UCesiumGeospatialLibrary::_ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
+
 glm::dvec3 UCesiumGeospatialLibrary::TransformLongLatHeightToUnreal(
     const glm::dvec3& LongLatHeight,
     const glm::dmat4& EcefToUeAbsoluteWorld,
@@ -30,7 +32,7 @@ glm::dvec3 UCesiumGeospatialLibrary::TransformUnrealToLongLatHeight(
 
 glm::dvec3 UCesiumGeospatialLibrary::TransformLongLatHeightToEcef(
     const glm::dvec3& LongLatHeight) {
-  return CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+  return _ellipsoid.cartographicToCartesian(
       CesiumGeospatial::Cartographic::fromDegrees(
           LongLatHeight.x,
           LongLatHeight.y,
@@ -40,7 +42,7 @@ glm::dvec3 UCesiumGeospatialLibrary::TransformLongLatHeightToEcef(
 glm::dvec3
 UCesiumGeospatialLibrary::TransformEcefToLongLatHeight(const glm::dvec3& Ecef) {
   std::optional<CesiumGeospatial::Cartographic> llh =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(Ecef);
+      CesiumGeospatial::_ellipsoid.cartesianToCartographic(Ecef);
   if (!llh) {
     // TODO: since degenerate cases only happen close to Earth's center
     // would it make more sense to assign an arbitrary but correct LLH
@@ -108,7 +110,7 @@ glm::dmat3 UCesiumGeospatialLibrary::ComputeEastNorthUpToUnreal(
 glm::dmat3
 UCesiumGeospatialLibrary::ComputeEastNorthUpToEcef(const glm::dvec3& Ecef) {
   return glm::dmat3(
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(Ecef));
+      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(Ecef, _ellipsoid));
 }
 
 glm::dvec3 UCesiumGeospatialLibrary::TransformEcefToUnreal(

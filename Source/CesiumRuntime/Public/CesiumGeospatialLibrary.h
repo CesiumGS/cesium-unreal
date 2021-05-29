@@ -145,7 +145,6 @@ public:
    */
   static glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& Ecef);
 
-public:
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
    * Unreal relative world (relative to the floating origin).
@@ -175,4 +174,7 @@ public:
       const glm::dvec3& UeLocation,
       const glm::dmat4& UeAbsoluteWorldToEcef,
       const glm::dvec3& UeOriginLocation);
+
+private:
+  static CesiumGeospatial::Ellipsoid _ellipsoid;
 };
