@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+
+#include "CesiumGeospatial/Ellipsoid.h"
+
 #include <glm/mat3x3.hpp>
 
 #include "CesiumGeospatialLibrary.generated.h"
