@@ -282,46 +282,54 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
   this->UpdateGeoreference();
 }
 
+namespace {
+  glm::dvec3 computeAverageCenter(const TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>>& boundingVolumeProviders)
+  {
+    glm::dvec3 center(0.0, 0.0, 0.0);
+
+    // TODO: it'd be better to compute the union of the bounding volumes and
+    // then use the union's center,
+    //       rather than averaging the centers.
+    size_t numberOfPositions = 0;
+
+    for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
+          boundingVolumeProviders) {
+      if (pObject.IsValid()) {
+        std::optional<Cesium3DTiles::BoundingVolume> bv =
+            pObject->GetBoundingVolume();
+        if (bv) {
+          center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
+          ++numberOfPositions;
+        }
+      }
+    }
+
+    if (numberOfPositions > 0) {
+      center /= numberOfPositions;
+    }
+    return center;
+  }
+}
+
+
 void ACesiumGeoreference::UpdateGeoreference() {
   // update georeferenced -> ECEF
   if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
     this->_georeferencedToEcef = glm::dmat4(1.0);
-  } else {
-    glm::dvec3 center(0.0, 0.0, 0.0);
-
-    if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-      // TODO: it'd be better to compute the union of the bounding volumes and
-      // then use the union's center,
-      //       rather than averaging the centers.
-      size_t numberOfPositions = 0;
-
-      for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
-           this->_boundingVolumeProviders) {
-        if (pObject.IsValid()) {
-          std::optional<Cesium3DTiles::BoundingVolume> bv =
-              pObject->GetBoundingVolume();
-          if (bv) {
-            center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
-            ++numberOfPositions;
-          }
-        }
-      }
-
-      if (numberOfPositions > 0) {
-        center /= numberOfPositions;
-      }
-    } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-      const CesiumGeospatial::Ellipsoid& ellipsoid =
-          CesiumGeospatial::Ellipsoid::WGS84;
-      center = ellipsoid.cartographicToCartesian(
-          CesiumGeospatial::Cartographic::fromDegrees(
-              this->OriginLongitude,
-              this->OriginLatitude,
-              this->OriginHeight));
-    }
-
+  } else if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
+    glm::dvec3 center = computeAverageCenter(this->_boundingVolumeProviders);
     this->_georeferencedToEcef =
         CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, CesiumGeospatial::Ellipsoid::WGS84);
+  } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+    const CesiumGeospatial::Ellipsoid& ellipsoid =
+        CesiumGeospatial::Ellipsoid::WGS84;
+    glm::dvec3 center = ellipsoid.cartographicToCartesian(
+        CesiumGeospatial::Cartographic::fromDegrees(
+            this->OriginLongitude,
+            this->OriginLatitude,
+            this->OriginHeight));
+    this->_georeferencedToEcef =
+        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, ellipsoid);
   }
 
   // update ECEF -> georeferenced
