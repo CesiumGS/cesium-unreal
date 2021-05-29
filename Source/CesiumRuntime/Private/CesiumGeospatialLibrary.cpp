@@ -7,7 +7,8 @@
 #include <CesiumGeospatial/Transforms.h>
 #include <glm/trigonometric.hpp>
 
-CesiumGeospatial::Ellipsoid UCesiumGeospatialLibrary::_ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
+CesiumGeospatial::Ellipsoid UCesiumGeospatialLibrary::_ellipsoid =
+    CesiumGeospatial::Ellipsoid::WGS84;
 
 glm::dvec3 UCesiumGeospatialLibrary::TransformLongLatHeightToUnreal(
     const glm::dvec3& LongLatHeight,

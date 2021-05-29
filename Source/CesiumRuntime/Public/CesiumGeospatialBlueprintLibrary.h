@@ -114,8 +114,9 @@ public:
    * coordinate system.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium Geospatial")
-  static FMatrix
-  ComputeEastNorthUpToUnreal(const FVector& UeLocation, ACesiumGeoreference* Georef);
+  static FMatrix ComputeEastNorthUpToUnreal(
+      const FVector& UeLocation,
+      ACesiumGeoreference* Georef);
 
   UFUNCTION(
       BlueprintCallable,

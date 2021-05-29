@@ -7,7 +7,8 @@
 #include "Engine/World.h"
 #include "VecMath.h"
 
-TWeakObjectPtr<ACesiumGeoreference> UCesiumGeospatialBlueprintLibrary::_defaultGeorefPtr;
+TWeakObjectPtr<ACesiumGeoreference>
+    UCesiumGeospatialBlueprintLibrary::_defaultGeorefPtr;
 
 ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::_getDefaultGeoref(
     const UObject* WorldContextObject) {
@@ -186,7 +187,9 @@ FMatrix
 UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToUnrealUsingDefaultGeoref(
     const UObject* WorldContextObject,
     const FVector& UeLocation) {
-  return ComputeEastNorthUpToUnreal(UeLocation, _getDefaultGeoref(WorldContextObject));
+  return ComputeEastNorthUpToUnreal(
+      UeLocation,
+      _getDefaultGeoref(WorldContextObject));
 }
 
 FMatrix UCesiumGeospatialBlueprintLibrary::ComputeEastNorthUpToEcef(

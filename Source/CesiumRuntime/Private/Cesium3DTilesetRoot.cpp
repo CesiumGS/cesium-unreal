@@ -3,8 +3,8 @@
 #include "Cesium3DTilesetRoot.h"
 #include "Cesium3DTileset.h"
 #include "CesiumUtility/Math.h"
-#include "VecMath.h"
 #include "Engine/World.h"
+#include "VecMath.h"
 
 UCesium3DTilesetRoot::UCesium3DTilesetRoot()
     : _worldOriginLocation(0.0),
@@ -95,8 +95,9 @@ void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
 
   FMatrix tilesetActorToUeLocal =
       this->GetComponentToWorld().ToMatrixWithScale();
-  glm::dmat4 ueAbsoluteToUeLocal = VecMath::createMatrix4D(tilesetActorToUeLocal, relativeLocation);
-    
+  glm::dmat4 ueAbsoluteToUeLocal =
+      VecMath::createMatrix4D(tilesetActorToUeLocal, relativeLocation);
+
   this->_tilesetToUnrealRelativeWorld =
       ueAbsoluteToUeLocal * ellipsoidCenteredToUnrealWorld;
 

@@ -206,8 +206,9 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   struct CalculateECEFCameraPosition {
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
-      glm::dmat4 ENU =
-          CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, CesiumGeospatial::Ellipsoid::WGS84);
+      glm::dmat4 ENU = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
+          center,
+          CesiumGeospatial::Ellipsoid::WGS84);
       glm::dvec3 offset =
           sphere.getRadius() * glm::normalize(ENU[0] + ENU[1] + ENU[2]);
       glm::dvec3 position = center + offset;
@@ -217,8 +218,9 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     glm::dvec3
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
-      glm::dmat4 ENU =
-          CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, CesiumGeospatial::Ellipsoid::WGS84);
+      glm::dmat4 ENU = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
+          center,
+          CesiumGeospatial::Ellipsoid::WGS84);
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset = glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
                           glm::normalize(ENU[0] + ENU[1] + ENU[2]);

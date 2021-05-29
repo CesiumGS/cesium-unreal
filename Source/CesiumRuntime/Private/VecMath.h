@@ -164,18 +164,18 @@ public:
    * @param v The `glm` vector.
    * @return The `FVector`.
    *
-   */ 
+   */
   static FVector createVector(const glm::dvec4& v) noexcept;
 
   /**
-  * @brief Create an `FVector` from the given `glm` 3D vector.
-  *
-  * @param v The `glm` vector.
-  * @return The `FVector`.
-  *
-  */ 
+   * @brief Create an `FVector` from the given `glm` 3D vector.
+   *
+   * @param v The `glm` vector.
+   * @return The `FVector`.
+   *
+   */
   static FVector createVector(const glm::dvec3& v) noexcept;
-  
+
   /**
    * @brief Create a `FRotator` from the given `glm` matrix.
    *

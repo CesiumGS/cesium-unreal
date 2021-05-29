@@ -8,7 +8,6 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
-#include "VecMath.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -19,6 +18,7 @@
 #include "Misc/PackageName.h"
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
+#include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <optional>
@@ -110,7 +110,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   glm::dvec4 translation = VecMath::add4D(viewLocation, originLocation);
 
   // camera local space to Unreal absolute world
-  glm::dmat4 cameraToAbsolute = VecMath::createMatrix4D(fCameraTransform, translation);
+  glm::dmat4 cameraToAbsolute =
+      VecMath::createMatrix4D(fCameraTransform, translation);
 
   // camera local space to ECEF
   glm::dmat4 cameraToECEF = this->_ueAbsToEcef * cameraToAbsolute;
@@ -132,7 +133,10 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
       targetGeoreferenceOrigin->height);
 
   glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
-      -originLocation.X, -originLocation.Y, -originLocation.Z, 1.0);
+      -originLocation.X,
+      -originLocation.Y,
+      -originLocation.Z,
+      1.0);
 
   // TODO: check for degeneracy ?
   glm::dmat4 newCameraTransform =
@@ -283,34 +287,34 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 }
 
 namespace {
-  glm::dvec3 computeAverageCenter(const TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>>& boundingVolumeProviders)
-  {
-    glm::dvec3 center(0.0, 0.0, 0.0);
+glm::dvec3 computeAverageCenter(
+    const TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>>&
+        boundingVolumeProviders) {
+  glm::dvec3 center(0.0, 0.0, 0.0);
 
-    // TODO: it'd be better to compute the union of the bounding volumes and
-    // then use the union's center,
-    //       rather than averaging the centers.
-    size_t numberOfPositions = 0;
+  // TODO: it'd be better to compute the union of the bounding volumes and
+  // then use the union's center,
+  //       rather than averaging the centers.
+  size_t numberOfPositions = 0;
 
-    for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
-          boundingVolumeProviders) {
-      if (pObject.IsValid()) {
-        std::optional<Cesium3DTiles::BoundingVolume> bv =
-            pObject->GetBoundingVolume();
-        if (bv) {
-          center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
-          ++numberOfPositions;
-        }
+  for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
+       boundingVolumeProviders) {
+    if (pObject.IsValid()) {
+      std::optional<Cesium3DTiles::BoundingVolume> bv =
+          pObject->GetBoundingVolume();
+      if (bv) {
+        center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
+        ++numberOfPositions;
       }
     }
-
-    if (numberOfPositions > 0) {
-      center /= numberOfPositions;
-    }
-    return center;
   }
-}
 
+  if (numberOfPositions > 0) {
+    center /= numberOfPositions;
+  }
+  return center;
+}
+} // namespace
 
 void ACesiumGeoreference::UpdateGeoreference() {
   // update georeferenced -> ECEF
@@ -319,7 +323,9 @@ void ACesiumGeoreference::UpdateGeoreference() {
   } else if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
     glm::dvec3 center = computeAverageCenter(this->_boundingVolumeProviders);
     this->_georeferencedToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, CesiumGeospatial::Ellipsoid::WGS84);
+        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
+            center,
+            CesiumGeospatial::Ellipsoid::WGS84);
   } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     const CesiumGeospatial::Ellipsoid& ellipsoid =
         CesiumGeospatial::Ellipsoid::WGS84;
@@ -329,7 +335,9 @@ void ACesiumGeoreference::UpdateGeoreference() {
             this->OriginLatitude,
             this->OriginHeight));
     this->_georeferencedToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center, ellipsoid);
+        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
+            center,
+            ellipsoid);
   }
 
   // update ECEF -> georeferenced
@@ -437,7 +445,8 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
 
   FVector grabbedLocation = mouseRayResults.Location;
   // convert from UE to ECEF to LongitudeLatitudeHeight
-  glm::dvec4 grabbedLocationAbs = VecMath::add4D(grabbedLocation, originLocation);
+  glm::dvec4 grabbedLocationAbs =
+      VecMath::add4D(grabbedLocation, originLocation);
 
   glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
   std::optional<CesiumGeospatial::Cartographic> optCartographic =
@@ -609,7 +618,8 @@ glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(VecMath::createVector3D(longitudeLatitudeHeight));
+  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(
+      VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
@@ -645,7 +655,8 @@ glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUe(
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUe(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(VecMath::createVector3D(longitudeLatitudeHeight));
+  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(
+      VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ue.x, ue.y, ue.z);
 }
 
@@ -757,8 +768,9 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
-  return glm::dmat3(
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef, CesiumGeospatial::Ellipsoid::WGS84));
+  return glm::dmat3(CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
+      ecef,
+      CesiumGeospatial::Ellipsoid::WGS84));
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
