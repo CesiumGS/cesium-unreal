@@ -387,9 +387,9 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
   pTileset->SetActorLabel(UTF8_TO_TCHAR(item->name.c_str()));
-  pTileset->IonAssetID = item->id;
-  pTileset->IonAccessToken = UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
+  pTileset->SetIonAssetID(item->id);
+  pTileset->SetIonAccessToken(UTF8_TO_TCHAR(
+      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
 
   pTileset->RerunConstructionScripts();
 }

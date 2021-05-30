@@ -2,34 +2,45 @@
 
 #pragma once
 
+#include "CesiumGeoreferenceComponent.h"
 #include "GameFramework/Actor.h"
 
 #include "CesiumGlobeAnchorParent.generated.h"
 
 /**
+ * DEPRECATED: Please create an empty actor, add a
+ * CesiumGeoreferenceComponent, and attach child actors to mimic the
+ * functionality of this class.
+ *
  * This actor defines a local East-South-Up reference frame in centimeters
  * wherever on the globe it is placed. Actors can be attached as children of
  * this actor and operate in the local space. This local reference frame is
  * automatically georeferenced to the globe and its location will be precisely
  * maintained. Note: all children actors must be movable.
  */
-UCLASS()
-class CESIUMRUNTIME_API ACesiumGlobeAnchorParent : public AActor {
+UCLASS(Deprecated)
+class CESIUMRUNTIME_API ADEPRECATED_CesiumGlobeAnchorParent : public AActor {
   GENERATED_BODY()
 
 public:
-  ACesiumGlobeAnchorParent();
+  ADEPRECATED_CesiumGlobeAnchorParent();
 
   /**
-   * The WGS84 longitude in degrees of this actor.
+   * The WGS84 longitude in degrees of this actor, in the range [-180, 180]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
   /**
-   * The WGS84 latitude in degrees of this actor.
+   * The WGS84 latitude in degrees of this actor, in the range [-90, 90]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
   /**

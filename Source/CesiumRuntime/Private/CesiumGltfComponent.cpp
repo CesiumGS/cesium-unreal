@@ -221,7 +221,7 @@ static void mikkSetTSpaceBasic(
 }
 
 static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
-  SMikkTSpaceInterface MikkTInterface;
+  SMikkTSpaceInterface MikkTInterface{};
   MikkTInterface.m_getNormal = mikkGetNormal;
   MikkTInterface.m_getNumFaces = mikkGetNumFaces;
   MikkTInterface.m_getNumVerticesOfFace = mikkGetNumVertsOfFace;
@@ -230,10 +230,10 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   MikkTInterface.m_setTSpaceBasic = mikkSetTSpaceBasic;
   MikkTInterface.m_setTSpace = nullptr;
 
-  SMikkTSpaceContext MikkTContext;
+  SMikkTSpaceContext MikkTContext{};
   MikkTContext.m_pInterface = &MikkTInterface;
   MikkTContext.m_pUserData = (void*)(&vertices);
-  MikkTContext.m_bIgnoreDegenerates = false;
+  // MikkTContext.m_bIgnoreDegenerates = false;
   genTangSpaceDefault(&MikkTContext);
 }
 
@@ -920,8 +920,6 @@ static void loadPrimitive(
       LODResources.VertexBuffers.ColorVertexBuffer;
   if (hasVertexColors) {
     ColorVertexBuffer.Init(StaticMeshBuildVertices);
-  } else if (indices.Num() > 0) {
-    ColorVertexBuffer.InitFromSingleColor(FColor::White, indices.Num());
   }
 
   LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
@@ -1609,7 +1607,9 @@ UCesiumGltfComponent::CreateOffGameThread(
     AActor* pParentActor,
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
-    UMaterialInterface* pBaseMaterial) {
+    UMaterialInterface* pBaseMaterial,
+    UMaterialInterface* pBaseWaterMaterial,
+    UMaterialInterface* pBaseOpacityMaterial) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -1623,6 +1623,14 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   if (pBaseMaterial) {
     Gltf->BaseMaterial = pBaseMaterial;
+  }
+
+  if (pBaseWaterMaterial) {
+    Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
+  }
+
+  if (pBaseOpacityMaterial) {
+    Gltf->OpacityMaskMaterial = pBaseOpacityMaterial;
   }
 
   for (LoadModelResult& model : result) {
@@ -1641,11 +1649,11 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlays.GltfMaterialWithOverlays")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/GltfMaterialWithOverlaysAndWater.GltfMaterialWithOverlaysAndWater")),
+              "/CesiumForUnreal/Materials/M_CesiumOverlayWater.M_CesiumOverlayWater")),
           OpacityMaskMaterial(TEXT(
-              "/CesiumForUnreal/GltfMaterialOpacityMask.GltfMaterialOpacityMask")) {
+              "/CesiumForUnreal/Materials/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
     }
   };
   static FConstructorStatics ConstructorStatics;

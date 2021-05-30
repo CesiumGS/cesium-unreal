@@ -52,15 +52,22 @@ struct FCesiumSubLevel {
 
   /**
    * The WGS84 longitude in degrees of where this level should sit on the
-   * globe.
+   * globe, in the range [-180, 180]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
   double LevelLongitude = 0.0;
 
   /**
-   * The WGS84 latitude in degrees of where this level should sit on the globe.
+   * The WGS84 latitude in degrees of where this level should sit on the globe,
+   * in the range [-90, 90]
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -90.0, ClampMax = 90.0))
   double LevelLatitude = 0.0;
 
   /**
@@ -73,7 +80,7 @@ struct FCesiumSubLevel {
    * How far in meters from the sublevel local origin the camera needs to be to
    * load the level.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
   double LoadRadius = 0.0;
 
   /**
@@ -136,8 +143,8 @@ public:
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a "CesiumGlobeAnchorParent". Ensure that static actors only
-   * exist in georeferenced sublevels.
+   * or attached to a an actor with that component. Ensure that static actors
+   * only exist in georeferenced sublevels.
    */
   UFUNCTION(CallInEditor, Category = "CesiumSublevels")
   void JumpToCurrentLevel();
@@ -150,8 +157,7 @@ public:
    * Warning: Before changing, ensure the last level you worked on has been
    * properly georeferenced. Ensure all actors are georeferenced, either by
    * inclusion in a georeferenced sublevel, by adding the
-   * "CesiumGeoreferenceComponent", or by attaching to a
-   * "CesiumGlobeAnchorParent".
+   * "CesiumGeoreferenceComponent", or by attaching to an actor with one.
    */
   UPROPERTY(
       EditAnywhere,
@@ -190,26 +196,32 @@ public:
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
   /**
-   * The longitude of the custom origin placement in degrees.
+   * The latitude of the custom origin placement in degrees, in the range [-90,
+   * 90]
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       meta =
           (EditCondition =
-               "OriginPlacement==EOriginPlacement::CartographicOrigin"))
-  double OriginLongitude = -105.25737;
+               "OriginPlacement==EOriginPlacement::CartographicOrigin",
+           ClampMin = -90.0,
+           ClampMax = 90.0))
+  double OriginLatitude = 39.736401;
 
   /**
-   * The latitude of the custom origin placement in degrees.
+   * The longitude of the custom origin placement in degrees, in the range
+   * [-180, 180]
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       meta =
           (EditCondition =
-               "OriginPlacement==EOriginPlacement::CartographicOrigin"))
-  double OriginLatitude = 39.736401;
+               "OriginPlacement==EOriginPlacement::CartographicOrigin",
+           ClampMin = -180.0,
+           ClampMax = 180.0))
+  double OriginLongitude = -105.25737;
 
   /**
    * The height of the custom origin placement in meters above the WGS84
@@ -248,7 +260,7 @@ public:
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a "CesiumGlobeAnchorParent". Ensure that static actors only
+   * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sublevels.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
@@ -262,7 +274,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
-      meta = (EditCondition = "KeepWorldOriginNearCamera"))
+      meta = (EditCondition = "KeepWorldOriginNearCamera", ClampMin = 0.0))
   double MaximumWorldOriginDistanceFromCamera = 10000.0;
 
   /**
@@ -526,8 +538,20 @@ public:
    */
   void UpdateGeoreference();
 
-  // Called every frame
+  /**
+   * @brief Returns whether `Tick` should be called in viewports-only mode.
+   *
+   * "If `true`, actor is ticked even if TickType==LEVELTICK_ViewportsOnly."
+   * (The TickType is determined by the unreal engine internally).
+   */
   virtual bool ShouldTickIfViewportsOnly() const override;
+
+  /**
+   * @brief Function called every frame on this Actor.
+   *
+   * @param DeltaTime Game time elapsed during last frame modified by the time
+   * dilation
+   */
   virtual void Tick(float DeltaTime) override;
 
 protected:
@@ -571,7 +595,52 @@ private:
   void _lineTraceViewportMouse(
       const bool ShowTrace,
       bool& Success,
-      FHitResult& HitResult);
+      FHitResult& HitResult) const;
+
+  /**
+   * @brief Show the load radius of each sub-level as a sphere.
+   *
+   * If this is not called "in-game", and `ShowLoadRadii` is `true`,
+   * then it will show a sphere indicating the load radius of each
+   * sub-level.
+   */
+  void _showSubLevelLoadRadii() const;
+
+  /**
+   * @brief Allow editing the origin with the mouse.
+   *
+   * If `EditOriginInViewport` is true, this will trace the mouse
+   * position, and update the origin based on the point that was
+   * hit.
+   */
+  void _handleViewportOriginEditing();
+
 #endif
+
+  /**
+   * @brief Updates the load state of sublevels.
+   *
+   * This checks all sublevels whether their load radius contains the
+   * `WorldOriginCamera`, in ECEF coordinates. The sublevels that
+   * contain the camera will be loaded. All others will be unloaded.
+   *
+   * @return Whether the camera is contained in *any* sublevel.
+   */
+  bool _updateSublevelState();
+
+  /**
+   * @brief Perform the origin-rebasing.
+   *
+   * If this actor is currently "in-game", and has an associated
+   * `WorldOriginCamera`, and the camera is further away from the origin than
+   * `MaximumWorldOriginDistanceFromCamera`, then this may set a new world
+   * origin by calling `GetWorld()->SetNewWorldOrigin` with a new position.
+   *
+   * This will only be done if origin rebasing is enabled via
+   * `KeepWorldOriginNearCamera`, and the actor is either *not* in a sublevel,
+   * or `OriginRebaseInsideSublevels` is enabled.
+   */
+  void _performOriginRebasing();
+
   TArray<TWeakInterfacePtr<ICesiumGeoreferenceable>> _georeferencedObjects;
 };

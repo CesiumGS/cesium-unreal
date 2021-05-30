@@ -18,7 +18,6 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-
         PrivateIncludePaths.AddRange(
             new string[] {
                 // ... add other private include paths required here ...
@@ -38,7 +37,12 @@ public class CesiumRuntime : ModuleRules
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if(Target.Platform == UnrealTargetPlatform.Linux) {
+        else if (Target.Platform == UnrealTargetPlatform.Android) {
+            platform = "Android-xaarch64";
+            libPostfix = ".a";
+            libPrefix = "lib";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Linux) {
             platform = "Linux-x64";
             libPostfix = ".a";
             libPrefix = "lib";
@@ -69,6 +73,7 @@ public class CesiumRuntime : ModuleRules
             "CesiumJsonReader",
             "CesiumUtility",
             "draco",
+            //"MikkTSpace",
             "modp_b64",
             "spdlog",
             "sqlite3",
@@ -76,6 +81,12 @@ public class CesiumRuntime : ModuleRules
             "uriparser",
             "fmt",
         };
+
+        // Use our own copy of MikkTSpace on Android.
+        if (Target.Platform == UnrealTargetPlatform.Android) {
+            libs = libs.Concat(new string[] { "MikkTSpace" }).ToArray();
+            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
+        }
 
         if (preferDebug)
         {
@@ -113,11 +124,17 @@ public class CesiumRuntime : ModuleRules
                 "MeshDescription",
                 "StaticMeshDescription",
                 "HTTP",
-                "MikkTSpace",
                 "LevelSequence",
                 "Projects"
             }
         );
+        
+        // Use UE's MikkTSpace on non-Android
+        if (Target.Platform != UnrealTargetPlatform.Android)
+        {
+            PrivateDependencyModuleNames.Add("MikkTSpace");
+        }
+
 
         PublicDefinitions.AddRange(
             new string[]
