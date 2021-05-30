@@ -72,7 +72,13 @@ public:
    * Rescan for sublevels that have not been georeferenced yet. New levels are
    * placed at the Unreal origin and georeferenced automatically.
    */
-  UFUNCTION(CallInEditor, Category = "CesiumSublevels")
+  UFUNCTION(
+      CallInEditor,
+      Category = "CesiumSublevels",
+      meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "This function is no longer required. The array of sublevels will be updated automatically."))
   void CheckForNewSubLevels();
 
   /*
@@ -108,7 +114,7 @@ public:
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
    */
-  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
+  UPROPERTY(EditAnywhere, EditFixedSize, Category = "CesiumSublevels")
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
@@ -535,8 +541,25 @@ private:
   void _jumpToLevel(const FCesiumSubLevel& level);
   void _setSunSky(double longitude, double latitude);
 
-  void OnLevelAdded(ULevel* InLevel, UWorld* InWorld);
-  void OnLevelRemoved(ULevel* InLevel, UWorld* InWorld);
+  /**
+   * Will be called when a level was added to the world, via the
+   * delegate that was added to FWorldDelegates::LevelAddedToWorld
+   * in PostInitProperties
+   */
+  void _OnLevelAdded(ULevel* InLevel, UWorld* InWorld);
+
+  /**
+   * Will be called when a level was removed from the world, via the
+   * delegate that was added to FWorldDelegates::LevelRemovedFromWorld
+   * in PostInitProperties
+   */
+  void _OnLevelRemoved(ULevel* InLevel, UWorld* InWorld);
+
+  /**
+   * Will make sure that the `CesiumSubLevels` array contains entries
+   * that exactly match the current streaming levels of the world
+   */
+  void _updateCesiumSubLevels();
 
 #if WITH_EDITOR
   void _lineTraceViewportMouse(
