@@ -8,87 +8,12 @@
 #include "GameFramework/Actor.h"
 #include "UObject/WeakInterfacePtr.h"
 #include <glm/mat3x3.hpp>
+#include "OriginPlacement.h"
+#include "CesiumSubLevel.h"
 #include "CesiumGeoreference.generated.h"
 
 class ICesiumGeoreferenceListener;
 class ICesiumBoundingVolumeProvider;
-
-UENUM(BlueprintType)
-enum class EOriginPlacement : uint8 {
-  /**
-   * Use the tileset's true origin as the Actor's origin. For georeferenced
-   * tilesets, this usually means the Actor's origin will be at the center
-   * of the Earth.
-   */
-  TrueOrigin UMETA(DisplayName = "True origin"),
-
-  /*
-   * Use the center of the tileset's bounding volume as the Actor's origin. This
-   * option preserves precision by keeping all tileset vertices as close to the
-   * Actor's origin as possible.
-   */
-  BoundingVolumeOrigin UMETA(DisplayName = "Bounding volume center"),
-
-  /**
-   * Use a custom position within the tileset as the Actor's origin. The
-   * position is expressed as a longitude, latitude, and height, and that
-   * position within the tileset will be at coordinate (0,0,0) in the Actor's
-   * coordinate system.
-   */
-  CartographicOrigin UMETA(DisplayName = "Longitude / latitude / height")
-};
-
-/*
- * Sublevels can be georeferenced to the globe by filling out this struct.
- */
-USTRUCT()
-struct FCesiumSubLevel {
-  GENERATED_BODY()
-
-  /**
-   * The plain name of the sub level, without any prefixes.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  FString LevelName;
-
-  /**
-   * The WGS84 longitude in degrees of where this level should sit on the
-   * globe, in the range [-180, 180]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (ClampMin = -180.0, ClampMax = 180.0))
-  double LevelLongitude = 0.0;
-
-  /**
-   * The WGS84 latitude in degrees of where this level should sit on the globe,
-   * in the range [-90, 90]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (ClampMin = -90.0, ClampMax = 90.0))
-  double LevelLatitude = 0.0;
-
-  /**
-   * The height in meters above the WGS84 globe this level should sit.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double LevelHeight = 0.0;
-
-  /**
-   * How far in meters from the sublevel local origin the camera needs to be to
-   * load the level.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
-  double LoadRadius = 0.0;
-
-  /**
-   * Whether or not this level is currently loaded. Not relevant in the editor.
-   */
-  bool CurrentlyLoaded = false;
-};
 
 class APlayerCameraManager;
 
