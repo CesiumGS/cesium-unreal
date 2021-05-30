@@ -36,16 +36,17 @@
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
   // This method can be called by actors even when opening the content browser.
-  if (!WorldContextObject->GetWorld()) {
+  UWorld* world = WorldContextObject->GetWorld();
+  if (!IsValid(world)){
     return nullptr;
   }
   UE_LOG(
       LogCesium,
       Verbose,
       TEXT("World name for GetDefaultForActor: %s"),
-      *WorldContextObject->GetWorld()->GetFullName());
+      *world->GetFullName());
   ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
-      WorldContextObject->GetWorld()->PersistentLevel,
+      world->PersistentLevel,
       TEXT("CesiumGeoreferenceDefault"));
   if (!pGeoreference) {
     const FString actorName = WorldContextObject->GetName();
@@ -59,7 +60,7 @@ ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
     // spawnParameters.OverrideLevel = WorldContextObject->GetLevel();
     pGeoreference =
-        WorldContextObject->GetWorld()->SpawnActor<ACesiumGeoreference>(
+        world->SpawnActor<ACesiumGeoreference>(
             spawnParameters);
   } else {
     const FString georeferenceName = pGeoreference->GetName();
@@ -96,7 +97,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // only editor-mode?
 
   // If this is PIE mode, ignore
-  if (this->GetWorld()->IsGameWorld()) {
+  UWorld* world = this->GetWorld();
+  if (world->IsGameWorld()) {
     return;
   }
 
@@ -108,7 +110,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   FRotationTranslationMatrix fCameraTransform(
       pEditorViewportClient->GetViewRotation(),
       pEditorViewportClient->GetViewLocation());
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FIntVector& originLocation = world->OriginLocation;
 
   // TODO: optimize this, only need to transform the front direction and
   // translation
@@ -176,12 +178,12 @@ void ACesiumGeoreference::CheckForNewSubLevels() {
     return;
   }
   const TArray<ULevelStreaming*>& streamedLevels =
-      this->GetWorld()->GetStreamingLevels();
+      world->GetStreamingLevels();
   // check all levels to see if any are new
   for (ULevelStreaming* streamedLevel : streamedLevels) {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-    levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
+    levelName.RemoveFromStart(world->StreamingLevelsPrefix);
     // check the known levels to see if this one is new
     bool found = false;
     for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
@@ -441,14 +443,15 @@ bool ACesiumGeoreference::ShouldTickIfViewportsOnly() const { return true; }
 
 #if WITH_EDITOR
 void ACesiumGeoreference::_showSubLevelLoadRadii() const {
-  bool isGame = this->GetWorld()->IsGameWorld();
+  UWorld* world = this->GetWorld();
+  bool isGame = world->IsGameWorld();
   if (isGame) {
     return;
   }
   if (!this->ShowLoadRadii) {
     return;
   }
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FIntVector& originLocation = world->OriginLocation;
   for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
     glm::dvec3 levelECEF =
         CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
@@ -461,7 +464,7 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
     FVector levelRelative =
         FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
     DrawDebugSphere(
-        this->GetWorld(),
+        world,
         levelRelative,
         100.0 * level.LoadRadius,
         100,
@@ -540,8 +543,8 @@ bool ACesiumGeoreference::_updateSublevelState() {
   if (!IsValid(WorldOriginCamera)) {
     return false;
   }
-
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  UWorld* world = this->GetWorld();
+  const FIntVector& originLocation = world->OriginLocation;
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
 
@@ -552,11 +555,11 @@ bool ACesiumGeoreference::_updateSublevelState() {
   bool isInsideSublevel = false;
 
   const TArray<ULevelStreaming*>& streamedLevels =
-      this->GetWorld()->GetStreamingLevels();
+      world->GetStreamingLevels();
   for (ULevelStreaming* streamedLevel : streamedLevels) {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-    levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
+    levelName.RemoveFromStart(world->StreamingLevelsPrefix);
     // TODO: maybe we should precalculate the level ECEF from level
     // long/lat/height
     // TODO: consider the case where we're intersecting multiple level radii
@@ -594,7 +597,8 @@ bool ACesiumGeoreference::_updateSublevelState() {
 }
 
 void ACesiumGeoreference::_performOriginRebasing() {
-  bool isGame = this->GetWorld()->IsGameWorld();
+  UWorld* world = this->GetWorld();
+  bool isGame = world->IsGameWorld();
   if (!isGame) {
     return;
   }
@@ -608,15 +612,15 @@ void ACesiumGeoreference::_performOriginRebasing() {
     // If we are not going to continue origin rebasing inside the
     // sublevel, just set the origin back to zero if necessary,
     // since the sublevel will be centered around zero anyways.
-    if (!this->GetWorld()->OriginLocation.IsZero()) {
-      this->GetWorld()->SetNewWorldOrigin(FIntVector::ZeroValue);
+    if (!world->OriginLocation.IsZero()) {
+      world->SetNewWorldOrigin(FIntVector::ZeroValue);
     }
     return;
   }
 
   // We're either not in a sublevel, or OriginRebaseInsideSublevels is true.
   // Check whether a rebasing is necessary.
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FIntVector& originLocation = world->OriginLocation;
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
   bool distanceTooLarge = !cameraLocation.Equals(
@@ -629,7 +633,7 @@ void ACesiumGeoreference::_performOriginRebasing() {
     int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
     int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
     int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
-    this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
+    world->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
   }
 }
 
@@ -731,14 +735,16 @@ ACesiumGeoreference::InaccurateTransformEcefToUe(const FVector& ecef) const {
 
 glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
 
-  if (!IsValid(this->GetWorld())) {
+  UWorld* world = this->GetWorld();
+  if (!IsValid(world)){
     UE_LOG(
         LogCesium,
-        Warning,
-        TEXT("The CesiumGeoreference is not spawned in a level"));
+        Verbose,
+        TEXT("Georeference is not spawned in world: %s"),
+        *this->GetFullName());
     return ue;
   }
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FIntVector& originLocation = world->OriginLocation;
 
   glm::dvec4 ueAbs(
       ue.x + static_cast<double>(originLocation.X),
