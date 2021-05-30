@@ -2,14 +2,14 @@
 
 #pragma once
 
+#include "CesiumSubLevel.h"
 #include "Components/ActorComponent.h"
 #include "Containers/UnrealString.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "OriginPlacement.h"
 #include "UObject/WeakInterfacePtr.h"
 #include <glm/mat3x3.hpp>
-#include "OriginPlacement.h"
-#include "CesiumSubLevel.h"
 #include "CesiumGeoreference.generated.h"
 
 class ICesiumGeoreferenceListener;
@@ -502,7 +502,6 @@ protected:
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
   virtual void PostInitProperties() override;
-
 
 #if WITH_EDITOR
   virtual void

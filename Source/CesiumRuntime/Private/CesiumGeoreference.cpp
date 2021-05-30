@@ -37,7 +37,7 @@
 ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
   // This method can be called by actors even when opening the content browser.
   UWorld* world = WorldContextObject->GetWorld();
-  if (!IsValid(world)){
+  if (!IsValid(world)) {
     return nullptr;
   }
   UE_LOG(
@@ -59,9 +59,7 @@ ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
     // spawnParameters.OverrideLevel = WorldContextObject->GetLevel();
-    pGeoreference =
-        world->SpawnActor<ACesiumGeoreference>(
-            spawnParameters);
+    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
   } else {
     const FString georeferenceName = pGeoreference->GetName();
     const FString actorName = WorldContextObject->GetName();
@@ -84,11 +82,9 @@ ACesiumGeoreference::ACesiumGeoreference()
   PrimaryActorTick.bCanEverTick = true;
 }
 
-
-
 ACesiumGeoreference::~ACesiumGeoreference() {
-	FWorldDelegates::LevelAddedToWorld.RemoveAll(this);
-	FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
+  FWorldDelegates::LevelAddedToWorld.RemoveAll(this);
+  FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
 }
 
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
@@ -169,7 +165,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
 void ACesiumGeoreference::CheckForNewSubLevels() {
   UWorld* world = this->GetWorld();
-  if (!IsValid(world)){
+  if (!IsValid(world)) {
     UE_LOG(
         LogCesium,
         Verbose,
@@ -177,8 +173,7 @@ void ACesiumGeoreference::CheckForNewSubLevels() {
         *this->GetFullName());
     return;
   }
-  const TArray<ULevelStreaming*>& streamedLevels =
-      world->GetStreamingLevels();
+  const TArray<ULevelStreaming*>& streamedLevels = world->GetStreamingLevels();
   // check all levels to see if any are new
   for (ULevelStreaming* streamedLevel : streamedLevels) {
     FString levelName =
@@ -304,15 +299,17 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
   this->UpdateGeoreference();
 }
 
-void ACesiumGeoreference::PostInitProperties()
-{
-	Super::PostInitProperties();
-	FWorldDelegates::LevelAddedToWorld.AddUObject(this, &ACesiumGeoreference::OnLevelAdded);
-	FWorldDelegates::LevelRemovedFromWorld.AddUObject(this, &ACesiumGeoreference::OnLevelRemoved);
+void ACesiumGeoreference::PostInitProperties() {
+  Super::PostInitProperties();
+  FWorldDelegates::LevelAddedToWorld.AddUObject(
+      this,
+      &ACesiumGeoreference::OnLevelAdded);
+  FWorldDelegates::LevelRemovedFromWorld.AddUObject(
+      this,
+      &ACesiumGeoreference::OnLevelRemoved);
 }
 
-void ACesiumGeoreference::OnLevelAdded(ULevel* InLevel, UWorld* InWorld)
-{
+void ACesiumGeoreference::OnLevelAdded(ULevel* InLevel, UWorld* InWorld) {
   UE_LOG(
       LogActor,
       Warning,
@@ -320,15 +317,13 @@ void ACesiumGeoreference::OnLevelAdded(ULevel* InLevel, UWorld* InWorld)
   CheckForNewSubLevels();
 }
 
-void ACesiumGeoreference::OnLevelRemoved(ULevel* InLevel, UWorld* InWorld)
-{
+void ACesiumGeoreference::OnLevelRemoved(ULevel* InLevel, UWorld* InWorld) {
   UE_LOG(
       LogActor,
       Warning,
       TEXT("Checking for new SubLevels due to OnLevelRemoved"));
   CheckForNewSubLevels();
 }
-
 
 namespace {
 glm::dvec3 computeAverageCenter(
@@ -554,8 +549,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   bool isInsideSublevel = false;
 
-  const TArray<ULevelStreaming*>& streamedLevels =
-      world->GetStreamingLevels();
+  const TArray<ULevelStreaming*>& streamedLevels = world->GetStreamingLevels();
   for (ULevelStreaming* streamedLevel : streamedLevels) {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
@@ -736,7 +730,7 @@ ACesiumGeoreference::InaccurateTransformEcefToUe(const FVector& ecef) const {
 glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
 
   UWorld* world = this->GetWorld();
-  if (!IsValid(world)){
+  if (!IsValid(world)) {
     UE_LOG(
         LogCesium,
         Verbose,
