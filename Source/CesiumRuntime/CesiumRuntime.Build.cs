@@ -73,7 +73,8 @@ public class CesiumRuntime : ModuleRules
             "spdlog",
             "sqlite3",
             "tinyxml2",
-            "uriparser"
+            "uriparser",
+            "fmt",
         };
 
         if (preferDebug)
@@ -121,6 +122,7 @@ public class CesiumRuntime : ModuleRules
         PublicDefinitions.AddRange(
             new string[]
             {
+                "SPDLOG_FMT_EXTERNAL",
                 "SPDLOG_COMPILED_LIB",
                 "LIBASYNC_STATIC"
             }
