@@ -48,6 +48,7 @@ public:
   GetDefaultForActor(const UObject* WorldContextObject);
 
   ACesiumGeoreference();
+  ~ACesiumGeoreference();
 
   /*
    * Whether to continue origin rebasing once inside a sublevel. If actors
@@ -500,6 +501,8 @@ protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void PostInitProperties() override;
+
 
 #if WITH_EDITOR
   virtual void
@@ -532,6 +535,9 @@ private:
       double targetHeight);
   void _jumpToLevel(const FCesiumSubLevel& level);
   void _setSunSky(double longitude, double latitude);
+
+  void OnLevelAdded(ULevel* InLevel, UWorld* InWorld);
+  void OnLevelRemoved(ULevel* InLevel, UWorld* InWorld);
 
 #if WITH_EDITOR
   void _lineTraceViewportMouse(

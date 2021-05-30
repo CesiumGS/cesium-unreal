@@ -83,6 +83,13 @@ ACesiumGeoreference::ACesiumGeoreference()
   PrimaryActorTick.bCanEverTick = true;
 }
 
+
+
+ACesiumGeoreference::~ACesiumGeoreference() {
+	FWorldDelegates::LevelAddedToWorld.RemoveAll(this);
+	FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
+}
+
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #if WITH_EDITOR
   // TODO: should we just assume origin rebasing isn't happening since this is
@@ -159,6 +166,15 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 }
 
 void ACesiumGeoreference::CheckForNewSubLevels() {
+  UWorld* world = this->GetWorld();
+  if (!IsValid(world)){
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Georeference is not spawned in world: %s"),
+        *this->GetFullName());
+    return;
+  }
   const TArray<ULevelStreaming*>& streamedLevels =
       this->GetWorld()->GetStreamingLevels();
   // check all levels to see if any are new
@@ -285,6 +301,32 @@ void ACesiumGeoreference::BeginPlay() {
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
   this->UpdateGeoreference();
 }
+
+void ACesiumGeoreference::PostInitProperties()
+{
+	Super::PostInitProperties();
+	FWorldDelegates::LevelAddedToWorld.AddUObject(this, &ACesiumGeoreference::OnLevelAdded);
+	FWorldDelegates::LevelRemovedFromWorld.AddUObject(this, &ACesiumGeoreference::OnLevelRemoved);
+}
+
+void ACesiumGeoreference::OnLevelAdded(ULevel* InLevel, UWorld* InWorld)
+{
+  UE_LOG(
+      LogActor,
+      Warning,
+      TEXT("Checking for new SubLevels due to OnLevelAdded"));
+  CheckForNewSubLevels();
+}
+
+void ACesiumGeoreference::OnLevelRemoved(ULevel* InLevel, UWorld* InWorld)
+{
+  UE_LOG(
+      LogActor,
+      Warning,
+      TEXT("Checking for new SubLevels due to OnLevelRemoved"));
+  CheckForNewSubLevels();
+}
+
 
 namespace {
 glm::dvec3 computeAverageCenter(
