@@ -7,6 +7,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "VecMath.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "UObject/NameTypes.h"
@@ -90,11 +91,8 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
     const FVector& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
   this->MoveToLongitudeLatitudeHeight(
-      glm::dvec3(
-          targetLongitudeLatitudeHeight.X,
-          targetLongitudeLatitudeHeight.Y,
-          targetLongitudeLatitudeHeight.Z),
-      maintainRelativeOrientation);
+    VecMath::createVector3D(targetLongitudeLatitudeHeight),
+    maintainRelativeOrientation);
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF(
@@ -107,7 +105,7 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
     const FVector& targetEcef,
     bool maintainRelativeOrientation) {
   this->MoveToECEF(
-      glm::dvec3(targetEcef.X, targetEcef.Y, targetEcef.Z),
+      VecMath::createVector3D(targetEcef),
       maintainRelativeOrientation);
 }
 
@@ -135,10 +133,7 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(
   USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
 
   const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
-  this->_worldOriginLocation = glm::dvec3(
-      static_cast<double>(oldOrigin.X) - static_cast<double>(InOffset.X),
-      static_cast<double>(oldOrigin.Y) - static_cast<double>(InOffset.Y),
-      static_cast<double>(oldOrigin.Z) - static_cast<double>(InOffset.Z));
+  this->_worldOriginLocation = VecMath::subtract3D(oldOrigin, InOffset);
 
   // Do _not_ call _updateAbsoluteLocation. The absolute position doesn't change
   // with an origin rebase, and we'll lose precision if we update the absolute
@@ -273,22 +268,13 @@ void UCesiumGeoreferenceComponent::_initRootComponent() {
 
 void UCesiumGeoreferenceComponent::_initWorldOriginLocation() {
   const FIntVector& origin = this->GetWorld()->OriginLocation;
-  this->_worldOriginLocation = glm::dvec3(
-      static_cast<double>(origin.X),
-      static_cast<double>(origin.Y),
-      static_cast<double>(origin.Z));
+  this->_worldOriginLocation = VecMath::createVector3D(origin);
 }
 
 void UCesiumGeoreferenceComponent::_updateAbsoluteLocation() {
   const FVector& relativeLocation = this->_ownerRoot->GetComponentLocation();
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  this->_absoluteLocation = glm::dvec3(
-      static_cast<double>(originLocation.X) +
-          static_cast<double>(relativeLocation.X),
-      static_cast<double>(originLocation.Y) +
-          static_cast<double>(relativeLocation.Y),
-      static_cast<double>(originLocation.Z) +
-          static_cast<double>(relativeLocation.Z));
+  this->_absoluteLocation = VecMath::add3D(originLocation, relativeLocation);
 }
 
 void UCesiumGeoreferenceComponent::_updateRelativeLocation() {
@@ -339,23 +325,7 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 
   FMatrix actorToRelativeWorld =
       this->_ownerRoot->GetComponentToWorld().ToMatrixWithScale();
-  glm::dmat4 actorToAbsoluteWorld(
-      glm::dvec4(
-          actorToRelativeWorld.M[0][0],
-          actorToRelativeWorld.M[0][1],
-          actorToRelativeWorld.M[0][2],
-          actorToRelativeWorld.M[0][3]),
-      glm::dvec4(
-          actorToRelativeWorld.M[1][0],
-          actorToRelativeWorld.M[1][1],
-          actorToRelativeWorld.M[1][2],
-          actorToRelativeWorld.M[1][3]),
-      glm::dvec4(
-          actorToRelativeWorld.M[2][0],
-          actorToRelativeWorld.M[2][1],
-          actorToRelativeWorld.M[2][2],
-          actorToRelativeWorld.M[2][3]),
-      glm::dvec4(this->_absoluteLocation, 1.0));
+  glm::dmat4 actorToAbsoluteWorld = VecMath::createMatrix4D(actorToRelativeWorld, this->_absoluteLocation);
 
   this->_actorToECEF = unrealWorldToEcef * actorToAbsoluteWorld;
   this->_updateDisplayECEF();
@@ -369,11 +339,8 @@ void UCesiumGeoreferenceComponent::
   }
   const glm::dmat4& ecefToUnrealWorld =
       this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
-  glm::dmat4 absoluteToRelativeWorld(
-      glm::dvec4(1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 1.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(-this->_worldOriginLocation, 1.0));
+  glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
+      -this->_worldOriginLocation.x, -this->_worldOriginLocation.y, -this->_worldOriginLocation.z, 1.0);
 
   this->_actorToUnrealRelativeWorld =
       absoluteToRelativeWorld * ecefToUnrealWorld * this->_actorToECEF;
@@ -389,11 +356,7 @@ void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
   _ignoreOnUpdateTransform = true;
 
   this->_ownerRoot->SetWorldTransform(
-      FTransform(FMatrix(
-          FVector(transform[0].x, transform[0].y, transform[0].z),
-          FVector(transform[1].x, transform[1].y, transform[1].z),
-          FVector(transform[2].x, transform[2].y, transform[2].z),
-          FVector(transform[3].x, transform[3].y, transform[3].z))),
+      FTransform(VecMath::createMatrix(transform)),
       false,
       nullptr,
       TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
