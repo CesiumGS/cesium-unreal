@@ -27,6 +27,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
+#include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
@@ -76,6 +77,8 @@ ACesium3DTileset::ACesium3DTileset()
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->RootComponent->SetMobility(EComponentMobility::Static);
+
+  PlatformName = UGameplayStatics::GetPlatformName();
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
@@ -697,7 +700,11 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::TilesetOptions options;
+  // TODO: figure out why water material crashes mac
+#if PLATFORM_MAC
+#else
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
+#endif
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
