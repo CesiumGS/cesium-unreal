@@ -41,45 +41,7 @@ Cesium for Unreal is tightly integrated with Unreal Engine making it possible to
 
 #### :hammer_and_wrench: Compiling Cesium for Unreal
 
-The following steps detail how to build the plugin and use it as part of your projects. You can also compile Cesium for Unreal as part of the [`cesium-unreal-samples`](https://github.com/CesiumGS/cesium-unreal-samples.git).
-
-Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [Cesium Native](https://github.com/CesiumGS/cesium-native), which is included as a submodule.
-
-1. Clone the repository using `git clone --recursive git@github.com:CesiumGS/cesium-unreal.git`.
-2. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
-
-    * CMake configuration and build on Windows platform:
-
-    ```cmd
-    cmake -B build -S . -G "Visual Studio 15 2017 Win64" # Optionally use "Visual Studio 16 2019"
-    cmake --build build --config Release --target install # Can optionally compile with --config RelWithDebInfo or MinSizeRel.
-    cmake --build build --config Debug --target install # Optional, recommended for debugging
-    ```
-
-    * CMake configuration and build on MacOS platform:
-
-    ```cmd
-    cmake -B build -S . -DCMAKE_BUILD_TYPE=Release # Can optionally compile with RelWithDebInfo or MinSizeRel.
-    cmake --build build --target install 
-    ```
-
-    * CMake configuration and build on Linux platform:
-    
-    ```cmd
-    export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
-    export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu
-    export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
-
-    # Release build
-    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    cmake --build build --target install
-
-    # Debug build
-    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Debug
-    cmake --build build --target install
-    ```
-
-3. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
+Follow the steps in the [Development Guide](./Documentation/development-guide.md) for the prerequisites and build steps.
 
 #### :package: Accessing Packaged Plugin
 
