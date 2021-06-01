@@ -2,7 +2,7 @@
 
 ### v1.3.0 - 2021-06-01
 
-##### Breaking :x:
+##### Breaking  :mega:
 
 - Tileset properties that require a tileset reload (URL, Source, IonAssetID, IonAccessToken, Materials) have been moved to `private`. Setter and getter methods are now provided for modifying them in Blueprints and C++.
 - Deprecated `CesiumGlobeAnchorParent` and `FloatingPawn`. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGeoreferenceComponent`. The `FloatingPawn` is now replaced by the `DynamicPawn`. In a future release, the `DynamicPawn` will be renamed to `CesiumFloatingPawn`.
