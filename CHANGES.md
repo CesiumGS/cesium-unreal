@@ -1,36 +1,35 @@
 # Change Log
 
-### v1.3.0 - ???
-
-##### Additions  :tada:
-
-- Added support for the Android platform.
-- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
-- Improved property change checks in `Cesium3DTileset::LoadTileset`.
-- Make origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
-- Make 3D Tiles properties editable in C++ and blueprints via getter/setter functions. Tileset now reloads at runtime when these properties are changed.
-- Improvements to dynamic camera, created altitude curves for FlyTo behavior.
-- Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
-- Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
-- Exposed all tileset materials to allow for changes in editor.
-- Fixed a bug that caused rendering- and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
-- Added teleport boolean property to CesiumGeoreferenceComponent.
-- Added a "Year" property to `CesiumSunSky`.
-- Added the ability to use an external Directional Light with `CesiumSunSky`, rather than the embedded DirectionalLight component.
-
-##### Fixes :wrench:
-
-- Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
-- Cleaned up, standardized, and commented material and material functions.
-- Moved all materials and material functions to the `Materials` subfolder.
-- Set CesiumSunSky's directional light intensity to a more physically accurate value.
-- Moved Latitude before Longitude on the `CesiumGeoreference` and `CesiumGeoreferenceComponent` Details panels.
+### v1.3.0 - 2021-06-01
 
 ##### Breaking :x:
 
 - Tileset properties that require a tileset reload (URL, Source, IonAssetID, IonAccessToken, Materials) have been moved to `private`. Setter and getter methods are now provided for modifying them in Blueprints and C++.
 - Deprecated `CesiumGlobeAnchorParent` and `FloatingPawn`. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGeoreferenceComponent`. The `FloatingPawn` is now replaced by the `DynamicPawn`. In a future release, the `DynamicPawn` will be renamed to `CesiumFloatingPawn`.
 
+##### Additions  :tada:
+
+- Added support for the Android platform.
+- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
+- Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Made origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
+- Made 3D Tiles properties editable in C++ and blueprints via getter/setter functions. The tileset now reloads at runtime when these properties are changed.
+- Improvements to dynamic camera, created altitude curves for FlyTo behavior.
+- Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
+- Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
+- Exposed all tileset materials to allow for changes in editor.
+- Added `TeleportWhenUpdatingTransform` boolean property to CesiumGeoreferenceComponent.
+- Added a "Year" property to `CesiumSunSky`.
+- Added the ability to use an external Directional Light with `CesiumSunSky`, rather than the embedded DirectionalLight component.
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused rendering and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
+- Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
+- Cleaned up, standardized, and commented material and material functions.
+- Moved all materials and material functions to the `Materials` subfolder.
+- Set CesiumSunSky's directional light intensity to a more physically accurate value.
+- Moved Latitude before Longitude on the `CesiumGeoreference` and `CesiumGeoreferenceComponent` Details panels.
 
 ### v1.2.1 - 2021-05-13
 

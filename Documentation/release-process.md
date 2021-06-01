@@ -25,6 +25,7 @@ While doing the steps below, make sure no new changes are going into either cesi
 * Change the version in `CesiumForUnreal.uplugin`:
   * Increment the `Version` integer property.
   * Change the `VersionName` property to the new three digit, dot-delimited version number. Use [Semantic Versioning](https://semver.org/) to pick the version number.
+* Change the `version` property in `package.json` to match the `VersionName` above.
 * Verify that cesium-native's CHANGES.md is complete and accurate.
 * Verify that cesium-unreal's CHANGES.md is complete and accurate.
 * Verify again that cesium-native CI has completed successfully on all platforms.
