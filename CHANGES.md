@@ -31,6 +31,8 @@
 - Set CesiumSunSky's directional light intensity to a more physically accurate value.
 - Moved Latitude before Longitude on the `CesiumGeoreference` and `CesiumGeoreferenceComponent` Details panels.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.3.1 to v0.4.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.2.1 - 2021-05-13
 
 ##### Fixes :wrench:
