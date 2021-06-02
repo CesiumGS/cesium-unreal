@@ -26,6 +26,7 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGeoreference.h"
 #include "CesiumGltf/GltfReader.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -42,6 +43,10 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <cstddef>
 #include <stb_image_resize.h>
+
+#if WITH_EDITOR
+#include "DrawDebugHelpers.h"
+#endif
 
 using namespace CesiumGltf;
 
@@ -576,10 +581,8 @@ applyCustomMasks(const CesiumGltf::Model& model, LoadModelResult& modelResult) {
     }
   }
 
-  auto customMaskTranslationXIt =
-      model.extras.find("customMaskTranslationX");
-  auto customMaskTranslationYIt =
-      model.extras.find("customMaskTranslationY");
+  auto customMaskTranslationXIt = model.extras.find("customMaskTranslationX");
+  auto customMaskTranslationYIt = model.extras.find("customMaskTranslationY");
   auto customMaskScaleIt = model.extras.find("customMaskScale");
 
   if (customMaskTranslationXIt != model.extras.end() &&
@@ -1487,6 +1490,21 @@ static void loadModelGameThreadPart(
       TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
 
   const CesiumGltf::Model& model = *loadResult.pModel;
+
+  auto westIt = model.extras.find("GlobeRectangleWest");
+  auto eastIt = model.extras.find("GlobeRectangleEast");
+  auto southIt = model.extras.find("GlobeRectangleSouth");
+  auto northIt = model.extras.find("GlobeRectangleNorth");
+  if (westIt != model.extras.end() && westIt->second.isDouble() &&
+      eastIt != model.extras.end() && eastIt->second.isDouble() &&
+      southIt != model.extras.end() && southIt->second.isDouble() &&
+      northIt != model.extras.end() && northIt->second.isDouble()) {
+    pGltf->west = westIt->second.getDouble();
+    pGltf->east = eastIt->second.getDouble();
+    pGltf->south = southIt->second.getDouble();
+    pGltf->north = northIt->second.getDouble();
+  }
+
   const CesiumGltf::Material& material =
       loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
 
@@ -1588,7 +1606,10 @@ static void loadModelGameThreadPart(
           loadResult.waterMaskScale));
 
   for (const CustomMask& customMask : loadResult.customMaskTextures) {
-    applyTexture(pMaterial, UTF8_TO_TCHAR(customMask.name.c_str()), customMask.loadTextureResult);
+    applyTexture(
+        pMaterial,
+        UTF8_TO_TCHAR(customMask.name.c_str()),
+        customMask.loadTextureResult);
   }
 
   pMaterial->SetVectorParameterValue(
@@ -1719,7 +1740,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
   this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
-  PrimaryComponentTick.bCanEverTick = false;
+  PrimaryComponentTick.bCanEverTick = true;
 }
 
 UCesiumGltfComponent::~UCesiumGltfComponent() {
@@ -1893,3 +1914,48 @@ BuildChaosTriangleMeshes(
   return nullptr;
 }
 #endif
+
+#if WITH_EDITOR
+void UCesiumGltfComponent::_drawDebugLine(
+    const glm::dvec2& point0,
+    const glm::dvec2& point1,
+    FColor color) const {
+  const ACesiumGeoreference* georeference =
+      ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
+  glm::dvec3 a = georeference->TransformLongitudeLatitudeHeightToUe(
+      glm::dvec3(glm::degrees(point0.x), glm::degrees(point0.y), 2000.0));
+  glm::dvec3 b = georeference->TransformLongitudeLatitudeHeightToUe(
+      glm::dvec3(glm::degrees(point1.x), glm::degrees(point1.y), 2000.0));
+
+  DrawDebugLine(
+      this->GetWorld(),
+      FVector(a.x, a.y, a.z),
+      FVector(b.x, b.y, b.z),
+      color,
+      false,
+      -1.0f,
+      0.0f,
+      2000.0f);
+}
+#endif
+
+void UCesiumGltfComponent::UpdateDebugVisualization() {
+#if WITH_EDITOR
+  this->_drawDebugLine(
+      glm::dvec2(west, south),
+      glm::dvec2(west, north),
+      FColor::Green);
+  this->_drawDebugLine(
+      glm::dvec2(west, north),
+      glm::dvec2(east, north),
+      FColor::Red);
+  this->_drawDebugLine(
+      glm::dvec2(east, north),
+      glm::dvec2(east, south),
+      FColor::Red);
+  this->_drawDebugLine(
+      glm::dvec2(east, south),
+      glm::dvec2(west, south),
+      FColor::Green);
+#endif
+}

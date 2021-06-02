@@ -96,13 +96,22 @@ public:
       UTexture2D* Texture,
       const CesiumGeometry::Rectangle& TextureCoordinateRectangle);
 
+  void UpdateDebugVisualization();
+
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
   virtual void FinishDestroy() override;
 
+  double west;
+  double east;
+  double south;
+  double north;
+
 private:
   void UpdateRasterOverlays();
 
   TArray<FRasterOverlayTile> OverlayTiles;
+
+  void _drawDebugLine(const glm::dvec2& point0, const glm::dvec2& point1, FColor color) const;
 };

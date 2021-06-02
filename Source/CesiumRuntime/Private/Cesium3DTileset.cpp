@@ -1073,6 +1073,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       continue;
     }
 
+#if WITH_EDITOR
+      //Gltf->UpdateDebugVisualization();
+#endif
+
     // Apply Actor-defined collision settings to the newly-created component.
     UCesiumGltfPrimitiveComponent* PrimitiveComponent =
         static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
