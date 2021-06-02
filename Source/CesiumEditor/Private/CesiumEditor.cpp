@@ -112,6 +112,10 @@ void FCesiumEditorModule::StartupModule() {
             FVector2D(222.0, 200.0f)));
 
     StyleSet->Set(
+        "Cesium.AddButtonIcon",
+        new IMAGE_BRUSH("Icons/PlusSymbol_12x", FVector2D(12.0f, 12.0f)));
+
+    StyleSet->Set(
         "WelcomeText",
         FTextBlockStyle()
             .SetColorAndOpacity(FSlateColor::UseForeground())
@@ -282,9 +286,11 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
-  pTilesetActor->SetIonAssetID(assetID);
-  pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
+  if (assetID != -1) {
+    pTilesetActor->SetIonAssetID(assetID);
+    pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
+        FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
+  }
 
   return pTilesetActor;
 }

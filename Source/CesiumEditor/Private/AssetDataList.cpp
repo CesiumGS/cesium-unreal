@@ -153,44 +153,31 @@ FText obtainToolTipText(TSharedPtr<FAssetData> assetData) {
  * It creates a visual representation of the `FAssetData` that was
  * found in the `_items` of the `AssetDataList`.
  */
-class FAssetDataRow : public SMultiColumnTableRow<TSharedPtr<FAssetData>> {
+class FAssetDataRow : public STableRow<TSharedPtr<FAssetData>> {
 public:
   void Construct(
       const FArguments& InArgs,
       const TSharedRef<STableViewBase>& InOwnerTableView,
       const TSharedPtr<FAssetData>& pItem) {
-    this->_pItem = pItem;
-    SMultiColumnTableRow<TSharedPtr<FAssetData>>::Construct(
-        InArgs,
-        InOwnerTableView);
-  }
-
-  virtual TSharedRef<SWidget>
-  GenerateWidgetForColumn(const FName& InColumnName) override {
-
+    STableRow<TSharedPtr<FAssetData>>::Construct(InArgs, InOwnerTableView);
     TSharedRef<SOverlay> overlay = SNew(SOverlay);
 
-    if (InColumnName == "MainColumn") {
+    // A single slot that only shows the class name
+    TSharedPtr<STextBlock> assetNameText =
+        SNew(STextBlock)
+            .AutoWrapText(true)
+            .Text(FText::FromString(pItem->AssetName.ToString()));
 
-      // A single slot that only shows the class name
-      overlay->AddSlot()
-          .HAlign(HAlign_Left)
-          .VAlign(VAlign_Center)
-          .Padding(
-              5.0f,
-              5.0f)[SNew(STextBlock)
-                        .AutoWrapText(true)
-                        .Text(FText::FromString(_pItem->AssetName.ToString()))];
+    overlay->AddSlot()
+        .HAlign(HAlign_Left)
+        .VAlign(VAlign_Center)
+        .Padding(5.0f, 5.0f)[assetNameText.ToSharedRef()];
 
-      // The tooltip for the row.
-      FText toolTipText = obtainToolTipText(_pItem);
-      overlay->SetToolTip(SNew(SToolTip)[SNew(STextBlock).Text(toolTipText)]);
-    }
-    return overlay;
+    // The tooltip for the row.
+    FText toolTipText = obtainToolTipText(pItem);
+    overlay->SetToolTip(SNew(SToolTip)[SNew(STextBlock).Text(toolTipText)]);
+    ChildSlot[overlay];
   }
-
-private:
-  TSharedPtr<FAssetData> _pItem;
 };
 
 } // namespace
