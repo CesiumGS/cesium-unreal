@@ -55,11 +55,14 @@ Cesium for Unreal depends on Cesium's high-precision geospatial C++ library - [C
 2. From the `cesium-unreal/extern` directory, run the following commands to build `cesium-native`.
 
     ```bash
-    cmake -B build-ios -S . -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DPLATFORM=OS64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    cmake -B build-ios -S . -DCMAKE_TOOLCHAIN_FILE="unreal-ios-toolchain.cmake" -DPLATFORM=OS64 -DDEPLOYMENT_TARGET=12 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     cmake --build build --target install
     ```
 
-3. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine.
+3. Point your Unreal Engine Project to the `CesiumForUnreal.uplugin` file to load the plugin into Unreal Engine. To build the plugin, the command is:
+    ```
+    /Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles/RunUAT.command BuildPlugin -Plugin="/Users/user/workspace/cesium-unreal/CesiumForUnreal.uplugin" -Package="/Users/user/workspace/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac+iOS
+    ```
 
 ### Linux
 
