@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "SpdlogUnrealLoggerSink.h"
+#include "CesiumRuntime.h"
 #include "CoreMinimal.h"
 
 void SpdlogUnrealLoggerSink::sink_it_(const spdlog::details::log_msg& msg) {

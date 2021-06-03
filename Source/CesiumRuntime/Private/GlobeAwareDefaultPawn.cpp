@@ -390,6 +390,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
+  Super::Tick(DeltaSeconds);
+
   _handleFlightStep(DeltaSeconds);
 
   // track current ecef in case we need to restore it on georeference update

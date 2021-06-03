@@ -32,7 +32,7 @@ public:
    * The actor controlling how this camera's location in the Cesium world
    * relates to the coordinate system in this Unreal Engine level.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium")
   ACesiumGeoreference* Georeference;
 
   /**
@@ -119,14 +119,14 @@ public:
   /**
    * The length in seconds that the flight should last.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  double FlyToDuration = 5;
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
+  double FlyToDuration = 5.0;
 
   /**
    * The granularity in degrees with which keypoints should be generated for
    * the flight interpolation.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
   double FlyToGranularityDegrees = 0.01;
 
   /**
