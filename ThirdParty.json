@@ -40,6 +40,11 @@
     "license": "MIT"
   },
   {
+    "name": "ios-cmake",
+    "url": "https://github.com/leetal/ios-cmake",
+    "license": "BSD-3-Clause"
+  },
+  {
     "name": "PicoSHA2",
     "url": "https://github.com/okdshin/PicoSHA2",
     "license": "MIT"
