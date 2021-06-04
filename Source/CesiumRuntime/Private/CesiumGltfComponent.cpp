@@ -259,7 +259,8 @@ static void computeFlatNormals(
   }
 }
 
-static FString fromSelectionState(Cesium3DTiles::TileSelectionState::Result result) {
+static FString
+fromSelectionState(Cesium3DTiles::TileSelectionState::Result result) {
   FString lastResult;
   switch (result) {
   case Cesium3DTiles::TileSelectionState::Result::None:
@@ -287,7 +288,11 @@ static FString fromSelectionState(Cesium3DTiles::TileSelectionState::Result resu
   return lastResult;
 }
 
-static void drawDebugTexture(const Cesium3DTiles::Tile *tile, UTextureRenderTarget2D* RenderTarget, UMaterialInstanceDynamic *pMaterial, UTexture2D *pTexture) {
+static void drawDebugTexture(
+    const Cesium3DTiles::Tile* tile,
+    UTextureRenderTarget2D* RenderTarget,
+    UMaterialInstanceDynamic* pMaterial,
+    UTexture2D* pTexture) {
   const CesiumGeometry::QuadtreeTileID* tileID =
       std::get_if<CesiumGeometry::QuadtreeTileID>(&tile->getTileID());
   if (!tileID) {
@@ -313,15 +318,10 @@ static void drawDebugTexture(const Cesium3DTiles::Tile *tile, UTextureRenderTarg
   FString frameStr = FString::FromInt(frameNumber);
   FString prevFrameStr = FString::FromInt(prevFrameNumber);
   FText txt = FText::FromString(
-      TEXT("Level: ") + level + "\n" + 
-      TEXT("X: ") + x + "\n" + 
-      TEXT("Y: ") + y + "\n" +
-      TEXT("Curr: ") + lastResult + "\n" + 
-      TEXT("Frame: ") + frameStr + "\n" +
-      TEXT("Last: ") + prevLastResult + "\n" + 
-      TEXT("PrevFrame: ") + prevFrameStr + "\n" +
-      TEXT("Line: " + prevLine)
-  );
+      TEXT("Level: ") + level + "\n" + TEXT("X: ") + x + "\n" + TEXT("Y: ") +
+      y + "\n" + TEXT("Curr: ") + lastResult + "\n" + TEXT("Frame: ") +
+      frameStr + "\n" + TEXT("Last: ") + prevLastResult + "\n" +
+      TEXT("PrevFrame: ") + prevFrameStr + "\n" + TEXT("Line: " + prevLine));
   FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
   boxItem.LineThickness = 4.0f;
   boxItem.SetColor(FLinearColor::Black);
@@ -1532,7 +1532,9 @@ static void loadModelGameThreadPart(
       NewObject<UCesiumGltfPrimitiveComponent>(
           pGltf,
           FName(loadResult.name.c_str()));
+  pMesh->SetVisibility(false, true);
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
+  pMesh->pTile = &tile;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
   pMesh->bUseDefaultCollision = false;
@@ -1656,11 +1658,8 @@ static void loadModelGameThreadPart(
   FString y = FString::FromInt(tileID->y);
   FString frameStr = FString::FromInt(frameNumber);
   FText txt = FText::FromString(
-      TEXT("Level: ") + level + "\n" + 
-      TEXT("X: ") + x + "\n" + 
-      TEXT("Y: ") + y + "\n" +
-      TEXT("Created: ") + lastResult + "\n"
-  );
+      TEXT("Level: ") + level + "\n" + TEXT("X: ") + x + "\n" + TEXT("Y: ") +
+      y + "\n" + TEXT("Created: ") + lastResult + "\n");
   FCanvasBoxItem boxItem(FVector2D(0.0f, 0.0f), FVector2D(256.0, 256.0));
   boxItem.LineThickness = 4.0f;
   boxItem.SetColor(FLinearColor::Black);
@@ -1850,6 +1849,11 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  Gltf->SetupAttachment(pParentActor->GetRootComponent());
+  Gltf->RegisterComponent();
+  //Gltf->AttachToComponent(
+  //    pParentActor->GetRootComponent(),
+  //    FAttachmentTransformRules::KeepRelativeTransform);
   return Gltf;
 }
 
@@ -1883,30 +1887,30 @@ UCesiumGltfComponent::~UCesiumGltfComponent() {
 
 void UCesiumGltfComponent::SetRender(bool rendered) {
   const CesiumGeometry::QuadtreeTileID* tileID =
-	  std::get_if<CesiumGeometry::QuadtreeTileID>(&DebugTile->getTileID());
+      std::get_if<CesiumGeometry::QuadtreeTileID>(&DebugTile->getTileID());
   if (!tileID) {
-	tileID =
-		&std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&DebugTile->getTileID())
-			 ->tileID;
+    tileID = &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(
+                  &DebugTile->getTileID())
+                  ->tileID;
   }
   Cesium3DTiles::TileSelectionState prevLastSelection =
-	  DebugTile->getPrevLastSelectionState();
+      DebugTile->getPrevLastSelectionState();
   Cesium3DTiles::TileSelectionState lastSelection =
-	  DebugTile->getLastSelectionState();
+      DebugTile->getLastSelectionState();
   uint32_t frameNumber = lastSelection.getFrameNumber();
   FString lastResult = fromSelectionState(lastSelection.getResult(frameNumber));
 
   uint32_t prevFrameNumber = prevLastSelection.getFrameNumber();
   FString prevLastResult =
-	  fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
+      fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
 
   if (rendered) {
-      drawDebugTexture(DebugTile, RenderTarget, DebugMaterial, DebugTexture);
-	  this->SetVisibility(true, true);
-	  this->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    drawDebugTexture(DebugTile, RenderTarget, DebugMaterial, DebugTexture);
+    this->SetVisibility(true, true);
+    this->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
   } else {
-      this->SetVisibility(false, true);
-      this->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    this->SetVisibility(false, true);
+    this->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   }
 }
 

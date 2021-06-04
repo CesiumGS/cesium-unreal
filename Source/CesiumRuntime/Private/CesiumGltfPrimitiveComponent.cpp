@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveComponent.h"
+#include "Cesium3DTiles/Tile.h"
 
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
@@ -28,4 +29,19 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       FVector(transform[1].x, transform[1].y, transform[1].z),
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
+}
+
+FPrimitiveSceneProxy* UCesiumGltfPrimitiveComponent::CreateSceneProxy() {
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("CreateSceneProxy %s"),
+      UTF8_TO_TCHAR(Cesium3DTiles::TileIdUtilities::createTileIdString(
+                        this->pTile->getTileID())
+                        .c_str()));
+  FPrimitiveSceneProxy* pResult = Super::CreateSceneProxy();
+  if (pResult == nullptr) {
+    UE_LOG(LogCesium, Display, TEXT("Proxy is nullptr!"));
+  }
+  return pResult;
 }

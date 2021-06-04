@@ -7,6 +7,10 @@
 #include <glm/mat4x4.hpp>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
+namespace Cesium3DTiles {
+class Tile;
+}
+
 UCLASS()
 class CESIUMRUNTIME_API UCesiumGltfPrimitiveComponent
     : public UStaticMeshComponent {
@@ -16,6 +20,8 @@ public:
   // Sets default values for this component's properties
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
+
+  Cesium3DTiles::Tile* pTile;
 
   /**
    * The double-precision transformation matrix for this glTF node.
@@ -30,4 +36,6 @@ public:
    * @param CesiumToUnrealTransform The new transformation.
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+
+  virtual FPrimitiveSceneProxy* CreateSceneProxy() override;
 };

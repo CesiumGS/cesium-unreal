@@ -449,6 +449,14 @@ public:
 
   virtual void*
   prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Prepare %s"),
+        UTF8_TO_TCHAR(
+            Cesium3DTiles::TileIdUtilities::createTileIdString(tile.getTileID())
+                .c_str()));
+
     const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
     if (pContent && pContent->model) {
       std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
@@ -472,6 +480,15 @@ public:
       Cesium3DTiles::Tile& tile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept {
+
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Free %s"),
+        UTF8_TO_TCHAR(
+            Cesium3DTiles::TileIdUtilities::createTileIdString(tile.getTileID())
+                .c_str()));
+
     if (pLoadThreadResult) {
       UCesiumGltfComponent::HalfConstructed* pHalf =
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
@@ -964,12 +981,14 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 }
 
 void ACesium3DTileset::log(const Cesium3DTiles::Tile* pTile, bool off) {
+  return;
+
   const CesiumGeometry::QuadtreeTileID* tileID =
-	  std::get_if<CesiumGeometry::QuadtreeTileID>(&pTile->getTileID());
+      std::get_if<CesiumGeometry::QuadtreeTileID>(&pTile->getTileID());
   if (!tileID) {
-	tileID =
-		&std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&pTile->getTileID())
-			 ->tileID;
+    tileID =
+        &std::get_if<CesiumGeometry::UpsampledQuadtreeNode>(&pTile->getTileID())
+             ->tileID;
   }
 
   if (!tileID) {
@@ -977,51 +996,92 @@ void ACesium3DTileset::log(const Cesium3DTiles::Tile* pTile, bool off) {
   }
 
   Cesium3DTiles::TileSelectionState prevLastSelection =
-	  pTile->getPrevLastSelectionState();
+      pTile->getPrevLastSelectionState();
   Cesium3DTiles::TileSelectionState lastSelection =
-	  pTile->getLastSelectionState();
+      pTile->getLastSelectionState();
   uint32_t frameNumber = lastSelection.getFrameNumber();
   FString lastResult = fromSelectionState(lastSelection.getResult(frameNumber));
 
   uint32_t prevFrameNumber = prevLastSelection.getFrameNumber();
   FString prevLastResult =
-	  fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
+      fromSelectionState(prevLastSelection.getResult(prevFrameNumber));
 
-  if (off) {
+  const wchar_t* onOff = off ? TEXT("OFF") : TEXT("ON");
+
+  if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
     UE_LOG(
         LogCesium,
         Display,
-        TEXT(
-            "Frame %d: OFF Id(level: %d, x: %d, y: %d) CurrState(%s, line %d) isRenderable(%d) hasContent(%d) PrevState(%s, frame %d, line %d)"),
+        TEXT("Frame %d: %s Id(level: %d, x: %d, y: %d) NOT DONE"),
         frameNumber,
+        onOff,
         tileID->level,
         tileID->x,
-        tileID->y,
-        *lastResult,
-        lastSelection.getLine(),
-        pTile->isRenderable(),
-        pTile->getContent() != nullptr,
-        *prevLastResult,
-        prevFrameNumber,
-        prevLastSelection.getLine());
-  } else {
-    UE_LOG(
-        LogCesium,
-        Display,
-        TEXT(
-            "Frame %d: ON Id(level: %d, x: %d, y: %d) CurrState(%s, line %d) isRenderable(%d) hasContent(%d) PrevState(%s, frame %d, line %d)"),
-        frameNumber,
-        tileID->level,
-        tileID->x,
-        tileID->y,
-        *lastResult,
-        lastSelection.getLine(),
-        pTile->isRenderable(),
-        pTile->getContent() != nullptr,
-        *prevLastResult,
-        prevFrameNumber,
-        prevLastSelection.getLine());
+        tileID->y);
+    return;
   }
+
+  UCesiumGltfComponent* Gltf =
+      static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+  if (!Gltf) {
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Frame %d: %s Id(level: %d, x: %d, y: %d) NO CesiumGltfComponent"),
+        frameNumber,
+        onOff,
+        tileID->level,
+        tileID->x,
+        tileID->y);
+    return;
+  }
+
+  if (Gltf->GetNumChildrenComponents() <= 0) {
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Frame %d: %s Id(level: %d, x: %d, y: %d) NO CHILDREN"),
+        frameNumber,
+        onOff,
+        tileID->level,
+        tileID->x,
+        tileID->y);
+    return;
+  }
+
+  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+
+  if (!off && PrimitiveComponent->SceneProxy == nullptr) {
+    PrimitiveComponent->GetWorld()->Scene->AddPrimitive(PrimitiveComponent);
+    if (PrimitiveComponent->SceneProxy == nullptr) {
+      UE_LOG(LogCesium, Display, TEXT("still no scene proxy?!"));
+    }
+  }
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT(
+          "Frame %d: %s Id(level: %d, x: %d, y: %d) LoadState %d RenderResources %d CurrState(%s, line %d) isRenderable(%d) hasContent(%d) PrevState(%s, frame %d, line %d) PrimitiveIsValid %d HasSceneProxy %d HasPrimitiveSceneInfo %d"),
+      frameNumber,
+      onOff,
+      tileID->level,
+      tileID->x,
+      tileID->y,
+      pTile->getState(),
+      pTile->getRendererResources() != nullptr,
+      *lastResult,
+      lastSelection.getLine(),
+      pTile->isRenderable(),
+      pTile->getContent() != nullptr,
+      *prevLastResult,
+      prevFrameNumber,
+      prevLastSelection.getLine(),
+      IsValid(PrimitiveComponent),
+      PrimitiveComponent->SceneProxy != nullptr,
+      PrimitiveComponent->SceneProxy != nullptr &&
+          PrimitiveComponent->SceneProxy->GetPrimitiveSceneInfo() != nullptr);
 }
 
 // Called every frame
@@ -1080,6 +1140,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
+  UE_LOG(LogCesium, Display, TEXT("Frame Select Start"));
+
   Cesium3DTiles::ViewState tilesetViewState =
       this->CreateViewStateFromViewParameters(
           camera.value().viewportSize,
@@ -1091,7 +1153,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->_captureMovieMode
           ? this->_pTileset->updateViewOffline(tilesetViewState)
           : this->_pTileset->updateView(tilesetViewState);
-  UE_LOG(LogCesium, Display, TEXT("Frame %d"), result.frameNumber);
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Frame %d Select Finish"),
+      result.frameNumber);
 
   GEngine->ClearOnScreenDebugMessages();
   GEngine->AddOnScreenDebugMessage(
@@ -1100,7 +1167,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       FColor::Yellow,
       FString::FromInt(result.frameNumber),
       true,
-      FVector2D(1.5, 1.5)); 
+      FVector2D(1.5, 1.5));
 
   if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
       result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
@@ -1140,7 +1207,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
-    log(pTile, true);
     if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
       continue;
     }
@@ -1149,8 +1215,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetRender(false);
-      //Gltf->SetVisibility(false, true);
-      //Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      // Gltf->SetVisibility(false, true);
+      // Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     } else {
       // TODO: why is this happening?
       UE_LOG(
@@ -1158,10 +1224,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
           VeryVerbose,
           TEXT("Tile to no longer render does not have a visible Gltf"));
     }
+
+    log(pTile, true);
   }
 
   for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
-    log(pTile, false);
     if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
       continue;
     }
@@ -1229,17 +1296,19 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       }
     }
 
-    if (Gltf->GetAttachParent() == nullptr) {
-      Gltf->AttachToComponent(
-          this->RootComponent,
-          FAttachmentTransformRules::KeepRelativeTransform);
-    }
+    //if (Gltf->GetAttachParent() == nullptr) {
+    //  Gltf->AttachToComponent(
+    //      this->RootComponent,
+    //      FAttachmentTransformRules::KeepRelativeTransform);
+    //}
 
     if (!Gltf->IsVisible()) {
       Gltf->SetRender(true);
-      //Gltf->SetVisibility(true, true);
-      //Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+      // Gltf->SetVisibility(true, true);
+      // Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     }
+
+    log(pTile, false);
   }
 }
 
