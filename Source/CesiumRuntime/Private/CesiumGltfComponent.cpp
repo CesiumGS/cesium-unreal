@@ -29,6 +29,7 @@
 #include "CesiumGltf/GltfReader.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfInstancedComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -551,6 +552,61 @@ static std::optional<LoadTextureResult> loadTexture(
   }
 
   return result;
+}
+
+static bool isInstancedGltf(const CesiumGltf::Model& model) {
+  auto instancesLengthIt = model.extras.find("INSTANCES_LENGTH");
+  return instancesLengthIt != model.extras.end() &&
+         instancesLengthIt->second.isUint64() &&
+         instancesLengthIt->second.getUint64() > 0;
+}
+
+static void spawnGltfInstances(
+    const CesiumGltf::Model& model,
+    UCesiumGltfInstancedComponent* instancedMeshComponent) {
+  if (!instancedMeshComponent) {
+    return;
+  }
+
+  auto instancesLengthIt = model.extras.find("INSTANCES_LENGTH");
+  if (instancesLengthIt == model.extras.end() ||
+      !instancesLengthIt->second.isUint64()) {
+    return;
+  }
+   
+  uint32_t instancesLength = static_cast<uint32_t>(instancesLengthIt->second.getUint64());
+
+  auto positionsIt = model.extras.find("INSTANCE_POSITIONS");
+  bool usingPositions =
+      positionsIt != model.extras.end() && positionsIt->second.isUint64();
+
+  auto quantizedPositionsIt = model.extras.find("INSTANCE_QUANTIZED_POSITION");
+  bool usingQuantizedPositions = quantizedPositionsIt != model.extras.end() &&
+                                 quantizedPositionsIt->second.isUint64();
+
+  if (usingPositions) {
+    uint32_t positionsAccessorId =
+        static_cast<uint32_t>(positionsIt->second.getUint64());
+
+    CesiumGltf::AccessorView<FVector> positionsAccessor(
+        model,
+        positionsAccessorId);
+    if (positionsAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      return;
+    }
+
+    for (uint32_t i = 0; i < instancesLength; ++i) {
+      FTransform instanceTransform;
+      instanceTransform.SetTranslation(positionsAccessor[i]);
+      instancedMeshComponent->AddInstance(instanceTransform);
+    }
+
+  } else if (usingQuantizedPositions) {
+    // TODO: actually use quantized positions
+    return;
+  } else {
+    return;
+  }
 }
 
 template <class TIndexAccessor>
@@ -1461,12 +1517,29 @@ static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadModelResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
-  UCesiumGltfPrimitiveComponent* pMesh =
-      NewObject<UCesiumGltfPrimitiveComponent>(
-          pGltf,
-          FName(loadResult.name.c_str()));
-  pMesh->HighPrecisionNodeTransform = loadResult.transform;
-  pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+  bool instancedGltf = isInstancedGltf(*loadResult.pModel);
+
+  UStaticMeshComponent* pMesh;
+  if (instancedGltf) {
+    UCesiumGltfInstancedComponent* pGltfInstancedMesh =
+        NewObject<UCesiumGltfInstancedComponent>(
+            pGltf,
+            FName(loadResult.name.c_str()));
+        pGltfInstancedMesh->HighPrecisionNodeTransform = loadResult.transform;
+        pGltfInstancedMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+        pMesh = pGltfInstancedMesh;
+  } else {
+    UCesiumGltfPrimitiveComponent* pGltfPrimitiveMesh =
+        NewObject<UCesiumGltfPrimitiveComponent>(
+            pGltf,
+            FName(loadResult.name.c_str()));
+    pGltfPrimitiveMesh->HighPrecisionNodeTransform = loadResult.transform;
+    pGltfPrimitiveMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+    pMesh = pGltfPrimitiveMesh;
+  }
 
   pMesh->bUseDefaultCollision = false;
   pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
@@ -1622,6 +1695,19 @@ static void loadModelGameThreadPart(
   // pMesh->bDrawMeshCollisionIfSimple = true;
   pMesh->SetupAttachment(pGltf);
   pMesh->RegisterComponent();
+
+  if (instancedGltf) {
+    // TODO: should move the parsing part of this to worker thread. Only the
+    // actual spawning instances part needs to be on the game thread. The
+    // transforms can be parsed earlier off the game thread.
+    spawnGltfInstances(model, dynamic_cast<UCesiumGltfInstancedComponent*>(pMesh));
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("SPAWNED %d INSTANCES"),
+        dynamic_cast<UCesiumGltfInstancedComponent*>(pMesh)
+            ->GetInstanceCount());
+  }
 }
 
 namespace {
@@ -1716,6 +1802,11 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
     if (pPrimitive) {
       pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     }
+    UCesiumGltfInstancedComponent* pInstanced = 
+        Cast<UCesiumGltfInstancedComponent>(pSceneComponent);
+    if (pInstanced) {
+      pInstanced->UpdateTransformFromCesium(cesiumToUnrealTransform);
+    }
   }
 }
 
@@ -1784,8 +1875,8 @@ void UCesiumGltfComponent::DetachRasterTile(
 void UCesiumGltfComponent::SetCollisionEnabled(
     ECollisionEnabled::Type NewType) {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+    UStaticMeshComponent* pPrimitive =
+        Cast<UStaticMeshComponent>(pSceneComponent);
     if (pPrimitive) {
       pPrimitive->SetCollisionEnabled(NewType);
     }
@@ -1799,8 +1890,8 @@ void UCesiumGltfComponent::FinishDestroy() {
 
 void UCesiumGltfComponent::UpdateRasterOverlays() {
   for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+    UStaticMeshComponent* pPrimitive =
+        Cast<UStaticMeshComponent>(pSceneComponent);
     if (pPrimitive) {
       UMaterialInstanceDynamic* pMaterial =
           Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
