@@ -1074,8 +1074,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
 
     // Apply Actor-defined collision settings to the newly-created component.
-    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-        static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+    UStaticMeshComponent* PrimitiveComponent =
+        static_cast<UStaticMeshComponent*>(Gltf->GetChildComponent(0));
     if (PrimitiveComponent != nullptr) {
       const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
       if (ChannelEnum) {
