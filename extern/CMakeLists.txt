@@ -33,7 +33,15 @@ set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 
+# Remove the install third-party directory first. This is here to 
+# make sure we find the correct third party libraries. Otherwise, debug
+# or release build will be mingled together
+install(CODE "file(REMOVE_RECURSE ${CMAKE_INSTALL_PREFIX})")
+
 add_subdirectory(cesium-native)
+
+# Don't build the cesium-native tests by default
+set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
@@ -46,6 +54,3 @@ if (ANDROID)
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mikktspace
     )
 endif()
-
-# Don't build the cesium-native tests by default
-set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)

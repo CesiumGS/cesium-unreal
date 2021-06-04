@@ -18,49 +18,11 @@ public class CesiumEditor : ModuleRules
             }
         );
 
-
         PrivateIncludePaths.AddRange(
             new string[] {
                 Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
         );
-
-        string libPrefix;
-        string libPostfix;
-        string platform;
-        if (Target.Platform == UnrealTargetPlatform.Win64) {
-            platform = "Windows-x64";
-            libPostfix = ".lib";
-            libPrefix = "";
-        }
-        else if (Target.Platform == UnrealTargetPlatform.Mac) {
-            platform = "Darwin-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else if(Target.Platform == UnrealTargetPlatform.Android) {
-            platform = "Android-xaarch64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else if(Target.Platform == UnrealTargetPlatform.Linux) {
-            platform = "Linux-x64";
-            libPostfix = ".a";
-            libPrefix = "lib";
-        }
-        else {
-            platform = "Unknown";
-            libPostfix = ".Unknown";
-            libPrefix = "Unknown";
-        }
-
-        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
-
-        string releasePostfix = "";
-        string debugPostfix = "d";
-
-        bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
-        string postfix = preferDebug ? debugPostfix : releasePostfix;
 
         string[] libs = new string[]
         {
@@ -68,23 +30,26 @@ public class CesiumEditor : ModuleRules
             "csprng"
         };
 
-        if (preferDebug)
-        {
-            // We prefer Debug, but might still use Release if that's all that's available.
-            foreach (string lib in libs)
-            {
-                string debugPath = Path.Combine(libPath, libPrefix + lib + debugPostfix + libPostfix);
-                if (!File.Exists(debugPath))
-                {
-                    Console.WriteLine("Using release build of cesium-native because a debug build is not available.");
-                    preferDebug = false;
-                    postfix = releasePostfix;
-                    break;
-                }
-            }
+        string platform;
+        if (Target.Platform == UnrealTargetPlatform.Win64) {
+            platform = "Windows-x64";
+        }
+        else if (Target.Platform == UnrealTargetPlatform.Mac) {
+            platform = "Darwin-x64";
+        }
+        else if(Target.Platform == UnrealTargetPlatform.Android) {
+            platform = "Android-xaarch64";
+        }
+        else if(Target.Platform == UnrealTargetPlatform.Linux) {
+            platform = "Linux-x64";
+        }
+        else {
+            platform = "Unknown"; 
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
+        string libPath = Path.Combine(ModuleDirectory, "../ThirdParty/lib/" + platform);
+        var libFiles = Directory.GetFiles(libPath).Where(path => libs.Any(lib => path.Contains(lib)));
+        PublicAdditionalLibraries.AddRange(libFiles);
 
         PublicDependencyModuleNames.AddRange(
             new string[]
