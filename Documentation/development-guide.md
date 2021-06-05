@@ -90,7 +90,7 @@ From the `cesium-unreal/extern` directory, run the following commands to build `
 
 ```bash
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release  # Can optionally compile with RelWithDebInfo or MinSizeRel.
-make --build build --target install
+cmake --build build --target install
 ```
 
 ### Android (Cross Compiling on Windows)
