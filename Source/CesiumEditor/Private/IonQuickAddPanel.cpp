@@ -41,33 +41,67 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
 TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
   static const TArray<TSharedRef<QuickAddItem>> quickAddItems = {
       MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::TILESET,
           "Cesium World Terrain + Bing Maps Aerial imagery",
+          "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery.",
           "Cesium World Terrain",
           1,
           "Bing Maps Aerial",
           2}),
       MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::TILESET,
           "Cesium World Terrain + Bing Maps Aerial with Labels imagery",
+          "High-resolution global terrain tileset curated from several data sources, textured with labeled Bing Maps satellite imagery.",
           "Cesium World Terrain",
           1,
           "Bing Maps Aerial with Labels",
           3}),
       MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::TILESET,
           "Cesium World Terrain + Bing Maps Road imagery",
+          "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery with labels and roads.",
           "Cesium World Terrain",
           1,
           "Bing Maps Road",
           4}),
       MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::TILESET,
           "Cesium World Terrain + Sentinel-2 imagery",
+          "High-resolution global terrain tileset curated from several data sources, textured with high-resolution satellite imagery from the Sentinel-2 project.",
           "Cesium World Terrain",
           1,
           "Sentinel-2 imagery",
           3954}),
       MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::TILESET,
           "Cesium OSM Buildings",
+          "A 3D buildings layer derived from OpenStreetMap covering the entire world.",
           "Cesium OSM Buildings",
           96188,
+          "",
+          -1}),
+      MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::TILESET,
+          "Blank Tileset",
+          "An empty tileset that can be configured to show Cesium ion assets or tilesets from other sources.",
+          "Blank Tileset",
+          -1,
+          "",
+          -1}),
+      MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::SUNSKY,
+          "Cesium SunSky",
+          "An actor that represents a geospatially accurate sun and sky.",
+          "",
+          -1,
+          "",
+          -1}),
+      MakeShared<QuickAddItem>(QuickAddItem{
+          QuickAddItemType::DYNAMIC_PAWN,
+          "Dynamic Pawn",
+          "A pawn that can be used to intuitively navigate in a geospatial environment.",
+          "",
+          -1,
           "",
           -1})};
 
@@ -81,46 +115,127 @@ TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
 TSharedRef<ITableRow> IonQuickAddPanel::CreateQuickAddItemRow(
     TSharedRef<QuickAddItem> item,
     const TSharedRef<STableViewBase>& list) {
-  return SNew(STableRow<TSharedRef<QuickAddItem>>, list)
+  // clang-format off
+  return SNew(STableRow<TSharedRef<QuickAddItem>>, list).Content()
+  [
+    SNew(SBox)
+      .HAlign(EHorizontalAlignment::HAlign_Fill)
+      .HeightOverride(40.0f)
       .Content()
-          [SNew(SBox)
-               .HAlign(EHorizontalAlignment::HAlign_Fill)
-               .HeightOverride(40.0f)
-               .Content()
-                   [SNew(SHorizontalBox) +
-                    SHorizontalBox::Slot().FillWidth(1.0f).Padding(5.0f).VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [SNew(STextBlock)
-                             .AutoWrapText(true)
-                             .Text(FText::FromString(
-                                 UTF8_TO_TCHAR(item->name.c_str())))] +
-                    SHorizontalBox::Slot().AutoWidth().VAlign(
-                        EVerticalAlignment::VAlign_Center)
-                        [PropertyCustomizationHelpers::MakeNewBlueprintButton(
-                            FSimpleDelegate::CreateLambda(
-                                [this, item]() { this->AddItemToLevel(item); }),
-                            FText::FromString(
-                                TEXT("Add this dataset to the level")),
-                            TAttribute<bool>::Create([this, item]() {
-                              return this->_itemsBeingAdded.find(item->name) ==
-                                     this->_itemsBeingAdded.end();
-                            }))]]];
+      [
+        SNew(SHorizontalBox) + 
+          SHorizontalBox::Slot()
+            .FillWidth(1.0f)
+            .Padding(5.0f)
+            .VAlign(EVerticalAlignment::VAlign_Center)
+            [
+              SNew(STextBlock)
+                .AutoWrapText(true)
+                .Text(FText::FromString(UTF8_TO_TCHAR(item->name.c_str())))
+                .ToolTipText(FText::FromString(UTF8_TO_TCHAR(item->description.c_str())))
+            ] +
+          SHorizontalBox::Slot()
+            .AutoWidth()
+            .VAlign(EVerticalAlignment::VAlign_Center)
+            [
+              PropertyCustomizationHelpers::MakeNewBlueprintButton(
+                FSimpleDelegate::CreateLambda(
+                  [this, item]() { this->AddItemToLevel(item); }),
+                FText::FromString(
+                  TEXT("Add this item to the level")),
+                  TAttribute<bool>::Create([this, item]() {
+                    return this->_itemsBeingAdded.find(item->name) ==
+                            this->_itemsBeingAdded.end();
+                  })
+              )
+            ]
+      ]
+  ];
+  // clang-format on
 }
 
-void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
-  if (this->_itemsBeingAdded.find(item->name) != this->_itemsBeingAdded.end()) {
-    // Add is already in progress.
-    return;
-  }
+namespace {
 
+void showAssetDepotConfirmWindow(
+    const FString& itemName,
+    int64_t missingAsset) {
+
+  // clang-format off
+  TSharedRef<SWindow> AssetDepotConfirmWindow =
+    SNew(SWindow)
+      .Title(FText::FromString(TEXT("Asset is not available in My Assets")))
+      .ClientSize(FVector2D(400.0f, 200.0f))
+      .Content()
+      [
+        SNew(SVerticalBox) +
+          SVerticalBox::Slot().AutoHeight().Padding(10.0f)
+          [
+            SNew(STextBlock)
+              .AutoWrapText(true)
+              .Text(FText::FromString(TEXT("Before " + itemName +
+                " can be added to your level, it must be added to \"My Assets\" in your Cesium ion account.")))
+          ] +
+          SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(EHorizontalAlignment::HAlign_Left)
+            .Padding(10.0f, 5.0f)
+          [
+            SNew(SHyperlink)
+              .OnNavigate_Lambda([missingAsset]() {
+                FPlatformProcess::LaunchURL(
+                    UTF8_TO_TCHAR(
+                        ("https://cesium.com/ion/assetdepot/" +
+                          std::to_string(missingAsset))
+                            .c_str()),
+                    NULL,
+                    NULL);
+              })
+              .Text(FText::FromString(TEXT(
+                  "Open this asset in the Cesium ion Asset Depot")))
+          ] +
+          SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(EHorizontalAlignment::HAlign_Left)
+            .Padding(10.0f, 5.0f)
+          [
+            SNew(STextBlock).Text(FText::FromString(TEXT(
+              "Click \"Add to my assets\" in the Cesium ion web page")))
+          ] +
+          SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(EHorizontalAlignment::HAlign_Left)
+            .Padding(10.0f, 5.0f)
+          [
+            SNew(STextBlock)
+              .Text(FText::FromString(TEXT(
+                "Return to Cesium for Unreal and try adding this asset again")))
+          ] +
+          SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(EHorizontalAlignment::HAlign_Center)
+            .Padding(10.0f, 25.0f)
+          [
+            SNew(SButton)
+              .OnClicked_Lambda(
+                  [&AssetDepotConfirmWindow]() {
+                    AssetDepotConfirmWindow
+                        ->RequestDestroyWindow();
+                    return FReply::Handled();
+                  })
+              .Text(FText::FromString(TEXT("Close")))
+          ]
+      ];
+  // clang-format on
+  GEditor->EditorAddModalWindow(AssetDepotConfirmWindow);
+}
+} // namespace
+
+void IonQuickAddPanel::AddTilesetToLevel(TSharedRef<QuickAddItem> item) {
   const std::optional<CesiumIonClient::Connection>& connection =
       FCesiumEditorModule::ion().getConnection();
   if (!connection) {
     return;
   }
-
-  this->_itemsBeingAdded.insert(item->name);
-
   connection->asset(item->tilesetID)
       .thenInMainThread([item, connection](Response<Asset>&& response) {
         if (!response.value.has_value()) {
@@ -141,64 +256,8 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
       })
       .thenInMainThread([this, item](int64_t missingAsset) {
         if (missingAsset != -1) {
-          TSharedRef<SWindow> AssetDepotConfirmWindow =
-              SNew(SWindow)
-                  .Title(FText::FromString(
-                      TEXT("Asset is not available in My Assets")))
-                  .ClientSize(FVector2D(400.0f, 200.0f))
-                  .Content()
-                      [SNew(SVerticalBox) +
-                       SVerticalBox::Slot().AutoHeight().Padding(10.0f)
-                           [SNew(STextBlock)
-                                .AutoWrapText(true)
-                                .Text(FText::FromString(TEXT(
-                                    "Before " +
-                                    FString(UTF8_TO_TCHAR(item->name.c_str())) +
-                                    " can be added to your level, it must be added to \"My Assets\" in your Cesium ion account.")))] +
-                       SVerticalBox::Slot()
-                           .AutoHeight()
-                           .HAlign(EHorizontalAlignment::HAlign_Left)
-                           .Padding(10.0f, 5.0f)
-                               [SNew(SHyperlink)
-                                    .OnNavigate_Lambda([missingAsset]() {
-                                      FPlatformProcess::LaunchURL(
-                                          UTF8_TO_TCHAR(
-                                              ("https://cesium.com/ion/assetdepot/" +
-                                               std::to_string(missingAsset))
-                                                  .c_str()),
-                                          NULL,
-                                          NULL);
-                                    })
-                                    .Text(FText::FromString(TEXT(
-                                        "Open this asset in the Cesium ion Asset Depot")))] +
-                       SVerticalBox::Slot()
-                           .AutoHeight()
-                           .HAlign(EHorizontalAlignment::HAlign_Left)
-                           .Padding(10.0f, 5.0f)
-                               [SNew(STextBlock)
-                                    .Text(FText::FromString(TEXT(
-                                        "Click \"Add to my assets\" in the Cesium ion web page")))] +
-                       SVerticalBox::Slot()
-                           .AutoHeight()
-                           .HAlign(EHorizontalAlignment::HAlign_Left)
-                           .Padding(10.0f, 5.0f)
-                               [SNew(STextBlock)
-                                    .Text(FText::FromString(TEXT(
-                                        "Return to Cesium for Unreal and try adding this asset again")))] +
-                       SVerticalBox::Slot()
-                           .AutoHeight()
-                           .HAlign(EHorizontalAlignment::HAlign_Center)
-                           .Padding(10.0f, 25.0f)
-                               [SNew(SButton)
-                                    .OnClicked_Lambda(
-                                        [&AssetDepotConfirmWindow]() {
-                                          AssetDepotConfirmWindow
-                                              ->RequestDestroyWindow();
-                                          return FReply::Handled();
-                                        })
-                                    .Text(FText::FromString(TEXT("Close")))]];
-
-          GEditor->EditorAddModalWindow(AssetDepotConfirmWindow);
+          FString itemName(UTF8_TO_TCHAR(item->name.c_str()));
+          showAssetDepotConfirmWindow(itemName, missingAsset);
         } else {
           ACesium3DTileset* pTileset =
               FCesiumEditorModule::FindFirstTilesetWithAssetID(item->tilesetID);
@@ -225,4 +284,92 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
 
         this->_itemsBeingAdded.erase(item->name);
       });
+}
+
+void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
+  if (FCesiumEditorModule::CurrentLevelContainsCesiumSunSky()) {
+    return;
+  }
+  AActor* actor = FCesiumEditorModule::SpawnCesiumSunSky();
+  GEditor->SelectNone(true, false);
+  GEditor->SelectActor(actor, true, true, true, true);
+}
+
+namespace {
+/**
+ * Set a byte property value in the given object.
+ *
+ * This will search the class of the given object for a property
+ * with the given name, which is assumed to be a byte property,
+ * and assign the given value to this property.
+ *
+ * If the object is `nullptr`, nothing will be done.
+ * If the class does not contain a property with the given name,
+ * or it is not a byte property, a warning will be printed.
+ *
+ * @param object The object to set the value in
+ * @param name The name of the property
+ * @param value The value to set for the property.
+ */
+void SetBytePropertyValue(
+    UObjectBase* object,
+    const std::string& name,
+    uint8 value) {
+  if (!object) {
+    return;
+  }
+  UClass* cls = object->GetClass();
+  FString nameString(name.c_str());
+  FName propName = FName(*nameString);
+  FProperty* property = cls->FindPropertyByName(propName);
+  if (!property) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT("Property with name %s not found"),
+        *nameString);
+    return;
+  }
+  FByteProperty* byteProperty = CastField<FByteProperty>(property);
+  if (!byteProperty) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT("Property is not an FByteProperty: %s"),
+        *nameString);
+    return;
+  }
+  byteProperty->SetPropertyValue_InContainer(object, value);
+}
+} // namespace
+
+void IonQuickAddPanel::AddDynamicPawnToLevel() {
+  if (FCesiumEditorModule::CurrentLevelContainsDynamicPawn()) {
+    return;
+  }
+  AActor* actor = FCesiumEditorModule::SpawnDynamicPawn();
+
+  uint8 autoPossessValue = static_cast<uint8>(EAutoReceiveInput::Type::Player0);
+  SetBytePropertyValue(actor, "AutoPossessPlayer", autoPossessValue);
+
+  GEditor->SelectNone(true, false);
+  GEditor->SelectActor(actor, true, true, true, true);
+}
+
+void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
+  if (this->_itemsBeingAdded.find(item->name) != this->_itemsBeingAdded.end()) {
+    // Add is already in progress.
+    return;
+  }
+  this->_itemsBeingAdded.insert(item->name);
+
+  if (item->type == QuickAddItemType::TILESET) {
+    AddTilesetToLevel(item);
+  } else if (item->type == QuickAddItemType::SUNSKY) {
+    AddCesiumSunSkyToLevel();
+    this->_itemsBeingAdded.erase(item->name);
+  } else if (item->type == QuickAddItemType::DYNAMIC_PAWN) {
+    AddDynamicPawnToLevel();
+    this->_itemsBeingAdded.erase(item->name);
+  }
 }

@@ -42,6 +42,9 @@ FString FCesiumEditorModule::InContent(
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::StyleSet = nullptr;
 FCesiumEditorModule* FCesiumEditorModule::_pModule = nullptr;
 
+UClass* FCesiumEditorModule::_cesiumSunSkyBlueprintClass = nullptr;
+UClass* FCesiumEditorModule::_dynamicPawnBlueprintClass = nullptr;
+
 void FCesiumEditorModule::StartupModule() {
   _pModule = this;
 
@@ -205,6 +208,25 @@ void FCesiumEditorModule::StartupModule() {
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
         pToolbarExtender);
   }
+
+  _cesiumSunSkyBlueprintClass = LoadClass<AActor>(
+      nullptr,
+      TEXT("/CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
+  if (!_cesiumSunSkyBlueprintClass) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT("Could not load /CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
+  }
+  _dynamicPawnBlueprintClass = LoadClass<AActor>(
+      nullptr,
+      TEXT("/CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+  if (!_dynamicPawnBlueprintClass) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT("Could not load /CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+  }
 }
 
 void FCesiumEditorModule::ShutdownModule() {
@@ -282,10 +304,11 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
-  pTilesetActor->SetIonAssetID(assetID);
-  pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
-
+  if (assetID != -1) {
+    pTilesetActor->SetIonAssetID(assetID);
+    pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
+        FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
+  }
   return pTilesetActor;
 }
 
@@ -316,4 +339,56 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
   pTilesetActor->AddInstanceComponent(pOverlay);
 
   return pOverlay;
+}
+
+namespace {
+/**
+ * Returns whether the current level of the edited world contains
+ * any actor with the given class.
+ *
+ * @param actorClass The expected class
+ * @return Whether such an actor could be found
+ */
+bool CurrentLevelContainsActorWithClass(UClass* actorClass) {
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+  for (TActorIterator<AActor> it(pCurrentWorld); it; ++it) {
+    if (it->GetClass() == actorClass) {
+      return true;
+    }
+  }
+  return false;
+}
+/**
+ * Tries to spawn an actor with the given class, with all
+ * default parameters, in the current level of the edited world.
+ *
+ * @param actorClass The class
+ * @return The resulting actor, or `nullptr` if the actor
+ * could not be spawned.
+ */
+AActor* SpawnActorWithClass(UClass* actorClass) {
+  if (!actorClass) {
+    return nullptr;
+  }
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  AActor* pNewActor = pCurrentWorld->SpawnActor<AActor>(actorClass);
+  return pNewActor;
+}
+} // namespace
+
+bool FCesiumEditorModule::CurrentLevelContainsCesiumSunSky() {
+  return CurrentLevelContainsActorWithClass(_cesiumSunSkyBlueprintClass);
+}
+
+AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
+  return SpawnActorWithClass(_cesiumSunSkyBlueprintClass);
+}
+
+bool FCesiumEditorModule::CurrentLevelContainsDynamicPawn() {
+  return CurrentLevelContainsActorWithClass(_dynamicPawnBlueprintClass);
+}
+
+AActor* FCesiumEditorModule::SpawnDynamicPawn() {
+  return SpawnActorWithClass(_dynamicPawnBlueprintClass);
 }

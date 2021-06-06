@@ -17,8 +17,12 @@ class IonQuickAddPanel : public SCompoundWidget {
   void Construct(const FArguments& InArgs);
 
 private:
+  enum class QuickAddItemType { TILESET, SUNSKY, DYNAMIC_PAWN };
+
   struct QuickAddItem {
+    QuickAddItemType type;
     std::string name{};
+    std::string description;
     std::string tilesetName{};
     int64_t tilesetID = -1;
     std::string overlayName{};
@@ -29,7 +33,11 @@ private:
   TSharedRef<ITableRow> CreateQuickAddItemRow(
       TSharedRef<QuickAddItem> item,
       const TSharedRef<STableViewBase>& list);
+
   void AddItemToLevel(TSharedRef<QuickAddItem> item);
+  void AddTilesetToLevel(TSharedRef<QuickAddItem> item);
+  void AddCesiumSunSkyToLevel();
+  void AddDynamicPawnToLevel();
 
   std::unordered_set<std::string> _itemsBeingAdded;
 };
