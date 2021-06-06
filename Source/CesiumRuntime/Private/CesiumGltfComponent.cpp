@@ -1469,9 +1469,14 @@ static void loadModelGameThreadPart(
   case CesiumGltf::Material::AlphaMode::OPAQUE:
   default:
     pMaterial = UMaterialInstanceDynamic::Create(
+// TODO: figure out why water material crashes mac
+#if PLATFORM_MAC
+        pGltf->BaseMaterial,
+#else
         (loadResult.onlyWater || !loadResult.onlyLand)
             ? pGltf->BaseMaterialWithWater
             : pGltf->BaseMaterial,
+#endif
         nullptr,
         ImportedSlotName);
     break;
