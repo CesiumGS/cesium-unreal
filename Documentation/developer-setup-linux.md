@@ -5,6 +5,14 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Build Unreal Engine for Linux by following the [Linux Quickstart](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html)
 
+After compiling Unreal Engine, set the following environment variables in your `.bashrc`.
+
+```bash
+export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
+export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu
+export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
+```
+
 # Cloning the git repos
 
 The following illustrates the recommended directory layout for developers:
@@ -36,13 +44,6 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 
 First, configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below.
 **Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
-
-First, set the environment variables used by the build process:
-
-      export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
-      export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu
-      export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
-
 
 Change to the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
 

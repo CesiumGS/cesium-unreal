@@ -23,3 +23,8 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 * [Windows](developer-setup-windows.md)
 * [Linux](developer-setup-linux.md)
 * macOS - coming soon
+
+## Deployment instructions
+
+* The [Packaging Guide](packaging-guide.md) describes how to create a package and use it in a local Unreal installation. This is similar to installing it from the Unreal Engine Marketplace, but allows testing non-release branches.
+* The [Release Process](release-process.md) describes the necessary steps to publish a new version of the plugin to the Unreal Marketplace.
