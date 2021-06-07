@@ -10,25 +10,31 @@
 
 class FArguments;
 
+enum class QuickAddItemType { TILESET, SUNSKY, DYNAMIC_PAWN };
+
+struct QuickAddItem {
+  QuickAddItemType type;
+  std::string name{};
+  std::string description;
+  std::string tilesetName{};
+  int64_t tilesetID = -1;
+  std::string overlayName{};
+  int64_t overlayID = -1;
+};
+
 class IonQuickAddPanel : public SCompoundWidget {
   SLATE_BEGIN_ARGS(IonQuickAddPanel) {}
+  /**
+   * The tile shown over the elements of the list
+   */
+  SLATE_ARGUMENT(FText, Title)
   SLATE_END_ARGS()
 
   void Construct(const FArguments& InArgs);
 
+  void AddItem(const QuickAddItem& item);
+
 private:
-  enum class QuickAddItemType { TILESET, SUNSKY, DYNAMIC_PAWN };
-
-  struct QuickAddItem {
-    QuickAddItemType type;
-    std::string name{};
-    std::string description;
-    std::string tilesetName{};
-    int64_t tilesetID = -1;
-    std::string overlayName{};
-    int64_t overlayID = -1;
-  };
-
   TSharedRef<SWidget> QuickAddList();
   TSharedRef<ITableRow> CreateQuickAddItemRow(
       TSharedRef<QuickAddItem> item,
@@ -39,5 +45,6 @@ private:
   void AddCesiumSunSkyToLevel();
   void AddDynamicPawnToLevel();
 
+  TArray<TSharedRef<QuickAddItem>> _quickAddItems;
   std::unordered_set<std::string> _itemsBeingAdded;
 };

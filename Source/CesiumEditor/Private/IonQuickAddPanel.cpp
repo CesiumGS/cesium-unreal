@@ -31,83 +31,21 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
                [SNew(SHeader).Content()
                     [SNew(STextBlock)
                          .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                         .Text(FText::FromString(TEXT("Quick Add")))]] +
+                         .Text(InArgs._Title)]] +
        SVerticalBox::Slot()
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Fill)
            .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))[this->QuickAddList()]];
 }
 
-TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
-  static const TArray<TSharedRef<QuickAddItem>> quickAddItems = {
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::TILESET,
-          "Cesium World Terrain + Bing Maps Aerial imagery",
-          "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery.",
-          "Cesium World Terrain",
-          1,
-          "Bing Maps Aerial",
-          2}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::TILESET,
-          "Cesium World Terrain + Bing Maps Aerial with Labels imagery",
-          "High-resolution global terrain tileset curated from several data sources, textured with labeled Bing Maps satellite imagery.",
-          "Cesium World Terrain",
-          1,
-          "Bing Maps Aerial with Labels",
-          3}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::TILESET,
-          "Cesium World Terrain + Bing Maps Road imagery",
-          "High-resolution global terrain tileset curated from several data sources, textured with Bing Maps satellite imagery with labels and roads.",
-          "Cesium World Terrain",
-          1,
-          "Bing Maps Road",
-          4}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::TILESET,
-          "Cesium World Terrain + Sentinel-2 imagery",
-          "High-resolution global terrain tileset curated from several data sources, textured with high-resolution satellite imagery from the Sentinel-2 project.",
-          "Cesium World Terrain",
-          1,
-          "Sentinel-2 imagery",
-          3954}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::TILESET,
-          "Cesium OSM Buildings",
-          "A 3D buildings layer derived from OpenStreetMap covering the entire world.",
-          "Cesium OSM Buildings",
-          96188,
-          "",
-          -1}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::TILESET,
-          "Blank Tileset",
-          "An empty tileset that can be configured to show Cesium ion assets or tilesets from other sources.",
-          "Blank Tileset",
-          -1,
-          "",
-          -1}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::SUNSKY,
-          "Cesium SunSky",
-          "An actor that represents a geospatially accurate sun and sky.",
-          "",
-          -1,
-          "",
-          -1}),
-      MakeShared<QuickAddItem>(QuickAddItem{
-          QuickAddItemType::DYNAMIC_PAWN,
-          "Dynamic Pawn",
-          "A pawn that can be used to intuitively navigate in a geospatial environment.",
-          "",
-          -1,
-          "",
-          -1})};
+void IonQuickAddPanel::AddItem(const QuickAddItem& item) {
+  _quickAddItems.Add(MakeShared<QuickAddItem>(item));
+}
 
+TSharedRef<SWidget> IonQuickAddPanel::QuickAddList() {
   return SNew(SListView<TSharedRef<QuickAddItem>>)
       .SelectionMode(ESelectionMode::None)
-      .ListItemsSource(&quickAddItems)
+      .ListItemsSource(&_quickAddItems)
       .OnMouseButtonDoubleClick(this, &IonQuickAddPanel::AddItemToLevel)
       .OnGenerateRow(this, &IonQuickAddPanel::CreateQuickAddItemRow);
 }

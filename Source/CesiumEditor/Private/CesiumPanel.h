@@ -21,7 +21,8 @@ class CesiumPanel : public SCompoundWidget {
 private:
   TSharedRef<SWidget> Toolbar();
   TSharedRef<SWidget> LoginPanel();
-  TSharedRef<SWidget> MainPanel();
+  TSharedRef<SWidget> MainIonQuickAddPanel();
+  TSharedRef<SWidget> BasicQuickAddPanel();
   TSharedRef<SWidget> ConnectionStatus();
 
   void addFromIon();
