@@ -2,6 +2,7 @@
 
 #include "CesiumRuntime.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"
+#include "CesiumUtility/Profiler.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
@@ -17,9 +18,11 @@ void FCesiumRuntimeModule::StartupModule() {
   pLogger->sinks() = {std::make_shared<SpdlogUnrealLoggerSink>()};
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
+
+  TRACE_START("tracer.json");
 }
 
-void FCesiumRuntimeModule::ShutdownModule() {}
+void FCesiumRuntimeModule::ShutdownModule() { TRACE_END(); }
 
 #undef LOCTEXT_NAMESPACE
 
