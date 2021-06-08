@@ -4,6 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "Containers/UnrealString.h"
+#include "GeoTransforms.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "UObject/WeakInterfacePtr.h"
@@ -480,7 +481,7 @@ public:
    * reference-frames.md}.
    */
   const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const {
-    return this->_georeferencedToEcef;
+    return this->_geoTransforms.GetGeoreferencedToEllipsoidCenteredTransform();
   }
 
   /**
@@ -494,7 +495,7 @@ public:
    * reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const {
-    return this->_ecefToGeoreferenced;
+    return this->_geoTransforms.GetEllipsoidCenteredToGeoreferencedTransform();
   }
 
   /**
@@ -507,7 +508,7 @@ public:
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
-    return this->_ueAbsToEcef;
+    return this->_geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform();
   }
 
   /**
@@ -520,7 +521,7 @@ public:
    * not the floating origin). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
-    return this->_ecefToUeAbs;
+    return this->_geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform();
   }
 
   /**
@@ -565,21 +566,14 @@ protected:
 #endif
 
 private:
-  UPROPERTY()
-  double _georeferencedToEcef_Array[16];
-  glm::dmat4& _georeferencedToEcef = *(glm::dmat4*)_georeferencedToEcef_Array;
 
   UPROPERTY()
-  double _ecefToGeoreferenced_Array[16];
-  glm::dmat4& _ecefToGeoreferenced = *(glm::dmat4*)_ecefToGeoreferenced_Array;
+  double _ellipsoidRadii[3];
 
   UPROPERTY()
-  double _ueAbsToEcef_Array[16];
-  glm::dmat4& _ueAbsToEcef = *(glm::dmat4*)_ueAbsToEcef_Array;
+  double _center[16];
 
-  UPROPERTY()
-  double _ecefToUeAbs_Array[16];
-  glm::dmat4& _ecefToUeAbs = *(glm::dmat4*)_ecefToUeAbs_Array;
+  GeoTransforms _geoTransforms;
 
   bool _insideSublevel;
 
