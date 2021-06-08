@@ -25,7 +25,6 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
       [SNew(SVerticalBox) +
        SVerticalBox::Slot()
            .VAlign(VAlign_Top)
-           .HAlign(HAlign_Fill)
            .AutoHeight()
            .Padding(FMargin(5.0f, 20.0f, 5.0f, 10.0f))
                [SNew(SHeader).Content()
@@ -34,7 +33,6 @@ void IonQuickAddPanel::Construct(const FArguments& InArgs) {
                          .Text(InArgs._Title)]] +
        SVerticalBox::Slot()
            .VAlign(VAlign_Top)
-           .HAlign(HAlign_Fill)
            .Padding(FMargin(5.0f, 0.0f, 5.0f, 20.0f))[this->QuickAddList()]];
 }
 

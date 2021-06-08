@@ -17,11 +17,10 @@
 void CesiumPanel::Construct(const FArguments& InArgs) {
   ChildSlot
       [SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight()[Toolbar()] +
-       SVerticalBox::Slot().FillHeight(1.0).VAlign(VAlign_Fill)
-           [SNew(SScrollBox) +
-            SScrollBox::Slot().HAlign(HAlign_Fill)[LoginPanel()] +
-            SScrollBox::Slot().HAlign(HAlign_Fill)[MainIonQuickAddPanel()] +
-            SScrollBox::Slot().HAlign(HAlign_Fill)[BasicQuickAddPanel()]] +
+       SVerticalBox::Slot().VAlign(VAlign_Fill)
+           [SNew(SScrollBox) + SScrollBox::Slot()[LoginPanel()] +
+            SScrollBox::Slot()[MainIonQuickAddPanel()] +
+            SScrollBox::Slot()[BasicQuickAddPanel()]] +
        SVerticalBox::Slot()
            .AutoHeight()
            .VAlign(VAlign_Bottom)

@@ -33,6 +33,57 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
 
   // TODO Format this, and disable clang format here
 
+  TSharedPtr<SVerticalBox> connectionStatusWidget =
+      SNew(SVerticalBox).Visibility_Lambda(visibleWhenConnecting) +
+      SVerticalBox::Slot()
+          .VAlign(VAlign_Top)
+          .Padding(5, 15, 5, 5)
+          .AutoHeight()
+              [SNew(STextBlock)
+                   .Text(FText::FromString(TEXT(
+                       "Waiting for you to sign into Cesium ion with your web browser...")))
+                   .AutoWrapText(true)] +
+      SVerticalBox::Slot()
+          .HAlign(HAlign_Center)
+          .Padding(5)[SNew(SThrobber).Animate(SThrobber::Horizontal)] +
+      SVerticalBox::Slot()
+          .HAlign(HAlign_Center)
+          .Padding(5)
+          .AutoHeight()
+              [SNew(SHyperlink)
+                   .OnNavigate(this, &IonLoginPanel::LaunchBrowserAgain)
+                   .Text(FText::FromString(TEXT("Open web browser again")))] +
+      SVerticalBox::Slot()
+          .VAlign(VAlign_Top)
+          .Padding(5)
+          .AutoHeight()[SNew(STextBlock)
+                            .Text(FText::FromString(TEXT(
+                                "Or copy the URL below into your web browser")))
+                            .AutoWrapText(true)] +
+      SVerticalBox::Slot()
+          .HAlign(HAlign_Center)
+          .AutoHeight()
+              [SNew(SHorizontalBox) +
+               SHorizontalBox::Slot().VAlign(VAlign_Center)[SNew(
+                   SBorder)[SNew(SEditableText)
+                                .IsReadOnly(true)
+                                .Text_Lambda([this]() {
+                                  return FText::FromString(
+                                      UTF8_TO_TCHAR(FCesiumEditorModule::ion()
+                                                        .getAuthorizeUrl()
+                                                        .c_str()));
+                                })]] +
+               SHorizontalBox::Slot()
+                   .VAlign(VAlign_Center)
+                   .HAlign(HAlign_Right)
+                   .AutoWidth()
+                       [SNew(SButton)
+                            .OnClicked(
+                                this,
+                                &IonLoginPanel::CopyAuthorizeUrlToClipboard)
+                            .Text(
+                                FText::FromString(TEXT("Copy to clipboard")))]];
+
   TSharedPtr<SVerticalBox> connectionWidget =
       SNew(SVerticalBox) +
       SVerticalBox::Slot()
@@ -49,17 +100,6 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                             })] +
       SVerticalBox::Slot()
           .VAlign(VAlign_Top)
-          .HAlign(HAlign_Fill)
-          .Padding(5, 15, 5, 5)
-          .AutoHeight()
-              [SNew(STextBlock)
-                   .Text(FText::FromString(TEXT(
-                       "Waiting for you to sign into Cesium ion with your web browser...")))
-                   .Visibility_Lambda(visibleWhenConnecting)
-                   .AutoWrapText(true)] +
-      SVerticalBox::Slot()
-          .VAlign(VAlign_Top)
-          .HAlign(HAlign_Fill)
           .Padding(5, 15, 5, 5)
           .AutoHeight()[SNew(STextBlock)
                             .Text(FText::FromString(
@@ -67,52 +107,8 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                             .Visibility_Lambda(visibleWhenResuming)
                             .AutoWrapText(true)] +
       SVerticalBox::Slot()
-          .HAlign(HAlign_Center)
-          .Padding(5)[SNew(SThrobber)
-                          .Animate(SThrobber::Horizontal)
-                          .Visibility_Lambda(visibleWhenConnecting)] +
-      SVerticalBox::Slot()
-          .HAlign(HAlign_Center)
-          .Padding(5)
-          .AutoHeight()
-              [SNew(SHyperlink)
-                   .OnNavigate(this, &IonLoginPanel::LaunchBrowserAgain)
-                   .Text(FText::FromString(TEXT("Open web browser again")))
-                   .Visibility_Lambda(visibleWhenConnecting)] +
-      SVerticalBox::Slot()
           .VAlign(VAlign_Top)
-          .HAlign(HAlign_Fill)
-          .Padding(5)
-          .AutoHeight()[SNew(STextBlock)
-                            .Text(FText::FromString(TEXT(
-                                "Or copy the URL below into your web browser")))
-                            .Visibility_Lambda(visibleWhenConnecting)
-                            .AutoWrapText(true)] +
-      SVerticalBox::Slot()
-          .HAlign(HAlign_Center)
-          .AutoHeight()
-              [SNew(SHorizontalBox).Visibility_Lambda(visibleWhenConnecting) +
-               SHorizontalBox::Slot()
-                   .HAlign(HAlign_Fill)
-                   .VAlign(VAlign_Center)[SNew(
-                       SBorder)[SNew(SEditableText)
-                                    .IsReadOnly(true)
-                                    .Text_Lambda([this]() {
-                                      return FText::FromString(UTF8_TO_TCHAR(
-                                          FCesiumEditorModule::ion()
-                                              .getAuthorizeUrl()
-                                              .c_str()));
-                                    })]] +
-               SHorizontalBox::Slot()
-                   .VAlign(VAlign_Center)
-                   .HAlign(HAlign_Right)
-                   .AutoWidth()
-                       [SNew(SButton)
-                            .OnClicked(
-                                this,
-                                &IonLoginPanel::CopyAuthorizeUrlToClipboard)
-                            .Text(
-                                FText::FromString(TEXT("Copy to clipboard")))]];
+          .AutoHeight()[connectionStatusWidget.ToSharedRef()];
 
   ChildSlot
       [SNew(SScrollBox) +
@@ -127,7 +123,6 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                                     TEXT("Cesium.Logo")))]] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
-           .HAlign(HAlign_Fill)
            .Padding(10)
                [SNew(STextBlock)
                     .AutoWrapText(true)
