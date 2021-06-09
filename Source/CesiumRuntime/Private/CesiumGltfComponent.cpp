@@ -576,10 +576,8 @@ applyCustomMasks(const CesiumGltf::Model& model, LoadModelResult& modelResult) {
     }
   }
 
-  auto customMaskTranslationXIt =
-      model.extras.find("customMaskTranslationX");
-  auto customMaskTranslationYIt =
-      model.extras.find("customMaskTranslationY");
+  auto customMaskTranslationXIt = model.extras.find("customMaskTranslationX");
+  auto customMaskTranslationYIt = model.extras.find("customMaskTranslationY");
   auto customMaskScaleIt = model.extras.find("customMaskScale");
 
   if (customMaskTranslationXIt != model.extras.end() &&
@@ -1588,7 +1586,10 @@ static void loadModelGameThreadPart(
           loadResult.waterMaskScale));
 
   for (const CustomMask& customMask : loadResult.customMaskTextures) {
-    applyTexture(pMaterial, UTF8_TO_TCHAR(customMask.name.c_str()), customMask.loadTextureResult);
+    applyTexture(
+        pMaterial,
+        UTF8_TO_TCHAR(customMask.name.c_str()),
+        customMask.loadTextureResult);
   }
 
   pMaterial->SetVectorParameterValue(

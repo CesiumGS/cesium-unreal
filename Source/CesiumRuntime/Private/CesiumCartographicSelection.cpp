@@ -59,10 +59,10 @@ void ACesiumCartographicSelection::UpdateSelection() {
   }
 }
 
-Cesium3DTiles::CartographicSelection ACesiumCartographicSelection::CreateCesiumCartographicSelection() const {
+Cesium3DTiles::CartographicSelection
+ACesiumCartographicSelection::CreateCesiumCartographicSelection() const {
   return Cesium3DTiles::CartographicSelection(
-    TCHAR_TO_UTF8(*this->TargetTexture),
-    this->_cartographicSelection,
-    this->IsForCulling
-  );
+      TCHAR_TO_UTF8(*this->TargetTexture),
+      this->_cartographicSelection,
+      this->IsForCulling);
 }
