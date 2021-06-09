@@ -124,10 +124,17 @@ UnrealAssetAccessor::requestAsset(
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
 
+#if TRACING_ENABLED
+  int64_t tracingID = CesiumUtility::Profiler::instance().getEnlistedID();
+  TRACE_ASYNC_BEGIN_ID("requestAsset", tracingID);
+#else
+  int64_t tracingID = -1;
+#endif
+
   const FString& userAgent = this->_userAgent;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
-      [&url, &headers, &userAgent](const auto& promise) {
+      [tracingID, &url, &headers, &userAgent](const auto& promise) {
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
@@ -142,10 +149,11 @@ UnrealAssetAccessor::requestAsset(
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
 
         pRequest->OnProcessRequestComplete().BindLambda(
-            [promise](
+            [promise, tracingID](
                 FHttpRequestPtr pRequest,
                 FHttpResponsePtr pResponse,
                 bool connectedSuccessfully) {
+              TRACE_ASYNC_END_ID("requestAsset", tracingID);
               if (connectedSuccessfully) {
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
