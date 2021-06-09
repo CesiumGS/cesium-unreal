@@ -19,10 +19,10 @@ void FCesiumRuntimeModule::StartupModule() {
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
 
-  TRACE_START("tracer.json");
+  TRACE_INIT("tracer.json");
 }
 
-void FCesiumRuntimeModule::ShutdownModule() { TRACE_END(); }
+void FCesiumRuntimeModule::ShutdownModule() { TRACE_SHUTDOWN(); }
 
 #undef LOCTEXT_NAMESPACE
 
