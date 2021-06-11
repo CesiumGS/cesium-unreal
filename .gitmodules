@@ -1,3 +1,6 @@
 [submodule "extern/cesium-native"]
 	path = extern/cesium-native
 	url = ../cesium-native.git
+[submodule "extern/MikkTSpace"]
+	path = extern/MikkTSpace
+	url = https://github.com/mmikk/MikkTSpace.git

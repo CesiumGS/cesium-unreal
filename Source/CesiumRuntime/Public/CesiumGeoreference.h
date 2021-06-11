@@ -4,6 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "Containers/UnrealString.h"
+#include "GeoTransforms.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "UObject/WeakInterfacePtr.h"
@@ -79,8 +80,8 @@ public:
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a "CesiumGlobeAnchorParent". Ensure that static actors only
-   * exist in georeferenced sublevels.
+   * or attached to a an actor with that component. Ensure that static actors
+   * only exist in georeferenced sublevels.
    */
   UFUNCTION(CallInEditor, Category = "CesiumSublevels")
   void JumpToCurrentLevel();
@@ -93,8 +94,7 @@ public:
    * Warning: Before changing, ensure the last level you worked on has been
    * properly georeferenced. Ensure all actors are georeferenced, either by
    * inclusion in a georeferenced sublevel, by adding the
-   * "CesiumGeoreferenceComponent", or by attaching to a
-   * "CesiumGlobeAnchorParent".
+   * "CesiumGeoreferenceComponent", or by attaching to an actor with one.
    */
   UPROPERTY(
       EditAnywhere,
@@ -133,20 +133,6 @@ public:
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
   /**
-   * The longitude of the custom origin placement in degrees, in the range
-   * [-180, 180]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta =
-          (EditCondition =
-               "OriginPlacement==EOriginPlacement::CartographicOrigin",
-           ClampMin = -180.0,
-           ClampMax = 180.0))
-  double OriginLongitude = -105.25737;
-
-  /**
    * The latitude of the custom origin placement in degrees, in the range [-90,
    * 90]
    */
@@ -159,6 +145,20 @@ public:
            ClampMin = -90.0,
            ClampMax = 90.0))
   double OriginLatitude = 39.736401;
+
+  /**
+   * The longitude of the custom origin placement in degrees, in the range
+   * [-180, 180]
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta =
+          (EditCondition =
+               "OriginPlacement==EOriginPlacement::CartographicOrigin",
+           ClampMin = -180.0,
+           ClampMax = 180.0))
+  double OriginLongitude = -105.25737;
 
   /**
    * The height of the custom origin placement in meters above the WGS84
@@ -197,7 +197,7 @@ public:
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a "CesiumGlobeAnchorParent". Ensure that static actors only
+   * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sublevels.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
@@ -417,7 +417,7 @@ public:
    * See {@link reference-frames.md}.
    */
   const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const {
-    return this->_georeferencedToEcef;
+    return this->_geoTransforms.GetGeoreferencedToEllipsoidCenteredTransform();
   }
 
   /**
@@ -431,7 +431,7 @@ public:
    * See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const {
-    return this->_ecefToGeoreferenced;
+    return this->_geoTransforms.GetEllipsoidCenteredToGeoreferencedTransform();
   }
 
   /**
@@ -444,7 +444,7 @@ public:
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
-    return this->_ueAbsToEcef;
+    return this->_geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform();
   }
 
   /**
@@ -457,7 +457,7 @@ public:
    * not the floating origin). See {@link reference-frames.md}.
    */
   const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
-    return this->_ecefToUeAbs;
+    return this->_geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform();
   }
 
   /**
@@ -507,21 +507,14 @@ protected:
 #endif
 
 private:
-  UPROPERTY()
-  double _georeferencedToEcef_Array[16];
-  glm::dmat4& _georeferencedToEcef = *(glm::dmat4*)_georeferencedToEcef_Array;
 
   UPROPERTY()
-  double _ecefToGeoreferenced_Array[16];
-  glm::dmat4& _ecefToGeoreferenced = *(glm::dmat4*)_ecefToGeoreferenced_Array;
+  double _ellipsoidRadii[3];
 
   UPROPERTY()
-  double _ueAbsToEcef_Array[16];
-  glm::dmat4& _ueAbsToEcef = *(glm::dmat4*)_ueAbsToEcef_Array;
+  double _center[16];
 
-  UPROPERTY()
-  double _ecefToUeAbs_Array[16];
-  glm::dmat4& _ecefToUeAbs = *(glm::dmat4*)_ecefToUeAbs_Array;
+  GeoTransforms _geoTransforms;
 
   bool _insideSublevel;
 

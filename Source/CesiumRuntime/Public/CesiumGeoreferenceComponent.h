@@ -59,15 +59,6 @@ public:
   bool TeleportWhenUpdatingTransform = true;
 
   /**
-   * The WGS84 longitude in degrees of this actor, in the range [-180, 180]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (ClampMin = -180.0, ClampMax = 180.0))
-  double Longitude = 0.0;
-
-  /**
    * The WGS84 latitude in degrees of this actor, in the range [-90, 90]
    */
   UPROPERTY(
@@ -75,6 +66,15 @@ public:
       Category = "Cesium",
       meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
+
+  /**
+   * The WGS84 longitude in degrees of this actor, in the range [-180, 180]
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
+  double Longitude = 0.0;
 
   /**
    * The height in meters (above the WGS84 ellipsoid) of this actor.

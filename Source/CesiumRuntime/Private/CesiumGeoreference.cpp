@@ -7,6 +7,7 @@
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "GeoTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
@@ -29,9 +30,6 @@
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
 #endif
-
-#define IDENTITY_MAT4x4_ARRAY                                                  \
-  1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0
 
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
@@ -75,10 +73,7 @@ ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _georeferencedToEcef_Array{IDENTITY_MAT4x4_ARRAY},
-      _ecefToGeoreferenced_Array{IDENTITY_MAT4x4_ARRAY},
-      _ueAbsToEcef_Array{IDENTITY_MAT4x4_ARRAY},
-      _ecefToUeAbs_Array{IDENTITY_MAT4x4_ARRAY},
+    : _geoTransforms(),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
@@ -114,7 +109,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
       VecMath::createMatrix4D(fCameraTransform, translation);
 
   // camera local space to ECEF
-  glm::dmat4 cameraToECEF = this->_ueAbsToEcef * cameraToAbsolute;
+  glm::dmat4 cameraToECEF = this->GetUnrealWorldToEllipsoidCenteredTransform() * cameraToAbsolute;
 
   // Long/Lat/Height camera location (also our new target georeference origin)
   std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin =
@@ -140,7 +135,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
   // TODO: check for degeneracy ?
   glm::dmat4 newCameraTransform =
-      absoluteToRelativeWorld * this->_ecefToUeAbs * cameraToECEF;
+      absoluteToRelativeWorld * this->GetEllipsoidCenteredToUnrealWorldTransform() * cameraToECEF;
   glm::dvec3 cameraFront = glm::normalize(newCameraTransform[0]);
   glm::dvec3 cameraRight =
       glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
@@ -318,40 +313,39 @@ glm::dvec3 computeAverageCenter(
 
 void ACesiumGeoreference::UpdateGeoreference() {
   // update georeferenced -> ECEF
-  if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
-    this->_georeferencedToEcef = glm::dmat4(1.0);
-  } else if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-    glm::dvec3 center = computeAverageCenter(this->_boundingVolumeProviders);
-    this->_georeferencedToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-            center,
-            CesiumGeospatial::Ellipsoid::WGS84);
+    glm::dvec3 center(0.0, 0.0, 0.0);
+  if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
+    // TODO: it'd be better to compute the union of the bounding volumes and
+    // then use the union's center,
+    //       rather than averaging the centers.
+    size_t numberOfPositions = 0;
+
+    for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
+          this->_georeferencedObjects) {
+      if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
+        std::optional<Cesium3DTiles::BoundingVolume> bv =
+            pObject->GetBoundingVolume();
+        if (bv) {
+          center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
+          ++numberOfPositions;
+        }
+      }
+    }
+
+    if (numberOfPositions > 0) {
+      center /= numberOfPositions;
+    }
   } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     const CesiumGeospatial::Ellipsoid& ellipsoid =
         CesiumGeospatial::Ellipsoid::WGS84;
-    glm::dvec3 center = ellipsoid.cartographicToCartesian(
+    center = ellipsoid.cartographicToCartesian(
         CesiumGeospatial::Cartographic::fromDegrees(
             this->OriginLongitude,
             this->OriginLatitude,
             this->OriginHeight));
-    this->_georeferencedToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-            center,
-            ellipsoid);
   }
 
-  // update ECEF -> georeferenced
-  this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
-
-  // update UE -> ECEF
-  this->_ueAbsToEcef = this->_georeferencedToEcef *
-                       CesiumTransforms::scaleToCesium *
-                       CesiumTransforms::unrealToOrFromCesium;
-
-  // update ECEF -> UE
-  this->_ecefToUeAbs = CesiumTransforms::unrealToOrFromCesium *
-                       CesiumTransforms::scaleToUnrealWorld *
-                       this->_ecefToGeoreferenced;
+  _geoTransforms.setCenter(center);
 
   for (TWeakInterfacePtr<ICesiumGeoreferenceListener> pObject :
        this->_georeferenceListeners) {
@@ -415,7 +409,7 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
                 level.LevelLatitude,
                 level.LevelHeight));
 
-    glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
+    glm::dvec4 levelAbs = this->GetEllipsoidCenteredToUnrealWorldTransform() * glm::dvec4(levelECEF, 1.0);
     FVector levelRelative =
         FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
     DrawDebugSphere(
@@ -448,7 +442,7 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
   glm::dvec4 grabbedLocationAbs =
       VecMath::add4D(grabbedLocation, originLocation);
 
-  glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
+  glm::dvec3 grabbedLocationECEF = this->GetUnrealWorldToEllipsoidCenteredTransform() * grabbedLocationAbs;
   std::optional<CesiumGeospatial::Cartographic> optCartographic =
       CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
           grabbedLocationECEF);
@@ -505,7 +499,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
 
-  glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
+  glm::dvec3 cameraECEF = this->GetUnrealWorldToEllipsoidCenteredTransform() * cameraAbsolute;
 
   bool isInsideSublevel = false;
 
@@ -673,12 +667,25 @@ FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
   return FVector(llh.x, llh.y, llh.z);
 }
 
+namespace {
+  glm::dvec4 getWorldOrigin4D(const AActor* actor) {
+    const UWorld *world = actor->GetWorld();
+    if (!IsValid(world)) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("The actor is not spawned in a level"));
+      return glm::dvec4();
+    }
+    const FIntVector& originLocation = world->OriginLocation;
+    return glm::dvec4(originLocation.X, originLocation.Y, originLocation.Z, 1.0);
+  }
+}
+
+
 glm::dvec3
 ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
-  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
-
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  return ueAbs - VecMath::createVector3D(originLocation);
+  return _geoTransforms.TransformEcefToUe(getWorldOrigin4D(this), ecef);
 }
 
 FVector
@@ -689,21 +696,7 @@ ACesiumGeoreference::InaccurateTransformEcefToUe(const FVector& ecef) const {
 
 glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
 
-  if (!IsValid(this->GetWorld())) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("The CesiumGeoreference is not spawned in a level"));
-    return ue;
-  }
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-
-  glm::dvec4 ueAbs(
-      ue.x + static_cast<double>(originLocation.X),
-      ue.y + static_cast<double>(originLocation.Y),
-      ue.z + static_cast<double>(originLocation.Z),
-      1.0);
-  return this->_ueAbsToEcef * ueAbs;
+  return this->GetUnrealWorldToEllipsoidCenteredTransform() * getWorldOrigin4D(this);
 }
 
 FVector
@@ -753,7 +746,7 @@ ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
   // Camera Axes = ENU
   // Unreal Axes = controlled by Georeference
   glm::dmat3 rotationCesium =
-      glm::dmat3(this->_ecefToGeoreferenced) * enuToEcef;
+      glm::dmat3(this->GetEllipsoidCenteredToGeoreferencedTransform()) * enuToEcef;
 
   return glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
          glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
@@ -817,7 +810,7 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
               longitude,
               latitude,
               0.0));
-  glm::dvec4 targetAbsUe = this->_ecefToUeAbs * glm::dvec4(targetEcef, 1.0);
+  glm::dvec4 targetAbsUe = this->GetEllipsoidCenteredToUnrealWorldTransform() * glm::dvec4(targetEcef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   this->SunSky->SetActorLocation(

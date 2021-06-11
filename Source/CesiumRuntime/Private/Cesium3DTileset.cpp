@@ -27,6 +27,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
+#include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
@@ -76,6 +77,8 @@ ACesium3DTileset::ACesium3DTileset()
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
   this->RootComponent->SetMobility(EComponentMobility::Static);
+
+  PlatformName = UGameplayStatics::GetPlatformName();
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
@@ -620,9 +623,24 @@ private:
 };
 
 static std::string getCacheDatabaseName() {
+  // On Android, EngineUserDir returns a "fake" directory. UE's IPlatformFile
+  // knows how to resolve it, but we can't pass it to cesium-native because
+  // cesium-native expects a real path. IAndroidPlatformFile::FileRootPath
+  // looks like it should be able to resolve it for us, but that's difficult
+  // to call from here.
+
+  // At the same time, apps on Android are isolated from each other and so we
+  // can't really share a cache between them anyway. So we store the cache in a
+  // different directory on Android.
+#if PLATFORM_ANDROID
+  FString baseDirectory = FPaths::ProjectPersistentDownloadDir();
+#else
   FString baseDirectory = FPaths::EngineUserDir();
+#endif
+
   FString filename =
       FPaths::Combine(baseDirectory, TEXT("cesium-request-cache.sqlite"));
+  UE_LOG(LogCesium, Verbose, TEXT("Caching Cesium requests in %s"), *filename);
   return TCHAR_TO_UTF8(*filename);
 }
 
@@ -676,7 +694,11 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::TilesetOptions options;
+  // TODO: figure out why water material crashes mac
+#if PLATFORM_MAC
+#else
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
+#endif
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
@@ -1125,6 +1147,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
       PropName ==
