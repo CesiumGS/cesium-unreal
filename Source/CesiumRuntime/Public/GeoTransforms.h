@@ -256,7 +256,6 @@ public:
     return _ellipsoid.geodeticSurfaceNormal(position);
   }
 
-
 private:
   /**
    * @brief Creates a new instance (for copy constructor).

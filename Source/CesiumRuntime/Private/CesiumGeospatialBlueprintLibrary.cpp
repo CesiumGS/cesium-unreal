@@ -16,7 +16,7 @@ ACesiumGeoreference* UCesiumGeospatialBlueprintLibrary::_getDefaultGeoref(
     return _defaultGeorefPtr.Get();
   }
   _defaultGeorefPtr =
-      ACesiumGeoreference::GetDefaultForActor(WorldContextObject);
+      ACesiumGeoreference::GetDefaultGeoreference(WorldContextObject);
   return _defaultGeorefPtr.Get();
 }
 

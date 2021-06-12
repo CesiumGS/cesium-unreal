@@ -407,7 +407,7 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
 
 void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
   if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
   this->_currentEcef = this->GetECEFCameraLocation();
@@ -418,7 +418,7 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
   Super::BeginPlay();
 
   if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
   this->_currentEcef = this->GetECEFCameraLocation();

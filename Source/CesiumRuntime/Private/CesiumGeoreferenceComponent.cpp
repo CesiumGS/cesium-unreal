@@ -45,7 +45,6 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
   // local up in ECEF (the +Z axis)
   glm::dvec3 actorUpECEF = glm::normalize(this->_actorToECEF[2]);
 
-
   // the surface normal of the ellipsoid model of the globe at the ECEF location
   // of the actor
   /*
@@ -63,8 +62,8 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
-  glm::dvec3 ellipsoidNormal = 
-    this->Georeference->ComputeGeodeticSurfaceNormal(this->_actorToECEF[3]);
+  glm::dvec3 ellipsoidNormal =
+      this->Georeference->ComputeGeodeticSurfaceNormal(this->_actorToECEF[3]);
 
   // the shortest rotation to align local up with the ellipsoid normal
   glm::dquat R = glm::rotation(actorUpECEF, ellipsoidNormal);
@@ -89,7 +88,7 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
       this->_actorToECEF[3],
       CesiumGeospatial::Ellipsoid::WGS84);
   */
-  
+
   if (!IsValid(this->Georeference)) {
     UE_LOG(
         LogCesium,
@@ -97,7 +96,8 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
-  glm::dmat4 ENUtoECEF = this->Georeference->ComputeEastNorthUpToEcef(this->_actorToECEF[3]);
+  glm::dmat4 ENUtoECEF =
+      this->Georeference->ComputeEastNorthUpToEcef(this->_actorToECEF[3]);
 
   this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium *
                        CesiumTransforms::unrealToOrFromCesium;
@@ -126,7 +126,8 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
-  glm::dvec3 ecef = this->Georeference->TransformLongitudeLatitudeHeightToEcef(targetLongitudeLatitudeHeight);
+  glm::dvec3 ecef = this->Georeference->TransformLongitudeLatitudeHeightToEcef(
+      targetLongitudeLatitudeHeight);
 
   this->_setECEF(ecef, maintainRelativeOrientation);
 }
@@ -334,7 +335,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
   // to update it
 
   // TODO GEOREF_REFACTORING
-  // What exactly is the difference between 
+  // What exactly is the difference between
   // IsValid(this->Georeference) and _georeferenced?
   // Shouldn't that always have the same truth value?
 
@@ -351,7 +352,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
   }
 
   this->Georeference =
-      ACesiumGeoreference::GetDefaultForActor(this->GetOwner());
+      ACesiumGeoreference::GetDefaultGeoreference(this->GetOwner());
   if (this->Georeference) {
     this->_updateActorToECEF();
     this->Georeference->AddGeoreferenceListener(this);
@@ -447,7 +448,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
     // Note: this probably degenerates when starting at or moving to either of
     // the poles
 
-    /* 
+    /*
     // TODO GEOREF_REFACTORING Check that the computations below
     // are adequately replaced with the ones from GeoRef that use
     // the right ellipsoid
@@ -464,18 +465,16 @@ void UCesiumGeoreferenceComponent::_setECEF(
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
+          TEXT(
+              "CesiumGeoreferenceComponent does not have a valid Georeference"));
       return;
     }
-    glm::dmat4 startEcefToEnu = 
-      glm::affineInverse(this->Georeference->ComputeEastNorthUpToEcef(this->_actorToECEF[3]));
-    glm::dmat4 endEnuToEcef = 
-      this->Georeference->ComputeEastNorthUpToEcef(targetEcef);
+    glm::dmat4 startEcefToEnu = glm::affineInverse(
+        this->Georeference->ComputeEastNorthUpToEcef(this->_actorToECEF[3]));
+    glm::dmat4 endEnuToEcef =
+        this->Georeference->ComputeEastNorthUpToEcef(targetEcef);
 
     this->_actorToECEF = endEnuToEcef * startEcefToEnu * this->_actorToECEF;
-
-
-
   }
 
   this->_updateActorToUnrealRelativeWorldTransform();
@@ -500,7 +499,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
 }
 
 void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
-  
+
   /*
   // TODO GEOREF_REFACTORING Check that the computations below
   // are adequately replaced with the ones from GeoRef that use
@@ -529,12 +528,13 @@ void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
-  glm::dvec3 cartographic = this->Georeference->TransformEcefToLongitudeLatitudeHeight(this->_actorToECEF[3]);
+  glm::dvec3 cartographic =
+      this->Georeference->TransformEcefToLongitudeLatitudeHeight(
+          this->_actorToECEF[3]);
   this->_dirty = true;
   this->Longitude = cartographic.x;
   this->Latitude = cartographic.y;
   this->Height = cartographic.z;
-
 }
 
 void UCesiumGeoreferenceComponent::_updateDisplayECEF() {

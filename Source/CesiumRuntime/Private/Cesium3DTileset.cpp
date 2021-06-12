@@ -169,7 +169,7 @@ void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
 
 void ACesium3DTileset::PlayMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultForActor(this);
+      ACesiumGeoreference::GetDefaultGeoreference(this);
 
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
@@ -186,7 +186,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
 
 void ACesium3DTileset::StopMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultForActor(this);
+      ACesiumGeoreference::GetDefaultGeoreference(this);
   this->_captureMovieMode = false;
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
@@ -673,7 +673,7 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);

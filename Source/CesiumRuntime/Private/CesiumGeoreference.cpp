@@ -10,6 +10,7 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTransforms.h"
 #include "Math/Matrix.h"
@@ -32,8 +33,11 @@
 #include "Slate/SceneViewport.h"
 #endif
 
+FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
+    FName("DEFAULT_GEOREFERENCE");
+
 /*static*/ ACesiumGeoreference*
-ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
+ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
   UWorld* world = WorldContextObject->GetWorld();
   // This method can be called by actors even when opening the content browser.
   if (!IsValid(world)) {
@@ -42,32 +46,46 @@ ACesiumGeoreference::GetDefaultForActor(const UObject* WorldContextObject) {
   UE_LOG(
       LogCesium,
       Verbose,
-      TEXT("World name for GetDefaultForActor: %s"),
+      TEXT("World name for GetDefaultGeoreference: %s"),
       *world->GetFullName());
-  ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
-      world->PersistentLevel,
-      TEXT("CesiumGeoreferenceDefault"));
+
+  // Note: The actor iterator will be created with the
+  // "EActorIteratorFlags::SkipPendingKill" flag,
+  // meaning that we don't have to handle objects
+  // that have been deleted. (This is the default,
+  // but made explicit here)
+  ACesiumGeoreference* pGeoreference = nullptr;
+  EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
+                              EActorIteratorFlags::SkipPendingKill;
+  for (TActorIterator<AActor> actorIterator(
+           world,
+           ACesiumGeoreference::StaticClass(),
+           flags);
+       actorIterator;
+       ++actorIterator) {
+    AActor* actor = *actorIterator;
+    if (actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
+      pGeoreference = Cast<ACesiumGeoreference>(actor);
+      break;
+    }
+  }
   if (!pGeoreference) {
-    const FString actorName = WorldContextObject->GetName();
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Creating default Georeference for actor %s"),
-        *actorName);
-    // Always spawn georeference in the persistent level (OverrideLevel = null)
-    FActorSpawnParameters spawnParameters;
-    spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
-    // spawnParameters.OverrideLevel = WorldContextObject->GetLevel();
-    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
+        *WorldContextObject->GetName());
+    // Spawn georeference in the persistent level
+    pGeoreference = world->SpawnActor<ACesiumGeoreference>();
+    pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
+
   } else {
-    const FString georeferenceName = pGeoreference->GetName();
-    const FString actorName = WorldContextObject->GetName();
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Using existing Georeference %s for actor %s"),
-        *georeferenceName,
-        *actorName);
+        *pGeoreference->GetName(),
+        *WorldContextObject->GetName());
   }
   return pGeoreference;
 }

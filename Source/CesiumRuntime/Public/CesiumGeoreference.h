@@ -46,7 +46,7 @@ public:
       Category = "CesiumGeoreference",
       meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
-  GetDefaultForActor(const UObject* WorldContextObject);
+  GetDefaultGeoreference(const UObject* WorldContextObject);
 
   ACesiumGeoreference();
 
@@ -530,6 +530,12 @@ protected:
 #endif
 
 private:
+  /**
+   * A tag that is assigned to Georeferences when they are created
+   * as the "default" Georeference for a certain world.
+   */
+  static FName DEFAULT_GEOREFERENCE_TAG;
+
   UPROPERTY()
   double _ellipsoidRadii[3];
 
