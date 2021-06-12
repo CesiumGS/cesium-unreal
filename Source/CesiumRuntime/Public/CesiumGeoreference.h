@@ -344,6 +344,7 @@ public:
    * Unreal relative world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorUnrealToEastNorthUp(
+      const glm::dvec3& origin, 
       const glm::dquat& UeRotator,
       const glm::dvec3& UeLocation) const;
 
@@ -353,6 +354,7 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorUnrealToEastNorthUp(
+      const FIntVector& Origin,
       const FRotator& UeRotator,
       const FVector& UeLocation) const;
 
@@ -361,6 +363,7 @@ public:
    * Unreal relative world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorEastNorthUpToUnreal(
+      const glm::dvec3& origin, 
       const glm::dquat& EnuRotator,
       const glm::dvec3& UeLocation) const;
 
@@ -370,6 +373,7 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorEastNorthUpToUnreal(
+      const FIntVector& Origin,
       const FRotator& EnuRotator,
       const FVector& UeLocation) const;
 

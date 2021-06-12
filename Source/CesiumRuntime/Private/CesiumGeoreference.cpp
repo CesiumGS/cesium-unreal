@@ -673,32 +673,38 @@ ACesiumGeoreference::InaccurateTransformUnrealToEcef(const FVector& ue) const {
 }
 
 glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
+    const glm::dvec3& origin, 
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const {
-  return _geoTransforms.TransformRotatorUnrealToEastNorthUp(UERotator, ueLocation);
+  return _geoTransforms.TransformRotatorUnrealToEastNorthUp(origin, UERotator, ueLocation);
 }
 
 FRotator ACesiumGeoreference::InaccurateTransformRotatorUnrealToEastNorthUp(
+    const FIntVector& origin, 
     const FRotator& UERotator,
     const FVector& ueLocation) const {
   glm::dquat q = this->TransformRotatorUnrealToEastNorthUp(
+      VecMath::createVector3D(origin), 
       VecMath::createQuaternion(UERotator.Quaternion()),
-      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+      VecMath::createVector3D(ueLocation));
   return VecMath::createRotator(q);
 }
 
 glm::dquat ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
+    const glm::dvec3& origin,
     const glm::dquat& ENURotator,
     const glm::dvec3& ueLocation) const {
-  return _geoTransforms.TransformRotatorEastNorthUpToUnreal(ENURotator, ueLocation);
+  return _geoTransforms.TransformRotatorEastNorthUpToUnreal(origin, ENURotator, ueLocation);
 }
 
 FRotator ACesiumGeoreference::InaccurateTransformRotatorEastNorthUpToUnreal(
+    const FIntVector& origin, 
     const FRotator& ENURotator,
     const FVector& ueLocation) const {
   glm::dquat q = this->TransformRotatorEastNorthUpToUnreal(
+      VecMath::createVector3D(origin), 
       VecMath::createQuaternion(ENURotator.Quaternion()),
-      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+      VecMath::createVector3D(ueLocation));
   return VecMath::createRotator(q);
 }
 

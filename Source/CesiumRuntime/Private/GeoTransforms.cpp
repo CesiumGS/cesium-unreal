@@ -4,6 +4,7 @@
 
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumTransforms.h"
+#include "VecMath.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -88,47 +89,23 @@ glm::dvec3 GeoTransforms::TransformUnrealToEcef(
 }
 
 glm::dquat GeoTransforms::TransformRotatorUnrealToEastNorthUp(
+    const glm::dvec3& origin,
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
-  /* TODO NOT IMPLEMENTED YET
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector::ZeroVector);
-  return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
-
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix = VecMath::createMatrix(enuToFixedUE);
-  return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
-
-  */
-  return UERotator;
+  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(origin, ueLocation);
+  glm::dquat enuAdjustmentQuat = glm::quat_cast(enuToFixedUE);
+  return enuAdjustmentQuat * UERotator;
 }
 
 glm::dquat GeoTransforms::TransformRotatorEastNorthUpToUnreal(
+    const glm::dvec3& origin,
     const glm::dquat& ENURotator,
     const glm::dvec3& ueLocation) const noexcept {
 
-  /* TODO NOT IMPLEMENTED YET
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector::ZeroVector);
-
-  FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-  return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
-
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix = VecMath::createMatrix(enuToFixedUE);
-  FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-  return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
-
-  */
-  return ENURotator;
+  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(origin, ueLocation);
+  glm::dmat3 fixedUeToEnu = glm::inverse(enuToFixedUE);
+  glm::dquat fixedUeToEnuQuat = glm::quat_cast(fixedUeToEnu);
+  return fixedUeToEnuQuat * ENURotator;
 }
 
 glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(

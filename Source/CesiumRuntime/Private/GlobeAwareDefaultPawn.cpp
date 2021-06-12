@@ -373,18 +373,22 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // Interpolate rotation - Computation has to be done at each step because
   // the ENU CRS is depending on location. Do all calculations in double
   // precision until the very end.
-
+  const glm::dvec3& ueOriginLocation =
+     VecMath::createVector3D(this->GetWorld()->OriginLocation);
   const GeoTransforms& geoTransforms = this->Georeference->getGeoTransforms();
   const glm::dquat startingQuat = geoTransforms.TransformRotatorUnrealToEastNorthUp(
+        ueOriginLocation,
         VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
         this->_keypoints[0]);
     const glm::dquat endingQuat = geoTransforms.TransformRotatorUnrealToEastNorthUp(
+        ueOriginLocation,
         VecMath::createQuaternion(this->_flyToDestinationRotation.Quaternion()),
         this->_keypoints.back());
     const glm::dquat& currentQuat =
         glm::slerp(startingQuat, endingQuat, flyPercentage);
     GetController()->SetControlRotation(VecMath::createRotator(
-        geoTransforms.TransformRotatorEastNorthUpToUnreal(currentQuat, currentPosition)));
+        geoTransforms.TransformRotatorEastNorthUpToUnreal(
+          ueOriginLocation, currentQuat, currentPosition)));
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {

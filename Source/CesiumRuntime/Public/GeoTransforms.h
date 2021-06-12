@@ -152,6 +152,7 @@ public:
    * Unreal relative world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorUnrealToEastNorthUp(
+      const glm::dvec3& origin,
       const glm::dquat& UeRotator,
       const glm::dvec3& UeLocation) const noexcept;
 
@@ -160,6 +161,7 @@ public:
    * Unreal relative world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorEastNorthUpToUnreal(
+      const glm::dvec3& origin,
       const glm::dquat& EnuRotator,
       const glm::dvec3& UeLocation) const noexcept;
 
