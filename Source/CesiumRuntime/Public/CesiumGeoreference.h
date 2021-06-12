@@ -107,7 +107,7 @@ public:
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
    */
-  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
+  UPROPERTY(EditAnywhere, EditFixedSize, Category = "CesiumSublevels")
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
@@ -547,6 +547,12 @@ private:
       double targetHeight);
   void _jumpToLevel(const FCesiumSubLevel& level);
   void _setSunSky(double longitude, double latitude);
+
+  /**
+   * Will make sure that the `CesiumSubLevels` array contains entries
+   * that exactly match the current streaming levels of the world
+   */
+  void _updateCesiumSubLevels();
 
 #if WITH_EDITOR
   void _lineTraceViewportMouse(

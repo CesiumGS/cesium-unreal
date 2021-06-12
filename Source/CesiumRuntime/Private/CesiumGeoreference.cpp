@@ -150,26 +150,42 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #endif
 }
 
-void ACesiumGeoreference::CheckForNewSubLevels() {
+void ACesiumGeoreference::CheckForNewSubLevels() { _updateCesiumSubLevels(); }
+
+void ACesiumGeoreference::_updateCesiumSubLevels() {
   UWorld* world = this->GetWorld();
+  if (!IsValid(world)) {
+    // This happens for the georeference that is shown in the
+    // content browser. Might omit this message.
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT(
+            "Georeference is not spawned in world: %s, skipping _updateCesiumSubLevels"),
+        *this->GetFullName());
+    return;
+  }
+
+  // Compute a new array of sublevels, based on the current
+  // streaming levels of the world
+  TArray<FCesiumSubLevel> newCesiumSubLevels;
   const TArray<ULevelStreaming*>& streamedLevels = world->GetStreamingLevels();
-  // check all levels to see if any are new
   for (ULevelStreaming* streamedLevel : streamedLevels) {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
     levelName.RemoveFromStart(world->StreamingLevelsPrefix);
-    // check the known levels to see if this one is new
+    // If the level is already known, just add it to the new array
     bool found = false;
     for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
       if (levelName.Equals(subLevel.LevelName)) {
         found = true;
+        newCesiumSubLevels.Add(subLevel);
         break;
       }
     }
-
+    // If the level was not known yet, create a new one
     if (!found) {
-      // add this level to the known streaming levels
-      this->CesiumSubLevels.Add(FCesiumSubLevel{
+      newCesiumSubLevels.Add(FCesiumSubLevel{
           levelName,
           OriginLongitude,
           OriginLatitude,
@@ -178,8 +194,8 @@ void ACesiumGeoreference::CheckForNewSubLevels() {
           false});
     }
   }
+  this->CesiumSubLevels = newCesiumSubLevels;
 }
-
 void ACesiumGeoreference::JumpToCurrentLevel() {
   if (this->CurrentLevelIndex < 0 ||
       this->CurrentLevelIndex >= this->CesiumSubLevels.Num()) {
