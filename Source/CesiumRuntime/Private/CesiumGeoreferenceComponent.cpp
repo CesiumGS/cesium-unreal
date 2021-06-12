@@ -7,10 +7,10 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
-#include "VecMath.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "UObject/NameTypes.h"
+#include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -91,8 +91,8 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
     const FVector& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
   this->MoveToLongitudeLatitudeHeight(
-    VecMath::createVector3D(targetLongitudeLatitudeHeight),
-    maintainRelativeOrientation);
+      VecMath::createVector3D(targetLongitudeLatitudeHeight),
+      maintainRelativeOrientation);
 }
 
 void UCesiumGeoreferenceComponent::MoveToECEF(
@@ -325,7 +325,8 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
 
   FMatrix actorToRelativeWorld =
       this->_ownerRoot->GetComponentToWorld().ToMatrixWithScale();
-  glm::dmat4 actorToAbsoluteWorld = VecMath::createMatrix4D(actorToRelativeWorld, this->_absoluteLocation);
+  glm::dmat4 actorToAbsoluteWorld =
+      VecMath::createMatrix4D(actorToRelativeWorld, this->_absoluteLocation);
 
   this->_actorToECEF = unrealWorldToEcef * actorToAbsoluteWorld;
   this->_updateDisplayECEF();
@@ -340,7 +341,10 @@ void UCesiumGeoreferenceComponent::
   const glm::dmat4& ecefToUnrealWorld =
       this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
   glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
-      -this->_worldOriginLocation.x, -this->_worldOriginLocation.y, -this->_worldOriginLocation.z, 1.0);
+      -this->_worldOriginLocation.x,
+      -this->_worldOriginLocation.y,
+      -this->_worldOriginLocation.z,
+      1.0);
 
   this->_actorToUnrealRelativeWorld =
       absoluteToRelativeWorld * ecefToUnrealWorld * this->_actorToECEF;

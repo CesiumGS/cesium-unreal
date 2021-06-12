@@ -72,8 +72,8 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     */
 
     FVector loc = this->GetPawnViewLocation();
-    glm::dvec3 locEcef =
-        this->Georeference->TransformUnrealToEcef(glm::dvec3(loc.X, loc.Y, loc.Z));
+    glm::dvec3 locEcef = this->Georeference->TransformUnrealToEcef(
+        glm::dvec3(loc.X, loc.Y, loc.Z));
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
@@ -374,21 +374,26 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // the ENU CRS is depending on location. Do all calculations in double
   // precision until the very end.
   const glm::dvec3& ueOriginLocation =
-     VecMath::createVector3D(this->GetWorld()->OriginLocation);
+      VecMath::createVector3D(this->GetWorld()->OriginLocation);
   const GeoTransforms& geoTransforms = this->Georeference->getGeoTransforms();
-  const glm::dquat startingQuat = geoTransforms.TransformRotatorUnrealToEastNorthUp(
-        ueOriginLocation,
-        VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
-        this->_keypoints[0]);
-    const glm::dquat endingQuat = geoTransforms.TransformRotatorUnrealToEastNorthUp(
-        ueOriginLocation,
-        VecMath::createQuaternion(this->_flyToDestinationRotation.Quaternion()),
-        this->_keypoints.back());
-    const glm::dquat& currentQuat =
-        glm::slerp(startingQuat, endingQuat, flyPercentage);
-    GetController()->SetControlRotation(VecMath::createRotator(
-        geoTransforms.TransformRotatorEastNorthUpToUnreal(
-          ueOriginLocation, currentQuat, currentPosition)));
+  const glm::dquat startingQuat =
+      geoTransforms.TransformRotatorUnrealToEastNorthUp(
+          ueOriginLocation,
+          VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
+          this->_keypoints[0]);
+  const glm::dquat endingQuat =
+      geoTransforms.TransformRotatorUnrealToEastNorthUp(
+          ueOriginLocation,
+          VecMath::createQuaternion(
+              this->_flyToDestinationRotation.Quaternion()),
+          this->_keypoints.back());
+  const glm::dquat& currentQuat =
+      glm::slerp(startingQuat, endingQuat, flyPercentage);
+  GetController()->SetControlRotation(
+      VecMath::createRotator(geoTransforms.TransformRotatorEastNorthUpToUnreal(
+          ueOriginLocation,
+          currentQuat,
+          currentPosition)));
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {

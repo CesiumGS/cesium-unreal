@@ -18,7 +18,6 @@
 class CESIUMRUNTIME_API GeoTransforms {
 
 public:
-
   /**
    * @brief Creates a new instance
    */
@@ -72,12 +71,12 @@ public:
 
   /**
    * @brief Returns the center of this instance
-   * 
+   *
    * @return The center
    */
   /* // TODO Not required yet?
   const glm::dvec3& getCenter() const noexcept {
-    return this->_center; 
+    return this->_center;
   }
   */
 
@@ -90,7 +89,7 @@ public:
 
   /**
    * @brief Returns the ellipsoid of this instance
-   * 
+   *
    * @return The ellipsoid
    */
   /* // TODO Not required yet?
@@ -137,15 +136,17 @@ public:
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
    * Unreal relative world (relative to the floating origin).
    */
-  glm::dvec3
-  TransformEcefToUnreal(const glm::dvec3& origin, const glm::dvec3& Ecef) const noexcept;
+  glm::dvec3 TransformEcefToUnreal(
+      const glm::dvec3& origin,
+      const glm::dvec3& Ecef) const noexcept;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
-  glm::dvec3
-  TransformUnrealToEcef(const glm::dvec3& origin, const glm::dvec3& Ue) const noexcept;
+  glm::dvec3 TransformUnrealToEcef(
+      const glm::dvec3& origin,
+      const glm::dvec3& Ue) const noexcept;
 
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
@@ -195,7 +196,8 @@ public:
    * which is usually Earth-centered, Earth-fixed. See {@link
    * reference-frames.md}.
    */
-  const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const noexcept {
+  const glm::dmat4&
+  GetGeoreferencedToEllipsoidCenteredTransform() const noexcept {
     return this->_georeferencedToEcef;
   }
 
@@ -209,7 +211,8 @@ public:
    * "Georeferenced" reference frame defined by this instance. See {@link
    * reference-frames.md}.
    */
-  const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const noexcept {
+  const glm::dmat4&
+  GetEllipsoidCenteredToGeoreferencedTransform() const noexcept {
     return this->_ecefToGeoreferenced;
   }
 
@@ -222,7 +225,8 @@ public:
    * to the "Ellipsoid-centered" reference frame (which is usually
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
-  const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const noexcept{
+  const glm::dmat4&
+  GetUnrealWorldToEllipsoidCenteredTransform() const noexcept {
     return this->_ueAbsToEcef;
   }
 
@@ -235,7 +239,8 @@ public:
    * "Unreal world" reference frame (with respect to the absolute world origin,
    * not the floating origin). See {@link reference-frames.md}.
    */
-  const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const noexcept {
+  const glm::dmat4&
+  GetEllipsoidCenteredToUnrealWorldTransform() const noexcept {
     return this->_ecefToUeAbs;
   }
 

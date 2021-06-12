@@ -2,15 +2,15 @@
 
 #pragma once
 
+#include "CesiumSubLevel.h"
 #include "Components/ActorComponent.h"
 #include "Containers/UnrealString.h"
-#include "GeoTransforms.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GeoTransforms.h"
+#include "OriginPlacement.h"
 #include "UObject/WeakInterfacePtr.h"
 #include <glm/mat3x3.hpp>
-#include "OriginPlacement.h"
-#include "CesiumSubLevel.h"
 #include "CesiumGeoreference.generated.h"
 
 class ICesiumGeoreferenceListener;
@@ -302,7 +302,8 @@ public:
    * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
    * meters (z).
    */
-  glm::dvec3 TransformUnrealToLongitudeLatitudeHeight(const glm::dvec3& Ue) const;
+  glm::dvec3
+  TransformUnrealToLongitudeLatitudeHeight(const glm::dvec3& Ue) const;
 
   /**
    * Transforms Unreal world coordinates (relative to the floating origin) into
@@ -344,7 +345,7 @@ public:
    * Unreal relative world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorUnrealToEastNorthUp(
-      const glm::dvec3& origin, 
+      const glm::dvec3& origin,
       const glm::dquat& UeRotator,
       const glm::dvec3& UeLocation) const;
 
@@ -363,7 +364,7 @@ public:
    * Unreal relative world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorEastNorthUpToUnreal(
-      const glm::dvec3& origin, 
+      const glm::dvec3& origin,
       const glm::dquat& EnuRotator,
       const glm::dvec3& UeLocation) const;
 
@@ -501,7 +502,6 @@ public:
    */
   virtual void Tick(float DeltaTime) override;
 
-
   // TODO : Try to avoid exposing this publicly
   const GeoTransforms& getGeoTransforms() const noexcept {
     return _geoTransforms;
@@ -518,7 +518,6 @@ protected:
 #endif
 
 private:
-
   UPROPERTY()
   double _ellipsoidRadii[3];
 

@@ -14,7 +14,8 @@ void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
   this->_center = center;
   updateTransforms();
 }
-void GeoTransforms::setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid)  noexcept {
+void GeoTransforms::setEllipsoid(
+    const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept {
   this->_ellipsoid = ellipsoid;
   updateTransforms();
 }
@@ -92,7 +93,8 @@ glm::dquat GeoTransforms::TransformRotatorUnrealToEastNorthUp(
     const glm::dvec3& origin,
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(origin, ueLocation);
+  glm::dmat3 enuToFixedUE =
+      this->ComputeEastNorthUpToUnreal(origin, ueLocation);
   glm::dquat enuAdjustmentQuat = glm::quat_cast(enuToFixedUE);
   return enuAdjustmentQuat * UERotator;
 }
@@ -102,7 +104,8 @@ glm::dquat GeoTransforms::TransformRotatorEastNorthUpToUnreal(
     const glm::dquat& ENURotator,
     const glm::dvec3& ueLocation) const noexcept {
 
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(origin, ueLocation);
+  glm::dmat3 enuToFixedUE =
+      this->ComputeEastNorthUpToUnreal(origin, ueLocation);
   glm::dmat3 fixedUeToEnu = glm::inverse(enuToFixedUE);
   glm::dquat fixedUeToEnuQuat = glm::quat_cast(fixedUeToEnu);
   return fixedUeToEnuQuat * ENURotator;

@@ -57,4 +57,3 @@ struct FCesiumSubLevel {
    */
   bool CurrentlyLoaded = false;
 };
-

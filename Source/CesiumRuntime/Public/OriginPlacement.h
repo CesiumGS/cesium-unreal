@@ -34,4 +34,3 @@ enum class EOriginPlacement : uint8 {
    */
   CartographicOrigin UMETA(DisplayName = "Longitude / latitude / height")
 };
-
