@@ -36,15 +36,13 @@ void UCesium3DTilesetRoot::RecalculateTransform() {
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
-void UCesium3DTilesetRoot::HandleGeoreferenceUpdated()
-{
+void UCesium3DTilesetRoot::HandleGeoreferenceUpdated() {
   UE_LOG(
       LogCesium,
       Verbose,
       TEXT("Called HandleGeoreferenceUpdated for tileset root"));
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
-
 
 const glm::dmat4&
 UCesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform() const {

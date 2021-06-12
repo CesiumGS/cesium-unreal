@@ -484,9 +484,8 @@ public:
    * A delegate that will be called whenever the Georeference is
    * modified in a way that affects its computations.
    */
-  UPROPERTY(BlueprintAssignable, Category="Cesium")
+  UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
-
 
   /**
    * Adds a ICesiumGeoreferenceListener to be notified on changes to the world
