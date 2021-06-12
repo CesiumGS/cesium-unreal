@@ -206,9 +206,14 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       TEXT("Called OnFocusEditorViewportOnThis on actor %s"),
       *this->GetName());
 
+  // TODO GEOREF_REFACTORING Check how the computations below
+  // can be adequately replaced with the ones from GeoRef that use
+  // the right ellipsoid
+
   struct CalculateECEFCameraPosition {
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
+
       glm::dmat4 ENU = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
           center,
           CesiumGeospatial::Ellipsoid::WGS84);

@@ -178,7 +178,6 @@ public:
 
 protected:
   // Called when the game starts
-  virtual void BeginPlay() override;
   virtual bool MoveComponentImpl(
       const FVector& Delta,
       const FQuat& NewRotation,

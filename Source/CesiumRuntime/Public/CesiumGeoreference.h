@@ -467,6 +467,18 @@ public:
   }
 
   /**
+   * @brief Computes the normal of the plane tangent to the surface of the
+   * ellipsoid that is used by this instance, at the provided position.
+   *
+   * @param position The cartesian position for which to to determine the
+   * surface normal.
+   * @return The normal.
+   */
+  glm::dvec3 ComputeGeodeticSurfaceNormal(const glm::dvec3& position) const {
+    return _geoTransforms.ComputeGeodeticSurfaceNormal(position);
+  }
+
+  /**
    * Adds a ICesiumGeoreferenceListener to be notified on changes to the world
    * georeference transforms.
    */
