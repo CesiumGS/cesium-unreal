@@ -22,6 +22,7 @@
 #include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <optional>
 
 #if WITH_EDITOR
@@ -671,51 +672,39 @@ ACesiumGeoreference::InaccurateTransformUnrealToEcef(const FVector& ue) const {
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
-    const FRotator& UERotator,
+glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
+    const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const {
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix = VecMath::createMatrix(enuToFixedUE);
-  return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
+  return _geoTransforms.TransformRotatorUnrealToEastNorthUp(UERotator, ueLocation);
 }
 
 FRotator ACesiumGeoreference::InaccurateTransformRotatorUnrealToEastNorthUp(
     const FRotator& UERotator,
     const FVector& ueLocation) const {
-  return this->TransformRotatorUnrealToEastNorthUp(
-      UERotator,
+  glm::dquat q = this->TransformRotatorUnrealToEastNorthUp(
+      VecMath::createQuaternion(UERotator.Quaternion()),
       glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+  return VecMath::createRotator(q);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
-    const FRotator& ENURotator,
+glm::dquat ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
+    const glm::dquat& ENURotator,
     const glm::dvec3& ueLocation) const {
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix = VecMath::createMatrix(enuToFixedUE);
-  FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-  return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
+  return _geoTransforms.TransformRotatorEastNorthUpToUnreal(ENURotator, ueLocation);
 }
 
 FRotator ACesiumGeoreference::InaccurateTransformRotatorEastNorthUpToUnreal(
     const FRotator& ENURotator,
     const FVector& ueLocation) const {
-  return this->TransformRotatorEastNorthUpToUnreal(
-      ENURotator,
+  glm::dquat q = this->TransformRotatorEastNorthUpToUnreal(
+      VecMath::createQuaternion(ENURotator.Quaternion()),
       glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+  return VecMath::createRotator(q);
 }
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
-  glm::dvec3 ecef = this->TransformUnrealToEcef(ue);
-  glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
-
-  // Camera Axes = ENU
-  // Unreal Axes = controlled by Georeference
-  glm::dmat3 rotationCesium =
-      glm::dmat3(this->GetEllipsoidCenteredToGeoreferencedTransform()) * enuToEcef;
-
-  return glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
-         glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+  return _geoTransforms.ComputeEastNorthUpToUnreal(getWorldOrigin4D(this), ue);
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
@@ -727,9 +716,7 @@ FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
-  return glm::dmat3(CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-      ecef,
-      CesiumGeospatial::Ellipsoid::WGS84));
+  return _geoTransforms.ComputeEastNorthUpToEcef(ecef);
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(

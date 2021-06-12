@@ -374,36 +374,17 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // the ENU CRS is depending on location. Do all calculations in double
   // precision until the very end.
 
-  const glm::dvec3& ueOriginLocation =
-      VecMath::createVector3D(this->GetWorld()->OriginLocation);
-  const glm::dmat4& ueAbsToEcef =
-      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
-  const glm::dmat4& ecefToGeoreferenced =
-      this->Georeference->GetEllipsoidCenteredToGeoreferencedTransform();
-
-  glm::dquat startingQuat = glm::quat_cast(
-      UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
-          VecMath::createRotationMatrix4D(this->_flyToSourceRotation),
-          this->_keypoints[0],
-          ueAbsToEcef,
-          ueOriginLocation,
-          ecefToGeoreferenced));
-
-  glm::dquat endingQuat = glm::quat_cast(
-      UCesiumGeospatialLibrary::TransformRotatorUnrealToEastNorthUp(
-          VecMath::createRotationMatrix4D(this->_flyToDestinationRotation),
-          this->_keypoints.back(),
-          ueAbsToEcef,
-          ueOriginLocation,
-          ecefToGeoreferenced));
-
-  const glm::dquat& currentQuat =
-      glm::slerp(startingQuat, endingQuat, flyPercentage);
-
-  GetController()->SetControlRotation(
-      this->Georeference->TransformRotatorEastNorthUpToUnreal(
-          VecMath::createQuaternion(currentQuat).Rotator(),
-          currentPosition));
+  const GeoTransforms& geoTransforms = this->Georeference->getGeoTransforms();
+  const glm::dquat startingQuat = geoTransforms.TransformRotatorUnrealToEastNorthUp(
+        VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
+        this->_keypoints[0]);
+    const glm::dquat endingQuat = geoTransforms.TransformRotatorUnrealToEastNorthUp(
+        VecMath::createQuaternion(this->_flyToDestinationRotation.Quaternion()),
+        this->_keypoints.back());
+    const glm::dquat& currentQuat =
+        glm::slerp(startingQuat, endingQuat, flyPercentage);
+    GetController()->SetControlRotation(VecMath::createRotator(
+        geoTransforms.TransformRotatorEastNorthUpToUnreal(currentQuat, currentPosition)));
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {

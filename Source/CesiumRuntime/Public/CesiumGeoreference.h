@@ -343,8 +343,8 @@ public:
    * Transforms a rotator from Unreal world to East-North-Up at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  FRotator TransformRotatorUnrealToEastNorthUp(
-      const FRotator& UeRotator,
+  glm::dquat TransformRotatorUnrealToEastNorthUp(
+      const glm::dquat& UeRotator,
       const glm::dvec3& UeLocation) const;
 
   /**
@@ -360,8 +360,8 @@ public:
    * Transforms a rotator from East-North-Up to Unreal world at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  FRotator TransformRotatorEastNorthUpToUnreal(
-      const FRotator& EnuRotator,
+  glm::dquat TransformRotatorEastNorthUpToUnreal(
+      const glm::dquat& EnuRotator,
       const glm::dvec3& UeLocation) const;
 
   /**
@@ -496,6 +496,12 @@ public:
    * dilation
    */
   virtual void Tick(float DeltaTime) override;
+
+
+  // TODO : Try to avoid exposing this publicly
+  const GeoTransforms& getGeoTransforms() const noexcept {
+    return _geoTransforms;
+  }
 
 protected:
   // Called when the game starts or when spawned
