@@ -834,7 +834,10 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
   const FVector& viewLoc = cursor.GetOrigin();
   const FVector& viewDir = cursor.GetDirection();
 
-  FVector lineEnd = viewLoc + viewDir * 637100000.0;
+  // TODO (low prio, because this whole function is preliminary) :
+  // This radius should probably be taken from the ellipsoid
+  const double earthRadiusCm = 637100000.0;
+  FVector lineEnd = viewLoc + viewDir * earthRadiusCm;
 
   static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
   if (ShowTrace) {
