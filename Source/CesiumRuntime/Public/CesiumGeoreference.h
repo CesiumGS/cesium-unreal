@@ -18,6 +18,8 @@ class ICesiumBoundingVolumeProvider;
 
 class APlayerCameraManager;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
+
 /**
  * Controls how global geospatial coordinates are mapped to coordinates in the
  * Unreal Engine level. Internally, Cesium uses a global Earth-centered,
@@ -477,6 +479,14 @@ public:
   glm::dvec3 ComputeGeodeticSurfaceNormal(const glm::dvec3& position) const {
     return _geoTransforms.ComputeGeodeticSurfaceNormal(position);
   }
+
+  /**
+   * A delegate that will be called whenever the Georeference is
+   * modified in a way that affects its computations.
+   */
+  UPROPERTY(BlueprintAssignable, Category="Cesium")
+  FGeoreferenceUpdated OnGeoreferenceUpdated;
+
 
   /**
    * Adds a ICesiumGeoreferenceListener to be notified on changes to the world

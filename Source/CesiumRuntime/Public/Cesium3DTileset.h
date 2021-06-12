@@ -506,6 +506,8 @@ private:
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
 
+  void HandleGeoreferenceUpdated();
+
   /**
    * Will be called after the tileset is loaded or spawned, to register
    * a delegate that calls OnFocusEditorViewportOnThis when this

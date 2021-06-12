@@ -678,7 +678,7 @@ void ACesium3DTileset::LoadTileset() {
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
   if (pRoot) {
-    this->Georeference->AddGeoreferenceListener(pRoot);
+    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(pRoot, &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
   }
   // Add this as a ICesiumBoundingVolumeProvider once the bounding volume is
   // ready.

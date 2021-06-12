@@ -363,6 +363,8 @@ void ACesiumGeoreference::UpdateGeoreference() {
   }
 
   this->_setSunSky(this->OriginLongitude, this->OriginLatitude);
+
+  OnGeoreferenceUpdated.Broadcast();
 }
 
 #if WITH_EDITOR

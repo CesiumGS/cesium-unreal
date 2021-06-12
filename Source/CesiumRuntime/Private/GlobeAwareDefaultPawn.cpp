@@ -3,6 +3,7 @@
 #include "GlobeAwareDefaultPawn.h"
 #include "Camera/CameraComponent.h"
 #include "CesiumGeoreference.h"
+#include "CesiumRuntime.h"
 #include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"

@@ -2,6 +2,7 @@
 
 #include "Cesium3DTilesetRoot.h"
 #include "Cesium3DTileset.h"
+#include "CesiumRuntime.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/World.h"
 #include "VecMath.h"
@@ -35,9 +36,15 @@ void UCesium3DTilesetRoot::RecalculateTransform() {
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
-void UCesium3DTilesetRoot::NotifyGeoreferenceUpdated() {
+void UCesium3DTilesetRoot::HandleGeoreferenceUpdated()
+{
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called HandleGeoreferenceUpdated for tileset root"));
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
+
 
 const glm::dmat4&
 UCesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform() const {

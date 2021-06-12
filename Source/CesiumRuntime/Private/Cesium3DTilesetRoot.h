@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumGeoreferenceListener.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
@@ -10,8 +9,7 @@
 #include "Cesium3DTilesetRoot.generated.h"
 
 UCLASS()
-class UCesium3DTilesetRoot : public USceneComponent,
-                             public ICesiumGeoreferenceListener {
+class UCesium3DTilesetRoot : public USceneComponent {
   GENERATED_BODY()
 
 public:
@@ -42,8 +40,6 @@ public:
    */
   void RecalculateTransform();
 
-  virtual void NotifyGeoreferenceUpdated() override;
-
   /**
    * @brief Gets the transform from the "Cesium Tileset" reference frame to the
    * "Unreal Relative World" reference frame.
@@ -66,6 +62,9 @@ public:
 
   virtual void
   ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+
+  UFUNCTION()
+  void HandleGeoreferenceUpdated();
 
 protected:
   virtual void BeginPlay() override;
