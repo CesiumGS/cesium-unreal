@@ -512,7 +512,7 @@ private:
   double _ellipsoidRadii[3];
 
   UPROPERTY()
-  double _center[16];
+  double _center[3];
 
   GeoTransforms _geoTransforms;
 
