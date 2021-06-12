@@ -57,29 +57,29 @@ glm::dvec3 GeoTransforms::TransformEcefToLongitudeLatitudeHeight(
       llh->height);
 }
 
-glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToUe(
+glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& longitudeLatitudeHeight) const noexcept {
   glm::dvec3 ecef =
       this->TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
-  return this->TransformEcefToUe(origin, ecef);
+  return this->TransformEcefToUnreal(origin, ecef);
 }
 
-glm::dvec3 GeoTransforms::TransformUeToLongitudeLatitudeHeight(
+glm::dvec3 GeoTransforms::TransformUnrealToLongitudeLatitudeHeight(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
-  glm::dvec3 ecef = this->TransformUeToEcef(origin, ue);
+  glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
   return this->TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
-glm::dvec3 GeoTransforms::TransformEcefToUe(
+glm::dvec3 GeoTransforms::TransformEcefToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ecef) const noexcept {
   glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
   return ueAbs - origin;
 }
 
-glm::dvec3 GeoTransforms::TransformUeToEcef(
+glm::dvec3 GeoTransforms::TransformUnrealToEcef(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
 
@@ -87,7 +87,7 @@ glm::dvec3 GeoTransforms::TransformUeToEcef(
   return this->_ueAbsToEcef * glm::dvec4(ueAbs, 1.0);
 }
 
-glm::dquat GeoTransforms::TransformRotatorUeToEnu(
+glm::dquat GeoTransforms::TransformRotatorUnrealToEastNorthUp(
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
   /* TODO NOT IMPLEMENTED YET
@@ -102,7 +102,7 @@ glm::dquat GeoTransforms::TransformRotatorUeToEnu(
   return UERotator;
 }
 
-glm::dquat GeoTransforms::TransformRotatorEnuToUe(
+glm::dquat GeoTransforms::TransformRotatorEastNorthUpToUnreal(
     const glm::dquat& ENURotator,
     const glm::dvec3& ueLocation) const noexcept {
   /* TODO NOT IMPLEMENTED YET
@@ -122,7 +122,7 @@ glm::dquat GeoTransforms::TransformRotatorEnuToUe(
 glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
-  glm::dvec3 ecef = this->TransformUeToEcef(origin, ue);
+  glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
   glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
 
   // Camera Axes = ENU

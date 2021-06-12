@@ -73,7 +73,7 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
 
     FVector loc = this->GetPawnViewLocation();
     glm::dvec3 locEcef =
-        this->Georeference->TransformUeToEcef(glm::dvec3(loc.X, loc.Y, loc.Z));
+        this->Georeference->TransformUnrealToEcef(glm::dvec3(loc.X, loc.Y, loc.Z));
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
@@ -138,7 +138,7 @@ glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
   if (!IsValid(this->Georeference)) {
     return ueLocationVec;
   }
-  return this->Georeference->TransformUeToEcef(ueLocationVec);
+  return this->Georeference->TransformUnrealToEcef(ueLocationVec);
 }
 
 void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
@@ -146,7 +146,7 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
   if (!IsValid(this->Georeference)) {
     ue = ecef;
   } else {
-    ue = this->Georeference->TransformEcefToUe(ecef);
+    ue = this->Georeference->TransformEcefToUnreal(ecef);
   }
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
@@ -401,7 +401,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
       glm::slerp(startingQuat, endingQuat, flyPercentage);
 
   GetController()->SetControlRotation(
-      this->Georeference->TransformRotatorEnuToUe(
+      this->Georeference->TransformRotatorEastNorthUpToUnreal(
           VecMath::createQuaternion(currentQuat).Rotator(),
           currentPosition));
 }

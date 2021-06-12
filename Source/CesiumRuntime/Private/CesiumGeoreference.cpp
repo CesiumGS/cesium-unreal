@@ -596,34 +596,44 @@ FVector ACesiumGeoreference::InaccurateTransformEcefToLongitudeLatitudeHeight(
   return FVector(llh.x, llh.y, llh.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUe(
+glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUnreal(
     const glm::dvec3& longitudeLatitudeHeight) const {
   glm::dvec3 ecef =
       this->TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
-  return this->TransformEcefToUe(ecef);
+  return this->TransformEcefToUnreal(ecef);
 }
 
-FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUe(
+FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUnreal(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(
+  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUnreal(
       VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ue.x, ue.y, ue.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformUeToLongitudeLatitudeHeight(
+glm::dvec3 ACesiumGeoreference::TransformUnrealToLongitudeLatitudeHeight(
     const glm::dvec3& ue) const {
-  glm::dvec3 ecef = this->TransformUeToEcef(ue);
+  glm::dvec3 ecef = this->TransformUnrealToEcef(ue);
   return this->TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
-FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
+FVector ACesiumGeoreference::InaccurateTransformUnrealToLongitudeLatitudeHeight(
     const FVector& ue) const {
   glm::dvec3 llh =
-      this->TransformUeToLongitudeLatitudeHeight(VecMath::createVector3D(ue));
+      this->TransformUnrealToLongitudeLatitudeHeight(VecMath::createVector3D(ue));
   return FVector(llh.x, llh.y, llh.z);
 }
 
 namespace {
+  /**
+   * @brief Returns the origin location of the world that the given 
+   * actor is contained in.
+   * 
+   * If the given actor is not contained in a world, then a warning
+   * is printed and (0,0,0,0) is returned.
+   * 
+   * @param actor The actor
+   * @return The world origin
+   */
   glm::dvec4 getWorldOrigin4D(const AActor* actor) {
     const UWorld *world = actor->GetWorld();
     if (!IsValid(world)) {
@@ -640,28 +650,28 @@ namespace {
 
 
 glm::dvec3
-ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
-  return _geoTransforms.TransformEcefToUe(getWorldOrigin4D(this), ecef);
+ACesiumGeoreference::TransformEcefToUnreal(const glm::dvec3& ecef) const {
+  return _geoTransforms.TransformEcefToUnreal(getWorldOrigin4D(this), ecef);
 }
 
 FVector
-ACesiumGeoreference::InaccurateTransformEcefToUe(const FVector& ecef) const {
-  glm::dvec3 ue = this->TransformEcefToUe(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+ACesiumGeoreference::InaccurateTransformEcefToUnreal(const FVector& ecef) const {
+  glm::dvec3 ue = this->TransformEcefToUnreal(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
   return FVector(ue.x, ue.y, ue.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
+glm::dvec3 ACesiumGeoreference::TransformUnrealToEcef(const glm::dvec3& ue) const {
 
   return this->GetUnrealWorldToEllipsoidCenteredTransform() * getWorldOrigin4D(this);
 }
 
 FVector
-ACesiumGeoreference::InaccurateTransformUeToEcef(const FVector& ue) const {
-  glm::dvec3 ecef = this->TransformUeToEcef(glm::dvec3(ue.X, ue.Y, ue.Z));
+ACesiumGeoreference::InaccurateTransformUnrealToEcef(const FVector& ue) const {
+  glm::dvec3 ecef = this->TransformUnrealToEcef(glm::dvec3(ue.X, ue.Y, ue.Z));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
+FRotator ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
     const FRotator& UERotator,
     const glm::dvec3& ueLocation) const {
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
@@ -669,15 +679,15 @@ FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
   return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
 }
 
-FRotator ACesiumGeoreference::InaccurateTransformRotatorUeToEnu(
+FRotator ACesiumGeoreference::InaccurateTransformRotatorUnrealToEastNorthUp(
     const FRotator& UERotator,
     const FVector& ueLocation) const {
-  return this->TransformRotatorUeToEnu(
+  return this->TransformRotatorUnrealToEastNorthUp(
       UERotator,
       glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
 }
 
-FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
+FRotator ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
     const FRotator& ENURotator,
     const glm::dvec3& ueLocation) const {
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
@@ -686,17 +696,17 @@ FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
   return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
 }
 
-FRotator ACesiumGeoreference::InaccurateTransformRotatorEnuToUe(
+FRotator ACesiumGeoreference::InaccurateTransformRotatorEastNorthUpToUnreal(
     const FRotator& ENURotator,
     const FVector& ueLocation) const {
-  return this->TransformRotatorEnuToUe(
+  return this->TransformRotatorEastNorthUpToUnreal(
       ENURotator,
       glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
 }
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
-  glm::dvec3 ecef = this->TransformUeToEcef(ue);
+  glm::dvec3 ecef = this->TransformUnrealToEcef(ue);
   glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
 
   // Camera Axes = ENU

@@ -120,7 +120,7 @@ public:
    * degrees (y), and height in meters (z) into Unreal world coordinates
    * (relative to the floating origin).
    */
-  glm::dvec3 TransformLongitudeLatitudeHeightToUe(
+  glm::dvec3 TransformLongitudeLatitudeHeightToUnreal(
       const glm::dvec3& origin,
       const glm::dvec3& LongitudeLatitudeHeight) const noexcept;
 
@@ -129,7 +129,7 @@ public:
    * longitude in degrees (x), latitude in degrees (y), and height in
    * meters (z).
    */
-  glm::dvec3 TransformUeToLongitudeLatitudeHeight(
+  glm::dvec3 TransformUnrealToLongitudeLatitudeHeight(
       const glm::dvec3& origin,
       const glm::dvec3& Ue) const noexcept;
 
@@ -138,20 +138,20 @@ public:
    * Unreal relative world (relative to the floating origin).
    */
   glm::dvec3
-  TransformEcefToUe(const glm::dvec3& origin, const glm::dvec3& Ecef) const noexcept;
+  TransformEcefToUnreal(const glm::dvec3& origin, const glm::dvec3& Ecef) const noexcept;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
   glm::dvec3
-  TransformUeToEcef(const glm::dvec3& origin, const glm::dvec3& Ue) const noexcept;
+  TransformUnrealToEcef(const glm::dvec3& origin, const glm::dvec3& Ue) const noexcept;
 
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  glm::dquat TransformRotatorUeToEnu(
+  glm::dquat TransformRotatorUnrealToEastNorthUp(
       const glm::dquat& UeRotator,
       const glm::dvec3& UeLocation) const noexcept;
 
@@ -159,7 +159,7 @@ public:
    * Transforms a rotator from East-North-Up to Unreal world at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  glm::dquat TransformRotatorEnuToUe(
+  glm::dquat TransformRotatorEastNorthUpToUnreal(
       const glm::dquat& EnuRotator,
       const glm::dvec3& UeLocation) const noexcept;
 
