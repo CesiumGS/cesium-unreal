@@ -11,6 +11,7 @@
 
 void GeoTransforms::setCenter(const glm::dvec3& center) {
   this->_center = center;
+  updateTransforms();
 }
 void GeoTransforms::setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid) {
   this->_ellipsoid = ellipsoid;
