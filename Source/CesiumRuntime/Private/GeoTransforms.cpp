@@ -9,16 +9,16 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-void GeoTransforms::setCenter(const glm::dvec3& center) {
+void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
   this->_center = center;
   updateTransforms();
 }
-void GeoTransforms::setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid) {
+void GeoTransforms::setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid)  noexcept {
   this->_ellipsoid = ellipsoid;
   updateTransforms();
 }
 
-void GeoTransforms::updateTransforms() {
+void GeoTransforms::updateTransforms() noexcept {
   this->_georeferencedToEcef =
       CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
           _center,
@@ -33,7 +33,7 @@ void GeoTransforms::updateTransforms() {
 }
 
 glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToEcef(
-    const glm::dvec3& longitudeLatitudeHeight) const {
+    const glm::dvec3& longitudeLatitudeHeight) const noexcept {
   return _ellipsoid.cartographicToCartesian(
       CesiumGeospatial::Cartographic::fromDegrees(
           longitudeLatitudeHeight.x,
@@ -42,7 +42,7 @@ glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToEcef(
 }
 
 glm::dvec3 GeoTransforms::TransformEcefToLongitudeLatitudeHeight(
-    const glm::dvec3& ecef) const {
+    const glm::dvec3& ecef) const noexcept {
   std::optional<CesiumGeospatial::Cartographic> llh =
       _ellipsoid.cartesianToCartographic(ecef);
   if (!llh) {
@@ -59,7 +59,7 @@ glm::dvec3 GeoTransforms::TransformEcefToLongitudeLatitudeHeight(
 
 glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToUe(
     const glm::dvec3& origin,
-    const glm::dvec3& longitudeLatitudeHeight) const {
+    const glm::dvec3& longitudeLatitudeHeight) const noexcept {
   glm::dvec3 ecef =
       this->TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
   return this->TransformEcefToUe(origin, ecef);
@@ -67,21 +67,21 @@ glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToUe(
 
 glm::dvec3 GeoTransforms::TransformUeToLongitudeLatitudeHeight(
     const glm::dvec3& origin,
-    const glm::dvec3& ue) const {
+    const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUeToEcef(origin, ue);
   return this->TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
 glm::dvec3 GeoTransforms::TransformEcefToUe(
     const glm::dvec3& origin,
-    const glm::dvec3& ecef) const {
+    const glm::dvec3& ecef) const noexcept {
   glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
   return ueAbs - origin;
 }
 
 glm::dvec3 GeoTransforms::TransformUeToEcef(
     const glm::dvec3& origin,
-    const glm::dvec3& ue) const {
+    const glm::dvec3& ue) const noexcept {
 
   glm::dvec3 ueAbs = ue + origin;
   return this->_ueAbsToEcef * glm::dvec4(ueAbs, 1.0);
@@ -89,7 +89,7 @@ glm::dvec3 GeoTransforms::TransformUeToEcef(
 
 glm::dquat GeoTransforms::TransformRotatorUeToEnu(
     const glm::dquat& UERotator,
-    const glm::dvec3& ueLocation) const {
+    const glm::dvec3& ueLocation) const noexcept {
   /* TODO NOT IMPLEMENTED YET
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
   FMatrix enuAdjustmentMatrix(
@@ -104,7 +104,7 @@ glm::dquat GeoTransforms::TransformRotatorUeToEnu(
 
 glm::dquat GeoTransforms::TransformRotatorEnuToUe(
     const glm::dquat& ENURotator,
-    const glm::dvec3& ueLocation) const {
+    const glm::dvec3& ueLocation) const noexcept {
   /* TODO NOT IMPLEMENTED YET
   glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
   FMatrix enuAdjustmentMatrix(
@@ -121,7 +121,7 @@ glm::dquat GeoTransforms::TransformRotatorEnuToUe(
 
 glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(
     const glm::dvec3& origin,
-    const glm::dvec3& ue) const {
+    const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUeToEcef(origin, ue);
   glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
 
@@ -135,7 +135,7 @@ glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(
 }
 
 glm::dmat3
-GeoTransforms::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
+GeoTransforms::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const noexcept {
   return glm::dmat3(
       CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef, _ellipsoid));
 }

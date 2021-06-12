@@ -224,6 +224,7 @@ public:
   APlayerCameraManager* WorldOriginCamera;
 
   // TODO: Allow user to select/configure the ellipsoid.
+  // Yeah, we're working on that...
 
   /**
    * This aligns the specified WGS84 longitude in degrees (x), latitude in

@@ -68,14 +68,36 @@ public:
    *
    * @param center The center position (TODO Explain...)
    */
-  void setCenter(const glm::dvec3& center);
+  void setCenter(const glm::dvec3& center) noexcept;
+
+  /**
+   * @brief Returns the center of this instance
+   * 
+   * @return The center
+   */
+  /* // TODO Not required yet?
+  const glm::dvec3& getCenter() const noexcept {
+    return this->_center; 
+  }
+  */
 
   /**
    * @brief Set the ellipsoid of this instance
    *
    * @param ellipsoid The ellipsoid
    */
-  void setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid);
+  void setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept;
+
+  /**
+   * @brief Returns the ellipsoid of this instance
+   * 
+   * @return The ellipsoid
+   */
+  /* // TODO Not required yet?
+  const CesiumGeospatial::Ellipsoid& getEllipsoid() const noexcept {
+    return this->_ellipsoid;
+  }
+  */
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
@@ -83,7 +105,7 @@ public:
    * (ECEF) coordinates.
    */
   glm::dvec3 TransformLongitudeLatitudeHeightToEcef(
-      const glm::dvec3& LongitudeLatitudeHeight) const;
+      const glm::dvec3& LongitudeLatitudeHeight) const noexcept;
 
   /**
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
@@ -91,7 +113,7 @@ public:
    * meters (z).
    */
   glm::dvec3
-  TransformEcefToLongitudeLatitudeHeight(const glm::dvec3& Ecef) const;
+  TransformEcefToLongitudeLatitudeHeight(const glm::dvec3& Ecef) const noexcept;
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
@@ -100,7 +122,7 @@ public:
    */
   glm::dvec3 TransformLongitudeLatitudeHeightToUe(
       const glm::dvec3& origin,
-      const glm::dvec3& LongitudeLatitudeHeight) const;
+      const glm::dvec3& LongitudeLatitudeHeight) const noexcept;
 
   /**
    * Transforms Unreal world coordinates (relative to the floating origin) into
@@ -109,21 +131,21 @@ public:
    */
   glm::dvec3 TransformUeToLongitudeLatitudeHeight(
       const glm::dvec3& origin,
-      const glm::dvec3& Ue) const;
+      const glm::dvec3& Ue) const noexcept;
 
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
    * Unreal relative world (relative to the floating origin).
    */
   glm::dvec3
-  TransformEcefToUe(const glm::dvec3& origin, const glm::dvec3& Ecef) const;
+  TransformEcefToUe(const glm::dvec3& origin, const glm::dvec3& Ecef) const noexcept;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
   glm::dvec3
-  TransformUeToEcef(const glm::dvec3& origin, const glm::dvec3& Ue) const;
+  TransformUeToEcef(const glm::dvec3& origin, const glm::dvec3& Ue) const noexcept;
 
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
@@ -131,7 +153,7 @@ public:
    */
   glm::dquat TransformRotatorUeToEnu(
       const glm::dquat& UeRotator,
-      const glm::dvec3& UeLocation) const;
+      const glm::dvec3& UeLocation) const noexcept;
 
   /**
    * Transforms a rotator from East-North-Up to Unreal world at the given
@@ -139,7 +161,7 @@ public:
    */
   glm::dquat TransformRotatorEnuToUe(
       const glm::dquat& EnuRotator,
-      const glm::dvec3& UeLocation) const;
+      const glm::dvec3& UeLocation) const noexcept;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to Unreal at the
@@ -149,13 +171,13 @@ public:
    */
   glm::dmat3 ComputeEastNorthUpToUnreal(
       const glm::dvec3& origin,
-      const glm::dvec3& Ue) const;
+      const glm::dvec3& Ue) const noexcept;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to
    * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
    */
-  glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& Ecef) const;
+  glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& Ecef) const noexcept;
 
   /*
    * GEOREFERENCE TRANSFORMS
@@ -171,7 +193,7 @@ public:
    * which is usually Earth-centered, Earth-fixed. See {@link
    * reference-frames.md}.
    */
-  const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const {
+  const glm::dmat4& GetGeoreferencedToEllipsoidCenteredTransform() const noexcept {
     return this->_georeferencedToEcef;
   }
 
@@ -185,7 +207,7 @@ public:
    * "Georeferenced" reference frame defined by this instance. See {@link
    * reference-frames.md}.
    */
-  const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const {
+  const glm::dmat4& GetEllipsoidCenteredToGeoreferencedTransform() const noexcept {
     return this->_ecefToGeoreferenced;
   }
 
@@ -198,7 +220,7 @@ public:
    * to the "Ellipsoid-centered" reference frame (which is usually
    * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
-  const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const {
+  const glm::dmat4& GetUnrealWorldToEllipsoidCenteredTransform() const noexcept{
     return this->_ueAbsToEcef;
   }
 
@@ -211,7 +233,7 @@ public:
    * "Unreal world" reference frame (with respect to the absolute world origin,
    * not the floating origin). See {@link reference-frames.md}.
    */
-  const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const {
+  const glm::dmat4& GetEllipsoidCenteredToUnrealWorldTransform() const noexcept {
     return this->_ecefToUeAbs;
   }
 
@@ -241,7 +263,7 @@ private:
    * Update the derived state (i.e. the matrices) when either
    * the center or the ellipsoid has changed.
    */
-  void updateTransforms();
+  void updateTransforms() noexcept;
 
   // Modifiable state
   CesiumGeospatial::Ellipsoid _ellipsoid;

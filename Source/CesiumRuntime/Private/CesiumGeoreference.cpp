@@ -113,21 +113,16 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // camera local space to ECEF
   glm::dmat4 cameraToECEF = this->GetUnrealWorldToEllipsoidCenteredTransform() * cameraToAbsolute;
 
-  // Long/Lat/Height camera location (also our new target georeference origin)
-  std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
-          cameraToECEF[3]);
-
-  if (!targetGeoreferenceOrigin) {
-    // This only happens when the location is too close to the center of the
-    // Earth.
-    return;
-  }
+  // Long/Lat/Height camera location, in degrees/meters (also our new target georeference origin)
+  // When the location is too close to the center of the earth, the
+  // result will be (0,0,0)
+  glm::dvec3 targetGeoreferenceOrigin =
+    _geoTransforms.TransformEcefToLongitudeLatitudeHeight(cameraToECEF[3]);
 
   this->_setGeoreferenceOrigin(
-      glm::degrees(targetGeoreferenceOrigin->longitude),
-      glm::degrees(targetGeoreferenceOrigin->latitude),
-      targetGeoreferenceOrigin->height);
+      targetGeoreferenceOrigin.x,
+      targetGeoreferenceOrigin.y,
+      targetGeoreferenceOrigin.z);
 
   glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
       -originLocation.X,
@@ -315,35 +310,12 @@ glm::dvec3 computeAverageCenter(
 } // namespace
 
 void ACesiumGeoreference::UpdateGeoreference() {
-  // update georeferenced -> ECEF
-    glm::dvec3 center(0.0, 0.0, 0.0);
+  glm::dvec3 center(0.0, 0.0, 0.0);
   if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-    // TODO: it'd be better to compute the union of the bounding volumes and
-    // then use the union's center,
-    //       rather than averaging the centers.
-    size_t numberOfPositions = 0;
-
-    for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
-          this->_boundingVolumeProviders) {
-      if (pObject.IsValid()) {
-        std::optional<Cesium3DTiles::BoundingVolume> bv =
-            pObject->GetBoundingVolume();
-        if (bv) {
-          center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
-          ++numberOfPositions;
-        }
-      }
-    }
-
-    if (numberOfPositions > 0) {
-      center /= numberOfPositions;
-    }
+    center = computeAverageCenter(this->_boundingVolumeProviders);
   } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-    const CesiumGeospatial::Ellipsoid& ellipsoid =
-        CesiumGeospatial::Ellipsoid::WGS84;
-    center = ellipsoid.cartographicToCartesian(
-        CesiumGeospatial::Cartographic::fromDegrees(
-            this->OriginLongitude,
+    center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(
+            glm::dvec3(this->OriginLongitude,
             this->OriginLatitude,
             this->OriginHeight));
   }
@@ -406,9 +378,8 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   const FIntVector& originLocation = world->OriginLocation;
   for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
     glm::dvec3 levelECEF =
-        CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-            CesiumGeospatial::Cartographic::fromDegrees(
-                level.LevelLongitude,
+        _geoTransforms.TransformLongitudeLatitudeHeightToEcef(
+                glm::dvec3(level.LevelLongitude,
                 level.LevelLatitude,
                 level.LevelHeight));
 
@@ -446,26 +417,23 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
       VecMath::add4D(grabbedLocation, originLocation);
 
   glm::dvec3 grabbedLocationECEF = this->GetUnrealWorldToEllipsoidCenteredTransform() * grabbedLocationAbs;
-  std::optional<CesiumGeospatial::Cartographic> optCartographic =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
-          grabbedLocationECEF);
 
-  if (optCartographic) {
-    CesiumGeospatial::Cartographic cartographic = *optCartographic;
-    UE_LOG(
-        LogActor,
-        Warning,
-        TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
-        glm::degrees(cartographic.longitude),
-        glm::degrees(cartographic.latitude),
-        cartographic.height);
+  glm::dvec3 cartographic =
+    _geoTransforms.TransformEcefToLongitudeLatitudeHeight(grabbedLocationECEF);
 
-    // TODO: find editor viewport mouse click event
-    // if (mouseDown) {
-    // this->_setGeoreferenceOrigin()
-    //	this->EditOriginInViewport = false;
-    //}
-  }
+  UE_LOG(
+      LogActor,
+      Warning,
+      TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
+      cartographic.x,
+      cartographic.y,
+      cartographic.z);
+
+  // TODO: find editor viewport mouse click event
+  // if (mouseDown) {
+  // this->_setGeoreferenceOrigin()
+  //	this->EditOriginInViewport = false;
+  //}
 }
 #endif // WITH_EDITOR
 
@@ -521,9 +489,8 @@ bool ACesiumGeoreference::_updateSublevelState() {
       // be loaded
       if (levelName.Equals(level.LevelName)) {
         glm::dvec3 levelECEF =
-            CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-                CesiumGeospatial::Cartographic::fromDegrees(
-                    level.LevelLongitude,
+          _geoTransforms.TransformLongitudeLatitudeHeightToEcef(
+                    glm::dvec3(level.LevelLongitude,
                     level.LevelLatitude,
                     level.LevelHeight));
 
@@ -607,11 +574,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
 
 glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
     const glm::dvec3& longitudeLatitudeHeight) const {
-  return CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-      CesiumGeospatial::Cartographic::fromDegrees(
-          longitudeLatitudeHeight.x,
-          longitudeLatitudeHeight.y,
-          longitudeLatitudeHeight.z));
+  return _geoTransforms.TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToEcef(
@@ -623,18 +586,7 @@ FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToEcef(
 
 glm::dvec3 ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
     const glm::dvec3& ecef) const {
-  std::optional<CesiumGeospatial::Cartographic> llh =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
-  if (!llh) {
-    // TODO: since degenerate cases only happen close to Earth's center
-    // would it make more sense to assign an arbitrary but correct LLH
-    // coordinate to this case such as (0.0, 0.0, -_EARTH_RADIUS_)?
-    return glm::dvec3(0.0, 0.0, 0.0);
-  }
-  return glm::dvec3(
-      glm::degrees(llh->longitude),
-      glm::degrees(llh->latitude),
-      llh->height);
+  return _geoTransforms.TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformEcefToLongitudeLatitudeHeight(
@@ -809,11 +761,7 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
 
   // SunSky needs to be clamped to the ellipsoid surface at this long/lat
   glm::dvec3 targetEcef =
-      CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-          CesiumGeospatial::Cartographic::fromDegrees(
-              longitude,
-              latitude,
-              0.0));
+    _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(longitude, latitude, 0.0));
   glm::dvec4 targetAbsUe = this->GetEllipsoidCenteredToUnrealWorldTransform() * glm::dvec4(targetEcef, 1.0);
 
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
