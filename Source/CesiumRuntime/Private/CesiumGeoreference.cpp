@@ -320,9 +320,9 @@ void ACesiumGeoreference::UpdateGeoreference() {
     //       rather than averaging the centers.
     size_t numberOfPositions = 0;
 
-    for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
-          this->_georeferencedObjects) {
-      if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
+    for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
+          this->_boundingVolumeProviders) {
+      if (pObject.IsValid()) {
         std::optional<Cesium3DTiles::BoundingVolume> bv =
             pObject->GetBoundingVolume();
         if (bv) {
