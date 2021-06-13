@@ -36,8 +36,7 @@
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
     FName("DEFAULT_GEOREFERENCE");
 
-#define WGS84_ELLIPSOID_RADII \
-  6378137.0, 6378137.0, 6356752.3142451793
+#define WGS84_ELLIPSOID_RADII 6378137.0, 6378137.0, 6356752.3142451793
 
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
@@ -94,10 +93,10 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-  : _ellipsoidRadii{WGS84_ELLIPSOID_RADII},
-    _center{0.0, 0.0, 0.0},
-    _geoTransforms(), 
-    _insideSublevel(false) {
+    : _ellipsoidRadii{WGS84_ELLIPSOID_RADII},
+      _center{0.0, 0.0, 0.0},
+      _geoTransforms(),
+      _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -111,7 +110,6 @@ void ACesiumGeoreference::PostInitProperties() {
   Super::PostInitProperties();
   UpdateGeoreference();
 }
-
 
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #if WITH_EDITOR
@@ -830,9 +828,9 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
   }
 
   // SunSky needs to be clamped to the ellipsoid surface at this long/lat
-  glm::dvec3 targetAbsUe =
-    this->TransformLongitudeLatitudeHeightToUnreal(glm::dvec3(longitude, latitude, 0));
-  
+  glm::dvec3 targetAbsUe = this->TransformLongitudeLatitudeHeightToUnreal(
+      glm::dvec3(longitude, latitude, 0));
+
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   this->SunSky->SetActorLocation(
       FVector(targetAbsUe.x, targetAbsUe.y, targetAbsUe.z) -

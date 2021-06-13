@@ -544,7 +544,6 @@ protected:
    */
   void PostInitProperties() override;
 
-
 private:
   /**
    * A tag that is assigned to Georeferences when they are created

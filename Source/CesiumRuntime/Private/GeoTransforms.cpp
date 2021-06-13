@@ -39,8 +39,14 @@ void GeoTransforms::updateTransforms() noexcept {
   UE_LOG(
       LogCesium,
       Warning,
-      TEXT("GeoTransforms::updateTransforms with center %f %f %f and ellipsoid radii %f %f %f"),
-      _center.x, _center.y, _center.z, _ellipsoid.getRadii().x,  _ellipsoid.getRadii().y, _ellipsoid.getRadii().z);
+      TEXT(
+          "GeoTransforms::updateTransforms with center %f %f %f and ellipsoid radii %f %f %f"),
+      _center.x,
+      _center.y,
+      _center.z,
+      _ellipsoid.getRadii().x,
+      _ellipsoid.getRadii().y,
+      _ellipsoid.getRadii().z);
 }
 
 glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToEcef(
