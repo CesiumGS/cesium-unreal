@@ -698,9 +698,8 @@ FVector ACesiumGeoreference::InaccurateTransformEcefToUnreal(
 
 glm::dvec3
 ACesiumGeoreference::TransformUnrealToEcef(const glm::dvec3& ue) const {
-
-  return this->GetUnrealWorldToEllipsoidCenteredTransform() *
-         getWorldOrigin4D(this);
+  glm::dvec4 ueAbs = glm::dvec4(ue, 0.0) + getWorldOrigin4D(this);
+  return this->GetUnrealWorldToEllipsoidCenteredTransform() * ueAbs;
 }
 
 FVector
