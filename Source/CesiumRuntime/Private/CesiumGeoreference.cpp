@@ -830,11 +830,9 @@ void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
   }
 
   // SunSky needs to be clamped to the ellipsoid surface at this long/lat
-  glm::dvec3 targetEcef = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(
-      glm::dvec3(longitude, latitude, 0.0));
-  glm::dvec4 targetAbsUe = this->GetEllipsoidCenteredToUnrealWorldTransform() *
-                           glm::dvec4(targetEcef, 1.0);
-
+  glm::dvec3 targetAbsUe =
+    this->TransformLongitudeLatitudeHeightToUnreal(glm::dvec3(longitude, latitude, 0));
+  
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   this->SunSky->SetActorLocation(
       FVector(targetAbsUe.x, targetAbsUe.y, targetAbsUe.z) -
