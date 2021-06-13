@@ -137,18 +137,53 @@ glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
   FVector ueLocation = this->GetPawnViewLocation();
   const glm::dvec3 ueLocationVec(ueLocation.X, ueLocation.Y, ueLocation.Z);
   if (!IsValid(this->Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
+        *this->GetName());
     return ueLocationVec;
   }
-  return this->Georeference->TransformUnrealToEcef(ueLocationVec);
+  glm::dvec3 ecef = this->Georeference->TransformUnrealToEcef(ueLocationVec);
+
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn::GetECEFCameraLocation %s from UE %f %f %f becomes ECEF %f %f %f"),
+        *this->GetName(), ueLocationVec.x, ueLocationVec.y, ueLocationVec.z, ecef.x, ecef.y, ecef.z);
+
+    if (ueLocationVec.x == 0 && ueLocationVec.y == 0 && ueLocationVec.z == 0)
+    {
+      // TODO XXX
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Now what to we have here? GlobeAwareDefaultPawn::GetECEFCameraLocation %s from UE %f %f %f becomes ECEF %f %f %f"),
+          *this->GetName(), ueLocationVec.x, ueLocationVec.y, ueLocationVec.z, ecef.x, ecef.y, ecef.z);
+    }
+
+  return ecef;
 }
 
 void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
   glm::dvec3 ue;
   if (!IsValid(this->Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
+        *this->GetName());
     ue = ecef;
   } else {
     ue = this->Georeference->TransformEcefToUnreal(ecef);
   }
+
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn::SetECEFCameraLocation %s from ECEF %f %f %f becomes UE %f %f %f"),
+        *this->GetName(), ecef.x, ecef.y, ecef.z, ue.x, ue.y, ue.z);
+
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
       static_cast<float>(ue.y),
@@ -318,6 +353,11 @@ bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
 void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   if (!IsValid(this->Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
+        *this->GetName());
     return;
   }
   if (!this->GetWorld()->IsGameWorld() || !this->_bFlyingToLocation) {

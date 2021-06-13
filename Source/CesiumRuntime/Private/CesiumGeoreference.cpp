@@ -36,6 +36,9 @@
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
     FName("DEFAULT_GEOREFERENCE");
 
+#define WGS84_ELLIPSOID_RADII \
+  6378137.0, 6378137.0, 6356752.3142451793
+
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
   UWorld* world = WorldContextObject->GetWorld();
@@ -91,9 +94,24 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _geoTransforms(), _insideSublevel(false) {
+  : _ellipsoidRadii{WGS84_ELLIPSOID_RADII},
+    _center{0.0, 0.0, 0.0},
+    _geoTransforms(), 
+    _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
+
+void ACesiumGeoreference::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+
+  Super::PostInitProperties();
+  UpdateGeoreference();
+}
+
 
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #if WITH_EDITOR
@@ -309,6 +327,13 @@ void ACesiumGeoreference::BeginPlay() {
 /** In case the CesiumGeoreference gets spawned at run time, instead of design
  *  time, ensure that frames are updated */
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
+
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT("Called OnConstruction on actor %s"),
+      *this->GetName());
+
   this->UpdateGeoreference();
 }
 

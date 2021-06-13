@@ -538,6 +538,13 @@ protected:
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  void PostInitProperties() override;
+
+
 private:
   /**
    * A tag that is assigned to Georeferences when they are created

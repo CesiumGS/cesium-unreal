@@ -6,6 +6,9 @@
 #include "CesiumTransforms.h"
 #include "VecMath.h"
 
+// ONLY used for logging!
+#include "CesiumRuntime.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -32,6 +35,12 @@ void GeoTransforms::updateTransforms() noexcept {
   this->_ecefToUeAbs = CesiumTransforms::unrealToOrFromCesium *
                        CesiumTransforms::scaleToUnrealWorld *
                        this->_ecefToGeoreferenced;
+
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT("GeoTransforms::updateTransforms with center %f %f %f and ellipsoid radii %f %f %f"),
+      _center.x, _center.y, _center.z, _ellipsoid.getRadii().x,  _ellipsoid.getRadii().y, _ellipsoid.getRadii().z);
 }
 
 glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToEcef(
