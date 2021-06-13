@@ -206,17 +206,16 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       TEXT("Called OnFocusEditorViewportOnThis on actor %s"),
       *this->GetName());
 
-  // TODO GEOREF_REFACTORING Check how the computations below
-  // can be adequately replaced with the ones from GeoRef that use
-  // the right ellipsoid
-
   struct CalculateECEFCameraPosition {
+
+    ACesiumGeoreference* localGeoreference;
+
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
-
-      glm::dmat4 ENU = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-          center,
-          CesiumGeospatial::Ellipsoid::WGS84);
+      glm::dmat4 ENU = glm::dmat4(1.0);
+      if (IsValid(localGeoreference)) {
+        ENU = localGeoreference->ComputeEastNorthUpToEcef(center);
+      }
       glm::dvec3 offset =
           sphere.getRadius() * glm::normalize(ENU[0] + ENU[1] + ENU[2]);
       glm::dvec3 position = center + offset;
@@ -226,9 +225,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     glm::dvec3
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
-      glm::dmat4 ENU = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
-          center,
-          CesiumGeospatial::Ellipsoid::WGS84);
+      glm::dmat4 ENU = glm::dmat4(1.0);
+      if (IsValid(localGeoreference)) {
+        ENU = localGeoreference->ComputeEastNorthUpToEcef(center);
+      }
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset = glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
                           glm::normalize(ENU[0] + ENU[1] + ENU[2]);
@@ -261,7 +261,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition =
-      std::visit(CalculateECEFCameraPosition(), boundingVolume);
+    std::visit(CalculateECEFCameraPosition{this->Georeference}, boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);
 
