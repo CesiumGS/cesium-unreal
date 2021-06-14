@@ -113,14 +113,6 @@ public:
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
-   * The CesiumSunSky actor to georeference. Allows the CesiumSunSky to be in
-   * sync with the georeferenced globe. This is only useful when
-   * OriginPlacement = EOriginPlacement::CartographicOrigin.
-   */
-  UPROPERTY(EditAnywhere, Category = "CesiumSunSky")
-  AActor* SunSky = nullptr;
-
-  /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
    *
    * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates, such
@@ -131,7 +123,7 @@ public:
    * this property will preserve vertex precision (and thus avoid jittering)
    * much better than setting the Actor's Transform property.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium")
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
   /**
@@ -228,6 +220,13 @@ public:
   // TODO: Allow user to select/configure the ellipsoid.
   // Yeah, we're working on that...
 
+  /**
+  * Returns the georeference origin position as an FVector. Only valid if
+  * the placement type is Cartographic Origin (i.e. Longitude / Latitude / Height).
+  */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  FVector InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight() const;
+  
   /**
    * This aligns the specified WGS84 longitude in degrees (x), latitude in
    * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
@@ -567,7 +566,6 @@ private:
       double targetLatitude,
       double targetHeight);
   void _jumpToLevel(const FCesiumSubLevel& level);
-  void _setSunSky(double longitude, double latitude);
 
   /**
    * Will make sure that the `CesiumSubLevels` array contains entries

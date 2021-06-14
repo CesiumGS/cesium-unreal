@@ -72,14 +72,33 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
     }
   }
   if (!pGeoreference) {
+    // Legacy method of finding Georeference, for backwards compatibility with
+    // existing projects
+    ACesiumGeoreference* pGeoreferenceCandidate = FindObject<
+      ACesiumGeoreference>(
+        world->PersistentLevel,
+        TEXT("CesiumGeoreferenceDefault"));
+    // Test if PendingKill
+    if (IsValid(pGeoreferenceCandidate)) {
+      pGeoreference = pGeoreferenceCandidate;
+    }
+  }
+  if (!pGeoreference) {
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Creating default Georeference for actor %s"),
         *WorldContextObject->GetName());
     // Spawn georeference in the persistent level
-    pGeoreference = world->SpawnActor<ACesiumGeoreference>();
-    pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
+    FActorSpawnParameters spawnParameters;
+    spawnParameters.SpawnCollisionHandlingOverride =
+        ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
+    // Null check so the editor doesn't crash when it makes arbitrary calls to this function
+    // without a valid world context object.
+    if(pGeoreference) { 
+      pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
+    }
 
   } else {
     UE_LOG(
@@ -245,6 +264,11 @@ void ACesiumGeoreference::JumpToCurrentLevel() {
       currentLevel.LevelHeight));
 }
 
+FVector ACesiumGeoreference::InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight() const
+{
+  return FVector(OriginLongitude, OriginLatitude, OriginHeight);
+}
+
 void ACesiumGeoreference::SetGeoreferenceOrigin(
     const glm::dvec3& targetLongitudeLatitudeHeight) {
   // Should not allow externally initiated georeference origin changing if we
@@ -385,8 +409,6 @@ void ACesiumGeoreference::UpdateGeoreference() {
     }
   }
 
-  this->_setSunSky(this->OriginLongitude, this->OriginLatitude);
-
   OnGeoreferenceUpdated.Broadcast();
 }
 
@@ -407,8 +429,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
       propertyName ==
-          GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight) ||
-      propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, SunSky)) {
+          GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)) {
     this->UpdateGeoreference();
     return;
   } else if (
@@ -817,49 +838,6 @@ void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
       level.LevelLongitude,
       level.LevelLatitude,
       level.LevelHeight);
-}
-
-// TODO: Figure out if sunsky can ever be oriented so it's not at the top of the
-// planet. Without this sunsky will only look good when we set the georeference
-// origin to be near the camera.
-void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
-  if (!this->SunSky) {
-    return;
-  }
-
-  // SunSky needs to be clamped to the ellipsoid surface at this long/lat
-  glm::dvec3 targetAbsUe = this->TransformLongitudeLatitudeHeightToUnreal(
-      glm::dvec3(longitude, latitude, 0));
-
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  this->SunSky->SetActorLocation(
-      FVector(targetAbsUe.x, targetAbsUe.y, targetAbsUe.z) -
-      FVector(originLocation));
-
-  UClass* SunSkyClass = this->SunSky->GetClass();
-  static FName LongProp = TEXT("Longitude");
-  static FName LatProp = TEXT("Latitude");
-  for (TFieldIterator<FProperty> PropertyIterator(SunSkyClass);
-       PropertyIterator;
-       ++PropertyIterator) {
-    FProperty* Property = *PropertyIterator;
-    FName const PropertyName = Property->GetFName();
-    if (PropertyName == LongProp) {
-      FFloatProperty* floatProp = CastField<FFloatProperty>(Property);
-      if (floatProp) {
-        floatProp->SetPropertyValue_InContainer((void*)this->SunSky, longitude);
-      }
-    } else if (PropertyName == LatProp) {
-      FFloatProperty* floatProp = CastField<FFloatProperty>(Property);
-      if (floatProp) {
-        floatProp->SetPropertyValue_InContainer((void*)this->SunSky, latitude);
-      }
-    }
-  }
-  UFunction* UpdateSun = this->SunSky->FindFunction(TEXT("UpdateSun"));
-  if (UpdateSun) {
-    this->SunSky->ProcessEvent(UpdateSun, NULL);
-  }
 }
 
 // TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal
