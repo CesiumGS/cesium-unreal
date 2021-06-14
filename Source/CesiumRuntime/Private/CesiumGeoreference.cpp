@@ -2,8 +2,6 @@
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
-#include "CesiumBoundingVolumeProvider.h"
-#include "CesiumGeoreferenceListener.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -103,7 +101,7 @@ ACesiumGeoreference::ACesiumGeoreference()
 void ACesiumGeoreference::PostInitProperties() {
   UE_LOG(
       LogCesium,
-      Warning,
+      Verbose,
       TEXT("Called PostInitProperties on actor %s"),
       *this->GetName());
 
@@ -266,43 +264,6 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.Z));
 }
 
-void ACesiumGeoreference::AddGeoreferenceListener(
-    ICesiumGeoreferenceListener* Object) {
-
-  // avoid adding duplicates
-  for (TWeakInterfacePtr<ICesiumGeoreferenceListener> pObject :
-       this->_georeferenceListeners) {
-    if (Cast<ICesiumGeoreferenceListener>(pObject.GetObject()) == Object) {
-      return;
-    }
-  }
-
-  this->_georeferenceListeners.Add(*Object);
-
-  // If this object is an Actor or UActorComponent, make sure it ticks _after_
-  // the CesiumGeoreference.
-  AActor* pActor = Cast<AActor>(Object);
-  UActorComponent* pActorComponent = Cast<UActorComponent>(Object);
-  if (pActor) {
-    pActor->AddTickPrerequisiteActor(this);
-  } else if (pActorComponent) {
-    pActorComponent->AddTickPrerequisiteActor(this);
-  }
-
-  // TODO: try commenting this out, it shouldn't be needed
-  this->UpdateGeoreference();
-}
-
-void ACesiumGeoreference::AddBoundingVolumeProvider(
-    ICesiumBoundingVolumeProvider* Object) {
-
-  this->_boundingVolumeProviders.Add(*Object);
-
-  if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-    this->UpdateGeoreference();
-  }
-}
-
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();
@@ -328,65 +289,23 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 
   UE_LOG(
       LogCesium,
-      Warning,
+      Verbose,
       TEXT("Called OnConstruction on actor %s"),
       *this->GetName());
 
   this->UpdateGeoreference();
 }
 
-namespace {
-glm::dvec3 computeAverageCenter(
-    const TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>>&
-        boundingVolumeProviders) {
-  glm::dvec3 center(0.0, 0.0, 0.0);
-
-  // TODO: it'd be better to compute the union of the bounding volumes and
-  // then use the union's center,
-  //       rather than averaging the centers.
-  size_t numberOfPositions = 0;
-
-  for (const TWeakInterfacePtr<ICesiumBoundingVolumeProvider>& pObject :
-       boundingVolumeProviders) {
-    if (pObject.IsValid()) {
-      std::optional<Cesium3DTiles::BoundingVolume> bv =
-          pObject->GetBoundingVolume();
-      if (bv) {
-        center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
-        ++numberOfPositions;
-      }
-    }
-  }
-
-  if (numberOfPositions > 0) {
-    center /= numberOfPositions;
-  }
-  return center;
-}
-} // namespace
-
 void ACesiumGeoreference::UpdateGeoreference() {
   glm::dvec3 center(0.0, 0.0, 0.0);
-  if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-    center = computeAverageCenter(this->_boundingVolumeProviders);
-  } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+  if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
         this->OriginLongitude,
         this->OriginLatitude,
         this->OriginHeight));
   }
-
   _geoTransforms.setCenter(center);
-
-  for (TWeakInterfacePtr<ICesiumGeoreferenceListener> pObject :
-       this->_georeferenceListeners) {
-    if (pObject.IsValid()) {
-      pObject->NotifyGeoreferenceUpdated();
-    }
-  }
-
   this->_setSunSky(this->OriginLongitude, this->OriginLatitude);
-
   OnGeoreferenceUpdated.Broadcast();
 }
 

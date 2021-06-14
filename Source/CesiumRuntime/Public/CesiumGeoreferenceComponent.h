@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceListener.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -22,9 +21,7 @@
  * Height relative to the WGS84 ellipsoid.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumGeoreferenceComponent
-    : public USceneComponent,
-      public ICesiumGeoreferenceListener {
+class CESIUMRUNTIME_API UCesiumGeoreferenceComponent : public USceneComponent {
   GENERATED_BODY()
 
 public:
@@ -172,9 +169,8 @@ public:
 
   virtual void OnRegister() override;
 
-  virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
-
-  virtual void NotifyGeoreferenceUpdated() override;
+  UFUNCTION()
+  void HandleGeoreferenceUpdated();
 
 protected:
   // Called when the game starts
@@ -186,6 +182,12 @@ protected:
       EMoveComponentFlags MoveFlags = MOVECOMP_NoFlags,
       ETeleportType Teleport = ETeleportType::None) override;
 
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  void PostInitProperties() override;
+
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -196,7 +198,6 @@ private:
   void _initWorldOriginLocation();
   void _updateAbsoluteLocation();
   void _updateRelativeLocation();
-  void _initGeoreference();
   void _updateActorToECEF();
   void _updateActorToUnrealRelativeWorldTransform();
   void _setTransform(const glm::dmat4& transform);
@@ -204,10 +205,16 @@ private:
   void _updateDisplayLongitudeLatitudeHeight();
   void _updateDisplayECEF();
 
+  // TODO GEOREF_REFACTORING I'm somewhat (but not entirely) sure
+  // that these properties are redundant and/or not updated when
+  // the corresponding value in UE changes. Review this...
   glm::dvec3 _worldOriginLocation;
   glm::dvec3 _absoluteLocation;
   glm::dvec3 _relativeLocation;
 
+  // TODO GEOREF_REFACTORING
+  // I'm relatively sure that serializing these should not be
+  // becessary, because they are derived from the GeoRef
   // Note: this is done to allow Unreal to recognize and serialize _actorToECEF
   UPROPERTY()
   double _actorToECEF_Array[16];
@@ -217,7 +224,6 @@ private:
   glm::dmat4 _actorToUnrealRelativeWorld;
   USceneComponent* _ownerRoot;
 
-  bool _georeferenced;
   bool _ignoreOnUpdateTransform;
   UPROPERTY()
   bool _autoSnapToEastSouthUp;

@@ -14,13 +14,17 @@
 #include <glm/gtc/quaternion.hpp>
 
 void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
-  this->_center = center;
-  updateTransforms();
+  if (this->_center != center) {
+    this->_center = center;
+    updateTransforms();
+  }
 }
 void GeoTransforms::setEllipsoid(
     const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept {
-  this->_ellipsoid = ellipsoid;
-  updateTransforms();
+  if (this->_ellipsoid.getRadii() != ellipsoid.getRadii()) {
+    this->_ellipsoid = ellipsoid;
+    updateTransforms();
+  }
 }
 
 void GeoTransforms::updateTransforms() noexcept {
@@ -38,7 +42,7 @@ void GeoTransforms::updateTransforms() noexcept {
 
   UE_LOG(
       LogCesium,
-      Warning,
+      Verbose,
       TEXT(
           "GeoTransforms::updateTransforms with center %f %f %f and ellipsoid radii %f %f %f"),
       _center.x,

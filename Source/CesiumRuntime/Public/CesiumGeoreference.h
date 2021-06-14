@@ -13,11 +13,12 @@
 #include <glm/mat3x3.hpp>
 #include "CesiumGeoreference.generated.h"
 
-class ICesiumGeoreferenceListener;
-class ICesiumBoundingVolumeProvider;
-
 class APlayerCameraManager;
 
+/**
+ * The delegate for the ACesiumGeoreference::OnGeoreferenceUpdated,
+ * which is triggered from UpdateGeoreference
+ */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
 
 /**
@@ -488,20 +489,6 @@ public:
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
   /**
-   * Adds a ICesiumGeoreferenceListener to be notified on changes to the world
-   * georeference transforms.
-   */
-  void AddGeoreferenceListener(ICesiumGeoreferenceListener* Object);
-
-  /**
-   * Adds a ICesiumBoundingVolumeProvider that will contribute to the
-   * georeference origin placement when OriginPlacement =
-   * EOriginPlacement::BoundingVolumeOrigin. Other origin placement modes will
-   * be unaffected by bounding volume providers.
-   */
-  void AddBoundingVolumeProvider(ICesiumBoundingVolumeProvider* Object);
-
-  /**
    * Recomputes all world georeference transforms. Usually there is no need to
    * explicitly call this from external code.
    */
@@ -600,10 +587,6 @@ private:
   void _handleViewportOriginEditing();
 
 #endif
-
-  TArray<TWeakInterfacePtr<ICesiumGeoreferenceListener>> _georeferenceListeners;
-  TArray<TWeakInterfacePtr<ICesiumBoundingVolumeProvider>>
-      _boundingVolumeProviders;
 
   /**
    * @brief Updates the load state of sublevels.

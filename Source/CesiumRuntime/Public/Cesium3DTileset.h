@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Cesium3DTiles/ViewState.h"
-#include "CesiumBoundingVolumeProvider.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -38,9 +37,7 @@ enum class ETilesetSource : uint8 {
 };
 
 UCLASS()
-class CESIUMRUNTIME_API ACesium3DTileset
-    : public AActor,
-      public ICesiumBoundingVolumeProvider {
+class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
   GENERATED_BODY()
 
 public:
@@ -447,9 +444,6 @@ public:
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
-  GetBoundingVolume() const override;
-
   // AActor overrides
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -474,7 +468,7 @@ protected:
    * Called after the C++ constructor and after the properties have
    * been initialized, including those loaded from config.
    */
-  virtual void PostInitProperties() override;
+  void PostInitProperties() override;
 
   virtual void NotifyHit(
       class UPrimitiveComponent* MyComp,
@@ -531,8 +525,6 @@ private:
 #endif
 
 private:
-  bool _isBoundingVolumeReady() const;
-
   Cesium3DTiles::Tileset* _pTileset;
 
   /**
@@ -552,7 +544,6 @@ private:
   uint32_t _lastTilesCulled;
   uint32_t _lastMaxDepthVisited;
 
-  bool _waitingForBoundingVolume;
   std::chrono::high_resolution_clock::time_point _startTime;
 
   bool _captureMovieMode;

@@ -23,7 +23,6 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent()
       //_actorToECEF(),
       _actorToUnrealRelativeWorld(),
       _ownerRoot(nullptr),
-      _georeferenced(false),
       _ignoreOnUpdateTransform(false),
       //_autoSnapToEastSouthUp(false),
       _dirty(false) {
@@ -82,12 +81,12 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
 
   // TODO GEOREF_REFACTORING
   // The following line should be replaced by the commented-out one,
-  // but the corresponding function from GeoRef returns a mat3, 
+  // but the corresponding function from GeoRef returns a mat3,
   // omitting the translation component
   glm::dmat4 ENUtoECEF = CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
       this->_actorToECEF[3],
       CesiumGeospatial::Ellipsoid::WGS84);
-  //glm::dmat4 ENUtoECEF =
+  // glm::dmat4 ENUtoECEF =
   //    this->Georeference->ComputeEastNorthUpToEcef(this->_actorToECEF[3]);
 
   this->_actorToECEF = ENUtoECEF * CesiumTransforms::scaleToCesium *
@@ -248,13 +247,14 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
 }
 #endif
 
-void UCesiumGeoreferenceComponent::OnComponentDestroyed(
-    bool bDestroyingHierarchy) {
-  Super::OnComponentDestroyed(bDestroyingHierarchy);
-}
-
-void UCesiumGeoreferenceComponent::NotifyGeoreferenceUpdated() {
+void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called HandleGeoreferenceUpdated for %s"),
+      *this->GetName());
   this->_updateActorToUnrealRelativeWorldTransform();
+  this->_updateActorToECEF();
   this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
@@ -262,6 +262,26 @@ void UCesiumGeoreferenceComponent::SetAutoSnapToEastSouthUp(bool value) {
   this->_autoSnapToEastSouthUp = value;
   if (value) {
     this->SnapToEastSouthUp();
+  }
+}
+
+void UCesiumGeoreferenceComponent::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+  Super::PostInitProperties();
+
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+  if (this->Georeference) {
+    this->_updateActorToUnrealRelativeWorldTransform();
+    this->_updateActorToECEF();
+    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        this,
+        &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
   }
 }
 
@@ -288,7 +308,6 @@ void UCesiumGeoreferenceComponent::_initRootComponent() {
   this->_initWorldOriginLocation();
   this->_updateAbsoluteLocation();
   this->_updateRelativeLocation();
-  this->_initGeoreference();
 }
 
 void UCesiumGeoreferenceComponent::_initWorldOriginLocation() {
@@ -312,39 +331,6 @@ void UCesiumGeoreferenceComponent::_updateRelativeLocation() {
       this->_absoluteLocation - this->_worldOriginLocation;
 }
 
-void UCesiumGeoreferenceComponent::_initGeoreference() {
-  // if the georeference already exists, so does _actorToECEF so we don't have
-  // to update it
-
-  // TODO GEOREF_REFACTORING
-  // What exactly is the difference between
-  // IsValid(this->Georeference) and _georeferenced?
-  // Shouldn't that always have the same truth value?
-
-  if (this->Georeference) {
-    if (!this->_georeferenced) {
-      this->Georeference->AddGeoreferenceListener(this);
-      this->_georeferenced = true;
-      return;
-    }
-
-    this->_updateActorToUnrealRelativeWorldTransform();
-    this->_setTransform(this->_actorToUnrealRelativeWorld);
-    return;
-  }
-
-  this->Georeference =
-      ACesiumGeoreference::GetDefaultGeoreference(this->GetOwner());
-  if (this->Georeference) {
-    this->_updateActorToECEF();
-    this->Georeference->AddGeoreferenceListener(this);
-    this->_georeferenced = true;
-  }
-
-  // Note: when a georeferenced object is added, NotifyGeoreferenceUpdated will
-  // automatically be called
-}
-
 // this is what georeferences the actor
 void UCesiumGeoreferenceComponent::_updateActorToECEF() {
   if (!IsValid(this->Georeference)) {
@@ -352,6 +338,13 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
         LogCesium,
         Warning,
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
+    return;
+  }
+  if (!IsValid(this->_ownerRoot)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGeoreferenceComponent does not have a valid ownerRoot"));
     return;
   }
 
@@ -440,7 +433,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
     }
     // TODO GEOREF_REFACTORING
     // The following lines should be replaced by the commented-out ones,
-    // but the corresponding functions from GeoRef returns a mat3, 
+    // but the corresponding functions from GeoRef returns a mat3,
     // omitting the translation component
     glm::dmat4 startEcefToEnu = glm::affineInverse(
         CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
@@ -450,9 +443,9 @@ void UCesiumGeoreferenceComponent::_setECEF(
         CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
             targetEcef,
             CesiumGeospatial::Ellipsoid::WGS84);
-    //glm::dmat4 startEcefToEnu = glm::affineInverse(
+    // glm::dmat4 startEcefToEnu = glm::affineInverse(
     //    this->Georeference->ComputeEastNorthUpToEcef(this->_actorToECEF[3]));
-    //glm::dmat4 endEnuToEcef =
+    // glm::dmat4 endEnuToEcef =
     //    this->Georeference->ComputeEastNorthUpToEcef(targetEcef);
 
     this->_actorToECEF = endEnuToEcef * startEcefToEnu * this->_actorToECEF;

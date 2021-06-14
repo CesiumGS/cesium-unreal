@@ -61,8 +61,6 @@ ACesium3DTileset::ACesium3DTileset()
       _lastTilesCulled(0),
       _lastMaxDepthVisited(0),
 
-      _waitingForBoundingVolume(false),
-
       _captureMovieMode{false},
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
@@ -260,8 +258,9 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   // calculate unreal camera position
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  glm::dvec3 ecefCameraPosition =
-    std::visit(CalculateECEFCameraPosition{this->Georeference}, boundingVolume);
+  glm::dvec3 ecefCameraPosition = std::visit(
+      CalculateECEFCameraPosition{this->Georeference},
+      boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);
 
@@ -311,21 +310,6 @@ const glm::dmat4&
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
   return Cast<UCesium3DTilesetRoot>(this->RootComponent)
       ->GetCesiumTilesetToUnrealRelativeWorldTransform();
-}
-
-bool ACesium3DTileset::_isBoundingVolumeReady() const {
-  // TODO: detect failures that will cause the root tile to never exist.
-  // That counts as "ready" too.
-  return this->_pTileset && this->_pTileset->getRootTile();
-}
-
-std::optional<Cesium3DTiles::BoundingVolume>
-ACesium3DTileset::GetBoundingVolume() const {
-  if (!this->_isBoundingVolumeReady()) {
-    return std::nullopt;
-  }
-
-  return this->_pTileset->getRootTile()->getBoundingVolume();
 }
 
 void ACesium3DTileset::UpdateTransformFromCesium(
@@ -682,9 +666,6 @@ void ACesium3DTileset::LoadTileset() {
         pRoot,
         &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
   }
-  // Add this as a ICesiumBoundingVolumeProvider once the bounding volume is
-  // ready.
-  this->_waitingForBoundingVolume = true;
 
   if (!this->CreditSystem) {
     this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
@@ -925,17 +906,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     pRoot->MarkTransformUnchanged();
   }
 
-  // If a georeference update is waiting on the bounding volume being ready,
-  // update when ready
-  if (this->_waitingForBoundingVolume && this->_isBoundingVolumeReady()) {
-    this->_waitingForBoundingVolume = false;
-    // The bounding volume is ready so register as a
-    // ICesiumBoundingVolumeProvider
-    if (IsValid(this->Georeference)) {
-      this->Georeference->AddBoundingVolumeProvider(this);
-    }
-  }
-
   if (this->SuspendUpdate) {
     return;
   }
@@ -998,7 +968,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
     UE_LOG(
         LogCesium,
-        Verbose,
+        VeryVerbose,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
