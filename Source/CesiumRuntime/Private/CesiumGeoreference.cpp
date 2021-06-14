@@ -70,6 +70,18 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
     }
   }
   if (!pGeoreference) {
+    // Legacy method of finding Georeference, for backwards compatibility with
+    // existing projects
+    ACesiumGeoreference* pGeoreferenceCandidate = FindObject<
+      ACesiumGeoreference>(
+        world->PersistentLevel,
+        TEXT("CesiumGeoreferenceDefault"));
+    // Test PendingKill
+    if (IsValid(pGeoreferenceCandidate)) {
+      pGeoreference = pGeoreferenceCandidate;
+    }
+  }
+  if (!pGeoreference) {
     UE_LOG(
         LogCesium,
         Verbose,
