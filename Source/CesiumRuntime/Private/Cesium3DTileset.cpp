@@ -1095,20 +1095,10 @@ void ACesium3DTileset::showTilesToRender(
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
     if (!Gltf) {
-      // TODO: Not-yet-renderable tiles shouldn't be here.
-      // (The root tile seems to be here, although it does
-      // not have a Gltf - but print a warning if this is
-      // NOT the root tile, i.e. if it does have a parent)
-      if (pTile->getParent()) {
-        FString tileIdString(Cesium3DTiles::TileIdUtilities::createTileIdString(
-                                 pTile->getTileID())
-                                 .c_str());
-        UE_LOG(
-            LogCesium,
-            Warning,
-            TEXT("Tile %s to render does not have a Gltf"),
-            *tileIdString);
-      }
+      // When a tile does not have render resources (i.e. a glTF), then
+      // the resources either have not yet been loaded or prepared,
+      // or the tile is from an external tileset and does not directly
+      // own renderable content. In both cases, the tile is ignored here.
       continue;
     }
 
