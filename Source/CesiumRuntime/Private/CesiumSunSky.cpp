@@ -32,3 +32,14 @@ void ACesiumSunSky::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
 }
+
+void ACesiumSunSky::SetSkyAtmosphereGroundRadius(
+    USkyAtmosphereComponent* Sky,
+    float Radius) {
+  // Only update if there's a significant change to be made
+  if (Sky && (Sky->BottomRadius - Radius) > 0.1) {
+    Sky->BottomRadius = Radius;
+    Sky->MarkRenderStateDirty();
+    UE_LOG(LogTemp, Warning, TEXT("GroundRadius now %f"), Sky->BottomRadius);
+  }
+}

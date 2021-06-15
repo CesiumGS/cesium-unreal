@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 
 #include "CesiumGeoreference.h"
+#include "Components/SkyAtmosphereComponent.h"
 #include "GameFramework/Actor.h"
 #include "CesiumSunSky.generated.h"
 
@@ -33,5 +34,14 @@ public:
   UFUNCTION(BlueprintImplementableEvent)
   void HandleGeoreferenceUpdated();
 
-
+  /**
+   * Modifies the sky atmosphere's ground radius, which represents the Earth's
+   * radius in the SkyAtmosphere rendering model. Only changes if there's a >0.1
+   * difference, to reduce redraws.
+   *
+   * @param Sky A pointer to the SkyAtmosphereComponent
+   * @param Radius The radius in kilometers.
+   */
+  UFUNCTION(BlueprintCallable)
+  void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, float Radius);
 };
