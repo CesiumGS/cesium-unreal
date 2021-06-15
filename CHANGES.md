@@ -1,5 +1,9 @@
 # Change Log
 
+### ? - ?
+
+- Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
+
 ### v1.3.1 - 2021-06-02
 
 - Temporarily removed support for the Android platform because it is causing problems in Epic's build environment, and is not quite production ready in any case.
