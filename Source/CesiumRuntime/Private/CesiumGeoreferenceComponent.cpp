@@ -53,8 +53,9 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
+  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
   glm::dvec3 ellipsoidNormal =
-      this->Georeference->ComputeGeodeticSurfaceNormal(this->_actorToECEF[3]);
+      geoTransforms.ComputeGeodeticSurfaceNormal(this->_actorToECEF[3]);
 
   // the shortest rotation to align local up with the ellipsoid normal
   glm::dquat R = glm::rotation(actorUpECEF, ellipsoidNormal);
@@ -107,7 +108,8 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
-  glm::dvec3 ecef = this->Georeference->TransformLongitudeLatitudeHeightToEcef(
+  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
+  glm::dvec3 ecef = geoTransforms.TransformLongitudeLatitudeHeightToEcef(
       targetLongitudeLatitudeHeight);
 
   this->_setECEF(ecef, maintainRelativeOrientation);
@@ -348,8 +350,9 @@ void UCesiumGeoreferenceComponent::_updateActorToECEF() {
     return;
   }
 
+  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
   const glm::dmat4& unrealWorldToEcef =
-      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
+      geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform();
 
   FMatrix actorToRelativeWorld =
       this->_ownerRoot->GetComponentToWorld().ToMatrixWithScale();
@@ -370,8 +373,9 @@ void UCesiumGeoreferenceComponent::
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
+  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
   const glm::dmat4& ecefToUnrealWorld =
-      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+      geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform();
   glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
       -this->_worldOriginLocation.x,
       -this->_worldOriginLocation.y,
@@ -481,8 +485,9 @@ void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
+  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
   glm::dvec3 cartographic =
-      this->Georeference->TransformEcefToLongitudeLatitudeHeight(
+      geoTransforms.TransformEcefToLongitudeLatitudeHeight(
           this->_actorToECEF[3]);
   this->_dirty = true;
   this->Longitude = cartographic.x;
