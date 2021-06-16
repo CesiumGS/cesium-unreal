@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumGeoreferenceListener.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
 #include <glm/mat3x3.hpp>
@@ -19,9 +18,7 @@ class UCurveFloat;
  * changes its own up direction such that the world always looks right-side up.
  */
 UCLASS()
-class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
-    : public ADefaultPawn,
-      public ICesiumGeoreferenceListener {
+class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {
   GENERATED_BODY()
 
 public:
@@ -186,13 +183,19 @@ public:
       float PitchAtDestination,
       bool CanInterruptByMoving);
 
-  virtual void NotifyGeoreferenceUpdated() override;
+  UFUNCTION()
+  void HandleGeoreferenceUpdated();
 
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
 
 protected:
-  virtual void OnConstruction(const FTransform& Transform) override;
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  void PostInitProperties() override;
+
   virtual void BeginPlay() override;
 
 private:

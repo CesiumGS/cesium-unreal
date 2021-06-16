@@ -19,13 +19,6 @@ enum class EOriginPlacement : uint8 {
    */
   TrueOrigin UMETA(DisplayName = "True origin"),
 
-  /*
-   * Use the center of the tileset's bounding volume as the Actor's origin. This
-   * option preserves precision by keeping all tileset vertices as close to the
-   * Actor's origin as possible.
-   */
-  BoundingVolumeOrigin UMETA(DisplayName = "Bounding volume center"),
-
   /**
    * Use a custom position within the tileset as the Actor's origin. The
    * position is expressed as a longitude, latitude, and height, and that

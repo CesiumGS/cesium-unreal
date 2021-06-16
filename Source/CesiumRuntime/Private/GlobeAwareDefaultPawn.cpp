@@ -17,9 +17,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
-//
-#include "CesiumGeospatialBlueprintLibrary.h"
-#include "CesiumGeospatialLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "VecMath.h"
 #include <glm/ext/vector_double3.hpp>
@@ -296,8 +293,15 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     float PitchAtDestination,
     bool CanInterruptByMoving) {
 
+  if (!IsValid(this->Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
+        *this->GetName());
+  }
   const glm::dvec3& ecef =
-      UCesiumGeospatialLibrary::TransformLongLatHeightToEcef(
+      this->Georeference->TransformLongitudeLatitudeHeightToEcef(
           LongitudeLatitudeHeightDestination);
   this->FlyToLocationECEF(
       ecef,
@@ -320,7 +324,12 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
       CanInterruptByMoving);
 }
 
-void AGlobeAwareDefaultPawn::NotifyGeoreferenceUpdated() {
+void AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called HandleGeoreferenceUpdated for %s"),
+      *this->GetName());
   this->SetECEFCameraLocation(this->_currentEcef);
 }
 
@@ -422,28 +431,29 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   this->_currentEcef = this->GetECEFCameraLocation();
 }
 
-void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
-
-  this->_currentEcef = this->GetECEFCameraLocation();
-  this->Georeference->AddGeoreferenceListener(this);
-}
-
 void AGlobeAwareDefaultPawn::BeginPlay() {
   Super::BeginPlay();
-
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
-
-  this->_currentEcef = this->GetECEFCameraLocation();
-  this->Georeference->AddGeoreferenceListener(this);
-
   // TODO: find more elegant solution
   // the controller gets confused if the pawn itself has a nonzero orientation
   this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
+}
+
+void AGlobeAwareDefaultPawn::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+  Super::PostInitProperties();
+
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+  if (this->Georeference) {
+    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        this,
+        &AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated);
+  }
 }
 
 void AGlobeAwareDefaultPawn::_interruptFlight() {
