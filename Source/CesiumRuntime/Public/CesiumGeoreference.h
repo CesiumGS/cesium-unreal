@@ -7,7 +7,7 @@
 #include "Containers/UnrealString.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "GeoTransforms.h"
+#include "Georeference.h"
 #include "OriginPlacement.h"
 #include "UObject/WeakInterfacePtr.h"
 #include <glm/mat3x3.hpp>
@@ -259,7 +259,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformLongitudeLatitudeHeightToEcef(
@@ -272,7 +272,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
@@ -284,7 +284,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformLongitudeLatitudeHeightToUnreal(
@@ -297,7 +297,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformUnrealToLongitudeLatitudeHeight(const FVector& Ue) const;
@@ -308,7 +308,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformEcefToUnreal(const FVector& Ecef) const;
@@ -319,7 +319,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformUnrealToEcef(const FVector& Ue) const;
@@ -330,7 +330,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator TransformRotatorUnrealToEastNorthUp(
@@ -344,7 +344,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator TransformRotatorEastNorthUpToUnreal(
@@ -360,7 +360,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FMatrix ComputeEastNorthUpToUnreal(const FVector& Ue) const;
@@ -371,7 +371,7 @@ public:
    * 
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * native Georeference class can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
@@ -406,14 +406,14 @@ public:
   virtual void Tick(float DeltaTime) override;
 
   /**
-   * Returns the {@link GeoTransforms} that offers the double-precision 
+   * Returns the {@link Georeference} that offers the double-precision 
    * conversion functions on top of which the conversion functions of
    * this class are implemented.
    * 
-   * @return The {@link GeoTransforms}
+   * @return The {@link Georeference}
    */
-  const GeoTransforms& getGeoTransforms() const noexcept {
-    return _geoTransforms;
+  const Georeference& getGeoreference() const noexcept {
+    return _georeference;
   }
 
 protected:
@@ -445,7 +445,7 @@ private:
   UPROPERTY()
   double _center[3];
 
-  GeoTransforms _geoTransforms;
+  Georeference _georeference;
 
   bool _insideSublevel;
 

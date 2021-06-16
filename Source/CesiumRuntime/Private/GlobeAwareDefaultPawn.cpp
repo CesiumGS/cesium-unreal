@@ -70,15 +70,14 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     */
 
     FVector loc = this->GetPawnViewLocation();
-    const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
     glm::dvec3 origin = VecMath::createVector3D(this->GetWorld()->OriginLocation);
-    glm::dvec3 locEcef = geoTransforms.TransformUnrealToEcef(
+    glm::dvec3 locEcef = Georeference->getGeoreference().TransformUnrealToEcef(
         origin, glm::dvec3(loc.X, loc.Y, loc.Z));
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
     glm::dvec4 up =
-        geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform() *
+        Georeference->getGeoreference().GetEllipsoidCenteredToUnrealWorldTransform() *
         upEcef;
 
     AddMovementInput(FVector(up.x, up.y, up.z), Val);
@@ -143,9 +142,8 @@ glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
         *this->GetName());
     return ueLocationVec;
   }
-  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
   glm::dvec3 origin = VecMath::createVector3D(this->GetWorld()->OriginLocation);
-  glm::dvec3 ecef = geoTransforms.TransformUnrealToEcef(origin, ueLocationVec);
+  glm::dvec3 ecef = Georeference->getGeoreference().TransformUnrealToEcef(origin, ueLocationVec);
   return ecef;
 }
 
@@ -159,9 +157,8 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
         *this->GetName());
     ue = ecef;
   } else {
-    const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
     glm::dvec3 origin = VecMath::createVector3D(this->GetWorld()->OriginLocation);
-    ue = geoTransforms.TransformEcefToUnreal(origin, ecef);
+    ue = Georeference->getGeoreference().TransformEcefToUnreal(origin, ecef);
   }
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
@@ -306,9 +303,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
         TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
         *this->GetName());
   }
-  const GeoTransforms& geoTransforms = Georeference->getGeoTransforms();
   const glm::dvec3& ecef =
-      geoTransforms.TransformLongitudeLatitudeHeightToEcef(
+      Georeference->getGeoreference().TransformLongitudeLatitudeHeightToEcef(
           LongitudeLatitudeHeightDestination);
   this->FlyToLocationECEF(
       ecef,
@@ -408,14 +404,14 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // precision until the very end.
   const glm::dvec3& ueOriginLocation =
       VecMath::createVector3D(this->GetWorld()->OriginLocation);
-  const GeoTransforms& geoTransforms = this->Georeference->getGeoTransforms();
+  const ::Georeference georeference = this->Georeference->getGeoreference();
   const glm::dquat startingQuat =
-      geoTransforms.TransformRotatorUnrealToEastNorthUp(
+      georeference.TransformRotatorUnrealToEastNorthUp(
           ueOriginLocation,
           VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
           this->_keypoints[0]);
   const glm::dquat endingQuat =
-      geoTransforms.TransformRotatorUnrealToEastNorthUp(
+      georeference.TransformRotatorUnrealToEastNorthUp(
           ueOriginLocation,
           VecMath::createQuaternion(
               this->_flyToDestinationRotation.Quaternion()),
@@ -423,7 +419,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   const glm::dquat& currentQuat =
       glm::slerp(startingQuat, endingQuat, flyPercentage);
   GetController()->SetControlRotation(
-      VecMath::createRotator(geoTransforms.TransformRotatorEastNorthUpToUnreal(
+      VecMath::createRotator(georeference.TransformRotatorEastNorthUpToUnreal(
           ueOriginLocation,
           currentQuat,
           currentPosition)));

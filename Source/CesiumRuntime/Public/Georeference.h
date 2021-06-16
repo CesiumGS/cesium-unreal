@@ -7,21 +7,21 @@
 #include <glm/glm.hpp>
 
 /**
- * @brief A lightweight structure to encapsulate coordinate transforms.
+ * Controls how global geospatial coordinates are mapped to world coordinates.
  *
  * It encapsulates the conversions between...
  * - Earth-Centered, Earth-Fixed (ECEF) coordinates
  * - Georeferenced coordinates (Latitude/Longitude/Height)
- * - Unreal coordinates (relative to the unreal world origin)
+ * - Relative and absolute world coordinates
  *
  */
-class CESIUMRUNTIME_API GeoTransforms {
+class CESIUMRUNTIME_API Georeference {
 
 public:
   /**
    * @brief Creates a new instance
    */
-  GeoTransforms()
+  Georeference()
       : _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
         _center(glm::dvec3(0.0)),
         _georeferencedToEcef(1.0),
@@ -37,7 +37,7 @@ public:
    * @param ellipsoid The ellipsoid to use for the georeferenced coordinates
    * @param center The center position (TODO Explain...)
    */
-  GeoTransforms(
+  Georeference(
       const CesiumGeospatial::Ellipsoid& ellipsoid,
       const glm::dvec3& center)
       : _ellipsoid(ellipsoid),
@@ -50,11 +50,11 @@ public:
   }
 
   /** @brief Destructor */
-  ~GeoTransforms() {}
+  ~Georeference() {}
 
   /** @brief Copy constructor */
-  GeoTransforms(const GeoTransforms& other)
-      : GeoTransforms(
+  Georeference(const Georeference& other)
+      : Georeference(
             other._ellipsoid,
             other._center,
             other._georeferencedToEcef,
@@ -262,7 +262,7 @@ private:
    * TODO The params are all fields. I think this is NOT auto-generated
    * by the compiler when there is another constructor...
    */
-  GeoTransforms(
+  Georeference(
       const CesiumGeospatial::Ellipsoid& ellipsoid,
       const glm::dvec3& center,
       const glm::dmat4 georeferencedToEcef,

@@ -93,9 +93,9 @@ void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
     return;
   }
 
-  const GeoTransforms& geoTransforms = pTileset->Georeference->getGeoTransforms();
+  const ::Georeference& georeference = pTileset->Georeference->getGeoreference();
   const glm::dmat4& ellipsoidCenteredToUnrealWorld =
-      geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform();
+      georeference.GetEllipsoidCenteredToUnrealWorldTransform();
 
   glm::dvec3 relativeLocation =
       this->_absoluteLocation - this->_worldOriginLocation;
