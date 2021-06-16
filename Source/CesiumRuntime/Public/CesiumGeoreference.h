@@ -221,12 +221,13 @@ public:
   // Yeah, we're working on that...
 
   /**
-  * Returns the georeference origin position as an FVector. Only valid if
-  * the placement type is Cartographic Origin (i.e. Longitude / Latitude / Height).
-  */
+   * Returns the georeference origin position as an FVector. Only valid if
+   * the placement type is Cartographic Origin (i.e. Longitude / Latitude /
+   * Height).
+   */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight() const;
-  
+
   /**
    * This aligns the specified WGS84 longitude in degrees (x), latitude in
    * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it

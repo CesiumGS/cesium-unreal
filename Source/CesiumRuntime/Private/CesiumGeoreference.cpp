@@ -74,10 +74,10 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
   if (!pGeoreference) {
     // Legacy method of finding Georeference, for backwards compatibility with
     // existing projects
-    ACesiumGeoreference* pGeoreferenceCandidate = FindObject<
-      ACesiumGeoreference>(
-        world->PersistentLevel,
-        TEXT("CesiumGeoreferenceDefault"));
+    ACesiumGeoreference* pGeoreferenceCandidate =
+        FindObject<ACesiumGeoreference>(
+            world->PersistentLevel,
+            TEXT("CesiumGeoreferenceDefault"));
     // Test if PendingKill
     if (IsValid(pGeoreferenceCandidate)) {
       pGeoreference = pGeoreferenceCandidate;
@@ -94,9 +94,9 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
-    // Null check so the editor doesn't crash when it makes arbitrary calls to this function
-    // without a valid world context object.
-    if(pGeoreference) { 
+    // Null check so the editor doesn't crash when it makes arbitrary calls to
+    // this function without a valid world context object.
+    if (pGeoreference) {
       pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
     }
 
@@ -264,8 +264,9 @@ void ACesiumGeoreference::JumpToCurrentLevel() {
       currentLevel.LevelHeight));
 }
 
-FVector ACesiumGeoreference::InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight() const
-{
+FVector
+ACesiumGeoreference::InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight()
+    const {
   return FVector(OriginLongitude, OriginLatitude, OriginHeight);
 }
 
