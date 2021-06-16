@@ -17,19 +17,12 @@ public:
   // Sets default values for this actor's properties
   ACesiumSunSky();
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Cesium)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
   ACesiumGeoreference* Georeference;
 
-protected:
-  // Called when the game starts or when spawned
-  virtual void BeginPlay() override;
-
-public:
-  // Called every frame
-  virtual void Tick(float DeltaTime) override;
-
   /**
-   * Callback after georeference origin (e.g. lat/long position) has been updated.
+   * Callback after georeference origin (e.g. lat/long position) has been
+   * updated.
    */
   UFUNCTION(BlueprintImplementableEvent)
   void HandleGeoreferenceUpdated();
