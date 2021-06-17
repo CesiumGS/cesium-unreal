@@ -31,6 +31,7 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "CesiumUtility/Profiler.h"
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
@@ -250,9 +251,9 @@ static void computeFlatNormals(
     FVector v02 = v2.Position - v0.Position;
     FVector normal = FVector::CrossProduct(v01, v02);
 
-    v0.TangentZ = normal.GetSafeNormal();
-    v1.TangentZ = v0.TangentZ;
-    v2.TangentZ = v0.TangentZ;
+    v0.TangentX = v1.TangentX = v2.TangentX = FVector(0.0f);
+    v0.TangentY = v1.TangentY = v2.TangentY = FVector(0.0f);
+    v0.TangentZ = v1.TangentZ = v2.TangentZ = normal.GetSafeNormal();
   }
 }
 
@@ -565,6 +566,9 @@ static void loadPrimitive(
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
+
+  TRACE("loadPrimitive<T>");
+
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
     // TODO: add support for primitive types other than triangles.
@@ -634,43 +638,49 @@ static void loadPrimitive(
 
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
-  const std::vector<double>& min = positionAccessor.min;
-  const std::vector<double>& max = positionAccessor.max;
-  glm::dvec3 minPosition{std::numeric_limits<double>::max()};
-  glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
-  if (min.size() != 3 || max.size() != 3) {
-    for (int32_t i = 0; i < positionView.size(); ++i) {
-      minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
-      minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
-      minPosition.z = glm::min<double>(minPosition.z, positionView[i].Z);
+  {
+    TRACE("compute AA bounding box");
 
-      maxPosition.x = glm::max<double>(maxPosition.x, positionView[i].X);
-      maxPosition.y = glm::max<double>(maxPosition.y, positionView[i].Y);
-      maxPosition.z = glm::max<double>(maxPosition.z, positionView[i].Z);
+    const std::vector<double>& min = positionAccessor.min;
+    const std::vector<double>& max = positionAccessor.max;
+    glm::dvec3 minPosition{std::numeric_limits<double>::max()};
+    glm::dvec3 maxPosition{std::numeric_limits<double>::lowest()};
+    if (min.size() != 3 || max.size() != 3) {
+      for (int32_t i = 0; i < positionView.size(); ++i) {
+        minPosition.x = glm::min<double>(minPosition.x, positionView[i].X);
+        minPosition.y = glm::min<double>(minPosition.y, positionView[i].Y);
+        minPosition.z = glm::min<double>(minPosition.z, positionView[i].Z);
+
+        maxPosition.x = glm::max<double>(maxPosition.x, positionView[i].X);
+        maxPosition.y = glm::max<double>(maxPosition.y, positionView[i].Y);
+        maxPosition.z = glm::max<double>(maxPosition.z, positionView[i].Z);
+      }
+    } else {
+      minPosition = glm::dvec3(min[0], min[1], min[2]);
+      maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
-  } else {
-    minPosition = glm::dvec3(min[0], min[1], min[2]);
-    maxPosition = glm::dvec3(max[0], max[1], max[2]);
+
+    FBox aaBox(
+        FVector(minPosition.x, minPosition.y, minPosition.z),
+        FVector(maxPosition.x, maxPosition.y, maxPosition.z));
+
+    aaBox.GetCenterAndExtents(
+        RenderData->Bounds.Origin,
+        RenderData->Bounds.BoxExtent);
+    RenderData->Bounds.SphereRadius = 0.0f;
   }
-
-  FBox aaBox(
-      FVector(minPosition.x, minPosition.y, minPosition.z),
-      FVector(maxPosition.x, maxPosition.y, maxPosition.z));
-
-  FBoxSphereBounds BoundingBoxAndSphere;
-  aaBox.GetCenterAndExtents(
-      BoundingBoxAndSphere.Origin,
-      BoundingBoxAndSphere.BoxExtent);
-  BoundingBoxAndSphere.SphereRadius = 0.0f;
 
   TArray<uint32> indices;
   if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
+    TRACE("copy TRIANGLE indices");
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
     for (int32 i = 0; i < indicesView.size(); ++i) {
       indices[i] = indicesView[i];
     }
   } else {
+    // assume TRIANGLE_STRIP because all others are rejected earlier.
+    TRACE("copy TRIANGLE_STRIP indices");
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
       if (i % 2) {
         indices.Add(indicesView[i]);
@@ -693,15 +703,18 @@ static void loadPrimitive(
   // according to the MikkTSpace algorithm when tangents are not included in the
   // glTF.
 
-  for (int64_t i = 0; i < indices.Num(); ++i) {
-    FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-    uint32 vertexIndex = indices[i];
-    vertex.Position = positionView[vertexIndex];
-    vertex.UVs[0] = FVector2D(0.0f, 0.0f);
-    vertex.UVs[2] = FVector2D(0.0f, 0.0f);
-    BoundingBoxAndSphere.SphereRadius = FMath::Max(
-        (vertex.Position - BoundingBoxAndSphere.Origin).Size(),
-        BoundingBoxAndSphere.SphereRadius);
+  {
+    TRACE("copy positions");
+    for (int64_t i = 0; i < indices.Num(); ++i) {
+      FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+      uint32 vertexIndex = indices[i];
+      vertex.Position = positionView[vertexIndex];
+      vertex.UVs[0] = FVector2D(0.0f, 0.0f);
+      vertex.UVs[2] = FVector2D(0.0f, 0.0f);
+      RenderData->Bounds.SphereRadius = FMath::Max(
+          (vertex.Position - RenderData->Bounds.Origin).Size(),
+          RenderData->Bounds.SphereRadius);
+    }
   }
 
   // TangentX: Tangent
@@ -713,12 +726,16 @@ static void loadPrimitive(
     int normalAccessorID = normalAccessorIt->second;
     CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
     if (normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
+      TRACE("copy normals");
       for (int64_t i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
+        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
         vertex.TangentZ = normalAccessor[vertexIndex];
       }
     } else {
+      TRACE("compute flat normals");
       UE_LOG(
           LogCesium,
           Warning,
@@ -728,8 +745,33 @@ static void loadPrimitive(
       computeFlatNormals(indices, StaticMeshBuildVertices);
     }
   } else {
+    TRACE("compute flat normals");
     computeFlatNormals(indices, StaticMeshBuildVertices);
   }
+
+  int materialID = primitive.material;
+  const CesiumGltf::Material& material =
+      materialID >= 0 && materialID < model.materials.size()
+          ? model.materials[materialID]
+          : defaultMaterial;
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
+
+  // TODO: make this configurable on the Actor/Component.
+  bool forceTangents = false;
+
+  bool hasNormalMap = material.normalTexture.has_value();
+  if (hasNormalMap) {
+    const CesiumGltf::Texture* pTexture =
+        Model::getSafe(&model.textures, material.normalTexture->index);
+    hasNormalMap = pTexture != nullptr &&
+                   Model::getSafe(&model.images, pTexture->source) != nullptr;
+  }
+
+  bool needsTangents = forceTangents || hasNormalMap;
+
+  bool hasTangents = false;
 
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
   if (tangentAccessorIt != primitive.attributes.end()) {
@@ -739,6 +781,7 @@ static void loadPrimitive(
         tangentAccessorID);
 
     if (tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
+      TRACE("copy tangents");
       for (int64_t i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -747,17 +790,21 @@ static void loadPrimitive(
         vertex.TangentY =
             FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
       }
+
+      hasTangents = true;
     } else {
+      TRACE("compute tangents");
       UE_LOG(
           LogCesium,
           Warning,
-          TEXT(
-              "%s: Invalid tangent buffer. Tangent vector will be auto-generated instead"),
+          TEXT("%s: Invalid tangent buffer."),
           UTF8_TO_TCHAR(name.c_str()));
-      computeTangentSpace(StaticMeshBuildVertices);
     }
-  } else {
+  }
+
+  if (needsTangents && !hasTangents) {
     // Use mikktspace to calculate the tangents
+    TRACE("compute tangents");
     computeTangentSpace(StaticMeshBuildVertices);
   }
 
@@ -765,6 +812,7 @@ static void loadPrimitive(
 
   auto colorAccessorIt = primitive.attributes.find("COLOR_0");
   if (colorAccessorIt != primitive.attributes.end()) {
+    TRACE("copy colors");
     int colorAccessorID = colorAccessorIt->second;
     hasVertexColors = CesiumGltf::createAccessorView(
         model,
@@ -777,99 +825,99 @@ static void loadPrimitive(
   // We need to copy the texture coordinates associated with each texture (if
   // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
 
-  int materialID = primitive.material;
-  const CesiumGltf::Material& material =
-      materialID >= 0 && materialID < model.materials.size()
-          ? model.materials[materialID]
-          : defaultMaterial;
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
-
   std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
-  primitiveResult.baseColorTexture =
-      loadTexture(model, pbrMetallicRoughness.baseColorTexture);
-  primitiveResult.metallicRoughnessTexture =
-      loadTexture(model, pbrMetallicRoughness.metallicRoughnessTexture);
-  primitiveResult.normalTexture = loadTexture(model, material.normalTexture);
-  primitiveResult.occlusionTexture =
-      loadTexture(model, material.occlusionTexture);
-  primitiveResult.emissiveTexture =
-      loadTexture(model, material.emissiveTexture);
-  primitiveResult
-      .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          pbrMetallicRoughness.baseColorTexture,
-          textureCoordinateMap);
-  primitiveResult
-      .textureCoordinateParameters["metallicRoughnessTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          pbrMetallicRoughness.metallicRoughnessTexture,
-          textureCoordinateMap);
-  primitiveResult.textureCoordinateParameters["normalTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          material.normalTexture,
-          textureCoordinateMap);
-  primitiveResult
-      .textureCoordinateParameters["occlusionTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          material.occlusionTexture,
-          textureCoordinateMap);
-  primitiveResult
-      .textureCoordinateParameters["emissiveTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          material.emissiveTexture,
-          textureCoordinateMap);
+  {
+    TRACE("loadTextures");
+    primitiveResult.baseColorTexture =
+        loadTexture(model, pbrMetallicRoughness.baseColorTexture);
+    primitiveResult.metallicRoughnessTexture =
+        loadTexture(model, pbrMetallicRoughness.metallicRoughnessTexture);
+    primitiveResult.normalTexture = loadTexture(model, material.normalTexture);
+    primitiveResult.occlusionTexture =
+        loadTexture(model, material.occlusionTexture);
+    primitiveResult.emissiveTexture =
+        loadTexture(model, material.emissiveTexture);
+  }
 
-  // Currently only one set of raster overlay texture coordinates is supported.
-  // TODO: Support more texture coordinate sets (e.g. web mercator and
-  // geographic)
-  primitiveResult
-      .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          rasterOverlay0,
-          textureCoordinateMap);
+  {
+    TRACE("updateTextureCoordinates");
+    primitiveResult
+        .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
+        updateTextureCoordinates(
+            model,
+            primitive,
+            StaticMeshBuildVertices,
+            indices,
+            pbrMetallicRoughness.baseColorTexture,
+            textureCoordinateMap);
+    primitiveResult.textureCoordinateParameters
+        ["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(
+        model,
+        primitive,
+        StaticMeshBuildVertices,
+        indices,
+        pbrMetallicRoughness.metallicRoughnessTexture,
+        textureCoordinateMap);
+    primitiveResult
+        .textureCoordinateParameters["normalTextureCoordinateIndex"] =
+        updateTextureCoordinates(
+            model,
+            primitive,
+            StaticMeshBuildVertices,
+            indices,
+            material.normalTexture,
+            textureCoordinateMap);
+    primitiveResult
+        .textureCoordinateParameters["occlusionTextureCoordinateIndex"] =
+        updateTextureCoordinates(
+            model,
+            primitive,
+            StaticMeshBuildVertices,
+            indices,
+            material.occlusionTexture,
+            textureCoordinateMap);
+    primitiveResult
+        .textureCoordinateParameters["emissiveTextureCoordinateIndex"] =
+        updateTextureCoordinates(
+            model,
+            primitive,
+            StaticMeshBuildVertices,
+            indices,
+            material.emissiveTexture,
+            textureCoordinateMap);
 
-  primitiveResult
-      .textureCoordinateParameters["geographicTextureCoordinateIndex"] =
-      updateTextureCoordinates(
-          model,
-          primitive,
-          StaticMeshBuildVertices,
-          indices,
-          rasterOverlay1,
-          textureCoordinateMap);
+    // Currently only one set of raster overlay texture coordinates is
+    // supported.
+    // TODO: Support more texture coordinate sets (e.g. web mercator and
+    // geographic)
+    primitiveResult
+        .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
+        updateTextureCoordinates(
+            model,
+            primitive,
+            StaticMeshBuildVertices,
+            indices,
+            rasterOverlay0,
+            textureCoordinateMap);
+
+    primitiveResult
+        .textureCoordinateParameters["geographicTextureCoordinateIndex"] =
+        updateTextureCoordinates(
+            model,
+            primitive,
+            StaticMeshBuildVertices,
+            indices,
+            rasterOverlay1,
+            textureCoordinateMap);
+  }
 
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
   if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
       onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
+    TRACE("water mask");
     bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
     bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
     primitiveResult.onlyWater = onlyWater;
@@ -912,19 +960,21 @@ static void loadPrimitive(
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
 
-  RenderData->Bounds = BoundingBoxAndSphere;
+  {
+    TRACE("init buffers");
+    LODResources.VertexBuffers.PositionVertexBuffer.Init(
+        StaticMeshBuildVertices);
 
-  LODResources.VertexBuffers.PositionVertexBuffer.Init(StaticMeshBuildVertices);
+    FColorVertexBuffer& ColorVertexBuffer =
+        LODResources.VertexBuffers.ColorVertexBuffer;
+    if (hasVertexColors) {
+      ColorVertexBuffer.Init(StaticMeshBuildVertices);
+    }
 
-  FColorVertexBuffer& ColorVertexBuffer =
-      LODResources.VertexBuffers.ColorVertexBuffer;
-  if (hasVertexColors) {
-    ColorVertexBuffer.Init(StaticMeshBuildVertices);
+    LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
+        StaticMeshBuildVertices,
+        textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
   }
-
-  LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
-      StaticMeshBuildVertices,
-      textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
 
   FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
       LODResources.Sections;
@@ -938,18 +988,24 @@ static void loadPrimitive(
   section.bEnableCollision = true;
   section.bCastShadow = true;
 
-  // Note that we're reversing the order of the indices, because the change from
-  // the glTF right-handed to the Unreal left-handed coordinate system reverses
-  // the winding order.
-  for (int32 i = 0; i < indices.Num(); ++i) {
-    indices[i] = indices.Num() - i - 1;
+  // Note that we're reversing the order of the indices, because the change
+  // from the glTF right-handed to the Unreal left-handed coordinate system
+  // reverses the winding order.
+  {
+    TRACE("reverse winding order");
+    for (int32 i = 0; i < indices.Num(); ++i) {
+      indices[i] = indices.Num() - i - 1;
+    }
   }
 
-  LODResources.IndexBuffer.SetIndices(
-      indices,
-      indices.Num() > std::numeric_limits<uint16>::max()
-          ? EIndexBufferStride::Type::Force32Bit
-          : EIndexBufferStride::Type::Force16Bit);
+  {
+    TRACE("SetIndices");
+    LODResources.IndexBuffer.SetIndices(
+        indices,
+        indices.Num() > std::numeric_limits<uint16>::max()
+            ? EIndexBufferStride::Type::Force32Bit
+            : EIndexBufferStride::Type::Force16Bit);
+  }
 
   LODResources.bHasDepthOnlyIndices = false;
   LODResources.bHasReversedIndices = false;
@@ -967,8 +1023,9 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
   if (pPhysXCooking) {
-    // TODO: use PhysX interface directly so we don't need to copy the vertices
-    // (it takes a stride parameter).
+    TRACE("PhysX cook");
+    // TODO: use PhysX interface directly so we don't need to copy the
+    // vertices (it takes a stride parameter).
     TArray<FVector> vertices;
     vertices.SetNum(StaticMeshBuildVertices.Num());
 
@@ -997,6 +1054,7 @@ static void loadPrimitive(
   }
 #else
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
+    TRACE("Chaos cook");
     primitiveResult.pCollisionMesh =
         BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
   }
@@ -1016,6 +1074,8 @@ static void loadPrimitive(
     IPhysXCooking* pPhysXCooking
 #endif
 ) {
+  TRACE("loadPrimitive");
+
   auto positionAccessorIt = primitive.attributes.find("POSITION");
   if (positionAccessorIt == primitive.attributes.end()) {
     // This primitive doesn't have a POSITION semantic, ignore it.
@@ -1105,6 +1165,9 @@ static void loadMesh(
     IPhysXCooking* pPhysXCooking
 #endif
 ) {
+
+  TRACE("loadMesh");
+
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     loadPrimitive(
         result,
@@ -1147,6 +1210,8 @@ static void loadNode(
       0.0,
       0.0,
       1.0};
+
+  TRACE("loadNode");
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -1229,14 +1294,14 @@ namespace {
 /**
  * @brief Apply the transform for the `RTC_CENTER`
  *
- * If the B3DM that contained the given model had an `RTC_CENTER` in its Feature
- * Table, then it was stored in the `extras` property of the glTF model, as a
- * 3-element array under the name `RTC_CENTER`.
+ * If the B3DM that contained the given model had an `RTC_CENTER` in its
+ * Feature Table, then it was stored in the `extras` property of the glTF
+ * model, as a 3-element array under the name `RTC_CENTER`.
  *
  * This function will multiply the given matrix with the (translation) matrix
- * that was created from this `RTC_CENTER` property in the `extras` of the given
- * model. If the given model does not have this property, then nothing will be
- * done.
+ * that was created from this `RTC_CENTER` property in the `extras` of the
+ * given model. If the given model does not have this property, then nothing
+ * will be done.
  *
  * @param model The glTF model
  * @param rootTransform The matrix that will be multiplied with the transform
@@ -1329,11 +1394,17 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
     IPhysXCooking* pPhysXCooking
 #endif
 ) {
+  TRACE("loadModelAnyThreadPart");
+
   std::vector<LoadModelResult> result;
 
   glm::dmat4x4 rootTransform = transform;
-  applyRtcCenter(model, rootTransform);
-  applyGltfUpAxisTransform(model, rootTransform);
+
+  {
+    TRACE("Apply transforms");
+    applyRtcCenter(model, rootTransform);
+    applyGltfUpAxisTransform(model, rootTransform);
+  }
 
   if (model.scene >= 0 && model.scene < model.scenes.size()) {
     // Show the default scene
@@ -1568,8 +1639,12 @@ static void loadModelGameThreadPart(
 #else
     pMesh->GetBodySetup()->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif
-    pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
   }
+
+  // Mark physics meshes created, no matter if we actually have a collision mesh
+  // or not. We don't want the editor creating collision meshes itself in the
+  // game thread, because that would be slow.
+  pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
 
@@ -1773,9 +1848,9 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
 
       if (pMaterial->IsPendingKillOrUnreachable()) {
         // Don't try to update the material while it's in the process of being
-        // destroyed. This can lead to the render thread freaking out when it's
-        // asked to update a parameter for a material that has been marked for
-        // garbage collection.
+        // destroyed. This can lead to the render thread freaking out when
+        // it's asked to update a parameter for a material that has been
+        // marked for garbage collection.
         continue;
       }
 
