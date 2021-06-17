@@ -243,6 +243,13 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Z)) {
     this->MoveToECEF(glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
+  } else if (propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Georeference)) {
+    if (IsValid(this->Georeference)) {
+      this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          this,
+          &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
+    }
+    return;
   }
 }
 #endif

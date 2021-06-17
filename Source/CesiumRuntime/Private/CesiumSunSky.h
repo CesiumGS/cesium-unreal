@@ -13,9 +13,22 @@ UCLASS()
 class CESIUMRUNTIME_API ACesiumSunSky : public AActor {
   GENERATED_BODY()
 
+protected:
+  /**
+   * Called after the C++ constructor and after the properties have
+   * been initialized, including those loaded from config.
+   */
+  void PostInitProperties() override;
+
+
 public:
   // Sets default values for this actor's properties
   ACesiumSunSky();
+
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
   ACesiumGeoreference* Georeference;

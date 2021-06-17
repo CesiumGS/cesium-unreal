@@ -40,7 +40,7 @@ void UCesium3DTilesetRoot::HandleGeoreferenceUpdated() {
   UE_LOG(
       LogCesium,
       Verbose,
-      TEXT("Called HandleGeoreferenceUpdated for %s"),
+      TEXT("Called HandleGeoreferenceUpdated for tileset root %s"),
       *this->GetName());
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
