@@ -172,6 +172,12 @@ public:
   UFUNCTION()
   void HandleGeoreferenceUpdated();
 
+  /**
+   * Initializes the component. Occurs at level startup or actor spawn. 
+   * Requires component to be registered, and bWantsInitializeComponent to be true.
+   */
+  void InitializeComponent() override;
+
 protected:
   // Called when the game starts
   virtual bool MoveComponentImpl(
@@ -187,7 +193,7 @@ protected:
    * been initialized, including those loaded from config.
    */
   void PostInitProperties() override;
-
+  
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

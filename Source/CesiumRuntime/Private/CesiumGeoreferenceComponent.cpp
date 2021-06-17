@@ -28,6 +28,8 @@ UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent()
       _dirty(false) {
   this->bAutoActivate = true;
   this->bWantsOnUpdateTransform = true;
+  this->bWantsInitializeComponent = true;
+
   PrimaryComponentTick.bCanEverTick = false;
 
   // TODO: check when exactly constructor is called. Is it possible that it is
@@ -138,8 +140,32 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
 // TODO: is this the best place to attach to the root component of the owner
 // actor?
 void UCesiumGeoreferenceComponent::OnRegister() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnRegister on component %s"),
+      *this->GetName());
   Super::OnRegister();
   this->_initRootComponent();
+
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+  if (this->Georeference) {
+    this->_updateActorToUnrealRelativeWorldTransform();
+    this->_updateActorToECEF();
+
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Attaching CesiumGeoreferenceComponent callback to Georeference %s"),
+        *this->GetFullName());
+
+    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        this,
+        &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
+    HandleGeoreferenceUpdated();
+  }
 }
 
 // TODO: figure out what these delegate parameters actually represent, currently
@@ -261,7 +287,11 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
       TEXT("Called HandleGeoreferenceUpdated for %s"),
       *this->GetName());
   this->_updateActorToUnrealRelativeWorldTransform();
-  this->_updateActorToECEF();
+  
+  // TODO GEOREF_REFACTORING: Figure what this function is 
+  // doing, and whether it has to be called here...
+  //this->_updateActorToECEF();
+
   this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
@@ -272,24 +302,26 @@ void UCesiumGeoreferenceComponent::SetAutoSnapToEastSouthUp(bool value) {
   }
 }
 
+
+
+// TODO GEOREF_REFACTORING Remove these overrides,
+// and the "bWantsInitializeComponent=true" that
+// is set in the constructor!
+void UCesiumGeoreferenceComponent::InitializeComponent() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called InitializeComponent on actor %s"),
+      *this->GetName());
+  Super::InitializeComponent();
+}
 void UCesiumGeoreferenceComponent::PostInitProperties() {
   UE_LOG(
       LogCesium,
       Verbose,
-      TEXT("Called PostInitProperties on actor %s"),
+      TEXT("Called PostInitProperties on component %s"),
       *this->GetName());
   Super::PostInitProperties();
-
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
-  if (this->Georeference) {
-    this->_updateActorToUnrealRelativeWorldTransform();
-    this->_updateActorToECEF();
-    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        this,
-        &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
-  }
 }
 
 /**

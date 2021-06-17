@@ -330,6 +330,13 @@ void ACesiumGeoreference::UpdateGeoreference() {
         this->OriginHeight));
   }
   _geoTransforms.setCenter(center);
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Broadcasting OnGeoreferenceUpdated for Georeference %s"),
+      *this->GetFullName());
+
   OnGeoreferenceUpdated.Broadcast();
 }
 
@@ -639,6 +646,10 @@ namespace {
  * @return The world origin
  */
 glm::dvec4 getWorldOrigin4D(const AActor* actor) {
+  if (!IsValid(actor)) {
+    UE_LOG(LogCesium, Warning, TEXT("The actor is not valid"));
+    return glm::dvec4();
+  }
   const UWorld* world = actor->GetWorld();
   if (!IsValid(world)) {
     UE_LOG(LogCesium, Warning, TEXT("The actor is not spawned in a level"));
