@@ -560,9 +560,7 @@ static void loadPrimitive(
     const CesiumGltf::Mesh& mesh,
     const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-#if PHYSICS_INTERFACE_PHYSX
-    IPhysXCooking* pPhysXCooking,
-#endif
+    const CreateModelOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
@@ -758,9 +756,6 @@ static void loadPrimitive(
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
                                     : defaultPbrMetallicRoughness;
 
-  // TODO: make this configurable on the Actor/Component.
-  bool forceTangents = false;
-
   bool hasNormalMap = material.normalTexture.has_value();
   if (hasNormalMap) {
     const CesiumGltf::Texture* pTexture =
@@ -769,7 +764,7 @@ static void loadPrimitive(
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
   }
 
-  bool needsTangents = forceTangents || hasNormalMap;
+  bool needsTangents = hasNormalMap || options.alwaysIncludeTangents;
 
   bool hasTangents = false;
 
@@ -793,7 +788,6 @@ static void loadPrimitive(
 
       hasTangents = true;
     } else {
-      TRACE("compute tangents");
       UE_LOG(
           LogCesium,
           Warning,
@@ -1019,10 +1013,10 @@ static void loadPrimitive(
 
   section.MaterialIndex = 0;
 
-#if PHYSICS_INTERFACE_PHYSX
   primitiveResult.pCollisionMesh = nullptr;
 
-  if (pPhysXCooking) {
+#if PHYSICS_INTERFACE_PHYSX
+  if (options.pPhysXCooking) {
     TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
@@ -1043,7 +1037,7 @@ static void loadPrimitive(
       physicsIndices[i].v2 = i * 3;
     }
 
-    pPhysXCooking->CreateTriMesh(
+    options.pPhysXCooking->CreateTriMesh(
         "PhysXGeneric",
         EPhysXMeshCookFlags::Default,
         vertices,
@@ -1068,11 +1062,8 @@ static void loadPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::Mesh& mesh,
     const CesiumGltf::MeshPrimitive& primitive,
-    const glm::dmat4x4& transform
-#if PHYSICS_INTERFACE_PHYSX
-    ,
-    IPhysXCooking* pPhysXCooking
-#endif
+    const glm::dmat4x4& transform,
+    const CreateModelOptions& options
 ) {
   TRACE("loadPrimitive");
 
@@ -1104,9 +1095,7 @@ static void loadPrimitive(
         mesh,
         primitive,
         transform,
-#if PHYSICS_INTERFACE_PHYSX
-        pPhysXCooking,
-#endif
+        options,
         *pPositionAccessor,
         positionView,
         syntheticIndexBuffer);
@@ -1124,9 +1113,7 @@ static void loadPrimitive(
           mesh,
           primitive,
           transform,
-#if PHYSICS_INTERFACE_PHYSX
-          pPhysXCooking,
-#endif
+          options,
           *pPositionAccessor,
           positionView,
           indexAccessor);
@@ -1142,9 +1129,7 @@ static void loadPrimitive(
           mesh,
           primitive,
           transform,
-#if PHYSICS_INTERFACE_PHYSX
-          pPhysXCooking,
-#endif
+          options,
           *pPositionAccessor,
           positionView,
           indexAccessor);
@@ -1159,11 +1144,8 @@ static void loadMesh(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
     const CesiumGltf::Mesh& mesh,
-    const glm::dmat4x4& transform
-#if PHYSICS_INTERFACE_PHYSX
-    ,
-    IPhysXCooking* pPhysXCooking
-#endif
+    const glm::dmat4x4& transform,
+    const CreateModelOptions& options
 ) {
 
   TRACE("loadMesh");
@@ -1174,11 +1156,8 @@ static void loadMesh(
         model,
         mesh,
         primitive,
-        transform
-#if PHYSICS_INTERFACE_PHYSX
-        ,
-        pPhysXCooking
-#endif
+        transform,
+        options
     );
   }
 }
@@ -1187,11 +1166,8 @@ static void loadNode(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
     const CesiumGltf::Node& node,
-    const glm::dmat4x4& transform
-#if PHYSICS_INTERFACE_PHYSX
-    ,
-    IPhysXCooking* pPhysXCooking
-#endif
+    const glm::dmat4x4& transform,
+    const CreateModelOptions& options
 ) {
   static constexpr std::array<double, 16> identityMatrix = {
       1.0,
@@ -1266,11 +1242,8 @@ static void loadNode(
         result,
         model,
         mesh,
-        nodeTransform
-#if PHYSICS_INTERFACE_PHYSX
-        ,
-        pPhysXCooking
-#endif
+        nodeTransform,
+        options
     );
   }
 
@@ -1280,11 +1253,8 @@ static void loadNode(
           result,
           model,
           model.nodes[childNodeId],
-          nodeTransform
-#if PHYSICS_INTERFACE_PHYSX
-          ,
-          pPhysXCooking
-#endif
+          nodeTransform,
+          options
       );
     }
   }
@@ -1388,11 +1358,8 @@ void applyGltfUpAxisTransform(
 
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
     const CesiumGltf::Model& model,
-    const glm::dmat4x4& transform
-#if PHYSICS_INTERFACE_PHYSX
-    ,
-    IPhysXCooking* pPhysXCooking
-#endif
+    const glm::dmat4x4& transform,
+    const CreateModelOptions& options
 ) {
   TRACE("loadModelAnyThreadPart");
 
@@ -1414,11 +1381,8 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
           result,
           model,
           model.nodes[nodeId],
-          rootTransform
-#if PHYSICS_INTERFACE_PHYSX
-          ,
-          pPhysXCooking
-#endif
+          rootTransform,
+          options
       );
     }
   } else if (model.scenes.size() > 0) {
@@ -1429,11 +1393,8 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
           result,
           model,
           model.nodes[nodeId],
-          rootTransform
-#if PHYSICS_INTERFACE_PHYSX
-          ,
-          pPhysXCooking
-#endif
+          rootTransform,
+          options
       );
     }
   } else if (model.nodes.size() > 0) {
@@ -1442,11 +1403,8 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
         result,
         model,
         model.nodes[0],
-        rootTransform
-#if PHYSICS_INTERFACE_PHYSX
-        ,
-        pPhysXCooking
-#endif
+        rootTransform,
+        options
     );
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
@@ -1455,11 +1413,8 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
           result,
           model,
           mesh,
-          rootTransform
-#if PHYSICS_INTERFACE_PHYSX
-          ,
-          pPhysXCooking
-#endif
+          rootTransform,
+          options
       );
     }
   }
@@ -1665,20 +1620,14 @@ public:
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumGltf::Model& Model,
-    const glm::dmat4x4& Transform
-#if PHYSICS_INTERFACE_PHYSX
-    ,
-    IPhysXCooking* PhysXCooking
-#endif
+    const glm::dmat4x4& Transform,
+    const CreateModelOptions& Options
 ) {
   auto pResult = std::make_unique<HalfConstructedReal>();
   pResult->loadModelResult = loadModelAnyThreadPart(
       Model,
-      Transform
-#if PHYSICS_INTERFACE_PHYSX
-      ,
-      PhysXCooking
-#endif
+      Transform,
+      Options
   );
   return pResult;
 }
