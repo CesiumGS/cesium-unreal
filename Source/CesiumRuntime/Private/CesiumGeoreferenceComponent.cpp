@@ -147,7 +147,10 @@ void UCesiumGeoreferenceComponent::OnRegister() {
       *this->GetName());
   Super::OnRegister();
   this->_initRootComponent();
+}
 
+void UCesiumGeoreferenceComponent::_initGeoreference()
+{
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
   }
@@ -179,6 +182,7 @@ void UCesiumGeoreferenceComponent::OnRootComponentChanged(
 void UCesiumGeoreferenceComponent::ApplyWorldOffset(
     const FVector& InOffset,
     bool bWorldShift) {
+
   // USceneComponent::ApplyWorldOffset will call OnUpdateTransform, we want to
   // ignore it since we don't have to recompute everything on origin rebase.
   this->_ignoreOnUpdateTransform = true;
@@ -202,6 +206,13 @@ void UCesiumGeoreferenceComponent::OnUpdateTransform(
     EUpdateTransformFlags UpdateTransformFlags,
     ETeleportType Teleport) {
   USceneComponent::OnUpdateTransform(UpdateTransformFlags, Teleport);
+
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Called OnUpdateTransform on %s"),
+        *this->GetFullName());
+
 
   // if we generated this transform call internally, we should ignore it
   if (this->_ignoreOnUpdateTransform) {
@@ -228,6 +239,13 @@ bool UCesiumGeoreferenceComponent::MoveComponentImpl(
     FHitResult* OutHit,
     EMoveComponentFlags MoveFlags,
     ETeleportType Teleport) {
+
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Called MoveComponentImpl on %s"),
+        *this->GetFullName());
+
   if (this->_ownerRoot != this) {
     return false;
   }
@@ -311,7 +329,7 @@ void UCesiumGeoreferenceComponent::InitializeComponent() {
   UE_LOG(
       LogCesium,
       Verbose,
-      TEXT("Called InitializeComponent on actor %s"),
+      TEXT("Called InitializeComponent on component %s"),
       *this->GetName());
   Super::InitializeComponent();
 }
@@ -323,6 +341,33 @@ void UCesiumGeoreferenceComponent::PostInitProperties() {
       *this->GetName());
   Super::PostInitProperties();
 }
+void UCesiumGeoreferenceComponent::OnComponentCreated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnComponentCreated on component %s"),
+      *this->GetName());
+  Super::OnComponentCreated();
+}
+void UCesiumGeoreferenceComponent::OnAttachmentChanged() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnAttachmentChanged on component %s"),
+      *this->GetName());
+  Super::OnAttachmentChanged();
+  _initGeoreference();
+}
+void UCesiumGeoreferenceComponent::PostLoad() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostLoad on component %s"),
+      *this->GetName());
+  Super::PostLoad();
+}
+
+
 
 /**
  *  PRIVATE HELPER FUNCTIONS

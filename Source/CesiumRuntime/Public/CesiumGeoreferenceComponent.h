@@ -168,6 +168,9 @@ public:
       ETeleportType Teleport) override;
 
   virtual void OnRegister() override;
+  virtual void OnComponentCreated() override;
+  virtual void OnAttachmentChanged() override;
+  virtual void PostLoad() override;
 
   UFUNCTION()
   void HandleGeoreferenceUpdated();
@@ -210,6 +213,8 @@ private:
   void _setECEF(const glm::dvec3& targetEcef, bool maintainRelativeOrientation);
   void _updateDisplayLongitudeLatitudeHeight();
   void _updateDisplayECEF();
+
+  void _initGeoreference();
 
   // TODO GEOREF_REFACTORING I'm somewhat (but not entirely) sure
   // that these properties are redundant and/or not updated when
