@@ -468,6 +468,17 @@ void UCesiumGeoreferenceComponent::
 
 void UCesiumGeoreferenceComponent::_setTransform(const glm::dmat4& transform) {
   if (!this->GetWorld()) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGeoreferenceComponent is not spawned in world"));
+    return;
+  }
+  if (!IsValid(this->_ownerRoot)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGeoreferenceComponent does not have a valid ownerRoot"));
     return;
   }
 
