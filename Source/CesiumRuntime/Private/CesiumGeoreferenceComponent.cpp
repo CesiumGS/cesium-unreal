@@ -98,6 +98,7 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
   this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
 
+/*
 void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
     const glm::dvec3& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
@@ -114,7 +115,6 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
 
   this->_setECEF(ecef, maintainRelativeOrientation);
 }
-
 void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
     const FVector& targetLongitudeLatitudeHeight,
     bool maintainRelativeOrientation) {
@@ -122,7 +122,6 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
       VecMath::createVector3D(targetLongitudeLatitudeHeight),
       maintainRelativeOrientation);
 }
-
 void UCesiumGeoreferenceComponent::MoveToECEF(
     const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
@@ -136,6 +135,7 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
       VecMath::createVector3D(targetEcef),
       maintainRelativeOrientation);
 }
+*/
 
 // TODO: is this the best place to attach to the root component of the owner
 // actor?
@@ -162,7 +162,7 @@ void UCesiumGeoreferenceComponent::_initGeoreference()
         LogCesium,
         Verbose,
         TEXT("Attaching CesiumGeoreferenceComponent callback to Georeference %s"),
-        *this->GetFullName());
+        *this->Georeference->GetFullName());
 
     this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
@@ -269,6 +269,8 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
 
   FName propertyName = event.Property->GetFName();
 
+  // TODO GEOREF_REFACTORING These are no longer editable here
+  /*
   if (propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Longitude) ||
       propertyName ==
@@ -287,11 +289,14 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Z)) {
     this->MoveToECEF(glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
-  } else if (propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Georeference)) {
+  } else 
+  */  
+  if (propertyName == GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Georeference)) {
     if (IsValid(this->Georeference)) {
       this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
           this,
           &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
+      HandleGeoreferenceUpdated();
     }
     return;
   }
@@ -306,9 +311,11 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
       *this->GetName());
   this->_updateActorToUnrealRelativeWorldTransform();
   
-  // TODO GEOREF_REFACTORING: Figure what this function is 
-  // doing, and whether it has to be called here...
-  //this->_updateActorToECEF();
+  // TODO GEOREF_REFACTORING 
+  // Not sure whether this has to be called here...
+  this->_updateActorToECEF();
+
+
 
   this->_setTransform(this->_actorToUnrealRelativeWorld);
 }
@@ -356,6 +363,8 @@ void UCesiumGeoreferenceComponent::OnAttachmentChanged() {
       TEXT("Called OnAttachmentChanged on component %s"),
       *this->GetName());
   Super::OnAttachmentChanged();
+  if (!IsValid(GetAttachParent())) {
+  }
   _initGeoreference();
 }
 void UCesiumGeoreferenceComponent::PostLoad() {
@@ -583,6 +592,14 @@ void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
   this->Longitude = cartographic.x;
   this->Latitude = cartographic.y;
   this->Height = cartographic.z;
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called _updateDisplayLongitudeLatitudeHeight with height %f on component %s"),
+      this->Height, *this->GetName());
+
+
 }
 
 void UCesiumGeoreferenceComponent::_updateDisplayECEF() {

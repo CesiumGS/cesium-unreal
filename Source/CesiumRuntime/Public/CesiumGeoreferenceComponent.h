@@ -56,45 +56,39 @@ public:
   bool TeleportWhenUpdatingTransform = true;
 
   /**
-   * The WGS84 latitude in degrees of this actor, in the range [-90, 90]
+   * The latitude in degrees of the Georeference of this component, in the range [-90, 90]
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (ClampMin = -90.0, ClampMax = 90.0))
+  UPROPERTY(VisibleAnywhere, Category = "Cesium", meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
   /**
-   * The WGS84 longitude in degrees of this actor, in the range [-180, 180]
+   * The longitude in degrees of the Georeference of this component, in the range [-180, 180]
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (ClampMin = -180.0, ClampMax = 180.0))
+  UPROPERTY(VisibleAnywhere, Category = "Cesium", meta = (ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
   /**
-   * The height in meters (above the WGS84 ellipsoid) of this actor.
+   * The height in meters (above the ellipsoid) of the Georeference of this component.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
   double Height = 0.0;
 
   /**
-   * The Earth-Centered Earth-Fixed X-coordinate of this actor.
+   * The Earth-Centered Earth-Fixed X-coordinate of the Georeference of this component.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
   double ECEF_X = 0.0;
 
   /**
-   * The Earth-Centered Earth-Fixed Y-coordinate of this actor.
+   * The Earth-Centered Earth-Fixed Y-coordinate of the Georeference of this component.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
   double ECEF_Y = 0.0;
 
   /**
-   * The Earth-Centered Earth-Fixed Z-coordinate of this actor.
+   * The Earth-Centered Earth-Fixed Z-coordinate of the Georeference of this component.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
   double ECEF_Z = 0.0;
 
   /**
@@ -111,39 +105,48 @@ public:
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
 
-  /**
-   * Move the actor to the specified WGS84 longitude in degrees (x), latitude
-   * in degrees (y), and height in meters (z).
-   */
-  void MoveToLongitudeLatitudeHeight(
-      const glm::dvec3& TargetLongitudeLatitudeHeight,
-      bool MaintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified WGS84 longitude in degrees (x), latitude
    * in degrees (y), and height in meters (z).
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateMoveToLongitudeLatitudeHeight(
-      const FVector& TargetLongitudeLatitudeHeight,
-      bool MaintainRelativeOrientation = true);
+  // TODO GEOREF_REFACTORING This was only used in GlobeAnchorPanrent, 
+  // and should be removed
+  //void MoveToLongitudeLatitudeHeight(
+  //    const glm::dvec3& TargetLongitudeLatitudeHeight,
+  //    bool MaintainRelativeOrientation = true);
+
+  /**
+   * Move the actor to the specified WGS84 longitude in degrees (x), latitude
+   * in degrees (y), and height in meters (z).
+   */
+  // TODO GEOREF_REFACTORING This was only used in GlobeAnchorPanrent, 
+  // and should be removed
+  //UFUNCTION(BlueprintCallable, Category = "Cesium")
+  //void InaccurateMoveToLongitudeLatitudeHeight(
+  //    const FVector& TargetLongitudeLatitudeHeight,
+  //    bool MaintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
-  void MoveToECEF(
-      const glm::dvec3& TargetEcef,
-      bool MaintainRelativeOrientation = true);
+  // TODO GEOREF_REFACTORING This was not used at all. Movement should
+  // be done on the Georeference
+  //void MoveToECEF(
+  //    const glm::dvec3& TargetEcef,
+  //    bool MaintainRelativeOrientation = true);
 
   /**
    * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateMoveToECEF(
-      const FVector& TargetEcef,
-      bool MaintainRelativeOrientation = true);
+  // TODO GEOREF_REFACTORING This was not used at all. Movement should
+  // be done on the Georeference
+  //UFUNCTION(BlueprintCallable, Category = "Cesium")
+  //void InaccurateMoveToECEF(
+  //    const FVector& TargetEcef,
+  //    bool MaintainRelativeOrientation = true);
 
   /**
    * Delegate implementation to recieve a notification when the owner's root

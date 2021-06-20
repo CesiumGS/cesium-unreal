@@ -53,6 +53,11 @@ void ADEPRECATED_CesiumGlobeAnchorParent::PostEditChangeProperty(
 
   FName propertyName = event.Property->GetFName();
 
+  // TODO GEOREF_REFACTORING This class is deprecated and
+  // about to be removed. The movement functions that have
+  // been called on the GeoreferenceComponent here should
+  // (if at all...) be called on the Georeference
+  /*
   if (propertyName == GET_MEMBER_NAME_CHECKED(
                           ADEPRECATED_CesiumGlobeAnchorParent,
                           Longitude) ||
@@ -79,5 +84,6 @@ void ADEPRECATED_CesiumGlobeAnchorParent::PostEditChangeProperty(
         glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
   }
+  */
 }
 #endif
