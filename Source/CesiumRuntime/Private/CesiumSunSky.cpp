@@ -44,11 +44,17 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
 
+#if PLATFORM_ANDROID
+  if(SkySphereClass) {
+    SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
+  }
+#else
   SkyAtmosphereComponent = CreateDefaultSubobject<USkyAtmosphereComponent>(
       TEXT("SkyAtmosphere"));
   SkyAtmosphereComponent->SetupAttachment(Scene);
   SkyAtmosphereComponent->TransformMode =
       ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
+#endif
 
   if (!Georeference) {
     Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -72,7 +78,7 @@ void ACesiumSunSky::GetHMSFromSolarTime(
     int32& Second) {
   Hour = FMath::TruncToInt(InSolarTime) % 24;
   Minute = (FMath::TruncToInt(InSolarTime - Hour) * 60) % 60;
-  
+
   // Convert hours + minutes so far to seconds, subtract from InSolarTime.
   // Not exactly sure why 0.5 is added at the end. Maybe to ensure that times
   // on the hour (e.g. 13.0) don't get truncated down after arithmetic
@@ -93,7 +99,7 @@ bool ACesiumSunSky::IsDST(
   }
   int32 hour, minute, second;
   this->GetHMSFromSolarTime(SolarTime, hour, minute, second);
-  
+
   // Editor will crash if we create an invalid FDateTime, so validate these
   // settings first
   if (!FDateTime::Validate(Year, Month, Day, hour, minute, second, 0)) {
@@ -113,27 +119,34 @@ bool ACesiumSunSky::IsDST(
   return current >= dstStart && current <= dstEnd;
 }
 
+/** For android, set sky sphere to georeference location */
 void ACesiumSunSky::HandleGeoreferenceUpdated() {
-  if (Georeference) {
-    UE_LOG(
-        LogTemp,
-        Warning,
-        TEXT("HandleGeoreferenceUpdated entered on CesiumSunSky"));
-    this->SetActorLocation(
-        Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
-    switch (Georeference->OriginPlacement) {
-    case EOriginPlacement::CartographicOrigin: {
-      FVector llh = Georeference->
-          InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight();
-      this->Longitude = llh.X;
-      this->Latitude = llh.Y;
-      UpdateSun();
-      break;
-    }
-    default:
-      break;
-    }
+  if (!Georeference) {
+    return;
   }
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("HandleGeoreferenceUpdated entered on CesiumSunSky"));
+#if PLATFORM_ANDROID
+    this->SetActorLocation(FVector::ZeroVector);
+#else
+  this->SetActorLocation(
+      Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
+#endif
+  switch (Georeference->OriginPlacement) {
+  case EOriginPlacement::CartographicOrigin: {
+    FVector llh = Georeference->
+        InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight();
+    this->Longitude = llh.X;
+    this->Latitude = llh.Y;
+    UpdateSun();
+    break;
+  }
+  default:
+    break;
+  }
+
 }
 
 void ACesiumSunSky::SetSkyAtmosphereGroundRadius(

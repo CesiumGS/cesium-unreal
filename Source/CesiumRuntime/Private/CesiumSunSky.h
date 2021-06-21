@@ -37,13 +37,20 @@ public:
   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Components)
   USkyAtmosphereComponent* SkyAtmosphereComponent;
 
+  
   /**
    * Mobile platforms currently do not support the SkyAtmosphereComponent.
    * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Mobile)
-  UClass* SkySphereClass;
+  TSubclassOf<AActor> SkySphereClass;
 
+  /**
+  * Reference to BP_Sky_Sphere or similar actor (mobile only)
+  */
+  UPROPERTY(BlueprintReadWrite, Category=Mobile)
+  AActor* SkySphereActor;
+  
   /**
    * Hold a reference to a georeference for height checks.
    */
