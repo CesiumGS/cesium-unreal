@@ -28,27 +28,32 @@ public class CesiumEditor : ModuleRules
         string libPrefix;
         string libPostfix;
         string platform;
-        if (Target.Platform == UnrealTargetPlatform.Win64) {
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
             platform = "Windows-x64";
             libPostfix = ".lib";
             libPrefix = "";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Mac) {
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
+        {
             platform = "Darwin-x64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if(Target.Platform == UnrealTargetPlatform.Android) {
+        else if (Target.Platform == UnrealTargetPlatform.Android)
+        {
             platform = "Android-xaarch64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if(Target.Platform == UnrealTargetPlatform.Linux) {
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
             platform = "Linux-x64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else {
+        else
+        {
             platform = "Unknown";
             libPostfix = ".Unknown";
             libPrefix = "Unknown";
