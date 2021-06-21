@@ -11,8 +11,8 @@ ACesiumSunSky::ACesiumSunSky() {
   Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Scene"));
   SetRootComponent(Scene);
 
-  CompassMesh = CreateDefaultSubobject<UStaticMeshComponent>(
-      TEXT("CompassMesh"));
+  CompassMesh =
+      CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CompassMesh"));
   CompassMesh->SetupAttachment(Scene);
   ConstructorHelpers::FObjectFinder<UStaticMesh> CompassFinder(
       TEXT("Class'/SunPosition/Editor/SM_Compass'"));
@@ -45,12 +45,12 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->CascadeDistributionExponent = 1.4;
 
 #if PLATFORM_ANDROID
-  if(SkySphereClass) {
+  if (SkySphereClass) {
     SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
   }
 #else
-  SkyAtmosphereComponent = CreateDefaultSubobject<USkyAtmosphereComponent>(
-      TEXT("SkyAtmosphere"));
+  SkyAtmosphereComponent =
+      CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
   SkyAtmosphereComponent->SetupAttachment(Scene);
   SkyAtmosphereComponent->TransformMode =
       ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
@@ -106,16 +106,10 @@ bool ACesiumSunSky::IsDST(
     return false;
   }
   FDateTime current = FDateTime(Year, Month, Day, hour, minute, second);
-  FDateTime dstStart = FDateTime(
-      Year,
-      InDSTStartMonth,
-      InDSTStartDay,
-      InDSTSwitchHour);
-  FDateTime dstEnd = FDateTime(
-      Year,
-      InDSTEndMonth,
-      InDSTEndDay,
-      InDSTSwitchHour);
+  FDateTime dstStart =
+      FDateTime(Year, InDSTStartMonth, InDSTStartDay, InDSTSwitchHour);
+  FDateTime dstEnd =
+      FDateTime(Year, InDSTEndMonth, InDSTEndDay, InDSTSwitchHour);
   return current >= dstStart && current <= dstEnd;
 }
 
@@ -129,15 +123,15 @@ void ACesiumSunSky::HandleGeoreferenceUpdated() {
       Verbose,
       TEXT("HandleGeoreferenceUpdated entered on CesiumSunSky"));
 #if PLATFORM_ANDROID
-    this->SetActorLocation(FVector::ZeroVector);
+  this->SetActorLocation(FVector::ZeroVector);
 #else
   this->SetActorLocation(
       Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
 #endif
   switch (Georeference->OriginPlacement) {
   case EOriginPlacement::CartographicOrigin: {
-    FVector llh = Georeference->
-        InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight();
+    FVector llh =
+        Georeference->InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight();
     this->Longitude = llh.X;
     this->Latitude = llh.Y;
     UpdateSun();
@@ -146,7 +140,6 @@ void ACesiumSunSky::HandleGeoreferenceUpdated() {
   default:
     break;
   }
-
 }
 
 void ACesiumSunSky::SetSkyAtmosphereGroundRadius(
