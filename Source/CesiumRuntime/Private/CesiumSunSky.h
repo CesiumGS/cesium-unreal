@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 
-#include "ActorFactories/ActorFactoryDirectionalLight.h"
 #include "CesiumGeoreference.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
