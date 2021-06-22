@@ -2,6 +2,12 @@
 
 ### ? - ?
 
+##### Breaking  :mega:
+
+- Tangents are now only generated for models that don't have them and that do have a normal map, saving a significant amount of time. If you have a custom material that requires the tangents, or need them for any other reason, you may set the `AlwaysIncludeTangents` property on `Cesium3DTileset` to force them to be generated like they were in previous versions.
+
+##### Fixes :wrench:
+
 - Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
 
 ### v1.3.1 - 2021-06-02
