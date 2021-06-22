@@ -124,8 +124,8 @@ UnrealAssetAccessor::requestAsset(
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
 
-#if TRACING_ENABLED
-  int64_t tracingID = CESIUM_TRACE_CURRENT_ASYNC_ID();
+#if CESIUM_TRACING_ENABLED
+  [[maybe_unused]] int64_t tracingID = CESIUM_TRACE_CURRENT_ASYNC_ID();
   if (tracingID >= 0) {
     CESIUM_TRACE_BEGIN_ID("requestAsset", tracingID);
   }

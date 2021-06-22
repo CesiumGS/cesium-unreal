@@ -140,7 +140,7 @@ public class CesiumRuntime : ModuleRules
             {
                 "SPDLOG_COMPILED_LIB",
                 "LIBASYNC_STATIC",
-                "TRACING_ENABLED"
+                // "CESIUM_TRACING_ENABLED"
             }
         );
 

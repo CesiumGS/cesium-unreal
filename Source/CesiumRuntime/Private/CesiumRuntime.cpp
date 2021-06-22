@@ -7,6 +7,10 @@
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
 
+#if CESIUM_TRACING_ENABLED
+#include <chrono>
+#endif
+
 #define LOCTEXT_NAMESPACE "FCesiumRuntimeModule"
 
 DEFINE_LOG_CATEGORY(LogCesium);
@@ -19,7 +23,13 @@ void FCesiumRuntimeModule::StartupModule() {
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
 
-  CESIUM_TRACE_INIT("tracer.json");
+  CESIUM_TRACE_INIT(
+      "cesium-trace-" +
+      std::to_string(std::chrono::time_point_cast<std::chrono::microseconds>(
+                         std::chrono::steady_clock::now())
+                         .time_since_epoch()
+                         .count()) +
+      ".json");
 }
 
 void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
