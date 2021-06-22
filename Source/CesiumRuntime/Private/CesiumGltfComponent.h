@@ -55,8 +55,7 @@ public:
   static std::unique_ptr<HalfConstructed> CreateOffGameThread(
       const CesiumGltf::Model& Model,
       const glm::dmat4x4& Transform,
-      const CreateModelOptions& Options
-  );
+      const CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       AActor* ParentActor,

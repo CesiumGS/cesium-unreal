@@ -1063,8 +1063,7 @@ static void loadPrimitive(
     const CesiumGltf::Mesh& mesh,
     const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options
-) {
+    const CreateModelOptions& options) {
   CESIUM_TRACE("loadPrimitive");
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
@@ -1145,20 +1144,12 @@ static void loadMesh(
     const CesiumGltf::Model& model,
     const CesiumGltf::Mesh& mesh,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options
-) {
+    const CreateModelOptions& options) {
 
   CESIUM_TRACE("loadMesh");
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    loadPrimitive(
-        result,
-        model,
-        mesh,
-        primitive,
-        transform,
-        options
-    );
+    loadPrimitive(result, model, mesh, primitive, transform, options);
   }
 }
 
@@ -1167,8 +1158,7 @@ static void loadNode(
     const CesiumGltf::Model& model,
     const CesiumGltf::Node& node,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options
-) {
+    const CreateModelOptions& options) {
   static constexpr std::array<double, 16> identityMatrix = {
       1.0,
       0.0,
@@ -1238,24 +1228,12 @@ static void loadNode(
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     const CesiumGltf::Mesh& mesh = model.meshes[meshId];
-    loadMesh(
-        result,
-        model,
-        mesh,
-        nodeTransform,
-        options
-    );
+    loadMesh(result, model, mesh, nodeTransform, options);
   }
 
   for (int childNodeId : node.children) {
     if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
-      loadNode(
-          result,
-          model,
-          model.nodes[childNodeId],
-          nodeTransform,
-          options
-      );
+      loadNode(result, model, model.nodes[childNodeId], nodeTransform, options);
     }
   }
 }
@@ -1359,8 +1337,7 @@ void applyGltfUpAxisTransform(
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
     const CesiumGltf::Model& model,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options
-) {
+    const CreateModelOptions& options) {
   CESIUM_TRACE("loadModelAnyThreadPart");
 
   std::vector<LoadModelResult> result;
@@ -1377,45 +1354,21 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
     // Show the default scene
     const CesiumGltf::Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
-      loadNode(
-          result,
-          model,
-          model.nodes[nodeId],
-          rootTransform,
-          options
-      );
+      loadNode(result, model, model.nodes[nodeId], rootTransform, options);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const CesiumGltf::Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
-      loadNode(
-          result,
-          model,
-          model.nodes[nodeId],
-          rootTransform,
-          options
-      );
+      loadNode(result, model, model.nodes[nodeId], rootTransform, options);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
-    loadNode(
-        result,
-        model,
-        model.nodes[0],
-        rootTransform,
-        options
-    );
+    loadNode(result, model, model.nodes[0], rootTransform, options);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const CesiumGltf::Mesh& mesh : model.meshes) {
-      loadMesh(
-          result,
-          model,
-          mesh,
-          rootTransform,
-          options
-      );
+      loadMesh(result, model, mesh, rootTransform, options);
     }
   }
 
@@ -1621,14 +1574,9 @@ public:
 UCesiumGltfComponent::CreateOffGameThread(
     const CesiumGltf::Model& Model,
     const glm::dmat4x4& Transform,
-    const CreateModelOptions& Options
-) {
+    const CreateModelOptions& Options) {
   auto pResult = std::make_unique<HalfConstructedReal>();
-  pResult->loadModelResult = loadModelAnyThreadPart(
-      Model,
-      Transform,
-      Options
-  );
+  pResult->loadModelResult = loadModelAnyThreadPart(Model, Transform, Options);
   return pResult;
 }
 

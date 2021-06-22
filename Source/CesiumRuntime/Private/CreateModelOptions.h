@@ -3,8 +3,8 @@
 #pragma once
 
 struct CESIUMRUNTIME_API CreateModelOptions {
-    bool alwaysIncludeTangents = false;
+  bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
-    IPhysXCooking* pPhysXCooking = nullptr;
+  IPhysXCooking* pPhysXCooking = nullptr;
 #endif
 };
