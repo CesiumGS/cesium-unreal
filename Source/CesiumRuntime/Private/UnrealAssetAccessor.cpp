@@ -125,8 +125,10 @@ UnrealAssetAccessor::requestAsset(
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
 
 #if TRACING_ENABLED
-  int64_t tracingID = CesiumUtility::Tracer::instance().getEnlistedID();
-  CESIUM_TRACE_BEGIN_ID("requestAsset", tracingID);
+  int64_t tracingID = CESIUM_TRACE_CURRENT_ASYNC_ID();
+  if (tracingID >= 0) {
+    CESIUM_TRACE_BEGIN_ID("requestAsset", tracingID);
+  }
 #else
   int64_t tracingID = -1;
 #endif
@@ -153,7 +155,9 @@ UnrealAssetAccessor::requestAsset(
                 FHttpRequestPtr pRequest,
                 FHttpResponsePtr pResponse,
                 bool connectedSuccessfully) {
-              CESIUM_TRACE_END_ID("requestAsset", tracingID);
+              if (tracingID >= 0) {
+                CESIUM_TRACE_END_ID("requestAsset", tracingID);
+              }
               if (connectedSuccessfully) {
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));
