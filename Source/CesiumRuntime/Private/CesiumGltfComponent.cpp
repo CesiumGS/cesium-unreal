@@ -31,7 +31,7 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
-#include "CesiumUtility/Profiler.h"
+#include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
@@ -565,7 +565,7 @@ static void loadPrimitive(
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
 
-  TRACE("loadPrimitive<T>");
+  CESIUM_TRACE("loadPrimitive<T>");
 
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
@@ -637,7 +637,7 @@ static void loadPrimitive(
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
   {
-    TRACE("compute AA bounding box");
+    CESIUM_TRACE("compute AA bounding box");
 
     const std::vector<double>& min = positionAccessor.min;
     const std::vector<double>& max = positionAccessor.max;
@@ -670,7 +670,7 @@ static void loadPrimitive(
 
   TArray<uint32> indices;
   if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
-    TRACE("copy TRIANGLE indices");
+    CESIUM_TRACE("copy TRIANGLE indices");
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
     for (int32 i = 0; i < indicesView.size(); ++i) {
@@ -678,7 +678,7 @@ static void loadPrimitive(
     }
   } else {
     // assume TRIANGLE_STRIP because all others are rejected earlier.
-    TRACE("copy TRIANGLE_STRIP indices");
+    CESIUM_TRACE("copy TRIANGLE_STRIP indices");
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
       if (i % 2) {
         indices.Add(indicesView[i]);
@@ -702,7 +702,7 @@ static void loadPrimitive(
   // glTF.
 
   {
-    TRACE("copy positions");
+    CESIUM_TRACE("copy positions");
     for (int64_t i = 0; i < indices.Num(); ++i) {
       FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
       uint32 vertexIndex = indices[i];
@@ -724,7 +724,7 @@ static void loadPrimitive(
     int normalAccessorID = normalAccessorIt->second;
     CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
     if (normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
-      TRACE("copy normals");
+      CESIUM_TRACE("copy normals");
       for (int64_t i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -733,7 +733,7 @@ static void loadPrimitive(
         vertex.TangentZ = normalAccessor[vertexIndex];
       }
     } else {
-      TRACE("compute flat normals");
+      CESIUM_TRACE("compute flat normals");
       UE_LOG(
           LogCesium,
           Warning,
@@ -743,7 +743,7 @@ static void loadPrimitive(
       computeFlatNormals(indices, StaticMeshBuildVertices);
     }
   } else {
-    TRACE("compute flat normals");
+    CESIUM_TRACE("compute flat normals");
     computeFlatNormals(indices, StaticMeshBuildVertices);
   }
 
@@ -776,7 +776,7 @@ static void loadPrimitive(
         tangentAccessorID);
 
     if (tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
-      TRACE("copy tangents");
+      CESIUM_TRACE("copy tangents");
       for (int64_t i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -798,7 +798,7 @@ static void loadPrimitive(
 
   if (needsTangents && !hasTangents) {
     // Use mikktspace to calculate the tangents
-    TRACE("compute tangents");
+    CESIUM_TRACE("compute tangents");
     computeTangentSpace(StaticMeshBuildVertices);
   }
 
@@ -806,7 +806,7 @@ static void loadPrimitive(
 
   auto colorAccessorIt = primitive.attributes.find("COLOR_0");
   if (colorAccessorIt != primitive.attributes.end()) {
-    TRACE("copy colors");
+    CESIUM_TRACE("copy colors");
     int colorAccessorID = colorAccessorIt->second;
     hasVertexColors = CesiumGltf::createAccessorView(
         model,
@@ -822,7 +822,7 @@ static void loadPrimitive(
   std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
   {
-    TRACE("loadTextures");
+    CESIUM_TRACE("loadTextures");
     primitiveResult.baseColorTexture =
         loadTexture(model, pbrMetallicRoughness.baseColorTexture);
     primitiveResult.metallicRoughnessTexture =
@@ -835,7 +835,7 @@ static void loadPrimitive(
   }
 
   {
-    TRACE("updateTextureCoordinates");
+    CESIUM_TRACE("updateTextureCoordinates");
     primitiveResult
         .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
         updateTextureCoordinates(
@@ -911,7 +911,7 @@ static void loadPrimitive(
   auto onlyLandIt = primitive.extras.find("OnlyLand");
   if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
       onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
-    TRACE("water mask");
+    CESIUM_TRACE("water mask");
     bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
     bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
     primitiveResult.onlyWater = onlyWater;
@@ -955,7 +955,7 @@ static void loadPrimitive(
   }
 
   {
-    TRACE("init buffers");
+    CESIUM_TRACE("init buffers");
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices);
 
@@ -986,14 +986,14 @@ static void loadPrimitive(
   // from the glTF right-handed to the Unreal left-handed coordinate system
   // reverses the winding order.
   {
-    TRACE("reverse winding order");
+    CESIUM_TRACE("reverse winding order");
     for (int32 i = 0; i < indices.Num(); ++i) {
       indices[i] = indices.Num() - i - 1;
     }
   }
 
   {
-    TRACE("SetIndices");
+    CESIUM_TRACE("SetIndices");
     LODResources.IndexBuffer.SetIndices(
         indices,
         indices.Num() > std::numeric_limits<uint16>::max()
@@ -1017,7 +1017,7 @@ static void loadPrimitive(
 
 #if PHYSICS_INTERFACE_PHYSX
   if (options.pPhysXCooking) {
-    TRACE("PhysX cook");
+    CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
     TArray<FVector> vertices;
@@ -1048,7 +1048,7 @@ static void loadPrimitive(
   }
 #else
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
-    TRACE("Chaos cook");
+    CESIUM_TRACE("Chaos cook");
     primitiveResult.pCollisionMesh =
         BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
   }
@@ -1065,7 +1065,7 @@ static void loadPrimitive(
     const glm::dmat4x4& transform,
     const CreateModelOptions& options
 ) {
-  TRACE("loadPrimitive");
+  CESIUM_TRACE("loadPrimitive");
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
   if (positionAccessorIt == primitive.attributes.end()) {
@@ -1148,7 +1148,7 @@ static void loadMesh(
     const CreateModelOptions& options
 ) {
 
-  TRACE("loadMesh");
+  CESIUM_TRACE("loadMesh");
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     loadPrimitive(
@@ -1187,7 +1187,7 @@ static void loadNode(
       0.0,
       1.0};
 
-  TRACE("loadNode");
+  CESIUM_TRACE("loadNode");
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -1361,14 +1361,14 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
     const glm::dmat4x4& transform,
     const CreateModelOptions& options
 ) {
-  TRACE("loadModelAnyThreadPart");
+  CESIUM_TRACE("loadModelAnyThreadPart");
 
   std::vector<LoadModelResult> result;
 
   glm::dmat4x4 rootTransform = transform;
 
   {
-    TRACE("Apply transforms");
+    CESIUM_TRACE("Apply transforms");
     applyRtcCenter(model, rootTransform);
     applyGltfUpAxisTransform(model, rootTransform);
   }

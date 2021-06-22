@@ -2,7 +2,7 @@
 
 #include "CesiumRuntime.h"
 #include "Cesium3DTiles/registerAllTileContentTypes.h"
-#include "CesiumUtility/Profiler.h"
+#include "CesiumUtility/Tracing.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
@@ -19,10 +19,10 @@ void FCesiumRuntimeModule::StartupModule() {
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
 
-  TRACE_INIT("tracer.json");
+  CESIUM_TRACE_INIT("tracer.json");
 }
 
-void FCesiumRuntimeModule::ShutdownModule() { TRACE_SHUTDOWN(); }
+void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
 
 #undef LOCTEXT_NAMESPACE
 
