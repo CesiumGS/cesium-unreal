@@ -192,10 +192,7 @@ private:
   glm::dvec3 _getRelativeLocationFromActor();
   glm::dvec3 _getAbsoluteLocationFromActor();
 
-  void _updateActorToECEF();
-
-  glm::dmat4 _computeActorToUnrealRelativeWorldTransform();
-  void _applyTransformToActor(const glm::dmat4& actorToUnrealRelativeWorldTransform);
+  glm::dvec3 _computeEcef();
 
   void _updateActorTransform();
 
