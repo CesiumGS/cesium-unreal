@@ -7,6 +7,7 @@
 #include "Cesium3DTiles/CreditSystem.h"
 #include "Cesium3DTiles/GltfContent.h"
 #include "Cesium3DTiles/IPrepareRendererResources.h"
+#include "Cesium3DTiles/RasterizedPolygonsOverlay.h"
 #include "Cesium3DTiles/Tileset.h"
 #include "Cesium3DTiles/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
@@ -16,6 +17,7 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/GeographicProjection.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -489,8 +491,22 @@ public:
       return nullptr;
     }
 
+    EPixelFormat pixelFormat;
+    switch (image.channels) {
+    case 1:
+      pixelFormat = PF_R8;
+      break;
+    case 2:
+      pixelFormat = PF_R8G8;
+      break;
+    case 3:
+    case 4:
+    default:
+      pixelFormat = PF_R8G8B8A8;
+    };
+
     UTexture2D* pTexture =
-        UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+        UTexture2D::CreateTransient(image.width, image.height, pixelFormat);
     pTexture->AddToRoot();
     pTexture->AddressX = TextureAddress::TA_Clamp;
     pTexture->AddressY = TextureAddress::TA_Clamp;
@@ -686,6 +702,7 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTiles::TilesetOptions options;
+  /*
   for (ACesiumCartographicSelection* pCartographicSelection :
        this->CartographicSelections) {
     if (pCartographicSelection) {
@@ -693,7 +710,7 @@ void ACesium3DTileset::LoadTileset() {
       options.cartographicSelections.push_back(
           pCartographicSelection->CreateCesiumCartographicSelection());
     }
-  }
+  }*/
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 
   switch (this->TilesetSource) {
@@ -719,6 +736,41 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   this->_pTileset = pTileset;
+
+  std::vector<bool> addedSelections(this->CartographicSelections.Num());
+  for (int i = 0; i < this->CartographicSelections.Num(); ++i) {
+    ACesiumCartographicSelection* pCartographicSelection =
+        this->CartographicSelections[i];
+
+    if (!pCartographicSelection || addedSelections[i]) {
+      continue;
+    }
+
+    FString textureName = pCartographicSelection->TargetTexture;
+    std::vector<Cesium3DTiles::CartographicSelection> polygons;
+
+    for (int j = i; j < this->CartographicSelections.Num(); ++j) {
+      ACesiumCartographicSelection* pCartographicSelection2 =
+          this->CartographicSelections[j];
+      if (!pCartographicSelection2 || addedSelections[j]) {
+        continue;
+      }
+      if (pCartographicSelection2->TargetTexture == textureName) {
+        polygons.push_back(
+            pCartographicSelection2->CreateCesiumCartographicSelection());
+        addedSelections[j] = true;
+      }
+    }
+
+    UE_LOG(LogCesium, Warning, TEXT("POLYGONS COUNT: %d"), polygons.size());
+
+    pTileset->getOverlays().add(
+        std::move(std::make_unique<Cesium3DTiles::RasterizedPolygonsOverlay>(
+            TCHAR_TO_UTF8(*textureName),
+            polygons,
+            CesiumGeospatial::Ellipsoid::WGS84,
+            CesiumGeospatial::GeographicProjection())));
+  }
 
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {

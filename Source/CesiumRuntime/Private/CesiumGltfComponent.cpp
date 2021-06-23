@@ -1751,6 +1751,7 @@ void UCesiumGltfComponent::AttachRasterTile(
   }
 
   this->OverlayTiles.Add(FRasterOverlayTile{
+      UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()),
       pTexture,
       FLinearColor(
           textureCoordinateRectangle.minimumX,

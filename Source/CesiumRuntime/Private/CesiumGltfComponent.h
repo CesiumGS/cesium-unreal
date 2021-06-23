@@ -35,6 +35,9 @@ struct FRasterOverlayTile {
   GENERATED_BODY()
 
   UPROPERTY()
+  FString OverlayName;
+
+  UPROPERTY()
   UTexture2D* Texture;
 
   FLinearColor TextureCoordinateRectangle;
