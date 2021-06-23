@@ -56,37 +56,37 @@ public:
   bool TeleportWhenUpdatingTransform = true;
 
   /**
-   * The latitude in degrees of the Georeference of this component, in the range [-90, 90]
+   * The latitude in degrees of this component, in the range [-90, 90]
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
   /**
-   * The longitude in degrees of the Georeference of this component, in the range [-180, 180]
+   * The longitude in degrees of this component, in the range [-180, 180]
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
   /**
-   * The height in meters (above the ellipsoid) of the Georeference of this component.
+   * The height in meters (above the ellipsoid) of this component.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double Height = 0.0;
 
   /**
-   * The Earth-Centered Earth-Fixed X-coordinate of the Georeference of this component.
+   * The Earth-Centered Earth-Fixed X-coordinate of this component.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double ECEF_X = 0.0;
 
   /**
-   * The Earth-Centered Earth-Fixed Y-coordinate of the Georeference of this component.
+   * The Earth-Centered Earth-Fixed Y-coordinate of this component.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double ECEF_Y = 0.0;
 
   /**
-   * The Earth-Centered Earth-Fixed Z-coordinate of the Georeference of this component.
+   * The Earth-Centered Earth-Fixed Z-coordinate of this component.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   double ECEF_Z = 0.0;
