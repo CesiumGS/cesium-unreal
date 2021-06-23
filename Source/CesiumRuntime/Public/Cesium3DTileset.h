@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTiles/ViewState.h"
+#include "Cesium3DTiles/ViewUpdateResult.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -13,6 +14,7 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -337,7 +339,8 @@ private:
       EditAnywhere,
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
-      Category = "Cesium|Rendering")
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
   bool EnableWaterMask = false;
 
   /**
@@ -385,6 +388,10 @@ private:
       BlueprintSetter = SetOpacityMaskMaterial,
       Category = "Cesium|Rendering")
   UMaterialInterface* OpacityMaskMaterial = nullptr;
+
+protected:
+  UPROPERTY()
+  FString PlatformName;
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
@@ -514,6 +521,31 @@ private:
 
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
+
+  /**
+   * Writes the values of all properties of this actor into the
+   * TilesetOptions, to take them into account during the next
+   * traversal.
+   */
+  void updateTilesetOptionsFromProperties();
+
+  /**
+   * Update all the "_last..." fields of this instance based
+   * on the given ViewUpdateResult, printing a log message
+   * if any value changed.
+   *
+   * @param result The ViewUpdateREsult
+   */
+  void updateLastViewUpdateResultState(
+      const Cesium3DTiles::ViewUpdateResult& result);
+
+  /**
+   * Creates the visual representations of the given tiles to
+   * be rendered in the current frame.
+   *
+   * @param tiles The tiles
+   */
+  void showTilesToRender(const std::vector<Cesium3DTiles::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register

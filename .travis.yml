@@ -7,7 +7,7 @@ jobs:
     dist: focal
     git:
       submodules: false
-    before_script: 
+    before_script:
     script:
     - npm install
     - npm run format -- --dry-run -Werror
@@ -39,12 +39,60 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-windows "target_url=${PACKAGE_LINK}" --ignore-stdin
+    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+  - name: Android
+    os: windows
+    cache:
+      timeout: 1000
+      directories:
+      - /C/Program\ Files/Epic\ Games/UE_4.26
+      - /C/Program\ Files\ \(x86\)/Epic\ Games/Launcher
+      - $HOME/android-ndk-r21e
+    install:
+    - choco install 7zip.portable
+    - choco install python --version 3.9.2
+    - choco install wget
+    - choco install ninja
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
+    - pip3 install httpie
+    - travis_wait 30 "./travis/travis-get-ue.sh"
+    - travis_wait 30 "./travis/travis-get-android-ndk.sh"
+    before_script:
+    - export ANDROID_NDK_ROOT=$HOME/android-ndk-r21e
+    - export NDKROOT=$ANDROID_NDK_ROOT
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-android-${CESIUM_UNREAL_VERSION}
+    - mkdir -p extern/build-win64
+    - mkdir -p extern/build-android
+    - cd extern/build-win64
+    - cmake .. -A x64
+    - cd ../../extern/build-android
+    - cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+    - cd ../..
+    script:
+    - cd extern/build-win64
+    - cmake --build . --config Release --target install -- /maxcpucount:4
+    - cd ../../extern/build-android
+    - cmake --build . --config Release --target install
+    - cd ../..
+    - rm -rf extern
+    - export CLONEDIR=$PWD
+    - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64+Android
+    - cat "C:\Users\travis\AppData\Roaming\Unreal Engine\AutomationTool\Logs\C+Program+Files+Epic+Games+UE_4.26\UBT-UE4Game-Android-Development.txt"
+    - cd "$CLONEDIR/../packages"
+    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-android "target_url=${PACKAGE_LINK}" --ignore-stdin
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - name: MacOS
     os: osx
@@ -67,12 +115,12 @@ jobs:
     - cd extern/build
     - cmake .. -DCMAKE_BUILD_TYPE=Release
     script:
-    - cmake --build . -j 4 --target install 
+    - cmake --build . -j 4 --target install
     - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
+    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -95,12 +143,12 @@ jobs:
     - mkdir -p extern/build
     - cd extern
     - cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cmake --build build -j 4 --target install 
+    - cmake --build build -j 4 --target install
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
-    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder
+    - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
     - cd "$CLONEDIR/../packages"
     - zip -r ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -118,11 +166,13 @@ jobs:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-android-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip .
     - mkdir -p build/package
     - cd build/package
     - unzip ../../CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-android-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-windows-${CESIUM_UNREAL_VERSION}.zip
     - zip -r CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
     - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
