@@ -30,7 +30,7 @@ bool ADEPRECATED_CesiumGlobeAnchorParent::ShouldTickIfViewportsOnly() const {
 void ADEPRECATED_CesiumGlobeAnchorParent::Tick(float DeltaTime) {
 
   // TODO GEOREF_REFACTORING This class is deprecated and
-  // about to be removed. 
+  // about to be removed.
   /*
   if (this->GeoreferenceComponent->CheckCoordinatesChanged()) {
 
@@ -59,7 +59,7 @@ void ADEPRECATED_CesiumGlobeAnchorParent::PostEditChangeProperty(
   FName propertyName = event.Property->GetFName();
 
   // TODO GEOREF_REFACTORING This class is deprecated and
-  // about to be removed. 
+  // about to be removed.
   /*
   if (propertyName == GET_MEMBER_NAME_CHECKED(
                           ADEPRECATED_CesiumGlobeAnchorParent,
