@@ -71,12 +71,14 @@ void registerIcon(
 } // namespace
 
 void FCesiumEditorModule::StartupModule() {
+  static CesiumAsync::AsyncSystem asyncSystem(
+      std::make_shared<UnrealTaskProcessor>());
+
   _pModule = this;
 
   IModuleInterface::StartupModule();
 
   auto pAssetAccessor = std::make_shared<UnrealAssetAccessor>();
-  CesiumAsync::AsyncSystem asyncSystem(std::make_shared<UnrealTaskProcessor>());
 
   this->_pIonSession =
       std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
