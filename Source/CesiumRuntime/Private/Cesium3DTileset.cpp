@@ -637,6 +637,8 @@ void ACesium3DTileset::LoadTileset() {
           std::make_shared<CesiumAsync::SqliteCache>(
               spdlog::default_logger(),
               getCacheDatabaseName()));
+  static CesiumAsync::AsyncSystem asyncSystem(
+      std::make_shared<UnrealTaskProcessor>());
 
   Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
@@ -665,7 +667,7 @@ void ACesium3DTileset::LoadTileset() {
   Cesium3DTiles::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
-      std::make_shared<UnrealTaskProcessor>(),
+      asyncSystem,
       this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem()
                          : nullptr,
       spdlog::default_logger()};
