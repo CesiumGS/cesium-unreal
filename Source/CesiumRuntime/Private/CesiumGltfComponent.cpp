@@ -1054,6 +1054,22 @@ static void loadPrimitive(
     const CesiumGltf::Accessor& indexAccessorGltf =
         model.accessors[primitive.indices];
     if (indexAccessorGltf.componentType ==
+        CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE) {
+      CesiumGltf::AccessorView<uint8_t> indexAccessor(model, primitive.indices);
+      loadPrimitive(
+          result,
+          model,
+          mesh,
+          primitive,
+          transform,
+#if PHYSICS_INTERFACE_PHYSX
+          pPhysXCooking,
+#endif
+          *pPositionAccessor,
+          positionView,
+          indexAccessor);
+    } else if (
+        indexAccessorGltf.componentType ==
         CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
       CesiumGltf::AccessorView<uint16_t> indexAccessor(
           model,
