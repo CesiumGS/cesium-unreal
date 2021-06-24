@@ -187,31 +187,15 @@ protected:
 
 private:
   void _initGeoreference();
-  void _initWorldOriginLocation();
 
+  void _updateFromActor();
   glm::dvec3 _getRelativeLocationFromActor();
-  glm::dvec3 _getAbsoluteLocationFromActor();
-
-  glm::dvec3 _computeEcef();
 
   void _updateActorTransform();
 
-  void _updateRelativeLocationFromActor();
 
   void _setECEF(const glm::dvec3& targetEcef, bool maintainRelativeOrientation);
-  
   void _updateDisplayLongitudeLatitudeHeight();
-  void _updateDisplayECEF();
-
-  /**
-   * The position of the world origin, as of this->GetWorld()->OriginLocation
-   */
-  glm::dvec3 _worldOriginLocation;
-
-  /**
-   * The relative location of the actor, as of ownerRoot->GetComponentLocation()
-   */
-  glm::dvec3 _relativeLocation;
 
   void _logState();
 
