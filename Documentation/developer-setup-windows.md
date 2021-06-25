@@ -9,7 +9,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 
 ## For Cross Compiling Android on Windows
 
-- Install Android NDK r21 from https://developer.android.com/ndk/downloads.
+- Follow the [Unreal Engine setup guide for Android](https://docs.unrealengine.com/SharingAndReleasing/Mobile/Android/Setup/AndroidStudio/).
 - Then set the following environment variable either in command line or system variables. Note that you must use forward-slashes, i.e. `c:/android` not `c:\android`.
     ```cmd
     SET ANDROID_NDK_ROOT=<path_to_android_ndk>
