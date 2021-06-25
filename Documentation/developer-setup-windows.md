@@ -106,7 +106,13 @@ Or the debug version:
 
 ## CMake command-line for Android
 
-To cross-compile Cesium Native for Android, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` directory, and execute the following commands. (**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!). To create and install the `Release` package for Android:
+To cross-compile Cesium Native for Android, you will first need to have Ninja installed. With [chocolatey](https://chocolatey.org/install), you can run:
+
+      choco install ninja
+
+or download [Ninja from GitHub](https://github.com/ninja-build/ninja/releases) and add it to your PATH.
+
+Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` directory, and execute the following commands. (**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!). To create and install the `Release` package for Android:
 
     cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
     cmake --build build-android --config Release --target install
