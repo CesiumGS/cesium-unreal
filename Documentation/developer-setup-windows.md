@@ -106,7 +106,7 @@ Or the debug version:
 
 ## CMake command-line for Android
 
-To cross-compile Cesium Native for Android, you will first need to have Ninja installed. With [chocolatey](https://chocolatey.org/install), you can run:
+To cross-compile Cesium Native for Android, ensure that you have [installed Android Studio and Android NDK](https://github.com/CesiumGS/cesium-unreal/blob/android-build-docs-update/Documentation/developer-setup-windows.md#for-cross-compiling-android-on-windows). Then you will need to have Ninja installed. With [chocolatey](https://chocolatey.org/install), you can run:
 
       choco install ninja
 
