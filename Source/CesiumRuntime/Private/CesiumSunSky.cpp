@@ -23,6 +23,7 @@ void ACesiumSunSky::PostEditChangeProperty(
       this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
           this,
           &ACesiumSunSky::HandleGeoreferenceUpdated);
+      this->HandleGeoreferenceUpdated();
     }
   }
 }
@@ -44,6 +45,7 @@ void ACesiumSunSky::PostInitProperties() {
     this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &ACesiumSunSky::HandleGeoreferenceUpdated);
+    this->HandleGeoreferenceUpdated();
   }
 
 }
