@@ -236,9 +236,8 @@ void UCesiumGeoreferenceComponent::_updateFromActor() {
     return;
   }
   const glm::dvec3 absoluteLocation = _getAbsoluteLocationFromActor();
-  const glm::dmat4& unrealToEcef =
-      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
-  const glm::dvec3 ecef = unrealToEcef * glm::dvec4(absoluteLocation, 1.0);
+  const glm::dvec3 ecef = this->Georeference->TransformUnrealToEcef(absoluteLocation);
+
   _setECEF(ecef, false); // TODO GEOREF_REFACTORING true or false?
 }
 
@@ -331,9 +330,7 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(
 
   // Compute the absolute location based on the ECEF
   const glm::dvec3 ecef = glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
-  const glm::dmat4& ecefToUnreal =
-      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
-  const glm::dvec3 absoluteLocation = ecefToUnreal * glm::dvec4(ecef, 1.0);
+  const glm::dvec3 absoluteLocation = this->Georeference->TransformEcefToUnreal(ecef);;
 
   // Apply the offset to compute the new absolute location
   const glm::dvec3 offset = VecMath::createVector3D(InOffset);
@@ -343,10 +340,7 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(
 
   // Convert the new absolute location back to ECEF, and apply it to this
   // component
-  const glm::dmat4& unrealToEcef =
-      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
-  const glm::dvec3 newEcef =
-      unrealToEcef * glm::dvec4(newAbsoluteLocation, 1.0);
+  const glm::dvec3 newEcef = this->Georeference->TransformUnrealToEcef(newAbsoluteLocation);
   _setECEF(newEcef, false); // TODO GEOREF_REFACTORING true or false?
   /*
   //if (this->FixTransformOnOriginRebase) // TODO GEOREF_REFACTORING Figure out
@@ -471,10 +465,9 @@ void UCesiumGeoreferenceComponent::_updateActorTransform() {
   }
 
   // Compute the absolute location from the ECEF
-  const glm::dmat4& ecefToUnreal =
-      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+  const glm::dvec3 ecef(ECEF_X, ECEF_Y, ECEF_Z);
   const glm::dvec3 absoluteLocation =
-      ecefToUnreal * glm::dvec4(ECEF_X, ECEF_Y, ECEF_Z, 1.0);
+    this->Georeference->TransformEcefToUnreal(ecef);
 
   // Compute the (high-precision) relative location
   // from the absolute location and the world origin
