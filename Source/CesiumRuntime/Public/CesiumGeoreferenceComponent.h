@@ -283,6 +283,11 @@ private:
   glm::dvec3 _getAbsoluteLocationFromActor();
 
   /**
+   * Obtains the current rotation matrix from the transform of the actor.
+   */
+  glm::dmat3 _getRotationFromActor();
+
+  /**
    * Set the position of this component, in ECEF coordinates.
    *
    * This will perform the necessary updates of the `ECEF_X`, `ECEF_Y`,
@@ -295,6 +300,12 @@ private:
   void _setECEF(const glm::dvec3& targetEcef, bool maintainRelativeOrientation);
 
   /**
+   * Computes the relative location, from the current ECEF location
+   * and the world origin location.
+   */
+  glm::dvec3 _computeRelativeLocation();
+
+  /**
    * Updates the transform of the owning actor.
    *
    * This will use the (high-precision) `ECEF_X`, `ECEF_Y`, and `ECEF_Z`
@@ -303,6 +314,16 @@ private:
    * that is applied to the owner by calling `SetWorldTransform`.
    */
   void _updateActorTransform();
+
+  /**
+   * Updates the transform of the owning actor.
+   *
+   * @param rotation The rotation component
+   * @param translation The translation component
+   */
+  void _updateActorTransform(
+      const glm::dmat3& rotation,
+      const glm::dvec3& translation);
 
   /**
    * Updates the `Longitude`, `Latitude` and `Height` properties
@@ -315,6 +336,13 @@ private:
    * (absolute and relative location) of this component.
    */
   void _debugLogState();
+
+  /**
+   * Whether an update of the actor transform is currently in progress,
+   * and further calls that are issued by HandleActorTransformUpdated
+   * should be ignored
+   */
+  bool _updatingActorTransform;
 
   // TODO GEOREF_REFACTORING
   // This is currently no longer used, but removing this messes up
