@@ -21,7 +21,7 @@ To package the plugin, follow the steps below:
         ```cmd
         "C:\Program Files\Epic Games\UE_4.26\Engine\Build\BatchFiles\RunUAT.bat" BuildPlugin -Plugin="C:\workspace\cesium-unreal\CesiumForUnreal.uplugin" -Package="C:\workspace\Packages\CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
         ```
-    * Windows+Android Example:
+    * Windows+Android Example (ensure you have completed the [Android-specific cross-compilation steps](https://github.com/CesiumGS/cesium-unreal/blob/android-build-docs-update/Documentation/developer-setup-windows.md#cmake-command-line-for-android) first):
         ```cmd
         "C:\Program Files\Epic Games\UE_4.26\Engine\Build\BatchFiles\RunUAT.bat" BuildPlugin -Plugin="C:\workspace\cesium-unreal\CesiumForUnreal.uplugin" -Package="C:\workspace\Packages\CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64+Android
         ```
