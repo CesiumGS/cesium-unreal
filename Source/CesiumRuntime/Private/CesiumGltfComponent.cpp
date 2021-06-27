@@ -1057,6 +1057,89 @@ static void loadPrimitive(
   result.push_back(std::move(primitiveResult));
 }
 
+static void loadIndexedPrimitive(
+    std::vector<LoadModelResult>& result,
+    const CesiumGltf::Model& model,
+    const CesiumGltf::Mesh& mesh,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const glm::dmat4x4& transform,
+    const CreateModelOptions& options,
+    const CesiumGltf::Accessor& positionAccessor,
+    const CesiumGltf::AccessorView<FVector>& positionView) {
+  const CesiumGltf::Accessor& indexAccessorGltf =
+      model.accessors[primitive.indices];
+  if (indexAccessorGltf.componentType ==
+      CesiumGltf::Accessor::ComponentType::BYTE) {
+    CesiumGltf::AccessorView<int8_t> indexAccessor(model, primitive.indices);
+    loadPrimitive(
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor);
+  } else if (
+      indexAccessorGltf.componentType ==
+      CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE) {
+    CesiumGltf::AccessorView<uint8_t> indexAccessor(model, primitive.indices);
+    loadPrimitive(
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor);
+  } else if (
+      indexAccessorGltf.componentType ==
+      CesiumGltf::Accessor::ComponentType::SHORT) {
+    CesiumGltf::AccessorView<int16_t> indexAccessor(model, primitive.indices);
+    loadPrimitive(
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor);
+  } else if (
+      indexAccessorGltf.componentType ==
+      CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
+    CesiumGltf::AccessorView<uint16_t> indexAccessor(model, primitive.indices);
+    loadPrimitive(
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor);
+  } else if (
+      indexAccessorGltf.componentType ==
+      CesiumGltf::Accessor::ComponentType::UNSIGNED_INT) {
+    CesiumGltf::AccessorView<uint32_t> indexAccessor(model, primitive.indices);
+    loadPrimitive(
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor);
+  }
+}
+
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
@@ -1099,43 +1182,15 @@ static void loadPrimitive(
         positionView,
         syntheticIndexBuffer);
   } else {
-    const CesiumGltf::Accessor& indexAccessorGltf =
-        model.accessors[primitive.indices];
-    if (indexAccessorGltf.componentType ==
-        CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
-      CesiumGltf::AccessorView<uint16_t> indexAccessor(
-          model,
-          primitive.indices);
-      loadPrimitive(
-          result,
-          model,
-          mesh,
-          primitive,
-          transform,
-          options,
-          *pPositionAccessor,
-          positionView,
-          indexAccessor);
-    } else if (
-        indexAccessorGltf.componentType ==
-        CesiumGltf::Accessor::ComponentType::UNSIGNED_INT) {
-      CesiumGltf::AccessorView<uint32_t> indexAccessor(
-          model,
-          primitive.indices);
-      loadPrimitive(
-          result,
-          model,
-          mesh,
-          primitive,
-          transform,
-          options,
-          *pPositionAccessor,
-          positionView,
-          indexAccessor);
-    } else {
-      // TODO: report unsupported index type.
-      return;
-    }
+    loadIndexedPrimitive(
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
+        *pPositionAccessor,
+        positionView);
   }
 }
 

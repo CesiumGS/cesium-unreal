@@ -9,7 +9,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 
 ## For Cross Compiling Android on Windows
 
-- Install Android NDK r21 from https://developer.android.com/ndk/downloads.
+- Follow the [Unreal Engine setup guide for Android](https://docs.unrealengine.com/SharingAndReleasing/Mobile/Android/Setup/AndroidStudio/).
 - Then set the following environment variable either in command line or system variables. Note that you must use forward-slashes, i.e. `c:/android` not `c:\android`.
     ```cmd
     SET ANDROID_NDK_ROOT=<path_to_android_ndk>
@@ -106,7 +106,13 @@ Or the debug version:
 
 ## CMake command-line for Android
 
-To cross-compile Cesium Native for Android, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` directory, and execute the following commands. (**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!). To create and install the `Release` package for Android:
+To cross-compile Cesium Native for Android, ensure that you have [installed Android Studio and Android NDK, and configured ANDROID_NDK_ROOT](https://github.com/CesiumGS/cesium-unreal/blob/android-build-docs-update/Documentation/developer-setup-windows.md#for-cross-compiling-android-on-windows). Then you will need to have Ninja installed. With [chocolatey](https://chocolatey.org/install), you can run:
+
+      choco install ninja
+
+or download [Ninja from GitHub](https://github.com/ninja-build/ninja/releases) and add it to your PATH.
+
+Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` directory, and execute the following commands. (**Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!). To create and install the `Release` package for Android:
 
     cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
     cmake --build build-android --config Release --target install
