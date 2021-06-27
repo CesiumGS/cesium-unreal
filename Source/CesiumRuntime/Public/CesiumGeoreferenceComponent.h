@@ -310,9 +310,10 @@ private:
   /**
    * Updates the transform of the owning actor.
    *
-   * This will use the (high-precision) `ECEF_X`, `ECEF_Y`, and `ECEF_Z`
-   * coordinates of this instance, as well as the rotation component of
-   * the current actor transform, and pass them to 
+   * This is intended to be called when the underlying Georeference was
+   * updated. It will use the (high-precision) `ECEF_X`, `ECEF_Y`, and 
+   * `ECEF_Z` coordinates of this instance, as well as the rotation 
+   * component of the current actor transform, and pass them to 
    * `_updateActorTransform(rotation, translation)`
    */
   void _updateActorTransform();
@@ -348,6 +349,21 @@ private:
    * should be ignored
    */
   bool _updatingActorTransform;
+
+  /**
+   * The current ECEF coordinates.
+   * 
+   * This reflects the `ECEF_X`, `ECEF_Y`, and `ECEF_Z` properties and is
+   * updated whenever `_setECEF` is called.
+   * 
+   * It is only used for tracking a change in the ECEF properties, so 
+   * that when `_setECEF` is called due to a change in the editor
+   * and `maintainRelativeOrientation` is `true`, the orientation
+   * can be updated based on this (previous) ECEF position, before
+   * it is assigned with the new `ECEF_X`, `ECEF_Y`, and `ECEF_Z` 
+   * property values.
+   */
+  glm::dvec3 _currentEcef;
 
   // TODO GEOREF_REFACTORING
   // This is currently no longer used, but removing this messes up
