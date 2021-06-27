@@ -145,8 +145,10 @@ public:
       const FVector& TargetEcef,
       bool MaintainRelativeOrientation = true);
 
-  // TODO Comment (or rather remove it - only used in CesiumGlobeAnchorParent!)
-  void SetAutoSnapToEastSouthUp(bool bValue);
+  // TODO GEOREF_REFACTORING 
+  // This was only used in CesiumGlobeAnchorParent (deprecated)
+  // In all other cases, the flag had always been "false"
+  //void SetAutoSnapToEastSouthUp(bool bValue);
 
   /**
    * Called by owner actor on position shifting. The Component should update
@@ -236,7 +238,7 @@ protected:
    * When an ECEF coordinate is modified, it calls `MoveToECEF` with the
    * new values.
    *
-   * When the georeference is about to be modified, then this will
+   * When the georeference has been be modified, then this will
    * attach the `HandleGeoreferenceUpdated` callback to the
    * `OnGeoreferenceUpdated` delegate of the new georeference,
    * and call `_updateActorTransform` to take the new georeference
@@ -310,13 +312,16 @@ private:
    *
    * This will use the (high-precision) `ECEF_X`, `ECEF_Y`, and `ECEF_Z`
    * coordinates of this instance, as well as the rotation component of
-   * the current actor transform, to compute an updated transform matrix
-   * that is applied to the owner by calling `SetWorldTransform`.
+   * the current actor transform, and pass them to 
+   * `_updateActorTransform(rotation, translation)`
    */
   void _updateActorTransform();
 
   /**
    * Updates the transform of the owning actor.
+   *
+   * This will compute an updated transform matrix that is applied 
+   * to the owner by calling `SetWorldTransform`.
    *
    * @param rotation The rotation component
    * @param translation The translation component
@@ -352,6 +357,9 @@ private:
   double _actorToECEF_Array[16];
   glm::dmat4& _actorToECEF = *(glm::dmat4*)_actorToECEF_Array;
 
+  // TODO GEOREF_REFACTORING
+  // This was only set to "true" from CesiumGlobeAnchorParent (deprecated)
+  // In all other cases, the flag had always been "false"
   UPROPERTY()
   bool _autoSnapToEastSouthUp;
 };

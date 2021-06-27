@@ -129,7 +129,7 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
 
   const glm::dvec3 ecef(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
   const glm::dmat3 newActorRotation =
-      this->Georeference->ComputeEastNorthUpToEcef(ecef);
+      this->Georeference->ComputeEastNorthUpToUnreal(ecef);
   const glm::dvec3 relativeLocation = _computeRelativeLocation();
 
   this->_updateActorTransform(newActorRotation, relativeLocation);
@@ -463,14 +463,14 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
       *this->GetName());
   this->_updateActorTransform();
 }
-
+/*
 void UCesiumGeoreferenceComponent::SetAutoSnapToEastSouthUp(bool value) {
   this->_autoSnapToEastSouthUp = value;
   if (value) {
     this->SnapToEastSouthUp();
   }
 }
-
+*/
 glm::dvec3 UCesiumGeoreferenceComponent::_computeRelativeLocation() {
   const UWorld* const world = this->GetWorld();
   if (!IsValid(world)) {
@@ -526,12 +526,6 @@ void UCesiumGeoreferenceComponent::_updateActorTransform() {
 
   const glm::dvec3 relativeLocation = _computeRelativeLocation();
   const glm::dmat3 actorRotation = _getRotationFromActor();
-
-  // TODO GEOREF_REFACTORING Somewhere here, the auto-snapping should happen...
-  if (this->_autoSnapToEastSouthUp) {
-    // this->SnapToEastSouthUp();
-  }
-
   _updateActorTransform(actorRotation, relativeLocation);
 }
 
@@ -619,11 +613,6 @@ void UCesiumGeoreferenceComponent::_setECEF(
   this->ECEF_Z = targetEcef.z;
 
   _updateActorTransform();
-
-  // If the transform needs to be snapped to the tangent plane, do it here.
-  if (this->_autoSnapToEastSouthUp) {
-    // this->SnapToEastSouthUp();
-  }
 
   this->_updateDisplayLongitudeLatitudeHeight();
 }
