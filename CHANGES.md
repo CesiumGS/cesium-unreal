@@ -8,6 +8,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug that could sometimes cause tile-sized holes to appear in a 3D Tiles model for one render frame.
 - Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
 - Add support for other types of Gltf index accessors: `BYTE`, `UNSIGNED_BYTE`, `SHORT`, `UNSIGNED_SHORT`
 

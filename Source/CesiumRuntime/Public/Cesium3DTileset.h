@@ -584,4 +584,5 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+  std::vector<Cesium3DTiles::Tile*> _tilesToNoLongerRenderNextFrame;
 };
