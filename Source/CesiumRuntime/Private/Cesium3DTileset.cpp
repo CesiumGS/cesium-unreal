@@ -909,6 +909,227 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
   return this->UpdateInEditor;
 }
 
+namespace {
+
+// TODO These could or should be members, but extracted here as a first step:
+
+/**
+ * @brief Check if the given tile is contained in one of the given exclusion
+ * zones.
+ *
+ * TODO Add details here what that means
+ * Old comment:
+ * Consider Exclusion zone to drop this tile... Ideally, should be
+ * considered in Cesium3DTiles::ViewState to avoid loading the tile
+ * first...
+ *
+ * @param exclusionZones The exclusion zones
+ * @param tile The tile
+ * @return The result of the test
+ */
+bool isInExclusionZone(
+    const TArray<FCesiumExclusionZone>& exclusionZones,
+    Cesium3DTiles::Tile const* tile) {
+  if (exclusionZones.Num() == 0) {
+    return false;
+  }
+  // Apparently, only tiles with bounding REGIONS are
+  // checked for the exclusion...
+  const CesiumGeospatial::BoundingRegion* pRegion =
+      std::get_if<CesiumGeospatial::BoundingRegion>(&tile->getBoundingVolume());
+  if (!pRegion) {
+    return false;
+  }
+  for (FCesiumExclusionZone ExclusionZone : exclusionZones) {
+    CesiumGeospatial::GlobeRectangle cgExclusionZone =
+        CesiumGeospatial::GlobeRectangle::fromDegrees(
+            ExclusionZone.West,
+            ExclusionZone.South,
+            ExclusionZone.East,
+            ExclusionZone.North);
+    if (cgExclusionZone.intersect(pRegion->getRectangle())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @brief Hides the visual representations of the given tiles.
+ *
+ * The visual representations (i.e. the `getRendererResources` of the
+ * tiles) are assumed to be `UCesiumGltfComponent` instances that
+ * are made invisible by this call.
+ *
+ * @param tiles The tiles to hide
+ */
+void hideTilesToNoLongerRender(const std::vector<Cesium3DTiles::Tile*>& tiles) {
+  for (Cesium3DTiles::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf =
+        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    if (Gltf && Gltf->IsVisible()) {
+      Gltf->SetVisibility(false, true);
+      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    } else {
+      // TODO: why is this happening?
+      UE_LOG(
+          LogCesium,
+          Verbose,
+          TEXT("Tile to no longer render does not have a visible Gltf"));
+    }
+  }
+}
+
+/**
+ * @brief Applies the actor collision settings for a newly created glTF
+ * component
+ *
+ * TODO Add details here what that means
+ * @param BodyInstance ...
+ * @param Gltf ...
+ */
+void applyActorCollisionSettings(
+    const FBodyInstance& BodyInstance,
+    UCesiumGltfComponent* Gltf) {
+  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+  if (PrimitiveComponent != nullptr) {
+    const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+    if (ChannelEnum) {
+      for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX;
+           ChannelValue++) {
+        ECollisionResponse response =
+            BodyInstance.GetCollisionResponse().GetResponse(
+                ECollisionChannel(ChannelValue));
+        PrimitiveComponent->SetCollisionResponseToChannel(
+            ECollisionChannel(ChannelValue),
+            response);
+      }
+    }
+  }
+}
+} // namespace
+
+void ACesium3DTileset::updateTilesetOptionsFromProperties() {
+  Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
+  options.maximumScreenSpaceError =
+      static_cast<double>(this->MaximumScreenSpaceError);
+
+  options.preloadAncestors = this->PreloadAncestors;
+  options.preloadSiblings = this->PreloadSiblings;
+  options.forbidHoles = this->ForbidHoles;
+  options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+  options.loadingDescendantLimit = this->LoadingDescendantLimit;
+
+  options.enableFrustumCulling = this->EnableFrustumCulling;
+  options.enableFogCulling = this->EnableFogCulling;
+  options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
+  options.culledScreenSpaceError =
+      static_cast<double>(this->CulledScreenSpaceError);
+}
+
+void ACesium3DTileset::updateLastViewUpdateResultState(
+    const Cesium3DTiles::ViewUpdateResult& result) {
+  if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
+      result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
+      result.tilesLoadingMediumPriority !=
+          this->_lastTilesLoadingMediumPriority ||
+      result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
+      result.tilesVisited != this->_lastTilesVisited ||
+      result.culledTilesVisited != this->_lastCulledTilesVisited ||
+      result.tilesCulled != this->_lastTilesCulled ||
+      result.maxDepthVisited != this->_lastMaxDepthVisited) {
+
+    this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
+    this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
+    this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
+    this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
+
+    this->_lastTilesVisited = result.tilesVisited;
+    this->_lastCulledTilesVisited = result.culledTilesVisited;
+    this->_lastTilesCulled = result.tilesCulled;
+    this->_lastMaxDepthVisited = result.maxDepthVisited;
+
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT(
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+        *this->GetName(),
+        (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
+            1000000,
+        result.tilesVisited,
+        result.culledTilesVisited,
+        result.tilesToRenderThisFrame.size(),
+        result.tilesCulled,
+        result.maxDepthVisited,
+        result.tilesLoadingLowPriority,
+        result.tilesLoadingMediumPriority,
+        result.tilesLoadingHighPriority);
+  }
+}
+
+void ACesium3DTileset::showTilesToRender(
+    const std::vector<Cesium3DTiles::Tile*>& tiles) {
+  for (Cesium3DTiles::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
+      continue;
+    }
+
+    if (isInExclusionZone(ExclusionZones, pTile)) {
+      continue;
+    }
+
+    // That looks like some reeeally entertaining debug session...:
+    // const Cesium3DTiles::TileID& id = pTile->getTileID();
+    // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
+    // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
+    // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
+    // 11626) { 	continue;
+    //}
+
+    UCesiumGltfComponent* Gltf =
+        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    if (!Gltf) {
+      // When a tile does not have render resources (i.e. a glTF), then
+      // the resources either have not yet been loaded or prepared,
+      // or the tile is from an external tileset and does not directly
+      // own renderable content. In both cases, the tile is ignored here.
+      continue;
+    }
+
+    applyActorCollisionSettings(BodyInstance, Gltf);
+
+    if (Gltf->GetAttachParent() == nullptr) {
+
+      // The AttachToComponent method is ridiculously complex,
+      // so print a warning if attaching fails for some reason
+      bool attached = Gltf->AttachToComponent(
+          this->RootComponent,
+          FAttachmentTransformRules::KeepRelativeTransform);
+      if (!attached) {
+        FString tileIdString(Cesium3DTiles::TileIdUtilities::createTileIdString(
+                                 pTile->getTileID())
+                                 .c_str());
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("Tile %s could not be attached to root"),
+            *tileIdString);
+      }
+    }
+
+    if (!Gltf->IsVisible()) {
+      Gltf->SetVisibility(true, true);
+      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
+  }
+}
+
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
@@ -940,21 +1161,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
-  options.maximumScreenSpaceError =
-      static_cast<double>(this->MaximumScreenSpaceError);
-
-  options.preloadAncestors = this->PreloadAncestors;
-  options.preloadSiblings = this->PreloadSiblings;
-  options.forbidHoles = this->ForbidHoles;
-  options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
-  options.loadingDescendantLimit = this->LoadingDescendantLimit;
-
-  options.enableFrustumCulling = this->EnableFrustumCulling;
-  options.enableFogCulling = this->EnableFogCulling;
-  options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
-  options.culledScreenSpaceError =
-      static_cast<double>(this->CulledScreenSpaceError);
+  updateTilesetOptionsFromProperties();
 
   if (_tilesetIsDirty) {
     LoadTileset();
@@ -976,142 +1183,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->_captureMovieMode
           ? this->_pTileset->updateViewOffline(tilesetViewState)
           : this->_pTileset->updateView(tilesetViewState);
+  updateLastViewUpdateResultState(result);
 
-  if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
-      result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
-      result.tilesLoadingMediumPriority !=
-          this->_lastTilesLoadingMediumPriority ||
-      result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
-      result.tilesVisited != this->_lastTilesVisited ||
-      result.culledTilesVisited != this->_lastCulledTilesVisited ||
-      result.tilesCulled != this->_lastTilesCulled ||
-      result.maxDepthVisited != this->_lastMaxDepthVisited) {
-    this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
-    this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
-    this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
-    this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
-
-    this->_lastTilesVisited = result.tilesVisited;
-    this->_lastCulledTilesVisited = result.culledTilesVisited;
-    this->_lastTilesCulled = result.tilesCulled;
-    this->_lastMaxDepthVisited = result.maxDepthVisited;
-
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
-        *this->GetName(),
-        (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
-            1000000,
-        result.tilesVisited,
-        result.culledTilesVisited,
-        result.tilesToRenderThisFrame.size(),
-        result.tilesCulled,
-        result.maxDepthVisited,
-        result.tilesLoadingLowPriority,
-        result.tilesLoadingMediumPriority,
-        result.tilesLoadingHighPriority);
-  }
-
-  for (Cesium3DTiles::Tile* pTile : result.tilesToNoLongerRenderThisFrame) {
-    if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
-      continue;
-    }
-
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
-    if (Gltf && Gltf->IsVisible()) {
-      Gltf->SetVisibility(false, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    } else {
-      // TODO: why is this happening?
-      UE_LOG(
-          LogCesium,
-          VeryVerbose,
-          TEXT("Tile to no longer render does not have a visible Gltf"));
-    }
-  }
-
-  for (Cesium3DTiles::Tile* pTile : result.tilesToRenderThisFrame) {
-    if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
-      continue;
-    }
-
-    // Consider Exclusion zone to drop this tile... Ideally, should be
-    // considered in Cesium3DTiles::ViewState to avoid loading the tile
-    // first...
-    if (ExclusionZones.Num() > 0) {
-      const CesiumGeospatial::BoundingRegion* pRegion =
-          std::get_if<CesiumGeospatial::BoundingRegion>(
-              &pTile->getBoundingVolume());
-      if (pRegion) {
-        bool culled = false;
-
-        for (FCesiumExclusionZone ExclusionZone : ExclusionZones) {
-          CesiumGeospatial::GlobeRectangle cgExclusionZone =
-              CesiumGeospatial::GlobeRectangle::fromDegrees(
-                  ExclusionZone.West,
-                  ExclusionZone.South,
-                  ExclusionZone.East,
-                  ExclusionZone.North);
-          if (cgExclusionZone.intersect(pRegion->getRectangle())) {
-            culled = true;
-            continue;
-          }
-        }
-
-        if (culled) {
-          continue;
-        }
-      }
-    }
-
-    // const Cesium3DTiles::TileID& id = pTile->getTileID();
-    // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
-    // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
-    // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
-    // 11626) { 	continue;
-    //}
-
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
-    if (!Gltf) {
-      // TODO: Not-yet-renderable tiles shouldn't be here.
-      // UE_LOG(LogCesium, VeryVerbose, TEXT("Tile to render does not have a
-      // Gltf"));
-      continue;
-    }
-
-    // Apply Actor-defined collision settings to the newly-created component.
-    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-        static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
-    if (PrimitiveComponent != nullptr) {
-      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
-      if (ChannelEnum) {
-        for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX;
-             ChannelValue++) {
-          ECollisionResponse response =
-              BodyInstance.GetCollisionResponse().GetResponse(
-                  ECollisionChannel(ChannelValue));
-          PrimitiveComponent->SetCollisionResponseToChannel(
-              ECollisionChannel(ChannelValue),
-              response);
-        }
-      }
-    }
-
-    if (Gltf->GetAttachParent() == nullptr) {
-      Gltf->AttachToComponent(
-          this->RootComponent,
-          FAttachmentTransformRules::KeepRelativeTransform);
-    }
-
-    if (!Gltf->IsVisible()) {
-      Gltf->SetVisibility(true, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    }
-  }
+  hideTilesToNoLongerRender(result.tilesToNoLongerRenderThisFrame);
+  showTilesToRender(result.tilesToRenderThisFrame);
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {

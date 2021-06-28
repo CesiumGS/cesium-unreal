@@ -45,6 +45,34 @@ FCesiumEditorModule* FCesiumEditorModule::_pModule = nullptr;
 UClass* FCesiumEditorModule::_cesiumSunSkyBlueprintClass = nullptr;
 UClass* FCesiumEditorModule::_dynamicPawnBlueprintClass = nullptr;
 
+namespace {
+/**
+ * Register an icon in the StyleSet, using the given property
+ * name and relative resource path.
+ *
+ * This will register the icon once with a default size of
+ * 40x40, and once under the same name, extended by the
+ * suffix `".Small"`, with a size of 20x20, which will be
+ * used when the "useSmallToolbarIcons" editor preference
+ * was enabled.
+ *
+ * @param styleSet The style set
+ * @param The property name
+ * @param The resource path
+ */
+void registerIcon(
+    TSharedPtr<FSlateStyleSet>& styleSet,
+    const FString& propertyName,
+    const FString& relativePath) {
+  const FVector2D Icon40x40(40.0f, 40.0f);
+  const FVector2D Icon20x20(20.0f, 20.0f);
+  styleSet->Set(FName(propertyName), new IMAGE_BRUSH(relativePath, Icon40x40));
+  styleSet->Set(
+      FName(propertyName + ".Small"),
+      new IMAGE_BRUSH(relativePath, Icon20x20));
+}
+} // namespace
+
 void FCesiumEditorModule::StartupModule() {
   _pModule = this;
 
@@ -82,31 +110,35 @@ void FCesiumEditorModule::StartupModule() {
         "ClassThumbnail.CesiumGeoreference",
         new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
 
-    StyleSet->Set(
+    registerIcon(
+        StyleSet,
         "Cesium.Common.AddFromIon",
-        new IMAGE_BRUSH("FontAwesome/plus-solid", Icon40x40));
-    StyleSet->Set(
+        "FontAwesome/plus-solid");
+    registerIcon(
+        StyleSet,
         "Cesium.Common.UploadToIon",
-        new IMAGE_BRUSH("FontAwesome/cloud-upload-alt-solid", Icon40x40));
-    StyleSet->Set(
+        "FontAwesome/cloud-upload-alt-solid");
+    registerIcon(
+        StyleSet,
         "Cesium.Common.AddBlankTileset",
-        new IMAGE_BRUSH("FontAwesome/globe-solid", Icon40x40));
-    StyleSet->Set(
+        "FontAwesome/globe-solid");
+    registerIcon(
+        StyleSet,
         "Cesium.Common.AccessToken",
-        new IMAGE_BRUSH("FontAwesome/key-solid", Icon40x40));
-    StyleSet->Set(
+        "FontAwesome/key-solid");
+    registerIcon(
+        StyleSet,
         "Cesium.Common.SignOut",
-        new IMAGE_BRUSH("FontAwesome/sign-out-alt-solid", Icon40x40));
-    StyleSet->Set(
+        "FontAwesome/sign-out-alt-solid");
+    registerIcon(
+        StyleSet,
         "Cesium.Common.OpenDocumentation",
-        new IMAGE_BRUSH("FontAwesome/book-reader-solid", Icon40x40));
-    StyleSet->Set(
+        "FontAwesome/book-reader-solid");
+    registerIcon(
+        StyleSet,
         "Cesium.Common.OpenSupport",
-        new IMAGE_BRUSH("FontAwesome/hands-helping-solid", Icon40x40));
-
-    StyleSet->Set(
-        "Cesium.Common.OpenCesiumPanel",
-        new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon40x40));
+        "FontAwesome/hands-helping-solid");
+    registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
 
     StyleSet->Set(
         "Cesium.Logo",

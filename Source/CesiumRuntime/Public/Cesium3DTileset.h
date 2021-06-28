@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTiles/ViewState.h"
+#include "Cesium3DTiles/ViewUpdateResult.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -507,6 +508,31 @@ private:
 
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
+
+  /**
+   * Writes the values of all properties of this actor into the
+   * TilesetOptions, to take them into account during the next
+   * traversal.
+   */
+  void updateTilesetOptionsFromProperties();
+
+  /**
+   * Update all the "_last..." fields of this instance based
+   * on the given ViewUpdateResult, printing a log message
+   * if any value changed.
+   *
+   * @param result The ViewUpdateREsult
+   */
+  void updateLastViewUpdateResultState(
+      const Cesium3DTiles::ViewUpdateResult& result);
+
+  /**
+   * Creates the visual representations of the given tiles to
+   * be rendered in the current frame.
+   *
+   * @param tiles The tiles
+   */
+  void showTilesToRender(const std::vector<Cesium3DTiles::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
