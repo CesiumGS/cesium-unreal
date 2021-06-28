@@ -67,7 +67,8 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _beforeMovieKeepWorldOriginNearCamera{true} {
+      _beforeMovieKeepWorldOriginNearCamera{true},
+      _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -954,6 +955,21 @@ bool isInExclusionZone(
   return false;
 }
 
+void removeVisibleTilesFromList(
+    std::vector<Cesium3DTiles::Tile*>& list,
+    const std::vector<Cesium3DTiles::Tile*>& visibleTiles) {
+  if (list.empty()) {
+    return;
+  }
+
+  for (Cesium3DTiles::Tile* pTile : visibleTiles) {
+    auto it = std::find(list.begin(), list.end(), pTile);
+    if (it != list.end()) {
+      list.erase(it);
+    }
+  }
+}
+
 /**
  * @brief Hides the visual representations of the given tiles.
  *
@@ -1185,7 +1201,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
           : this->_pTileset->updateView(tilesetViewState);
   updateLastViewUpdateResultState(result);
 
-  hideTilesToNoLongerRender(result.tilesToNoLongerRenderThisFrame);
+  removeVisibleTilesFromList(
+      this->_tilesToNoLongerRenderNextFrame,
+      result.tilesToRenderThisFrame);
+  hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
+  this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
 }
 
