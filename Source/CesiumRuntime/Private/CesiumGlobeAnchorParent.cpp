@@ -22,7 +22,7 @@ void ADEPRECATED_CesiumGlobeAnchorParent::OnConstruction(
   Super::OnConstruction(Transform);
   // TODO GEOREF_REFACTORING This class is deprecated and
   // about to be removed.
-  //this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
+  // this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
 }
 
 bool ADEPRECATED_CesiumGlobeAnchorParent::ShouldTickIfViewportsOnly() const {

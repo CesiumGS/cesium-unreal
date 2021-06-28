@@ -145,11 +145,6 @@ public:
       const FVector& TargetEcef,
       bool MaintainRelativeOrientation = true);
 
-  // TODO GEOREF_REFACTORING 
-  // This was only used in CesiumGlobeAnchorParent (deprecated)
-  // In all other cases, the flag had always been "false"
-  //void SetAutoSnapToEastSouthUp(bool bValue);
-
   /**
    * Called by owner actor on position shifting. The Component should update
    * all relevant data structures to reflect new actor location.
@@ -302,18 +297,18 @@ private:
   void _setECEF(const glm::dvec3& targetEcef, bool maintainRelativeOrientation);
 
   /**
-   * Computes the relative location, from the current ECEF location
+   * Computes the relative location, from the given ECEF location
    * and the world origin location.
    */
-  glm::dvec3 _computeRelativeLocation();
+  glm::dvec3 _computeRelativeLocation(const glm::dvec3& ecef);
 
   /**
    * Updates the transform of the owning actor.
    *
    * This is intended to be called when the underlying Georeference was
-   * updated. It will use the (high-precision) `ECEF_X`, `ECEF_Y`, and 
-   * `ECEF_Z` coordinates of this instance, as well as the rotation 
-   * component of the current actor transform, and pass them to 
+   * updated. It will use the (high-precision) `ECEF_X`, `ECEF_Y`, and
+   * `ECEF_Z` coordinates of this instance, as well as the rotation
+   * component of the current actor transform, and pass them to
    * `_updateActorTransform(rotation, translation)`
    */
   void _updateActorTransform();
@@ -321,7 +316,7 @@ private:
   /**
    * Updates the transform of the owning actor.
    *
-   * This will compute an updated transform matrix that is applied 
+   * This will compute an updated transform matrix that is applied
    * to the owner by calling `SetWorldTransform`.
    *
    * @param rotation The rotation component
@@ -352,15 +347,15 @@ private:
 
   /**
    * The current ECEF coordinates.
-   * 
+   *
    * This reflects the `ECEF_X`, `ECEF_Y`, and `ECEF_Z` properties and is
    * updated whenever `_setECEF` is called.
-   * 
-   * It is only used for tracking a change in the ECEF properties, so 
+   *
+   * It is only used for tracking a change in the ECEF properties, so
    * that when `_setECEF` is called due to a change in the editor
    * and `maintainRelativeOrientation` is `true`, the orientation
    * can be updated based on this (previous) ECEF position, before
-   * it is assigned with the new `ECEF_X`, `ECEF_Y`, and `ECEF_Z` 
+   * it is assigned with the new `ECEF_X`, `ECEF_Y`, and `ECEF_Z`
    * property values.
    */
   glm::dvec3 _currentEcef;
