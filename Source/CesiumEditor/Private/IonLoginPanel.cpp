@@ -115,12 +115,13 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Center)
-           .Padding(20)[SNew(SScaleBox)
-                            .Stretch(EStretch::ScaleToFit)
-                            .HAlign(HAlign_Center)
-                            .VAlign(VAlign_Top)[SNew(SImage).Image(
-                                FCesiumEditorModule::GetStyle()->GetBrush(
-                                    TEXT("Cesium.Logo")))]] +
+           .Padding(20, 0, 20, 5)
+               [SNew(SScaleBox)
+                    .Stretch(EStretch::ScaleToFit)
+                    .HAlign(HAlign_Center)
+                    .VAlign(VAlign_Top)[SNew(SImage).Image(
+                        FCesiumEditorModule::GetStyle()->GetBrush(
+                            TEXT("Cesium.Logo")))]] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
            .Padding(10)

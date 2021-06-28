@@ -18,9 +18,9 @@ void CesiumPanel::Construct(const FArguments& InArgs) {
   ChildSlot
       [SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight()[Toolbar()] +
        SVerticalBox::Slot().VAlign(VAlign_Fill)
-           [SNew(SScrollBox) + SScrollBox::Slot()[LoginPanel()] +
-            SScrollBox::Slot()[MainIonQuickAddPanel()] +
-            SScrollBox::Slot()[BasicQuickAddPanel()]] +
+           [SNew(SScrollBox) + SScrollBox::Slot()[BasicQuickAddPanel()] +
+            SScrollBox::Slot()[LoginPanel()] +
+            SScrollBox::Slot()[MainIonQuickAddPanel()]] +
        SVerticalBox::Slot()
            .AutoHeight()
            .VAlign(VAlign_Bottom)
@@ -90,7 +90,7 @@ TSharedRef<SWidget> CesiumPanel::LoginPanel() {
 TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
   TSharedPtr<IonQuickAddPanel> quickAddPanel =
       SNew(IonQuickAddPanel)
-          .Title(FText::FromString("Quick Add Assets"))
+          .Title(FText::FromString("Add Cesium ion Assets"))
           .Visibility_Lambda([]() {
             return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed;
           });
@@ -140,10 +140,10 @@ TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
 
 TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
   TSharedPtr<IonQuickAddPanel> quickAddPanel =
-      SNew(IonQuickAddPanel).Title(FText::FromString("Quick Add Actors"));
+      SNew(IonQuickAddPanel).Title(FText::FromString("Add basic Actors"));
   quickAddPanel->AddItem(
       {QuickAddItemType::TILESET,
-       "Blank Tileset",
+       "Blank 3D Tiles Tileset",
        "An empty tileset that can be configured to show Cesium ion assets or tilesets from other sources.",
        "Blank Tileset",
        -1,

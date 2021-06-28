@@ -140,8 +140,8 @@ void FCesiumEditorModule::StartupModule() {
     StyleSet->Set(
         "Cesium.Logo",
         new IMAGE_BRUSH(
-            "Cesium-for-Unreal-Logo-Micro-BlackV",
-            FVector2D(222.0, 200.0f)));
+            "Cesium_for_Unreal_light_color_vertical-height150",
+            FVector2D(184.0f, 150.0f)));
 
     StyleSet->Set(
         "WelcomeText",
