@@ -223,12 +223,22 @@ void IonQuickAddPanel::AddTilesetToLevel(TSharedRef<QuickAddItem> item) {
 }
 
 void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
-  if (FCesiumEditorModule::CurrentLevelContainsCesiumSunSky()) {
-    return;
+  AActor* pActor = FCesiumEditorModule::GetCurrentLevelCesiumSunSky();
+  if (!pActor) {
+    pActor = FCesiumEditorModule::SpawnCesiumSunSky();
   }
-  AActor* actor = FCesiumEditorModule::SpawnCesiumSunSky();
-  GEditor->SelectNone(true, false);
-  GEditor->SelectActor(actor, true, true, true, true);
+
+  if (pActor) {
+    // Make this the Georeference's designated CesiumSunSky.
+    ACesiumGeoreference* pGeoreference =
+        ACesiumGeoreference::GetDefaultForActor(pActor);
+    if (pGeoreference) {
+      pGeoreference->SunSky = pActor;
+    }
+
+    GEditor->SelectNone(true, false);
+    GEditor->SelectActor(pActor, true, true, true, true);
+  }
 }
 
 namespace {
@@ -280,16 +290,19 @@ void SetBytePropertyValue(
 } // namespace
 
 void IonQuickAddPanel::AddDynamicPawnToLevel() {
-  if (FCesiumEditorModule::CurrentLevelContainsDynamicPawn()) {
-    return;
+  AActor* pActor = FCesiumEditorModule::GetCurrentLevelDynamicPawn();
+  if (!pActor) {
+    pActor = FCesiumEditorModule::SpawnDynamicPawn();
   }
-  AActor* actor = FCesiumEditorModule::SpawnDynamicPawn();
 
-  uint8 autoPossessValue = static_cast<uint8>(EAutoReceiveInput::Type::Player0);
-  SetBytePropertyValue(actor, "AutoPossessPlayer", autoPossessValue);
+  if (pActor) {
+    uint8 autoPossessValue =
+        static_cast<uint8>(EAutoReceiveInput::Type::Player0);
+    SetBytePropertyValue(pActor, "AutoPossessPlayer", autoPossessValue);
 
-  GEditor->SelectNone(true, false);
-  GEditor->SelectActor(actor, true, true, true, true);
+    GEditor->SelectNone(true, false);
+    GEditor->SelectActor(pActor, true, true, true, true);
+  }
 }
 
 void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {

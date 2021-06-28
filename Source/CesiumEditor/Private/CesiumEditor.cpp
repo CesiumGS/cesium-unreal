@@ -352,6 +352,17 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
 }
 
 namespace {
+AActor* GetFirstCurrentLevelActorWithClass(UClass* pActorClass) {
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+  for (TActorIterator<AActor> it(pCurrentWorld); it; ++it) {
+    if (it->GetClass() == pActorClass) {
+      return *it;
+    }
+  }
+  return nullptr;
+}
+
 /**
  * Returns whether the current level of the edited world contains
  * any actor with the given class.
@@ -359,15 +370,8 @@ namespace {
  * @param actorClass The expected class
  * @return Whether such an actor could be found
  */
-bool CurrentLevelContainsActorWithClass(UClass* actorClass) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-  for (TActorIterator<AActor> it(pCurrentWorld); it; ++it) {
-    if (it->GetClass() == actorClass) {
-      return true;
-    }
-  }
-  return false;
+bool CurrentLevelContainsActorWithClass(UClass* pActorClass) {
+  return GetFirstCurrentLevelActorWithClass(pActorClass) != nullptr;
 }
 /**
  * Tries to spawn an actor with the given class, with all
@@ -387,16 +391,16 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 }
 } // namespace
 
-bool FCesiumEditorModule::CurrentLevelContainsCesiumSunSky() {
-  return CurrentLevelContainsActorWithClass(GetCesiumSunSkyBlueprintClass());
+AActor* FCesiumEditorModule::GetCurrentLevelCesiumSunSky() {
+  return GetFirstCurrentLevelActorWithClass(GetCesiumSunSkyBlueprintClass());
+}
+
+AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
+  return GetFirstCurrentLevelActorWithClass(GetDynamicPawnBlueprintClass());
 }
 
 AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
   return SpawnActorWithClass(GetCesiumSunSkyBlueprintClass());
-}
-
-bool FCesiumEditorModule::CurrentLevelContainsDynamicPawn() {
-  return CurrentLevelContainsActorWithClass(GetDynamicPawnBlueprintClass());
 }
 
 AActor* FCesiumEditorModule::SpawnDynamicPawn() {

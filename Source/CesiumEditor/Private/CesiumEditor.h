@@ -44,16 +44,16 @@ public:
       int64_t assetID);
 
   /**
-   * Returns whether the current level of the edited world
-   * contains an actor with the _cesiumSunSkyBlueprintClass
+   * Gets the first CesiumSunSky in the current level if there is one, or
+   * nullptr if there is not.
    */
-  static bool CurrentLevelContainsCesiumSunSky();
+  static AActor* GetCurrentLevelCesiumSunSky();
 
   /**
-   * Returns whether the current level of the edited world
-   * contains an actor with the _dynamicPawnBlueprintClass
+   * Gets the first DynamicPawn in the current level if there is one, or
+   * nullptr if there is not.
    */
-  static bool CurrentLevelContainsDynamicPawn();
+  static AActor* GetCurrentLevelDynamicPawn();
 
   /**
    * Spawns a new actor with the _cesiumSunSkyBlueprintClass
