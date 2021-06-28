@@ -192,7 +192,7 @@ public:
       meta = (UIMin = 0, UIMax = 23, ClampMin = 0, ClampMax = 23))
   int32 DSTSwitchHour = 2.f;
 
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Event Tick")
   float HashVal;
 
 public:
@@ -204,14 +204,14 @@ public:
   void UpdateSun();
   void UpdateSun_Implementation();
 
-  UFUNCTION(BlueprintCallable, BlueprintPure)
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = Sun)
   static void GetHMSFromSolarTime(
       float InSolarTime,
       int32& Hour,
       int32& Minute,
       int32& Second);
 
-  UFUNCTION(BlueprintCallable, BlueprintPure)
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = Sun)
   bool IsDST(
       bool DSTEnable,
       int32 InDSTStartMonth,
@@ -225,7 +225,7 @@ protected:
    * Callback after georeference origin (e.g. lat/long position) has been
    * updated.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = Cesium)
   void HandleGeoreferenceUpdated();
 
   /**
@@ -236,6 +236,6 @@ protected:
    * @param Sky A pointer to the SkyAtmosphereComponent
    * @param Radius The radius in kilometers.
    */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = Cesium)
   void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, float Radius);
 };
