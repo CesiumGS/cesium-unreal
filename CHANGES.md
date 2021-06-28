@@ -6,6 +6,8 @@
 
 ##### Additions :tada:
 
+- The main Cesium panel now has buttons to easily add a `CesiumSunSky` or a `DynamicPawn`.
+
 ##### Fixes :wrench:
 
 - Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
