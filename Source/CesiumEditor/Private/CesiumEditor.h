@@ -78,14 +78,14 @@ private:
   static FCesiumEditorModule* _pModule;
 
   /**
-   * The class of the "Cesium Sun Sky" bluepring, initialized
-   * in StartupModule, and used for spawning the CesiumSunSky
+   * Gets the class of the "Cesium Sun Sky" blueprint, loading it if necessary.
+   * Used for spawning the CesiumSunSky.
    */
-  static UClass* _cesiumSunSkyBlueprintClass;
+  static UClass* GetCesiumSunSkyBlueprintClass();
 
   /**
-   * The class of the DynamicPawn blueprint, initialized
-   * in StartupModule, and used for spawning the DynamicPawn
+   * Gets the class of the "Dynamic Pawn" blueprint, loading it if necessary.
+   * Used for spawning the DynamicPawn.
    */
-  static UClass* _dynamicPawnBlueprintClass;
+  static UClass* GetDynamicPawnBlueprintClass();
 };

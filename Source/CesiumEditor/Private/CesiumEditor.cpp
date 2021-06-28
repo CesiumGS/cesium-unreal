@@ -42,9 +42,6 @@ FString FCesiumEditorModule::InContent(
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::StyleSet = nullptr;
 FCesiumEditorModule* FCesiumEditorModule::_pModule = nullptr;
 
-UClass* FCesiumEditorModule::_cesiumSunSkyBlueprintClass = nullptr;
-UClass* FCesiumEditorModule::_dynamicPawnBlueprintClass = nullptr;
-
 namespace {
 /**
  * Register an icon in the StyleSet, using the given property
@@ -240,25 +237,6 @@ void FCesiumEditorModule::StartupModule() {
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
         pToolbarExtender);
   }
-
-  _cesiumSunSkyBlueprintClass = LoadClass<AActor>(
-      nullptr,
-      TEXT("/CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
-  if (!_cesiumSunSkyBlueprintClass) {
-    UE_LOG(
-        LogCesiumEditor,
-        Warning,
-        TEXT("Could not load /CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
-  }
-  _dynamicPawnBlueprintClass = LoadClass<AActor>(
-      nullptr,
-      TEXT("/CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
-  if (!_dynamicPawnBlueprintClass) {
-    UE_LOG(
-        LogCesiumEditor,
-        Warning,
-        TEXT("Could not load /CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
-  }
 }
 
 void FCesiumEditorModule::ShutdownModule() {
@@ -410,17 +388,53 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 } // namespace
 
 bool FCesiumEditorModule::CurrentLevelContainsCesiumSunSky() {
-  return CurrentLevelContainsActorWithClass(_cesiumSunSkyBlueprintClass);
+  return CurrentLevelContainsActorWithClass(GetCesiumSunSkyBlueprintClass());
 }
 
 AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
-  return SpawnActorWithClass(_cesiumSunSkyBlueprintClass);
+  return SpawnActorWithClass(GetCesiumSunSkyBlueprintClass());
 }
 
 bool FCesiumEditorModule::CurrentLevelContainsDynamicPawn() {
-  return CurrentLevelContainsActorWithClass(_dynamicPawnBlueprintClass);
+  return CurrentLevelContainsActorWithClass(GetDynamicPawnBlueprintClass());
 }
 
 AActor* FCesiumEditorModule::SpawnDynamicPawn() {
-  return SpawnActorWithClass(_dynamicPawnBlueprintClass);
+  return SpawnActorWithClass(GetDynamicPawnBlueprintClass());
+}
+
+UClass* FCesiumEditorModule::GetCesiumSunSkyBlueprintClass() {
+  static UClass* pResult = nullptr;
+
+  if (!pResult) {
+    pResult = LoadClass<AActor>(
+        nullptr,
+        TEXT("/CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
+    if (!pResult) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT("Could not load /CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
+    }
+  }
+
+  return pResult;
+}
+
+UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {
+  static UClass* pResult = nullptr;
+
+  if (!pResult) {
+    pResult = LoadClass<AActor>(
+        nullptr,
+        TEXT("/CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+    if (!pResult) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT("Could not load /CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+    }
+  }
+
+  return pResult;
 }
