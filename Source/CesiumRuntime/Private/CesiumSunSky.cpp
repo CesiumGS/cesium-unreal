@@ -4,15 +4,13 @@
 #include "CesiumRuntime.h"
 
 // Sets default values
-ACesiumSunSky::ACesiumSunSky() {
-  PrimaryActorTick.bCanEverTick = false;
-}
+ACesiumSunSky::ACesiumSunSky() { PrimaryActorTick.bCanEverTick = false; }
 
 #if WITH_EDITOR
 void ACesiumSunSky::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeProperty(PropertyChangedEvent);
-  
+
   if (!PropertyChangedEvent.Property) {
     return;
   }
@@ -47,7 +45,6 @@ void ACesiumSunSky::PostInitProperties() {
         &ACesiumSunSky::HandleGeoreferenceUpdated);
     this->HandleGeoreferenceUpdated();
   }
-
 }
 
 void ACesiumSunSky::SetSkyAtmosphereGroundRadius(

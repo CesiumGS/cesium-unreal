@@ -106,7 +106,6 @@ void ACesium3DTileset::PostInitProperties() {
   }
 
   AddFocusViewportDelegate();
-
 }
 
 void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
@@ -174,7 +173,7 @@ void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
 void ACesium3DTileset::PlayMovieSequencer() {
   // TODO GEOREF_REFACTORING: This should proably use the
   // actual Georeference, and not obtain a new one, to make
-  // sure that the behavior in the sequencer is the 
+  // sure that the behavior in the sequencer is the
   // same as in the non-sequencer run
   ACesiumGeoreference* cesiumGeoreference =
       ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -195,7 +194,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
 void ACesium3DTileset::StopMovieSequencer() {
   // TODO GEOREF_REFACTORING: This should proably use the
   // actual Georeference, and not obtain a new one, to make
-  // sure that the behavior in the sequencer is the 
+  // sure that the behavior in the sequencer is the
   // same as in the non-sequencer run
   ACesiumGeoreference* cesiumGeoreference =
       ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -1136,7 +1135,7 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
 void ACesium3DTileset::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeProperty(PropertyChangedEvent);
-  
+
   if (!PropertyChangedEvent.Property) {
     return;
   }
@@ -1152,9 +1151,11 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, OpacityMaskMaterial)) {
     MarkTilesetDirty();
-  } else if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
+  } else if (
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
     if (IsValid(this->Georeference)) {
-      UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+      UCesium3DTilesetRoot* pRoot =
+          Cast<UCesium3DTilesetRoot>(this->RootComponent);
       if (pRoot) {
         this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
             pRoot,

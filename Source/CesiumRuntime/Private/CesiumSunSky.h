@@ -20,7 +20,6 @@ protected:
    */
   void PostInitProperties() override;
 
-
 public:
   // Sets default values for this actor's properties
   ACesiumSunSky();
