@@ -197,9 +197,11 @@ void UCesiumGeoreferenceComponent::OnRegister() {
     return;
   }
   USceneComponent* ownerRoot = owner->GetRootComponent();
-  ownerRoot->TransformUpdated.AddUObject(
-      this,
-      &UCesiumGeoreferenceComponent::HandleActorTransformUpdated);
+  if(ownerRoot) {
+    ownerRoot->TransformUpdated.AddUObject(
+    this,
+    &UCesiumGeoreferenceComponent::HandleActorTransformUpdated);
+  }
 }
 
 void UCesiumGeoreferenceComponent::OnUnregister() {
@@ -220,7 +222,9 @@ void UCesiumGeoreferenceComponent::OnUnregister() {
     return;
   }
   USceneComponent* ownerRoot = owner->GetRootComponent();
-  ownerRoot->TransformUpdated.RemoveAll(this);
+  if(ownerRoot) {
+    ownerRoot->TransformUpdated.RemoveAll(this);    
+  }
 }
 
 void UCesiumGeoreferenceComponent::HandleActorTransformUpdated(
