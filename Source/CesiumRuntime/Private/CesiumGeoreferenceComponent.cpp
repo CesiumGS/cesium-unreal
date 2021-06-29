@@ -236,6 +236,17 @@ void UCesiumGeoreferenceComponent::HandleActorTransformUpdated(
       Verbose,
       TEXT("Called HandleActorTransformUpdated on component %s"),
       *this->GetName());
+
+  // When this notification was caused by the SetWorldTransform
+  // call in _updateActor transform, ignore it
+  if (_updatingActorTransform) {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT(
+            "Ignoring HandleActorTransformUpdated, because it was triggered internally"));
+    return;
+  }
   _updateFromActor();
 }
 
@@ -247,9 +258,12 @@ void UCesiumGeoreferenceComponent::_updateFromActor() {
         TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
     return;
   }
+  // Do NOT use TransformUnrealToEcef, because it will assume
+  // that the given position is relative to the world origin
   const glm::dvec3 absoluteLocation = _getAbsoluteLocationFromActor();
-  const glm::dvec3 ecef =
-      this->Georeference->TransformUnrealToEcef(absoluteLocation);
+  const glm::dmat4& unrealToEcef =
+      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
+  const glm::dvec3 ecef = unrealToEcef * glm::dvec4(absoluteLocation, 1.0);
 
   _setECEF(ecef, true);
 }
@@ -316,10 +330,13 @@ void UCesiumGeoreferenceComponent::OnComponentCreated() {
   _initGeoreference();
 
   // When the component is created, initialize its ECEF position with the
-  // position of the actor (but leave the rotation as it is)
+  // position of the actor (but leave the rotation as it is).
+  // Do NOT use TransformUnrealToEcef, because it will assume
+  // that the given position is relative to the world origin
   const glm::dvec3 absoluteLocation = _getAbsoluteLocationFromActor();
-  const glm::dvec3 ecef =
-      this->Georeference->TransformUnrealToEcef(absoluteLocation);
+  const glm::dmat4& unrealToEcef =
+      this->Georeference->GetUnrealWorldToEllipsoidCenteredTransform();
+  const glm::dvec3 ecef = unrealToEcef * glm::dvec4(absoluteLocation, 1.0);
   _setECEF(ecef, false);
 }
 
@@ -360,6 +377,9 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(
       TEXT("Called ApplyWorldOffset on component %s"),
       *this->GetName());
   UActorComponent::ApplyWorldOffset(InOffset, bWorldShift);
+  if (!this->FixTransformOnOriginRebase) {
+    return;
+  }
 
   const UWorld* world = this->GetWorld();
   if (!IsValid(world)) {
@@ -380,30 +400,29 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(
     return;
   }
 
-  // Compute the absolute location based on the ECEF
-  const glm::dvec3 absoluteLocation =
-      this->Georeference->TransformEcefToUnreal(_currentEcef);
-
-  // Apply the offset to compute the new absolute location
+  // Compute the position that the world origin will have
+  // after the rebase, indeed by SUBTRACTING the offset
+  const glm::dvec3 oldWorldOriginLocation =
+      VecMath::createVector3D(world->OriginLocation);
   const glm::dvec3 offset = VecMath::createVector3D(InOffset);
+  const glm::dvec3 newWorldOriginLocation = oldWorldOriginLocation - offset;
 
-  // TODO GEOREF_REFACTORING: Is this really "MINUS offset"?
-  const glm::dvec3 newAbsoluteLocation = absoluteLocation + offset;
+  // Compute the absolute location based on the ECEF
+  // Do NOT use TransformEcefToUnreal, because it will return the
+  // position relative to the current world origin!
+  const glm::dmat4& ecefToUnreal =
+      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+  const glm::dvec3 absoluteLocation =
+      ecefToUnreal * glm::dvec4(_currentEcef, 1.0);
 
-  // Convert the new absolute location back to ECEF, and apply it to this
-  // component
-  const glm::dvec3 newEcef =
-      this->Georeference->TransformUnrealToEcef(newAbsoluteLocation);
-  _setECEF(newEcef, true);
-  /*
-  // TODO GEOREF_REFACTORING Figure out how to handle this...
-  if (this->FixTransformOnOriginRebase)
-  {
-    this->_updateActorTransform();
-  }
-  */
+  // Compute the new (high-precision) relative location from
+  // the absolute location and the new world origin
+  const glm::dvec3 newRelativeLocation =
+      absoluteLocation - newWorldOriginLocation;
+
+  const glm::dmat3 actorRotation = _getRotationFromActor();
+  _updateActorTransform(actorRotation, newRelativeLocation);
 }
-
 #if WITH_EDITOR
 void UCesiumGeoreferenceComponent::PreEditChange(
     FProperty* PropertyThatWillChange) {
@@ -504,9 +523,12 @@ UCesiumGeoreferenceComponent::_computeRelativeLocation(const glm::dvec3& ecef) {
         *this->GetName());
     return glm::dvec3();
   }
-  // Compute the absolute location from the ECEF
-  const glm::dvec3 absoluteLocation =
-      this->Georeference->TransformEcefToUnreal(ecef);
+  // Compute the absolute location from the ECEF.
+  // Do NOT use TransformEcefToUnreal, because it will return the
+  // position relative to the current world origin!
+  const glm::dmat4& ecefToUnreal =
+      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+  const glm::dvec3 absoluteLocation = ecefToUnreal * glm::dvec4(ecef, 1.0);
 
   // Compute the (high-precision) relative location
   // from the absolute location and the world origin
@@ -669,6 +691,15 @@ void UCesiumGeoreferenceComponent::_debugLogState() {
         *this->GetName());
     return;
   }
+  const AActor* const owner = this->GetOwner();
+  if (!IsValid(owner)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGeoreferenceComponent %s does not have a valid owner"),
+        *this->GetName());
+    return;
+  }
   if (!IsValid(this->Georeference)) {
     UE_LOG(
         LogCesium,
@@ -678,17 +709,26 @@ void UCesiumGeoreferenceComponent::_debugLogState() {
         *this->GetName());
     return;
   }
+  const glm::dmat4& ecefToUnreal =
+      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
   const glm::dvec3 absoluteLocation =
-      this->Georeference->TransformEcefToUnreal(_currentEcef);
+      ecefToUnreal * glm::dvec4(_currentEcef, 1.0);
   const glm::dvec3 worldOriginLocation =
       VecMath::createVector3D(world->OriginLocation);
   const glm::dvec3 relativeLocation = absoluteLocation - worldOriginLocation;
 
   const glm::dmat3 actorRotation = _getRotationFromActor();
 
+  const USceneComponent* ownerRoot = owner->GetRootComponent();
+  const FVector& componentLocation = ownerRoot->GetComponentLocation();
+  const glm::dvec3 relativeLocationFromActor =
+      VecMath::createVector3D(componentLocation);
+
   UE_LOG(LogCesium, Verbose, TEXT("State of %s"), *this->GetName());
-  logVector("  worldOriginLocation", worldOriginLocation);
-  logVector("  relativeLocation   ", relativeLocation);
-  logVector("  absoluteLocation   ", (relativeLocation + worldOriginLocation));
+  logVector("  _currentEcef                ", _currentEcef);
+  logVector("  worldOriginLocation         ", worldOriginLocation);
+  logVector("  relativeLocation            ", relativeLocation);
+  logVector("  absoluteLocation            ", absoluteLocation);
+  logVector("  relativeLocationFromActor   ", relativeLocationFromActor);
   logMatrix("  actorRotation", glm::dmat4(actorRotation));
 }
