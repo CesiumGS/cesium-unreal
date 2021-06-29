@@ -609,4 +609,18 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  // This is used as a workaround for cesium-native#186
+  //
+  // The tiles that are no longer supposed to be rendered in the current
+  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // are kept in this list, and hidden in the NEXT frame, because some
+  // internal occlusion culling information from Unreal might prevent
+  // the tiles that are supposed to be rendered instead from appearing
+  // immediately.
+  //
+  // If we find a way to clear the wrong occlusion information in the
+  // Unreal Engine, then this field may be removed, and the
+  // tilesToNoLongerRenderThisFrame may be hidden immediately.
+  std::vector<Cesium3DTiles::Tile*> _tilesToNoLongerRenderNextFrame;
 };

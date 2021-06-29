@@ -142,8 +142,8 @@ void FCesiumEditorModule::StartupModule() {
     StyleSet->Set(
         "Cesium.Logo",
         new IMAGE_BRUSH(
-            "Cesium-for-Unreal-Logo-Micro-BlackV",
-            FVector2D(222.0, 200.0f)));
+            "Cesium_for_Unreal_light_color_vertical-height150",
+            FVector2D(184.0f, 150.0f)));
 
     StyleSet->Set(
         "WelcomeText",
@@ -316,10 +316,11 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
       RF_Public | RF_Transactional);
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
-  pTilesetActor->SetIonAssetID(assetID);
-  pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
-
+  if (assetID != -1) {
+    pTilesetActor->SetIonAssetID(assetID);
+    pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
+        FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
+  }
   return pTilesetActor;
 }
 
@@ -350,4 +351,96 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
   pTilesetActor->AddInstanceComponent(pOverlay);
 
   return pOverlay;
+}
+
+namespace {
+AActor* GetFirstCurrentLevelActorWithClass(UClass* pActorClass) {
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+  for (TActorIterator<AActor> it(pCurrentWorld); it; ++it) {
+    if (it->GetClass() == pActorClass) {
+      return *it;
+    }
+  }
+  return nullptr;
+}
+
+/**
+ * Returns whether the current level of the edited world contains
+ * any actor with the given class.
+ *
+ * @param actorClass The expected class
+ * @return Whether such an actor could be found
+ */
+bool CurrentLevelContainsActorWithClass(UClass* pActorClass) {
+  return GetFirstCurrentLevelActorWithClass(pActorClass) != nullptr;
+}
+/**
+ * Tries to spawn an actor with the given class, with all
+ * default parameters, in the current level of the edited world.
+ *
+ * @param actorClass The class
+ * @return The resulting actor, or `nullptr` if the actor
+ * could not be spawned.
+ */
+AActor* SpawnActorWithClass(UClass* actorClass) {
+  if (!actorClass) {
+    return nullptr;
+  }
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  AActor* pNewActor = pCurrentWorld->SpawnActor<AActor>(actorClass);
+  return pNewActor;
+}
+} // namespace
+
+AActor* FCesiumEditorModule::GetCurrentLevelCesiumSunSky() {
+  return GetFirstCurrentLevelActorWithClass(GetCesiumSunSkyBlueprintClass());
+}
+
+AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
+  return GetFirstCurrentLevelActorWithClass(GetDynamicPawnBlueprintClass());
+}
+
+AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
+  return SpawnActorWithClass(GetCesiumSunSkyBlueprintClass());
+}
+
+AActor* FCesiumEditorModule::SpawnDynamicPawn() {
+  return SpawnActorWithClass(GetDynamicPawnBlueprintClass());
+}
+
+UClass* FCesiumEditorModule::GetCesiumSunSkyBlueprintClass() {
+  static UClass* pResult = nullptr;
+
+  if (!pResult) {
+    pResult = LoadClass<AActor>(
+        nullptr,
+        TEXT("/CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
+    if (!pResult) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT("Could not load /CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
+    }
+  }
+
+  return pResult;
+}
+
+UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {
+  static UClass* pResult = nullptr;
+
+  if (!pResult) {
+    pResult = LoadClass<AActor>(
+        nullptr,
+        TEXT("/CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+    if (!pResult) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT("Could not load /CesiumForUnreal/DynamicPawn.DynamicPawn_C"));
+    }
+  }
+
+  return pResult;
 }
