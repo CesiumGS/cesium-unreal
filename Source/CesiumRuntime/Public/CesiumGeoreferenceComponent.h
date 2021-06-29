@@ -195,7 +195,7 @@ protected:
    * Called when a component is created (not loaded).
    * This can happen in the editor or during gameplay.
    *
-   * This is overrideen for initializing the Georeference by calling
+   * This is overriden for initializing the Georeference by calling
    * _initGeoreference. This indeed seems to be called only exactly
    * once, when the component is created in the editor.
    */
@@ -205,7 +205,7 @@ protected:
    * Do any object-specific cleanup required immediately after
    * loading an object.
    *
-   * This is overrideen for initializing the Georeference by calling
+   * This is overriden for initializing the Georeference by calling
    * _initGeoreference. This indeed seems to  be called only exactly
    * once, when the component is loaded as part of a level in the editor.
    */

@@ -318,6 +318,7 @@ void UCesiumGeoreferenceComponent::OnComponentCreated() {
       this->Georeference->TransformUnrealToEcef(absoluteLocation);
   _setECEF(ecef, false);
 }
+
 void UCesiumGeoreferenceComponent::PostLoad() {
   UE_LOG(
       LogCesium,
