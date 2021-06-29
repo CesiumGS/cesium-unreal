@@ -36,6 +36,16 @@ public:
   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Components)
   USkyAtmosphereComponent* SkyAtmosphereComponent;
 
+
+  /**
+   * A switch to toggle between desktop and mobile rendering code paths.
+   * This will be automatically set to true when deployed on mobile.
+   * It can also be manually toggled for development testing (requires level
+   * reload to see changes).
+   */
+  UPROPERTY(EditAnywhere, Category = Mobile)
+  bool bMobileRendering;
+
   /**
    * Mobile platforms currently do not support the SkyAtmosphereComponent.
    * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
@@ -46,8 +56,11 @@ public:
   /**
    * Reference to BP_Sky_Sphere or similar actor (mobile only)
    */
-  UPROPERTY(BlueprintReadWrite, Category = Mobile)
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
   AActor* SkySphereActor;
+
+  UPROPERTY(EditAnywhere, Category = Mobile)
+  float MobileDirectionalLightIntensity = 6.f;
 
   /**
    * Hold a reference to a georeference for height checks.
@@ -80,32 +93,32 @@ public:
   ADirectionalLight* LevelDirectionalLight;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = Location,
-      meta =
-          (UIMin = -89.99, UIMax = 89.99, ClampMin = -89.99, ClampMax = 89.99))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = Location,
+    meta =
+    (UIMin = -89.99, UIMax = 89.99, ClampMin = -89.99, ClampMax = 89.99))
   float Latitude = 45.f;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = Location,
-      meta = (UIMin = -180, UIMax = 180, ClampMin = -180, ClampMax = 180))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = Location,
+    meta = (UIMin = -180, UIMax = 180, ClampMin = -180, ClampMax = 180))
   float Longitude = -73.f;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = Location,
-      meta = (UIMin = -12, UIMax = 14, ClampMin = -12, ClampMax = 14))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = Location,
+    meta = (UIMin = -12, UIMax = 14, ClampMin = -12, ClampMax = 14))
   float TimeZone = -5.f;
 
   UPROPERTY(
-      EditDefaultsOnly,
-      BlueprintReadWrite,
-      Category = Location,
-      meta = (UIMin = -360, UIMax = 360, ClampMin = -360, ClampMax = 360))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = Location,
+    meta = (UIMin = -360, UIMax = 360, ClampMin = -360, ClampMax = 360))
   float NorthOffset = -90.f;
 
   /** Sun elevation */
@@ -121,31 +134,31 @@ public:
   float Azimuth = 0.f;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = -4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = -4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
   float SolarTime = 13.f;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
   int32 Day = 21;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
   int32 Month = 9;
 
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1800, UIMax = 2200, ClampMin = 0, ClampMax = 4000))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1800, UIMax = 2200, ClampMin = 0, ClampMax = 4000))
   int32 Year = 2019;
 
   /** Enables Daylight Saving Time (DST) */
@@ -154,42 +167,42 @@ public:
 
   /** Set the Date at which DST starts in the current year */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
   int32 DSTStartMonth = 3;
 
   /** Set the Date at which DST starts in the current year */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
   int32 DSTStartDay = 10;
 
   /** Set the Date at which DST ends in the current year */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
   int32 DSTEndMonth = 11;
 
   /** Set the Date at which DST ends in the current year */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
   int32 DSTEndDay = 3;
 
   /** Hour of the DST Switch for both beginning and end */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Date and Time",
-      meta = (UIMin = 0, UIMax = 23, ClampMin = 0, ClampMax = 23))
+    EditAnywhere,
+    BlueprintReadWrite,
+    Category = "Date and Time",
+    meta = (UIMin = 0, UIMax = 23, ClampMin = 0, ClampMax = 23))
   int32 DSTSwitchHour = 2.f;
 
   UPROPERTY(BlueprintReadWrite, Category = "Event Tick")
@@ -197,10 +210,10 @@ public:
 
 public:
   UFUNCTION(
-      CallInEditor,
-      BlueprintCallable,
-      BlueprintNativeEvent,
-      Category = Sun)
+    CallInEditor,
+    BlueprintCallable,
+    BlueprintNativeEvent,
+    Category = Sun)
   void UpdateSun();
   void UpdateSun_Implementation();
 
@@ -220,6 +233,10 @@ public:
       int32 InDSTEndDay,
       int32 InDSTSwitchHour) const;
 
+  // Begin AActor Interface
+  virtual void OnConstruction(const FTransform& Transform) override;
+  // End AActor Interface
+
 protected:
   /**
    * Callback after georeference origin (e.g. lat/long position) has been
@@ -238,4 +255,28 @@ protected:
    */
   UFUNCTION(BlueprintCallable, Category = Cesium)
   void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, float Radius);
+
+  // Begin Actor Interface
+#if WITH_EDITOR
+  virtual void PostEditChangeProperty(
+      FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+  virtual void PostInitProperties() override;
+  virtual void PostInitializeComponents() override;
+  // End Actor Interface
+
+
+  UFUNCTION(BlueprintCallable, Category = Mobile)
+  void UpdateSkySphere();
+
+
+private:
+  UPROPERTY()
+  bool bSpawnMobileSkySphere;
+
+  UFUNCTION(Category = Mobile)
+  void SpawnSkySphere();
+
+  UFUNCTION(Category = Mobile)
+  void SetSkyAtmosphereVisibility(bool bVisible);
 };

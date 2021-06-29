@@ -14,25 +14,15 @@ ACesiumSunSky::ACesiumSunSky() {
   CompassMesh =
       CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CompassMesh"));
   CompassMesh->SetupAttachment(Scene);
-  ConstructorHelpers::FObjectFinder<UStaticMesh> CompassFinder(
+  ConstructorHelpers::FObjectFinder<UStaticMesh> compassFinder(
       TEXT("Class'/SunPosition/Editor/SM_Compass'"));
-  if (CompassFinder.Succeeded()) {
-    CompassMesh->SetStaticMesh(CompassFinder.Object);
+  if (compassFinder.Succeeded()) {
+    CompassMesh->SetStaticMesh(compassFinder.Object);
   }
   CompassMesh->SetCollisionProfileName(TEXT("NoCollision"));
   CompassMesh->CastShadow = false;
   CompassMesh->bHiddenInGame = true;
   CompassMesh->bIsEditorOnly = true;
-
-  SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
-  SkyLight->SetupAttachment(Scene);
-  SkyLight->SetRelativeLocation(FVector(0, 0, 150));
-  SkyLight->SetMobility(EComponentMobility::Movable);
-  SkyLight->bRealTimeCapture = true;
-  SkyLight->bLowerHemisphereIsBlack = false;
-  SkyLight->bTransmission = true;
-  SkyLight->bCastRaytracedShadow = true;
-  SkyLight->SamplesPerPixel = 2;
 
   DirectionalLight = CreateDefaultSubobject<UDirectionalLightComponent>(
       TEXT("DirectionalLight"));
@@ -44,17 +34,55 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
 
-#if PLATFORM_ANDROID
-  if (SkySphereClass) {
-    SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
+  UE_LOG(LogTemp, Warning, TEXT("CesiumSunSky constructor called"));
+
+  if (!SkySphereClass) {
+    ConstructorHelpers::FObjectFinder<UBlueprint> skySphereFinder(
+        TEXT("Blueprint'/CesiumForUnreal/MobileSkySphere.MobileSkySphere'"));
+    if (skySphereFinder.Succeeded()) {
+      SkySphereClass = skySphereFinder.Object->GeneratedClass;
+      UE_LOG(LogTemp, Warning, TEXT("Found SkySphere class"));
+    }
   }
-#else
-  SkyAtmosphereComponent =
-      CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
-  SkyAtmosphereComponent->SetupAttachment(Scene);
-  SkyAtmosphereComponent->TransformMode =
-      ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
+
+  // On desktop development machines, bMobileRendering can be set to true
+  // from the editor, but that custom setting cannot be accessed from the C++
+  // constructor. In that case, we do special handling later on to enable
+  // mobile rendering features.
+#if PLATFORM_ANDROID || PLATFORM_IOS
+  bMobileRendering = true;
 #endif
+
+  UE_LOG(
+      LogTemp,
+      Warning,
+      TEXT("Mobile rendering: %s"),
+      bMobileRendering? TEXT("true") : TEXT("false"));
+
+  // Handle blueprint settings for the mobile-only components later on,
+  // as they are not loaded in the C++ constructor.
+
+  if (bMobileRendering) {
+    if (!SkySphereActor) {
+      bSpawnMobileSkySphere = true;
+    }
+  } else {
+    SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
+    SkyLight->SetupAttachment(Scene);
+    SkyLight->SetRelativeLocation(FVector(0, 0, 150));
+    SkyLight->SetMobility(EComponentMobility::Movable);
+    SkyLight->bRealTimeCapture = true;
+    SkyLight->bLowerHemisphereIsBlack = false;
+    SkyLight->bTransmission = true;
+    SkyLight->bCastRaytracedShadow = true;
+    SkyLight->SamplesPerPixel = 2;
+
+    SkyAtmosphereComponent =
+        CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
+    SkyAtmosphereComponent->SetupAttachment(Scene);
+    SkyAtmosphereComponent->TransformMode =
+        ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
+  }
 
   if (!Georeference) {
     Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -64,8 +92,110 @@ ACesiumSunSky::ACesiumSunSky() {
     Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &ACesiumSunSky::HandleGeoreferenceUpdated);
+    HandleGeoreferenceUpdated();
+  }
+
+}
+
+void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
+  Super::OnConstruction(Transform);
+  UE_LOG(
+      LogTemp,
+      Warning,
+      TEXT("Spawn new sky sphere: %s"),
+      bSpawnMobileSkySphere ? TEXT("true") : TEXT("false"));
+  if (bMobileRendering && bSpawnMobileSkySphere && SkySphereClass) {
+    SpawnSkySphere();
+    UpdateSkySphere();
+  }
+  SetSkyAtmosphereVisibility(!bMobileRendering);
+}
+
+void ACesiumSunSky::PostInitProperties() {
+  Super::PostInitProperties();
+  UE_LOG(LogTemp, Warning, TEXT("PostInitProperties called"));
+  if (bMobileRendering) {
+    DirectionalLight->Intensity = MobileDirectionalLightIntensity;
+  }
+  // SetSkyAtmosphereVisibility(!bMobileRendering);
+}
+
+void ACesiumSunSky::PostInitializeComponents() {
+  Super::PostInitializeComponents();
+  UE_LOG(LogTemp, Warning, TEXT("PostInitializeComponents called"));
+  // SetSkyAtmosphereVisibility(!bMobileRendering);
+}
+
+#if WITH_EDITOR
+void ACesiumSunSky::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  const FName PropName = (PropertyChangedEvent.Property)
+                           ? PropertyChangedEvent.Property->GetFName()
+                           : NAME_None;
+  if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, SkySphereClass)) {
+    bSpawnMobileSkySphere = true;
+    if (SkySphereActor) {
+      SkySphereActor->Destroy();
+    }
+  }
+  if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, bMobileRendering)) {
+    bSpawnMobileSkySphere = bMobileRendering;
+    SetSkyAtmosphereVisibility(!bMobileRendering);
+    if (!bMobileRendering && SkySphereActor) {
+      SkySphereActor->Destroy();
+    }
+  }
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+#endif
+
+void ACesiumSunSky::SpawnSkySphere() {
+  if (!bMobileRendering || !IsValid(GetWorld())) {
+    return;
+  }
+  SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
+  bSpawnMobileSkySphere = false;
+  UE_LOG(LogTemp, Warning, TEXT("Spawned SkySphere actor"));
+
+  // Set Directional Light Component in Sky Sphere actor
+  for (TFieldIterator<FProperty> PropertyIterator(SkySphereClass);
+       PropertyIterator;
+       ++PropertyIterator) {
+    FProperty* prop = *PropertyIterator;
+    FName const propName = prop->GetFName();
+    if (propName == TEXT("DirectionalLightComponent")) {
+      FObjectProperty* objectProp = CastField<FObjectProperty>(prop);
+      if (objectProp) {
+        objectProp->SetPropertyValue_InContainer(
+            this->SkySphereActor,
+            DirectionalLight);
+      }
+    }
   }
 }
+
+void ACesiumSunSky::SetSkyAtmosphereVisibility(bool bVisible) {
+  UE_LOG(
+      LogTemp,
+      Warning,
+      TEXT("SkyAtmosphere visible: %s"),
+      bVisible ? TEXT("true") : TEXT("false"));
+  SkyLight->SetVisibility(bVisible);
+  SkyAtmosphereComponent->SetVisibility(bVisible);
+}
+
+
+void ACesiumSunSky::UpdateSkySphere() {
+  if (!bMobileRendering || !SkySphereActor) {
+    return;
+  }
+  UFunction* UpdateSkySphere = this->SkySphereActor->FindFunction(
+      TEXT("RefreshMaterial"));
+  if (UpdateSkySphere) {
+    this->SkySphereActor->ProcessEvent(UpdateSkySphere, NULL);
+  }
+}
+
 
 void ACesiumSunSky::UpdateSun_Implementation() {
   // No C++ base implementation for now
@@ -113,7 +243,8 @@ bool ACesiumSunSky::IsDST(
   return current >= dstStart && current <= dstEnd;
 }
 
-/** For android, set sky sphere to georeference location */
+
+/** For mobile, set sky sphere to georeference location */
 void ACesiumSunSky::HandleGeoreferenceUpdated() {
   if (!Georeference) {
     return;
@@ -122,12 +253,12 @@ void ACesiumSunSky::HandleGeoreferenceUpdated() {
       LogCesium,
       Verbose,
       TEXT("HandleGeoreferenceUpdated entered on CesiumSunSky"));
-#if PLATFORM_ANDROID
-  this->SetActorLocation(FVector::ZeroVector);
-#else
-  this->SetActorLocation(
-      Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
-#endif
+  if (bMobileRendering) {
+    this->SetActorTransform(FTransform::Identity);
+  } else {
+    this->SetActorLocation(
+        Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
+  }
   switch (Georeference->OriginPlacement) {
   case EOriginPlacement::CartographicOrigin: {
     FVector llh =
