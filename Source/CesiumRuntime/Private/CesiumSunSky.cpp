@@ -34,14 +34,11 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
 
-  UE_LOG(LogTemp, Warning, TEXT("CesiumSunSky constructor called"));
-
   if (!SkySphereClass) {
     ConstructorHelpers::FObjectFinder<UBlueprint> skySphereFinder(
         TEXT("Blueprint'/CesiumForUnreal/MobileSkySphere.MobileSkySphere'"));
     if (skySphereFinder.Succeeded()) {
       SkySphereClass = skySphereFinder.Object->GeneratedClass;
-      UE_LOG(LogTemp, Warning, TEXT("Found SkySphere class"));
     }
   }
 
@@ -54,17 +51,17 @@ ACesiumSunSky::ACesiumSunSky() {
 #endif
 
   UE_LOG(
-      LogTemp,
-      Warning,
-      TEXT("Mobile rendering: %s"),
-      bMobileRendering? TEXT("true") : TEXT("false"));
+      LogCesium,
+      Display,
+      TEXT("Enable mobile rendering: %s"),
+      EnableMobileRendering ? TEXT("true") : TEXT("false"));
 
   // Handle blueprint settings for the mobile-only components later on,
   // as they are not loaded in the C++ constructor.
 
-  if (bMobileRendering) {
+  if (EnableMobileRendering) {
     if (!SkySphereActor) {
-      bSpawnMobileSkySphere = true;
+      _wantsSpawnMobileSkySphere = true;
     }
   } else {
     SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
@@ -99,62 +96,53 @@ ACesiumSunSky::ACesiumSunSky() {
 void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
   UE_LOG(
-      LogTemp,
-      Warning,
+      LogCesium,
+      Verbose,
       TEXT("Spawn new sky sphere: %s"),
-      bSpawnMobileSkySphere ? TEXT("true") : TEXT("false"));
-  if (bMobileRendering && bSpawnMobileSkySphere && SkySphereClass) {
-    SpawnSkySphere();
-    UpdateSkySphere();
-  }
-  SetSkyAtmosphereVisibility(!bMobileRendering);
-}
-
-void ACesiumSunSky::PostInitProperties() {
-  Super::PostInitProperties();
-  UE_LOG(LogTemp, Warning, TEXT("PostInitProperties called"));
-  if (bMobileRendering) {
+      _wantsSpawnMobileSkySphere ? TEXT("true") : TEXT("false"));
+  if (EnableMobileRendering) {
     DirectionalLight->Intensity = MobileDirectionalLightIntensity;
+    if (_wantsSpawnMobileSkySphere && SkySphereClass) {
+      SpawnSkySphere();
+      UpdateSkySphere();
+    }
   }
-  // SetSkyAtmosphereVisibility(!bMobileRendering);
-}
-
-void ACesiumSunSky::PostInitializeComponents() {
-  Super::PostInitializeComponents();
-  UE_LOG(LogTemp, Warning, TEXT("PostInitializeComponents called"));
-  // SetSkyAtmosphereVisibility(!bMobileRendering);
+  SetSkyAtmosphereVisibility(!EnableMobileRendering);
 }
 
 #if WITH_EDITOR
 void ACesiumSunSky::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
+
   const FName PropName = (PropertyChangedEvent.Property)
-                           ? PropertyChangedEvent.Property->GetFName()
-                           : NAME_None;
+                             ? PropertyChangedEvent.Property->GetFName()
+                             : NAME_None;
   if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, SkySphereClass)) {
-    bSpawnMobileSkySphere = true;
+    _wantsSpawnMobileSkySphere = true;
     if (SkySphereActor) {
       SkySphereActor->Destroy();
     }
   }
-  if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, bMobileRendering)) {
-    bSpawnMobileSkySphere = bMobileRendering;
-    SetSkyAtmosphereVisibility(!bMobileRendering);
-    if (!bMobileRendering && SkySphereActor) {
+  if (PropName ==
+      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, EnableMobileRendering)) {
+    _wantsSpawnMobileSkySphere = EnableMobileRendering;
+    SetSkyAtmosphereVisibility(!EnableMobileRendering);
+    if (!EnableMobileRendering && SkySphereActor) {
       SkySphereActor->Destroy();
     }
   }
+  // Place superclass method after variables are updated, so that a new sky
+  // sphere can be spawned if needed
   Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 #endif
 
 void ACesiumSunSky::SpawnSkySphere() {
-  if (!bMobileRendering || !IsValid(GetWorld())) {
+  if (!EnableMobileRendering || !IsValid(GetWorld())) {
     return;
   }
   SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
-  bSpawnMobileSkySphere = false;
-  UE_LOG(LogTemp, Warning, TEXT("Spawned SkySphere actor"));
+  _wantsSpawnMobileSkySphere = false;
 
   // Set Directional Light Component in Sky Sphere actor
   for (TFieldIterator<FProperty> PropertyIterator(SkySphereClass);
@@ -174,11 +162,6 @@ void ACesiumSunSky::SpawnSkySphere() {
 }
 
 void ACesiumSunSky::SetSkyAtmosphereVisibility(bool bVisible) {
-  UE_LOG(
-      LogTemp,
-      Warning,
-      TEXT("SkyAtmosphere visible: %s"),
-      bVisible ? TEXT("true") : TEXT("false"));
   if (IsValid(SkyLight)) {
     SkyLight->SetVisibility(bVisible);
   }
@@ -188,11 +171,11 @@ void ACesiumSunSky::SetSkyAtmosphereVisibility(bool bVisible) {
 }
 
 void ACesiumSunSky::UpdateSkySphere() {
-  if (!bMobileRendering || !SkySphereActor) {
+  if (!EnableMobileRendering || !SkySphereActor) {
     return;
   }
-  UFunction* UpdateSkySphere = this->SkySphereActor->FindFunction(
-      TEXT("RefreshMaterial"));
+  UFunction* UpdateSkySphere =
+      this->SkySphereActor->FindFunction(TEXT("RefreshMaterial"));
   if (UpdateSkySphere) {
     this->SkySphereActor->ProcessEvent(UpdateSkySphere, NULL);
   }
@@ -244,7 +227,6 @@ bool ACesiumSunSky::IsDST(
   return current >= dstStart && current <= dstEnd;
 }
 
-/** For mobile, set sky sphere to georeference location */
 void ACesiumSunSky::HandleGeoreferenceUpdated() {
   if (!Georeference) {
     return;
@@ -252,8 +234,9 @@ void ACesiumSunSky::HandleGeoreferenceUpdated() {
   UE_LOG(
       LogCesium,
       Verbose,
-      TEXT("HandleGeoreferenceUpdated entered on CesiumSunSky"));
-  if (bMobileRendering) {
+      TEXT("HandleGeoreferenceUpdated called on CesiumSunSky"));
+  // For mobile, simply set sky sphere to world origin location
+  if (EnableMobileRendering) {
     this->SetActorTransform(FTransform::Identity);
   } else {
     this->SetActorLocation(
