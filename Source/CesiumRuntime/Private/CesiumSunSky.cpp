@@ -94,7 +94,6 @@ ACesiumSunSky::ACesiumSunSky() {
         &ACesiumSunSky::HandleGeoreferenceUpdated);
     HandleGeoreferenceUpdated();
   }
-
 }
 
 void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
@@ -180,10 +179,13 @@ void ACesiumSunSky::SetSkyAtmosphereVisibility(bool bVisible) {
       Warning,
       TEXT("SkyAtmosphere visible: %s"),
       bVisible ? TEXT("true") : TEXT("false"));
-  SkyLight->SetVisibility(bVisible);
-  SkyAtmosphereComponent->SetVisibility(bVisible);
+  if (IsValid(SkyLight)) {
+    SkyLight->SetVisibility(bVisible);
+  }
+  if (IsValid(SkyAtmosphereComponent)) {
+    SkyAtmosphereComponent->SetVisibility(bVisible);
+  }
 }
-
 
 void ACesiumSunSky::UpdateSkySphere() {
   if (!bMobileRendering || !SkySphereActor) {
@@ -195,7 +197,6 @@ void ACesiumSunSky::UpdateSkySphere() {
     this->SkySphereActor->ProcessEvent(UpdateSkySphere, NULL);
   }
 }
-
 
 void ACesiumSunSky::UpdateSun_Implementation() {
   // No C++ base implementation for now
@@ -242,7 +243,6 @@ bool ACesiumSunSky::IsDST(
       FDateTime(Year, InDSTEndMonth, InDSTEndDay, InDSTSwitchHour);
   return current >= dstStart && current <= dstEnd;
 }
-
 
 /** For mobile, set sky sphere to georeference location */
 void ACesiumSunSky::HandleGeoreferenceUpdated() {
