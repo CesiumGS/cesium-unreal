@@ -303,6 +303,12 @@ private:
   glm::dvec3 _computeRelativeLocation(const glm::dvec3& ecef);
 
   /**
+   * Computes the normal of the ellipsoid, for the given ECEF position,
+   * and returns it in the absolute unreal coordinate system
+   */
+  glm::dvec3 _computeEllipsoidNormalUnreal(const glm::dvec3& ecef);
+
+  /**
    * Updates the transform of the owning actor.
    *
    * This is intended to be called when the underlying Georeference was

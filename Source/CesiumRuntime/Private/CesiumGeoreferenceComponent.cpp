@@ -92,21 +92,14 @@ void UCesiumGeoreferenceComponent::SnapLocalUpToEllipsoidNormal() {
 
   // Compute the local up axis of the actor (the +Z axis)
   const glm::dmat3 currentActorRotation = _getRotationFromActor();
-  const glm::dvec3 actorUpUnreal = currentActorRotation[2];
+  const glm::dvec3 actorUpUnreal = glm::normalize(currentActorRotation[2]);
 
-  // Compute the surface normal of the ellipsoid model of the globe at
-  // the ECEF location of the actor, and convert it into unreal coordinates
-  const glm::dvec3 ellipsoidNormalEcef =
-      this->Georeference->ComputeGeodeticSurfaceNormal(_currentEcef);
-  const glm::dmat4& ecefToUnreal =
-      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+  // Compute the surface normal of the ellipsoid
   const glm::dvec3 ellipsoidNormalUnreal =
-      ecefToUnreal * glm::dvec4(ellipsoidNormalEcef, 0.0);
+      _computeEllipsoidNormalUnreal(_currentEcef);
 
   // The shortest rotation to align local up with the ellipsoid normal
-  const glm::dquat R = glm::rotation(
-      glm::normalize(actorUpUnreal),
-      glm::normalize(ellipsoidNormalUnreal));
+  const glm::dquat R = glm::rotation(actorUpUnreal, ellipsoidNormalUnreal);
   const glm::dmat3 alignmentRotation = glm::mat3_cast(R);
 
   // Compute the new actor rotation
@@ -539,6 +532,27 @@ UCesiumGeoreferenceComponent::_computeRelativeLocation(const glm::dvec3& ecef) {
   return relativeLocation;
 }
 
+glm::dvec3 UCesiumGeoreferenceComponent::_computeEllipsoidNormalUnreal(
+    const glm::dvec3& ecef) {
+
+  if (!IsValid(this->Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumGeoreferenceComponent %s does not have a valid Georeference"),
+        *this->GetName());
+    return glm::dvec3();
+  }
+  const glm::dvec3 ellipsoidNormalEcef =
+      this->Georeference->ComputeGeodeticSurfaceNormal(ecef);
+  const glm::dmat4& ecefToUnreal =
+      this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+  const glm::dvec3 ellipsoidNormalUnreal =
+      glm::dvec3(ecefToUnreal * glm::dvec4(ellipsoidNormalEcef, 0.0));
+  return glm::normalize(ellipsoidNormalUnreal);
+}
+
 void UCesiumGeoreferenceComponent::_updateActorTransform() {
   const UWorld* const world = this->GetWorld();
   if (!IsValid(world)) {
@@ -634,22 +648,21 @@ void UCesiumGeoreferenceComponent::_setECEF(
   } else {
 
     // When maintaining the relative orientation, compute
-    // - the Unreal-to-ENU transform at the old position
-    // - the ENU-to-Unreal transform at the new position
-    // - use this to compute the new actor rotation
-    // - update the ECEF position with the new values
+    // the surface normal of the ellipsoid at the old and
+    // the new position, and use the rotation between
+    // these normals to update the actor rotation
+    const glm::dvec3 oldEllipsoidNormalUnreal =
+        _computeEllipsoidNormalUnreal(_currentEcef);
+    const glm::dvec3 newEllipsoidNormalUnreal =
+        _computeEllipsoidNormalUnreal(targetEcef);
 
-    // Note: this probably degenerates when starting at or moving to either of
-    // the poles
+    // The rotation between the old and the new normal
+    const glm::dquat R =
+        glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
+    const glm::dmat3 alignmentRotation = glm::mat3_cast(R);
 
-    const glm::dvec3 currentRelativeLocation =
-        _computeRelativeLocation(_currentEcef);
-    const glm::dmat3 currentUnrealToEnu =
-        glm::inverse(this->Georeference->ComputeEastNorthUpToUnreal(
-            currentRelativeLocation));
-    const glm::dmat3 newEnuToUnreal(
-        this->Georeference->ComputeEastNorthUpToUnreal(newRelativeLocation));
-    newActorRotation = newEnuToUnreal * currentUnrealToEnu * oldActorRotation;
+    // Compute the new actor rotation
+    newActorRotation = alignmentRotation * oldActorRotation;
 
     this->ECEF_X = targetEcef.x;
     this->ECEF_Y = targetEcef.y;
