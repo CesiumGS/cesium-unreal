@@ -90,7 +90,7 @@ TSharedRef<SWidget> CesiumPanel::LoginPanel() {
 TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
   TSharedPtr<IonQuickAddPanel> quickAddPanel =
       SNew(IonQuickAddPanel)
-          .Title(FText::FromString("Add Cesium ion Assets"))
+          .Title(FText::FromString("Quick Add Cesium ion Assets"))
           .Visibility_Lambda([]() {
             return isSignedIn() ? EVisibility::Visible : EVisibility::Collapsed;
           });
@@ -140,7 +140,7 @@ TSharedRef<SWidget> CesiumPanel::MainIonQuickAddPanel() {
 
 TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
   TSharedPtr<IonQuickAddPanel> quickAddPanel =
-      SNew(IonQuickAddPanel).Title(FText::FromString("Add basic Actors"));
+      SNew(IonQuickAddPanel).Title(FText::FromString("Quick Add Basic Actors"));
   quickAddPanel->AddItem(
       {QuickAddItemType::TILESET,
        "Blank 3D Tiles Tileset",
