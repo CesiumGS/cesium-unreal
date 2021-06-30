@@ -327,6 +327,9 @@ private:
    * automatically using the MikkTSpace algorithm. When this property is false,
    * load time will be improved by skipping the generation of the tangent
    * vector, but the tangent space basis will be unreliable.
+   *
+   * Note that a tileset with "Enable Water Mask" set will include tangents
+   * for tiles containing water, regardless of the value of this property.
    */
   UPROPERTY(
       EditAnywhere,
