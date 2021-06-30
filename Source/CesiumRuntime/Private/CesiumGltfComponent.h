@@ -12,6 +12,7 @@
 class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
+struct CreateModelOptions;
 
 #if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;
@@ -53,18 +54,16 @@ public:
 
   static std::unique_ptr<HalfConstructed> CreateOffGameThread(
       const CesiumGltf::Model& Model,
-      const glm::dmat4x4& Transform
-#if PHYSICS_INTERFACE_PHYSX
-      ,
-      IPhysXCooking* PhysXCooking = nullptr
-#endif
-  );
+      const glm::dmat4x4& Transform,
+      const CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       AActor* ParentActor,
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
-      UMaterialInterface* BaseMaterial);
+      UMaterialInterface* BaseMaterial,
+      UMaterialInterface* BaseWaterMaterial,
+      UMaterialInterface* BaseOpacityMaterial);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();

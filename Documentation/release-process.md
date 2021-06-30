@@ -13,6 +13,7 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
   * Does it open without crashing?
   * Does it look correct?
   * Press Play. Does it work as expected? The billboard in each level should give you a good idea of what to expect.
+* Using one of the sample scenes, open the foliage window and create a new foliage type using any engine static mesh. Verify that foliage painting on Cesium World Terrain works correctly.
 * Test on other platforms if you can. If you can't (e.g., you don't have a Mac), post a message on Slack asking others to give it at least a quick smoke test.
 
 If all of the above goes well, you're ready to release Cesium for Unreal.
@@ -24,6 +25,7 @@ While doing the steps below, make sure no new changes are going into either cesi
 * Change the version in `CesiumForUnreal.uplugin`:
   * Increment the `Version` integer property.
   * Change the `VersionName` property to the new three digit, dot-delimited version number. Use [Semantic Versioning](https://semver.org/) to pick the version number.
+* Change the `version` property in `package.json` to match the `VersionName` above.
 * Verify that cesium-native's CHANGES.md is complete and accurate.
 * Verify that cesium-unreal's CHANGES.md is complete and accurate.
 * Verify again that cesium-native CI has completed successfully on all platforms.

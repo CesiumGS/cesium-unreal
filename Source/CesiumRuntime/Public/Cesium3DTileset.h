@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTiles/ViewState.h"
+#include "Cesium3DTiles/ViewUpdateResult.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -13,6 +14,7 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -22,7 +24,7 @@ class Tileset;
 class TilesetView;
 } // namespace Cesium3DTiles
 
-UENUM()
+UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
   /**
    * The tileset will be loaded from Cesium Ion using the provided IonAssetID
@@ -46,48 +48,10 @@ public:
   virtual ~ACesium3DTileset();
 
   /**
-   * The type of source from which to load this tileset.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (DisplayName = "Source"))
-  ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
-
-  /**
-   * The URL of this tileset's "tileset.json" file.
-   *
-   * If this property is specified, the ion asset ID and token are ignored.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
-  FString Url;
-
-  /**
-   * The ID of the Cesium ion asset to use.
-   *
-   * This property is ignored if the Url is specified.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
-  uint32 IonAssetID;
-
-  /**
-   * The access token to use to access the Cesium ion resource.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      Category = "Cesium",
-      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
-  FString IonAccessToken;
-
-  /**
    * The actor controlling how this tileset's coordinate system relates to the
    * coordinate system in this Unreal Engine level.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ACesiumGeoreference* Georeference;
 
   /**
@@ -111,8 +75,12 @@ public:
    * value of 16.0 corresponds to the standard value for quantized-mesh terrain
    * of 2.0.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Level of Detail")
-  double MaximumScreenSpaceError = 16.0;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Level of Detail",
+      meta = (ClampMin = 0.0))
+  float MaximumScreenSpaceError = 16.0;
 
   /**
    * Whether to preload ancestor tiles.
@@ -121,7 +89,7 @@ public:
    * detail in newly-exposed areas when panning. The down side is that it
    * requires loading more tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool PreloadAncestors = true;
 
   /**
@@ -131,7 +99,7 @@ public:
    * to be loaded, even if they are culled. Setting this to true may provide a
    * better panning experience at the cost of loading more tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool PreloadSiblings = true;
 
   /**
@@ -143,7 +111,7 @@ public:
    * false, overall loading will be faster, but newly-visible parts of the
    * tileset may initially be blank.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool ForbidHoles = false;
 
   /**
@@ -155,8 +123,12 @@ public:
    * may cause the tiles to be loaded and rendered more quickly, at the
    * cost of a higher network- and processing load.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
-  int MaximumSimultaneousTileLoads = 20;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Loading",
+      meta = (ClampMin = 0))
+  int32 MaximumSimultaneousTileLoads = 20;
 
   /**
    * The number of loading descendents a tile should allow before deciding to
@@ -169,8 +141,12 @@ public:
    * is achieved, but this high-detail representation will appear at once, as
    * soon as it is loaded completely.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Loading")
-  int LoadingDescendantLimit = 20;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Loading",
+      meta = (ClampMin = 0))
+  int32 LoadingDescendantLimit = 20;
 
   /**
    * Whether to cull tiles that are outside the frustum.
@@ -183,7 +159,7 @@ public:
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnableFrustumCulling = true;
 
   /**
@@ -194,7 +170,7 @@ public:
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnableFogCulling = true;
 
   /**
@@ -217,7 +193,7 @@ public:
    * "Culled Screen Space Error". This allows control over the minimum quality
    * of these would-be-culled tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Tile Culling")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
   /**
@@ -260,33 +236,15 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      meta = (EditCondition = "EnforceCulledScreenSpaceError"))
-  double CulledScreenSpaceError = 64.0;
-
-  /**
-   * A custom Material to use to render this tileset, in order to implement
-   * custom visual effects.
-   *
-   * The custom material should generally be created by copying the
-   * "GltfMaterialWithOverlays" material and customizing it as desired.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  UMaterialInterface* Material = nullptr;
-
-  /**
-   * Whether to request and render the water mask.
-   *
-   * Currently only applicable for quantized-mesh tilesets that support the
-   * water mask extension.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  bool EnableWaterMask = false;
+      meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
+  float CulledScreenSpaceError = 64.0;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
   bool SuspendUpdate;
 
   /**
@@ -306,6 +264,197 @@ public:
       Category = "Collision",
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
+
+private:
+  /**
+   * The type of source from which to load this tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetTilesetSource,
+      BlueprintSetter = SetTilesetSource,
+      Category = "Cesium",
+      meta = (DisplayName = "Source"))
+  ETilesetSource TilesetSource = ETilesetSource::FromCesiumIon;
+
+  /**
+   * The URL of this tileset's "tileset.json" file.
+   *
+   * If this property is specified, the ion asset ID and token are ignored.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetUrl,
+      BlueprintSetter = SetUrl,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
+  FString Url;
+
+  /**
+   * The ID of the Cesium ion asset to use.
+   *
+   * This property is ignored if the Url is specified.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIonAssetID,
+      BlueprintSetter = SetIonAssetID,
+      Category = "Cesium",
+      meta =
+          (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
+           ClampMin = 0))
+  int32 IonAssetID;
+
+  /**
+   * The access token to use to access the Cesium ion resource.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIonAccessToken,
+      BlueprintSetter = SetIonAccessToken,
+      Category = "Cesium",
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
+  FString IonAccessToken;
+
+  /**
+   * Whether to always generate a correct tangent space basis for tiles that
+   * don't have them.
+   *
+   * Normally, a per-vertex tangent space basis is only required for glTF models
+   * with a normal map. However, a custom, user-supplied material may need a
+   * tangent space basis for other purposes. When this property is set to true,
+   * tiles lacking an explicit tangent vector will have one computed
+   * automatically using the MikkTSpace algorithm. When this property is false,
+   * load time will be improved by skipping the generation of the tangent
+   * vector, but the tangent space basis will be unreliable.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAlwaysIncludeTangents,
+      BlueprintSetter = SetAlwaysIncludeTangents,
+      Category = "Cesium|Rendering")
+  bool AlwaysIncludeTangents = false;
+
+  /**
+   * Whether to request and render the water mask.
+   *
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableWaterMask,
+      BlueprintSetter = SetEnableWaterMask,
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
+  bool EnableWaterMask = false;
+
+  /**
+   * A custom Material to use to render this tileset, in order to implement
+   * custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumOverlay" material and customizing it as desired.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetMaterial,
+      BlueprintSetter = SetMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* Material = nullptr;
+
+  /**
+   * A custom Material to use to render this tileset in areas where the
+   * watermask is, in order to implement custom visual effects.
+   * Currently only applicable for quantized-mesh tilesets that support the
+   * water mask extension.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumOverlayWater" material and customizing it as desired. For best
+   * results, any changes to the above material should also be duplicated in the
+   * Water Material.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetWaterMaterial,
+      BlueprintSetter = SetWaterMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* WaterMaterial = nullptr;
+
+  /**
+   * A custom Material to use to render this tileset in areas using opacity
+   * masks, in order to implement custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumDefaultMasked" material and customizing it as desired.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetOpacityMaskMaterial,
+      BlueprintSetter = SetOpacityMaskMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* OpacityMaskMaterial = nullptr;
+
+protected:
+  UPROPERTY()
+  FString PlatformName;
+
+public:
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ETilesetSource GetTilesetSource() const { return TilesetSource; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetTilesetSource(ETilesetSource InSource);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetUrl() const { return Url; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetUrl(FString InUrl);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  int32 GetIonAssetID() const { return IonAssetID; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetIonAssetID(int32 InAssetID);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetIonAccessToken() const { return IonAccessToken; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetIonAccessToken(FString InAccessToken);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetEnableWaterMask() const { return EnableWaterMask; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetEnableWaterMask(bool bEnableMask);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  UMaterialInterface* GetMaterial() const { return Material; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetMaterial(UMaterialInterface* InMaterial);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  UMaterialInterface* GetWaterMaterial() const { return WaterMaterial; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetWaterMaterial(UMaterialInterface* InMaterial);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  UMaterialInterface* GetOpacityMaskMaterial() const {
+    return OpacityMaskMaterial;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetOpacityMaskMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
@@ -338,6 +487,12 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
+  // UObject overrides
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
@@ -362,6 +517,7 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
+  void MarkTilesetDirty();
   Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
       const FVector2D& viewportSize,
       const FVector& location,
@@ -377,6 +533,31 @@ private:
 
   std::optional<UnrealCameraParameters> GetCamera() const;
   std::optional<UnrealCameraParameters> GetPlayerCamera() const;
+
+  /**
+   * Writes the values of all properties of this actor into the
+   * TilesetOptions, to take them into account during the next
+   * traversal.
+   */
+  void updateTilesetOptionsFromProperties();
+
+  /**
+   * Update all the "_last..." fields of this instance based
+   * on the given ViewUpdateResult, printing a log message
+   * if any value changed.
+   *
+   * @param result The ViewUpdateREsult
+   */
+  void updateLastViewUpdateResultState(
+      const Cesium3DTiles::ViewUpdateResult& result);
+
+  /**
+   * Creates the visual representations of the given tiles to
+   * be rendered in the current frame.
+   *
+   * @param tiles The tiles
+   */
+  void showTilesToRender(const std::vector<Cesium3DTiles::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -403,9 +584,13 @@ private:
 private:
   Cesium3DTiles::Tileset* _pTileset;
 
-  ETilesetSource _lastTilesetSource;
-  UMaterialInterface* _lastMaterial;
+  /**
+   * Marks whether tileset should be updated in LoadTileset.
+   * Default to true so that tileset is created on construction.
+   */
+  bool _tilesetIsDirty = true;
 
+  // For debug output
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;
   uint32_t _lastTilesLoadingMediumPriority;
@@ -424,4 +609,18 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  // This is used as a workaround for cesium-native#186
+  //
+  // The tiles that are no longer supposed to be rendered in the current
+  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // are kept in this list, and hidden in the NEXT frame, because some
+  // internal occlusion culling information from Unreal might prevent
+  // the tiles that are supposed to be rendered instead from appearing
+  // immediately.
+  //
+  // If we find a way to clear the wrong occlusion information in the
+  // Unreal Engine, then this field may be removed, and the
+  // tilesToNoLongerRenderThisFrame may be hidden immediately.
+  std::vector<Cesium3DTiles::Tile*> _tilesToNoLongerRenderNextFrame;
 };

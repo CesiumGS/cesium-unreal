@@ -51,7 +51,7 @@ Please note that the transformation from Unreal Tileset coordinates to Unreal Ab
 
 ## Unreal Absolute World
 
-Vectors and matrices in Unreal Engine are expressed using single-precision floating-point numbers. In order to maintain precision, these coordinate values must remain relatively small. To support this, the Unreal absolute world origin can be moved by setting the `OriginLocation` property of `UWorld`. Coordinates that are said to be in the "Unreal Absolute World" reference frame are expressed relative to the absolute origin (0,0,0) and are not affected by the value of the `OriginLocation` property.
+Vectors and matrices in Unreal Engine are expressed using single-precision floating-point numbers. In order to maintain precision, these coordinate values must remain relatively small. To support this, the Unreal floating world origin can be moved by setting the `OriginLocation` property of `UWorld`. Coordinates that are said to be in the "Unreal Absolute World" reference frame are expressed relative to the absolute origin (0,0,0) and are not affected by the value of the `OriginLocation` property.
 
 |  |  |
 |----------|----------|

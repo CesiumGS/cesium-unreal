@@ -1,20 +1,71 @@
 # Change Log
 
-### v1.3.0 - ???
+### ? - ?
 
-##### Additions  :tada:
+##### Breaking :mega:
 
-- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
-- Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Tangents are now only generated for models that don't have them and that do have a normal map, saving a significant amount of time. If you have a custom material that requires the tangents, or need them for any other reason, you may set the `AlwaysIncludeTangents` property on `Cesium3DTileset` to force them to be generated like they were in previous versions.
+
+##### Additions :tada:
+
+- The main Cesium panel now has buttons to easily add a `CesiumSunSky` or a `DynamicPawn`.
 
 ##### Fixes :wrench:
 
-- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
+- Fixed a bug that could sometimes cause tile-sized holes to appear in a 3D Tiles model for one render frame.
+- Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
+- Add support for other types of Gltf index accessors: `BYTE`, `UNSIGNED_BYTE`, `SHORT`, `UNSIGNED_SHORT`
+
+### v1.3.1 - 2021-06-02
+
+- Temporarily removed support for the Android platform because it is causing problems in Epic's build environment, and is not quite production ready in any case.
+
+### v1.3.0 - 2021-06-01
+
+##### Breaking :mega:
+
+- Tileset properties that require a tileset reload (URL, Source, IonAssetID, IonAccessToken, Materials) have been moved to `private`. Setter and getter methods are now provided for modifying them in Blueprints and C++.
+- Deprecated `CesiumGlobeAnchorParent` and `FloatingPawn`. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGeoreferenceComponent`. The `FloatingPawn` is now replaced by the `DynamicPawn`. In a future release, the `DynamicPawn` will be renamed to `CesiumFloatingPawn`.
+
+##### Additions :tada:
+
+- Added support for the Android platform.
+- Added support for displaying a water effect for the parts of quantized-mesh terrain tiles that are known to be water.
+- Improved property change checks in `Cesium3DTileset::LoadTileset`.
+- Made origin rebasing boolean properties in `CesiumGeoreference` and `CesiumGeoreferenceComponent` blueprint editable.
+- Made 3D Tiles properties editable in C++ and blueprints via getter/setter functions. The tileset now reloads at runtime when these properties are changed.
+- Improvements to dynamic camera, created altitude curves for FlyTo behavior.
+- Constrained the values for `UPROPERTY` user inputs to be in valid ranges.
+- Added `M_CesiumOverlayWater` and `M_CesiumOverlayComplexWater` materials for use with water tiles.
+- Exposed all tileset materials to allow for changes in editor.
+- Added `TeleportWhenUpdatingTransform` boolean property to CesiumGeoreferenceComponent.
+- Added a "Year" property to `CesiumSunSky`.
+- Added the ability to use an external Directional Light with `CesiumSunSky`, rather than the embedded DirectionalLight component.
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused rendering and navigation problems when zooming too far away from the globe when origin rebasing is enabled.
 - Fixed a bug that caused glTF node `translation`, `rotation`, and `scale` properties to be ignored even if the node had no `matrix`.
+- Cleaned up, standardized, and commented material and material functions.
+- Moved all materials and material functions to the `Materials` subfolder.
+- Set CesiumSunSky's directional light intensity to a more physically accurate value.
+- Moved Latitude before Longitude on the `CesiumGeoreference` and `CesiumGeoreferenceComponent` Details panels.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.3.1 to v0.4.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.2.1 - 2021-05-13
+
+##### Fixes :wrench:
+
+- Fixed a regression in Cesium for Unreal v1.2.0 where `GlobeAwareDefaultPawn` lost its georeference during playmode.
+- Fixed a regression in Cesium for Unreal v1.2.0 where the matrices in `CesiumGeoreference` were being initialized to zero instead of identity.
+- Fixed a regression in Cesium for Unreal v1.2.0 that broke the ability to paint foliage on terrain and other tilesets.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.3.0 to v0.3.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.2.0 - 2021-05-03
 
-##### Additions  :tada:
+##### Additions :tada:
 
 - Added a dynamic camera that adapts to height above terrain.
 - Added Linux support.
@@ -22,11 +73,11 @@
 
 ##### Fixes :wrench:
 
-* Fixed issue where displayed longitude-latitude-height in `CesiumGeoreferenceComponent` wasn't updating in certain cases.
-* `FEditorDelegates::OnFocusViewportOnActors` is no longer unnecessarily subscribed to multiple times.
-* `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
-* Fixed a bug where collision does not update correctly when changing properties of a tileset in the editor.
-* Fixed a bug that caused tiles to disappear when "Suspend Update" was enabled.
+- Fixed issue where displayed longitude-latitude-height in `CesiumGeoreferenceComponent` wasn't updating in certain cases.
+- `FEditorDelegates::OnFocusViewportOnActors` is no longer unnecessarily subscribed to multiple times.
+- `Loading tileset ...` is now only written to the output log when the tileset actually needs to be reloaded.
+- Fixed a bug where collision does not update correctly when changing properties of a tileset in the editor.
+- Fixed a bug that caused tiles to disappear when "Suspend Update" was enabled.
 
 ### v1.1.1 - 2021-04-23
 
@@ -61,7 +112,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 ### v1.0.0 - 2021-03-30 - Initial Release
 
-##### Features  :tada:
+##### Features :tada:
 
 - High-accuracy, global-scale WGS84 globe for visualization of real-world 3D content
 - 3D Tiles runtime engine to stream massive 3D geospatial datasets, such as terrain, imagery, 3D cities, and photogrammetry
