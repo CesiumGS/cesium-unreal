@@ -278,8 +278,7 @@ FCesiumMetadataProperty::GetGenericValue(size_t featureID) const {
 
 FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
     const CesiumGltf::Model& model,
-    const CesiumGltf::FeatureTable& featureTable,
-    const CesiumGltf::FeatureIDAttribute& featureIDAttribute) {
+    const CesiumGltf::FeatureTable& featureTable) {
   CesiumGltf::MetadataFeatureTableView featureTableView{&model, &featureTable};
 
   featureTableView.forEachProperty([&properties = _properties](
@@ -310,6 +309,30 @@ FCesiumMetadataFeatureTable::GetProperty(const FString& name) const {
   }
 
   return *pProperty;
+}
+
+FCesiumMetadata::FCesiumMetadata(
+  const CesiumGltf::Model& model,
+  const CesiumGltf::ModelEXT_feature_metadata& metadata) 
+{
+  for (const auto& featureTable : metadata.featureTables) {
+    _featureTables.Add(
+        FString(featureTable.first.size(), featureTable.first.data()),
+        FCesiumMetadataFeatureTable(model, featureTable.second));
+  }
+}
+
+const FString& FCesiumMetadata::GetSchemaName() const { return _schemaName; }
+
+const FString& FCesiumMetadata::GetSchemaDescription() const {
+  return _schemaDescription;
+}
+
+const FString& FCesiumMetadata::GetVersion() const { return _schemaVersion; }
+
+const TMap<FString, FCesiumMetadataFeatureTable>&
+FCesiumMetadata::GetFeatureTables() const {
+  return _featureTables;
 }
 
 TMap<FString, FCesiumMetadataGenericValue>
@@ -460,3 +483,4 @@ FString UCesiumMetadataArrayBlueprintLibrary::GetString(
     int64 index) {
   return array.GetString(index);
 }
+

@@ -284,8 +284,7 @@ public:
 
   FCesiumMetadataFeatureTable(
       const CesiumGltf::Model& model,
-      const CesiumGltf::FeatureTable& featureTable,
-      const CesiumGltf::FeatureIDAttribute& featureIDAttribute);
+      const CesiumGltf::FeatureTable& featureTable);
 
   TMap<FString, FCesiumMetadataGenericValue>
   GetValuesForFeatureID(size_t featureID) const;
@@ -294,6 +293,32 @@ public:
 
 private:
   TMap<FString, FCesiumMetadataProperty> _properties;
+};
+
+USTRUCT(BlueprintType)
+struct CESIUMRUNTIME_API FCesiumMetadata {
+  GENERATED_USTRUCT_BODY()
+
+public:
+  FCesiumMetadata() {}
+
+  FCesiumMetadata(
+      const CesiumGltf::Model& model,
+      const CesiumGltf::ModelEXT_feature_metadata& metadata);
+
+  const FString &GetSchemaName() const;
+
+  const FString &GetSchemaDescription() const;
+
+  const FString &GetVersion() const;
+
+  const TMap<FString, FCesiumMetadataFeatureTable>& GetFeatureTables() const;
+
+private:
+  FString _schemaName;
+  FString _schemaDescription;
+  FString _schemaVersion;
+  TMap<FString, FCesiumMetadataFeatureTable> _featureTables;
 };
 
 UCLASS()
