@@ -817,10 +817,10 @@ ACesium3DTileset::GetPlayerCamera() const {
     return std::optional<UnrealCameraParameters>();
   }
 
-  const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
-  const FVector& location = pov.Location;
-  const FRotator& rotation = pCameraManager->ViewTarget.POV.Rotation;
-  double fov = pov.FOV;
+  FVector location;
+  FRotator rotation;
+  pCameraManager->GetCameraViewPoint(location, rotation);
+  double fov = pCameraManager->GetFOVAngle();
 
   FVector2D size;
   pViewport->GetViewportSize(size);
