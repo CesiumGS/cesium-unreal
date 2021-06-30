@@ -317,6 +317,25 @@ private:
   FString IonAccessToken;
 
   /**
+   * Whether to always generate a correct tangent space basis for tiles that
+   * don't have them.
+   *
+   * Normally, a per-vertex tangent space basis is only required for glTF models
+   * with a normal map. However, a custom, user-supplied material may need a
+   * tangent space basis for other purposes. When this property is set to true,
+   * tiles lacking an explicit tangent vector will have one computed
+   * automatically using the MikkTSpace algorithm. When this property is false,
+   * load time will be improved by skipping the generation of the tangent
+   * vector, but the tangent space basis will be unreliable.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAlwaysIncludeTangents,
+      BlueprintSetter = SetAlwaysIncludeTangents,
+      Category = "Cesium|Rendering")
+  bool AlwaysIncludeTangents = false;
+
+  /**
    * Whether to request and render the water mask.
    *
    * Currently only applicable for quantized-mesh tilesets that support the
@@ -404,6 +423,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }

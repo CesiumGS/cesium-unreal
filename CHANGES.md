@@ -4,6 +4,8 @@
 
 ##### Breaking :mega:
 
+- Tangents are now only generated for models that don't have them and that do have a normal map, saving a significant amount of time. If you have a custom material that requires the tangents, or need them for any other reason, you may set the `AlwaysIncludeTangents` property on `Cesium3DTileset` to force them to be generated like they were in previous versions.
+
 ##### Additions :tada:
 
 - The main Cesium panel now has buttons to easily add a `CesiumSunSky` or a `DynamicPawn`.
