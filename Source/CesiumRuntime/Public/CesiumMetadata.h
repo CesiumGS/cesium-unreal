@@ -58,25 +58,17 @@ public:
         holdsArrayAlternative<uint32_t>(_value) ||
         holdsArrayAlternative<int64_t>(_value)) {
       _type = ECesiumMetadataValueType::Int64;
-    }
-
-    if (holdsArrayAlternative<uint64_t>(_value)) {
+    } else if (holdsArrayAlternative<uint64_t>(_value)) {
       _type = ECesiumMetadataValueType::Uint64;
-    }
-
-    if (holdsArrayAlternative<float>(_value)) {
+    } else if (holdsArrayAlternative<float>(_value)) {
       _type = ECesiumMetadataValueType::Float;
-    }
-
-    if (holdsArrayAlternative<double>(_value)) {
+    } else if (holdsArrayAlternative<double>(_value)) {
       _type = ECesiumMetadataValueType::Double;
-    }
-
-    if (holdsArrayAlternative<bool>(_value)) {
+    } else if (holdsArrayAlternative<bool>(_value)) {
       _type = ECesiumMetadataValueType::Boolean;
+    } else {
+      _type = ECesiumMetadataValueType::String;
     }
-
-    _type = ECesiumMetadataValueType::String;
   }
 
   ECesiumMetadataValueType GetComponentType() const;
@@ -145,7 +137,10 @@ public:
   template<typename T>
   FCesiumMetadataGenericValue(const T& value)
       : _value(value), _type(ECesiumMetadataValueType::None) {
-    if (std::holds_alternative<int8_t>(_value) ||
+    if (std::holds_alternative<std::monostate>(_value)) {
+      _type = ECesiumMetadataValueType::None;
+    } else if (
+        std::holds_alternative<int8_t>(_value) ||
         std::holds_alternative<uint8_t>(_value) ||
         std::holds_alternative<int16_t>(_value) ||
         std::holds_alternative<uint16_t>(_value) ||
@@ -153,29 +148,19 @@ public:
         std::holds_alternative<uint32_t>(_value) ||
         std::holds_alternative<int64_t>(_value)) {
       _type = ECesiumMetadataValueType::Int64;
-    }
-
-    if (std::holds_alternative<uint64_t>(_value)) {
+    } else if (std::holds_alternative<uint64_t>(_value)) {
       _type = ECesiumMetadataValueType::Uint64;
-    }
-
-    if (std::holds_alternative<float>(_value)) {
+    } else if (std::holds_alternative<float>(_value)) {
       _type = ECesiumMetadataValueType::Float;
-    }
-
-    if (std::holds_alternative<double>(_value)) {
+    } else if (std::holds_alternative<double>(_value)) {
       _type = ECesiumMetadataValueType::Double;
-    }
-
-    if (std::holds_alternative<bool>(_value)) {
+    } else if (std::holds_alternative<bool>(_value)) {
       _type = ECesiumMetadataValueType::Boolean;
-    }
-
-    if (std::holds_alternative<std::string_view>(_value)) {
+    } else if (std::holds_alternative<std::string_view>(_value)) {
       _type = ECesiumMetadataValueType::String;
+    } else {
+      _type = ECesiumMetadataValueType::Array;
     }
-
-    _type = ECesiumMetadataValueType::Array;
   }
 
   ECesiumMetadataValueType GetType() const;
@@ -248,29 +233,19 @@ public:
         holdsPropertyAlternative<uint32_t>(_property) ||
         holdsPropertyAlternative<int64_t>(_property)) {
       _type = ECesiumMetadataValueType::Int64;
-    }
-
-    if (holdsPropertyAlternative<uint64_t>(_property)) {
+    } else if (holdsPropertyAlternative<uint64_t>(_property)) {
       _type = ECesiumMetadataValueType::Uint64;
-    }
-
-    if (holdsPropertyAlternative<float>(_property)) {
+    } else if (holdsPropertyAlternative<float>(_property)) {
       _type = ECesiumMetadataValueType::Float;
-    }
-
-    if (holdsPropertyAlternative<double>(_property)) {
+    } else if (holdsPropertyAlternative<double>(_property)) {
       _type = ECesiumMetadataValueType::Double;
-    }
-
-    if (holdsPropertyAlternative<bool>(_property)) {
+    } else if (holdsPropertyAlternative<bool>(_property)) {
       _type = ECesiumMetadataValueType::Boolean;
-    }
-
-    if (holdsPropertyAlternative<std::string_view>(_property)) {
+    } else if (holdsPropertyAlternative<std::string_view>(_property)) {
       _type = ECesiumMetadataValueType::String;
+    } else {
+      _type = ECesiumMetadataValueType::Array;
     }
-
-    _type = ECesiumMetadataValueType::Array;
   }
 
   ECesiumMetadataValueType GetType() const;
@@ -289,6 +264,8 @@ public:
 
   FCesiumMetadataArray GetArray(size_t featureID) const;
 
+  FCesiumMetadataGenericValue GetGenericValue(size_t featureID) const;
+
 private:
   template<typename T, typename ...VariantType>
   static bool holdsPropertyAlternative(const std::variant<VariantType...> &variant) {
@@ -300,13 +277,13 @@ private:
 };
 
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureTable {
+struct CESIUMRUNTIME_API FCesiumMetadataFeatureTable {
   GENERATED_USTRUCT_BODY()
 
 public:
-  FCesiumFeatureTable(){};
+  FCesiumMetadataFeatureTable(){};
 
-  FCesiumFeatureTable(
+  FCesiumMetadataFeatureTable(
       const CesiumGltf::Model& model,
       const CesiumGltf::FeatureTable& featureTable,
       const CesiumGltf::FeatureIDAttribute& featureIDAttribute);
@@ -320,18 +297,140 @@ private:
   TMap<FString, FCesiumMetadataProperty> _properties;
 };
 
-//UCLASS()
-//class CESIUMRUNTIME_API UCesiumMetadataBlueprintFunctionLibrary
-//    : public UBlueprintFunctionLibrary {
-//  GENERATED_BODY()
-//
-//  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-//  static TMap<FString, FCesiumMetadataGenericValue> GetMetadataForFeatureID(
-//      UPARAM(ref) FCesiumMetadata& Metadata,
-//      int64 FeatureID);
-//
-//  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-//  static FCesiumMetadataProperty
-//  GetProperty(UPARAM(ref) FCesiumMetadata& Metadata, const FString& name);
-//};
-//
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataArrayBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static ECesiumMetadataValueType
+  GetComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static bool
+  GetBoolean(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static int64
+  GetInt64(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float
+  GetUint64AsFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float
+  GetFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float
+  GetDoubleAsFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FString
+  GetString(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataGenericValueBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static ECesiumMetadataValueType
+  GetType(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static int64 GetInt64(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float GetUint64AsFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float GetFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float GetDoubleAsFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static bool GetBoolean(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FString GetString(UPARAM(ref)
+                               const FCesiumMetadataGenericValue& value);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FCesiumMetadataArray
+  GetArray(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataPropertyBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static ECesiumMetadataValueType
+  GetType(UPARAM(ref) const FCesiumMetadataProperty& property);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static bool GetBoolean(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static int64 GetInt64(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float GetUint64AsFloat(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float GetFloat(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static float GetDoubleAsFloat(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FString GetString(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FCesiumMetadataArray GetArray(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FCesiumMetadataGenericValue GetGenericValue(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static TMap<FString, FCesiumMetadataGenericValue> GetValuesForFeatureID(
+      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+      int64 featureID);
+
+  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
+  static FCesiumMetadataProperty GetProperty(
+      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+      const FString& name);
+};
+
