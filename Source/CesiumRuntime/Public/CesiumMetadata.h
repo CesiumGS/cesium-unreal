@@ -1,12 +1,12 @@
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumGltf/ModelEXT_feature_metadata.h"
+#include "CesiumGltf/FeatureIDAttribute.h"
 #include "CesiumGltf/MetadataArrayView.h"
 #include "CesiumGltf/MetadataPropertyView.h"
-#include "CesiumGltf/FeatureIDAttribute.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumGltf/ModelEXT_feature_metadata.h"
+#include "CoreMinimal.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include <variant>
 #include "CesiumMetadata.generated.h"
 
@@ -43,11 +43,10 @@ private:
       CesiumGltf::MetadataArrayView<std::string_view>>;
 
 public:
-  FCesiumMetadataArray() 
-    : _value(std::monostate{}), _type(ECesiumMetadataValueType::None)
-  {}
+  FCesiumMetadataArray()
+      : _value(std::monostate{}), _type(ECesiumMetadataValueType::None) {}
 
-  template<typename T>
+  template <typename T>
   FCesiumMetadataArray(CesiumGltf::MetadataArrayView<T> value)
       : _value(value), _type(ECesiumMetadataValueType::None) {
     if (holdsArrayAlternative<int8_t>(_value) ||
@@ -88,8 +87,9 @@ public:
   FString GetString(size_t i) const;
 
 private:
-  template<typename T, typename ...VariantType>
-  static bool holdsArrayAlternative(const std::variant<VariantType...>& variant) {
+  template <typename T, typename... VariantType>
+  static bool
+  holdsArrayAlternative(const std::variant<VariantType...>& variant) {
     return std::holds_alternative<CesiumGltf::MetadataArrayView<T>>(variant);
   }
 
@@ -130,11 +130,10 @@ private:
       CesiumGltf::MetadataArrayView<std::string_view>>;
 
 public:
-  FCesiumMetadataGenericValue() 
-    : _value(std::monostate{}), _type(ECesiumMetadataValueType::None)
-  {}
+  FCesiumMetadataGenericValue()
+      : _value(std::monostate{}), _type(ECesiumMetadataValueType::None) {}
 
-  template<typename T>
+  template <typename T>
   FCesiumMetadataGenericValue(const T& value)
       : _value(value), _type(ECesiumMetadataValueType::None) {
     if (std::holds_alternative<std::monostate>(_value)) {
@@ -218,11 +217,10 @@ private:
           CesiumGltf::MetadataArrayView<std::string_view>>>;
 
 public:
-  FCesiumMetadataProperty() 
-    : _property(std::monostate{}), _type(ECesiumMetadataValueType::None)
-  {}
+  FCesiumMetadataProperty()
+      : _property(std::monostate{}), _type(ECesiumMetadataValueType::None) {}
 
-  template<typename T>
+  template <typename T>
   FCesiumMetadataProperty(const CesiumGltf::MetadataPropertyView<T>& value)
       : _property(value), _type(ECesiumMetadataValueType::None) {
     if (holdsPropertyAlternative<int8_t>(_property) ||
@@ -267,8 +265,9 @@ public:
   FCesiumMetadataGenericValue GetGenericValue(size_t featureID) const;
 
 private:
-  template<typename T, typename ...VariantType>
-  static bool holdsPropertyAlternative(const std::variant<VariantType...> &variant) {
+  template <typename T, typename... VariantType>
+  static bool
+  holdsPropertyAlternative(const std::variant<VariantType...>& variant) {
     return std::holds_alternative<CesiumGltf::MetadataPropertyView<T>>(variant);
   }
 
@@ -346,13 +345,15 @@ public:
   static int64 GetInt64(UPARAM(ref) const FCesiumMetadataGenericValue& value);
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetUint64AsFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+  static float GetUint64AsFloat(UPARAM(ref)
+                                    const FCesiumMetadataGenericValue& value);
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
   static float GetFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetDoubleAsFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+  static float GetDoubleAsFloat(UPARAM(ref)
+                                    const FCesiumMetadataGenericValue& value);
 
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
   static bool GetBoolean(UPARAM(ref) const FCesiumMetadataGenericValue& value);
@@ -433,4 +434,3 @@ public:
       UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
       const FString& name);
 };
-

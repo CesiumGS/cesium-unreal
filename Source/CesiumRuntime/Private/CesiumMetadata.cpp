@@ -5,8 +5,10 @@ namespace {
 struct MetadataArraySize {
   size_t operator()(std::monostate) { return 0; }
 
-  template<typename T>
-  size_t operator()(const CesiumGltf::MetadataArrayView<T>& value) { return value.size(); }
+  template <typename T>
+  size_t operator()(const CesiumGltf::MetadataArrayView<T>& value) {
+    return value.size();
+  }
 };
 
 struct MetadataPropertyValue {
@@ -14,7 +16,7 @@ struct MetadataPropertyValue {
     return FCesiumMetadataGenericValue{};
   }
 
-  template<typename T>
+  template <typename T>
   FCesiumMetadataGenericValue
   operator()(const CesiumGltf::MetadataPropertyView<T>& value) {
     return FCesiumMetadataGenericValue{value.get(featureID)};
@@ -26,25 +28,27 @@ struct MetadataPropertyValue {
 template <typename T> struct IsNumericProperty {
   static constexpr bool value = false;
 };
-template <typename T> struct IsNumericProperty<CesiumGltf::MetadataPropertyView<T>> {
+template <typename T>
+struct IsNumericProperty<CesiumGltf::MetadataPropertyView<T>> {
   static constexpr bool value = CesiumGltf::IsMetadataNumeric<T>::value;
 };
 
 template <typename T> struct IsArrayProperty {
   static constexpr bool value = false;
 };
-template <typename T> struct IsArrayProperty<CesiumGltf::MetadataPropertyView<T>> {
+template <typename T>
+struct IsArrayProperty<CesiumGltf::MetadataPropertyView<T>> {
   static constexpr bool value = CesiumGltf::IsMetadataNumericArray<T>::value ||
                                 CesiumGltf::IsMetadataBooleanArray<T>::value ||
                                 CesiumGltf::IsMetadataStringArray<T>::value;
 };
-}
+} // namespace
 
 ECesiumMetadataValueType FCesiumMetadataArray::GetComponentType() const {
   return _type;
 }
 
-size_t FCesiumMetadataArray::GetSize() const { 
+size_t FCesiumMetadataArray::GetSize() const {
   return std::visit(MetadataArraySize{}, _value);
 }
 
@@ -70,7 +74,7 @@ uint64 FCesiumMetadataArray::GetUint64(size_t i) const {
   return std::get<CesiumGltf::MetadataArrayView<uint64_t>>(_value)[i];
 }
 
-float FCesiumMetadataArray::GetFloat(size_t i) const { 
+float FCesiumMetadataArray::GetFloat(size_t i) const {
   ensureAlwaysMsgf(
       (_type == ECesiumMetadataValueType::Float),
       TEXT("Value cannot be represented as Float"));
@@ -78,7 +82,7 @@ float FCesiumMetadataArray::GetFloat(size_t i) const {
   return std::get<CesiumGltf::MetadataArrayView<float>>(_value)[i];
 }
 
-double FCesiumMetadataArray::GetDouble(size_t i) const { 
+double FCesiumMetadataArray::GetDouble(size_t i) const {
   ensureAlwaysMsgf(
       (_type == ECesiumMetadataValueType::Double),
       TEXT("Value cannot be represented as Double"));
@@ -99,7 +103,7 @@ FString FCesiumMetadataArray::GetString(size_t i) const {
       (_type == ECesiumMetadataValueType::String),
       TEXT("Value cannot be represented as String"));
 
-  const CesiumGltf::MetadataArrayView<std::string_view> &val =
+  const CesiumGltf::MetadataArrayView<std::string_view>& val =
       std::get<CesiumGltf::MetadataArrayView<std::string_view>>(_value);
   std::string_view member = val[i];
   return FString(member.size(), member.data());
@@ -109,7 +113,7 @@ ECesiumMetadataValueType FCesiumMetadataGenericValue::GetType() const {
   return _type;
 }
 
-int64 FCesiumMetadataGenericValue::GetInt64() const { 
+int64 FCesiumMetadataGenericValue::GetInt64() const {
   ensureAlwaysMsgf(
       (_type == ECesiumMetadataValueType::Int64),
       TEXT("Value cannot be represented as Int64"));
@@ -123,7 +127,7 @@ int64 FCesiumMetadataGenericValue::GetInt64() const {
       _value);
 }
 
-uint64 FCesiumMetadataGenericValue::GetUint64() const { 
+uint64 FCesiumMetadataGenericValue::GetUint64() const {
   ensureAlwaysMsgf(
       (_type == ECesiumMetadataValueType::Uint64),
       TEXT("Value cannot be represented as Uint64"));
@@ -138,7 +142,7 @@ float FCesiumMetadataGenericValue::GetFloat() const {
   return std::get<float>(_value);
 }
 
-double FCesiumMetadataGenericValue::GetDouble() const { 
+double FCesiumMetadataGenericValue::GetDouble() const {
   ensureAlwaysMsgf(
       (_type == ECesiumMetadataValueType::Double),
       TEXT("Value cannot be represented as Double"));
@@ -210,15 +214,17 @@ uint64 FCesiumMetadataProperty::GetUint64(size_t featureID) const {
       (_type == ECesiumMetadataValueType::Uint64),
       TEXT("Value cannot be represented as Uint64"));
 
-  return std::get<CesiumGltf::MetadataPropertyView<float>>(_property).get(featureID);
+  return std::get<CesiumGltf::MetadataPropertyView<float>>(_property).get(
+      featureID);
 }
 
-float FCesiumMetadataProperty::GetFloat(size_t featureID) const { 
+float FCesiumMetadataProperty::GetFloat(size_t featureID) const {
   ensureAlwaysMsgf(
       (_type == ECesiumMetadataValueType::Float),
       TEXT("Value cannot be represented as Float"));
 
-  return std::get<CesiumGltf::MetadataPropertyView<float>>(_property).get(featureID);
+  return std::get<CesiumGltf::MetadataPropertyView<float>>(_property).get(
+      featureID);
 }
 
 double FCesiumMetadataProperty::GetDouble(size_t featureID) const {
@@ -226,7 +232,8 @@ double FCesiumMetadataProperty::GetDouble(size_t featureID) const {
       (_type == ECesiumMetadataValueType::Double),
       TEXT("Value cannot be represented as Double"));
 
-  return std::get<CesiumGltf::MetadataPropertyView<double>>(_property).get(featureID);
+  return std::get<CesiumGltf::MetadataPropertyView<double>>(_property).get(
+      featureID);
 }
 
 bool FCesiumMetadataProperty::GetBoolean(size_t featureID) const {
@@ -234,7 +241,8 @@ bool FCesiumMetadataProperty::GetBoolean(size_t featureID) const {
       (_type == ECesiumMetadataValueType::Boolean),
       TEXT("Value cannot be represented as Boolean"));
 
-  return std::get<CesiumGltf::MetadataPropertyView<bool>>(_property).get(featureID);
+  return std::get<CesiumGltf::MetadataPropertyView<bool>>(_property).get(
+      featureID);
 }
 
 FString FCesiumMetadataProperty::GetString(size_t featureID) const {
@@ -272,9 +280,7 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
     const CesiumGltf::Model& model,
     const CesiumGltf::FeatureTable& featureTable,
     const CesiumGltf::FeatureIDAttribute& featureIDAttribute) {
-  CesiumGltf::MetadataFeatureTableView featureTableView{
-      &model,
-      &featureTable};
+  CesiumGltf::MetadataFeatureTableView featureTableView{&model, &featureTable};
 
   featureTableView.forEachProperty([&properties = _properties](
                                        const std::string& propertyName,
@@ -300,7 +306,7 @@ FCesiumMetadataProperty
 FCesiumMetadataFeatureTable::GetProperty(const FString& name) const {
   auto pProperty = _properties.Find(name);
   if (!pProperty) {
-    return FCesiumMetadataProperty(); 
+    return FCesiumMetadataProperty();
   }
 
   return *pProperty;
@@ -313,7 +319,8 @@ UCesiumMetadataFeatureTableBlueprintLibrary::GetValuesForFeatureID(
   return featureTable.GetValuesForFeatureID(featureID);
 }
 
-FCesiumMetadataProperty UCesiumMetadataFeatureTableBlueprintLibrary::GetProperty(
+FCesiumMetadataProperty
+UCesiumMetadataFeatureTableBlueprintLibrary::GetProperty(
     UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
     const FString& name) {
   return featureTable.GetProperty(name);
@@ -453,4 +460,3 @@ FString UCesiumMetadataArrayBlueprintLibrary::GetString(
     int64 index) {
   return array.GetString(index);
 }
-
