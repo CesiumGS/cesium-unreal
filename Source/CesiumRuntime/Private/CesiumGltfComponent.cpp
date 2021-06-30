@@ -796,6 +796,43 @@ static void loadPrimitive(
     }
   }
 
+  // Initialize water mask if needed.
+  auto onlyWaterIt = primitive.extras.find("OnlyWater");
+  auto onlyLandIt = primitive.extras.find("OnlyLand");
+  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
+      onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
+    CESIUM_TRACE("water mask");
+    bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
+    bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
+    primitiveResult.onlyWater = onlyWater;
+    primitiveResult.onlyLand = onlyLand;
+    if (!onlyWater && !onlyLand) {
+      // We have to use the water mask
+      auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
+      if (waterMaskTextureIdIt != primitive.extras.end() &&
+          waterMaskTextureIdIt->second.isInt64()) {
+        int32_t waterMaskTextureId = static_cast<int32_t>(
+            waterMaskTextureIdIt->second.getInt64OrDefault(-1));
+        CesiumGltf::TextureInfo waterMaskInfo;
+        waterMaskInfo.index = waterMaskTextureId;
+        if (waterMaskTextureId >= 0 &&
+            waterMaskTextureId < model.textures.size()) {
+          primitiveResult.waterMaskTexture =
+              loadTexture(model, std::make_optional(waterMaskInfo));
+        }
+      }
+    }
+  } else {
+    primitiveResult.onlyWater = false;
+    primitiveResult.onlyLand = true;
+  }
+
+  // The water effect works by animating the normal, and the normal is
+  // expressed in tangent space. So if we have water, we need tangents.
+  if (primitiveResult.onlyWater || primitiveResult.waterMaskTexture) {
+    needsTangents = true;
+  }
+
   if (needsTangents && !hasTangents) {
     // Use mikktspace to calculate the tangents
     CESIUM_TRACE("compute tangents");
@@ -906,36 +943,6 @@ static void loadPrimitive(
             textureCoordinateMap);
   }
 
-  // Initialize water mask if needed.
-  auto onlyWaterIt = primitive.extras.find("OnlyWater");
-  auto onlyLandIt = primitive.extras.find("OnlyLand");
-  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
-      onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
-    CESIUM_TRACE("water mask");
-    bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
-    bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
-    primitiveResult.onlyWater = onlyWater;
-    primitiveResult.onlyLand = onlyLand;
-    if (!onlyWater && !onlyLand) {
-      // We have to use the water mask
-      auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
-      if (waterMaskTextureIdIt != primitive.extras.end() &&
-          waterMaskTextureIdIt->second.isInt64()) {
-        int32_t waterMaskTextureId = static_cast<int32_t>(
-            waterMaskTextureIdIt->second.getInt64OrDefault(-1));
-        CesiumGltf::TextureInfo waterMaskInfo;
-        waterMaskInfo.index = waterMaskTextureId;
-        if (waterMaskTextureId >= 0 &&
-            waterMaskTextureId < model.textures.size()) {
-          primitiveResult.waterMaskTexture =
-              loadTexture(model, std::make_optional(waterMaskInfo));
-        }
-      }
-    }
-  } else {
-    primitiveResult.onlyWater = false;
-    primitiveResult.onlyLand = true;
-  }
   auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
   auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
   auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
