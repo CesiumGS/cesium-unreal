@@ -9,6 +9,7 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
+#include "GlmLogging.h"
 #include "UObject/NameTypes.h"
 #include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
@@ -16,58 +17,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <optional>
-
-// Functions for debug logging. These functions could (in a similar form)
-// be offered elsewhere, e.g. in VecMath.
-namespace {
-
-void logVector(const std::string& name, const glm::dvec3& vector) {
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("%s: %16.6f %16.6f %16.6f"),
-      *FString(name.c_str()),
-      vector.x,
-      vector.y,
-      vector.z);
-}
-
-void logMatrix(const std::string& name, const glm::dmat4& matrix) {
-  UE_LOG(LogCesium, Verbose, TEXT("%s:"), *FString(name.c_str()));
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT(" %16.6f %16.6f %16.6f %16.6f"),
-      matrix[0][0],
-      matrix[1][0],
-      matrix[2][0],
-      matrix[3][0]);
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT(" %16.6f %16.6f %16.6f %16.6f"),
-      matrix[0][1],
-      matrix[1][1],
-      matrix[2][1],
-      matrix[3][1]);
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT(" %16.6f %16.6f %16.6f %16.6f"),
-      matrix[0][2],
-      matrix[1][2],
-      matrix[2][2],
-      matrix[3][2]);
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT(" %16.6f %16.6f %16.6f %16.6f"),
-      matrix[0][3],
-      matrix[1][3],
-      matrix[2][3],
-      matrix[3][3]);
-}
-} // namespace
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent()
     : _updatingActorTransform(false),
@@ -617,8 +566,8 @@ void UCesiumGeoreferenceComponent::_setECEF(
     const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
 
-  logVector("_setECEF _currentEcef ", _currentEcef);
-  logVector("_setECEF   targetEcef ", targetEcef);
+  GlmLogging::logVector("_setECEF _currentEcef ", _currentEcef);
+  GlmLogging::logVector("_setECEF   targetEcef ", targetEcef);
   _debugLogState();
 
   if (!IsValid(this->Georeference)) {
@@ -672,7 +621,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
   _updateActorTransform(newActorRotation, newRelativeLocation);
   this->_updateDisplayLongitudeLatitudeHeight();
 
-  logVector("_setECEF done, _currentEcef now ", _currentEcef);
+  GlmLogging::logVector("_setECEF done, _currentEcef now ", _currentEcef);
   _debugLogState();
 }
 
@@ -738,10 +687,12 @@ void UCesiumGeoreferenceComponent::_debugLogState() {
       VecMath::createVector3D(componentLocation);
 
   UE_LOG(LogCesium, Verbose, TEXT("State of %s"), *this->GetName());
-  logVector("  _currentEcef                ", _currentEcef);
-  logVector("  worldOriginLocation         ", worldOriginLocation);
-  logVector("  relativeLocation            ", relativeLocation);
-  logVector("  absoluteLocation            ", absoluteLocation);
-  logVector("  relativeLocationFromActor   ", relativeLocationFromActor);
-  logMatrix("  actorRotation", glm::dmat4(actorRotation));
+  GlmLogging::logVector("  _currentEcef                ", _currentEcef);
+  GlmLogging::logVector("  worldOriginLocation         ", worldOriginLocation);
+  GlmLogging::logVector("  relativeLocation            ", relativeLocation);
+  GlmLogging::logVector("  absoluteLocation            ", absoluteLocation);
+  GlmLogging::logVector(
+      "  relativeLocationFromActor   ",
+      relativeLocationFromActor);
+  GlmLogging::logMatrix("  actorRotation", glm::dmat4(actorRotation));
 }
