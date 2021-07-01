@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <string>
 #include <glm/glm.hpp>
+#include <string>
 
 /**
  * @brief Utility functions for logging GLM data in Unreal
