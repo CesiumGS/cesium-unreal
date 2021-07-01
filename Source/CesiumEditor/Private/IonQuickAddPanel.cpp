@@ -234,6 +234,7 @@ void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
         ACesiumGeoreference::GetDefaultForActor(pActor);
     if (pGeoreference) {
       pGeoreference->SunSky = pActor;
+      pGeoreference->UpdateGeoreference();
     }
 
     GEditor->SelectNone(true, false);
