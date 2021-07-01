@@ -1,2 +1,2 @@
-# Set the default behavior, in case people don't have core.autocrlf set.
+# Auto-detect text files and store them with LF (not CRLF) in the repo.
 * text=auto
