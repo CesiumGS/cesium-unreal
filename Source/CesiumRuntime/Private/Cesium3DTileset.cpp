@@ -784,8 +784,6 @@ void ACesium3DTileset::LoadTileset() {
       }
     }
 
-    UE_LOG(LogCesium, Warning, TEXT("POLYGONS COUNT: %d"), polygons.size());
-
     pTileset->getOverlays().add(
         std::move(std::make_unique<Cesium3DTiles::RasterizedPolygonsOverlay>(
             TCHAR_TO_UTF8(*textureName),
