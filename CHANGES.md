@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v1.4.0 - 2021-07-01
 
 ##### Breaking :mega:
 
@@ -14,7 +14,7 @@
 
 - Fixed a bug that could sometimes cause tile-sized holes to appear in a 3D Tiles model for one render frame.
 - Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
-- Add support for other types of Gltf index accessors: `BYTE`, `UNSIGNED_BYTE`, `SHORT`, `UNSIGNED_SHORT`
+- Added support for other types of glTF index accessors: `BYTE`, `UNSIGNED_BYTE`, `SHORT`, and `UNSIGNED_SHORT`.
 
 ### v1.3.1 - 2021-06-02
 
