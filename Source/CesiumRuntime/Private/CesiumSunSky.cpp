@@ -35,10 +35,10 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->CascadeDistributionExponent = 1.4;
 
   if (!SkySphereClass) {
-    ConstructorHelpers::FObjectFinder<UBlueprint> skySphereFinder(
-        TEXT("Blueprint'/CesiumForUnreal/MobileSkySphere.MobileSkySphere'"));
+    ConstructorHelpers::FClassFinder<AActor> skySphereFinder(
+        TEXT("Blueprint'/CesiumForUnreal/MobileSkySphere.MobileSkySphere_C'"));
     if (skySphereFinder.Succeeded()) {
-      SkySphereClass = skySphereFinder.Object->GeneratedClass;
+      SkySphereClass = skySphereFinder.Class;
     }
   }
 
@@ -63,23 +63,28 @@ ACesiumSunSky::ACesiumSunSky() {
     if (!SkySphereActor) {
       _wantsSpawnMobileSkySphere = true;
     }
-  } else {
-    SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
-    SkyLight->SetupAttachment(Scene);
-    SkyLight->SetRelativeLocation(FVector(0, 0, 150));
-    SkyLight->SetMobility(EComponentMobility::Movable);
-    SkyLight->bRealTimeCapture = true;
-    SkyLight->bLowerHemisphereIsBlack = false;
-    SkyLight->bTransmission = true;
-    SkyLight->bCastRaytracedShadow = true;
-    SkyLight->SamplesPerPixel = 2;
-
-    SkyAtmosphereComponent =
-        CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
-    SkyAtmosphereComponent->SetupAttachment(Scene);
-    SkyAtmosphereComponent->TransformMode =
-        ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
   }
+
+  // In desktop + editor, always create these components and simply hide them
+  // if not needed
+#if PLATFORM_ANDROID || PLATFORM_IOS
+#else
+  SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
+  SkyLight->SetupAttachment(Scene);
+  SkyLight->SetRelativeLocation(FVector(0, 0, 150));
+  SkyLight->SetMobility(EComponentMobility::Movable);
+  SkyLight->bRealTimeCapture = true;
+  SkyLight->bLowerHemisphereIsBlack = false;
+  SkyLight->bTransmission = true;
+  SkyLight->bCastRaytracedShadow = true;
+  SkyLight->SamplesPerPixel = 2;
+
+  SkyAtmosphereComponent =
+      CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
+  SkyAtmosphereComponent->SetupAttachment(Scene);
+  SkyAtmosphereComponent->TransformMode =
+      ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
+#endif
 
   if (!Georeference) {
     Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -89,7 +94,6 @@ ACesiumSunSky::ACesiumSunSky() {
     Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &ACesiumSunSky::HandleGeoreferenceUpdated);
-    HandleGeoreferenceUpdated();
   }
 }
 
@@ -103,11 +107,11 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
   if (EnableMobileRendering) {
     DirectionalLight->Intensity = MobileDirectionalLightIntensity;
     if (_wantsSpawnMobileSkySphere && SkySphereClass) {
-      SpawnSkySphere();
+      _spawnSkySphere();
       UpdateSkySphere();
     }
   }
-  SetSkyAtmosphereVisibility(!EnableMobileRendering);
+  _setSkyAtmosphereVisibility(!EnableMobileRendering);
 }
 
 #if WITH_EDITOR
@@ -126,9 +130,19 @@ void ACesiumSunSky::PostEditChangeProperty(
   if (PropName ==
       GET_MEMBER_NAME_CHECKED(ACesiumSunSky, EnableMobileRendering)) {
     _wantsSpawnMobileSkySphere = EnableMobileRendering;
-    SetSkyAtmosphereVisibility(!EnableMobileRendering);
+    _setSkyAtmosphereVisibility(!EnableMobileRendering);
     if (!EnableMobileRendering && SkySphereActor) {
       SkySphereActor->Destroy();
+    }
+  }
+  if (PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseLevelDirectionalLight) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesiumSunSky, LevelDirectionalLight)) {
+    _setSkySphereDirectionalLight();
+    if (IsValid(LevelDirectionalLight)) {
+      LevelDirectionalLight->GetComponent()->SetAtmosphereSunLight(true);
+      LevelDirectionalLight->GetComponent()->MarkRenderStateDirty();
     }
   }
   // Place superclass method after variables are updated, so that a new sky
@@ -137,14 +151,21 @@ void ACesiumSunSky::PostEditChangeProperty(
 }
 #endif
 
-void ACesiumSunSky::SpawnSkySphere() {
+void ACesiumSunSky::_spawnSkySphere() {
   if (!EnableMobileRendering || !IsValid(GetWorld())) {
     return;
   }
   SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
   _wantsSpawnMobileSkySphere = false;
 
-  // Set Directional Light Component in Sky Sphere actor
+  _setSkySphereDirectionalLight();
+}
+
+void ACesiumSunSky::_setSkySphereDirectionalLight() {
+  if (!EnableMobileRendering || !SkySphereClass || !IsValid(SkySphereActor)) {
+    return;
+  }
+
   for (TFieldIterator<FProperty> PropertyIterator(SkySphereClass);
        PropertyIterator;
        ++PropertyIterator) {
@@ -153,15 +174,24 @@ void ACesiumSunSky::SpawnSkySphere() {
     if (propName == TEXT("DirectionalLightComponent")) {
       FObjectProperty* objectProp = CastField<FObjectProperty>(prop);
       if (objectProp) {
+        UDirectionalLightComponent* directionalLightComponent = nullptr;
+        if (UseLevelDirectionalLight) {
+          // Getting the component from a DirectionalLight actor is editor-only
+#if WITH_EDITORONLY_DATA
+          directionalLightComponent = LevelDirectionalLight->GetComponent();
+#endif
+        } else {
+          directionalLightComponent = DirectionalLight;
+        }
         objectProp->SetPropertyValue_InContainer(
             this->SkySphereActor,
-            DirectionalLight);
+            directionalLightComponent);
       }
     }
   }
 }
 
-void ACesiumSunSky::SetSkyAtmosphereVisibility(bool bVisible) {
+void ACesiumSunSky::_setSkyAtmosphereVisibility(bool bVisible) {
   if (IsValid(SkyLight)) {
     SkyLight->SetVisibility(bVisible);
   }

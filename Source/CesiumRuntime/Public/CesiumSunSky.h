@@ -24,42 +24,17 @@ public:
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   USceneComponent* Scene;
 
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Components)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   UStaticMeshComponent* CompassMesh;
 
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Components)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   USkyLightComponent* SkyLight;
 
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Components)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   UDirectionalLightComponent* DirectionalLight;
 
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Components)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   USkyAtmosphereComponent* SkyAtmosphereComponent;
-
-  /**
-   * A switch to toggle between desktop and mobile rendering code paths.
-   * This will be automatically set to true when deployed on mobile.
-   * It can also be manually toggled for development testing (requires level
-   * reload to see changes).
-   */
-  UPROPERTY(EditAnywhere, Category = Mobile)
-  bool EnableMobileRendering;
-
-  /**
-   * Mobile platforms currently do not support the SkyAtmosphereComponent.
-   * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mobile)
-  TSubclassOf<AActor> SkySphereClass;
-
-  /**
-   * Reference to BP_Sky_Sphere or similar actor (mobile only)
-   */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
-  AActor* SkySphereActor;
-
-  UPROPERTY(EditAnywhere, Category = Mobile)
-  float MobileDirectionalLightIntensity = 6.f;
 
   /**
    * Hold a reference to a georeference for height checks.
@@ -90,6 +65,31 @@ public:
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sun)
   ADirectionalLight* LevelDirectionalLight;
+
+  /**
+   * A switch to toggle between desktop and mobile rendering code paths.
+   * This will be automatically set to true when deployed on mobile.
+   * It can also be manually toggled for development testing (requires level
+   * reload to see changes).
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
+  bool EnableMobileRendering;
+
+  /**
+   * Mobile platforms currently do not support the SkyAtmosphereComponent.
+   * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mobile)
+  TSubclassOf<AActor> SkySphereClass;
+
+  /**
+   * Reference to BP_Sky_Sphere or similar actor (mobile only)
+   */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
+  AActor* SkySphereActor;
+
+  UPROPERTY(EditAnywhere, Category = Mobile)
+  float MobileDirectionalLightIntensity = 6.f;
 
   UPROPERTY(
       EditAnywhere,
@@ -273,23 +273,24 @@ protected:
   UFUNCTION(BlueprintCallable, Category = Cesium)
   void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, float Radius);
 
-#if WITH_EDITOR
-  virtual void
-  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
-
   /**
    * Update MobileSkySphere by calling its RefreshMaterial function
    */
   UFUNCTION(BlueprintCallable, Category = Mobile)
   void UpdateSkySphere();
 
-private:
-  UFUNCTION(Category = Mobile)
-  void SpawnSkySphere();
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
-  UFUNCTION(Category = Mobile)
-  void SetSkyAtmosphereVisibility(bool bVisible);
+private:
+  void _spawnSkySphere();
+
+  // Set Directional Light Component in Sky Sphere actor
+  void _setSkySphereDirectionalLight();
+
+  void _setSkyAtmosphereVisibility(bool bVisible);
 
   // Determines whether mobile sky sphere will be spawned during OnConstruction.
   bool _wantsSpawnMobileSkySphere;
