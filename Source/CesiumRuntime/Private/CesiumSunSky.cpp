@@ -47,7 +47,7 @@ ACesiumSunSky::ACesiumSunSky() {
   // constructor. In that case, we do special handling later on to enable
   // mobile rendering features.
 #if PLATFORM_ANDROID || PLATFORM_IOS
-  bMobileRendering = true;
+  EnableMobileRendering = true;
 #endif
 
   UE_LOG(
