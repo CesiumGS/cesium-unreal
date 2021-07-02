@@ -208,9 +208,8 @@ public:
 
   /**
    * A switch to toggle between desktop and mobile rendering code paths.
-   * This will be automatically set to true when deployed on mobile.
-   * It can also be manually toggled for development testing (requires level
-   * reload to see changes).
+   * This will NOT be automatically set when running on mobile, so make sure
+   * to check this setting before building on mobile platforms.
    */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
   bool EnableMobileRendering;

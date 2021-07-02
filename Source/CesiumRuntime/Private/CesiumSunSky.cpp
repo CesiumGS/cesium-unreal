@@ -42,33 +42,8 @@ ACesiumSunSky::ACesiumSunSky() {
     }
   }
 
-  // On desktop development machines, bMobileRendering can be set to true
-  // from the editor, but that custom setting cannot be accessed from the C++
-  // constructor. In that case, we do special handling later on to enable
-  // mobile rendering features.
-#if PLATFORM_ANDROID || PLATFORM_IOS
-  EnableMobileRendering = true;
-#endif
-
-  UE_LOG(
-      LogCesium,
-      Display,
-      TEXT("Enable mobile rendering: %s"),
-      EnableMobileRendering ? TEXT("true") : TEXT("false"));
-
-  // Handle blueprint settings for the mobile-only components later on,
-  // as they are not loaded in the C++ constructor.
-
-  if (EnableMobileRendering) {
-    if (!SkySphereActor) {
-      _wantsSpawnMobileSkySphere = true;
-    }
-  }
-
-  // In desktop + editor, always create these components and simply hide them
-  // if not needed
-#if PLATFORM_ANDROID || PLATFORM_IOS
-#else
+  // Always create these components and simply hide them if not needed
+  // (e.g. on mobile)
   SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
   SkyLight->SetupAttachment(Scene);
   SkyLight->SetRelativeLocation(FVector(0, 0, 150));
@@ -84,7 +59,6 @@ ACesiumSunSky::ACesiumSunSky() {
   SkyAtmosphereComponent->SetupAttachment(Scene);
   SkyAtmosphereComponent->TransformMode =
       ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
-#endif
 
   if (!Georeference) {
     Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -119,8 +93,8 @@ void ACesiumSunSky::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
 
   const FName PropName = (PropertyChangedEvent.Property)
-                             ? PropertyChangedEvent.Property->GetFName()
-                             : NAME_None;
+                           ? PropertyChangedEvent.Property->GetFName()
+                           : NAME_None;
   if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, SkySphereClass)) {
     _wantsSpawnMobileSkySphere = true;
     if (SkySphereActor) {
@@ -136,9 +110,9 @@ void ACesiumSunSky::PostEditChangeProperty(
     }
   }
   if (PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseLevelDirectionalLight) ||
+      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseLevelDirectionalLight) ||
       PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesiumSunSky, LevelDirectionalLight)) {
+      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, LevelDirectionalLight)) {
     _setSkySphereDirectionalLight();
     if (IsValid(LevelDirectionalLight)) {
       LevelDirectionalLight->GetComponent()->SetAtmosphereSunLight(true);
