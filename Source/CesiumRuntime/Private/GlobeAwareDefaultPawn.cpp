@@ -2,6 +2,7 @@
 
 #include "GlobeAwareDefaultPawn.h"
 #include "Camera/CameraComponent.h"
+#include "CesiumActors.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -70,14 +71,16 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     */
 
     FVector loc = this->GetPawnViewLocation();
-    glm::dvec3 locEcef = this->Georeference->TransformUnrealToEcef(
-        glm::dvec3(loc.X, loc.Y, loc.Z));
+    glm::dvec3 locEcef =
+        this->Georeference->getGeoTransforms().TransformUnrealToEcef(
+            CesiumActors::getWorldOrigin4D(this),
+            glm::dvec3(loc.X, loc.Y, loc.Z));
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
-    glm::dvec4 up =
-        this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform() *
-        upEcef;
+    glm::dvec4 up = this->Georeference->getGeoTransforms()
+                        .GetEllipsoidCenteredToUnrealWorldTransform() *
+                    upEcef;
 
     AddMovementInput(FVector(up.x, up.y, up.z), Val);
 
@@ -141,7 +144,10 @@ glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
         *this->GetName());
     return ueLocationVec;
   }
-  glm::dvec3 ecef = this->Georeference->TransformUnrealToEcef(ueLocationVec);
+  glm::dvec3 ecef =
+      this->Georeference->getGeoTransforms().TransformUnrealToEcef(
+          CesiumActors::getWorldOrigin4D(this),
+          ueLocationVec);
   return ecef;
 }
 
@@ -155,7 +161,9 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
         *this->GetName());
     ue = ecef;
   } else {
-    ue = this->Georeference->TransformEcefToUnreal(ecef);
+    ue = this->Georeference->getGeoTransforms().TransformEcefToUnreal(
+        CesiumActors::getWorldOrigin4D(this),
+        ecef);
   }
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
@@ -300,9 +308,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
         TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
         *this->GetName());
   }
-  const glm::dvec3& ecef =
-      this->Georeference->TransformLongitudeLatitudeHeightToEcef(
-          LongitudeLatitudeHeightDestination);
+  const glm::dvec3& ecef = this->Georeference->getGeoTransforms()
+                               .TransformLongitudeLatitudeHeightToEcef(
+                                   LongitudeLatitudeHeightDestination);
   this->FlyToLocationECEF(
       ecef,
       YawAtDestination,

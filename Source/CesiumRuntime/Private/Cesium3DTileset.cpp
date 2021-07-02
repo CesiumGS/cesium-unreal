@@ -219,14 +219,11 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
   struct CalculateECEFCameraPosition {
 
-    ACesiumGeoreference* localGeoreference;
+    const GeoTransforms& localGeoTransforms;
 
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
-      glm::dmat4 ENU = glm::dmat4(1.0);
-      if (IsValid(localGeoreference)) {
-        ENU = localGeoreference->ComputeEastNorthUpToEcef(center);
-      }
+      glm::dmat4 ENU = localGeoTransforms.ComputeEastNorthUpToEcef(center);
       glm::dvec3 offset =
           sphere.getRadius() * glm::normalize(ENU[0] + ENU[1] + ENU[2]);
       glm::dvec3 position = center + offset;
@@ -236,10 +233,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     glm::dvec3
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
-      glm::dmat4 ENU = glm::dmat4(1.0);
-      if (IsValid(localGeoreference)) {
-        ENU = localGeoreference->ComputeEastNorthUpToEcef(center);
-      }
+      glm::dmat4 ENU = localGeoTransforms.ComputeEastNorthUpToEcef(center);
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset = glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
                           glm::normalize(ENU[0] + ENU[1] + ENU[2]);
@@ -272,7 +266,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition = std::visit(
-      CalculateECEFCameraPosition{this->Georeference},
+      CalculateECEFCameraPosition{this->Georeference->getGeoTransforms()},
       boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);
