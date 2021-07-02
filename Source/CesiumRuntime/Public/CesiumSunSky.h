@@ -55,7 +55,7 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
   float UpdateAtmospherePeriod = 1.f;
-   
+
   /**
    * False: Use Directional Light component inside CesiumSunSky.
    * True: Use the assigned Directional Light in the level.
