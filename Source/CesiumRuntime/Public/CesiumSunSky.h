@@ -55,7 +55,7 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
   float UpdateAtmospherePeriod = 1.f;
-
+   
   /**
    * False: Use Directional Light component inside CesiumSunSky.
    * True: Use the assigned Directional Light in the level.
@@ -67,29 +67,22 @@ public:
   ADirectionalLight* LevelDirectionalLight;
 
   /**
-   * A switch to toggle between desktop and mobile rendering code paths.
-   * This will be automatically set to true when deployed on mobile.
-   * It can also be manually toggled for development testing (requires level
-   * reload to see changes).
+   * Sun elevation
    */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
-  bool EnableMobileRendering;
+  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
+  float Elevation = 0.f;
 
   /**
-   * Mobile platforms currently do not support the SkyAtmosphereComponent.
-   * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
+   * Sun elevation, corrected for atmospheric diffraction
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mobile)
-  TSubclassOf<AActor> SkySphereClass;
+  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
+  float CorrectedElevation = 0.f;
 
   /**
-   * Reference to BP_Sky_Sphere or similar actor (mobile only)
+   * Sun azimuth
    */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
-  AActor* SkySphereActor;
-
-  UPROPERTY(EditAnywhere, Category = Mobile)
-  float MobileDirectionalLightIntensity = 6.f;
+  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
+  float Azimuth = 0.f;
 
   UPROPERTY(
       EditAnywhere,
@@ -119,24 +112,6 @@ public:
       Category = Location,
       meta = (UIMin = -360, UIMax = 360, ClampMin = -360, ClampMax = 360))
   float NorthOffset = -90.f;
-
-  /**
-   * Sun elevation
-   */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Location)
-  float Elevation = 0.f;
-
-  /**
-   * Sun elevation, corrected for atmospheric diffraction
-   */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Location)
-  float CorrectedElevation = 0.f;
-
-  /**
-   * Sun azimuth
-   */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Location)
-  float Azimuth = 0.f;
 
   UPROPERTY(
       EditAnywhere,
@@ -169,7 +144,11 @@ public:
   /**
    * Enables Daylight Saving Time (DST)
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Date and Time")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      AdvancedDisplay,
+      Category = "Date and Time")
   bool UseDaylightSavingTime = true;
 
   /**
@@ -178,6 +157,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      AdvancedDisplay,
       Category = "Date and Time",
       meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
   int32 DSTStartMonth = 3;
@@ -188,6 +168,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      AdvancedDisplay,
       Category = "Date and Time",
       meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
   int32 DSTStartDay = 10;
@@ -198,6 +179,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      AdvancedDisplay,
       Category = "Date and Time",
       meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
   int32 DSTEndMonth = 11;
@@ -208,6 +190,7 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      AdvancedDisplay,
       Category = "Date and Time",
       meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
   int32 DSTEndDay = 3;
@@ -218,9 +201,35 @@ public:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      AdvancedDisplay,
       Category = "Date and Time",
       meta = (UIMin = 0, UIMax = 23, ClampMin = 0, ClampMax = 23))
   int32 DSTSwitchHour = 2.f;
+
+  /**
+   * A switch to toggle between desktop and mobile rendering code paths.
+   * This will be automatically set to true when deployed on mobile.
+   * It can also be manually toggled for development testing (requires level
+   * reload to see changes).
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
+  bool EnableMobileRendering;
+
+  /**
+   * Mobile platforms currently do not support the SkyAtmosphereComponent.
+   * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mobile)
+  TSubclassOf<AActor> SkySphereClass;
+
+  /**
+   * Reference to BP_Sky_Sphere or similar actor (mobile only)
+   */
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
+  AActor* SkySphereActor;
+
+  UPROPERTY(EditAnywhere, Category = Mobile)
+  float MobileDirectionalLightIntensity = 6.f;
 
   UPROPERTY(BlueprintReadWrite, Category = "Event Tick")
   float HashVal;
