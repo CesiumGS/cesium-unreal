@@ -436,11 +436,12 @@ private:
    */
   static FName DEFAULT_GEOREFERENCE_TAG;
 
+  /**
+   * The radii, in x-, y-, and z-direction, of the ellipsoid that
+   * should be used in this instance.
+   */
   UPROPERTY()
   double _ellipsoidRadii[3];
-
-  UPROPERTY()
-  double _center[3];
 
   GeoTransforms _geoTransforms;
 

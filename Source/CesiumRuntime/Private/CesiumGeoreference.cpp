@@ -112,7 +112,6 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
 
 ACesiumGeoreference::ACesiumGeoreference()
     : _ellipsoidRadii{WGS84_ELLIPSOID_RADII},
-      _center{0.0, 0.0, 0.0},
       _geoTransforms(),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
@@ -126,6 +125,10 @@ void ACesiumGeoreference::PostInitProperties() {
       *this->GetName());
 
   Super::PostInitProperties();
+
+  // Initialize the GeoTransforms with the state from the
+  // deserialized properties
+  _geoTransforms.setEllipsoid(CesiumGeospatial::Ellipsoid(glm::dvec3(_ellipsoidRadii[0], _ellipsoidRadii[1], _ellipsoidRadii[2])));
   UpdateGeoreference();
 }
 
