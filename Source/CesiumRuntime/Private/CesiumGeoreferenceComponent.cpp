@@ -120,6 +120,15 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToLongitudeLatitudeHeight(
       VecMath::createVector3D(targetLongitudeLatitudeHeight),
       maintainRelativeOrientation);
 }
+
+FVector
+UCesiumGeoreferenceComponent::InaccurateGetLongitudeLatitudeHeight() const {
+  return FVector(
+      static_cast<float>(this->Longitude),
+      static_cast<float>(this->Latitude),
+      static_cast<float>(this->Height));
+}
+
 void UCesiumGeoreferenceComponent::MoveToECEF(
     const glm::dvec3& targetEcef,
     bool maintainRelativeOrientation) {
@@ -132,6 +141,13 @@ void UCesiumGeoreferenceComponent::InaccurateMoveToECEF(
   this->MoveToECEF(
       VecMath::createVector3D(targetEcef),
       maintainRelativeOrientation);
+}
+
+FVector UCesiumGeoreferenceComponent::InaccurateGetECEF() const {
+  return FVector(
+      static_cast<float>(this->ECEF_X),
+      static_cast<float>(this->ECEF_Y),
+      static_cast<float>(this->ECEF_Z));
 }
 
 void UCesiumGeoreferenceComponent::OnRegister() {

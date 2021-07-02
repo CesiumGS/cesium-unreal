@@ -129,6 +129,14 @@ public:
       bool MaintainRelativeOrientation = true);
 
   /**
+   * Returns the longitude in degrees (x), latitude in degrees (y),
+   * and height in meters (z) of the actor, downcasted to a
+   * single-precision floating point vector.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  FVector InaccurateGetLongitudeLatitudeHeight() const;
+
+  /**
    * Move the actor to the specified Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
@@ -144,6 +152,14 @@ public:
   void InaccurateMoveToECEF(
       const FVector& TargetEcef,
       bool MaintainRelativeOrientation = true);
+
+  /**
+   * Returns the Earth-Centered, Earth-Fixed (ECEF)
+   * coordinates of the actor, downcasted to a
+   * single-precision floating point vector.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  FVector InaccurateGetECEF() const;
 
   /**
    * Called by owner actor on position shifting. The Component should update
