@@ -370,13 +370,13 @@ private:
   // This is currently no longer used, but removing this messes up
   // the deserialization (unless we handle different versions)
   // Note: this is done to allow Unreal to recognize and serialize _actorToECEF
-  UPROPERTY()
-  double _actorToECEF_Array[16];
-  glm::dmat4& _actorToECEF = *(glm::dmat4*)_actorToECEF_Array;
+  //UPROPERTY()
+  //double _actorToECEF_Array[16];
+  //glm::dmat4& _actorToECEF = *(glm::dmat4*)_actorToECEF_Array;
 
   // TODO GEOREF_REFACTORING
   // This was only set to "true" from CesiumGlobeAnchorParent (deprecated)
   // In all other cases, the flag had always been "false"
-  UPROPERTY()
-  bool _autoSnapToEastSouthUp;
+  //UPROPERTY()
+  //bool _autoSnapToEastSouthUp;
 };
