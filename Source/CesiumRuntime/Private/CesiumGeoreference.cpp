@@ -128,7 +128,8 @@ void ACesiumGeoreference::PostInitProperties() {
 
   // Initialize the GeoTransforms with the state from the
   // deserialized properties
-  _geoTransforms.setEllipsoid(CesiumGeospatial::Ellipsoid(glm::dvec3(_ellipsoidRadii[0], _ellipsoidRadii[1], _ellipsoidRadii[2])));
+  _geoTransforms.setEllipsoid(CesiumGeospatial::Ellipsoid(
+      glm::dvec3(_ellipsoidRadii[0], _ellipsoidRadii[1], _ellipsoidRadii[2])));
   UpdateGeoreference();
 }
 
