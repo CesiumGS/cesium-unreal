@@ -129,7 +129,17 @@ void ACesiumSunSky::_spawnSkySphere() {
   if (!EnableMobileRendering || !IsValid(GetWorld())) {
     return;
   }
-  SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
+
+  if (!Georeference) {
+    return;
+  }
+
+  // Set sky sphere actor position to ECEF 0,0,0
+  FTransform spawnTransform = FTransform(
+      Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
+  SkySphereActor = GetWorld()->SpawnActor<AActor>(
+      SkySphereClass,
+      spawnTransform);
   _wantsSpawnMobileSkySphere = false;
 
   _setSkySphereDirectionalLight();
