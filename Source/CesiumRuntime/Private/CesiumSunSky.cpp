@@ -93,8 +93,8 @@ void ACesiumSunSky::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
 
   const FName PropName = (PropertyChangedEvent.Property)
-                           ? PropertyChangedEvent.Property->GetFName()
-                           : NAME_None;
+                             ? PropertyChangedEvent.Property->GetFName()
+                             : NAME_None;
   if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, SkySphereClass)) {
     _wantsSpawnMobileSkySphere = true;
     if (SkySphereActor) {
@@ -110,9 +110,9 @@ void ACesiumSunSky::PostEditChangeProperty(
     }
   }
   if (PropName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseLevelDirectionalLight) ||
+          GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseLevelDirectionalLight) ||
       PropName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, LevelDirectionalLight)) {
+          GET_MEMBER_NAME_CHECKED(ACesiumSunSky, LevelDirectionalLight)) {
     _setSkySphereDirectionalLight();
     if (IsValid(LevelDirectionalLight)) {
       LevelDirectionalLight->GetComponent()->SetAtmosphereSunLight(true);
@@ -137,9 +137,8 @@ void ACesiumSunSky::_spawnSkySphere() {
   // Set sky sphere actor position to ECEF 0,0,0
   FTransform spawnTransform = FTransform(
       Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
-  SkySphereActor = GetWorld()->SpawnActor<AActor>(
-      SkySphereClass,
-      spawnTransform);
+  SkySphereActor =
+      GetWorld()->SpawnActor<AActor>(SkySphereClass, spawnTransform);
   _wantsSpawnMobileSkySphere = false;
 
   _setSkySphereDirectionalLight();
