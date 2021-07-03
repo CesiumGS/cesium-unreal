@@ -32,6 +32,7 @@ set(CMAKE_DEBUG_POSTFIX ${CESIUM_DEBUG_POSTFIX})
 set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 add_subdirectory(cesium-native)
 
@@ -40,7 +41,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_res
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
-if (ANDROID) 
+if (ANDROID)
     add_library(MikkTSpace MikkTSpace/mikktspace.c)
     set_target_properties(MikkTSpace PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/MikkTSpace/mikktspace.h")
     target_include_directories(MikkTSpace PUBLIC MikkTSpace)
