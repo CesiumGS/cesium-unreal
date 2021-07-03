@@ -313,6 +313,7 @@ void ACesiumGeoreference::BeginPlay() {
   for (FCesiumSubLevel& level : CesiumSubLevels) {
     level.CurrentlyLoaded = false;
   }
+  UpdateGeoreference();
 }
 
 /** In case the CesiumGeoreference gets spawned at run time, instead of design
