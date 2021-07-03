@@ -33,11 +33,13 @@ set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 
-# cmake_policy(SET CMP0063 NEW)
-# set(CMAKE_CXX_VISIBILITY_PRESET ms-compat)
-# set(CMAKE_VISIBILITY_INLINES_HIDDEN on)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fvisibility-ms-compat -fvisibility-ms-compat")
+# On Mac and Linux, Unreal uses -fvisibility-ms-compat.
+# On Android, it uses -fvisibility=hidden
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-ms-compat -fvisibility-inlines-hidden")
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+endif()
 
 add_subdirectory(cesium-native)
 
