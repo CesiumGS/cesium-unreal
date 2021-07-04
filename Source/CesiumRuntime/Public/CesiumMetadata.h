@@ -5,6 +5,8 @@
 #include "CesiumGltf/MetadataPropertyView.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltf/ModelEXT_feature_metadata.h"
+#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
+#include "CesiumGltf/AccessorView.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include <variant>
@@ -178,6 +180,8 @@ public:
 
   FCesiumMetadataArray GetArray() const;
 
+  FString ToString() const;
+
 private:
   ValueType _value;
   ECesiumMetadataValueType _type;
@@ -248,6 +252,8 @@ public:
 
   ECesiumMetadataValueType GetType() const;
 
+  size_t GetNumOfFeature() const;
+
   bool GetBoolean(size_t featureID) const;
 
   int64 GetInt64(size_t featureID) const;
@@ -279,183 +285,55 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataFeatureTable {
   GENERATED_USTRUCT_BODY()
 
+  using AccesorViewType = std::variant<
+      std::monostate,
+      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>,
+      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
+      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>,
+      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
+      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>,
+      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>>;
+
 public:
   FCesiumMetadataFeatureTable(){};
 
   FCesiumMetadataFeatureTable(
       const CesiumGltf::Model& model,
+      const CesiumGltf::Accessor& accessor,
       const CesiumGltf::FeatureTable& featureTable);
+
+  size_t GetNumOfFeatures() const;
+
+  int64 GetFeatureIDForVertex(uint32 vertexIdx) const;
 
   TMap<FString, FCesiumMetadataGenericValue>
   GetValuesForFeatureID(size_t featureID) const;
 
-  FCesiumMetadataProperty GetProperty(const FString& name) const;
+  TMap<FString, FString>
+  GetValuesAsStringsForFeatureID(size_t featureID) const;
+
+  const TMap<FString, FCesiumMetadataProperty> &GetProperties() const;
 
 private:
+  AccesorViewType _featureIDAccessor;
   TMap<FString, FCesiumMetadataProperty> _properties;
 };
 
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumMetadata {
+struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {
   GENERATED_USTRUCT_BODY()
 
 public:
-  FCesiumMetadata() {}
+  FCesiumMetadataPrimitive() {}
 
-  FCesiumMetadata(
+  FCesiumMetadataPrimitive(
       const CesiumGltf::Model& model,
-      const CesiumGltf::ModelEXT_feature_metadata& metadata);
+      const CesiumGltf::MeshPrimitive& primitive,
+      const CesiumGltf::ModelEXT_feature_metadata& metadata,
+      const CesiumGltf::MeshPrimitiveEXT_feature_metadata& primitiveMetadata);
 
-  const FString &GetSchemaName() const;
-
-  const FString &GetSchemaDescription() const;
-
-  const FString &GetVersion() const;
-
-  const TMap<FString, FCesiumMetadataFeatureTable>& GetFeatureTables() const;
+  const TArray<FCesiumMetadataFeatureTable>& GetFeatureTables() const;
 
 private:
-  FString _schemaName;
-  FString _schemaDescription;
-  FString _schemaVersion;
-  TMap<FString, FCesiumMetadataFeatureTable> _featureTables;
-};
-
-UCLASS()
-class CESIUMRUNTIME_API UCesiumMetadataArrayBlueprintLibrary
-    : public UBlueprintFunctionLibrary {
-  GENERATED_BODY()
-
-public:
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static ECesiumMetadataValueType
-  GetComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static bool
-  GetBoolean(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static int64
-  GetInt64(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float
-  GetUint64AsFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float
-  GetFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float
-  GetDoubleAsFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FString
-  GetString(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
-};
-
-UCLASS()
-class CESIUMRUNTIME_API UCesiumMetadataGenericValueBlueprintLibrary
-    : public UBlueprintFunctionLibrary {
-  GENERATED_BODY()
-
-public:
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static ECesiumMetadataValueType
-  GetType(UPARAM(ref) const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static int64 GetInt64(UPARAM(ref) const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetUint64AsFloat(UPARAM(ref)
-                                    const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetDoubleAsFloat(UPARAM(ref)
-                                    const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static bool GetBoolean(UPARAM(ref) const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FString GetString(UPARAM(ref)
-                               const FCesiumMetadataGenericValue& value);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FCesiumMetadataArray
-  GetArray(UPARAM(ref) const FCesiumMetadataGenericValue& value);
-};
-
-UCLASS()
-class CESIUMRUNTIME_API UCesiumMetadataPropertyBlueprintLibrary
-    : public UBlueprintFunctionLibrary {
-  GENERATED_BODY()
-
-public:
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static ECesiumMetadataValueType
-  GetType(UPARAM(ref) const FCesiumMetadataProperty& property);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static bool GetBoolean(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static int64 GetInt64(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetUint64AsFloat(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetFloat(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static float GetDoubleAsFloat(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FString GetString(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FCesiumMetadataArray GetArray(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FCesiumMetadataGenericValue GetGenericValue(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-};
-
-UCLASS()
-class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
-    : public UBlueprintFunctionLibrary {
-  GENERATED_BODY()
-
-public:
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static TMap<FString, FCesiumMetadataGenericValue> GetValuesForFeatureID(
-      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
-      int64 featureID);
-
-  UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Cesium|Metadata")
-  static FCesiumMetadataProperty GetProperty(
-      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
-      const FString& name);
+  TArray<FCesiumMetadataFeatureTable> _featureIDAttributes;
 };

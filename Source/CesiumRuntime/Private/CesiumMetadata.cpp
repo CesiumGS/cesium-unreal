@@ -2,11 +2,60 @@
 #include "CesiumGltf/MetadataFeatureTableView.h"
 
 namespace {
+struct GenericValueToString {
+  FString operator()(std::monostate) { return ""; }
+
+  template <typename Integer> FString operator()(Integer value) {
+    return FString::FromInt(value);
+  }
+
+  FString operator()(float value) { 
+    return FString::SanitizeFloat(value);
+  }
+
+  FString operator()(double value) {
+    return FString::SanitizeFloat(value);
+  }
+
+  FString operator()(bool value) {
+    if (value) {
+      return "true";
+    }
+
+    return "false";
+  }
+
+  FString operator()(std::string_view value) {
+    return FString(value.size(), value.data());
+  }
+
+  template <typename T>
+  FString operator()(const CesiumGltf::MetadataArrayView<T>& value) {
+    FString result = "{";
+    FString seperator = "";
+    for (size_t i = 0; i < value.size(); ++i) {
+      result += seperator + (*this)(value[i]);
+      seperator = ", ";
+    }
+
+    return result;
+  }
+};
+
 struct MetadataArraySize {
   size_t operator()(std::monostate) { return 0; }
 
   template <typename T>
   size_t operator()(const CesiumGltf::MetadataArrayView<T>& value) {
+    return value.size();
+  }
+};
+
+struct MetadataPropertySize {
+  size_t operator()(std::monostate) { return 0; }
+
+  template <typename T>
+  size_t operator()(const CesiumGltf::MetadataPropertyView<T>& value) {
     return value.size();
   }
 };
@@ -23,6 +72,17 @@ struct MetadataPropertyValue {
   }
 
   size_t featureID;
+};
+
+struct FeatureIDFromAccessor {
+  int64 operator()(std::monostate) { return -1; }
+
+  template <typename T>
+  int64 operator()(const CesiumGltf::AccessorView<T>& value) {
+    return static_cast<int64>(value[vertexIdx].value[0]);
+  }
+
+  uint32_t vertexIdx;
 };
 
 template <typename T> struct IsNumericProperty {
@@ -191,8 +251,16 @@ FCesiumMetadataArray FCesiumMetadataGenericValue::GetArray() const {
       _value);
 }
 
+FString FCesiumMetadataGenericValue::ToString() const { 
+  return std::visit(GenericValueToString{}, _value);
+}
+
 ECesiumMetadataValueType FCesiumMetadataProperty::GetType() const {
   return _type;
+}
+
+size_t FCesiumMetadataProperty::GetNumOfFeature() const {
+  return std::visit(MetadataPropertySize{}, _property);
 }
 
 int64 FCesiumMetadataProperty::GetInt64(size_t featureID) const {
@@ -278,7 +346,44 @@ FCesiumMetadataProperty::GetGenericValue(size_t featureID) const {
 
 FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
     const CesiumGltf::Model& model,
+    const CesiumGltf::Accessor& featureIDAccessor,
     const CesiumGltf::FeatureTable& featureTable) {
+
+  switch (featureIDAccessor.componentType) {
+  case CesiumGltf::Accessor::ComponentType::BYTE:
+    _featureIDAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>(
+            model,
+            featureIDAccessor);
+    break;
+  case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
+    _featureIDAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>(
+            model,
+            featureIDAccessor);
+    break;
+  case CesiumGltf::Accessor::ComponentType::SHORT:
+    _featureIDAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>(
+            model,
+            featureIDAccessor);
+    break;
+  case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
+    _featureIDAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>(
+            model,
+            featureIDAccessor);
+    break;
+  case CesiumGltf::Accessor::ComponentType::FLOAT:
+    _featureIDAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>(
+            model,
+            featureIDAccessor);
+    break;
+  default:
+    break;
+  }
+
   CesiumGltf::MetadataFeatureTableView featureTableView{&model, &featureTable};
 
   featureTableView.forEachProperty([&properties = _properties](
@@ -301,186 +406,74 @@ FCesiumMetadataFeatureTable::GetValuesForFeatureID(size_t featureID) const {
   return feature;
 }
 
-FCesiumMetadataProperty
-FCesiumMetadataFeatureTable::GetProperty(const FString& name) const {
-  auto pProperty = _properties.Find(name);
-  if (!pProperty) {
-    return FCesiumMetadataProperty();
+TMap<FString, FString>
+FCesiumMetadataFeatureTable::GetValuesAsStringsForFeatureID(
+    size_t featureID) const {
+  TMap<FString, FString> feature;
+  for (const auto pair : _properties) {
+    feature.Add(pair.Key, pair.Value.GetGenericValue(featureID).ToString());
   }
 
-  return *pProperty;
+  return feature;
 }
 
-FCesiumMetadata::FCesiumMetadata(
-  const CesiumGltf::Model& model,
-  const CesiumGltf::ModelEXT_feature_metadata& metadata) 
-{
-  for (const auto& featureTable : metadata.featureTables) {
-    _featureTables.Add(
-        FString(featureTable.first.size(), featureTable.first.data()),
-        FCesiumMetadataFeatureTable(model, featureTable.second));
+size_t FCesiumMetadataFeatureTable::GetNumOfFeatures() const {
+  if (_properties.Num() == 0) {
+    return 0;
+  }
+
+  return _properties.begin().Value().GetNumOfFeature();
+}
+
+int64
+FCesiumMetadataFeatureTable::GetFeatureIDForVertex(uint32 vertexIdx) const {
+  return std::visit(FeatureIDFromAccessor{vertexIdx}, _featureIDAccessor);
+}
+
+const TMap<FString, FCesiumMetadataProperty>&
+FCesiumMetadataFeatureTable::GetProperties() const {
+  return _properties;
+}
+
+FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive,
+    const CesiumGltf::ModelEXT_feature_metadata& metadata,
+    const CesiumGltf::MeshPrimitiveEXT_feature_metadata& primitiveMetadata) {
+  for (const CesiumGltf::FeatureIDAttribute& attribute :
+       primitiveMetadata.featureIdAttributes) {
+    if (attribute.featureIds.attribute) {
+      auto featureID =
+          primitive.attributes.find(attribute.featureIds.attribute.value());
+      if (featureID == primitive.attributes.end()) {
+        continue;
+      }
+
+      const CesiumGltf::Accessor* accessor =
+          model.getSafe<CesiumGltf::Accessor>(
+              &model.accessors,
+              featureID->second);
+      if (!accessor) {
+        continue;
+      }
+
+      if (accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
+        continue;
+      }
+
+      auto featureTable = metadata.featureTables.find(attribute.featureTable);
+      if (featureTable == metadata.featureTables.end()) {
+        continue;
+      }
+
+      _featureIDAttributes.Add((
+          FCesiumMetadataFeatureTable(model, *accessor, featureTable->second)));
+    }
   }
 }
 
-const FString& FCesiumMetadata::GetSchemaName() const { return _schemaName; }
-
-const FString& FCesiumMetadata::GetSchemaDescription() const {
-  return _schemaDescription;
-}
-
-const FString& FCesiumMetadata::GetVersion() const { return _schemaVersion; }
-
-const TMap<FString, FCesiumMetadataFeatureTable>&
-FCesiumMetadata::GetFeatureTables() const {
-  return _featureTables;
-}
-
-TMap<FString, FCesiumMetadataGenericValue>
-UCesiumMetadataFeatureTableBlueprintLibrary::GetValuesForFeatureID(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
-    int64 featureID) {
-  return featureTable.GetValuesForFeatureID(featureID);
-}
-
-FCesiumMetadataProperty
-UCesiumMetadataFeatureTableBlueprintLibrary::GetProperty(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
-    const FString& name) {
-  return featureTable.GetProperty(name);
-}
-
-ECesiumMetadataValueType UCesiumMetadataPropertyBlueprintLibrary::GetType(
-    UPARAM(ref) const FCesiumMetadataProperty& property) {
-  return property.GetType();
-}
-
-bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetBoolean(featureID);
-}
-
-int64 UCesiumMetadataPropertyBlueprintLibrary::GetInt64(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetInt64(featureID);
-}
-
-float UCesiumMetadataPropertyBlueprintLibrary::GetUint64AsFloat(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return static_cast<float>(property.GetUint64(featureID));
-}
-
-float UCesiumMetadataPropertyBlueprintLibrary::GetFloat(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetFloat(featureID);
-}
-
-float UCesiumMetadataPropertyBlueprintLibrary::GetDoubleAsFloat(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return static_cast<float>(property.GetDouble(featureID));
-}
-
-FString UCesiumMetadataPropertyBlueprintLibrary::GetString(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetString(featureID);
-}
-
-FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetArray(featureID);
-}
-
-FCesiumMetadataGenericValue
-UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetGenericValue(featureID);
-}
-
-ECesiumMetadataValueType UCesiumMetadataGenericValueBlueprintLibrary::GetType(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetType();
-}
-
-int64 UCesiumMetadataGenericValueBlueprintLibrary::GetInt64(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetInt64();
-}
-
-float UCesiumMetadataGenericValueBlueprintLibrary::GetUint64AsFloat(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return static_cast<float>(value.GetUint64());
-}
-
-float UCesiumMetadataGenericValueBlueprintLibrary::GetFloat(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetFloat();
-}
-
-float UCesiumMetadataGenericValueBlueprintLibrary::GetDoubleAsFloat(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetDouble();
-}
-
-bool UCesiumMetadataGenericValueBlueprintLibrary::GetBoolean(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetBoolean();
-}
-
-FString UCesiumMetadataGenericValueBlueprintLibrary::GetString(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetString();
-}
-
-FCesiumMetadataArray UCesiumMetadataGenericValueBlueprintLibrary::GetArray(
-    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetArray();
-}
-
-ECesiumMetadataValueType UCesiumMetadataArrayBlueprintLibrary::GetComponentType(
-    UPARAM(ref) const FCesiumMetadataArray& array) {
-  return array.GetComponentType();
-}
-
-bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetBoolean(index);
-}
-
-int64 UCesiumMetadataArrayBlueprintLibrary::GetInt64(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetInt64(index);
-}
-
-float UCesiumMetadataArrayBlueprintLibrary::GetUint64AsFloat(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return static_cast<float>(array.GetUint64(index));
-}
-
-float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetFloat(index);
-}
-
-float UCesiumMetadataArrayBlueprintLibrary::GetDoubleAsFloat(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return static_cast<float>(array.GetDouble(index));
-}
-
-FString UCesiumMetadataArrayBlueprintLibrary::GetString(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetString(index);
+const TArray<FCesiumMetadataFeatureTable>&
+FCesiumMetadataPrimitive::GetFeatureTables() const {
+  return _featureIDAttributes;
 }
 
