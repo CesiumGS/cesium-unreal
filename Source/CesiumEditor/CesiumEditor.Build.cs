@@ -119,7 +119,6 @@ public class CesiumEditor : ModuleRules
         PublicDefinitions.AddRange(
             new string[]
             {
-                "LIBASYNC_STATIC",
             }
         );
 
