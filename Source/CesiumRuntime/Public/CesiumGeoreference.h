@@ -236,14 +236,20 @@ public:
   /**
    * This aligns the specified longitude in degrees (x), latitude in
    * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
-   * rotates the globe so that these coordinates exactly fall on the origin.
+   * moves the globe so that these coordinates exactly fall on the origin.
+   *
+   * When the WorldOriginCamera of this instance is currently contained
+   * the bounds of a sublevel, then this call has no effect.
    */
   void SetGeoreferenceOrigin(const glm::dvec3& TargetLongitudeLatitudeHeight);
 
   /**
    * This aligns the specified longitude in degrees (x), latitude in
    * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
-   * rotates the globe so that these coordinates exactly fall on the origin.
+   * moves the globe so that these coordinates exactly fall on the origin.
+   *
+   * When the WorldOriginCamera of this instance is currently contained
+   * the bounds of a sublevel, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void
