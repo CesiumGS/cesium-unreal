@@ -4,7 +4,7 @@ then
     if [[ ! -d "$HOME/android-ndk-r21e/platforms" ]]
     then
         echo "Downloading Android NDK"
-        wget -q https://dl.google.com/android/repository/android-ndk-r21e-windows-x86_64.zip
+        wget -q https://dl.google.com/android/repository/android-ndk-r21b-windows-x86_64.zip
         7z x android-ndk-r21e-windows-x86_64.zip "-o$HOME/"
         rm android-ndk-r21e-windows-x86_64.zip
     else
