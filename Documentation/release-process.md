@@ -92,7 +92,13 @@ The full list of tilesets that need to be replaced are:
       * Cesium World Terrain and OSM buildings in 05_CesiumWorld_PostProcessing
 7. If the plugin update has replaced any Cesium blueprints that may already exist in one of the scenes, such as DynamicPawn, CesiumSunSky, or similar, replace the old version of the blueprint with the new version, and test the scene with the play button to make sure everything is working. If you're unsure whether the plugin update has resulted in anything that needs to be changed in the Samples, ask the team. 
 8. Visit every scene again to make sure that the view is correct and that nothing appears to be missing. 
-9. Commit and push your changes, then merge to `main`.
+9. For 04_MAIN_CesiumSublevels, play the scene in editor to test for the following. 
+   1. You'll start in Denver. Make sure the Denver Photogrammetry and CWT are showing and that there are no unexpected tilesets.
+   2. Press "2". Make sure you fly to the Grand Canyon, you should see CWT only. Make sure there are no other unexpected tilesets.
+   3. Press "3". Make sure you fly to Boston and CWT and the Boston Photogrammetry are showing. Make sure there are no other unexpected tilesets.
+   4. Press "4". Make sure you fly to Paris, and CWT and OSM buildings are showing. Make sure there are no other unexpected tilesets.
+   5. If no errors, return the camera to the starting view with the "1" key and close the scene without saving. 
+10. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
 
 ## Publish Cesium for Unreal Samples on Marketplace
 Coming soon, presumably the same as above.
