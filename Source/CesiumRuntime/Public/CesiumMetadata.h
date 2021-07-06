@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CoreMinimal.h"
 #include "CesiumGltf/FeatureIDAttribute.h"
 #include "CesiumGltf/MetadataArrayView.h"
 #include "CesiumGltf/MetadataPropertyView.h"
@@ -7,8 +8,6 @@
 #include "CesiumGltf/ModelEXT_feature_metadata.h"
 #include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
 #include "CesiumGltf/AccessorView.h"
-#include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
 #include <variant>
 #include "CesiumMetadata.generated.h"
 

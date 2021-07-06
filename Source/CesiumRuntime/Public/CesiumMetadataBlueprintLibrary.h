@@ -1,6 +1,8 @@
 #pragma once
 
+#include "CoreMinimal.h"
 #include "CesiumMetadata.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumMetadataBlueprintLibrary.generated.h"
 
 UCLASS()
