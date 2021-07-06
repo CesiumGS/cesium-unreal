@@ -252,7 +252,7 @@ public:
 
   ECesiumMetadataValueType GetType() const;
 
-  size_t GetNumOfFeature() const;
+  size_t GetNumOfFeatures() const;
 
   bool GetBoolean(size_t featureID) const;
 
@@ -335,5 +335,5 @@ public:
   const TArray<FCesiumMetadataFeatureTable>& GetFeatureTables() const;
 
 private:
-  TArray<FCesiumMetadataFeatureTable> _featureIDAttributes;
+  TArray<FCesiumMetadataFeatureTable> _featureTables;
 };

@@ -60,7 +60,7 @@ int64 GetFeatureIDForFace(
 }
 }
 
-int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumOfFeature(
+int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumOfFeatures(
     UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable) {
   return featureTable.GetNumOfFeatures();
 }
@@ -90,9 +90,9 @@ ECesiumMetadataValueType UCesiumMetadataPropertyBlueprintLibrary::GetType(
   return property.GetType();
 }
 
-int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumOfFeature(
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumOfFeatures(
     UPARAM(ref) const FCesiumMetadataProperty& property) {
-  return property.GetNumOfFeature();
+  return property.GetNumOfFeatures();
 }
 
 bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(

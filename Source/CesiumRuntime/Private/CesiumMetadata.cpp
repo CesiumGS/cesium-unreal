@@ -259,7 +259,7 @@ ECesiumMetadataValueType FCesiumMetadataProperty::GetType() const {
   return _type;
 }
 
-size_t FCesiumMetadataProperty::GetNumOfFeature() const {
+size_t FCesiumMetadataProperty::GetNumOfFeatures() const {
   return std::visit(MetadataPropertySize{}, _property);
 }
 
@@ -422,7 +422,7 @@ size_t FCesiumMetadataFeatureTable::GetNumOfFeatures() const {
     return 0;
   }
 
-  return _properties.begin().Value().GetNumOfFeature();
+  return _properties.begin().Value().GetNumOfFeatures();
 }
 
 int64
@@ -466,7 +466,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         continue;
       }
 
-      _featureIDAttributes.Add((
+      _featureTables.Add((
           FCesiumMetadataFeatureTable(model, *accessor, featureTable->second)));
     }
   }
@@ -474,6 +474,6 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
 
 const TArray<FCesiumMetadataFeatureTable>&
 FCesiumMetadataPrimitive::GetFeatureTables() const {
-  return _featureIDAttributes;
+  return _featureTables;
 }
 
