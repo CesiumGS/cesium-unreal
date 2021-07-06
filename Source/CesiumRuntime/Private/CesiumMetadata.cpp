@@ -9,13 +9,9 @@ struct GenericValueToString {
     return FString::FromInt(value);
   }
 
-  FString operator()(float value) { 
-    return FString::SanitizeFloat(value);
-  }
+  FString operator()(float value) { return FString::SanitizeFloat(value); }
 
-  FString operator()(double value) {
-    return FString::SanitizeFloat(value);
-  }
+  FString operator()(double value) { return FString::SanitizeFloat(value); }
 
   FString operator()(bool value) {
     if (value) {
@@ -251,7 +247,7 @@ FCesiumMetadataArray FCesiumMetadataGenericValue::GetArray() const {
       _value);
 }
 
-FString FCesiumMetadataGenericValue::ToString() const { 
+FString FCesiumMetadataGenericValue::ToString() const {
   return std::visit(GenericValueToString{}, _value);
 }
 
@@ -425,8 +421,8 @@ size_t FCesiumMetadataFeatureTable::GetNumOfFeatures() const {
   return _properties.begin().Value().GetNumOfFeatures();
 }
 
-int64
-FCesiumMetadataFeatureTable::GetFeatureIDForVertex(uint32 vertexIdx) const {
+int64 FCesiumMetadataFeatureTable::GetFeatureIDForVertex(
+    uint32 vertexIdx) const {
   return std::visit(FeatureIDFromAccessor{vertexIdx}, _featureIDAccessor);
 }
 
@@ -476,4 +472,3 @@ const TArray<FCesiumMetadataFeatureTable>&
 FCesiumMetadataPrimitive::GetFeatureTables() const {
   return _featureTables;
 }
-

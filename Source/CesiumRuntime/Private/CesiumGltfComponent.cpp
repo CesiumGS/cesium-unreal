@@ -27,8 +27,8 @@
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/GltfReader.h"
-#include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
+#include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -570,7 +570,11 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
     return FCesiumMetadataPrimitive();
   }
 
-  return FCesiumMetadataPrimitive(model, primitive, *metadata, *primitiveMetadata);
+  return FCesiumMetadataPrimitive(
+      model,
+      primitive,
+      *metadata,
+      *primitiveMetadata);
 }
 
 template <class TIndexAccessor>

@@ -3,11 +3,12 @@
 
 namespace {
 struct GetVertexIndexForFace {
-  template<typename T>
-  void operator()(const T& view) { return; }
+  template <typename T> void operator()(const T& view) { return; }
 
-  template<typename T>
-  void operator()(const CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<T>>& view) { 
+  template <typename T>
+  void operator()(
+      const CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<T>>&
+          view) {
     int64_t vertexBegin = faceID * 3;
     if (vertexBegin + 3 >= view.size()) {
       return;
@@ -17,7 +18,7 @@ struct GetVertexIndexForFace {
     *v1 = static_cast<int64_t>(view[vertexBegin + 1].value[0]);
     *v2 = static_cast<int64_t>(view[vertexBegin + 2].value[0]);
 
-    return; 
+    return;
   }
 
   int64_t faceID{};
@@ -38,7 +39,7 @@ int64 GetFeatureIDForFace(
   int64_t v0 = -1;
   int64_t v1 = -1;
   int64_t v2 = -1;
-  
+
   CesiumGltf::createAccessorView(
       model,
       meshPrimitive.indices,
@@ -58,7 +59,7 @@ int64 GetFeatureIDForFace(
 
   return id0;
 }
-}
+} // namespace
 
 int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumOfFeatures(
     UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable) {
@@ -264,7 +265,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   int64 featureID = GetFeatureIDForFace(
       faceID,
       *pGltfComponent->pModel,
-      *pGltfComponent->pMeshPrimitive, 
+      *pGltfComponent->pMeshPrimitive,
       featureTable);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();

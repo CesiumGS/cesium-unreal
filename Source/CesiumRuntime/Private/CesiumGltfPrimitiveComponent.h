@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include "CesiumGltf/MeshPrimitive.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumMetadata.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
-#include "CesiumMetadata.h"
-#include "CesiumGltf/Model.h"
-#include "CesiumGltf/MeshPrimitive.h"
 #include <glm/mat4x4.hpp>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
