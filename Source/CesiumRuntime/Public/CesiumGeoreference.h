@@ -380,10 +380,18 @@ public:
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
    * Unreal relative world location (relative to the floating origin).
+   */
+  glm::dquat TransformRotatorUnrealToEastNorthUp(
+      const glm::dquat& UeRotator,
+      const glm::dvec3& UeLocation) const;
+
+  /**
+   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Unreal relative world location (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
-   * TransformUnrealToEcef can be used.
+   * TransformRotatorUnrealToEastNorthUp can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorUnrealToEastNorthUp(
@@ -393,10 +401,18 @@ public:
   /**
    * Transforms a rotator from East-North-Up to Unreal world at the given
    * Unreal relative world location (relative to the floating origin).
+   */
+  glm::dquat TransformRotatorEastNorthUpToUnreal(
+      const glm::dquat& EnuRotator,
+      const glm::dvec3& UeLocation) const;
+
+  /**
+   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Unreal relative world location (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function from the
-   * {@link getGeoTransforms} can be used.
+   * the C++ API, corresponding double-precision function
+   * TransformRotatorEastNorthUpToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorEastNorthUpToUnreal(
