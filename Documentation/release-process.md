@@ -65,3 +65,40 @@ While doing the steps below, make sure no new changes are going into either cesi
 8. Once the new release is approved, it does not automatically go live. Take this opportunity to update the product description, images, and other content as needed (product page changes do not require Epic's review).
 9. To release it to the marketplace, navigate back to the product page and click **Publish**.
 10. Once Epic confirms that the plugin has been updated (likely between hours and days later), return to the Product page and edit the changelog link in the "Technical Details" section to point to the new version.
+
+
+# Update Cesium for Unreal Samples
+
+Assuming you tested the release candidate as described above, you should have [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) using the updated plugin. You'll use this to push updates to the project.
+
+## Update ion Access Tokens and Project
+
+1. Create a new branch of cesium-unreal-samples. 
+2. Delete the Cesium for Unreal Samples token for the release before last, which should expire close to the present date.
+3. Create a new access token using the CesiumJS ion account. 
+   * The name of the token should match "Cesium for Unreal Samples x.x.x - Delete on September 1st, 2021". The expiry date should be two months later than present. 
+   * The scope of the token should be "assets:read" for all assets.
+4. Copy the access token you just created. 
+5. Open cesium-unreal-samples in Unreal Engine.
+6. For each scene in the Maps folder, do the following:
+   1. For **all** 3D tilesets in the scene, clear the existing token with the yellow arrow. Add the new access token. Ensure all tilesets are rendering in the scene again.
+   2. If the camera has moved at all, press "1" on your keyboard to return the camera to the starting view. Make sure the text box describing the level is clearly framed in the camera view.
+   3. Save the scene.
+The full list of tilesets that need to be replaced are:
+      * Cesium World Terrain in 01_CesiumWorld
+      * Cesium World Terrain and Melbourne Photogrammetry in 02_CesiumMelbourne
+      * Cesium World Terrain and Aerometrex Denver Photogrammetry in 03_CesiumDenver
+      * Cesium World Terrain, Aerometrex Denver, Nearmap Boston, and OSM buildings in 04_MAIN_CesiumSublevels. You will have to load all the sublevels in the Levels menu for all the tliesets to show up in the World Outliner. Make sure to save both 04_MAIN_CesiumSublevels and 04_SublevelParis. 
+      * Cesium World Terrain and OSM buildings in 05_CesiumWorld_PostProcessing
+7. If the plugin update has replaced any Cesium blueprints that may already exist in one of the scenes, such as DynamicPawn, CesiumSunSky, or similar, replace the old version of the blueprint with the new version, and test the scene with the play button to make sure everything is working. If you're unsure whether the plugin update has resulted in anything that needs to be changed in the Samples, ask the team. 
+8. Visit every scene again to make sure that the view is correct and that nothing appears to be missing. 
+9. For 04_MAIN_CesiumSublevels, play the scene in editor to test for the following. 
+   1. You'll start in Denver. Make sure the Denver Photogrammetry and CWT are showing and that there are no unexpected tilesets.
+   2. Press "2". Make sure you fly to the Grand Canyon, you should see CWT only. Make sure there are no other unexpected tilesets.
+   3. Press "3". Make sure you fly to Boston and CWT and the Boston Photogrammetry are showing. Make sure there are no other unexpected tilesets.
+   4. Press "4". Make sure you fly to Paris, and CWT and OSM buildings are showing. Make sure there are no other unexpected tilesets.
+   5. If no errors, return the camera to the starting view with the "1" key and close the scene without saving. 
+10. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
+
+## Publish Cesium for Unreal Samples on Marketplace
+Coming soon, presumably the same as above.
