@@ -83,12 +83,8 @@ void UCesiumGeoreferenceComponent::SnapToEastSouthUp() {
         *this->GetName());
     return;
   }
-  const glm::dvec3 worldOriginLocation =
-      VecMath::createVector3D(world->OriginLocation);
   const glm::dmat3 newActorRotation =
-      this->Georeference->getGeoTransforms().ComputeEastNorthUpToUnreal(
-          worldOriginLocation,
-          _currentEcef);
+      this->Georeference->ComputeEastNorthUpToUnreal(_currentEcef);
   const glm::dvec3 relativeLocation = _computeRelativeLocation(_currentEcef);
 
   this->_updateActorTransform(newActorRotation, relativeLocation);
@@ -107,9 +103,8 @@ void UCesiumGeoreferenceComponent::MoveToLongitudeLatitudeHeight(
         *this->GetName());
     return;
   }
-  glm::dvec3 ecef = this->Georeference->getGeoTransforms()
-                        .TransformLongitudeLatitudeHeightToEcef(
-                            targetLongitudeLatitudeHeight);
+  glm::dvec3 ecef = this->Georeference->TransformLongitudeLatitudeHeightToEcef(
+      targetLongitudeLatitudeHeight);
 
   this->_setECEF(ecef, maintainRelativeOrientation);
 }
@@ -527,7 +522,7 @@ glm::dvec3 UCesiumGeoreferenceComponent::_computeEllipsoidNormalUnreal(
     return glm::dvec3();
   }
   const glm::dvec3 ellipsoidNormalEcef =
-      this->Georeference->getGeoTransforms().ComputeGeodeticSurfaceNormal(ecef);
+      this->Georeference->ComputeGeodeticSurfaceNormal(ecef);
   const glm::dmat4& ecefToUnreal =
       this->Georeference->getGeoTransforms()
           .GetEllipsoidCenteredToUnrealWorldTransform();
@@ -671,8 +666,7 @@ void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {
     return;
   }
   const glm::dvec3 cartographic =
-      this->Georeference->getGeoTransforms()
-          .TransformEcefToLongitudeLatitudeHeight(_currentEcef);
+      this->Georeference->TransformEcefToLongitudeLatitudeHeight(_currentEcef);
   this->Longitude = cartographic.x;
   this->Latitude = cartographic.y;
   this->Height = cartographic.z;
@@ -706,11 +700,11 @@ void UCesiumGeoreferenceComponent::_debugLogState() {
         *this->GetName());
     return;
   }
-  const glm::dmat4& ecefToUnreal =
+  const glm::dmat4& ecefToAbsoluteUnreal =
       this->Georeference->getGeoTransforms()
           .GetEllipsoidCenteredToUnrealWorldTransform();
   const glm::dvec3 absoluteLocation =
-      ecefToUnreal * glm::dvec4(_currentEcef, 1.0);
+      ecefToAbsoluteUnreal * glm::dvec4(_currentEcef, 1.0);
   const glm::dvec3 worldOriginLocation =
       VecMath::createVector3D(world->OriginLocation);
   const glm::dvec3 relativeLocation = absoluteLocation - worldOriginLocation;
