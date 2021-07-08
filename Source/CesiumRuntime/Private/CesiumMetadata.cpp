@@ -118,6 +118,9 @@ int64 FCesiumMetadataArray::GetInt64(size_t i) const {
         if constexpr (CesiumGltf::IsMetadataNumeric<decltype(v)>::value) {
           return static_cast<int64_t>(v[i]);
         }
+
+        assert(false && "Value cannot be represented as Int64");
+        return 0;
       },
       _value);
 }
@@ -179,6 +182,9 @@ int64 FCesiumMetadataGenericValue::GetInt64() const {
         if constexpr (CesiumGltf::IsMetadataNumeric<decltype(v)>::value) {
           return static_cast<int64_t>(v);
         }
+
+        assert(false && "Value cannot be represented as Int64");
+        return 0;
       },
       _value);
 }
@@ -243,6 +249,9 @@ FCesiumMetadataArray FCesiumMetadataGenericValue::GetArray() const {
                           value)>::value) {
           return FCesiumMetadataArray(value);
         }
+
+        assert(false && "Value cannot be represented as Array");
+        return FCesiumMetadataArray();
       },
       _value);
 }
@@ -269,6 +278,9 @@ int64 FCesiumMetadataProperty::GetInt64(size_t featureID) const {
         if constexpr (IsNumericProperty<decltype(v)>::value) {
           return static_cast<int64_t>(v.get(featureID));
         }
+
+        assert(false && "Value cannot be represented as Int64");
+        return 0;
       },
       _property);
 }
@@ -331,6 +343,9 @@ FCesiumMetadataArray FCesiumMetadataProperty::GetArray(size_t featureID) const {
         if constexpr (IsArrayProperty<decltype(value)>::value) {
           return FCesiumMetadataArray(value.get(featureID));
         }
+
+        assert(false && "Value cannot be represented as Array");
+        return FCesiumMetadataArray(); 
       },
       _property);
 }
