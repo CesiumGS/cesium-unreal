@@ -345,7 +345,7 @@ FCesiumMetadataArray FCesiumMetadataProperty::GetArray(size_t featureID) const {
         }
 
         assert(false && "Value cannot be represented as Array");
-        return FCesiumMetadataArray(); 
+        return FCesiumMetadataArray();
       },
       _property);
 }
