@@ -20,6 +20,7 @@ endif()
 # Rename sqlite3* symbols to cesium_sqlite3* so they don't conflict with UE's sqlite3,
 # which has a bunch of limitations and is not considered public.
 set(PRIVATE_CESIUM_SQLITE ON)
+set(CESIUM_CXX_STANDARD 14)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
@@ -40,7 +41,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_res
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
-if (ANDROID) 
+if (ANDROID)
     add_library(MikkTSpace MikkTSpace/mikktspace.c)
     set_target_properties(MikkTSpace PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/MikkTSpace/mikktspace.h")
     target_include_directories(MikkTSpace PUBLIC MikkTSpace)

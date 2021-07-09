@@ -14,7 +14,8 @@ public class CesiumRuntime : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
-                Path.Combine(ModuleDirectory, "../ThirdParty/include")
+                Path.Combine(ModuleDirectory, "../ThirdParty/include"),
+                Path.Combine(ModuleDirectory, "../ThirdParty/include/Cpp14Compatibility")
             }
         );
 
@@ -174,7 +175,7 @@ public class CesiumRuntime : ModuleRules
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
-        CppStandard = CppStandardVersion.Cpp17;
+        CppStandard = CppStandardVersion.Cpp14;
         bEnableExceptions = true;
     }
 }

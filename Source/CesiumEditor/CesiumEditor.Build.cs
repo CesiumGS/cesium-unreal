@@ -21,7 +21,6 @@ public class CesiumEditor : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-                Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
         );
 
@@ -131,6 +130,6 @@ public class CesiumEditor : ModuleRules
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrivatePCHHeaderFile = "Private/PCH.h";
-        CppStandard = CppStandardVersion.Cpp17;
+        CppStandard = CppStandardVersion.Cpp14;
     }
 }

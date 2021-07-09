@@ -9,7 +9,7 @@
 // VS2017. See https://github.com/akrzemi1/Optional/issues/57 and
 // https://answers.unrealengine.com/questions/607946/anonymous-union-with-none-trivial-type.html
 #ifdef _MSC_VER
-#if _MSC_VER < 1920
+#if _MSC_VER < 1920 || _MSVC_LANG < 201703L
 #pragma warning(push)
 #pragma warning(disable : 4583)
 #pragma warning(disable : 4582)

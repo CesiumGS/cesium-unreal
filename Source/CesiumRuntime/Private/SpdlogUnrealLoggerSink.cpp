@@ -3,6 +3,7 @@
 #include "SpdlogUnrealLoggerSink.h"
 #include "CesiumRuntime.h"
 #include "CoreMinimal.h"
+#include <mutex>
 
 void SpdlogUnrealLoggerSink::sink_it_(const spdlog::details::log_msg& msg) {
   switch (msg.level) {
@@ -36,7 +37,7 @@ FString SpdlogUnrealLoggerSink::formatMessage(
   // Frustratingly, spdlog::formatter isn't thread safe. So even though our sink
   // itself doesn't need to be protected by a mutex, the formatter does.
   // See https://github.com/gabime/spdlog/issues/897
-  std::scoped_lock<std::mutex> lock(this->_formatMutex);
+  std::lock_guard<std::mutex> lock(this->_formatMutex);
 
   spdlog::memory_buf_t formatted;
   this->formatter_->format(msg, formatted);
