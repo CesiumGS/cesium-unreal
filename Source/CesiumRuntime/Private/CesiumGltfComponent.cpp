@@ -1763,9 +1763,9 @@ void UCesiumGltfComponent::AttachRasterTile(
           textureCoordinateRectangle.maximumY),
       FLinearColor(translation.x, translation.y, scale.x, scale.y)});
 
-  if (this->OverlayTiles.Num() > 3) {
-    UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
-  }
+  // if (this->OverlayTiles.Num() > 3) {
+  //  UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
+  //}
 
   this->UpdateRasterOverlays();
 }
@@ -1777,13 +1777,19 @@ void UCesiumGltfComponent::DetachRasterTile(
     const CesiumGeometry::Rectangle& textureCoordinateRectangle) {
   size_t numBefore = this->OverlayTiles.Num();
   this->OverlayTiles.RemoveAll(
-      [pTexture, &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
-        return tile.Texture == pTexture &&
-               tile.TextureCoordinateRectangle.Equals(FLinearColor(
-                   textureCoordinateRectangle.minimumX,
-                   textureCoordinateRectangle.minimumY,
-                   textureCoordinateRectangle.maximumX,
-                   textureCoordinateRectangle.maximumY));
+      [/*overlayName =
+          UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()),*/
+       pTexture,
+       &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
+        return /*tile.OverlayName == overlayName &&*/
+            tile.Texture == pTexture &&
+            // TODO: can we remove the texcoord rect check now that only there's
+            // only one texture per tile per overlay?
+            tile.TextureCoordinateRectangle.Equals(FLinearColor(
+                textureCoordinateRectangle.minimumX,
+                textureCoordinateRectangle.minimumY,
+                textureCoordinateRectangle.maximumX,
+                textureCoordinateRectangle.maximumY));
       });
   size_t numAfter = this->OverlayTiles.Num();
 
@@ -1836,6 +1842,18 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
         continue;
       }
 
+      for (FRasterOverlayTile& overlayTile : this->OverlayTiles) {
+        pMaterial->SetTextureParameterValue(
+            TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_Texture")),
+            overlayTile.Texture);
+        pMaterial->SetVectorParameterValue(
+            TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_Rect")),
+            overlayTile.TextureCoordinateRectangle);
+        pMaterial->SetVectorParameterValue(
+            TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_TranslationScale")),
+            overlayTile.TranslationAndScale);
+      }
+      /*
       for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
         FRasterOverlayTile& overlayTile = this->OverlayTiles[i];
         std::string is = std::to_string(i + 1);
@@ -1875,6 +1893,7 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
       pMaterial->SetScalarParameterValue(
           "opacityMask",
           this->OverlayTiles.Num() > 0 ? 0.0 : 1.0);
+      */
     }
   }
 }

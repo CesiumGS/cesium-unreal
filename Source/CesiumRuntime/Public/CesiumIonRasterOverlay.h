@@ -18,6 +18,12 @@ class CESIUMRUNTIME_API UCesiumIonRasterOverlay : public UCesiumRasterOverlay {
 
 public:
   /**
+   * The name to use for this overlay.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name = "Overlay0";
+
+  /**
    * The ID of the Cesium ion asset to use.
    *
    * If this property is non-zero, the Bing Maps Key and Map Style properties

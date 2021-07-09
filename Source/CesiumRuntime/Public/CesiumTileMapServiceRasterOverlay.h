@@ -19,6 +19,12 @@ class CESIUMRUNTIME_API UCesiumTileMapServiceRasterOverlay
 
 public:
   /**
+   * The name to use for this overlay.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name = "TMS";
+
+  /**
    * The base URL of the Tile Map Service (TMS).
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
