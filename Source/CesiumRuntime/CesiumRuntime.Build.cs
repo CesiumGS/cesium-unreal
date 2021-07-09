@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 public class CesiumRuntime : ModuleRules
 {
@@ -127,7 +128,7 @@ public class CesiumRuntime : ModuleRules
                 "Projects"
             }
         );
-        
+
         // Use UE's MikkTSpace on non-Android
         if (Target.Platform != UnrealTargetPlatform.Android)
         {
@@ -176,5 +177,19 @@ public class CesiumRuntime : ModuleRules
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
-    }
+
+        if (Target.Platform == UnrealTargetPlatform.Android)
+        {
+          // This line is just to force C++14 even on UE 4.262, so we can test what follows.
+          CppStandard = CppStandardVersion.Cpp14;
+
+          // Use reflection to force C++17 mode even though the UBT in UE
+          // versions prior to 4.26.2 ignore the CppStandard property
+          // and just always use C++14.
+          Type type = Target.GetType();
+          FieldInfo innerField = type.GetField("Inner", BindingFlags.Instance | BindingFlags.NonPublic);
+          TargetRules inner = (TargetRules)innerField.GetValue(Target);
+          inner.AdditionalCompilerArguments += " -std=c++17";
+        }
+  }
 }
