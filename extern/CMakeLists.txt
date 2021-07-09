@@ -20,7 +20,7 @@ endif()
 # Rename sqlite3* symbols to cesium_sqlite3* so they don't conflict with UE's sqlite3,
 # which has a bunch of limitations and is not considered public.
 set(PRIVATE_CESIUM_SQLITE ON)
-set(CESIUM_CXX_STANDARD 14)
+set(CESIUM_CXX_STANDARD 14 CACHE STRING "The C++ version standard to use. Supports 14 or 17. This option will be removed in the future and cesium-native will only support C++17." FORCE)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
