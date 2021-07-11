@@ -20,6 +20,7 @@
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "CreateModelOptions.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
@@ -67,7 +68,8 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _beforeMovieKeepWorldOriginNearCamera{true} {
+      _beforeMovieKeepWorldOriginNearCamera{true},
+      _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -136,6 +138,13 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->MarkTilesetDirty();
     }
+  }
+}
+
+void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
+  if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
+    this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
+    this->MarkTilesetDirty();
   }
 }
 
@@ -427,21 +436,23 @@ public:
 
   virtual void* prepareInLoadThread(
       const CesiumGltf::Model& model,
-      const glm::dmat4& transform) {
-    std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(
-            model,
-            transform
+      const glm::dmat4& transform) override {
+
+    CreateModelOptions options;
+    options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
+
 #if PHYSICS_INTERFACE_PHYSX
-            ,
-            this->_pPhysXCooking
+    options.pPhysXCooking = this->_pPhysXCooking;
 #endif
-        );
+
+    std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
+        UCesiumGltfComponent::CreateOffGameThread(model, transform, options);
     return pHalf.release();
   }
 
-  virtual void*
-  prepareInMainThread(Cesium3DTiles::Tile& tile, void* pLoadThreadResult) {
+  virtual void* prepareInMainThread(
+      Cesium3DTiles::Tile& tile,
+      void* pLoadThreadResult) override {
     const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
     if (pContent && pContent->model) {
       std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
@@ -462,7 +473,7 @@ public:
   virtual void free(
       Cesium3DTiles::Tile& tile,
       void* pLoadThreadResult,
-      void* pMainThreadResult) noexcept {
+      void* pMainThreadResult) noexcept override {
     if (pLoadThreadResult) {
       UCesiumGltfComponent::HalfConstructed* pHalf =
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
@@ -482,7 +493,7 @@ public:
 
   virtual void* prepareRasterInMainThread(
       const Cesium3DTiles::RasterOverlayTile& rasterTile,
-      void* pLoadThreadResult) {
+      void* pLoadThreadResult) override {
     const CesiumGltf::ImageCesium& image = rasterTile.getImage();
     if (image.width <= 0 || image.height <= 0) {
       return nullptr;
@@ -526,7 +537,7 @@ public:
       void* pMainThreadRendererResources,
       const CesiumGeometry::Rectangle& textureCoordinateRectangle,
       const glm::dvec2& translation,
-      const glm::dvec2& scale) {
+      const glm::dvec2& scale) override {
     const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
     if (pContent && pContent->model) {
       UCesiumGltfComponent* pGltfContent =
@@ -541,8 +552,6 @@ public:
             scale);
       }
     }
-    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for attaching raster to
-    // tile"));
   }
 
   virtual void detachRasterInMainThread(
@@ -564,32 +573,9 @@ public:
             textureCoordinateRectangle);
       }
     }
-    // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for detaching raster
-    // from tile"));
   }
 
 private:
-  // static int32 GetObjReferenceCount(UObject* Obj, TArray<UObject*>*
-  // OutReferredToObjects = nullptr)
-  // {
-  // 	if (!Obj ||
-  // 		!Obj->IsValidLowLevelFast())
-  // 	{
-  // 		return -1;
-  // 	}
-
-  // 	TArray<UObject*> ReferredToObjects;             //req outer, ignore
-  // archetype, recursive, ignore transient 	FReferenceFinder
-  // ObjectReferenceCollector(ReferredToObjects, nullptr, false, true, true,
-  // false); 	ObjectReferenceCollector.FindReferences(Obj);
-
-  // 	if (OutReferredToObjects)
-  // 	{
-  // 		OutReferredToObjects->Append(ReferredToObjects);
-  // 	}
-  // 	return ReferredToObjects.Num();
-  // }
-
   void destroyRecursively(USceneComponent* pComponent) {
 
     UE_LOG(
@@ -600,12 +586,6 @@ private:
     if (!pComponent) {
       return;
     }
-
-    // FString newName = TEXT("Destroyed_") + pComponent->GetName();
-    // pComponent->Rename(*newName);
-
-    // TArray<UObject*> before;
-    // GetObjReferenceCount(pComponent, &before);
 
     if (pComponent->IsRegistered()) {
       pComponent->UnregisterComponent();
@@ -618,12 +598,6 @@ private:
 
     pComponent->DestroyPhysicsState();
     pComponent->DestroyComponent();
-
-    // TArray<UObject*> after;
-    // GetObjReferenceCount(pComponent, &after);
-
-    // UE_LOG(LogActor, Warning, TEXT("Before %d, After %d"), before.Num(),
-    // after.Num());
 
     UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
   }
@@ -664,6 +638,8 @@ void ACesium3DTileset::LoadTileset() {
           std::make_shared<CesiumAsync::SqliteCache>(
               spdlog::default_logger(),
               getCacheDatabaseName()));
+  static CesiumAsync::AsyncSystem asyncSystem(
+      std::make_shared<UnrealTaskProcessor>());
 
   Cesium3DTiles::Tileset* pTileset = this->_pTileset;
 
@@ -692,7 +668,7 @@ void ACesium3DTileset::LoadTileset() {
   Cesium3DTiles::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
-      std::make_shared<UnrealTaskProcessor>(),
+      asyncSystem,
       this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem()
                          : nullptr,
       spdlog::default_logger()};
@@ -841,10 +817,10 @@ ACesium3DTileset::GetPlayerCamera() const {
     return std::optional<UnrealCameraParameters>();
   }
 
-  const FMinimalViewInfo& pov = pCameraManager->ViewTarget.POV;
-  const FVector& location = pov.Location;
-  const FRotator& rotation = pCameraManager->ViewTarget.POV.Rotation;
-  double fov = pov.FOV;
+  FVector location;
+  FRotator rotation;
+  pCameraManager->GetCameraViewPoint(location, rotation);
+  double fov = pCameraManager->GetFOVAngle();
 
   FVector2D size;
   pViewport->GetViewportSize(size);
@@ -952,6 +928,21 @@ bool isInExclusionZone(
     }
   }
   return false;
+}
+
+void removeVisibleTilesFromList(
+    std::vector<Cesium3DTiles::Tile*>& list,
+    const std::vector<Cesium3DTiles::Tile*>& visibleTiles) {
+  if (list.empty()) {
+    return;
+  }
+
+  for (Cesium3DTiles::Tile* pTile : visibleTiles) {
+    auto it = std::find(list.begin(), list.end(), pTile);
+    if (it != list.end()) {
+      list.erase(it);
+    }
+  }
 }
 
 /**
@@ -1095,20 +1086,10 @@ void ACesium3DTileset::showTilesToRender(
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
     if (!Gltf) {
-      // TODO: Not-yet-renderable tiles shouldn't be here.
-      // (The root tile seems to be here, although it does
-      // not have a Gltf - but print a warning if this is
-      // NOT the root tile, i.e. if it does have a parent)
-      if (pTile->getParent()) {
-        FString tileIdString(Cesium3DTiles::TileIdUtilities::createTileIdString(
-                                 pTile->getTileID())
-                                 .c_str());
-        UE_LOG(
-            LogCesium,
-            Warning,
-            TEXT("Tile %s to render does not have a Gltf"),
-            *tileIdString);
-      }
+      // When a tile does not have render resources (i.e. a glTF), then
+      // the resources either have not yet been loaded or prepared,
+      // or the tile is from an external tileset and does not directly
+      // own renderable content. In both cases, the tile is ignored here.
       continue;
     }
 
@@ -1195,7 +1176,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
           : this->_pTileset->updateView(tilesetViewState);
   updateLastViewUpdateResultState(result);
 
-  hideTilesToNoLongerRender(result.tilesToNoLongerRenderThisFrame);
+  removeVisibleTilesFromList(
+      this->_tilesToNoLongerRenderNextFrame,
+      result.tilesToRenderThisFrame);
+  hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
+  this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
 }
 
@@ -1239,6 +1224,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
