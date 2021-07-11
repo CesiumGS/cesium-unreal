@@ -411,7 +411,7 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
 TMap<FString, FCesiumMetadataGenericValue>
 FCesiumMetadataFeatureTable::GetValuesForFeatureID(size_t featureID) const {
   TMap<FString, FCesiumMetadataGenericValue> feature;
-  for (const auto &pair : _properties) {
+  for (const auto& pair : _properties) {
     feature.Add(pair.Key, pair.Value.GetGenericValue(featureID));
   }
 
@@ -422,7 +422,7 @@ TMap<FString, FString>
 FCesiumMetadataFeatureTable::GetValuesAsStringsForFeatureID(
     size_t featureID) const {
   TMap<FString, FString> feature;
-  for (const auto &pair : _properties) {
+  for (const auto& pair : _properties) {
     feature.Add(pair.Key, pair.Value.GetGenericValue(featureID).ToString());
   }
 
