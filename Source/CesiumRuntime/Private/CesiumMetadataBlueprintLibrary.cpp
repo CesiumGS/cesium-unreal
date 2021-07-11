@@ -66,6 +66,12 @@ int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumOfFeatures(
   return featureTable.GetNumOfFeatures();
 }
 
+int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+    int64 vertexIdx) {
+  return featureTable.GetFeatureIDForVertex(vertexIdx);
+}
+
 TMap<FString, FCesiumMetadataGenericValue>
 UCesiumMetadataFeatureTableBlueprintLibrary::GetValuesForFeatureID(
     UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
@@ -185,9 +191,19 @@ FCesiumMetadataArray UCesiumMetadataGenericValueBlueprintLibrary::GetArray(
   return value.GetArray();
 }
 
+FString UCesiumMetadataGenericValueBlueprintLibrary::ToString(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.ToString();
+}
+
 ECesiumMetadataValueType UCesiumMetadataArrayBlueprintLibrary::GetComponentType(
     UPARAM(ref) const FCesiumMetadataArray& array) {
   return array.GetComponentType();
+}
+
+int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return array.GetSize();
 }
 
 bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
