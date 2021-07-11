@@ -32,8 +32,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Array")
-  static int64
-  GetSize(UPARAM(ref) const FCesiumMetadataArray& array);
+  static int64 GetSize(UPARAM(ref) const FCesiumMetadataArray& array);
 
   /**
    * Retrieve the component at index i as an int64_t value.
@@ -141,7 +140,7 @@ public:
                                     const FCesiumMetadataGenericValue& value);
 
   /**
-   * Retrieve the value as a float value. 
+   * Retrieve the value as a float value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -162,7 +161,7 @@ public:
                                     const FCesiumMetadataGenericValue& value);
 
   /**
-   * Retrieve the value as a boolean value. 
+   * Retrieve the value as a boolean value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -171,7 +170,7 @@ public:
   static bool GetBoolean(UPARAM(ref) const FCesiumMetadataGenericValue& value);
 
   /**
-   * Retrieve the value as a string value. 
+   * Retrieve the value as a string value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -181,7 +180,7 @@ public:
                                const FCesiumMetadataGenericValue& value);
 
   /**
-   * Retrieve the value as a generic array value. 
+   * Retrieve the value as a generic array value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -197,8 +196,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|GenericValue")
-  static FString
-  ToString(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+  static FString ToString(UPARAM(ref) const FCesiumMetadataGenericValue& value);
 };
 
 UCLASS()
@@ -253,9 +251,9 @@ public:
       int64 featureID);
 
   /**
-   * Retrieve the feature value at index featureID as an uint64_t value. However,
-   * because blueprint cannot work with uint64, the type will be converted
-   * to float, which will incur the loss of precision
+   * Retrieve the feature value at index featureID as an uint64_t value.
+   * However, because blueprint cannot work with uint64, the type will be
+   * converted to float, which will incur the loss of precision
    */
   UFUNCTION(
       BlueprintCallable,
@@ -347,8 +345,9 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable")
-  static int64
-  GetFeatureIDForVertex(UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable, int64 vertexIdx);
+  static int64 GetFeatureIDForVertex(
+      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+      int64 vertexIdx);
 
   /**
    * Return the map of a feature that maps feature's property name to value.
@@ -401,8 +400,8 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
 
 public:
   /**
-   * Get the primitive metadata of a Gltf primitive component. If component is not
-   * a Cesium Gltf primitive component, the returned metadata is empty
+   * Get the primitive metadata of a Gltf primitive component. If component is
+   * not a Cesium Gltf primitive component, the returned metadata is empty
    */
   UFUNCTION(
       BlueprintCallable,
@@ -412,8 +411,8 @@ public:
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
-   * Get the metadata of a face of a gltf primitive component. If the component is not
-   * a Cesium Gltf primitive component, the returned metadata is empty
+   * Get the metadata of a face of a gltf primitive component. If the component
+   * is not a Cesium Gltf primitive component, the returned metadata is empty
    */
   UFUNCTION(
       BlueprintCallable,
@@ -423,8 +422,9 @@ public:
   GetMetadataValuesForFace(const UPrimitiveComponent* component, int64 faceID);
 
   /**
-   * Get the metadata as string of a face of a gltf primitive component. If the component is not
-   * a Cesium Gltf primitive component, the returned metadata is empty
+   * Get the metadata as string of a face of a gltf primitive component. If the
+   * component is not a Cesium Gltf primitive component, the returned metadata
+   * is empty
    */
   UFUNCTION(
       BlueprintCallable,
