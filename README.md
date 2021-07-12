@@ -16,7 +16,7 @@ Have questions? Ask them on the [community forum](https://community.cesium.com).
 
 <p>
 <a href="https://github.com/CesiumGS/cesium-unreal-samples"><img src="https://images.prismic.io/cesium/bfa9f768-26eb-4a6f-a427-8e9cecbe16b1_melbourne.jpg" width="48%" /></a>&nbsp;
-<a href="https://www.unrealengine.com/en-US/industry/project-anywhere"><img src="https://cesium.com/blog/images/2020/11-30/Project-Anywhere-3.jpg" width="48%" /></a>&nbsp;
+<a href="https://cesium.com/blog/2020/11/30/project-anywhere/"><img src="https://images.prismic.io/cesium/2020-11-30-Project-Anywhere-3.jpg" width="48%" /></a>&nbsp;
 <br/>
 <br/>
 </p>
