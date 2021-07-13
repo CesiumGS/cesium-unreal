@@ -1,5 +1,12 @@
 # Change Log
 
+### v1.4.1 - 2021-07-13
+
+##### Fixes :wrench:
+
+- Fixed linker warnings on macOS related to "different visibility settings."
+- Fixed compile errors on Android in Unreal Engine versions prior to 4.26.2 caused by missing support for C++17.
+
 ### v1.4.0 - 2021-07-01
 
 ##### Breaking :mega:
