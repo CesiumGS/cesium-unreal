@@ -782,102 +782,126 @@ void ACesium3DTileset::MarkTilesetDirty() {
   UE_LOG(LogCesium, Verbose, TEXT("Tileset marked Dirty"));
 }
 
-std::optional<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetCamera() const {
-  std::optional<UnrealCameraParameters> camera = this->GetPlayerCamera();
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetCameras() const {
+  std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
 
 #if WITH_EDITOR
-  if (!camera) {
-    camera = this->GetEditorCamera();
-  }
+  std::vector<UnrealCameraParameters> editorCameras = this->GetEditorCameras();
+  cameras.insert(
+      cameras.end(),
+      std::make_move_iterator(editorCameras.begin()),
+      std::make_move_iterator(editorCameras.end()));
 #endif
 
-  return camera;
+  return cameras;
 }
 
-std::optional<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetPlayerCamera() const {
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetPlayerCameras() const {
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
-    return std::optional<UnrealCameraParameters>();
+    return {};
   }
 
-  APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
-  if (!pPlayerController) {
-    return std::optional<UnrealCameraParameters>();
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+
+  for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
+       playerControllerIt;
+       playerControllerIt++) {
+
+    const TWeakObjectPtr<APlayerController> pPlayerController =
+        *playerControllerIt;
+    if (pPlayerController == nullptr) {
+      continue;
+    }
+
+    APlayerCameraManager* pCameraManager =
+        pPlayerController->PlayerCameraManager;
+    if (!pCameraManager) {
+      continue;
+    }
+
+    UGameViewportClient* pViewport = pWorld->GetGameViewport();
+    if (!pViewport) {
+      continue;
+    }
+
+    FVector location;
+    FRotator rotation;
+    pCameraManager->GetCameraViewPoint(location, rotation);
+    double fov = pCameraManager->GetFOVAngle();
+
+    FVector2D size;
+    pViewport->GetViewportSize(size);
+
+    if (size.X < 1.0 || size.Y < 1.0) {
+      continue;
+    }
+
+    cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
   }
 
-  APlayerCameraManager* pCameraManager = pPlayerController->PlayerCameraManager;
-  if (!pCameraManager) {
-    return std::optional<UnrealCameraParameters>();
-  }
-
-  UGameViewportClient* pViewport = pWorld->GetGameViewport();
-  if (!pViewport) {
-    return std::optional<UnrealCameraParameters>();
-  }
-
-  FVector location;
-  FRotator rotation;
-  pCameraManager->GetCameraViewPoint(location, rotation);
-  double fov = pCameraManager->GetFOVAngle();
-
-  FVector2D size;
-  pViewport->GetViewportSize(size);
-
-  if (size.X < 1.0 || size.Y < 1.0) {
-    return std::nullopt;
-  }
-
-  return UnrealCameraParameters{size, location, rotation, fov};
+  return cameras;
 }
 
-Cesium3DTiles::ViewState ACesium3DTileset::CreateViewStateFromViewParameters(
-    const FVector2D& viewportSize,
-    const FVector& location,
-    const FRotator& rotation,
-    double fieldOfViewDegrees) const {
-  double horizontalFieldOfView = FMath::DegreesToRadians(fieldOfViewDegrees);
+/*static*/ Cesium3DTiles::ViewState
+ACesium3DTileset::CreateViewStateFromViewParameters(
+    const UnrealCameraParameters& camera,
+    const glm::dmat4& unrealWorldToTileset) {
 
-  double aspectRatio = viewportSize.X / viewportSize.Y;
+  double horizontalFieldOfView =
+      FMath::DegreesToRadians(camera.fieldOfViewDegrees);
+  double aspectRatio = camera.viewportSize.X / camera.viewportSize.Y;
   double verticalFieldOfView =
       atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
 
-  FVector direction = rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-  FVector up = rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
-
-  glm::dmat4 unrealWorldToTileset = glm::affineInverse(
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+  FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+  FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
   return Cesium3DTiles::ViewState::create(
-      unrealWorldToTileset *
-          glm::dvec4(location.X, location.Y, location.Z, 1.0),
+      unrealWorldToTileset * glm::dvec4(
+                                 camera.location.X,
+                                 camera.location.Y,
+                                 camera.location.Z,
+                                 1.0),
       glm::normalize(
           unrealWorldToTileset *
           glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)),
       glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
-      glm::dvec2(viewportSize.X, viewportSize.Y),
+      glm::dvec2(camera.viewportSize.X, camera.viewportSize.Y),
       horizontalFieldOfView,
       verticalFieldOfView);
 }
 
 #if WITH_EDITOR
-std::optional<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetEditorCamera() const {
-  FViewport* pViewport = GEditor->GetActiveViewport();
-  FViewportClient* pViewportClient = pViewport->GetClient();
-  FEditorViewportClient* pEditorViewportClient =
-      static_cast<FEditorViewportClient*>(pViewportClient);
-  const FVector& location = pEditorViewportClient->GetViewLocation();
-  const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-  double fov = pEditorViewportClient->FOVAngle;
-  FVector2D size = pViewport->GetSizeXY();
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetEditorCameras() const {
 
-  if (size.X < 1.0 || size.Y < 1.0) {
-    return std::nullopt;
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  for (FViewportClient* pViewportClient : GEditor->GetAllViewportClients()) {
+    FEditorViewportClient* pEditorViewportClient =
+        static_cast<FEditorViewportClient*>(pViewportClient);
+
+    if (!pEditorViewportClient) {
+      continue;
+    }
+
+    const FVector& location = pEditorViewportClient->GetViewLocation();
+    const FRotator& rotation = pEditorViewportClient->GetViewRotation();
+    double fov = pEditorViewportClient->FOVAngle;
+    FIntPoint _;
+    FIntPoint size;
+    pEditorViewportClient->GetViewportDimensions(_, size);
+
+    if (size.X < 1 || size.Y < 1) {
+      continue;
+    }
+
+    cameras.push_back({size, location, rotation, fov});
   }
 
-  return UnrealCameraParameters{size, location, rotation, fov};
+  return cameras;
 }
 #endif
 
@@ -1158,22 +1182,23 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     LoadTileset();
   }
 
-  std::optional<UnrealCameraParameters> camera = this->GetCamera();
-  if (!camera) {
+  std::vector<UnrealCameraParameters> cameras = this->GetCameras();
+  if (cameras.empty()) {
     return;
   }
 
-  Cesium3DTiles::ViewState tilesetViewState =
-      this->CreateViewStateFromViewParameters(
-          camera.value().viewportSize,
-          camera.value().location,
-          camera.value().rotation,
-          camera.value().fieldOfViewDegrees);
+  glm::dmat4 unrealWorldToTileset = glm::affineInverse(
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+
+  std::vector<Cesium3DTiles::ViewState> frustums;
+  for (const UnrealCameraParameters& camera : cameras) {
+    frustums.push_back(
+        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+  }
 
   const Cesium3DTiles::ViewUpdateResult& result =
-      this->_captureMovieMode
-          ? this->_pTileset->updateViewOffline(tilesetViewState)
-          : this->_pTileset->updateView(tilesetViewState);
+      this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
+                              : this->_pTileset->updateView(frustums);
   updateLastViewUpdateResultState(result);
 
   removeVisibleTilesFromList(
