@@ -410,6 +410,11 @@ void UCesiumGeoreferenceComponent::PreEditChange(
       GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Georeference)) {
     if (IsValid(this->Georeference)) {
       this->Georeference->OnGeoreferenceUpdated.RemoveAll(this);
+
+      // The Georeference might be set to None/null, so a final update
+      // of the actor transform based on the last valid state.
+      // (TODO: This might not be necessary, but possible side effects
+      // of a null Georeference should be covered with tests)
       _updateActorTransform();
     }
     return;
