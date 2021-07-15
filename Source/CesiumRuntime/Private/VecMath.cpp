@@ -182,6 +182,11 @@ VecMath::add4D(const FIntVector& i, const FVector& f) noexcept {
   return glm::dvec4(VecMath::add3D(i, f), 1.0);
 }
 
+inline glm::dvec4
+VecMath::add4D(const glm::vec4& d, const FIntVector& i) noexcept {
+  return glm::dvec4(VecMath::add3D(d, i), 1.0);
+}
+
 inline glm::dvec3
 VecMath::add3D(const FIntVector& i, const FVector& f) noexcept {
   return glm::dvec3(

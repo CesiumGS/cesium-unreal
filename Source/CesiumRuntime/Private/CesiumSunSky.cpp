@@ -4,17 +4,46 @@
 #include "CesiumRuntime.h"
 
 // Sets default values
-ACesiumSunSky::ACesiumSunSky() {
-      PrimaryActorTick.bCanEverTick = false;
+ACesiumSunSky::ACesiumSunSky() { PrimaryActorTick.bCanEverTick = false; }
 
-  if (!Georeference) {
-    Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+#if WITH_EDITOR
+void ACesiumSunSky::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  if (!PropertyChangedEvent.Property) {
+    return;
   }
 
-  if (Georeference) {
-    Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+  FName PropName = PropertyChangedEvent.Property->GetFName();
+  if (PropName == GET_MEMBER_NAME_CHECKED(ACesiumSunSky, Georeference)) {
+    if (IsValid(this->Georeference)) {
+      this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          this,
+          &ACesiumSunSky::HandleGeoreferenceUpdated);
+      this->HandleGeoreferenceUpdated();
+    }
+  }
+}
+#endif
+
+void ACesiumSunSky::PostInitProperties() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostInitProperties on actor %s"),
+      *this->GetName());
+
+  Super::PostInitProperties();
+
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+  if (IsValid(this->Georeference)) {
+    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &ACesiumSunSky::HandleGeoreferenceUpdated);
+    this->HandleGeoreferenceUpdated();
   }
 }
 

@@ -20,7 +20,9 @@ ADEPRECATED_CesiumGlobeAnchorParent::ADEPRECATED_CesiumGlobeAnchorParent() {
 void ADEPRECATED_CesiumGlobeAnchorParent::OnConstruction(
     const FTransform& Transform) {
   Super::OnConstruction(Transform);
-  this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
+  // TODO GEOREF_REFACTORING This class is deprecated and
+  // about to be removed.
+  // this->GeoreferenceComponent->SetAutoSnapToEastSouthUp(true);
 }
 
 bool ADEPRECATED_CesiumGlobeAnchorParent::ShouldTickIfViewportsOnly() const {
@@ -28,6 +30,10 @@ bool ADEPRECATED_CesiumGlobeAnchorParent::ShouldTickIfViewportsOnly() const {
 }
 
 void ADEPRECATED_CesiumGlobeAnchorParent::Tick(float DeltaTime) {
+
+  // TODO GEOREF_REFACTORING This class is deprecated and
+  // about to be removed.
+  /*
   if (this->GeoreferenceComponent->CheckCoordinatesChanged()) {
 
     this->Longitude = this->GeoreferenceComponent->Longitude;
@@ -40,6 +46,7 @@ void ADEPRECATED_CesiumGlobeAnchorParent::Tick(float DeltaTime) {
 
     this->GeoreferenceComponent->MarkCoordinatesUnchanged();
   }
+  */
 }
 
 #if WITH_EDITOR
@@ -53,6 +60,9 @@ void ADEPRECATED_CesiumGlobeAnchorParent::PostEditChangeProperty(
 
   FName propertyName = event.Property->GetFName();
 
+  // TODO GEOREF_REFACTORING This class is deprecated and
+  // about to be removed.
+  /*
   if (propertyName == GET_MEMBER_NAME_CHECKED(
                           ADEPRECATED_CesiumGlobeAnchorParent,
                           Longitude) ||
@@ -79,5 +89,6 @@ void ADEPRECATED_CesiumGlobeAnchorParent::PostEditChangeProperty(
         glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
   }
+  */
 }
 #endif
