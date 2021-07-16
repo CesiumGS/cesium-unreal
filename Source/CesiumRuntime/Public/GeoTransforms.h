@@ -32,10 +32,13 @@ public:
   }
 
   /**
-   * @brief Creates a new instance
+   * @brief Creates a new instance.
+   *
+   * The center position is the position of the origin of the
+   * local coordinate system that is established by this instance.
    *
    * @param ellipsoid The ellipsoid to use for the georeferenced coordinates
-   * @param center The center position (TODO Explain...)
+   * @param center The center position.
    */
   GeoTransforms(
       const CesiumGeospatial::Ellipsoid& ellipsoid,
@@ -65,20 +68,12 @@ public:
   /**
    * @brief Set the center position of this instance
    *
-   * @param center The center position (TODO Explain...)
+   * The center position is the position of the origin of the
+   * local coordinate system that is established by this instance.
+   *
+   * @param center The center position.
    */
   void setCenter(const glm::dvec3& center) noexcept;
-
-  /**
-   * @brief Returns the center of this instance
-   *
-   * @return The center
-   */
-  /* // TODO Not required yet?
-  const glm::dvec3& getCenter() const noexcept {
-    return this->_center;
-  }
-  */
 
   /**
    * @brief Set the ellipsoid of this instance
@@ -86,17 +81,6 @@ public:
    * @param ellipsoid The ellipsoid
    */
   void setEllipsoid(const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept;
-
-  /**
-   * @brief Returns the ellipsoid of this instance
-   *
-   * @return The ellipsoid
-   */
-  /* // TODO Not required yet?
-  const CesiumGeospatial::Ellipsoid& getEllipsoid() const noexcept {
-    return this->_ellipsoid;
-  }
-  */
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
@@ -259,8 +243,6 @@ public:
 private:
   /**
    * @brief Creates a new instance (for copy constructor).
-   * TODO The params are all fields. I think this is NOT auto-generated
-   * by the compiler when there is another constructor...
    */
   GeoTransforms(
       const CesiumGeospatial::Ellipsoid& ellipsoid,

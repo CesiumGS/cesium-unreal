@@ -36,9 +36,7 @@ public:
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   USkyAtmosphereComponent* SkyAtmosphereComponent;
 
-  /**
-   * Hold a reference to a georeference for height checks.
-   */
+public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
   ACesiumGeoreference* Georeference;
 
@@ -63,6 +61,9 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sun)
   bool UseLevelDirectionalLight = false;
 
+  /**
+   * Reference to a manually assigned Directional Light in the level.
+   */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sun)
   ADirectionalLight* LevelDirectionalLight;
 
@@ -227,9 +228,16 @@ public:
   UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
   AActor* SkySphereActor;
 
+  /**
+   * Default intensity of directional light that's spawned for mobile rendering.
+   */
   UPROPERTY(EditAnywhere, Category = Mobile)
   float MobileDirectionalLightIntensity = 6.f;
 
+  /**
+   * Determines whether the date and sun settings have changed and warrant
+   * a refresh of the SkyAtmosphere rendering.
+   */
   UPROPERTY(BlueprintReadWrite, Category = "Event Tick")
   float HashVal;
 
@@ -242,6 +250,10 @@ public:
   void UpdateSun();
   void UpdateSun_Implementation();
 
+  /**
+   * Convert solar time to Hours:Minutes:Seconds. Copied the implementation
+   * from the engine SunSkyBP class.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = Sun)
   static void GetHMSFromSolarTime(
       float InSolarTime,
@@ -249,6 +261,11 @@ public:
       int32& Minute,
       int32& Second);
 
+  /**
+   * Check whether the current time and date (based on this class instance's
+   * properties) falls within Daylight Savings Time. Copied the implementation
+   * from the engine SunSkyBP class.
+   */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = Sun)
   bool IsDST(
       bool DSTEnable,
@@ -259,13 +276,18 @@ public:
       int32 InDSTSwitchHour) const;
 
   // Begin AActor Interface
+  /**
+   * Gets called when the actor is first created, and when properties are
+   * changed at edit-time. Refreshes the actor's position w/r/t the georeference
+   * and handles mobile-specific setup if needed.
+   */
   virtual void OnConstruction(const FTransform& Transform) override;
   // End AActor Interface
 
 protected:
   /**
    * Callback after georeference origin (e.g. lat/long position) has been
-   * updated.
+   * updated. Sets this actor's position to the Earth's center.
    */
   UFUNCTION(BlueprintCallable, Category = Cesium)
   void HandleGeoreferenceUpdated();
@@ -288,6 +310,7 @@ protected:
   void UpdateSkySphere();
 
 #if WITH_EDITOR
+  virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -295,7 +318,7 @@ protected:
 private:
   void _spawnSkySphere();
 
-  // Set Directional Light Component in Sky Sphere actor
+  // Sets Directional Light Component in Sky Sphere actor
   void _setSkySphereDirectionalLight();
 
   void _setSkyAtmosphereVisibility(bool bVisible);

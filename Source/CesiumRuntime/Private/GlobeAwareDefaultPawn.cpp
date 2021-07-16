@@ -2,6 +2,7 @@
 
 #include "GlobeAwareDefaultPawn.h"
 #include "Camera/CameraComponent.h"
+#include "CesiumActors.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -75,9 +76,9 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
-    glm::dvec4 up =
-        this->Georeference->GetEllipsoidCenteredToUnrealWorldTransform() *
-        upEcef;
+    glm::dvec4 up = this->Georeference->getGeoTransforms()
+                        .GetEllipsoidCenteredToUnrealWorldTransform() *
+                    upEcef;
 
     AddMovementInput(FVector(up.x, up.y, up.z), Val);
 
@@ -399,25 +400,19 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // Interpolate rotation - Computation has to be done at each step because
   // the ENU CRS is depending on location. Do all calculations in double
   // precision until the very end.
-  const glm::dvec3& ueOriginLocation =
-      VecMath::createVector3D(this->GetWorld()->OriginLocation);
-  const GeoTransforms& geoTransforms = this->Georeference->getGeoTransforms();
   const glm::dquat startingQuat =
-      geoTransforms.TransformRotatorUnrealToEastNorthUp(
-          ueOriginLocation,
+      Georeference->TransformRotatorUnrealToEastNorthUp(
           VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
           this->_keypoints[0]);
   const glm::dquat endingQuat =
-      geoTransforms.TransformRotatorUnrealToEastNorthUp(
-          ueOriginLocation,
+      Georeference->TransformRotatorUnrealToEastNorthUp(
           VecMath::createQuaternion(
               this->_flyToDestinationRotation.Quaternion()),
           this->_keypoints.back());
   const glm::dquat& currentQuat =
       glm::slerp(startingQuat, endingQuat, flyPercentage);
   GetController()->SetControlRotation(
-      VecMath::createRotator(geoTransforms.TransformRotatorEastNorthUpToUnreal(
-          ueOriginLocation,
+      VecMath::createRotator(Georeference->TransformRotatorEastNorthUpToUnreal(
           currentQuat,
           currentPosition)));
 }
