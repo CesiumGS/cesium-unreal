@@ -220,7 +220,9 @@ private:
 
   // the current ECEF coordinates, stored in case they need to be restored on
   // georeference update
-  glm::dvec3 _currentEcef;
+  UPROPERTY()
+  double _currentEcef_Array[3];
+  glm::dvec3& _currentEcef = *(glm::dvec3*)_currentEcef_Array;
 
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;

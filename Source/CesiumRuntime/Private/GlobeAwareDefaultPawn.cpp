@@ -445,6 +445,7 @@ void AGlobeAwareDefaultPawn::PostInitProperties() {
     this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
   }
   if (this->Georeference) {
+    this->_currentEcef = this->GetECEFCameraLocation();
     this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated);
