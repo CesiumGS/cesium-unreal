@@ -101,6 +101,7 @@ The full list of tilesets that need to be replaced are:
 10. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
 
 ## Publish the Cesium for Unreal Samples release on GitHub
+
 After the update has been merged to `main`, do the following:
 * Open a clean, current copy of cesium-unreal-samples in Unreal Engine. 
 * Create a .zip of the project through Unreal Engine by selecting File > Package Project > Zip Up Project. Save the new .zip as `CesiumForUnrealSamples-vX.X.X`. 
@@ -111,7 +112,6 @@ After the update has been merged to `main`, do the following:
 * Copy the link to download the .zip file from this page - you'll need it later.
 
 ## Publish Cesium for Unreal Samples on Marketplace
-Coming soon, presumably the same as above.
 
 1. Open https://publish.unrealengine.com/v2/products. Login with the admin credentials.
 2. Navigate to **Products -> Published**.
