@@ -100,7 +100,7 @@ The full list of tilesets that need to be replaced are:
    5. If no errors, return the camera to the starting view with the "1" key and close the scene without saving. 
 10. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
 
-## Publish the release on GitHub
+## Publish the Cesium for Unreal Samples release on GitHub
 After the update has been merged to `main`, do the following:
 * Open a clean, current copy of cesium-unreal-samples in Unreal Engine. 
 * Create a .zip of the project through Unreal Engine by selecting File > Package Project > Zip Up Project. Save the new .zip as `CesiumForUnrealSamples-vX.X.X`. 
