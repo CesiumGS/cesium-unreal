@@ -89,50 +89,49 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = Location,
-      meta =
-          (UIMin = -89.99, UIMax = 89.99, ClampMin = -89.99, ClampMax = 89.99))
+      meta = (ClampMin = -89.99, ClampMax = 89.99))
   float Latitude = 45.f;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = Location,
-      meta = (UIMin = -180, UIMax = 180, ClampMin = -180, ClampMax = 180))
+      meta = (ClampMin = -180, ClampMax = 180))
   float Longitude = -73.f;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = Location,
-      meta = (UIMin = -12, UIMax = 14, ClampMin = -12, ClampMax = 14))
+      meta = (ClampMin = -12, ClampMax = 14))
   float TimeZone = -5.f;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = Location,
-      meta = (UIMin = -360, UIMax = 360, ClampMin = -360, ClampMax = 360))
+      meta = (ClampMin = -360, ClampMax = 360))
   float NorthOffset = -90.f;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Date and Time",
-      meta = (UIMin = -4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
+      meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
   float SolarTime = 13.f;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
+      meta = (ClampMin = 1, ClampMax = 31))
   int32 Day = 21;
 
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
+      meta = (ClampMin = 1, ClampMax = 12))
   int32 Month = 9;
 
   UPROPERTY(
@@ -160,7 +159,7 @@ public:
       BlueprintReadWrite,
       AdvancedDisplay,
       Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
+      meta = (ClampMin = 1, ClampMax = 12))
   int32 DSTStartMonth = 3;
 
   /**
@@ -171,7 +170,7 @@ public:
       BlueprintReadWrite,
       AdvancedDisplay,
       Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
+      meta = (ClampMin = 1, ClampMax = 31))
   int32 DSTStartDay = 10;
 
   /**
@@ -182,7 +181,7 @@ public:
       BlueprintReadWrite,
       AdvancedDisplay,
       Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 12, ClampMin = 1, ClampMax = 12))
+      meta = (ClampMin = 1, ClampMax = 12))
   int32 DSTEndMonth = 11;
 
   /**
@@ -193,7 +192,7 @@ public:
       BlueprintReadWrite,
       AdvancedDisplay,
       Category = "Date and Time",
-      meta = (UIMin = 1, UIMax = 31, ClampMin = 1, ClampMax = 31))
+      meta = (ClampMin = 1, ClampMax = 31))
   int32 DSTEndDay = 3;
 
   /**
@@ -204,7 +203,7 @@ public:
       BlueprintReadWrite,
       AdvancedDisplay,
       Category = "Date and Time",
-      meta = (UIMin = 0, UIMax = 23, ClampMin = 0, ClampMax = 23))
+      meta = (ClampMin = 0, ClampMax = 23))
   int32 DSTSwitchHour = 2.f;
 
   /**
