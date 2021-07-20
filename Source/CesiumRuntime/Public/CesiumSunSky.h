@@ -51,7 +51,7 @@ public:
   /**
    * How frequently the atmosphere should be updated, in seconds.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium, meta = (ClampMin = 0.0001))
   float UpdateAtmospherePeriod = 1.f;
 
   /**
@@ -106,6 +106,10 @@ public:
       meta = (ClampMin = -12, ClampMax = 14))
   float TimeZone = -5.f;
 
+  /**
+   * Offset in the sun's position. Should be set to -90 for the sun's position
+   * to be accurate in the Unreal reference frame.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -324,4 +328,8 @@ private:
 
   // Determines whether mobile sky sphere will be spawned during OnConstruction.
   bool _wantsSpawnMobileSkySphere;
+
+  // Updates the location of this actor after a georeference update,
+  // as well as lat/long properties
+  void _updateSunSkyLocation();
 };
