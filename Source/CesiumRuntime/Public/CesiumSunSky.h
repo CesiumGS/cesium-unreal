@@ -13,6 +13,16 @@
 #include "GameFramework/Actor.h"
 #include "CesiumSunSky.generated.h"
 
+/**
+ * A globe-aware sun sky actor. If the georeference is set to CartographicOrigin
+ * (aka Longitude/Latitude/Height) mode, then this actor will automatically
+ * sync its longitude and latitude properties with the georeference's, and
+ * recalculate the sun position whenever those properties change.
+ *
+ * Note: because we use `Planet Center at Component Transform`
+ * for the SkyAtmosphere transform mode, this actor's location will be forced
+ * to the Earth's center if the georeference is set to CartographicOrigin.
+ */
 UCLASS()
 class CESIUMRUNTIME_API ACesiumSunSky : public AActor {
   GENERATED_BODY()
@@ -51,7 +61,11 @@ public:
   /**
    * How frequently the atmosphere should be updated, in seconds.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium, meta = (ClampMin = 0.0001))
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = Cesium,
+      meta = (ClampMin = 0.0001))
   float UpdateAtmospherePeriod = 1.f;
 
   /**
@@ -89,7 +103,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = Location,
-      meta = (ClampMin = -89.99, ClampMax = 89.99))
+      meta = (ClampMin = -90, ClampMax = 90))
   float Latitude = 45.f;
 
   UPROPERTY(

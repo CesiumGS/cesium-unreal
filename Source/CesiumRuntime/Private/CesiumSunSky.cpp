@@ -74,7 +74,8 @@ void ACesiumSunSky::HandleGeoreferenceUpdated() {
   UE_LOG(
       LogCesium,
       Verbose,
-      TEXT("Called HandleGeoreferenceUpdated on CesiumSunSky %s"), *this->GetName());
+      TEXT("Called HandleGeoreferenceUpdated on CesiumSunSky %s"),
+      *this->GetName());
   _updateSunSkyLocation();
 }
 
@@ -89,7 +90,7 @@ void ACesiumSunSky::_updateSunSkyLocation() {
     this->SetActorLocation(
         Georeference->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
   }
-  
+
   switch (Georeference->OriginPlacement) {
   case EOriginPlacement::CartographicOrigin: {
     FVector llh =
@@ -104,11 +105,14 @@ void ACesiumSunSky::_updateSunSkyLocation() {
   }
 }
 
-
 void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
-  UE_LOG(LogCesium, Verbose, TEXT("Called OnConstruction for CesiumSunSky %s"), *this->GetName());
-  
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnConstruction for CesiumSunSky %s"),
+      *this->GetName());
+
   UE_LOG(
       LogCesium,
       Verbose,
@@ -165,7 +169,6 @@ void ACesiumSunSky::_setSkyAtmosphereVisibility(bool bVisible) {
     SkyAtmosphereComponent->SetVisibility(bVisible);
   }
 }
-
 
 void ACesiumSunSky::_setSkySphereDirectionalLight() {
   if (!EnableMobileRendering || !SkySphereClass || !IsValid(SkySphereActor)) {
@@ -266,7 +269,7 @@ void ACesiumSunSky::GetHMSFromSolarTime(
   Minute = (FMath::TruncToInt(InSolarTime - Hour) * 60) % 60;
 
   // Convert hours + minutes so far to seconds, and subtract from InSolarTime.
-  Second = FMath::RoundToInt ((InSolarTime - Hour - Minute / 60) * 3600) % 60;
+  Second = FMath::RoundToInt((InSolarTime - Hour - Minute / 60) * 3600) % 60;
 }
 
 bool ACesiumSunSky::IsDST(
@@ -294,7 +297,6 @@ bool ACesiumSunSky::IsDST(
       FDateTime(Year, InDSTEndMonth, InDSTEndDay, InDSTSwitchHour);
   return current >= dstStart && current <= dstEnd;
 }
-
 
 void ACesiumSunSky::SetSkyAtmosphereGroundRadius(
     USkyAtmosphereComponent* Sky,
