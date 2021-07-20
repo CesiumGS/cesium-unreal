@@ -384,17 +384,19 @@ private:
    */
   glm::dvec3 _currentEcef;
 
-  // TODO GEOREF_REFACTORING
-  // This is currently no longer used, but removing this messes up
-  // the deserialization (unless we handle different versions)
-  // Note: this is done to allow Unreal to recognize and serialize _actorToECEF
-  // UPROPERTY()
-  // double _actorToECEF_Array[16];
-  // glm::dmat4& _actorToECEF = *(glm::dmat4*)_actorToECEF_Array;
-
-  // TODO GEOREF_REFACTORING
-  // This was only set to "true" from CesiumGlobeAnchorParent (deprecated)
-  // In all other cases, the flag had always been "false"
-  // UPROPERTY()
-  // bool _autoSnapToEastSouthUp;
+  /**
+   * The current Unreal-to-ECEF rotation matrix.
+   *
+   * This reflects the state that is obtained from the Georeference,
+   * as the rotation component of the matrix that is returned from
+   * `geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform()`.
+   *
+   * Whenever the Georeference is modified and `HandleGeoreferenceUpdated`
+   * is called, this is used to compute the change in rotation from the
+   * old state of the Georeference and the new, updated state. The change
+   * between the old and the new rotation is applied to the actor
+   * rotation, to keep its orientation consistent despite the change
+   * of the underlying Georeference.
+   */
+  glm::dmat3 _currentUnrealToEcef;
 };

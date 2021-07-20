@@ -204,7 +204,7 @@ void UCesiumGeoreferenceComponent::HandleActorTransformUpdated(
       *this->GetName());
 
   // When this notification was caused by the SetWorldTransform
-  // call in _updateActor transform, ignore it
+  // call in _updateActorTransform, ignore it
   if (_updatingActorTransform) {
     UE_LOG(
         LogCesium,
@@ -333,6 +333,10 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
     this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
+    const glm::dmat3 unrealToEcef =
+        glm::dmat3(Georeference->getGeoTransforms()
+                       .GetUnrealWorldToEllipsoidCenteredTransform());
+    this->_currentUnrealToEcef = unrealToEcef;
   }
 }
 
@@ -474,7 +478,27 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
       Verbose,
       TEXT("Called HandleGeoreferenceUpdated for %s"),
       *this->GetName());
-  this->_updateActorTransform();
+
+  const GeoTransforms& geoTransforms = this->Georeference->getGeoTransforms();
+
+  // Compute the change of rotation that is implied by the
+  // new ECEF-to-Unreal rotation, and the one that was
+  // stored previously
+  const glm::dmat3 ecefToUnreal =
+      glm::dmat3(geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform());
+  const glm::dmat3 rotationChange = ecefToUnreal * _currentUnrealToEcef;
+
+  // Update the actor rotation based on the rotation change
+  const glm::dmat3 oldActorRotation = _getRotationFromActor();
+  const glm::dmat3 newActorRotation = oldActorRotation * rotationChange;
+
+  // Store the new Unreal-to-ECEF rotation for further updates
+  const glm::dmat3 unrealToEcef =
+      glm::dmat3(geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform());
+  this->_currentUnrealToEcef = unrealToEcef;
+
+  const glm::dvec3 relativeLocation = _computeRelativeLocation(_currentEcef);
+  _updateActorTransform(newActorRotation, relativeLocation);
 }
 
 glm::dvec3
