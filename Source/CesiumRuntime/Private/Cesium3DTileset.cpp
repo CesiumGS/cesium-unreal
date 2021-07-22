@@ -42,7 +42,6 @@
 
 #if WITH_EDITOR
 #include "Editor.h"
-#include "Editor/UnrealEdTypes.h"
 #include "EditorViewportClient.h"
 #include "LevelEditorViewport.h"
 #endif
@@ -823,9 +822,6 @@ ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    bool isOrthographic = pCameraManager->IsOrthographic();
-    double orthographicWidth = pCameraManager->GetOrthoWidth();
-
     UGameViewportClient* pViewport = pWorld->GetGameViewport();
     if (!pViewport) {
       continue;
@@ -843,14 +839,7 @@ ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    cameras.push_back(UnrealCameraParameters{
-        !isOrthographic,
-        isOrthographic,
-        size,
-        location,
-        rotation,
-        fov,
-        orthographicWidth});
+    cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
   }
 
   return cameras;
@@ -870,15 +859,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
   FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
-  Cesium3DTiles::ViewState::FrustumType frustumType;
-  if (camera.isOrthographic) {
-    frustumType = Cesium3DTiles::ViewState::FrustumType::Orthographic;
-  } else {
-    frustumType = Cesium3DTiles::ViewState::FrustumType::Perspective;
-  }
-
   return Cesium3DTiles::ViewState::create(
-      frustumType,
       unrealWorldToTileset * glm::dvec4(
                                  camera.location.X,
                                  camera.location.Y,
@@ -890,9 +871,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
       glm::dvec2(camera.viewportSize.X, camera.viewportSize.Y),
       horizontalFieldOfView,
-      verticalFieldOfView,
-      0.01 * camera.orthographicWidth,
-      0.01 * camera.orthographicWidth / aspectRatio);
+      verticalFieldOfView);
 }
 
 #if WITH_EDITOR
@@ -909,58 +888,17 @@ ACesium3DTileset::GetEditorCameras() const {
     }
 
     const FVector& location = pEditorViewportClient->GetViewLocation();
+    const FRotator& rotation = pEditorViewportClient->GetViewRotation();
     double fov = pEditorViewportClient->FOVAngle;
     FIntPoint _;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(_, size);
 
-    FRotator rotation;
-
-    switch (pEditorViewportClient->GetViewportType()) {
-    case LVT_OrthoXY:
-      rotation = FRotator(-90.0f, -90.0f, 0.0f);
-      break;
-    case LVT_OrthoNegativeXY:
-      rotation = FRotator(90.0f, 90.0f, 0.0f);
-      break;
-    case LVT_OrthoXZ:
-      rotation = FRotator(0.0f, -90.0f, 0.0f);
-      break;
-    case LVT_OrthoNegativeXZ:
-      rotation = FRotator(0.0f, 90.0f, 0.0f);
-      break;
-    case LVT_OrthoYZ:
-      rotation = FRotator(0.0f, 0.0f, 0.0f);
-      break;
-    case LVT_OrthoNegativeYZ:
-      rotation = FRotator(0.0f, 180.0f, 0.0f);
-      break;
-    case LVT_OrthoFreelook:
-    case LVT_Perspective:
-    case LVT_MAX:
-    case LVT_None:
-      rotation = pEditorViewportClient->GetViewRotation();
-    }
-
-    bool isPerspective = pEditorViewportClient->IsPerspective();
-    bool isOrthographic = pEditorViewportClient->IsOrtho();
-    double orthographicUnitsPerPixel =
-        pEditorViewportClient->GetOrthoUnitsPerPixel(
-            pEditorViewportClient->Viewport);
-    double orthographicWidth = orthographicUnitsPerPixel * (double)size.X;
-
     if (size.X < 1 || size.Y < 1) {
       continue;
     }
 
-    cameras.push_back(
-        {isPerspective,
-         isOrthographic,
-         size,
-         location,
-         rotation,
-         fov,
-         orthographicWidth});
+    cameras.push_back({size, location, rotation, fov});
   }
 
   return cameras;

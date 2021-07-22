@@ -524,13 +524,10 @@ private:
   void MarkTilesetDirty();
 
   struct UnrealCameraParameters {
-    bool isPerspective;
-    bool isOrthographic;
     FVector2D viewportSize;
     FVector location;
     FRotator rotation;
     double fieldOfViewDegrees;
-    double orthographicWidth;
   };
 
   static Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
