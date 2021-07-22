@@ -23,6 +23,11 @@ public:
   glm::dmat4x4 HighPrecisionNodeTransform;
 
   /**
+   * The instance transforms relative to the node.
+   */
+  std::vector<glm::dmat4> InstanceToNodeTransforms;
+
+  /**
    * Updates this component's transform from a new double-precision
    * transformation from the Cesium world to the Unreal Engine world, as well as
    * the current HighPrecisionNodeTransform.

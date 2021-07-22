@@ -16,16 +16,24 @@ UCesiumGltfInstancedComponent::~UCesiumGltfInstancedComponent() {}
 
 void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
-  this->SetUsingAbsoluteLocation(true);
-  this->SetUsingAbsoluteRotation(true);
-  this->SetUsingAbsoluteScale(true);
-
   const glm::dmat4x4& transform =
-      CesiumToUnrealTransform * this->HighPrecisionNodeTransform;
+      CesiumToUnrealTransform;// * this->HighPrecisionNodeTransform;
 
-  this->SetRelativeTransform(FTransform(FMatrix(
-      FVector(transform[0].x, transform[0].y, transform[0].z),
-      FVector(transform[1].x, transform[1].y, transform[1].z),
-      FVector(transform[2].x, transform[2].y, transform[2].z),
-      FVector(transform[3].x, transform[3].y, transform[3].z))));
+  if (this->GetInstanceCount() != InstanceToNodeTransforms.size()) {
+    return;
+  }
+
+  for (int32 i = 0; i < this->GetInstanceCount(); ++i) {
+    glm::dmat4 newInstanceTransform = transform * InstanceToNodeTransforms[i];
+    this->UpdateInstanceTransform(
+        i, 
+        FTransform(FMatrix(
+          FVector(newInstanceTransform[0].x, newInstanceTransform[0].y, newInstanceTransform[0].z),
+          FVector(newInstanceTransform[1].x, newInstanceTransform[1].y, newInstanceTransform[1].z),
+          FVector(newInstanceTransform[2].x, newInstanceTransform[2].y, newInstanceTransform[2].z),
+          FVector(newInstanceTransform[3].x, newInstanceTransform[3].y, newInstanceTransform[3].z))),
+        true,
+        true,
+        true);
+  }
 }
