@@ -565,7 +565,8 @@ static std::optional<LoadTextureResult> loadTexture(
 
 static void spawnGltfInstances(
     const CesiumGltf::Model& model,
-    const glm::dmat4& nodeToUnrealTransform,
+    const glm::dmat4& nodeTransform,
+    const glm::dmat4& cesiumToUnreal,
     const InstanceAttributes& instanceAttributes,
     UCesiumGltfInstancedComponent* instancedMeshComponent) {
   if (!instancedMeshComponent) {
@@ -608,7 +609,8 @@ static void spawnGltfInstances(
     instanceToNode[3] =
         glm::dvec4(translation.x, translation.y, translation.z, 1.0);
 
-    glm::dmat4 instanceToUnreal = nodeToUnrealTransform * instanceToNode;
+    glm::dmat4 instanceToUnreal =
+        cesiumToUnreal * instanceToNode * nodeTransform;
 
     UE_LOG(
         LogCesium,
@@ -1789,6 +1791,7 @@ static void loadModelGameThreadPart(
   if (loadResult.instanceAttributes) {
     spawnGltfInstances(
         model,
+        loadResult.transform,
         cesiumToUnrealTransform, // * loadResult.transform,
         *loadResult.instanceAttributes,
         dynamic_cast<UCesiumGltfInstancedComponent*>(pMesh));

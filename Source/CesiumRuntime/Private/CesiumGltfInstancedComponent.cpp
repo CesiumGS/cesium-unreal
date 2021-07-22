@@ -16,15 +16,16 @@ UCesiumGltfInstancedComponent::~UCesiumGltfInstancedComponent() {}
 
 void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
-  const glm::dmat4x4& transform =
-      CesiumToUnrealTransform; // * this->HighPrecisionNodeTransform;
 
   if (this->GetInstanceCount() != InstanceToNodeTransforms.size()) {
     return;
   }
 
   for (int32 i = 0; i < this->GetInstanceCount(); ++i) {
-    glm::dmat4 newInstanceTransform = transform * InstanceToNodeTransforms[i];
+    glm::dmat4 newInstanceTransform = CesiumToUnrealTransform *
+                                      InstanceToNodeTransforms[i] *
+                                      this->HighPrecisionNodeTransform;
+
     this->UpdateInstanceTransform(
         i,
         FTransform(FMatrix(
