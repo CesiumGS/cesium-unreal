@@ -26,11 +26,11 @@
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGltf/EXT_mesh_gpu_instancing.h"
 #include "CesiumGltf/GltfReader.h"
 #include "CesiumGltf/TextureInfo.h"
-#include "CesiumGltf/EXT_mesh_gpu_instancing.h"
-#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfInstancedComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -574,61 +574,74 @@ static void spawnGltfInstances(
 
   // TODO: handle quantized positions as well
 
-  CesiumGltf::AccessorView<FVector> translationAccessor(
+  CesiumGltf::AccessorView<glm::vec3> translationAccessor(
       model,
       instanceAttributes.translationAccessorId);
-  /*
-  CesiumGltf::AccessorView<glm::vec4> rotationAccessor(
+
+  CesiumGltf::AccessorView<glm::quat> rotationAccessor(
       model,
       instanceAttributes.rotationAccessorId);
-
-  // TODO: consider non-uniform scaling
+  /*
+  // TODO: consider non-uniform scaling as well
   CesiumGltf::AccessorView<float> scaleAccessor(
       model,
       instanceAttributes.scaleAccessorId);
   */
 
-  if (translationAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
+  if (translationAccessor.status() != CesiumGltf::AccessorViewStatus::Valid ||
+      rotationAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
     return;
   }
 
-  //UE_LOG(LogCesium, Warning, TEXT("NODE TRANSFORM"))
+  // UE_LOG(LogCesium, Warning, TEXT("NODE TRANSFORM"))
   int64_t instanceCount = translationAccessor.size();
   instancedMeshComponent->InstanceToNodeTransforms.resize(instanceCount);
 
   for (int64_t i = 0; i < instanceCount; ++i) {
 
-    const FVector& translation = translationAccessor[i];
+    const glm::vec3& translation = translationAccessor[i];
+    const glm::quat& rotation = rotationAccessor[i];
 
     glm::dmat4& instanceToNode =
         instancedMeshComponent->InstanceToNodeTransforms[i];
-    instanceToNode = glm::dmat4(1.0);
+    instanceToNode = glm::toMat4(rotation);
     instanceToNode[3] =
-        glm::dvec4(translation.X, translation.Y, translation.Z, 1.0);
+        glm::dvec4(translation.x, translation.y, translation.z, 1.0);
 
     glm::dmat4 instanceToUnreal = nodeToUnrealTransform * instanceToNode;
 
-    UE_LOG(LogCesium, Warning, TEXT("T(%f, %f, %f)"), translation.X, translation.Y, translation.Z);
-    UE_LOG(LogCesium, Warning, TEXT("(%f, %f, %f)"), instanceToUnreal[3].x, instanceToUnreal[3].y, instanceToUnreal[3].z);
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("T(%f, %f, %f)"),
+        translation.x,
+        translation.y,
+        translation.z);
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("(%f, %f, %f)"),
+        instanceToUnreal[3].x,
+        instanceToUnreal[3].y,
+        instanceToUnreal[3].z);
 
-    instancedMeshComponent->AddInstanceWorldSpace(
-        FTransform(FMatrix(
-            FVector(
-              instanceToUnreal[0].x,
-              instanceToUnreal[0].y,
-              instanceToUnreal[0].z),
-            FVector(
-              instanceToUnreal[1].x,
-              instanceToUnreal[1].y,
-              instanceToUnreal[1].z),
-            FVector(
-              instanceToUnreal[2].x,
-              instanceToUnreal[2].y,
-              instanceToUnreal[2].z),
-            FVector(
-              instanceToUnreal[3].x,
-              instanceToUnreal[3].y,
-              instanceToUnreal[3].z))));
+    instancedMeshComponent->AddInstanceWorldSpace(FTransform(FMatrix(
+        FVector(
+            instanceToUnreal[0].x,
+            instanceToUnreal[0].y,
+            instanceToUnreal[0].z),
+        FVector(
+            instanceToUnreal[1].x,
+            instanceToUnreal[1].y,
+            instanceToUnreal[1].z),
+        FVector(
+            instanceToUnreal[2].x,
+            instanceToUnreal[2].y,
+            instanceToUnreal[2].z),
+        FVector(
+            instanceToUnreal[3].x,
+            instanceToUnreal[3].y,
+            instanceToUnreal[3].z))));
   }
 }
 
@@ -1306,12 +1319,12 @@ static void loadMesh(
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     loadPrimitive(
-        result, 
-        model, 
-        mesh, 
-        primitive, 
-        transform, 
-        options, 
+        result,
+        model,
+        mesh,
+        primitive,
+        transform,
+        options,
         instanceAttributes);
   }
 }
@@ -1392,17 +1405,37 @@ static void loadNode(
   if (meshId >= 0 && meshId < model.meshes.size()) {
     const CesiumGltf::Mesh& mesh = model.meshes[meshId];
 
-    const CesiumGltf::EXT_mesh_gpu_instancing* pInstancedMesh = 
+    const CesiumGltf::EXT_mesh_gpu_instancing* pInstancedMesh =
         node.getExtension<CesiumGltf::EXT_mesh_gpu_instancing>();
 
     std::optional<InstanceAttributes> instanceAttributes = std::nullopt;
 
     if (pInstancedMesh) {
-      auto instanceTranslationsIt = 
+      int32_t translationAccessorId = -1;
+      auto instanceTranslationsIt =
           pInstancedMesh->attributes.find("TRANSLATION");
-
       if (instanceTranslationsIt != pInstancedMesh->attributes.end()) {
-        instanceAttributes = {instanceTranslationsIt->second, -1, -1};
+        translationAccessorId = instanceTranslationsIt->second;
+      }
+
+      int32_t rotationAccessorId = -1;
+      auto instanceRotationsIt = pInstancedMesh->attributes.find("ROTATION");
+      if (instanceRotationsIt != pInstancedMesh->attributes.end()) {
+        rotationAccessorId = instanceRotationsIt->second;
+      }
+
+      int32_t scaleAccessorId = -1;
+      auto instanceScaleIt = pInstancedMesh->attributes.find("SCALE");
+      if (instanceScaleIt != pInstancedMesh->attributes.end()) {
+        scaleAccessorId = instanceScaleIt->second;
+      }
+
+      if (translationAccessorId >= 0 || rotationAccessorId >= 0 ||
+          scaleAccessorId >= 0) {
+        instanceAttributes = {
+            translationAccessorId,
+            rotationAccessorId,
+            scaleAccessorId};
       }
     }
 
@@ -1755,9 +1788,9 @@ static void loadModelGameThreadPart(
 
   if (loadResult.instanceAttributes) {
     spawnGltfInstances(
-        model, 
-        cesiumToUnrealTransform,// * loadResult.transform,
-        *loadResult.instanceAttributes, 
+        model,
+        cesiumToUnrealTransform, // * loadResult.transform,
+        *loadResult.instanceAttributes,
         dynamic_cast<UCesiumGltfInstancedComponent*>(pMesh));
     UE_LOG(
         LogCesium,
@@ -1860,7 +1893,7 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
     if (pPrimitive) {
       pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
     }
-    UCesiumGltfInstancedComponent* pInstanced = 
+    UCesiumGltfInstancedComponent* pInstanced =
         Cast<UCesiumGltfInstancedComponent>(pSceneComponent);
     if (pInstanced) {
       pInstanced->UpdateTransformFromCesium(cesiumToUnrealTransform);
