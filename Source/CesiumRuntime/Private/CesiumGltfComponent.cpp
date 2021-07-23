@@ -40,6 +40,7 @@
 #include "mikktspace.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_operation.hpp>
 #include <glm/mat3x3.hpp>
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
@@ -582,19 +583,17 @@ static void spawnGltfInstances(
   CesiumGltf::AccessorView<glm::quat> rotationAccessor(
       model,
       instanceAttributes.rotationAccessorId);
-  /*
-  // TODO: consider non-uniform scaling as well
-  CesiumGltf::AccessorView<float> scaleAccessor(
+
+  CesiumGltf::AccessorView<glm::vec3> scaleAccessor(
       model,
       instanceAttributes.scaleAccessorId);
-  */
 
   if (translationAccessor.status() != CesiumGltf::AccessorViewStatus::Valid ||
-      rotationAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
+      rotationAccessor.status() != CesiumGltf::AccessorViewStatus::Valid ||
+      scaleAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
     return;
   }
 
-  // UE_LOG(LogCesium, Warning, TEXT("NODE TRANSFORM"))
   int64_t instanceCount = translationAccessor.size();
   instancedMeshComponent->InstanceToNodeTransforms.resize(instanceCount);
 
@@ -602,30 +601,19 @@ static void spawnGltfInstances(
 
     const glm::vec3& translation = translationAccessor[i];
     const glm::quat& rotation = rotationAccessor[i];
+    const glm::vec3& scale = scaleAccessor[i];
 
     glm::dmat4& instanceToNode =
         instancedMeshComponent->InstanceToNodeTransforms[i];
-    instanceToNode = glm::toMat4(rotation);
+    instanceToNode = glm::mat4(glm::mat3(rotation) * glm::diagonal3x3(scale));
     instanceToNode[3] =
         glm::dvec4(translation.x, translation.y, translation.z, 1.0);
 
+    // TODO: WARNING: this is non-compliant to the prescibed transformation
+    // order for EXT_mesh_gpu_instancing, we may need a custom extension for
+    // i3dm support
     glm::dmat4 instanceToUnreal =
         cesiumToUnreal * instanceToNode * nodeTransform;
-
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("T(%f, %f, %f)"),
-        translation.x,
-        translation.y,
-        translation.z);
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("(%f, %f, %f)"),
-        instanceToUnreal[3].x,
-        instanceToUnreal[3].y,
-        instanceToUnreal[3].z);
 
     instancedMeshComponent->AddInstanceWorldSpace(FTransform(FMatrix(
         FVector(
@@ -1367,11 +1355,8 @@ static void loadNode(
   }
 
   if (matrix.size() == 16 && !isIdentityMatrix) {
-    glm::dmat4x4 nodeTransformGltf(
-        glm::dvec4(matrix[0], matrix[1], matrix[2], matrix[3]),
-        glm::dvec4(matrix[4], matrix[5], matrix[6], matrix[7]),
-        glm::dvec4(matrix[8], matrix[9], matrix[10], matrix[11]),
-        glm::dvec4(matrix[12], matrix[13], matrix[14], matrix[15]));
+    const glm::dmat4& nodeTransformGltf =
+        *reinterpret_cast<const glm::dmat4*>(matrix.data());
 
     nodeTransform = nodeTransform * nodeTransformGltf;
   } else {
