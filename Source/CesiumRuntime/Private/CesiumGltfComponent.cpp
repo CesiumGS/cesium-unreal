@@ -1559,8 +1559,8 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 
   {
     CESIUM_TRACE("Apply transforms");
-    applyRtcCenter(model, rootTransform);
-    applyGltfUpAxisTransform(model, rootTransform);
+    // applyRtcCenter(model, rootTransform);
+    // applyGltfUpAxisTransform(model, rootTransform);
   }
 
   if (model.scene >= 0 && model.scene < model.scenes.size()) {

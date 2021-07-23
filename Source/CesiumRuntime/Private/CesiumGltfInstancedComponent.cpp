@@ -17,13 +17,13 @@ UCesiumGltfInstancedComponent::~UCesiumGltfInstancedComponent() {}
 void UCesiumGltfInstancedComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
 
-  if (this->GetInstanceCount() != InstanceToNodeTransforms.size()) {
+  if (this->GetInstanceCount() != this->InstanceToNodeTransforms.size()) {
     return;
   }
 
   for (int32 i = 0; i < this->GetInstanceCount(); ++i) {
     glm::dmat4 newInstanceTransform = CesiumToUnrealTransform *
-                                      InstanceToNodeTransforms[i] *
+                                      this->InstanceToNodeTransforms[i] *
                                       this->HighPrecisionNodeTransform;
 
     this->UpdateInstanceTransform(
