@@ -21,10 +21,12 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CreateModelOptions.h"
+#include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
@@ -33,6 +35,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
+#include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
@@ -804,42 +807,80 @@ ACesium3DTileset::GetPlayerCameras() const {
     return {};
   }
 
+  float worldToMeters = 0.01f;
+  AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
+  if (pWorldSettings) {
+    worldToMeters = pWorldSettings->WorldToMeters;
+  }
+
+  UGameViewportClient* pViewport = pWorld->GetGameViewport();
+  if (!pViewport) {
+    return {};
+  }
+
+  FVector2D size;
+  pViewport->GetViewportSize(size);
+  if (size.X < 1.0 || size.Y < 1.0) {
+    return {};
+  }
+
+  TSharedPtr<IStereoRendering, ESPMode::ThreadSafe> pStereoRendering = nullptr;
+  if (GEngine) {
+    pStereoRendering = GEngine->StereoRenderingDevice;
+  }
+
   std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
 
-  for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
-       playerControllerIt;
-       playerControllerIt++) {
+  for (auto controllerIt = pWorld->GetControllerIterator(); controllerIt;
+       controllerIt++) {
 
-    const TWeakObjectPtr<APlayerController> pPlayerController =
-        *playerControllerIt;
-    if (pPlayerController == nullptr) {
+    const TWeakObjectPtr<AController> pController = *controllerIt;
+    if (pController == nullptr) {
       continue;
     }
 
-    APlayerCameraManager* pCameraManager =
-        pPlayerController->PlayerCameraManager;
-    if (!pCameraManager) {
-      continue;
-    }
+    const APlayerController* pPlayerController =
+        static_cast<const APlayerController*>(pController.Get());
 
-    UGameViewportClient* pViewport = pWorld->GetGameViewport();
-    if (!pViewport) {
-      continue;
+    // default fov
+    double fov = 90.0;
+    if (pPlayerController != nullptr &&
+        pPlayerController->PlayerCameraManager != nullptr) {
+      fov = pPlayerController->PlayerCameraManager->GetFOVAngle();
     }
 
     FVector location;
     FRotator rotation;
-    pCameraManager->GetCameraViewPoint(location, rotation);
-    double fov = pCameraManager->GetFOVAngle();
+    pController->GetPlayerViewPoint(location, rotation);
 
-    FVector2D size;
-    pViewport->GetViewportSize(size);
+    if (pStereoRendering) {
+      FVector leftEyeLocation = location;
+      FRotator leftEyeRotation = rotation;
+      pStereoRendering->CalculateStereoViewOffset(
+          EStereoscopicPass::eSSP_LEFT_EYE,
+          leftEyeRotation,
+          worldToMeters,
+          leftEyeLocation);
 
-    if (size.X < 1.0 || size.Y < 1.0) {
-      continue;
+      cameras.push_back(
+          UnrealCameraParameters{size, leftEyeLocation, leftEyeRotation, fov});
+
+      FVector rightEyeLocation = location;
+      FRotator rightEyeRotation = rotation;
+      pStereoRendering->CalculateStereoViewOffset(
+          EStereoscopicPass::eSSP_RIGHT_EYE,
+          rightEyeRotation,
+          worldToMeters,
+          rightEyeLocation);
+
+      cameras.push_back(UnrealCameraParameters{
+          size,
+          rightEyeLocation,
+          rightEyeRotation,
+          fov});
+    } else {
+      cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
     }
-
-    cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
   }
 
   return cameras;
