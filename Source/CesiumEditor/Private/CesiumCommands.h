@@ -11,8 +11,6 @@ public:
 
   TSharedPtr<FUICommandInfo> AddFromIon;
   TSharedPtr<FUICommandInfo> UploadToIon;
-  TSharedPtr<FUICommandInfo> AddBlankTileset;
-  TSharedPtr<FUICommandInfo> AccessToken;
   TSharedPtr<FUICommandInfo> SignOut;
   TSharedPtr<FUICommandInfo> OpenDocumentation;
   TSharedPtr<FUICommandInfo> OpenSupport;
