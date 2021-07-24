@@ -100,5 +100,32 @@ The full list of tilesets that need to be replaced are:
    5. If no errors, return the camera to the starting view with the "1" key and close the scene without saving. 
 10. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
 
+## Publish the Cesium for Unreal Samples release on GitHub
+
+After the update has been merged to `main`, do the following:
+* Open a clean, current copy of cesium-unreal-samples in Unreal Engine. 
+* Create a .zip of the project through Unreal Engine by selecting File > Package Project > Zip Up Project. Save the new .zip as `CesiumForUnrealSamples-vX.X.X`. 
+* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal-samples/releases/new. Add a changelog in the body to describe recent updates. Follow the format used in previous release. 
+* Create a new tag for your release to match the version number of Cesium for Unreal Samples.
+* Upload the release ZIP that you created above.
+* Publish the release. Your browser will take you to a new page that shows the published release. Save this page, you'll need it later.
+* Copy the link to download the .zip file from this page - you'll need it later.
+
 ## Publish Cesium for Unreal Samples on Marketplace
-Coming soon, presumably the same as above.
+
+1. Open https://publish.unrealengine.com/v2/products. Login with the admin credentials.
+2. Navigate to **Products -> Published**.
+3. Select **Cesium for Unreal Samples**, then scroll all the way to the bottom to the **Product Files** section.
+4. Click the **Submit File Update** button. Confirm the prompts, and you will be directed to this page below.
+    * A note here - The **Create New Version** button (don't use this) is for adding a plugin that is for a different version of Unreal Engine. For example if there were different build for 4.25 and 4.26. Even if you accidentally click it, the box for 4.26 will be greyed out. Delete the accidentally added row by clicking the delete icon.
+5. Do the following to update the plugin:
+    1. Update the Version Title to match the release version.
+    2. Replace the Project File Link with the download link you copied from the Github release. (Likely `https://github.com/CesiumGS/cesium-unreal-samples/releases/download/vX.X.X/CesiumForUnrealSamples-vX.X.X.zip`)
+    3. Confirm the supported Unreal Engine versions.
+    4. Confirm the supported platforms.
+    5. Replace the Version Notes with the link to the published release.(Likely `https://github.com/CesiumGS/cesium-unreal-samples/releases/tag/vX.X.X`)
+  ![image](https://user-images.githubusercontent.com/39537389/126185273-f4df4437-a9c9-477b-85a3-10e75699c26c.png)
+6. Click **Submit**.
+7. This should take you back to the product page, and the **Product Files** section should show **View Pending File Update**. The admin will also recieve an email confirming the submission. The release is now pending Epic's review. If the Marketplace Team reaches out about any issues, those may need resolving, and follow this process again to submit a new zip file for the release.
+8. Once the new release is approved, it does not automatically go live. Take this opportunity to update the product description, images, and other content as needed (product page changes do not require Epic's review).
+9. To release it to the marketplace, navigate back to the product page and click **Publish**.
