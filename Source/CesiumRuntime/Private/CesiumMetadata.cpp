@@ -29,7 +29,7 @@ struct GenericValueToString {
   FString operator()(const CesiumGltf::MetadataArrayView<T>& value) {
     FString result = "{";
     FString seperator = "";
-    for (size_t i = 0; i < value.size(); ++i) {
+    for (int64_t i = 0; i < value.size(); ++i) {
       result += seperator + (*this)(value[i]);
       seperator = ", ";
     }
@@ -401,9 +401,9 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
   featureTableView.forEachProperty([&properties = _properties](
                                        const std::string& propertyName,
                                        auto propertyValue) mutable {
-    if (propertyValue) {
+    if (propertyValue.status() == MetadataPropertyViewStatus::Valid) {
       FString key(propertyName.size(), propertyName.data());
-      properties.Add(key, FCesiumMetadataProperty(*propertyValue));
+      properties.Add(key, FCesiumMetadataProperty(propertyValue));
     }
   });
 }
