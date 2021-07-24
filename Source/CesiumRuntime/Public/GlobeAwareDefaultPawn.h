@@ -56,34 +56,36 @@ public:
   virtual void MoveUp_World(float Val) override;
 
   /**
-   * Called via input to turn at a given rate.
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
-   * desired turn rate
+   * Get the view rotation of the Pawn (direction they are looking,
+   * normally Controller->ControlRotation).
+   *
+   * This is overridden to include the rotation that is determined
+   * by the georeference East-North-Up to Unreal translation.
+   *
+   * @return The view rotation of the Pawn.
    */
-  virtual void TurnAtRate(float Rate) override;
+  virtual FRotator GetViewRotation() const override;
 
   /**
-   * Called via input to look up at a given rate (or down if Rate is negative).
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
-   * desired turn rate
+   * Return the aim rotation for the Pawn.
+   *
+   * This is overridden to return the same as GetViewRotation.
+   *
+   * @return The aim rotation of the Pawn.
    */
-  virtual void LookUpAtRate(float Rate) override;
-
-  virtual void AddControllerPitchInput(float Val) override;
-  virtual void AddControllerYawInput(float Val) override;
-  virtual void AddControllerRollInput(float Val) override;
-  virtual FRotator GetViewRotation() const override;
   virtual FRotator GetBaseAimRotation() const override;
 
   /**
    * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates.
+   * coordinates. This is the position of the actor, excluding the
+   * BaseEyeHeight.
    */
   glm::dvec3 GetECEFCameraLocation() const;
 
   /**
    * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates.
+   * coordinates. This is the position of the actor, excluding the
+   * BaseEyeHeight.
    */
   void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
@@ -196,10 +198,38 @@ protected:
    */
   void PostInitProperties() override;
 
+  virtual void PostActorCreated() override;
+  virtual void PostLoad() override;
+
   virtual void BeginPlay() override;
+
+#if WITH_EDITOR
+
+  /**
+   * This is called when a property is about to be modified externally.
+   *
+   * When the georeference is about to be modified, then this will
+   * remove the `HandleGeoreferenceUpdated` callback from the
+   * `OnGeoreferenceUpdated` delegate of the current georeference.
+   */
+  void PreEditChange(FProperty* PropertyThatWillChange);
+
+  /**
+   * Called when a property on this object has been modified externally
+   *
+   * This is called every time that a value is modified in the editor UI.
+   *
+   * When the georeference has been be modified, then this will
+   * attach the `HandleGeoreferenceUpdated` callback to the
+   * `OnGeoreferenceUpdated` delegate of the new georeference.
+   */
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 private:
   void _interruptFlight();
+  void _initGeoreference();
 
   /**
    * @brief Advance the camera flight based on the given time delta.
@@ -218,11 +248,26 @@ private:
    */
   void _handleFlightStep(float DeltaSeconds);
 
-  // the current ECEF coordinates, stored in case they need to be restored on
-  // georeference update
+  /**
+   * The x-coordinate of the position of this actor, in ECEF coordinates,
+   * corresponding to GetActorLocation().X
+   */
   UPROPERTY()
-  double _currentEcef_Array[3];
-  glm::dvec3& _currentEcef = *(glm::dvec3*)_currentEcef_Array;
+  double currentEcefX;
+
+  /**
+   * The y-coordinate of the position of this actor, in ECEF coordinates,
+   * corresponding to GetActorLocation().Y
+   */
+  UPROPERTY()
+  double currentEcefY;
+
+  /**
+   * The z-coordinate of the position of this actor, in ECEF coordinates,
+   * corresponding to GetActorLocation().Z
+   */
+  UPROPERTY()
+  double currentEcefZ;
 
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;

@@ -27,35 +27,19 @@ AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
 }
 
 void AGlobeAwareDefaultPawn::MoveRight(float Val) {
-  if (Val != 0.f) {
-    if (Controller) {
-      FRotator const ControlSpaceRot = this->GetViewRotation();
-
-      // transform to world space and add it
-      AddMovementInput(
-          FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::Y),
-          Val);
-
-      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-        this->_interruptFlight();
-      }
+  ADefaultPawn::MoveRight(Val);
+  if (Val != 0.f && Controller) {
+    if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+      this->_interruptFlight();
     }
   }
 }
 
 void AGlobeAwareDefaultPawn::MoveForward(float Val) {
-  if (Val != 0.f) {
-    if (Controller) {
-      FRotator const ControlSpaceRot = this->GetViewRotation();
-
-      // transform to world space and add it
-      AddMovementInput(
-          FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::X),
-          Val);
-
-      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-        this->_interruptFlight();
-      }
+  ADefaultPawn::MoveForward(Val);
+  if (Val != 0.f && Controller) {
+    if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+      this->_interruptFlight();
     }
   }
 }
@@ -66,11 +50,11 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     /*
     FMatrix enuToFixed =
         this->Georeference->InaccurateComputeEastNorthUpToUnreal(
-            this->GetPawnViewLocation());
+            this->GetActorLocation());
     FVector up = enuToFixed.GetColumn(2);
     */
 
-    FVector loc = this->GetPawnViewLocation();
+    FVector loc = this->GetActorLocation();
     glm::dvec3 locEcef = this->Georeference->TransformUnrealToEcef(
         glm::dvec3(loc.X, loc.Y, loc.Z));
     glm::dvec4 upEcef(
@@ -88,41 +72,12 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   }
 }
 
-void AGlobeAwareDefaultPawn::TurnAtRate(float Rate) {
-  ADefaultPawn::TurnAtRate(Rate);
-}
-
-void AGlobeAwareDefaultPawn::LookUpAtRate(float Rate) {
-  // calculate delta for this frame from the rate information
-  AddControllerPitchInput(
-      Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds() *
-      CustomTimeDilation);
-}
-
-void AGlobeAwareDefaultPawn::AddControllerPitchInput(float Val) {
-  if (Val != 0.f && Controller && Controller->IsLocalPlayerController()) {
-    APlayerController* const PC = CastChecked<APlayerController>(Controller);
-    PC->AddPitchInput(Val);
-  }
-}
-
-void AGlobeAwareDefaultPawn::AddControllerYawInput(float Val) {
-  ADefaultPawn::AddControllerYawInput(Val);
-}
-
-void AGlobeAwareDefaultPawn::AddControllerRollInput(float Val) {
-  if (Val != 0.f && Controller && Controller->IsLocalPlayerController()) {
-    APlayerController* const PC = CastChecked<APlayerController>(Controller);
-    PC->AddRollInput(Val);
-  }
-}
-
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FRotator localRotation = ADefaultPawn::GetViewRotation();
 
   FMatrix enuAdjustmentMatrix =
       this->Georeference->InaccurateComputeEastNorthUpToUnreal(
-          this->GetPawnViewLocation());
+          this->GetActorLocation());
 
   return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
 }
@@ -132,7 +87,7 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 }
 
 glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
-  FVector ueLocation = this->GetPawnViewLocation();
+  FVector ueLocation = this->GetActorLocation();
   const glm::dvec3 ueLocationVec(ueLocation.X, ueLocation.Y, ueLocation.Z);
   if (!IsValid(this->Georeference)) {
     UE_LOG(
@@ -143,6 +98,28 @@ glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
     return ueLocationVec;
   }
   glm::dvec3 ecef = this->Georeference->TransformUnrealToEcef(ueLocationVec);
+
+  // TODO XXX This should be the same (maybe except for floating point errors),
+  // except for the issue that the currentEcef is updated in Tick()...
+  glm::dvec3 expectedEcef(currentEcefX, currentEcefY, currentEcefZ);
+  if (ecef != expectedEcef) {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("ecef is  %f %f %f in %s"),
+        ecef.x,
+        ecef.y,
+        ecef.z,
+        *this->GetName());
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("expected %f %f %f"),
+        expectedEcef.x,
+        expectedEcef.y,
+        expectedEcef.z);
+  }
+
   return ecef;
 }
 
@@ -158,6 +135,9 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
   } else {
     ue = this->Georeference->TransformEcefToUnreal(ecef);
   }
+  this->currentEcefX = ecef.x;
+  this->currentEcefY = ecef.y;
+  this->currentEcefZ = ecef.z;
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
       static_cast<float>(ue.y),
@@ -331,7 +311,47 @@ void AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated() {
       Verbose,
       TEXT("Called HandleGeoreferenceUpdated for %s"),
       *this->GetName());
-  this->SetECEFCameraLocation(this->_currentEcef);
+
+  // TODO XXX DEBUG OUTPUT
+  FVector ueLocation = this->GetActorLocation();
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT(
+          "In HandleGeoreferenceUpdated %s geoRef is %s, ecef at %f %f %f, UE was at %f %f %f"),
+      *this->GetName(),
+      this->Georeference ? *FString("non-null") : *FString("null"),
+      currentEcefX,
+      currentEcefY,
+      currentEcefZ,
+      ueLocation.X,
+      ueLocation.Y,
+      ueLocation.Z);
+  // TODO XXX DEBUG OUTPUT
+
+  glm::dvec3 ue = this->Georeference->TransformEcefToUnreal(
+      glm::dvec3(currentEcefX, currentEcefY, currentEcefZ));
+  ADefaultPawn::SetActorLocation(FVector(
+      static_cast<float>(ue.x),
+      static_cast<float>(ue.y),
+      static_cast<float>(ue.z)));
+
+  // TODO XXX DEBUG OUTPUT
+  ueLocation = this->GetActorLocation();
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT(
+          "In HandleGeoreferenceUpdated %s geoRef is %s, ecef at %f %f %f, UE now at %f %f %f"),
+      *this->GetName(),
+      this->Georeference ? *FString("non-null") : *FString("null"),
+      currentEcefX,
+      currentEcefY,
+      currentEcefZ,
+      ueLocation.X,
+      ueLocation.Y,
+      ueLocation.Z);
+  // TODO XXX DEBUG OUTPUT
 }
 
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
@@ -423,16 +443,81 @@ void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   _handleFlightStep(DeltaSeconds);
 
   // track current ecef in case we need to restore it on georeference update
-  this->_currentEcef = this->GetECEFCameraLocation();
+
+  // TODO The `currentEcef` should always contain the latest and correct values,
+  // but it is not clear where all the "AddMovementInput" stuff is collapsed
+  // into an actual update of the actor location....
+  const glm::dvec3 newEcef = this->GetECEFCameraLocation();
+  if (newEcef != glm::dvec3(currentEcefX, currentEcefY, currentEcefZ)) {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("In tick of %s update ecef at %f %f %f to %f %f %f"),
+        *this->GetName(),
+        currentEcefX,
+        currentEcefY,
+        currentEcefZ,
+        newEcef.x,
+        newEcef.y,
+        newEcef.z);
+  }
+  this->currentEcefX = newEcef.x;
+  this->currentEcefY = newEcef.y;
+  this->currentEcefZ = newEcef.z;
 }
 
 void AGlobeAwareDefaultPawn::BeginPlay() {
   Super::BeginPlay();
   // TODO: find more elegant solution
   // the controller gets confused if the pawn itself has a nonzero orientation
+  // I get confused when I read comments like this one.
   this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
 }
 
+void AGlobeAwareDefaultPawn::PostActorCreated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostActorCreated on actor %s"),
+      *this->GetName());
+  Super::PostActorCreated();
+  _initGeoreference();
+}
+void AGlobeAwareDefaultPawn::PostLoad() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostLoad on actor %s"),
+      *this->GetName());
+  Super::PostLoad();
+  _initGeoreference();
+}
+void AGlobeAwareDefaultPawn::_initGeoreference() {
+  if (!this->Georeference) {
+    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+  if (this->Georeference) {
+    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        this,
+        &AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated);
+  }
+  FVector ueLocation = this->GetActorLocation();
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT(
+          "In _initGeoreference ties %s geoRef is %s, ecef at %f %f %f, UE at %f %f %f"),
+      *this->GetName(),
+      this->Georeference ? *FString("non-null") : *FString("null"),
+      currentEcefX,
+      currentEcefY,
+      currentEcefZ,
+      ueLocation.X,
+      ueLocation.Y,
+      ueLocation.Z);
+}
+
+// TODO Remove this, no longer needed
 void AGlobeAwareDefaultPawn::PostInitProperties() {
   UE_LOG(
       LogCesium,
@@ -440,16 +525,6 @@ void AGlobeAwareDefaultPawn::PostInitProperties() {
       TEXT("Called PostInitProperties on actor %s"),
       *this->GetName());
   Super::PostInitProperties();
-
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
-  if (this->Georeference) {
-    this->_currentEcef = this->GetECEFCameraLocation();
-    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        this,
-        &AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated);
-  }
 }
 
 void AGlobeAwareDefaultPawn::_interruptFlight() {
@@ -460,3 +535,51 @@ void AGlobeAwareDefaultPawn::_interruptFlight() {
   currentRotator.Roll = 0.0;
   GetController()->SetControlRotation(currentRotator);
 }
+
+#if WITH_EDITOR
+void AGlobeAwareDefaultPawn::PreEditChange(FProperty* PropertyThatWillChange) {
+  Super::PreEditChange(PropertyThatWillChange);
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PreEditChange for %s"),
+      *this->GetName());
+
+  // If the Georeference is modified, detach the `HandleGeoreferenceUpdated`
+  // callback from the current instance
+  FName propertyName = PropertyThatWillChange->GetFName();
+  if (propertyName ==
+      GET_MEMBER_NAME_CHECKED(AGlobeAwareDefaultPawn, Georeference)) {
+    if (IsValid(this->Georeference)) {
+      this->Georeference->OnGeoreferenceUpdated.RemoveAll(this);
+    }
+    return;
+  }
+}
+void AGlobeAwareDefaultPawn::PostEditChangeProperty(
+    FPropertyChangedEvent& event) {
+  Super::PostEditChangeProperty(event);
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called PostEditChangeProperty for %s"),
+      *this->GetName());
+
+  if (!event.Property) {
+    return;
+  }
+
+  FName propertyName = event.Property->GetFName();
+  if (propertyName ==
+      GET_MEMBER_NAME_CHECKED(AGlobeAwareDefaultPawn, Georeference)) {
+    if (IsValid(this->Georeference)) {
+      this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          this,
+          &AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated);
+    }
+    return;
+  }
+}
+#endif
