@@ -17,7 +17,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
-
+#include "GlmLogging.h"
 #include "DrawDebugHelpers.h"
 #include "VecMath.h"
 #include <glm/ext/vector_double3.hpp>
@@ -47,12 +47,11 @@ void AGlobeAwareDefaultPawn::MoveForward(float Val) {
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   if (Val != 0.f) {
     // TODO: Determine why the commented out code doesn't work
-    /*
+
     FMatrix enuToFixed =
         this->Georeference->InaccurateComputeEastNorthUpToUnreal(
             this->GetActorLocation());
-    FVector up = enuToFixed.GetColumn(2);
-    */
+    FVector upA = enuToFixed.GetColumn(2);
 
     FVector loc = this->GetActorLocation();
     glm::dvec3 locEcef = this->Georeference->TransformUnrealToEcef(
@@ -63,6 +62,9 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     glm::dvec4 up = this->Georeference->getGeoTransforms()
                         .GetEllipsoidCenteredToUnrealWorldTransform() *
                     upEcef;
+
+    GlmLogging::logVector("MoveUpWorld upA ", VecMath::createVector3D(upA));
+    GlmLogging::logVector("MoveUpWorld up  ", up);
 
     AddMovementInput(FVector(up.x, up.y, up.z), Val);
 
