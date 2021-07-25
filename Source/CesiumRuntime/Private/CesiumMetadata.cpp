@@ -180,7 +180,8 @@ int64 FCesiumMetadataGenericValue::GetInt64() const {
 
   return std::visit(
       [](const auto& v) -> int64_t {
-        if constexpr (CesiumGltf::IsMetadataNumeric<decltype(v)>::value) {
+        using CoreType = std::remove_cv_t<std::remove_reference_t<decltype(v)>>;
+        if constexpr (CesiumGltf::IsMetadataNumeric<CoreType>::value) {
           return static_cast<int64_t>(v);
         }
 
