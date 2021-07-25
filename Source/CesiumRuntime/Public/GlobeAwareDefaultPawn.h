@@ -232,6 +232,12 @@ private:
   void _initGeoreference();
 
   /**
+   * Computes the normal of the ellipsoid at the given location,
+   * in unreal coordinates.
+   */
+  FVector _computeEllipsoidNormalUnreal(const FVector& location);
+
+  /**
    * @brief Advance the camera flight based on the given time delta.
    *
    * NOTE: This function requires the Georefence to be valid. If it

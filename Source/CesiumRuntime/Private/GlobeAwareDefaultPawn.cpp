@@ -4,69 +4,97 @@
 #include "Camera/CameraComponent.h"
 #include "CesiumActors.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "GlmLogging.h"
+#include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_double3.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
-#include "GlmLogging.h"
-#include "DrawDebugHelpers.h"
-#include "VecMath.h"
-#include <glm/ext/vector_double3.hpp>
 
 AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
   PrimaryActorTick.bCanEverTick = true;
 }
 
 void AGlobeAwareDefaultPawn::MoveRight(float Val) {
-  ADefaultPawn::MoveRight(Val);
-  if (Val != 0.f && Controller) {
-    if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-      this->_interruptFlight();
+
+  // Note: This is overridden from ADefaultPawn to not
+  // use ControlSpaceRot = Controller->GetControlRotation()
+  // but ControlSpaceRot = this->GetViewRotation() instead!
+  if (Val != 0.f) {
+    if (Controller) {
+      FRotator const ControlSpaceRot = this->GetViewRotation();
+
+      // transform to world space and add it
+      AddMovementInput(
+          FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::Y),
+          Val);
+
+      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+        this->_interruptFlight();
+      }
     }
   }
 }
 
 void AGlobeAwareDefaultPawn::MoveForward(float Val) {
-  ADefaultPawn::MoveForward(Val);
-  if (Val != 0.f && Controller) {
-    if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-      this->_interruptFlight();
+
+  // Note: This is overridden from ADefaultPawn to not
+  // use ControlSpaceRot = Controller->GetControlRotation()
+  // but ControlSpaceRot = this->GetViewRotation() instead!
+  if (Val != 0.f) {
+    if (Controller) {
+      FRotator const ControlSpaceRot = this->GetViewRotation();
+
+      // transform to world space and add it
+      AddMovementInput(
+          FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::X),
+          Val);
+
+      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+        this->_interruptFlight();
+      }
     }
   }
 }
 
+FVector
+AGlobeAwareDefaultPawn::_computeEllipsoidNormalUnreal(const FVector& location) {
+
+  if (!IsValid(this->Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
+        *this->GetName());
+    return FVector();
+  }
+  glm::dvec3 ecef = this->Georeference->TransformUnrealToEcef(
+      glm::dvec3(location.X, location.Y, location.Z));
+  const glm::dvec3 ellipsoidNormalEcef =
+      this->Georeference->ComputeGeodeticSurfaceNormal(ecef);
+  const glm::dmat4& ecefToUnreal =
+      this->Georeference->getGeoTransforms()
+          .GetEllipsoidCenteredToUnrealWorldTransform();
+  const glm::dvec3 ellipsoidNormalUnreal =
+      glm::dvec3(ecefToUnreal * glm::dvec4(ellipsoidNormalEcef, 0.0));
+  return VecMath::createVector(glm::normalize(ellipsoidNormalUnreal));
+}
+
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   if (Val != 0.f) {
-    // TODO: Determine why the commented out code doesn't work
-
-    FMatrix enuToFixed =
-        this->Georeference->InaccurateComputeEastNorthUpToUnreal(
-            this->GetActorLocation());
-    FVector upA = enuToFixed.GetColumn(2);
-
-    FVector loc = this->GetActorLocation();
-    glm::dvec3 locEcef = this->Georeference->TransformUnrealToEcef(
-        glm::dvec3(loc.X, loc.Y, loc.Z));
-    glm::dvec4 upEcef(
-        CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
-        0.0);
-    glm::dvec4 up = this->Georeference->getGeoTransforms()
-                        .GetEllipsoidCenteredToUnrealWorldTransform() *
-                    upEcef;
-
-    GlmLogging::logVector("MoveUpWorld upA ", VecMath::createVector3D(upA));
-    GlmLogging::logVector("MoveUpWorld up  ", up);
-
-    AddMovementInput(FVector(up.x, up.y, up.z), Val);
+    FVector location = this->GetActorLocation();
+    FVector up = _computeEllipsoidNormalUnreal(location);
+    AddMovementInput(up, Val);
 
     if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
       this->_interruptFlight();
