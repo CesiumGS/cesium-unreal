@@ -4,7 +4,7 @@
 
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumMetadata.h"
+#include "CesiumMetadataPrimitive.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>

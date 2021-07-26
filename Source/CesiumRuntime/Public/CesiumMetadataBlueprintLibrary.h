@@ -1,6 +1,10 @@
 #pragma once
 
-#include "CesiumMetadata.h"
+#include "CesiumMetadataFeatureTable.h"
+#include "CesiumMetadataGenericValue.h"
+#include "CesiumMetadataPrimitive.h"
+#include "CesiumMetadataProperty.h"
+#include "CesiumMetadataValueType.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumMetadataBlueprintLibrary.generated.h"
