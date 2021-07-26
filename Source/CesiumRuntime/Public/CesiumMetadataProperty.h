@@ -3,6 +3,10 @@
 #pragma once
 
 #include "CesiumGltf/MetadataPropertyView.h"
+#include "CesiumMetadataArray.h"
+#include "CesiumMetadataGenericValue.h"
+#include "CesiumMetadataValueType.h"
+#include "UObject/ObjectMacros.h"
 #include <string_view>
 #include <variant>
 #include "CesiumMetadataProperty.generated.h"

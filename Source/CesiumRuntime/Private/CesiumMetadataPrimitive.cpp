@@ -1,6 +1,9 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumGltf/ModelEXT_feature_metadata.h"
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const CesiumGltf::Model& model,
