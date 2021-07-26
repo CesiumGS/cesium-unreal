@@ -46,3 +46,9 @@ const TArray<FCesiumMetadataFeatureTable>&
 FCesiumMetadataPrimitive::GetFeatureTables() const {
   return _featureTables;
 }
+
+const TArray<FCesiumMetadataFeatureTable>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
+    const FCesiumMetadataPrimitive& metadataPrimitive) {
+  return metadataPrimitive.GetFeatureTables();
+}

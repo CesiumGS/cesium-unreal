@@ -5,6 +5,8 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataProperty.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/ObjectMacros.h"
 #include "CesiumMetadataFeatureTable.generated.h"
 
 namespace CesiumGltf {
@@ -89,4 +91,57 @@ public:
 private:
   AccesorViewType _featureIDAccessor;
   TMap<FString, FCesiumMetadataProperty> _properties;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  /**
+   * Query the number of features in the feature table.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTable")
+  static int64
+  GetNumOfFeatures(UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable);
+
+  /**
+   * Query the feature ID based on a vertex.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTable")
+  static int64 GetFeatureIDForVertex(
+      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+      int64 vertexIdx);
+
+  /**
+   * Return the map of a feature that maps feature's property name to value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTable")
+  static TMap<FString, FCesiumMetadataGenericValue> GetValuesForFeatureID(
+      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+      int64 featureID);
+
+  /**
+   * Return the map of a feature that maps feature's property name to value as
+   * string.
+   */
+  TMap<FString, FString> static GetValuesAsStringsForFeatureID(
+      UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+      int64 featureID);
+
+  /**
+   * Get all the properties of a feature table.
+   */
+  static const TMap<FString, FCesiumMetadataProperty>&
+  GetProperties(UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable);
 };

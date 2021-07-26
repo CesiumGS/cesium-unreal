@@ -140,3 +140,62 @@ FCesiumMetadataGenericValue
 FCesiumMetadataProperty::GetGenericValue(size_t featureID) const {
   return std::visit(MetadataPropertyValue{featureID}, _property);
 }
+
+ECesiumMetadataValueType UCesiumMetadataPropertyBlueprintLibrary::GetType(
+    UPARAM(ref) const FCesiumMetadataProperty& property) {
+  return property.GetType();
+}
+
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumOfFeatures(
+    UPARAM(ref) const FCesiumMetadataProperty& property) {
+  return property.GetNumOfFeatures();
+}
+
+bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return property.GetBoolean(featureID);
+}
+
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetInt64(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return property.GetInt64(featureID);
+}
+
+float UCesiumMetadataPropertyBlueprintLibrary::GetUint64AsFloat(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return static_cast<float>(property.GetUint64(featureID));
+}
+
+float UCesiumMetadataPropertyBlueprintLibrary::GetFloat(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return property.GetFloat(featureID);
+}
+
+float UCesiumMetadataPropertyBlueprintLibrary::GetDoubleAsFloat(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return static_cast<float>(property.GetDouble(featureID));
+}
+
+FString UCesiumMetadataPropertyBlueprintLibrary::GetString(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return property.GetString(featureID);
+}
+
+FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return property.GetArray(featureID);
+}
+
+FCesiumMetadataGenericValue
+UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
+    UPARAM(ref) const FCesiumMetadataProperty& property,
+    int64 featureID) {
+  return property.GetGenericValue(featureID);
+}

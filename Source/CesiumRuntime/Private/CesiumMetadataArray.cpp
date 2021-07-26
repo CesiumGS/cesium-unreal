@@ -83,3 +83,49 @@ FString FCesiumMetadataArray::GetString(size_t i) const {
   std::string_view member = val[i];
   return FString(member.size(), member.data());
 }
+
+ECesiumMetadataValueType UCesiumMetadataArrayBlueprintLibrary::GetComponentType(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return array.GetComponentType();
+}
+
+int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return array.GetSize();
+}
+
+bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index) {
+  return array.GetBoolean(index);
+}
+
+int64 UCesiumMetadataArrayBlueprintLibrary::GetInt64(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index) {
+  return array.GetInt64(index);
+}
+
+float UCesiumMetadataArrayBlueprintLibrary::GetUint64AsFloat(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index) {
+  return static_cast<float>(array.GetUint64(index));
+}
+
+float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index) {
+  return array.GetFloat(index);
+}
+
+float UCesiumMetadataArrayBlueprintLibrary::GetDoubleAsFloat(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index) {
+  return static_cast<float>(array.GetDouble(index));
+}
+
+FString UCesiumMetadataArrayBlueprintLibrary::GetString(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index) {
+  return array.GetString(index);
+}

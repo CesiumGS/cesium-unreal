@@ -4,6 +4,8 @@
 
 #include "CesiumGltf/MetadataArrayView.h"
 #include "CesiumMetadataValueType.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/ObjectMacros.h"
 #include <string_view>
 #include <variant>
 #include "CesiumMetadataArray.generated.h"
@@ -142,4 +144,98 @@ private:
 
   ArrayType _value;
   ECesiumMetadataValueType _type;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataArrayBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  /**
+   * Query the component type of the array value.
+   * This method should be used first before retrieving the data of the array.
+   * If the data that is tried to retrieve is different from the stored data
+   * type, the current program will be aborted.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static ECesiumMetadataValueType
+  GetComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+
+  /**
+   * Query the number of elements in the array.
+   * This method returns 0 if component type is ECesiumMetadataValueType::None
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static int64 GetSize(UPARAM(ref) const FCesiumMetadataArray& array);
+
+  /**
+   * Retrieve the component at index i as an int64_t value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static int64
+  GetInt64(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  /**
+   * Retrieve the component at index i as an uint64_t value. However,
+   * because blueprint cannot work with uint64, the type will be converted
+   * to float, which will incur the loss of precision
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static float
+  GetUint64AsFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  /**
+   * Retrieve the component at index i as a float value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static float
+  GetFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  /**
+   * Retrieve the component at index i as a double value. However,
+   * because blueprint cannot work with double, the type will be converted
+   * to float, which will incur the loss of precision
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static float
+  GetDoubleAsFloat(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  /**
+   * Retrieve the component at index i as a boolean value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static bool
+  GetBoolean(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
+
+  /**
+   * Retrieve the component at index i as a string value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static FString
+  GetString(UPARAM(ref) const FCesiumMetadataArray& array, int64 index);
 };

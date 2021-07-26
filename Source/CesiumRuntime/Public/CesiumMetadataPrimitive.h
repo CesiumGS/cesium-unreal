@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CesiumMetadataFeatureTable.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/ObjectMacros.h"
 #include "CesiumMetadataPrimitive.generated.h"
 
 namespace CesiumGltf {
@@ -49,4 +51,22 @@ public:
 
 private:
   TArray<FCesiumMetadataFeatureTable> _featureTables;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  /**
+   * Get all the feature tables that are associated with the primitive.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static const TArray<FCesiumMetadataFeatureTable>&
+  GetFeatureTables(UPARAM(ref)
+                       const FCesiumMetadataPrimitive& metadataPrimitive);
 };

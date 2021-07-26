@@ -5,6 +5,8 @@
 #include "CesiumGltf/MetadataArrayView.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataValueType.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "UObject/ObjectMacros.h"
 #include "CesiumMetadataGenericValue.generated.h"
 
 /**
@@ -153,4 +155,104 @@ public:
 private:
   ValueType _value;
   ECesiumMetadataValueType _type;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataGenericValueBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  /**
+   * Query the type of the value.
+   * This method should be used first before retrieving the stored value.
+   * If the data that is tried to retrieve is different from the stored data
+   * type, the current program will be aborted.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static ECesiumMetadataValueType
+  GetType(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as an int64_t.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static int64 GetInt64(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as an uint64_t value. However,
+   * because blueprint cannot work with uint64, the type will be converted
+   * to float, which will incur the loss of precision
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static float GetUint64AsFloat(UPARAM(ref)
+                                    const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as a float value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static float GetFloat(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as a double value. However,
+   * because blueprint cannot work with double, the type will be converted
+   * to float, which will incur the loss of precision
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static float GetDoubleAsFloat(UPARAM(ref)
+                                    const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as a boolean value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static bool GetBoolean(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as a string value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static FString GetString(UPARAM(ref)
+                               const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Retrieve the value as a generic array value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static FCesiumMetadataArray
+  GetArray(UPARAM(ref) const FCesiumMetadataGenericValue& value);
+
+  /**
+   * Convert the stored value to string for display purpose.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static FString ToString(UPARAM(ref) const FCesiumMetadataGenericValue& value);
 };

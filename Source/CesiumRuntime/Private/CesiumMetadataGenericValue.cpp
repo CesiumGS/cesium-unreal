@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataGenericValue.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 
 namespace {
 
@@ -134,4 +135,49 @@ FCesiumMetadataArray FCesiumMetadataGenericValue::GetArray() const {
 
 FString FCesiumMetadataGenericValue::ToString() const {
   return std::visit(GenericValueToString{}, _value);
+}
+
+ECesiumMetadataValueType UCesiumMetadataGenericValueBlueprintLibrary::GetType(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetType();
+}
+
+int64 UCesiumMetadataGenericValueBlueprintLibrary::GetInt64(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetInt64();
+}
+
+float UCesiumMetadataGenericValueBlueprintLibrary::GetUint64AsFloat(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return static_cast<float>(value.GetUint64());
+}
+
+float UCesiumMetadataGenericValueBlueprintLibrary::GetFloat(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetFloat();
+}
+
+float UCesiumMetadataGenericValueBlueprintLibrary::GetDoubleAsFloat(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetDouble();
+}
+
+bool UCesiumMetadataGenericValueBlueprintLibrary::GetBoolean(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetBoolean();
+}
+
+FString UCesiumMetadataGenericValueBlueprintLibrary::GetString(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetString();
+}
+
+FCesiumMetadataArray UCesiumMetadataGenericValueBlueprintLibrary::GetArray(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetArray();
+}
+
+FString UCesiumMetadataGenericValueBlueprintLibrary::ToString(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.ToString();
 }

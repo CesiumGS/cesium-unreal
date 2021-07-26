@@ -6,6 +6,7 @@
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataValueType.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include <string_view>
 #include <variant>
@@ -179,4 +180,127 @@ private:
 
   PropertyType _property;
   ECesiumMetadataValueType _type;
+};
+
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataPropertyBlueprintLibrary
+    : public UBlueprintFunctionLibrary {
+  GENERATED_BODY()
+
+public:
+  /**
+   * Query the type of the property.
+   * This method should be used first before retrieving the stored value.
+   * If the data that is tried to retrieve is different from the stored data
+   * type, the current program will be aborted.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static ECesiumMetadataValueType
+  GetType(UPARAM(ref) const FCesiumMetadataProperty& property);
+
+  /**
+   * Query the number of features in the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static int64 GetNumOfFeatures(UPARAM(ref)
+                                    const FCesiumMetadataProperty& property);
+
+  /**
+   * Retrieve the feature value at index featureID as a boolean value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static bool GetBoolean(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Retrieve the feature value at index featureID as an int64_t value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static int64 GetInt64(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Retrieve the feature value at index featureID as an uint64_t value.
+   * However, because blueprint cannot work with uint64, the type will be
+   * converted to float, which will incur the loss of precision
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static float GetUint64AsFloat(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Retrieve the feature value at index featureID as a float value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static float GetFloat(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Retrieve the feature value at index featureID as a double value. However,
+   * because blueprint cannot work with double, the type will be converted
+   * to float, which will incur the loss of precision
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static float GetDoubleAsFloat(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Retrieve the feature value at index featureID as a string value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static FString GetString(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Retrieve the feature value at index featureID as an array value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static FCesiumMetadataArray GetArray(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
+
+  /**
+   * Convert the underlying value to a generic value. Convenient for storing
+   * the value in the container like TArray or TMap
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static FCesiumMetadataGenericValue GetGenericValue(
+      UPARAM(ref) const FCesiumMetadataProperty& property,
+      int64 featureID);
 };
