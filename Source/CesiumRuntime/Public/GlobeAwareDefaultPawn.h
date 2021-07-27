@@ -198,6 +198,7 @@ protected:
    */
   void PostInitProperties() override;
 
+  virtual void OnConstruction(const FTransform& Transform) override;
   virtual void PostActorCreated() override;
   virtual void PostLoad() override;
 

@@ -504,6 +504,23 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
   this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
 }
 
+void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnConstruction on actor %s"),
+      *this->GetName());
+  Super::OnConstruction(Transform);
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("In OnConstruction currentEcef is  %f %f %f in %s"),
+        currentEcefX,
+        currentEcefY,
+        currentEcefZ,
+        *this->GetName());
+}
+
 void AGlobeAwareDefaultPawn::PostActorCreated() {
   UE_LOG(
       LogCesium,
