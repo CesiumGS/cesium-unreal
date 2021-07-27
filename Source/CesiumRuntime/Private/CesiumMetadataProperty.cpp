@@ -116,7 +116,7 @@ bool FCesiumMetadataProperty::GetBoolean(int64 featureID, bool defaultValue)
   return std::visit(
       [featureID, defaultValue](const auto& v) -> bool {
         auto value = v.get(featureID);
-        return MetadataConverter<bool, decltype(value)>::convert(
+        return CesiumMetadataConversions<bool, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -128,7 +128,7 @@ uint8 FCesiumMetadataProperty::GetByte(int64 featureID, uint8 defaultValue)
   return std::visit(
       [featureID, defaultValue](const auto& v) -> uint8 {
         auto value = v.get(featureID);
-        return MetadataConverter<uint8, decltype(value)>::convert(
+        return CesiumMetadataConversions<uint8, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -140,7 +140,7 @@ int32 FCesiumMetadataProperty::GetInteger(int64 featureID, int32 defaultValue)
   return std::visit(
       [featureID, defaultValue](const auto& v) -> int32 {
         auto value = v.get(featureID);
-        return MetadataConverter<int32, decltype(value)>::convert(
+        return CesiumMetadataConversions<int32, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -152,7 +152,7 @@ int64 FCesiumMetadataProperty::GetInteger64(int64 featureID, int64 defaultValue)
   return std::visit(
       [featureID, defaultValue](const auto& v) -> int64 {
         auto value = v.get(featureID);
-        return MetadataConverter<int64, decltype(value)>::convert(
+        return CesiumMetadataConversions<int64, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -164,7 +164,7 @@ float FCesiumMetadataProperty::GetFloat(int64 featureID, float defaultValue)
   return std::visit(
       [featureID, defaultValue](const auto& v) -> float {
         auto value = v.get(featureID);
-        return MetadataConverter<float, decltype(value)>::convert(
+        return CesiumMetadataConversions<float, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -177,7 +177,7 @@ FString FCesiumMetadataProperty::GetString(
   return std::visit(
       [featureID, &defaultValue](const auto& v) -> FString {
         auto value = v.get(featureID);
-        return MetadataConverter<FString, decltype(value)>::convert(
+        return CesiumMetadataConversions<FString, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -188,8 +188,9 @@ FCesiumMetadataArray FCesiumMetadataProperty::GetArray(int64 featureID) const {
   return std::visit(
       [featureID](const auto& v) -> FCesiumMetadataArray {
         auto value = v.get(featureID);
-        return MetadataConverter<FCesiumMetadataArray, decltype(value)>::
-            convert(value, FCesiumMetadataArray());
+        return CesiumMetadataConversions<
+            FCesiumMetadataArray,
+            decltype(value)>::convert(value, FCesiumMetadataArray());
       },
       _property);
 }

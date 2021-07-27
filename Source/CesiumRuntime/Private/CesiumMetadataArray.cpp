@@ -29,7 +29,7 @@ bool FCesiumMetadataArray::GetBoolean(int64 index, bool defaultValue) const {
   return std::visit(
       [index, defaultValue](const auto& v) -> bool {
         auto value = v[index];
-        return MetadataConverter<bool, decltype(value)>::convert(
+        return CesiumMetadataConversions<bool, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -40,7 +40,7 @@ uint8 FCesiumMetadataArray::GetByte(int64 index, uint8 defaultValue) const {
   return std::visit(
       [index, defaultValue](const auto& v) -> uint8 {
         auto value = v[index];
-        return MetadataConverter<uint8, decltype(value)>::convert(
+        return CesiumMetadataConversions<uint8, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -51,7 +51,7 @@ int32 FCesiumMetadataArray::GetInteger(int64 index, int32 defaultValue) const {
   return std::visit(
       [index, defaultValue](const auto& v) -> int32 {
         auto value = v[index];
-        return MetadataConverter<int32, decltype(value)>::convert(
+        return CesiumMetadataConversions<int32, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -63,7 +63,7 @@ int64 FCesiumMetadataArray::GetInteger64(int64 index, int64 defaultValue)
   return std::visit(
       [index, defaultValue](const auto& v) -> int64 {
         auto value = v[index];
-        return MetadataConverter<int64, decltype(value)>::convert(
+        return CesiumMetadataConversions<int64, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -74,7 +74,7 @@ float FCesiumMetadataArray::GetFloat(int64 index, float defaultValue) const {
   return std::visit(
       [index, defaultValue](const auto& v) -> float {
         auto value = v[index];
-        return MetadataConverter<float, decltype(value)>::convert(
+        return CesiumMetadataConversions<float, decltype(value)>::convert(
             value,
             defaultValue);
       },
@@ -87,7 +87,7 @@ FString FCesiumMetadataArray::GetString(
   return std::visit(
       [index, defaultValue](const auto& v) -> FString {
         auto value = v[index];
-        return MetadataConverter<FString, decltype(value)>::convert(
+        return CesiumMetadataConversions<FString, decltype(value)>::convert(
             value,
             defaultValue);
       },

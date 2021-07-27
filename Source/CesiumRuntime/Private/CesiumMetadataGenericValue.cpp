@@ -11,7 +11,7 @@ ECesiumMetadataValueType FCesiumMetadataGenericValue::GetType() const {
 bool FCesiumMetadataGenericValue::GetBoolean(bool DefaultValue) const {
   return std::visit(
       [DefaultValue](auto value) -> bool {
-        return MetadataConverter<bool, decltype(value)>::convert(
+        return CesiumMetadataConversions<bool, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -21,7 +21,7 @@ bool FCesiumMetadataGenericValue::GetBoolean(bool DefaultValue) const {
 uint8 FCesiumMetadataGenericValue::GetByte(uint8 DefaultValue) const {
   return std::visit(
       [DefaultValue](auto value) -> uint8 {
-        return MetadataConverter<uint8, decltype(value)>::convert(
+        return CesiumMetadataConversions<uint8, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -31,7 +31,7 @@ uint8 FCesiumMetadataGenericValue::GetByte(uint8 DefaultValue) const {
 int32 FCesiumMetadataGenericValue::GetInteger(int32 DefaultValue) const {
   return std::visit(
       [DefaultValue](auto value) {
-        return MetadataConverter<int32, decltype(value)>::convert(
+        return CesiumMetadataConversions<int32, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -41,7 +41,7 @@ int32 FCesiumMetadataGenericValue::GetInteger(int32 DefaultValue) const {
 int64 FCesiumMetadataGenericValue::GetInteger64(int64 DefaultValue) const {
   return std::visit(
       [DefaultValue](auto value) -> int64 {
-        return MetadataConverter<int64, decltype(value)>::convert(
+        return CesiumMetadataConversions<int64, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -51,7 +51,7 @@ int64 FCesiumMetadataGenericValue::GetInteger64(int64 DefaultValue) const {
 float FCesiumMetadataGenericValue::GetFloat(float DefaultValue) const {
   return std::visit(
       [DefaultValue](auto value) -> float {
-        return MetadataConverter<float, decltype(value)>::convert(
+        return CesiumMetadataConversions<float, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -62,7 +62,7 @@ FString
 FCesiumMetadataGenericValue::GetString(const FString& DefaultValue) const {
   return std::visit(
       [DefaultValue](auto value) -> FString {
-        return MetadataConverter<FString, decltype(value)>::convert(
+        return CesiumMetadataConversions<FString, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -72,8 +72,9 @@ FCesiumMetadataGenericValue::GetString(const FString& DefaultValue) const {
 FCesiumMetadataArray FCesiumMetadataGenericValue::GetArray() const {
   return std::visit(
       [](auto value) -> FCesiumMetadataArray {
-        return MetadataConverter<FCesiumMetadataArray, decltype(value)>::
-            convert(value, FCesiumMetadataArray());
+        return CesiumMetadataConversions<
+            FCesiumMetadataArray,
+            decltype(value)>::convert(value, FCesiumMetadataArray());
       },
       _value);
 }

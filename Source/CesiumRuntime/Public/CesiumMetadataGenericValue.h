@@ -58,7 +58,7 @@ public:
    * @param value The value to be stored in this struct
    */
   template <typename T>
-  FCesiumMetadataGenericValue(const T& value)
+  explicit FCesiumMetadataGenericValue(const T& value)
       : _value(value), _type(ECesiumMetadataValueType::None) {
     if (std::holds_alternative<std::monostate>(_value)) {
       _type = ECesiumMetadataValueType::None;

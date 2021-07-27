@@ -8,12 +8,12 @@
 
 // Default conversion, just returns the default value.
 template <typename TTo, typename TFrom, typename Enable = void>
-struct MetadataConverter {
+struct CesiumMetadataConversions {
   static TTo convert(TFrom from, TTo defaultValue) { return defaultValue; }
 };
 
 // Trivially convert any type to itself.
-template <typename T> struct MetadataConverter<T, T> {
+template <typename T> struct CesiumMetadataConversions<T, T> {
   static T convert(T from, T defaultValue) { return from; }
 };
 
@@ -24,7 +24,7 @@ template <typename T> struct MetadataConverter<T, T> {
 
 // numeric -> bool
 template <typename TFrom>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     bool,
     TFrom,
     std::enable_if_t<CesiumGltf::IsMetadataNumeric<TFrom>::value>> {
@@ -34,7 +34,7 @@ struct MetadataConverter<
 };
 
 // string -> bool
-template <> struct MetadataConverter<bool, std::string_view> {
+template <> struct CesiumMetadataConversions<bool, std::string_view> {
   static bool convert(const std::string_view& from, bool defaultValue) {
     FString f(from.size(), from.data());
     if (f.Compare("1", ESearchCase::IgnoreCase) == 0 ||
@@ -58,7 +58,7 @@ template <> struct MetadataConverter<bool, std::string_view> {
 
 // any integer -> any integer
 template <typename TTo, typename TFrom>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     TTo,
     TFrom,
     std::enable_if_t<
@@ -72,7 +72,7 @@ struct MetadataConverter<
 
 // float/double -> any integer
 template <typename TTo, typename TFrom>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     TTo,
     TFrom,
     std::enable_if_t<
@@ -91,7 +91,7 @@ struct MetadataConverter<
 
 // string -> any integer
 template <typename TTo>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     TTo,
     std::string_view,
     std::enable_if_t<CesiumGltf::IsMetadataInteger<TTo>::value>> {
@@ -127,7 +127,7 @@ struct MetadataConverter<
 
 // bool -> any integer
 template <typename TTo>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     TTo,
     bool,
     std::enable_if_t<CesiumGltf::IsMetadataInteger<TTo>::value>> {
@@ -139,7 +139,7 @@ struct MetadataConverter<
 //
 
 // bool -> string
-template <> struct MetadataConverter<FString, bool> {
+template <> struct CesiumMetadataConversions<FString, bool> {
   static FString convert(bool from, const FString& defaultValue) {
     return from ? "true" : "false";
   }
@@ -147,7 +147,7 @@ template <> struct MetadataConverter<FString, bool> {
 
 // numeric -> string
 template <typename TFrom>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     FString,
     TFrom,
     std::enable_if_t<CesiumGltf::IsMetadataNumeric<TFrom>::value>> {
@@ -157,7 +157,7 @@ struct MetadataConverter<
 };
 
 // string_view -> FString
-template <> struct MetadataConverter<FString, std::string_view> {
+template <> struct CesiumMetadataConversions<FString, std::string_view> {
   static FString
   convert(const std::string_view& from, const FString& defaultValue) {
     return FString(from.size(), from.data());
@@ -169,7 +169,7 @@ template <> struct MetadataConverter<FString, std::string_view> {
 //
 
 // bool -> float
-template <> struct MetadataConverter<float, bool> {
+template <> struct CesiumMetadataConversions<float, bool> {
   static float convert(bool from, float defaultValue) {
     return from ? 1.0f : 0.0f;
   }
@@ -177,7 +177,7 @@ template <> struct MetadataConverter<float, bool> {
 
 // any integer -> float
 template <typename TFrom>
-struct MetadataConverter<
+struct CesiumMetadataConversions<
     float,
     TFrom,
     std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
@@ -187,7 +187,7 @@ struct MetadataConverter<
 };
 
 // double -> float
-template <> struct MetadataConverter<float, double> {
+template <> struct CesiumMetadataConversions<float, double> {
   static float convert(double from, float defaultValue) {
     if (from > std::numeric_limits<float>::max() ||
         from < std::numeric_limits<float>::lowest()) {
@@ -198,7 +198,7 @@ template <> struct MetadataConverter<float, double> {
 };
 
 // string -> float
-template <> struct MetadataConverter<float, std::string_view> {
+template <> struct CesiumMetadataConversions<float, std::string_view> {
   static float convert(const std::string_view& from, float defaultValue) {
     const char* pStart = from.data();
     const char* pEnd = from.data() + from.size();
