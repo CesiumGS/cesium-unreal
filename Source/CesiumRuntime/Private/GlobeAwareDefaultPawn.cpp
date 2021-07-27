@@ -511,14 +511,19 @@ void AGlobeAwareDefaultPawn::OnConstruction(const FTransform& Transform) {
       TEXT("Called OnConstruction on actor %s"),
       *this->GetName());
   Super::OnConstruction(Transform);
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("In OnConstruction currentEcef is  %f %f %f in %s"),
-        currentEcefX,
-        currentEcefY,
-        currentEcefZ,
-        *this->GetName());
+
+  // When starting to play in the editor WITHOUT enabling "auto-possess"
+  // for the pawn, the objects in the current world undergo a somewhat
+  // obscure process of being "cloned", but their properties are not
+  // always initialized properly, causing the currentEcef to be (0,0,0).
+  // In the initial implementation of the GlobeAwareDefault pawn class, 
+  // this was alleviated by obtaining the current ECEF from the actor 
+  // location here in OnConstuction. I have no idea why this works, but 
+  // it does, and in doubt, the original author has to explain that:
+  const glm::dvec3 ecef = GetECEFCameraLocation();
+  this->currentEcefX = ecef.x;
+  this->currentEcefY = ecef.y;
+  this->currentEcefZ = ecef.z;
 }
 
 void AGlobeAwareDefaultPawn::PostActorCreated() {
