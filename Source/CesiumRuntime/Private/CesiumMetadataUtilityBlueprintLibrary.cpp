@@ -100,7 +100,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
 
-  return featureTable.GetValuesForFeatureID(featureID);
+  return featureTable.GetPropertiesForFeatureID(featureID);
 }
 
 TMap<FString, FString>
@@ -130,5 +130,5 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
     return TMap<FString, FString>();
   }
 
-  return featureTable.GetValuesAsStringsForFeatureID(featureID);
+  return featureTable.GetPropertiesAsStringsForFeatureID(featureID);
 }

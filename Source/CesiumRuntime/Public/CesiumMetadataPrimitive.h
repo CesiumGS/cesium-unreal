@@ -13,8 +13,8 @@ struct MeshPrimitiveEXT_feature_metadata;
 } // namespace CesiumGltf
 
 /**
- * Provide a wrapper for a Gltf Primitive's Metadata. Each primitive
- * metadata is a collection of feature tables
+ * A Blueprint-accessible wrapper for a glTF Primitive's Metadata. It holds a
+ * collection of feature tables.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {

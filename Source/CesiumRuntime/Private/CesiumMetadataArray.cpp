@@ -2,6 +2,7 @@
 
 #include "CesiumMetadataArray.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataConversions.h"
 
 namespace {
 
@@ -24,64 +25,73 @@ size_t FCesiumMetadataArray::GetSize() const {
   return std::visit(MetadataArraySize{}, _value);
 }
 
-int64 FCesiumMetadataArray::GetInt64(size_t i) const {
-  ensureAlwaysMsgf(
-      (_type == ECesiumMetadataValueType::Int64),
-      TEXT("Value cannot be represented as Int64"));
-
+bool FCesiumMetadataArray::GetBoolean(int64 index, bool defaultValue) const {
   return std::visit(
-      [i](const auto& v) -> int64_t {
-        if constexpr (CesiumGltf::IsMetadataNumeric<decltype(v)>::value) {
-          return static_cast<int64_t>(v[i]);
-        }
-
-        assert(false && "Value cannot be represented as Int64");
-        return 0;
+      [index, defaultValue](const auto& v) -> bool {
+        auto value = v[index];
+        return MetadataConverter<bool, decltype(value)>::convert(
+            value,
+            defaultValue);
       },
       _value);
 }
 
-uint64 FCesiumMetadataArray::GetUint64(size_t i) const {
-  ensureAlwaysMsgf(
-      (_type == ECesiumMetadataValueType::Uint64),
-      TEXT("Value cannot be represented as Uint64"));
-
-  return std::get<CesiumGltf::MetadataArrayView<uint64_t>>(_value)[i];
+uint8 FCesiumMetadataArray::GetByte(int64 index, uint8 defaultValue) const {
+  return std::visit(
+      [index, defaultValue](const auto& v) -> uint8 {
+        auto value = v[index];
+        return MetadataConverter<uint8, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      _value);
 }
 
-float FCesiumMetadataArray::GetFloat(size_t i) const {
-  ensureAlwaysMsgf(
-      (_type == ECesiumMetadataValueType::Float),
-      TEXT("Value cannot be represented as Float"));
-
-  return std::get<CesiumGltf::MetadataArrayView<float>>(_value)[i];
+int32 FCesiumMetadataArray::GetInteger(int64 index, int32 defaultValue) const {
+  return std::visit(
+      [index, defaultValue](const auto& v) -> int32 {
+        auto value = v[index];
+        return MetadataConverter<int32, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      _value);
 }
 
-double FCesiumMetadataArray::GetDouble(size_t i) const {
-  ensureAlwaysMsgf(
-      (_type == ECesiumMetadataValueType::Double),
-      TEXT("Value cannot be represented as Double"));
-
-  return std::get<CesiumGltf::MetadataArrayView<double>>(_value)[i];
+int64 FCesiumMetadataArray::GetInteger64(int64 index, int64 defaultValue)
+    const {
+  return std::visit(
+      [index, defaultValue](const auto& v) -> int64 {
+        auto value = v[index];
+        return MetadataConverter<int64, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      _value);
 }
 
-bool FCesiumMetadataArray::GetBoolean(size_t i) const {
-  ensureAlwaysMsgf(
-      (_type == ECesiumMetadataValueType::Boolean),
-      TEXT("Value cannot be represented as Boolean"));
-
-  return std::get<CesiumGltf::MetadataArrayView<bool>>(_value)[i];
+float FCesiumMetadataArray::GetFloat(int64 index, float defaultValue) const {
+  return std::visit(
+      [index, defaultValue](const auto& v) -> float {
+        auto value = v[index];
+        return MetadataConverter<float, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      _value);
 }
 
-FString FCesiumMetadataArray::GetString(size_t i) const {
-  ensureAlwaysMsgf(
-      (_type == ECesiumMetadataValueType::String),
-      TEXT("Value cannot be represented as String"));
-
-  const CesiumGltf::MetadataArrayView<std::string_view>& val =
-      std::get<CesiumGltf::MetadataArrayView<std::string_view>>(_value);
-  std::string_view member = val[i];
-  return FString(member.size(), member.data());
+FString FCesiumMetadataArray::GetString(
+    int64 index,
+    const FString& defaultValue) const {
+  return std::visit(
+      [index, defaultValue](const auto& v) -> FString {
+        auto value = v[index];
+        return MetadataConverter<FString, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      _value);
 }
 
 ECesiumMetadataValueType UCesiumMetadataArrayBlueprintLibrary::GetComponentType(
@@ -95,37 +105,43 @@ int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(
 }
 
 bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetBoolean(index);
+    UPARAM(ref) const FCesiumMetadataArray& Array,
+    int64 Index,
+    bool DefaultValue) {
+  return Array.GetBoolean(Index, DefaultValue);
 }
 
-int64 UCesiumMetadataArrayBlueprintLibrary::GetInt64(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetInt64(index);
+uint8 UCesiumMetadataArrayBlueprintLibrary::GetByte(
+    UPARAM(ref) const FCesiumMetadataArray& Array,
+    int64 Index,
+    uint8 DefaultValue) {
+  return Array.GetByte(Index, DefaultValue);
 }
 
-float UCesiumMetadataArrayBlueprintLibrary::GetUint64AsFloat(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return static_cast<float>(array.GetUint64(index));
+int32 UCesiumMetadataArrayBlueprintLibrary::GetInteger(
+    UPARAM(ref) const FCesiumMetadataArray& Array,
+    int64 Index,
+    int32 DefaultValue) {
+  return Array.GetInteger(Index, DefaultValue);
+}
+
+int64 UCesiumMetadataArrayBlueprintLibrary::GetInteger64(
+    UPARAM(ref) const FCesiumMetadataArray& Array,
+    int64 Index,
+    int64 DefaultValue) {
+  return Array.GetInteger64(Index, DefaultValue);
 }
 
 float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetFloat(index);
-}
-
-float UCesiumMetadataArrayBlueprintLibrary::GetDoubleAsFloat(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return static_cast<float>(array.GetDouble(index));
+    UPARAM(ref) const FCesiumMetadataArray& Array,
+    int64 Index,
+    float DefaultValue) {
+  return Array.GetFloat(Index, DefaultValue);
 }
 
 FString UCesiumMetadataArrayBlueprintLibrary::GetString(
-    UPARAM(ref) const FCesiumMetadataArray& array,
-    int64 index) {
-  return array.GetString(index);
+    UPARAM(ref) const FCesiumMetadataArray& Array,
+    int64 Index,
+    const FString& DefaultValue) {
+  return Array.GetString(Index, DefaultValue);
 }

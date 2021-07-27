@@ -13,10 +13,9 @@
 #include "CesiumMetadataProperty.generated.h"
 
 /**
- * Provide a wrapper for a metadata property. Each value in
- * the property represents the value of a feature's metadata value
- * at that property field in the feature table.
- * This struct is provided to make it work with blueprint.
+ * A Blueprint-accessible wrapper for a glTF metadata property. A property has a
+ * particular type, such as int64 or string, and a value of that type for each
+ * feature in the mesh.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataProperty {
@@ -24,7 +23,6 @@ struct CESIUMRUNTIME_API FCesiumMetadataProperty {
 
 private:
   using PropertyType = std::variant<
-      std::monostate,
       CesiumGltf::MetadataPropertyView<int8_t>,
       CesiumGltf::MetadataPropertyView<uint8_t>,
       CesiumGltf::MetadataPropertyView<int16_t>,
@@ -56,7 +54,7 @@ public:
    * Construct an empty property with unknown type.
    */
   FCesiumMetadataProperty()
-      : _property(std::monostate{}), _type(ECesiumMetadataValueType::None) {}
+      : _property(), _type(ECesiumMetadataValueType::None) {}
 
   /**
    * Construct a wrapper for the property view.
@@ -66,22 +64,26 @@ public:
   template <typename T>
   FCesiumMetadataProperty(const CesiumGltf::MetadataPropertyView<T>& value)
       : _property(value), _type(ECesiumMetadataValueType::None) {
-    if (holdsPropertyAlternative<int8_t>(_property) ||
-        holdsPropertyAlternative<uint8_t>(_property) ||
+    if (holdsPropertyAlternative<bool>(_property)) {
+      _type = ECesiumMetadataValueType::Boolean;
+    } else if (holdsPropertyAlternative<uint8_t>(_property)) {
+      _type = ECesiumMetadataValueType::Byte;
+    } else if (
+        holdsPropertyAlternative<int8_t>(_property) ||
         holdsPropertyAlternative<int16_t>(_property) ||
         holdsPropertyAlternative<uint16_t>(_property) ||
-        holdsPropertyAlternative<int32_t>(_property) ||
+        holdsPropertyAlternative<int32_t>(_property)) {
+      _type = ECesiumMetadataValueType::Integer;
+    } else if (
         holdsPropertyAlternative<uint32_t>(_property) ||
         holdsPropertyAlternative<int64_t>(_property)) {
-      _type = ECesiumMetadataValueType::Int64;
+      _type = ECesiumMetadataValueType::Integer64;
     } else if (holdsPropertyAlternative<uint64_t>(_property)) {
-      _type = ECesiumMetadataValueType::Uint64;
+      _type = ECesiumMetadataValueType::String;
     } else if (holdsPropertyAlternative<float>(_property)) {
       _type = ECesiumMetadataValueType::Float;
     } else if (holdsPropertyAlternative<double>(_property)) {
-      _type = ECesiumMetadataValueType::Double;
-    } else if (holdsPropertyAlternative<bool>(_property)) {
-      _type = ECesiumMetadataValueType::Boolean;
+      _type = ECesiumMetadataValueType::String;
     } else if (holdsPropertyAlternative<std::string_view>(_property)) {
       _type = ECesiumMetadataValueType::String;
     } else {
@@ -90,86 +92,188 @@ public:
   }
 
   /**
-   * Query the type of the property.
-   * This method should be used first before retrieving the stored value.
-   * If the data that is tried to retrieve is different from the stored data
-   * type, the current program will be aborted.
+   * Queries the underlying type of the property. For the most precise
+   * representation of the property's values, you should retrieve them using
+   * this type.
    *
-   * @return The type of the value
+   * @return The type of the property.
    */
   ECesiumMetadataValueType GetType() const;
 
   /**
-   * Query the number of features in the property.
-   *
-   * @return The number of features in the property
+   * Queries the number of features in the property.
    */
-  size_t GetNumOfFeatures() const;
+  size_t GetNumberOfFeatures() const;
 
   /**
-   * Retrieve the feature value at index featureID as a boolean value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a Boolean value.
    *
-   * @param featureID The index of the feature
-   * @return The boolean value at the featureID
+   * If the property is boolean, it is returned directly.
+   *
+   * If the property is numeric, zero is converted to false, while any other
+   * value is converted to true.
+   *
+   * If the property is a string, "0", "false", and "no" (case-insensitive) are
+   * converted to false, while "1", "true", and "yes" are converted to true.
+   * All other strings, including strings that can be converted to numbers,
+   * will return the default value.
+   *
+   * Other types of properties will return the default value.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
-  bool GetBoolean(size_t featureID) const;
+  bool GetBoolean(int64 featureID, bool defaultValue) const;
 
   /**
-   * Retrieve the feature value at index featureID as an int64_t value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to an unsigned 8-bit integer value.
    *
-   * @param featureID The index of the feature
-   * @return The int64_t value at the featureID
+   * If the property is an integer and between 0 and 255, it is returned
+   * directly.
+   *
+   * If the property is a floating-point number, it is truncated (rounded
+   * toward zero).
+   *
+   * If the property is a boolean, 0 is returned for false and 1 for true.
+   *
+   * If the property is a string and the entire string can be parsed as an
+   * integer between 0 and 255, the parsed value is returned. The string is
+   * parsed in a locale-independent way and does not support use of a comma or
+   * other character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
-  int64 GetInt64(size_t featureID) const;
+  uint8 GetByte(int64 featureID, uint8 defaultValue) const;
 
   /**
-   * Retrieve the feature value at index featureID as an uint64_t value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a signed 32-bit integer value.
    *
-   * @param featureID The index of the feature
-   * @return The uint64_t value at the featureID
+   * If the property is an integer and between -2,147,483,647 and 2,147,483,647,
+   * it is returned directly.
+   *
+   * If the property is a floating-point number, it is truncated (rounded
+   * toward zero).
+   *
+   * If the property is a boolean, 0 is returned for false and 1 for true.
+   *
+   * If the property is a string and the entire string can be parsed as an
+   * integer in the valid range, the parsed value is returned. If it can be
+   * parsed as a floating-point number, the parsed value is truncated (rounded
+   * toward zero). In either case, the string is parsed in a locale-independent
+   * way and does not support use of a comma or other character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
-  uint64 GetUint64(size_t featureID) const;
+  int32 GetInteger(int64 featureID, int32 defaultValue) const;
 
   /**
-   * Retrieve the feature value at index featureID as a float value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a signed 64-bit integer value.
    *
-   * @param featureID The index of the feature
-   * @return The float value at the featureID
+   * If the property is an integer and between -2^63-1 and 2^63-1, it
+   * is returned directly.
+   *
+   * If the property is a floating-point number, it is truncated (rounded
+   * toward zero).
+   *
+   * If the property is a boolean, 0 is returned for false and 1 for true.
+   *
+   * If the property is a string and the entire string can be parsed as an
+   * integer in the valid range, the parsed value is returned. If it can be
+   * parsed as a floating-point number, the parsed value is truncated (rounded
+   * toward zero). In either case, the string is parsed in a locale-independent
+   * way and does not support use of a comma or other character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
-  float GetFloat(size_t featureID) const;
+  int64 GetInteger64(int64 featureID, int64 defaultValue) const;
 
   /**
-   * Retrieve the feature value at index featureID as a double value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a 32-bit floating-point value.
    *
-   * @param featureID The index of the feature
-   * @return The double value at the featureID
+   * If the property is a singe-precision floating-point number, is is returned.
+   *
+   * If the property is an integer or double-precision floating-point number,
+   * it is converted to the closest representable single-precision
+   * floating-point number.
+   *
+   * If the property is a boolean, 0.0 is returned for false and 1.0 for true.
+   *
+   * If the property is a string and the entire string can be parsed as a
+   * number, the parsed value is returned. The string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
-  double GetDouble(size_t featureID) const;
+  float GetFloat(int64 featureID, float defaultValue) const;
 
   /**
-   * Retrieve the feature value at index featureID as a string value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a string value.
    *
-   * @param featureID The index of the feature
-   * @return The string value at the featureID
+   * Numeric properties are converted to a string with `FString::Format`, which
+   * uses the current locale.
+   *
+   * Boolean properties are converted to "true" or "false".
+   *
+   * Array properties return the `defaultValue`.
+   *
+   * String properties are returned directly.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
-  FString GetString(size_t featureID) const;
+  FString GetString(int64 featureID, const FString& defaultValue) const;
 
   /**
-   * Retrieve the feature value at index featureID as an array value.
+   * Retrieves the value of the property for the feature with the given ID.
+   * If the property is not an array type, this method returns an empty array.
    *
-   * @param featureID The index of the feature
-   * @return The array value at the featureID
+   * If the property is not an array, the default value is returned.
+   *
+   * @param featureID The ID of the feature.
+   * @return The property value.
    */
-  FCesiumMetadataArray GetArray(size_t featureID) const;
+  FCesiumMetadataArray GetArray(int64 featureID) const;
 
   /**
-   * Convert the underlying value to a generic value. Convenient for storing
-   * the value in the container like TArray or TMap
+   * Retrieves the value of the property for the feature with the given ID.
+   * The value is returned in a generic form that can be queried as a specific
+   * type later.
    *
-   * @param featureID The index of the feature
-   * @return The generic value at the featureID
+   * @param featureID The ID of the feature.
+   * @return The property value.
    */
-  FCesiumMetadataGenericValue GetGenericValue(size_t featureID) const;
+  FCesiumMetadataGenericValue GetGenericValue(int64 featureID) const;
 
 private:
   template <typename T, typename... VariantType>
@@ -189,118 +293,250 @@ class CESIUMRUNTIME_API UCesiumMetadataPropertyBlueprintLibrary
 
 public:
   /**
-   * Query the type of the property.
-   * This method should be used first before retrieving the stored value.
-   * If the data that is tried to retrieve is different from the stored data
-   * type, the current program will be aborted.
+   * Queries the underlying type of the property. For the most precise
+   * representation of the property's values, you should retrieve them using
+   * this type.
+   *
+   * @return The type of the property.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
   static ECesiumMetadataValueType
-  GetType(UPARAM(ref) const FCesiumMetadataProperty& property);
+  GetType(UPARAM(ref) const FCesiumMetadataProperty& Property);
 
   /**
-   * Query the number of features in the property.
+   * Queries the number of features in the property.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static int64 GetNumOfFeatures(UPARAM(ref)
-                                    const FCesiumMetadataProperty& property);
+  static int64 GetNumberOfFeatures(UPARAM(ref)
+                                       const FCesiumMetadataProperty& Property);
 
   /**
-   * Retrieve the feature value at index featureID as a boolean value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a Boolean value.
+   *
+   * If the property is boolean, it is returned directly.
+   *
+   * If the property is numeric, zero is converted to false, while any other
+   * value is converted to true.
+   *
+   * If the property is a string, "0", "false", and "no" (case-insensitive) are
+   * converted to false, while "1", "true", and "yes" are converted to true.
+   * All other strings, including strings that can be converted to numbers,
+   * will return the default value.
+   *
+   * Other types of properties will return the default value.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
   static bool GetBoolean(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      bool DefaultValue = false);
 
   /**
-   * Retrieve the feature value at index featureID as an int64_t value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to an unsigned 8-bit integer value.
+   *
+   * If the property is an integer and between 0 and 255, it is returned
+   * directly.
+   *
+   * If the property is a floating-point number, it is truncated (rounded
+   * toward zero).
+   *
+   * If the property is a boolean, 0 is returned for false and 1 for true.
+   *
+   * If the property is a string and the entire string can be parsed as an
+   * integer between 0 and 255, the parsed value is returned. The string is
+   * parsed in a locale-independent way and does not support use of a comma or
+   * other character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static int64 GetInt64(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+  static uint8 GetByte(
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      uint8 DefaultValue = 0);
 
   /**
-   * Retrieve the feature value at index featureID as an uint64_t value.
-   * However, because blueprint cannot work with uint64, the type will be
-   * converted to float, which will incur the loss of precision
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a signed 32-bit integer value.
+   *
+   * If the property is an integer and between -2,147,483,647 and 2,147,483,647,
+   * it is returned directly.
+   *
+   * If the property is a floating-point number, it is truncated (rounded
+   * toward zero).
+   *
+   * If the property is a boolean, 0 is returned for false and 1 for true.
+   *
+   * If the property is a string and the entire string can be parsed as an
+   * integer in the valid range, the parsed value is returned. If it can be
+   * parsed as a floating-point number, the parsed value is truncated (rounded
+   * toward zero). In either case, the string is parsed in a locale-independent
+   * way and does not support use of a comma or other character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static float GetUint64AsFloat(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+  static int32 GetInteger(
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      int32 DefaultValue = 0);
 
   /**
-   * Retrieve the feature value at index featureID as a float value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a signed 64-bit integer value.
+   *
+   * If the property is an integer and between -2^63-1 and 2^63-1, it
+   * is returned directly.
+   *
+   * If the property is a floating-point number, it is truncated (rounded
+   * toward zero).
+   *
+   * If the property is a boolean, 0 is returned for false and 1 for true.
+   *
+   * If the property is a string and the entire string can be parsed as an
+   * integer in the valid range, the parsed value is returned. If it can be
+   * parsed as a floating-point number, the parsed value is truncated (rounded
+   * toward zero). In either case, the string is parsed in a locale-independent
+   * way and does not support use of a comma or other character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static int64 GetInteger64(
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      int64 DefaultValue = 0);
+
+  /**
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a 32-bit floating-point value.
+   *
+   * If the property is a singe-precision floating-point number, is is returned.
+   *
+   * If the property is an integer or double-precision floating-point number,
+   * it is converted to the closest representable single-precision
+   * floating-point number.
+   *
+   * If the property is a boolean, 0.0 is returned for false and 1.0 for true.
+   *
+   * If the property is a string and the entire string can be parsed as a
+   * number, the parsed value is returned. The string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
   static float GetFloat(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      float DefaultValue = 0.0f);
 
   /**
-   * Retrieve the feature value at index featureID as a double value. However,
-   * because blueprint cannot work with double, the type will be converted
-   * to float, which will incur the loss of precision
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Property")
-  static float GetDoubleAsFloat(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
-
-  /**
-   * Retrieve the feature value at index featureID as a string value.
+   * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a string value.
+   *
+   * Numeric properties are converted to a string with `FString::Format`, which
+   * uses the current locale.
+   *
+   * Boolean properties are converted to "true" or "false".
+   *
+   * Array properties return the `defaultValue`.
+   *
+   * String properties are returned directly.
+   *
+   * @param featureID The ID of the feature.
+   * @param defaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
   static FString GetString(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      const FString& DefaultValue = "");
 
   /**
-   * Retrieve the feature value at index featureID as an array value.
+   * Retrieves the value of the property for the feature with the given ID.
+   * If the property is not an array type, this method returns an empty array.
+   *
+   * If the property is not an array, the default value is returned.
+   *
+   * @param featureID The ID of the feature.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
   static FCesiumMetadataArray GetArray(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID);
 
   /**
-   * Convert the underlying value to a generic value. Convenient for storing
-   * the value in the container like TArray or TMap
+   * Retrieves the value of the property for the feature with the given ID.
+   * The value is returned in a generic form that can be queried as a specific
+   * type later.
+   *
+   * @param featureID The ID of the feature.
+   * @return The property value.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
   static FCesiumMetadataGenericValue GetGenericValue(
-      UPARAM(ref) const FCesiumMetadataProperty& property,
-      int64 featureID);
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID);
 };

@@ -5,20 +5,16 @@
 #include "UObject/ObjectMacros.h"
 
 /**
- * Determine the type of the metadata value.
- * The enum should be used first before retrieving the
- * stored value in FCesiumMetadataArray or FCesiumMetadataGenericValue.
- * If the stored value type is different with what the enum reports, it will
- * abort the program.
+ * The Blueprint type that can losslessly represent values of a given property.
  */
 UENUM(BlueprintType)
 enum class ECesiumMetadataValueType : uint8 {
-  Int64,
-  Uint64,
-  Float,
-  Double,
+  None,
   Boolean,
+  Byte,
+  Integer,
+  Integer64,
+  Float,
   String,
-  Array,
-  None
+  Array
 };
