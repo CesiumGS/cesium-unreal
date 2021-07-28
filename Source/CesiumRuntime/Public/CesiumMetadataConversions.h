@@ -201,7 +201,9 @@ struct CesiumMetadataConversions<
     TFrom,
     std::enable_if_t<CesiumGltf::IsMetadataNumeric<TFrom>::value>> {
   static FString convert(TFrom from, const FString& defaultValue) {
-    return FString::Format(TEXT("{0}"), {from});
+    return FString::Format(
+        TEXT("{0}"),
+        FStringFormatOrderedArguments{FStringFormatArg(from)});
   }
 };
 
