@@ -20,7 +20,6 @@ template <typename T> struct CesiumMetadataConversions<T, T> {
 //
 // Conversions to boolean
 //
-//
 
 // numeric -> bool
 template <typename TFrom>

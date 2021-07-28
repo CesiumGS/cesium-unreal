@@ -15,8 +15,8 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
 
 public:
   /**
-   * Get the primitive metadata of a Gltf primitive component. If component is
-   * not a Cesium Gltf primitive component, the returned metadata is empty
+   * Gets the primitive metadata of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned metadata is empty
    */
   UFUNCTION(
       BlueprintCallable,
@@ -26,8 +26,10 @@ public:
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
-   * Get the metadata of a face of a gltf primitive component. If the component
-   * is not a Cesium Gltf primitive component, the returned metadata is empty
+   * Gets the metadata of a face of a glTF primitive component. If the component
+   * is not a Cesium glTF primitive component, the returned metadata is empty.
+   * If the primitive has multiple feature tables, the metadata in the first
+   * table is returned.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -37,9 +39,10 @@ public:
   GetMetadataValuesForFace(const UPrimitiveComponent* component, int64 faceID);
 
   /**
-   * Get the metadata as string of a face of a gltf primitive component. If the
-   * component is not a Cesium Gltf primitive component, the returned metadata
-   * is empty
+   * Gets the metadata as string of a face of a glTF primitive component. If the
+   * component is not a Cesium glTF primitive component, the returned metadata
+   * is empty. If the primitive has multiple feature tables, the metadata in the
+   * first table is returned.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -47,5 +50,17 @@ public:
       Category = "Cesium|Metadata|Utility")
   static TMap<FString, FString> GetMetadataValuesAsStringForFace(
       const UPrimitiveComponent* component,
+      int64 faceID);
+
+  /**
+   * Gets the feature ID associated with a given face for a given feature table.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility")
+  static int64 GetFeatureIDForFace(
+      UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+      UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 faceID);
 };

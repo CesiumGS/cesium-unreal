@@ -10,8 +10,7 @@
 #include "CesiumMetadataGenericValue.generated.h"
 
 /**
- * Provide a wrapper for scalar and array value.
- * This struct is provided to make it work with blueprint.
+ * A Blueprint-accessible wrapper for a glTF metadata value.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataGenericValue {
@@ -47,19 +46,19 @@ private:
 
 public:
   /**
-   * Construct an empty value with unknown type.
+   * Constructs an empty value with unknown type.
    */
   FCesiumMetadataGenericValue()
       : _value(std::monostate{}), _type(ECesiumMetadataValueType::None) {}
 
   /**
-   * Construct a scalar or array value.
+   * Constructs a value.
    *
-   * @param value The value to be stored in this struct
+   * @param Value The value to be stored in this struct
    */
   template <typename T>
-  explicit FCesiumMetadataGenericValue(const T& value)
-      : _value(value), _type(ECesiumMetadataValueType::None) {
+  explicit FCesiumMetadataGenericValue(const T& Value)
+      : _value(Value), _type(ECesiumMetadataValueType::None) {
     if (std::holds_alternative<std::monostate>(_value)) {
       _type = ECesiumMetadataValueType::None;
     } else if (std::holds_alternative<bool>(_value)) {
@@ -90,16 +89,13 @@ public:
   }
 
   /**
-   * Queries the underlying type of the property. For the most precise
-   * representation of the property's values, you should retrieve them using
-   * this type.
-   *
-   * @return The type of the property.
+   * Gets the underlying type of the value. For the most precise representation
+   * of the value, you should retrieve it using this type.
    */
   ECesiumMetadataValueType GetType() const;
 
   /**
-   * Retrieves the value and attempts to convert it to a Boolean value.
+   * Gets the value and attempts to convert it to a Boolean value.
    *
    * If the value is boolean, it is returned directly.
    *
@@ -113,14 +109,14 @@ public:
    *
    * Other types of values will return the default value.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
+   * @param DefaultValue The default value to use if the value cannot be
+   * converted.
    * @return The value.
    */
   bool GetBoolean(bool DefaultValue) const;
 
   /**
-   * Retrieves the value and attempts to convert it to an unsigned 8-bit integer
+   * Gets the value and attempts to convert it to an unsigned 8-bit integer
    * value.
    *
    * If the value is an integer and between 0 and 255, it is returned
@@ -129,23 +125,23 @@ public:
    * If the value is a floating-point number in the range `(-1, 256)`, it is
    * truncated (rounded toward zero).
    *
-   * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
+   * If the value is a boolean, 0 is returned for false and 1 for true.
    *
-   * If the value is a string and the entire string can be parsed as an
-   * integer between 0 and 255, the parsed value is returned. The string is
-   * parsed in a locale-independent way and does not support use of a comma or
-   * other character to group digits.
+   * If the value is a string and the _entire_ string can be parsed as a
+   * number between 0 and 255 (once truncated, if it's floating-point), the
+   * parsed value is returned. The string is parsed in a locale-independent way
+   * and does not support use of a comma or other character to group digits.
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
+   * @param DefaultValue The default value to use if the value cannot be
+   * converted.
    * @return The property value.
    */
   uint8 GetByte(uint8 DefaultValue) const;
 
   /**
-   * Retrieves the value and attempts to convert it to a signed 32-bit integer
+   * Gets the value and attempts to convert it to a signed 32-bit integer
    * value.
    *
    * If the value is an integer and between -2,147,483,647 and 2,147,483,647,
@@ -156,22 +152,22 @@ public:
    *
    * If the value is a boolean, 0 is returned for false and 1 for true.
    *
-   * If the value is a string and the entire string can be parsed as an
-   * integer in the valid range, the parsed value is returned. If it can be
-   * parsed as a floating-point number, the parsed value is truncated (rounded
-   * toward zero). In either case, the string is parsed in a locale-independent
-   * way and does not support use of a comma or other character to group digits.
+   * If the value is a string and the entire string can be parsed as a
+   * number in the valid range (once truncated, if it's floating-point), the
+   * parsed value is returned. In either case, the string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
+   * @param DefaultValue The default value to use if the value cannot be
+   * converted.
    * @return The property value.
    */
   int32 GetInteger(int32 DefaultValue) const;
 
   /**
-   * Retrieves the value and attempts to convert it to a signed 64-bit integer
+   * Gets the value and attempts to convert it to a signed 64-bit integer
    * value.
    *
    * If the value is an integer and between -2^63-1 and 2^63-1,
@@ -182,22 +178,22 @@ public:
    *
    * If the value is a boolean, 0 is returned for false and 1 for true.
    *
-   * If the value is a string and the entire string can be parsed as an
-   * integer in the valid range, the parsed value is returned. If it can be
-   * parsed as a floating-point number, the parsed value is truncated (rounded
-   * toward zero). In either case, the string is parsed in a locale-independent
-   * way and does not support use of a comma or other character to group digits.
+   * If the value is a string and the entire string can be parsed as a
+   * number in the valid range (once truncated, if it's floating-point), the
+   * parsed value is returned. In either case, the string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
+   * @param DefaultValue The default value to use if the value cannot be
+   * converted.
    * @return The property value.
    */
   int64 GetInteger64(int64 DefaultValue) const;
 
   /**
-   * Retrieves the value and attempts to convert it to a 32-bit floating-point
+   * Gets the value and attempts to convert it to a 32-bit floating-point
    * value.
    *
    * If the value is a singe-precision floating-point number, is is returned.
@@ -215,14 +211,14 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
+   * @param DefaultValue The default value to use if the value cannot be
+   * converted.
    * @return The property value.
    */
   float GetFloat(float DefaultValue) const;
 
   /**
-   * Retrieves the value and attempts to convert it to a string value.
+   * Gets the value and attempts to convert it to a string value.
    *
    * A numeric value is converted to a string with `FString::Format`, which uses
    * the current locale.
@@ -233,14 +229,14 @@ public:
    *
    * String properties are returned directly.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
+   * @param DefaultValue The default value to use if the value cannot be
+   * converted.
    * @return The property value.
    */
   FString GetString(const FString& DefaultValue) const;
 
   /**
-   * Retrieves the value as an array.
+   * Gets the value as an array.
    * If the property is not an array type, this method returns an empty array.
    *
    * @return The property value.
@@ -259,8 +255,8 @@ class CESIUMRUNTIME_API UCesiumMetadataGenericValueBlueprintLibrary
 
 public:
   /**
-   * Queries the underlying type of the property. For the most precise
-   * representation of the property's values, you should retrieve them using
+   * Gets the underlying type of the property. For the most precise
+   * representation of the property's values, you should get them using
    * this type.
    *
    * @return The type of the property.
@@ -273,7 +269,7 @@ public:
   GetType(UPARAM(ref) const FCesiumMetadataGenericValue& Value);
 
   /**
-   * Retrieves the value and attempts to convert it to a Boolean value.
+   * Gets the value and attempts to convert it to a Boolean value.
    *
    * If the value is boolean, it is returned directly.
    *
@@ -300,7 +296,7 @@ public:
       bool DefaultValue);
 
   /**
-   * Retrieves the value and attempts to convert it to an unsigned 8-bit integer
+   * Gets the value and attempts to convert it to an unsigned 8-bit integer
    * value.
    *
    * If the value is an integer and between 0 and 255, it is returned
@@ -331,7 +327,7 @@ public:
       uint8 DefaultValue);
 
   /**
-   * Retrieves the value and attempts to convert it to a signed 32-bit integer
+   * Gets the value and attempts to convert it to a signed 32-bit integer
    * value.
    *
    * If the value is an integer and between -2,147,483,647 and 2,147,483,647,
@@ -363,7 +359,7 @@ public:
       int32 DefaultValue);
 
   /**
-   * Retrieves the value and attempts to convert it to a signed 64-bit integer
+   * Gets the value and attempts to convert it to a signed 64-bit integer
    * value.
    *
    * If the value is an integer and between -2^63-1 and 2^63-1,
@@ -395,7 +391,7 @@ public:
       int64 DefaultValue);
 
   /**
-   * Retrieves the value and attempts to convert it to a 32-bit floating-point
+   * Gets the value and attempts to convert it to a 32-bit floating-point
    * value.
    *
    * If the value is a singe-precision floating-point number, is is returned.
@@ -426,7 +422,7 @@ public:
       float DefaultValue);
 
   /**
-   * Retrieves the value and attempts to convert it to a string value.
+   * Gets the value and attempts to convert it to a string value.
    *
    * A numeric value is converted to a string with `FString::Format`, which uses
    * the current locale.
@@ -450,7 +446,7 @@ public:
       const FString& DefaultValue);
 
   /**
-   * Retrieves the value as an array.
+   * Gets the value as an array.
    * If the property is not an array type, this method returns an empty array.
    *
    * @return The property value.

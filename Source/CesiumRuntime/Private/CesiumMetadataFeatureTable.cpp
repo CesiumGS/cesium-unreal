@@ -2,6 +2,7 @@
 
 #include "CesiumMetadataFeatureTable.h"
 #include "CesiumGltf/MetadataFeatureTableView.h"
+#include "CesiumMetadataPrimitive.h"
 
 namespace {
 
@@ -13,7 +14,7 @@ struct FeatureIDFromAccessor {
     return static_cast<int64>(value[vertexIdx].value[0]);
   }
 
-  uint32_t vertexIdx;
+  int64 vertexIdx;
 };
 
 } // namespace
@@ -100,7 +101,7 @@ int64 FCesiumMetadataFeatureTable::GetNumberOfFeatures() const {
 }
 
 int64 FCesiumMetadataFeatureTable::GetFeatureIDForVertex(
-    uint32 vertexIdx) const {
+    int64 vertexIdx) const {
   return std::visit(FeatureIDFromAccessor{vertexIdx}, _featureIDAccessor);
 }
 
