@@ -4,7 +4,7 @@
 
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
-#include <charconv>
+#include <cstdlib>
 #include <type_traits>
 
 ECesiumMetadataBlueprintType
@@ -82,42 +82,88 @@ struct CesiumMetadataConversions<
         CesiumGltf::IsMetadataInteger<TTo>::value &&
         CesiumGltf::IsMetadataFloating<TFrom>::value>> {
   static TTo convert(TFrom from, TTo defaultValue) {
-    if (from >= 0.0) {
-      uint64_t asInt = static_cast<uint64_t>(from);
-      return CesiumUtility::losslessNarrowOrDefault(asInt, defaultValue);
-    } else {
-      int64_t asInt = static_cast<int64_t>(from);
-      return CesiumUtility::losslessNarrowOrDefault(asInt, defaultValue);
+    if (double(std::numeric_limits<TTo>::max()) < from ||
+        double(std::numeric_limits<TTo>::lowest()) > from) {
+      // Floating-point number is outside the range of this integer type.
+      return defaultValue;
     }
+
+    return static_cast<TTo>(from);
   }
 };
 
-// string -> any integer
+// string -> any signed integer
 template <typename TTo>
 struct CesiumMetadataConversions<
     TTo,
     std::string_view,
-    std::enable_if_t<CesiumGltf::IsMetadataInteger<TTo>::value>> {
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<TTo>::value && std::is_signed_v<TTo>>> {
   static TTo convert(const std::string_view& from, TTo defaultValue) {
-    const char* pStart = from.data();
-    const char* pEnd = from.data() + from.size();
+    // Amazingly, C++ has no* string parsing functions that work with strings
+    // that might not be null-terminated. So we have to copy to a std::string
+    // (which _is_ guaranteed to be null terminated) before parsing.
+    // * except std::from_chars, but compiler/library support for the
+    //   floating-point version of that method is spotty at best.
+    std::string temp(from);
 
-    TTo parsedValue;
-    std::from_chars_result result =
-        std::from_chars(pStart, pEnd, parsedValue, 10);
-    if (result.ec == std::errc() && result.ptr == pEnd) {
+    char* pLastUsed;
+    int64_t parsedValue = std::strtoll(temp.c_str(), &pLastUsed, 10);
+    if (pLastUsed == temp.c_str() + temp.size()) {
       // Successfully parsed the entire string as an integer of this type.
-      return parsedValue;
+      return CesiumUtility::losslessNarrowOrDefault(parsedValue, defaultValue);
     }
 
-    // Try parsing as a floating-point number instead.
-    double parsedDouble;
-    result = std::from_chars(pStart, pEnd, parsedDouble);
-    if (result.ec == std::errc() && result.ptr == pEnd) {
-      // Successfully parsed the entire string as a double of this type.
+    // Failed to parse as an integer. Maybe we can parse as a double and
+    // truncate it?
+    double parsedDouble = std::strtod(temp.c_str(), &pLastUsed);
+    if (pLastUsed == temp.c_str() + temp.size()) {
+      // Successfully parsed the entire string as a double.
       // Convert it to an integer if we can.
       double truncated = glm::trunc(parsedDouble);
+
       int64_t asInteger = static_cast<int64_t>(truncated);
+      double roundTrip = static_cast<double>(asInteger);
+      if (roundTrip == truncated) {
+        return CesiumUtility::losslessNarrowOrDefault(asInteger, defaultValue);
+      }
+    }
+
+    return defaultValue;
+  }
+};
+
+// string -> any unsigned integer
+template <typename TTo>
+struct CesiumMetadataConversions<
+    TTo,
+    std::string_view,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<TTo>::value && !std::is_signed_v<TTo>>> {
+  static TTo convert(const std::string_view& from, TTo defaultValue) {
+    // Amazingly, C++ has no* string parsing functions that work with strings
+    // that might not be null-terminated. So we have to copy to a std::string
+    // (which _is_ guaranteed to be null terminated) before parsing.
+    // * except std::from_chars, but compiler/library support for the
+    //   floating-point version of that method is spotty at best.
+    std::string temp(from);
+
+    char* pLastUsed;
+    uint64_t parsedValue = std::strtoull(temp.c_str(), &pLastUsed, 10);
+    if (pLastUsed == temp.c_str() + temp.size()) {
+      // Successfully parsed the entire string as an integer of this type.
+      return CesiumUtility::losslessNarrowOrDefault(parsedValue, defaultValue);
+    }
+
+    // Failed to parse as an integer. Maybe we can parse as a double and
+    // truncate it?
+    double parsedDouble = std::strtod(temp.c_str(), &pLastUsed);
+    if (pLastUsed == temp.c_str() + temp.size()) {
+      // Successfully parsed the entire string as a double.
+      // Convert it to an integer if we can.
+      double truncated = glm::trunc(parsedDouble);
+
+      uint64_t asInteger = static_cast<uint64_t>(truncated);
       double roundTrip = static_cast<double>(asInteger);
       if (roundTrip == truncated) {
         return CesiumUtility::losslessNarrowOrDefault(asInteger, defaultValue);
@@ -203,12 +249,16 @@ template <> struct CesiumMetadataConversions<float, double> {
 // string -> float
 template <> struct CesiumMetadataConversions<float, std::string_view> {
   static float convert(const std::string_view& from, float defaultValue) {
-    const char* pStart = from.data();
-    const char* pEnd = from.data() + from.size();
+    // Amazingly, C++ has no* string parsing functions that work with strings
+    // that might not be null-terminated. So we have to copy to a std::string
+    // (which _is_ guaranteed to be null terminated) before parsing.
+    // * except std::from_chars, but compiler/library support for the
+    //   floating-point version of that method is spotty at best.
+    std::string temp(from);
 
-    float parsedValue;
-    std::from_chars_result result = std::from_chars(pStart, pEnd, parsedValue);
-    if (result.ec == std::errc() && result.ptr == pEnd) {
+    char* pLastUsed;
+    float parsedValue = std::strtof(temp.c_str(), &pLastUsed);
+    if (pLastUsed == temp.c_str() + temp.size()) {
       // Successfully parsed the entire string as a float.
       return parsedValue;
     }
