@@ -31,29 +31,38 @@ struct MetadataPropertyValue {
 
 } // namespace
 
-ECesiumMetadataBlueprintType FCesiumMetadataProperty::GetBlueprintType() const {
-  return CesiuMetadataTrueTypeToBlueprintType(_type);
+ECesiumMetadataBlueprintType
+UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return CesiuMetadataTrueTypeToBlueprintType(Property._type);
 }
 
 ECesiumMetadataBlueprintType
-FCesiumMetadataProperty::GetBlueprintComponentType() const {
-  return CesiuMetadataTrueTypeToBlueprintType(_componentType);
+UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintComponentType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return CesiuMetadataTrueTypeToBlueprintType(Property._componentType);
 }
 
-ECesiumMetadataTrueType FCesiumMetadataProperty::GetTrueType() const {
-  return _type;
+ECesiumMetadataTrueType UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property._type;
 }
 
-ECesiumMetadataTrueType FCesiumMetadataProperty::GetTrueComponentType() const {
-  return _componentType;
+ECesiumMetadataTrueType
+UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property._componentType;
 }
 
-size_t FCesiumMetadataProperty::GetNumberOfFeatures() const {
-  return std::visit(MetadataPropertySize{}, _property);
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return std::visit(MetadataPropertySize{}, Property._property);
 }
 
-bool FCesiumMetadataProperty::GetBoolean(int64 featureID, bool defaultValue)
-    const {
+bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID,
+    bool defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> bool {
         auto value = v.get(featureID);
@@ -61,11 +70,13 @@ bool FCesiumMetadataProperty::GetBoolean(int64 featureID, bool defaultValue)
             value,
             defaultValue);
       },
-      _property);
+      Property._property);
 }
 
-uint8 FCesiumMetadataProperty::GetByte(int64 featureID, uint8 defaultValue)
-    const {
+uint8 UCesiumMetadataPropertyBlueprintLibrary::GetByte(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID,
+    uint8 defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> uint8 {
         auto value = v.get(featureID);
@@ -73,11 +84,13 @@ uint8 FCesiumMetadataProperty::GetByte(int64 featureID, uint8 defaultValue)
             value,
             defaultValue);
       },
-      _property);
+      Property._property);
 }
 
-int32 FCesiumMetadataProperty::GetInteger(int64 featureID, int32 defaultValue)
-    const {
+int32 UCesiumMetadataPropertyBlueprintLibrary::GetInteger(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID,
+    int32 defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> int32 {
         auto value = v.get(featureID);
@@ -85,11 +98,13 @@ int32 FCesiumMetadataProperty::GetInteger(int64 featureID, int32 defaultValue)
             value,
             defaultValue);
       },
-      _property);
+      Property._property);
 }
 
-int64 FCesiumMetadataProperty::GetInteger64(int64 featureID, int64 defaultValue)
-    const {
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetInteger64(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID,
+    int64 defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> int64 {
         auto value = v.get(featureID);
@@ -97,11 +112,13 @@ int64 FCesiumMetadataProperty::GetInteger64(int64 featureID, int64 defaultValue)
             value,
             defaultValue);
       },
-      _property);
+      Property._property);
 }
 
-float FCesiumMetadataProperty::GetFloat(int64 featureID, float defaultValue)
-    const {
+float UCesiumMetadataPropertyBlueprintLibrary::GetFloat(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID,
+    float defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> float {
         auto value = v.get(featureID);
@@ -109,12 +126,13 @@ float FCesiumMetadataProperty::GetFloat(int64 featureID, float defaultValue)
             value,
             defaultValue);
       },
-      _property);
+      Property._property);
 }
 
-FString FCesiumMetadataProperty::GetString(
+FString UCesiumMetadataPropertyBlueprintLibrary::GetString(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
     int64 featureID,
-    const FString& defaultValue) const {
+    const FString& defaultValue) {
   return std::visit(
       [featureID, &defaultValue](const auto& v) -> FString {
         auto value = v.get(featureID);
@@ -122,10 +140,12 @@ FString FCesiumMetadataProperty::GetString(
             value,
             defaultValue);
       },
-      _property);
+      Property._property);
 }
 
-FCesiumMetadataArray FCesiumMetadataProperty::GetArray(int64 featureID) const {
+FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID) {
   return std::visit(
       [featureID](const auto& v) -> FCesiumMetadataArray {
         auto value = v.get(featureID);
@@ -133,93 +153,12 @@ FCesiumMetadataArray FCesiumMetadataProperty::GetArray(int64 featureID) const {
             FCesiumMetadataArray,
             decltype(value)>::convert(value, FCesiumMetadataArray());
       },
-      _property);
-}
-
-FCesiumMetadataGenericValue
-FCesiumMetadataProperty::GetGenericValue(int64 featureID) const {
-  return std::visit(MetadataPropertyValue{featureID}, _property);
-}
-
-ECesiumMetadataBlueprintType
-UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintType(
-    UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return Property.GetBlueprintType();
-}
-
-ECesiumMetadataBlueprintType
-UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintComponentType(
-    UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return Property.GetBlueprintComponentType();
-}
-
-ECesiumMetadataTrueType UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(
-    UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return Property.GetTrueType();
-}
-
-ECesiumMetadataTrueType
-UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
-    UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return Property.GetTrueComponentType();
-}
-
-int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
-    UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return Property.GetNumberOfFeatures();
-}
-
-bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
-    UPARAM(ref) const FCesiumMetadataProperty& Property,
-    int64 FeatureID,
-    bool DefaultValue) {
-  return Property.GetBoolean(FeatureID, DefaultValue);
-}
-
-uint8 UCesiumMetadataPropertyBlueprintLibrary::GetByte(
-    UPARAM(ref) const FCesiumMetadataProperty& Property,
-    int64 FeatureID,
-    uint8 DefaultValue) {
-  return Property.GetByte(FeatureID, DefaultValue);
-}
-
-int32 UCesiumMetadataPropertyBlueprintLibrary::GetInteger(
-    UPARAM(ref) const FCesiumMetadataProperty& Property,
-    int64 FeatureID,
-    int32 DefaultValue) {
-  return Property.GetInteger(FeatureID, DefaultValue);
-}
-
-int64 UCesiumMetadataPropertyBlueprintLibrary::GetInteger64(
-    UPARAM(ref) const FCesiumMetadataProperty& Property,
-    int64 FeatureID,
-    int64 DefaultValue) {
-  return Property.GetInteger64(FeatureID, DefaultValue);
-}
-
-float UCesiumMetadataPropertyBlueprintLibrary::GetFloat(
-    UPARAM(ref) const FCesiumMetadataProperty& Property,
-    int64 FeatureID,
-    float DefaultValue) {
-  return Property.GetFloat(FeatureID, DefaultValue);
-}
-
-FString UCesiumMetadataPropertyBlueprintLibrary::GetString(
-    UPARAM(ref) const FCesiumMetadataProperty& Property,
-    int64 FeatureID,
-    const FString& DefaultValue) {
-  return Property.GetString(FeatureID, DefaultValue);
-}
-
-FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
-    int64 featureID) {
-  return property.GetArray(featureID);
+      Property._property);
 }
 
 FCesiumMetadataGenericValue
 UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
-    UPARAM(ref) const FCesiumMetadataProperty& property,
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
     int64 featureID) {
-  return property.GetGenericValue(featureID);
+  return std::visit(MetadataPropertyValue{featureID}, Property._property);
 }

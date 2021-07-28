@@ -69,11 +69,14 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
 }
 
 const TArray<FCesiumMetadataFeatureTable>&
-FCesiumMetadataPrimitive::GetFeatureTables() const {
-  return _featureTables;
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
+    const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureTables;
 }
 
-int64 FCesiumMetadataPrimitive::GetFirstVertexIDFromFaceID(int64 faceID) const {
+int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
+    const FCesiumMetadataPrimitive& MetadataPrimitive,
+    int64 faceID) {
   return std::visit(
       [faceID](const auto& accessor) {
         int64 index = faceID * 3;
@@ -89,17 +92,5 @@ int64 FCesiumMetadataPrimitive::GetFirstVertexIDFromFaceID(int64 faceID) const {
 
         return int64(accessor[index].value[0]);
       },
-      _vertexIDAccessor);
-}
-
-const TArray<FCesiumMetadataFeatureTable>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
-    const FCesiumMetadataPrimitive& metadataPrimitive) {
-  return metadataPrimitive.GetFeatureTables();
-}
-
-int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
-    UPARAM(ref) const FCesiumMetadataPrimitive& metadataPrimitive,
-    int64 faceID) {
-  return metadataPrimitive.GetFirstVertexIDFromFaceID(faceID);
+      MetadataPrimitive._vertexIDAccessor);
 }

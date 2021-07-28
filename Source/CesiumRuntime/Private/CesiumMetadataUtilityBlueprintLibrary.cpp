@@ -25,7 +25,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
 
   const FCesiumMetadataPrimitive& metadata = pGltfComponent->Metadata;
   const TArray<FCesiumMetadataFeatureTable>& featureTables =
-      metadata.GetFeatureTables();
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(metadata);
   if (featureTables.Num() == 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
@@ -36,7 +36,9 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
 
-  return featureTable.GetPropertiesForFeatureID(featureID);
+  return UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
+      featureTable,
+      featureID);
 }
 
 TMap<FString, FString>
@@ -51,7 +53,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
 
   const FCesiumMetadataPrimitive& metadata = pGltfComponent->Metadata;
   const TArray<FCesiumMetadataFeatureTable>& featureTables =
-      metadata.GetFeatureTables();
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(metadata);
   if (featureTables.Num() == 0) {
     return TMap<FString, FString>();
   }
@@ -62,13 +64,17 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
     return TMap<FString, FString>();
   }
 
-  return featureTable.GetPropertiesAsStringsForFeatureID(featureID);
+  return UCesiumMetadataFeatureTableBlueprintLibrary::
+      GetPropertiesAsStringsForFeatureID(featureTable, featureID);
 }
 
 int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
     UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 faceID) {
-  return FeatureTable.GetFeatureIDForVertex(
-      Primitive.GetFirstVertexIDFromFaceID(faceID));
+  return UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
+      FeatureTable,
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
+          Primitive,
+          faceID));
 }

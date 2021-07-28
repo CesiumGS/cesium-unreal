@@ -72,71 +72,59 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
 }
 
 TMap<FString, FCesiumMetadataGenericValue>
-FCesiumMetadataFeatureTable::GetPropertiesForFeatureID(int64 featureID) const {
-  TMap<FString, FCesiumMetadataGenericValue> feature;
-  for (const auto& pair : _properties) {
-    feature.Add(pair.Key, pair.Value.GetGenericValue(featureID));
-  }
-
-  return feature;
-}
-
-TMap<FString, FString>
-FCesiumMetadataFeatureTable::GetPropertiesAsStringsForFeatureID(
-    int64 featureID) const {
-  TMap<FString, FString> feature;
-  for (const auto& pair : _properties) {
-    feature.Add(pair.Key, pair.Value.GetGenericValue(featureID).GetString(""));
-  }
-
-  return feature;
-}
-
-int64 FCesiumMetadataFeatureTable::GetNumberOfFeatures() const {
-  if (_properties.Num() == 0) {
-    return 0;
-  }
-
-  return _properties.begin().Value().GetNumberOfFeatures();
-}
-
-int64 FCesiumMetadataFeatureTable::GetFeatureIDForVertex(
-    int64 vertexIdx) const {
-  return std::visit(FeatureIDFromAccessor{vertexIdx}, _featureIDAccessor);
-}
-
-const TMap<FString, FCesiumMetadataProperty>&
-FCesiumMetadataFeatureTable::GetProperties() const {
-  return _properties;
-}
-
-int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumberOfFeatures(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable) {
-  return featureTable.GetNumberOfFeatures();
-}
-
-int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
-    int64 vertexIdx) {
-  return featureTable.GetFeatureIDForVertex(vertexIdx);
-}
-
-TMap<FString, FCesiumMetadataGenericValue>
 UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 featureID) {
-  return featureTable.GetPropertiesForFeatureID(featureID);
+  TMap<FString, FCesiumMetadataGenericValue> feature;
+  for (const auto& pair : FeatureTable._properties) {
+    feature.Add(
+        pair.Key,
+        UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
+            pair.Value,
+            featureID));
+  }
+
+  return feature;
 }
 
 TMap<FString, FString>
 UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
+    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 featureID) {
-  return featureTable.GetPropertiesAsStringsForFeatureID(featureID);
+  TMap<FString, FString> feature;
+  for (const auto& pair : FeatureTable._properties) {
+    feature.Add(
+        pair.Key,
+        UCesiumMetadataGenericValueBlueprintLibrary::GetString(
+            UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
+                pair.Value,
+                featureID),
+            ""));
+  }
+
+  return feature;
+}
+
+int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumberOfFeatures(
+    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable) {
+  if (FeatureTable._properties.Num() == 0) {
+    return 0;
+  }
+
+  return UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
+      FeatureTable._properties.begin().Value());
+}
+
+int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+    int64 vertexIdx) {
+  return std::visit(
+      FeatureIDFromAccessor{vertexIdx},
+      FeatureTable._featureIDAccessor);
 }
 
 const TMap<FString, FCesiumMetadataProperty>&
 UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable) {
-  return featureTable.GetProperties();
+    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable) {
+  return FeatureTable._properties;
 }

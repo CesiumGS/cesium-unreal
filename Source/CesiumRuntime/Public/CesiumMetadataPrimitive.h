@@ -47,24 +47,11 @@ public:
       const CesiumGltf::ModelEXT_feature_metadata& metadata,
       const CesiumGltf::MeshPrimitiveEXT_feature_metadata& primitiveMetadata);
 
-  /**
-   * Gets all the feature tables that are associated with the primitive.
-   *
-   * @return All the feature tables that are associated with the primitive
-   */
-  const TArray<FCesiumMetadataFeatureTable>& GetFeatureTables() const;
-
-  /**
-   * Gets the ID of the first vertex that makes up a given face of this
-   * primitive.
-   *
-   * @param faceID The ID of the face.
-   */
-  int64 GetFirstVertexIDFromFaceID(int64 faceID) const;
-
 private:
   TArray<FCesiumMetadataFeatureTable> _featureTables;
   VertexIDAccessorType _vertexIDAccessor;
+
+  friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
 
 UCLASS()

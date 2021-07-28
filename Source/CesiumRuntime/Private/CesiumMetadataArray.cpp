@@ -18,19 +18,26 @@ struct MetadataArraySize {
 } // namespace
 
 ECesiumMetadataBlueprintType
-FCesiumMetadataArray::GetBlueprintComponentType() const {
-  return CesiuMetadataTrueTypeToBlueprintType(_type);
+UCesiumMetadataArrayBlueprintLibrary::GetBlueprintComponentType(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return CesiuMetadataTrueTypeToBlueprintType(array._type);
 }
 
-ECesiumMetadataTrueType FCesiumMetadataArray::GetTrueComponentType() const {
-  return _type;
+ECesiumMetadataTrueType
+UCesiumMetadataArrayBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return array._type;
 }
 
-size_t FCesiumMetadataArray::GetSize() const {
-  return std::visit(MetadataArraySize{}, _value);
+int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return std::visit(MetadataArraySize{}, array._value);
 }
 
-bool FCesiumMetadataArray::GetBoolean(int64 index, bool defaultValue) const {
+bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index,
+    bool defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> bool {
         auto value = v[index];
@@ -38,10 +45,13 @@ bool FCesiumMetadataArray::GetBoolean(int64 index, bool defaultValue) const {
             value,
             defaultValue);
       },
-      _value);
+      array._value);
 }
 
-uint8 FCesiumMetadataArray::GetByte(int64 index, uint8 defaultValue) const {
+uint8 UCesiumMetadataArrayBlueprintLibrary::GetByte(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index,
+    uint8 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> uint8 {
         auto value = v[index];
@@ -49,10 +59,13 @@ uint8 FCesiumMetadataArray::GetByte(int64 index, uint8 defaultValue) const {
             value,
             defaultValue);
       },
-      _value);
+      array._value);
 }
 
-int32 FCesiumMetadataArray::GetInteger(int64 index, int32 defaultValue) const {
+int32 UCesiumMetadataArrayBlueprintLibrary::GetInteger(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index,
+    int32 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> int32 {
         auto value = v[index];
@@ -60,11 +73,13 @@ int32 FCesiumMetadataArray::GetInteger(int64 index, int32 defaultValue) const {
             value,
             defaultValue);
       },
-      _value);
+      array._value);
 }
 
-int64 FCesiumMetadataArray::GetInteger64(int64 index, int64 defaultValue)
-    const {
+int64 UCesiumMetadataArrayBlueprintLibrary::GetInteger64(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index,
+    int64 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> int64 {
         auto value = v[index];
@@ -72,10 +87,13 @@ int64 FCesiumMetadataArray::GetInteger64(int64 index, int64 defaultValue)
             value,
             defaultValue);
       },
-      _value);
+      array._value);
 }
 
-float FCesiumMetadataArray::GetFloat(int64 index, float defaultValue) const {
+float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index,
+    float defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> float {
         auto value = v[index];
@@ -83,12 +101,13 @@ float FCesiumMetadataArray::GetFloat(int64 index, float defaultValue) const {
             value,
             defaultValue);
       },
-      _value);
+      array._value);
 }
 
-FString FCesiumMetadataArray::GetString(
+FString UCesiumMetadataArrayBlueprintLibrary::GetString(
+    UPARAM(ref) const FCesiumMetadataArray& array,
     int64 index,
-    const FString& defaultValue) const {
+    const FString& defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> FString {
         auto value = v[index];
@@ -96,64 +115,5 @@ FString FCesiumMetadataArray::GetString(
             value,
             defaultValue);
       },
-      _value);
-}
-
-ECesiumMetadataBlueprintType
-UCesiumMetadataArrayBlueprintLibrary::GetBlueprintComponentType(
-    UPARAM(ref) const FCesiumMetadataArray& array) {
-  return array.GetBlueprintComponentType();
-}
-
-ECesiumMetadataTrueType
-UCesiumMetadataArrayBlueprintLibrary::GetTrueComponentType(
-    UPARAM(ref) const FCesiumMetadataArray& array) {
-  return array.GetTrueComponentType();
-}
-
-int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(
-    UPARAM(ref) const FCesiumMetadataArray& array) {
-  return array.GetSize();
-}
-
-bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
-    UPARAM(ref) const FCesiumMetadataArray& Array,
-    int64 Index,
-    bool DefaultValue) {
-  return Array.GetBoolean(Index, DefaultValue);
-}
-
-uint8 UCesiumMetadataArrayBlueprintLibrary::GetByte(
-    UPARAM(ref) const FCesiumMetadataArray& Array,
-    int64 Index,
-    uint8 DefaultValue) {
-  return Array.GetByte(Index, DefaultValue);
-}
-
-int32 UCesiumMetadataArrayBlueprintLibrary::GetInteger(
-    UPARAM(ref) const FCesiumMetadataArray& Array,
-    int64 Index,
-    int32 DefaultValue) {
-  return Array.GetInteger(Index, DefaultValue);
-}
-
-int64 UCesiumMetadataArrayBlueprintLibrary::GetInteger64(
-    UPARAM(ref) const FCesiumMetadataArray& Array,
-    int64 Index,
-    int64 DefaultValue) {
-  return Array.GetInteger64(Index, DefaultValue);
-}
-
-float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
-    UPARAM(ref) const FCesiumMetadataArray& Array,
-    int64 Index,
-    float DefaultValue) {
-  return Array.GetFloat(Index, DefaultValue);
-}
-
-FString UCesiumMetadataArrayBlueprintLibrary::GetString(
-    UPARAM(ref) const FCesiumMetadataArray& Array,
-    int64 Index,
-    const FString& DefaultValue) {
-  return Array.GetString(Index, DefaultValue);
+      array._value);
 }

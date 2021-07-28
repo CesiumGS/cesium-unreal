@@ -51,44 +51,11 @@ public:
       const CesiumGltf::Accessor& Accessor,
       const CesiumGltf::FeatureTable& FeatureTable);
 
-  /**
-   * Gets the number of features in the feature table.
-   */
-  int64 GetNumberOfFeatures() const;
-
-  /**
-   * Gets the feature ID associated with a given vertex.
-   *
-   * @param VertexIndex The index of the vertex.
-   * @returns The feature ID, or -1 if no feature is associated with the vertex.
-   */
-  int64 GetFeatureIDForVertex(int64 VertexIndex) const;
-
-  /**
-   * Gets a map of property name to property value for a given feature.
-   *
-   * @param FeatureID The ID of the feature.
-   */
-  TMap<FString, FCesiumMetadataGenericValue>
-  GetPropertiesForFeatureID(int64 FeatureID) const;
-
-  /**
-   * Gets a map of property name to property value for a given feature, where
-   * the value is converted to a string regardless of the underlying type.
-   *
-   * @param FeatureID The ID of the feature.
-   */
-  TMap<FString, FString>
-  GetPropertiesAsStringsForFeatureID(int64 FeatureID) const;
-
-  /**
-   * Gets all the properties of the feature table.
-   */
-  const TMap<FString, FCesiumMetadataProperty>& GetProperties() const;
-
 private:
   FeatureIDAccessorType _featureIDAccessor;
   TMap<FString, FCesiumMetadataProperty> _properties;
+
+  friend class UCesiumMetadataFeatureTableBlueprintLibrary;
 };
 
 UCLASS()
