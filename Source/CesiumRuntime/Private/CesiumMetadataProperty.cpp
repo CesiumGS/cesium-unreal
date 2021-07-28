@@ -2,9 +2,6 @@
 
 #include "CesiumMetadataProperty.h"
 #include "CesiumMetadataConversions.h"
-#include "CesiumUtility/JsonValue.h"
-#include <charconv>
-#include <optional>
 
 using namespace CesiumGltf;
 
@@ -31,75 +28,6 @@ struct MetadataPropertyValue {
 
   int64 featureID;
 };
-
-template <typename T> struct IsNumericProperty {
-  static constexpr bool value = false;
-};
-
-template <typename T> struct IsNumericProperty<MetadataPropertyView<T>> {
-  static constexpr bool value = IsMetadataNumeric<T>::value;
-};
-
-template <typename T> struct IsArrayProperty {
-  static constexpr bool value = false;
-};
-
-template <typename T> struct IsArrayProperty<MetadataPropertyView<T>> {
-  static constexpr bool value = IsMetadataNumericArray<T>::value ||
-                                IsMetadataBooleanArray<T>::value ||
-                                IsMetadataStringArray<T>::value;
-};
-
-template <typename T>
-T parseStringAsFloat(const std::string_view& s, T defaultValue) {
-  const char* pStart = s.data();
-  const char* pEnd = s.data() + s.size();
-
-  T parsedValue;
-  std::from_chars_result result = std::from_chars(pStart, pEnd, parsedValue);
-  if (result.ec == std::errc() && result.ptr == pEnd) {
-    // Successfully parsed the entire string as an integer of this type.
-    return parsedValue;
-  }
-
-  return defaultValue;
-}
-
-template <typename T>
-T parseStringAsInteger(const std::string_view& s, T defaultValue) {
-  const char* pStart = s.data();
-  const char* pEnd = s.data() + s.size();
-
-  T parsedValue;
-  std::from_chars_result result =
-      std::from_chars(pStart, pEnd, parsedValue, 10);
-  if (result.ec == std::errc() && result.ptr == pEnd) {
-    // Successfully parsed the entire string as an integer of this type.
-    return parsedValue;
-  }
-
-  // Try parsing as a floating-point number instead.
-  double parsedDouble;
-  result = std::from_chars(pStart, pEnd, parsedDouble);
-  if (result.ec == std::errc() && result.ptr == pEnd) {
-    // Successfully parsed the entire string as a double of this type.
-    // Convert it to an integer if we can.
-    int64_t asInteger = static_cast<int64_t>(parsedDouble);
-    return CesiumUtility::losslessNarrowOrDefault(asInteger, defaultValue);
-  }
-
-  return defaultValue;
-}
-
-bool equalsCaseInsensitive(const std::string_view& s1, const std::string& s2) {
-  if (s1.size() != s2.size()) {
-    return false;
-  }
-
-  return std::equal(s1.begin(), s1.end(), s2.begin(), [](char a, char b) {
-    return std::toupper(a) == std::toupper(b);
-  });
-}
 
 } // namespace
 
