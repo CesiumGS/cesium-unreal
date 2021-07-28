@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGltf/MetadataPropertyView.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataValueType.h"
@@ -54,7 +55,9 @@ public:
    * Construct an empty property with unknown type.
    */
   FCesiumMetadataProperty()
-      : _property(), _type(ECesiumMetadataValueType::None) {}
+      : _property(),
+        _type(ECesiumMetadataTrueType::None),
+        _componentType(ECesiumMetadataTrueType::None) {}
 
   /**
    * Construct a wrapper for the property view.
@@ -63,42 +66,37 @@ public:
    */
   template <typename T>
   FCesiumMetadataProperty(const CesiumGltf::MetadataPropertyView<T>& value)
-      : _property(value), _type(ECesiumMetadataValueType::None) {
-    if (holdsPropertyAlternative<bool>(_property)) {
-      _type = ECesiumMetadataValueType::Boolean;
-    } else if (holdsPropertyAlternative<uint8_t>(_property)) {
-      _type = ECesiumMetadataValueType::Byte;
-    } else if (
-        holdsPropertyAlternative<int8_t>(_property) ||
-        holdsPropertyAlternative<int16_t>(_property) ||
-        holdsPropertyAlternative<uint16_t>(_property) ||
-        holdsPropertyAlternative<int32_t>(_property)) {
-      _type = ECesiumMetadataValueType::Integer;
-    } else if (
-        holdsPropertyAlternative<uint32_t>(_property) ||
-        holdsPropertyAlternative<int64_t>(_property)) {
-      _type = ECesiumMetadataValueType::Integer64;
-    } else if (holdsPropertyAlternative<uint64_t>(_property)) {
-      _type = ECesiumMetadataValueType::String;
-    } else if (holdsPropertyAlternative<float>(_property)) {
-      _type = ECesiumMetadataValueType::Float;
-    } else if (holdsPropertyAlternative<double>(_property)) {
-      _type = ECesiumMetadataValueType::String;
-    } else if (holdsPropertyAlternative<std::string_view>(_property)) {
-      _type = ECesiumMetadataValueType::String;
-    } else {
-      _type = ECesiumMetadataValueType::Array;
-    }
+      : _property(value), _type(ECesiumMetadataTrueType::None) {
+    _type = ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<T>::value);
+    _componentType =
+        ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<T>::component);
   }
 
   /**
-   * Queries the underlying type of the property. For the most precise
-   * representation of the property's values, you should retrieve them using
-   * this type.
-   *
-   * @return The type of the property.
+   * Gets best-fitting Blueprints type for the property. For the most precise
+   * representation of the value possible from Blueprints, you should retrieve
+   * it using this type.
    */
-  ECesiumMetadataValueType GetType() const;
+  ECesiumMetadataBlueprintType GetBlueprintType() const;
+
+  /**
+   * Gets best-fitting Blueprints type for the elements of this array. If this
+   * value is not an array, returns None.
+   */
+  ECesiumMetadataBlueprintType GetBlueprintComponentType() const;
+
+  /**
+   * Gets true type of the property. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  ECesiumMetadataTrueType GetTrueType() const;
+
+  /**
+   * Gets true type of the elements in the array. If this value is not an array,
+   * the component type will be None. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  ECesiumMetadataTrueType GetTrueComponentType() const;
 
   /**
    * Queries the number of features in the property.
@@ -283,7 +281,8 @@ private:
   }
 
   PropertyType _property;
-  ECesiumMetadataValueType _type;
+  ECesiumMetadataTrueType _type;
+  ECesiumMetadataTrueType _componentType;
 };
 
 UCLASS()
@@ -293,18 +292,51 @@ class CESIUMRUNTIME_API UCesiumMetadataPropertyBlueprintLibrary
 
 public:
   /**
-   * Queries the underlying type of the property. For the most precise
-   * representation of the property's values, you should retrieve them using
-   * this type.
-   *
-   * @return The type of the property.
+   * Gets best-fitting Blueprints type for the property. For the most precise
+   * representation of the value possible from Blueprints, you should retrieve
+   * it using this type.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static ECesiumMetadataValueType
-  GetType(UPARAM(ref) const FCesiumMetadataProperty& Property);
+  static ECesiumMetadataBlueprintType
+  GetBlueprintType(UPARAM(ref) const FCesiumMetadataProperty& Property);
+
+  /**
+   * Gets best-fitting Blueprints type for the elements of this array. If this
+   * value is not an array, returns None.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static ECesiumMetadataBlueprintType
+  GetBlueprintComponentType(UPARAM(ref)
+                                const FCesiumMetadataProperty& Property);
+
+  /**
+   * Gets true type of the property. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static ECesiumMetadataTrueType
+  GetTrueType(UPARAM(ref) const FCesiumMetadataProperty& Property);
+
+  /**
+   * Gets true type of the elements in the array. If this value is not an array,
+   * the component type will be None. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static ECesiumMetadataTrueType
+  GetTrueComponentType(UPARAM(ref) const FCesiumMetadataProperty& Property);
 
   /**
    * Queries the number of features in the property.

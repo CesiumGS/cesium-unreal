@@ -36,7 +36,7 @@ public:
   /**
    * Construct an empty array with unknown type.
    */
-  FCesiumMetadataArray() : _value(), _type(ECesiumMetadataValueType::None) {}
+  FCesiumMetadataArray() : _value(), _type(ECesiumMetadataTrueType::None) {}
 
   /**
    * Construct a non-empty array.
@@ -44,43 +44,26 @@ public:
    */
   template <typename T>
   FCesiumMetadataArray(CesiumGltf::MetadataArrayView<T> value)
-      : _value(value), _type(ECesiumMetadataValueType::None) {
-    if (holdsArrayAlternative<bool>(_value)) {
-      _type = ECesiumMetadataValueType::Boolean;
-    } else if (holdsArrayAlternative<uint8_t>(_value)) {
-      _type = ECesiumMetadataValueType::Byte;
-    } else if (
-        holdsArrayAlternative<int8_t>(_value) ||
-        holdsArrayAlternative<int16_t>(_value) ||
-        holdsArrayAlternative<uint16_t>(_value) ||
-        holdsArrayAlternative<int32_t>(_value)) {
-      _type = ECesiumMetadataValueType::Integer;
-    } else if (
-        holdsArrayAlternative<uint32_t>(_value) ||
-        holdsArrayAlternative<int64_t>(_value)) {
-      _type = ECesiumMetadataValueType::Integer64;
-    } else if (holdsArrayAlternative<uint64_t>(_value)) {
-      _type = ECesiumMetadataValueType::String;
-    } else if (holdsArrayAlternative<float>(_value)) {
-      _type = ECesiumMetadataValueType::Float;
-    } else if (holdsArrayAlternative<double>(_value)) {
-      _type = ECesiumMetadataValueType::String;
-    } else {
-      _type = ECesiumMetadataValueType::String;
-    }
+      : _value(value), _type(ECesiumMetadataTrueType::None) {
+    _type =
+        ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<
+                                CesiumGltf::MetadataArrayView<T>>::component);
   }
 
   /**
-   * Queries the type of the elements in the array. For the most precise
-   * representation of the property's values, you should retrieve them using
-   * this type.
-   *
-   * @return The component type of the array.
+   * Gets best-fitting Blueprints type for the elements of this array.
    */
-  ECesiumMetadataValueType GetComponentType() const;
+  ECesiumMetadataBlueprintType GetBlueprintComponentType() const;
 
   /**
-   * Queries the number of elements in the array.
+   * Gets true type of the elements in the array. Many of these types are not
+   * accessible from Blueprints, but can be converted to a Blueprint-accessible
+   * type.
+   */
+  ECesiumMetadataTrueType GetTrueComponentType() const;
+
+  /**
+   * Gets the number of elements in the array.
    * This method returns 0 if component type is ECesiumMetadataValueType::None
    *
    * @return The number of elements in the array.
@@ -242,7 +225,7 @@ private:
   }
 
   ArrayType _value;
-  ECesiumMetadataValueType _type;
+  ECesiumMetadataTrueType _type;
 };
 
 UCLASS()
@@ -252,17 +235,26 @@ class CESIUMRUNTIME_API UCesiumMetadataArrayBlueprintLibrary
 
 public:
   /**
-   * Query the component type of the array value.
-   * This method should be used first before retrieving the data of the array.
-   * If the data that is tried to retrieve is different from the stored data
-   * type, the current program will be aborted.
+   * Gets best-fitting Blueprints type for the elements of this array.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Array")
-  static ECesiumMetadataValueType
-  GetComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+  static ECesiumMetadataBlueprintType
+  GetBlueprintComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+
+  /**
+   * Gets true type of the elements in the array. Many of these types are not
+   * accessible from Blueprints, but can be converted to a Blueprint-accessible
+   * type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static ECesiumMetadataTrueType
+  GetTrueComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
 
   /**
    * Queries the number of elements in the array.

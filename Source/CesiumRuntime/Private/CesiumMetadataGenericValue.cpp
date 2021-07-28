@@ -4,8 +4,23 @@
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataConversions.h"
 
-ECesiumMetadataValueType FCesiumMetadataGenericValue::GetType() const {
+ECesiumMetadataBlueprintType
+FCesiumMetadataGenericValue::GetBlueprintType() const {
+  return CesiuMetadataTrueTypeToBlueprintType(_type);
+}
+
+ECesiumMetadataBlueprintType
+FCesiumMetadataGenericValue::GetBlueprintComponentType() const {
+  return CesiuMetadataTrueTypeToBlueprintType(_componentType);
+}
+
+ECesiumMetadataTrueType FCesiumMetadataGenericValue::GetTrueType() const {
   return _type;
+}
+
+ECesiumMetadataTrueType
+FCesiumMetadataGenericValue::GetTrueComponentType() const {
+  return _componentType;
 }
 
 bool FCesiumMetadataGenericValue::GetBoolean(bool DefaultValue) const {
@@ -79,9 +94,28 @@ FCesiumMetadataArray FCesiumMetadataGenericValue::GetArray() const {
       _value);
 }
 
-ECesiumMetadataValueType UCesiumMetadataGenericValueBlueprintLibrary::GetType(
+ECesiumMetadataBlueprintType
+UCesiumMetadataGenericValueBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataGenericValue& value) {
-  return value.GetType();
+  return value.GetBlueprintType();
+}
+
+ECesiumMetadataBlueprintType
+UCesiumMetadataGenericValueBlueprintLibrary::GetBlueprintComponentType(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetBlueprintComponentType();
+}
+
+ECesiumMetadataTrueType
+UCesiumMetadataGenericValueBlueprintLibrary::GetTrueType(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetTrueType();
+}
+
+ECesiumMetadataTrueType
+UCesiumMetadataGenericValueBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumMetadataGenericValue& value) {
+  return value.GetTrueComponentType();
 }
 
 bool UCesiumMetadataGenericValueBlueprintLibrary::GetBoolean(

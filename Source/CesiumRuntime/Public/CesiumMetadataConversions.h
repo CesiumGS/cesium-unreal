@@ -3,8 +3,12 @@
 #pragma once
 
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataValueType.h"
 #include <charconv>
 #include <type_traits>
+
+ECesiumMetadataBlueprintType
+CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType);
 
 // Default conversion, just returns the default value.
 template <typename TTo, typename TFrom, typename Enable = void>

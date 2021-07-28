@@ -17,7 +17,12 @@ struct MetadataArraySize {
 
 } // namespace
 
-ECesiumMetadataValueType FCesiumMetadataArray::GetComponentType() const {
+ECesiumMetadataBlueprintType
+FCesiumMetadataArray::GetBlueprintComponentType() const {
+  return CesiuMetadataTrueTypeToBlueprintType(_type);
+}
+
+ECesiumMetadataTrueType FCesiumMetadataArray::GetTrueComponentType() const {
   return _type;
 }
 
@@ -94,9 +99,16 @@ FString FCesiumMetadataArray::GetString(
       _value);
 }
 
-ECesiumMetadataValueType UCesiumMetadataArrayBlueprintLibrary::GetComponentType(
+ECesiumMetadataBlueprintType
+UCesiumMetadataArrayBlueprintLibrary::GetBlueprintComponentType(
     UPARAM(ref) const FCesiumMetadataArray& array) {
-  return array.GetComponentType();
+  return array.GetBlueprintComponentType();
+}
+
+ECesiumMetadataTrueType
+UCesiumMetadataArrayBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumMetadataArray& array) {
+  return array.GetTrueComponentType();
 }
 
 int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(

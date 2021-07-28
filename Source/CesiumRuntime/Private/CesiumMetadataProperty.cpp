@@ -31,8 +31,21 @@ struct MetadataPropertyValue {
 
 } // namespace
 
-ECesiumMetadataValueType FCesiumMetadataProperty::GetType() const {
+ECesiumMetadataBlueprintType FCesiumMetadataProperty::GetBlueprintType() const {
+  return CesiuMetadataTrueTypeToBlueprintType(_type);
+}
+
+ECesiumMetadataBlueprintType
+FCesiumMetadataProperty::GetBlueprintComponentType() const {
+  return CesiuMetadataTrueTypeToBlueprintType(_componentType);
+}
+
+ECesiumMetadataTrueType FCesiumMetadataProperty::GetTrueType() const {
   return _type;
+}
+
+ECesiumMetadataTrueType FCesiumMetadataProperty::GetTrueComponentType() const {
+  return _componentType;
 }
 
 size_t FCesiumMetadataProperty::GetNumberOfFeatures() const {
@@ -128,9 +141,27 @@ FCesiumMetadataProperty::GetGenericValue(int64 featureID) const {
   return std::visit(MetadataPropertyValue{featureID}, _property);
 }
 
-ECesiumMetadataValueType UCesiumMetadataPropertyBlueprintLibrary::GetType(
+ECesiumMetadataBlueprintType
+UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return Property.GetType();
+  return Property.GetBlueprintType();
+}
+
+ECesiumMetadataBlueprintType
+UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintComponentType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property.GetBlueprintComponentType();
+}
+
+ECesiumMetadataTrueType UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property.GetTrueType();
+}
+
+ECesiumMetadataTrueType
+UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property.GetTrueComponentType();
 }
 
 int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
