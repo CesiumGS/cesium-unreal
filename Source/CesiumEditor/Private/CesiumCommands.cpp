@@ -26,18 +26,6 @@ void FCesiumCommands::RegisterCommands() {
       EUserInterfaceActionType::Button,
       FInputChord());
   UI_COMMAND(
-      AddBlankTileset,
-      "Add Blank",
-      "Add a blank tileset to the level",
-      EUserInterfaceActionType::Button,
-      FInputChord());
-  UI_COMMAND(
-      AccessToken,
-      "Access Token",
-      "Configure the access token used to stream tiles from Cesium ion",
-      EUserInterfaceActionType::Button,
-      FInputChord());
-  UI_COMMAND(
       SignOut,
       "Sign Out",
       "Sign out of Cesium ion",

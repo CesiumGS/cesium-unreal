@@ -166,10 +166,14 @@ void showAssetDepotConfirmWindow(
 }
 } // namespace
 
-void IonQuickAddPanel::AddTilesetToLevel(TSharedRef<QuickAddItem> item) {
+void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
   const std::optional<CesiumIonClient::Connection>& connection =
       FCesiumEditorModule::ion().getConnection();
   if (!connection) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT("Cannot add an ion asset without an active connection"));
     return;
   }
   connection->asset(item->tilesetID)
@@ -306,6 +310,18 @@ void IonQuickAddPanel::AddDynamicPawnToLevel() {
   }
 }
 
+void IonQuickAddPanel::AddBlankTilesetToLevel() {
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+  GEditor->AddActor(
+      pCurrentLevel,
+      ACesium3DTileset::StaticClass(),
+      FTransform(),
+      false,
+      RF_Public | RF_Transactional);
+}
+
 void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
   if (this->_itemsBeingAdded.find(item->name) != this->_itemsBeingAdded.end()) {
     // Add is already in progress.
@@ -314,7 +330,18 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
   this->_itemsBeingAdded.insert(item->name);
 
   if (item->type == QuickAddItemType::TILESET) {
-    AddTilesetToLevel(item);
+
+    // The blank tileset (identified by the tileset and overlay ID being -1)
+    // can be added directly. All ion tilesets are added via
+    // AddIonTilesetToLevel, which requires an active connection.
+    bool isBlankTileset = item->type == QuickAddItemType::TILESET &&
+                          item->tilesetID == -1 && item->overlayID == -1;
+    if (isBlankTileset) {
+      AddBlankTilesetToLevel();
+      this->_itemsBeingAdded.erase(item->name);
+    } else {
+      AddIonTilesetToLevel(item);
+    }
   } else if (item->type == QuickAddItemType::SUNSKY) {
     AddCesiumSunSkyToLevel();
     this->_itemsBeingAdded.erase(item->name);
