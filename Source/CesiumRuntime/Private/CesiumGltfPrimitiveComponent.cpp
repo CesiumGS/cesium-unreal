@@ -8,8 +8,8 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   // every frame.  You can turn these features off to improve performance if you
   // don't need them.
   PrimaryComponentTick.bCanEverTick = false;
-
-  // ...
+  pModel = nullptr;
+  pMeshPrimitive = nullptr;
 }
 
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
