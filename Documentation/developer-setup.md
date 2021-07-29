@@ -17,6 +17,7 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 - You must use the same compiler to build cesium-native and Cesium for Unreal.
 - On Windows, packaging the Cesium for Unreal plugin on Windows requires Visual Studio 2017. This means you must also build cesium-native with Visual Studio 2017 in order for plugin packaging to be successful. But if you're not concerned with packaging, you can use Visual Studio 2019 exclusively.
 - The Unreal project "DebugGame" configuration tries to use the debug build of cesium-native if one is built and installed, and falls back on the release build otherwise. The "Development" and "Shipping" configurations use the release build exclusively.
+- Our CI build process checks for formatting using clang, and fails if code is improperly formatted. To run clang on all source code before committing, run `npm ci` to install node modules, then `npm run format`.
 
 ## Platform-specific setup instructions
 

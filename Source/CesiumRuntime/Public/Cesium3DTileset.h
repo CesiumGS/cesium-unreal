@@ -330,6 +330,28 @@ private:
   FString IonAccessToken;
 
   /**
+   * Whether to always generate a correct tangent space basis for tiles that
+   * don't have them.
+   *
+   * Normally, a per-vertex tangent space basis is only required for glTF models
+   * with a normal map. However, a custom, user-supplied material may need a
+   * tangent space basis for other purposes. When this property is set to true,
+   * tiles lacking an explicit tangent vector will have one computed
+   * automatically using the MikkTSpace algorithm. When this property is false,
+   * load time will be improved by skipping the generation of the tangent
+   * vector, but the tangent space basis will be unreliable.
+   *
+   * Note that a tileset with "Enable Water Mask" set will include tangents
+   * for tiles containing water, regardless of the value of this property.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAlwaysIncludeTangents,
+      BlueprintSetter = SetAlwaysIncludeTangents,
+      Category = "Cesium|Rendering")
+  bool AlwaysIncludeTangents = false;
+
+  /**
    * Whether to request and render the water mask.
    *
    * Currently only applicable for quantized-mesh tilesets that support the
@@ -417,6 +439,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }
@@ -597,4 +625,18 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  // This is used as a workaround for cesium-native#186
+  //
+  // The tiles that are no longer supposed to be rendered in the current
+  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // are kept in this list, and hidden in the NEXT frame, because some
+  // internal occlusion culling information from Unreal might prevent
+  // the tiles that are supposed to be rendered instead from appearing
+  // immediately.
+  //
+  // If we find a way to clear the wrong occlusion information in the
+  // Unreal Engine, then this field may be removed, and the
+  // tilesToNoLongerRenderThisFrame may be hidden immediately.
+  std::vector<Cesium3DTiles::Tile*> _tilesToNoLongerRenderNextFrame;
 };
