@@ -5,32 +5,6 @@
 
 using namespace CesiumGltf;
 
-namespace {
-
-struct MetadataPropertySize {
-  size_t operator()(std::monostate) { return 0; }
-
-  template <typename T>
-  size_t operator()(const MetadataPropertyView<T>& value) {
-    return value.size();
-  }
-};
-
-struct MetadataPropertyValue {
-  FCesiumMetadataGenericValue operator()(std::monostate) {
-    return FCesiumMetadataGenericValue{};
-  }
-
-  template <typename T>
-  FCesiumMetadataGenericValue operator()(const MetadataPropertyView<T>& value) {
-    return FCesiumMetadataGenericValue{value.get(featureID)};
-  }
-
-  int64 featureID;
-};
-
-} // namespace
-
 ECesiumMetadataBlueprintType
 UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataProperty& Property) {
@@ -56,7 +30,9 @@ UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
 
 int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
     UPARAM(ref) const FCesiumMetadataProperty& Property) {
-  return std::visit(MetadataPropertySize{}, Property._property);
+  return std::visit(
+      [](const auto& view) { return view.size(); },
+      Property._property);
 }
 
 bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
@@ -160,5 +136,9 @@ FCesiumMetadataGenericValue
 UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
     UPARAM(ref) const FCesiumMetadataProperty& Property,
     int64 featureID) {
-  return std::visit(MetadataPropertyValue{featureID}, Property._property);
+  return std::visit(
+      [featureID](const auto& view) {
+        return FCesiumMetadataGenericValue{view.get(featureID)};
+      },
+      Property._property);
 }

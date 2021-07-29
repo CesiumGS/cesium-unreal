@@ -4,19 +4,6 @@
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataConversions.h"
 
-namespace {
-
-struct MetadataArraySize {
-  size_t operator()(std::monostate) { return 0; }
-
-  template <typename T>
-  size_t operator()(const CesiumGltf::MetadataArrayView<T>& value) {
-    return value.size();
-  }
-};
-
-} // namespace
-
 ECesiumMetadataBlueprintType
 UCesiumMetadataArrayBlueprintLibrary::GetBlueprintComponentType(
     UPARAM(ref) const FCesiumMetadataArray& array) {
@@ -31,7 +18,7 @@ UCesiumMetadataArrayBlueprintLibrary::GetTrueComponentType(
 
 int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(
     UPARAM(ref) const FCesiumMetadataArray& array) {
-  return std::visit(MetadataArraySize{}, array._value);
+  return std::visit([](const auto& view) { return view.size(); }, array._value);
 }
 
 bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
