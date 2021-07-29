@@ -6,6 +6,10 @@
 
 - Added support for reading per-feature metadata from glTFs with the `EXT_feature_metadata` extension or from 3D Tiles with a B3DM batch table and accessing it from Blueprints.
 
+##### Fixes :wrench:
+
+- Fixed a bug introduced in v1.4.0 that made it impossible to add a "Blank 3D Tiles Tileset" using the Cesium panel without first signing in to Cesium ion.
+
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.5.0 to TODO. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.4.1 - 2021-07-13
