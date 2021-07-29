@@ -27,6 +27,7 @@
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/GltfReader.h"
+#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRuntime.h"
@@ -56,8 +57,10 @@ struct LoadTextureResult {
 };
 
 struct LoadModelResult {
+  FCesiumMetadataPrimitive Metadata;
   FStaticMeshRenderData* RenderData;
   const CesiumGltf::Model* pModel;
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
   const CesiumGltf::Material* pMaterial;
   glm::dmat4x4 transform;
 #if PHYSICS_INTERFACE_PHYSX
@@ -553,6 +556,28 @@ static std::optional<LoadTextureResult> loadTexture(
   return result;
 }
 
+static FCesiumMetadataPrimitive loadMetadataPrimitive(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive) {
+  const CesiumGltf::ModelEXT_feature_metadata* metadata =
+      model.getExtension<CesiumGltf::ModelEXT_feature_metadata>();
+  if (!metadata) {
+    return FCesiumMetadataPrimitive();
+  }
+
+  const CesiumGltf::MeshPrimitiveEXT_feature_metadata* primitiveMetadata =
+      primitive.getExtension<CesiumGltf::MeshPrimitiveEXT_feature_metadata>();
+  if (!primitiveMetadata) {
+    return FCesiumMetadataPrimitive();
+  }
+
+  return FCesiumMetadataPrimitive(
+      model,
+      primitive,
+      *metadata,
+      *primitiveMetadata);
+}
+
 template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
@@ -1014,6 +1039,7 @@ static void loadPrimitive(
   LODResources.bHasAdjacencyInfo = false;
 
   primitiveResult.pModel = &model;
+  primitiveResult.pMeshPrimitive = &primitive;
   primitiveResult.RenderData = RenderData;
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
@@ -1060,6 +1086,9 @@ static void loadPrimitive(
         BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
   }
 #endif
+
+  // load primitive metadata
+  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
 
   result.push_back(std::move(primitiveResult));
 }
@@ -1471,6 +1500,9 @@ static void loadModelGameThreadPart(
   pMesh->bUseDefaultCollision = false;
   pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
   pMesh->SetFlags(RF_Transient);
+  pMesh->Metadata = std::move(loadResult.Metadata);
+  pMesh->pModel = loadResult.pModel;
+  pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
 
   UStaticMesh* pStaticMesh =
       NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
