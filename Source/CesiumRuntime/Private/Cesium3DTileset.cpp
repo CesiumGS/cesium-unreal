@@ -40,6 +40,7 @@
 #include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/trigonometric.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
 
@@ -829,29 +830,58 @@ ACesium3DTileset::GetPlayerCameras() const {
     pStereoRendering = GEngine->StereoRenderingDevice;
   }
 
+  uint32 stereoLeftSizeX = static_cast<uint32>(size.X);
+  uint32 stereoLeftSizeY = static_cast<uint32>(size.Y);
+  uint32 stereoRightSizeX = static_cast<uint32>(size.X);
+  uint32 stereoRightSizeY = static_cast<uint32>(size.Y);
+  if (pStereoRendering) {
+    int32 _x;
+    int32 _y;
+
+    pStereoRendering->AdjustViewRect(
+        EStereoscopicPass::eSSP_LEFT_EYE,
+        _x,
+        _y,
+        stereoLeftSizeX,
+        stereoLeftSizeY);
+
+    pStereoRendering->AdjustViewRect(
+        EStereoscopicPass::eSSP_RIGHT_EYE,
+        _x,
+        _y,
+        stereoRightSizeX,
+        stereoRightSizeY);
+  }
+
+  FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
+  float stereoLeftAspectRatio = stereoLeftSizeY / stereoLeftSizeX;
+  FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
+  float stereoRightAspectRatio = stereoRightSizeY / stereoRightSizeX;
+
   std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
 
-  for (auto controllerIt = pWorld->GetControllerIterator(); controllerIt;
-       controllerIt++) {
+  for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
+       playerControllerIt;
+       playerControllerIt++) {
 
-    const TWeakObjectPtr<AController> pController = *controllerIt;
-    if (pController == nullptr) {
+    const TWeakObjectPtr<APlayerController> pPlayerController =
+        *playerControllerIt;
+    if (pPlayerController == nullptr) {
       continue;
     }
 
-    const APlayerController* pPlayerController =
-        static_cast<const APlayerController*>(pController.Get());
+    const APlayerCameraManager* pPlayerCameraManager =
+        pPlayerController->PlayerCameraManager;
 
-    // default fov
-    double fov = 90.0;
-    if (pPlayerController != nullptr &&
-        pPlayerController->PlayerCameraManager != nullptr) {
-      fov = pPlayerController->PlayerCameraManager->GetFOVAngle();
+    if (!pPlayerCameraManager) {
+      continue;
     }
+
+    double fov = pPlayerCameraManager->GetFOVAngle();
 
     FVector location;
     FRotator rotation;
-    pController->GetPlayerViewPoint(location, rotation);
+    pPlayerController->GetPlayerViewPoint(location, rotation);
 
     if (pStereoRendering) {
       FVector leftEyeLocation = location;
@@ -862,8 +892,20 @@ ACesium3DTileset::GetPlayerCameras() const {
           worldToMeters,
           leftEyeLocation);
 
-      cameras.push_back(
-          UnrealCameraParameters{size, leftEyeLocation, leftEyeRotation, fov});
+      FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
+          EStereoscopicPass::eSSP_LEFT_EYE);
+
+      // TODO: consider assymetric frustums using 4 fovs
+      float one_over_tan_half_hfov = projection.M[0][0];
+
+      float hfov =
+          glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+
+      cameras.push_back(UnrealCameraParameters{
+          stereoLeftSize,
+          leftEyeLocation,
+          leftEyeRotation,
+          hfov});
 
       FVector rightEyeLocation = location;
       FRotator rightEyeRotation = rotation;
@@ -873,11 +915,18 @@ ACesium3DTileset::GetPlayerCameras() const {
           worldToMeters,
           rightEyeLocation);
 
+      projection = pStereoRendering->GetStereoProjectionMatrix(
+          EStereoscopicPass::eSSP_RIGHT_EYE);
+
+      one_over_tan_half_hfov = projection.M[0][0];
+
+      hfov = glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+
       cameras.push_back(UnrealCameraParameters{
-          size,
+          stereoRightSize,
           rightEyeLocation,
           rightEyeRotation,
-          fov});
+          hfov});
     } else {
       cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
     }
@@ -918,6 +967,9 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
 #if WITH_EDITOR
 std::vector<ACesium3DTileset::UnrealCameraParameters>
 ACesium3DTileset::GetEditorCameras() const {
+  if (!GEditor) {
+    return {};
+  }
 
   std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
   for (FViewportClient* pViewportClient : GEditor->GetAllViewportClients()) {
