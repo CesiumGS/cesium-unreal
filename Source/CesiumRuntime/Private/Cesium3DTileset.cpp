@@ -1152,11 +1152,16 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  updateTilesetOptionsFromProperties();
-
   if (_tilesetIsDirty) {
     LoadTileset();
   }
+
+  // If we still don't have a tileset, we're done.
+  if (!this->_pTileset) {
+    return;
+  }
+
+  updateTilesetOptionsFromProperties();
 
   std::optional<UnrealCameraParameters> camera = this->GetCamera();
   if (!camera) {
@@ -1220,7 +1225,9 @@ void ACesium3DTileset::PostEditChangeProperty(
   const FName PropName = (PropertyChangedEvent.Property)
                              ? PropertyChangedEvent.Property->GetFName()
                              : NAME_None;
-  if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
+
+  if (this->_pTileset == nullptr ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
