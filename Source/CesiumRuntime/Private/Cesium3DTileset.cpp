@@ -110,7 +110,7 @@ void ACesium3DTileset::PostInitProperties() {
 void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   if (InSource != this->TilesetSource) {
     this->TilesetSource = InSource;
-    this->MarkTilesetDirty();
+    this->DestroyTileset();
   }
 }
 
@@ -118,7 +118,7 @@ void ACesium3DTileset::SetUrl(FString InUrl) {
   if (InUrl != this->Url) {
     this->Url = InUrl;
     if (this->TilesetSource == ETilesetSource::FromUrl) {
-      this->MarkTilesetDirty();
+      this->DestroyTileset();
     }
   }
 }
@@ -127,7 +127,7 @@ void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
   if (InAssetID >= 0 && InAssetID != this->IonAssetID) {
     this->IonAssetID = InAssetID;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
-      this->MarkTilesetDirty();
+      this->DestroyTileset();
     }
   }
 }
@@ -136,7 +136,7 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
   if (this->IonAccessToken != InAccessToken) {
     this->IonAccessToken = InAccessToken;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
-      this->MarkTilesetDirty();
+      this->DestroyTileset();
     }
   }
 }
@@ -144,35 +144,35 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
-    this->MarkTilesetDirty();
+    this->DestroyTileset();
   }
 }
 
 void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
   if (this->EnableWaterMask != bEnableMask) {
     this->EnableWaterMask = bEnableMask;
-    this->MarkTilesetDirty();
+    this->DestroyTileset();
   }
 }
 
 void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
   if (this->Material != InMaterial) {
     this->Material = InMaterial;
-    this->MarkTilesetDirty();
+    this->DestroyTileset();
   }
 }
 
 void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   if (this->WaterMaterial != InMaterial) {
     this->WaterMaterial = InMaterial;
-    this->MarkTilesetDirty();
+    this->DestroyTileset();
   }
 }
 
 void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
   if (this->OpacityMaskMaterial != InMaterial) {
     this->OpacityMaskMaterial = InMaterial;
-    this->MarkTilesetDirty();
+    this->DestroyTileset();
   }
 }
 
@@ -641,19 +641,13 @@ void ACesium3DTileset::LoadTileset() {
   static CesiumAsync::AsyncSystem asyncSystem(
       std::make_shared<UnrealTaskProcessor>());
 
-  Cesium3DTiles::Tileset* pTileset = this->_pTileset;
+  if (this->_pTileset) {
+    // Tileset already loaded, do nothing.
+    return;
+  }
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
-  // The tileset already exists. If properties have been changed that require
-  // the tileset to be recreated, then destroy the tileset. Otherwise, ignore.
-  if (_tilesetIsDirty) {
-    this->DestroyTileset();
-    _tilesetIsDirty = false;
-  } else {
-    return;
-  }
 
   if (!this->Georeference) {
     this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
@@ -685,7 +679,7 @@ void ACesium3DTileset::LoadTileset() {
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-    pTileset = new Cesium3DTiles::Tileset(
+    this->_pTileset = new Cesium3DTiles::Tileset(
         externals,
         TCHAR_TO_UTF8(*this->Url),
         options);
@@ -696,15 +690,13 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
-    pTileset = new Cesium3DTiles::Tileset(
+    this->_pTileset = new Cesium3DTiles::Tileset(
         externals,
         static_cast<uint32_t>(this->IonAssetID),
         TCHAR_TO_UTF8(*this->IonAccessToken),
         options);
     break;
   }
-
-  this->_pTileset = pTileset;
 
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
@@ -775,11 +767,6 @@ void ACesium3DTileset::DestroyTileset() {
         TEXT("Destroying tileset for asset ID %d done"),
         this->IonAssetID);
   }
-}
-
-void ACesium3DTileset::MarkTilesetDirty() {
-  _tilesetIsDirty = true;
-  UE_LOG(LogCesium, Verbose, TEXT("Tileset marked Dirty"));
 }
 
 std::optional<ACesium3DTileset::UnrealCameraParameters>
@@ -1152,13 +1139,15 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  if (_tilesetIsDirty) {
-    LoadTileset();
-  }
-
-  // If we still don't have a tileset, we're done.
   if (!this->_pTileset) {
-    return;
+    LoadTileset();
+
+    // In the unlikely event that we _still_ don't have a tileset, stop here so
+    // we don't crash below. This shouldn't happen.
+    if (!this->_pTileset) {
+      assert(false);
+      return;
+    }
   }
 
   updateTilesetOptionsFromProperties();
@@ -1226,8 +1215,7 @@ void ACesium3DTileset::PostEditChangeProperty(
                              ? PropertyChangedEvent.Property->GetFName()
                              : NAME_None;
 
-  if (this->_pTileset == nullptr ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
+  if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
@@ -1238,9 +1226,19 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, OpacityMaskMaterial)) {
-    MarkTilesetDirty();
+    this->DestroyTileset();
   }
+
   Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+
+void ACesium3DTileset::PostEditUndo() {
+  Super::PostEditUndo();
+
+  // It doesn't appear to be possible to get detailed information about what
+  // changed in the undo/redo operation, so we have to assume the worst and
+  // recreate the tileset.
+  this->DestroyTileset();
 }
 #endif
 
