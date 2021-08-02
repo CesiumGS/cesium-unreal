@@ -119,14 +119,6 @@ void FCesiumEditorModule::StartupModule() {
         "FontAwesome/cloud-upload-alt-solid");
     registerIcon(
         StyleSet,
-        "Cesium.Common.AddBlankTileset",
-        "FontAwesome/globe-solid");
-    registerIcon(
-        StyleSet,
-        "Cesium.Common.AccessToken",
-        "FontAwesome/key-solid");
-    registerIcon(
-        StyleSet,
         "Cesium.Common.SignOut",
         "FontAwesome/sign-out-alt-solid");
     registerIcon(

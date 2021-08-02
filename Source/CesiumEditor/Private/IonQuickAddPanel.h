@@ -41,7 +41,8 @@ private:
       const TSharedRef<STableViewBase>& list);
 
   void AddItemToLevel(TSharedRef<QuickAddItem> item);
-  void AddTilesetToLevel(TSharedRef<QuickAddItem> item);
+  void AddBlankTilesetToLevel();
+  void AddIonTilesetToLevel(TSharedRef<QuickAddItem> item);
   void AddCesiumSunSkyToLevel();
   void AddDynamicPawnToLevel();
 

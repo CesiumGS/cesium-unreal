@@ -1,5 +1,25 @@
 # Change Log
 
+### v1.5.0 - 2021-08-02
+
+##### Additions :tada:
+
+- Added support for reading per-feature metadata from glTFs with the `EXT_feature_metadata` extension or from 3D Tiles with a B3DM batch table and accessing it from Blueprints.
+
+##### Fixes :wrench:
+
+- Fixed a bug introduced in v1.4.0 that made it impossible to add a "Blank 3D Tiles Tileset" using the Cesium panel without first signing in to Cesium ion.
+- Fixed a bug that caused a crash when deleting a Cesium 3D Tileset Actor and then undoing that deletion.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.5.0 to TODO. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.4.1 - 2021-07-13
+
+##### Fixes :wrench:
+
+- Fixed linker warnings on macOS related to "different visibility settings."
+- Fixed compile errors on Android in Unreal Engine versions prior to 4.26.2 caused by missing support for C++17.
+
 ### v1.4.0 - 2021-07-01
 
 ##### Breaking :mega:
@@ -15,6 +35,8 @@
 - Fixed a bug that could sometimes cause tile-sized holes to appear in a 3D Tiles model for one render frame.
 - Fixed a bug that caused Cesium toolbar buttons to disappear when `Editor Preferences` -> `Use Small Tool Bar Icons` is enabled.
 - Added support for other types of glTF index accessors: `BYTE`, `UNSIGNED_BYTE`, `SHORT`, and `UNSIGNED_SHORT`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.4.0 to v0.5.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.3.1 - 2021-06-02
 
