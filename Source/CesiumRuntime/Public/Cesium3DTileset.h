@@ -494,6 +494,8 @@ public:
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditUndo() override;
+  virtual void PostEditImport() override;
 #endif
 
 protected:
@@ -520,7 +522,6 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
-  void MarkTilesetDirty();
   Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
       const FVector2D& viewportSize,
       const FVector& location,
@@ -586,12 +587,6 @@ private:
 
 private:
   Cesium3DTiles::Tileset* _pTileset;
-
-  /**
-   * Marks whether tileset should be updated in LoadTileset.
-   * Default to true so that tileset is created on construction.
-   */
-  bool _tilesetIsDirty = true;
 
   // For debug output
   uint32_t _lastTilesRendered;
