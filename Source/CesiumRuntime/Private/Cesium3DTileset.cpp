@@ -808,7 +808,7 @@ ACesium3DTileset::GetPlayerCameras() const {
     return {};
   }
 
-  float worldToMeters = 0.01f;
+  float worldToMeters = 100.0f;
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings) {
     worldToMeters = pWorldSettings->WorldToMeters;
