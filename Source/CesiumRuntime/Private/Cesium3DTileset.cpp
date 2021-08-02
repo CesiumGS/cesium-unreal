@@ -21,10 +21,12 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CreateModelOptions.h"
+#include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
@@ -33,10 +35,12 @@
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
+#include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/trigonometric.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
 
@@ -769,102 +773,221 @@ void ACesium3DTileset::DestroyTileset() {
   }
 }
 
-std::optional<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetCamera() const {
-  std::optional<UnrealCameraParameters> camera = this->GetPlayerCamera();
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetCameras() const {
+  std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
 
 #if WITH_EDITOR
-  if (!camera) {
-    camera = this->GetEditorCamera();
-  }
+  std::vector<UnrealCameraParameters> editorCameras = this->GetEditorCameras();
+  cameras.insert(
+      cameras.end(),
+      std::make_move_iterator(editorCameras.begin()),
+      std::make_move_iterator(editorCameras.end()));
 #endif
 
-  return camera;
+  return cameras;
 }
 
-std::optional<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetPlayerCamera() const {
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetPlayerCameras() const {
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
-    return std::optional<UnrealCameraParameters>();
+    return {};
   }
 
-  APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
-  if (!pPlayerController) {
-    return std::optional<UnrealCameraParameters>();
-  }
-
-  APlayerCameraManager* pCameraManager = pPlayerController->PlayerCameraManager;
-  if (!pCameraManager) {
-    return std::optional<UnrealCameraParameters>();
+  float worldToMeters = 100.0f;
+  AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
+  if (pWorldSettings) {
+    worldToMeters = pWorldSettings->WorldToMeters;
   }
 
   UGameViewportClient* pViewport = pWorld->GetGameViewport();
   if (!pViewport) {
-    return std::optional<UnrealCameraParameters>();
+    return {};
   }
-
-  FVector location;
-  FRotator rotation;
-  pCameraManager->GetCameraViewPoint(location, rotation);
-  double fov = pCameraManager->GetFOVAngle();
 
   FVector2D size;
   pViewport->GetViewportSize(size);
-
   if (size.X < 1.0 || size.Y < 1.0) {
-    return std::nullopt;
+    return {};
   }
 
-  return UnrealCameraParameters{size, location, rotation, fov};
+  TSharedPtr<IStereoRendering, ESPMode::ThreadSafe> pStereoRendering = nullptr;
+  if (GEngine) {
+    pStereoRendering = GEngine->StereoRenderingDevice;
+  }
+
+  uint32 stereoLeftSizeX = static_cast<uint32>(size.X);
+  uint32 stereoLeftSizeY = static_cast<uint32>(size.Y);
+  uint32 stereoRightSizeX = static_cast<uint32>(size.X);
+  uint32 stereoRightSizeY = static_cast<uint32>(size.Y);
+  if (pStereoRendering) {
+    int32 _x;
+    int32 _y;
+
+    pStereoRendering->AdjustViewRect(
+        EStereoscopicPass::eSSP_LEFT_EYE,
+        _x,
+        _y,
+        stereoLeftSizeX,
+        stereoLeftSizeY);
+
+    pStereoRendering->AdjustViewRect(
+        EStereoscopicPass::eSSP_RIGHT_EYE,
+        _x,
+        _y,
+        stereoRightSizeX,
+        stereoRightSizeY);
+  }
+
+  FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
+  float stereoLeftAspectRatio = stereoLeftSizeY / stereoLeftSizeX;
+  FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
+  float stereoRightAspectRatio = stereoRightSizeY / stereoRightSizeX;
+
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  cameras.reserve(pWorld->GetNumPlayerControllers());
+
+  for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
+       playerControllerIt;
+       playerControllerIt++) {
+
+    const TWeakObjectPtr<APlayerController> pPlayerController =
+        *playerControllerIt;
+    if (pPlayerController == nullptr) {
+      continue;
+    }
+
+    const APlayerCameraManager* pPlayerCameraManager =
+        pPlayerController->PlayerCameraManager;
+
+    if (!pPlayerCameraManager) {
+      continue;
+    }
+
+    double fov = pPlayerCameraManager->GetFOVAngle();
+
+    FVector location;
+    FRotator rotation;
+    pPlayerController->GetPlayerViewPoint(location, rotation);
+
+    if (pStereoRendering) {
+      FVector leftEyeLocation = location;
+      FRotator leftEyeRotation = rotation;
+      pStereoRendering->CalculateStereoViewOffset(
+          EStereoscopicPass::eSSP_LEFT_EYE,
+          leftEyeRotation,
+          worldToMeters,
+          leftEyeLocation);
+
+      FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
+          EStereoscopicPass::eSSP_LEFT_EYE);
+
+      // TODO: consider assymetric frustums using 4 fovs
+      float one_over_tan_half_hfov = projection.M[0][0];
+
+      float hfov =
+          glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+
+      cameras.push_back(UnrealCameraParameters{
+          stereoLeftSize,
+          leftEyeLocation,
+          leftEyeRotation,
+          hfov});
+
+      FVector rightEyeLocation = location;
+      FRotator rightEyeRotation = rotation;
+      pStereoRendering->CalculateStereoViewOffset(
+          EStereoscopicPass::eSSP_RIGHT_EYE,
+          rightEyeRotation,
+          worldToMeters,
+          rightEyeLocation);
+
+      projection = pStereoRendering->GetStereoProjectionMatrix(
+          EStereoscopicPass::eSSP_RIGHT_EYE);
+
+      one_over_tan_half_hfov = projection.M[0][0];
+
+      hfov = glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+
+      cameras.push_back(UnrealCameraParameters{
+          stereoRightSize,
+          rightEyeLocation,
+          rightEyeRotation,
+          hfov});
+    } else {
+      cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
+    }
+  }
+
+  return cameras;
 }
 
-Cesium3DTiles::ViewState ACesium3DTileset::CreateViewStateFromViewParameters(
-    const FVector2D& viewportSize,
-    const FVector& location,
-    const FRotator& rotation,
-    double fieldOfViewDegrees) const {
-  double horizontalFieldOfView = FMath::DegreesToRadians(fieldOfViewDegrees);
+/*static*/ Cesium3DTiles::ViewState
+ACesium3DTileset::CreateViewStateFromViewParameters(
+    const UnrealCameraParameters& camera,
+    const glm::dmat4& unrealWorldToTileset) {
 
-  double aspectRatio = viewportSize.X / viewportSize.Y;
+  double horizontalFieldOfView =
+      FMath::DegreesToRadians(camera.fieldOfViewDegrees);
+  double aspectRatio = camera.viewportSize.X / camera.viewportSize.Y;
   double verticalFieldOfView =
       atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
 
-  FVector direction = rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-  FVector up = rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+  FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+  FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
-  glm::dmat4 unrealWorldToTileset = glm::affineInverse(
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+  glm::dvec3 tilesetCameraLocation =
+      unrealWorldToTileset *
+      glm::dvec4(camera.location.X, camera.location.Y, camera.location.Z, 1.0);
+  glm::dvec3 tilesetCameraFront = glm::normalize(
+      unrealWorldToTileset *
+      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0));
+  glm::dvec3 tilesetCameraUp =
+      glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0));
 
   return Cesium3DTiles::ViewState::create(
-      unrealWorldToTileset *
-          glm::dvec4(location.X, location.Y, location.Z, 1.0),
-      glm::normalize(
-          unrealWorldToTileset *
-          glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)),
-      glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
-      glm::dvec2(viewportSize.X, viewportSize.Y),
+      tilesetCameraLocation,
+      tilesetCameraFront,
+      tilesetCameraUp,
+      glm::dvec2(camera.viewportSize.X, camera.viewportSize.Y),
       horizontalFieldOfView,
       verticalFieldOfView);
 }
 
 #if WITH_EDITOR
-std::optional<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetEditorCamera() const {
-  FViewport* pViewport = GEditor->GetActiveViewport();
-  FViewportClient* pViewportClient = pViewport->GetClient();
-  FEditorViewportClient* pEditorViewportClient =
-      static_cast<FEditorViewportClient*>(pViewportClient);
-  const FVector& location = pEditorViewportClient->GetViewLocation();
-  const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-  double fov = pEditorViewportClient->FOVAngle;
-  FVector2D size = pViewport->GetSizeXY();
-
-  if (size.X < 1.0 || size.Y < 1.0) {
-    return std::nullopt;
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetEditorCameras() const {
+  if (!GEditor) {
+    return {};
   }
 
-  return UnrealCameraParameters{size, location, rotation, fov};
+  const TArray<FEditorViewportClient*>& viewportClients =
+      GEditor->GetAllViewportClients();
+
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  cameras.reserve(viewportClients.Num());
+
+  for (FEditorViewportClient* pEditorViewportClient : viewportClients) {
+    if (!pEditorViewportClient) {
+      continue;
+    }
+
+    const FVector& location = pEditorViewportClient->GetViewLocation();
+    const FRotator& rotation = pEditorViewportClient->GetViewRotation();
+    double fov = pEditorViewportClient->FOVAngle;
+    FIntPoint offset;
+    FIntPoint size;
+    pEditorViewportClient->GetViewportDimensions(offset, size);
+
+    if (size.X < 1 || size.Y < 1) {
+      continue;
+    }
+
+    cameras.push_back({size, location, rotation, fov});
+  }
+
+  return cameras;
 }
 #endif
 
@@ -1152,22 +1275,23 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   updateTilesetOptionsFromProperties();
 
-  std::optional<UnrealCameraParameters> camera = this->GetCamera();
-  if (!camera) {
+  std::vector<UnrealCameraParameters> cameras = this->GetCameras();
+  if (cameras.empty()) {
     return;
   }
 
-  Cesium3DTiles::ViewState tilesetViewState =
-      this->CreateViewStateFromViewParameters(
-          camera.value().viewportSize,
-          camera.value().location,
-          camera.value().rotation,
-          camera.value().fieldOfViewDegrees);
+  glm::dmat4 unrealWorldToTileset = glm::affineInverse(
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+
+  std::vector<Cesium3DTiles::ViewState> frustums;
+  for (const UnrealCameraParameters& camera : cameras) {
+    frustums.push_back(
+        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+  }
 
   const Cesium3DTiles::ViewUpdateResult& result =
-      this->_captureMovieMode
-          ? this->_pTileset->updateViewOffline(tilesetViewState)
-          : this->_pTileset->updateView(tilesetViewState);
+      this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
+                              : this->_pTileset->updateView(frustums);
   updateLastViewUpdateResultState(result);
 
   removeVisibleTilesFromList(
