@@ -859,6 +859,7 @@ ACesium3DTileset::GetPlayerCameras() const {
   float stereoRightAspectRatio = stereoRightSizeY / stereoRightSizeX;
 
   std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  cameras.reserve(pWorld->GetNumPlayerControllers());
 
   for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
        playerControllerIt;
@@ -949,16 +950,19 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
   FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
+  glm::dvec3 tilesetCameraLocation =
+      unrealWorldToTileset *
+      glm::dvec4(camera.location.X, camera.location.Y, camera.location.Z, 1.0);
+  glm::dvec3 tilesetCameraFront = glm::normalize(
+      unrealWorldToTileset *
+      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0));
+  glm::dvec3 tilesetCameraUp =
+      glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0));
+
   return Cesium3DTiles::ViewState::create(
-      unrealWorldToTileset * glm::dvec4(
-                                 camera.location.X,
-                                 camera.location.Y,
-                                 camera.location.Z,
-                                 1.0),
-      glm::normalize(
-          unrealWorldToTileset *
-          glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)),
-      glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)),
+      tilesetCameraLocation,
+      tilesetCameraFront,
+      tilesetCameraUp,
       glm::dvec2(camera.viewportSize.X, camera.viewportSize.Y),
       horizontalFieldOfView,
       verticalFieldOfView);
@@ -971,11 +975,13 @@ ACesium3DTileset::GetEditorCameras() const {
     return {};
   }
 
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
-  for (FViewportClient* pViewportClient : GEditor->GetAllViewportClients()) {
-    FEditorViewportClient* pEditorViewportClient =
-        static_cast<FEditorViewportClient*>(pViewportClient);
+  const TArray<FEditorViewportClient*>& viewportClients =
+      GEditor->GetAllViewportClients();
 
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  cameras.reserve(viewportClients.Num());
+
+  for (FEditorViewportClient* pEditorViewportClient : viewportClients) {
     if (!pEditorViewportClient) {
       continue;
     }
@@ -983,9 +989,9 @@ ACesium3DTileset::GetEditorCameras() const {
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
     double fov = pEditorViewportClient->FOVAngle;
-    FIntPoint _;
+    FIntPoint offset;
     FIntPoint size;
-    pEditorViewportClient->GetViewportDimensions(_, size);
+    pEditorViewportClient->GetViewportDimensions(offset, size);
 
     if (size.X < 1 || size.Y < 1) {
       continue;
