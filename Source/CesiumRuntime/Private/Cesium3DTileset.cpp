@@ -1240,6 +1240,13 @@ void ACesium3DTileset::PostEditUndo() {
   // recreate the tileset.
   this->DestroyTileset();
 }
+
+void ACesium3DTileset::PostEditImport() {
+  Super::PostEditImport();
+
+  // Recreate the tileset on Paste.
+  this->DestroyTileset();
+}
 #endif
 
 void ACesium3DTileset::BeginDestroy() {
