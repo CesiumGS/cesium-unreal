@@ -553,8 +553,7 @@ void ACesiumGeoreference::_performOriginRebasing() {
     // sublevel, just set the origin back to zero if necessary,
     // since the sublevel will be centered around zero anyways.
     if (!world->OriginLocation.IsZero()) {
-      world->RequestNewWorldOrigin(FIntVector::ZeroValue);
-      // world->SetNewWorldOrigin(FIntVector::ZeroValue);
+      world->SetNewWorldOrigin(FIntVector::ZeroValue);
     }
     return;
   }
@@ -574,7 +573,7 @@ void ACesiumGeoreference::_performOriginRebasing() {
     int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
     int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
     int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
-    world->RequestNewWorldOrigin(FIntVector(newX, newY, newZ));
+    world->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
   }
 }
 
