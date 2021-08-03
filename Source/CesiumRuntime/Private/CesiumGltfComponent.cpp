@@ -1515,8 +1515,10 @@ bool applyTexture(
     return false;
   }
 
-  UTexture2D* pTexture =
-      NewObject<UTexture2D>(GetTransientPackage(), NAME_None, RF_Transient);
+  UTexture2D* pTexture = NewObject<UTexture2D>(
+      GetTransientPackage(),
+      NAME_None,
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   pTexture->PlatformData = loadedTexture->pTextureData;
   pTexture->AddressX = loadedTexture->addressX;
@@ -1540,7 +1542,8 @@ static void loadModelGameThreadPart(
 
   pMesh->bUseDefaultCollision = false;
   pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  pMesh->SetFlags(RF_Transient);
+  pMesh->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMesh->Metadata = std::move(loadResult.Metadata);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
@@ -1549,6 +1552,8 @@ static void loadModelGameThreadPart(
       NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
   pMesh->SetStaticMesh(pStaticMesh);
 
+  pStaticMesh->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pStaticMesh->bIsBuiltAtRuntime = true;
   pStaticMesh->NeverStream = true;
   pStaticMesh->RenderData =
@@ -1596,6 +1601,8 @@ static void loadModelGameThreadPart(
     break;
   }
 
+  pMaterial->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
@@ -1745,7 +1752,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
   Gltf->SetUsingAbsoluteLocation(true);
-  Gltf->SetFlags(RF_Transient);
+  Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   if (pBaseMaterial) {
     Gltf->BaseMaterial = pBaseMaterial;

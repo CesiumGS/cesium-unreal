@@ -9,8 +9,9 @@
 ##### Fixes :wrench:
 
 - Fixed a bug introduced in v1.4.0 that made it impossible to add a "Blank 3D Tiles Tileset" using the Cesium panel without first signing in to Cesium ion.
+- Fixed a bug that caused a crash when deleting a Cesium 3D Tileset Actor and then undoing that deletion.
 
-In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.5.0 to TODO. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.5.0 to v0.6.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.4.1 - 2021-07-13
 

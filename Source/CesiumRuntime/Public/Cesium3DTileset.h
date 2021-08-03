@@ -14,6 +14,7 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+#include <vector>
 
 #include "Cesium3DTileset.generated.h"
 
@@ -507,6 +508,8 @@ public:
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditUndo() override;
+  virtual void PostEditImport() override;
 #endif
 
 protected:
@@ -533,12 +536,6 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
-  void MarkTilesetDirty();
-  Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
-      const FVector2D& viewportSize,
-      const FVector& location,
-      const FRotator& rotation,
-      double fieldOfViewDegrees) const;
 
   struct UnrealCameraParameters {
     FVector2D viewportSize;
@@ -547,8 +544,12 @@ private:
     double fieldOfViewDegrees;
   };
 
-  std::optional<UnrealCameraParameters> GetCamera() const;
-  std::optional<UnrealCameraParameters> GetPlayerCamera() const;
+  static Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
+      const UnrealCameraParameters& camera,
+      const glm::dmat4& unrealWorldToTileset);
+
+  std::vector<UnrealCameraParameters> GetCameras() const;
+  std::vector<UnrealCameraParameters> GetPlayerCameras() const;
 
   /**
    * Writes the values of all properties of this actor into the
@@ -583,7 +584,7 @@ private:
   void AddFocusViewportDelegate();
 
 #if WITH_EDITOR
-  std::optional<UnrealCameraParameters> GetEditorCamera() const;
+  std::vector<UnrealCameraParameters> GetEditorCameras() const;
 
   /**
    * Will focus all viewports on this tileset.
@@ -599,12 +600,6 @@ private:
 
 private:
   Cesium3DTiles::Tileset* _pTileset;
-
-  /**
-   * Marks whether tileset should be updated in LoadTileset.
-   * Default to true so that tileset is created on construction.
-   */
-  bool _tilesetIsDirty = true;
 
   // For debug output
   uint32_t _lastTilesRendered;
