@@ -757,11 +757,11 @@ void ACesium3DTileset::LoadTileset() {
     }
 
     this->_pTileset->getOverlays().add(
-        std::move(std::make_unique<Cesium3DTiles::RasterizedPolygonsOverlay>(
+        std::make_unique<Cesium3DTiles::RasterizedPolygonsOverlay>(
             TCHAR_TO_UTF8(*textureName),
             polygons,
             CesiumGeospatial::Ellipsoid::WGS84,
-            CesiumGeospatial::GeographicProjection())));
+            CesiumGeospatial::GeographicProjection()));
   }
 
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
