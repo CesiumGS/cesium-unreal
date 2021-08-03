@@ -490,7 +490,7 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
 
   // Update the actor rotation based on the rotation change
   const glm::dmat3 oldActorRotation = _getRotationFromActor();
-  const glm::dmat3 newActorRotation = oldActorRotation * rotationChange;
+  const glm::dmat3 newActorRotation = rotationChange * oldActorRotation;
 
   // Store the new Unreal-to-ECEF rotation for further updates
   const glm::dmat3 unrealToEcef =
