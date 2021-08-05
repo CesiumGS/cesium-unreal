@@ -1,5 +1,11 @@
 # Change Log
 
+### Next Release - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause mis-registration of feature metadata to the wrong features in Draco-compressed meshes.
+
 ### v1.5.0 - 2021-08-02
 
 ##### Additions :tada:
