@@ -841,9 +841,7 @@ ACesium3DTileset::GetPlayerCameras() const {
   }
 
   FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
-  float stereoLeftAspectRatio = stereoLeftSizeY / stereoLeftSizeX;
   FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
-  float stereoRightAspectRatio = stereoRightSizeY / stereoRightSizeX;
 
   std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
   cameras.reserve(pWorld->GetNumPlayerControllers());
