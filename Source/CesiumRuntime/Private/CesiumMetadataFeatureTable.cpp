@@ -9,6 +9,11 @@ namespace {
 struct FeatureIDFromAccessor {
   int64 operator()(std::monostate) { return -1; }
 
+  int64 operator()(
+      const CesiumGltf::AccessorView<AccessorTypes::SCALAR<float>>& value) {
+    return static_cast<int64>(glm::round(value[vertexIdx].value[0]));
+  }
+
   template <typename T>
   int64 operator()(const CesiumGltf::AccessorView<T>& value) {
     return static_cast<int64>(value[vertexIdx].value[0]);
