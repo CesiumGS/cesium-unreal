@@ -870,49 +870,54 @@ ACesium3DTileset::GetPlayerCameras() const {
     pPlayerController->GetPlayerViewPoint(location, rotation);
 
     if (pStereoRendering) {
-      FVector leftEyeLocation = location;
-      FRotator leftEyeRotation = rotation;
-      pStereoRendering->CalculateStereoViewOffset(
-          EStereoscopicPass::eSSP_LEFT_EYE,
-          leftEyeRotation,
-          worldToMeters,
-          leftEyeLocation);
+      if (stereoLeftSize.X >= 1.0 && stereoLeftSize.Y >= 1.0) {
+        FVector leftEyeLocation = location;
+        FRotator leftEyeRotation = rotation;
+        pStereoRendering->CalculateStereoViewOffset(
+            EStereoscopicPass::eSSP_LEFT_EYE,
+            leftEyeRotation,
+            worldToMeters,
+            leftEyeLocation);
 
-      FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-          EStereoscopicPass::eSSP_LEFT_EYE);
+        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
+            EStereoscopicPass::eSSP_LEFT_EYE);
 
-      // TODO: consider assymetric frustums using 4 fovs
-      float one_over_tan_half_hfov = projection.M[0][0];
+        // TODO: consider assymetric frustums using 4 fovs
+        float one_over_tan_half_hfov = projection.M[0][0];
 
-      float hfov =
-          glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+        float hfov =
+            glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
-      cameras.push_back(UnrealCameraParameters{
-          stereoLeftSize,
-          leftEyeLocation,
-          leftEyeRotation,
-          hfov});
+        cameras.push_back(UnrealCameraParameters{
+            stereoLeftSize,
+            leftEyeLocation,
+            leftEyeRotation,
+            hfov});
+      }
 
-      FVector rightEyeLocation = location;
-      FRotator rightEyeRotation = rotation;
-      pStereoRendering->CalculateStereoViewOffset(
-          EStereoscopicPass::eSSP_RIGHT_EYE,
-          rightEyeRotation,
-          worldToMeters,
-          rightEyeLocation);
+      if (stereoRightSize.X >= 1.0 && stereoRightSize.Y >= 1.0) {
+        FVector rightEyeLocation = location;
+        FRotator rightEyeRotation = rotation;
+        pStereoRendering->CalculateStereoViewOffset(
+            EStereoscopicPass::eSSP_RIGHT_EYE,
+            rightEyeRotation,
+            worldToMeters,
+            rightEyeLocation);
 
-      projection = pStereoRendering->GetStereoProjectionMatrix(
-          EStereoscopicPass::eSSP_RIGHT_EYE);
+        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
+            EStereoscopicPass::eSSP_RIGHT_EYE);
 
-      one_over_tan_half_hfov = projection.M[0][0];
+        float one_over_tan_half_hfov = projection.M[0][0];
 
-      hfov = glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+        float hfov =
+            glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
-      cameras.push_back(UnrealCameraParameters{
-          stereoRightSize,
-          rightEyeLocation,
-          rightEyeRotation,
-          hfov});
+        cameras.push_back(UnrealCameraParameters{
+            stereoRightSize,
+            rightEyeLocation,
+            rightEyeRotation,
+            hfov});
+      }
     } else {
       cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
     }
