@@ -817,11 +817,16 @@ ACesium3DTileset::GetPlayerCameras() const {
     pStereoRendering = GEngine->StereoRenderingDevice;
   }
 
+  bool useStereoRendering = false;
+  if (pStereoRendering && pStereoRendering->IsStereoEnabled()) {
+    useStereoRendering = true;
+  }
+
   uint32 stereoLeftSizeX = static_cast<uint32>(size.X);
   uint32 stereoLeftSizeY = static_cast<uint32>(size.Y);
   uint32 stereoRightSizeX = static_cast<uint32>(size.X);
   uint32 stereoRightSizeY = static_cast<uint32>(size.Y);
-  if (pStereoRendering) {
+  if (useStereoRendering) {
     int32 _x;
     int32 _y;
 
@@ -869,7 +874,7 @@ ACesium3DTileset::GetPlayerCameras() const {
     FRotator rotation;
     pPlayerController->GetPlayerViewPoint(location, rotation);
 
-    if (pStereoRendering) {
+    if (useStereoRendering) {
       if (stereoLeftSize.X >= 1.0 && stereoLeftSize.Y >= 1.0) {
         FVector leftEyeLocation = location;
         FRotator leftEyeRotation = rotation;
