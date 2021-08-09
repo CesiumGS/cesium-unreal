@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause mis-registration of feature metadata to the wrong features in Draco-compressed meshes.
+- Fixed a bug that could cause a crash with VR/AR devices enabled but not in use.
 
 ### v1.5.0 - 2021-08-02
 
