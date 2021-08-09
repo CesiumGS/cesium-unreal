@@ -1,6 +1,6 @@
 # Change Log
 
-### Next Release - ?
+### v1.5.1 - 2021-08-09
 
 ##### Fixes :wrench:
 
