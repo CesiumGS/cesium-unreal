@@ -5,12 +5,14 @@
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause mis-registration of feature metadata to the wrong features in Draco-compressed meshes.
+- Fixed a bug that could cause a crash with VR/AR devices enabled but not in use.
 
 ### v1.5.0 - 2021-08-02
 
 ##### Additions :tada:
 
 - Added support for reading per-feature metadata from glTFs with the `EXT_feature_metadata` extension or from 3D Tiles with a B3DM batch table and accessing it from Blueprints.
+- Added support for using multiple view frustums in `ACesium3DTileset` to inform the tile selection algorithm.
 
 ##### Fixes :wrench:
 
