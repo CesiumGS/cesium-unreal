@@ -33,6 +33,14 @@ set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 
+# On Mac and Linux, Unreal uses -fvisibility-ms-compat.
+# On Android, it uses -fvisibility=hidden
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-ms-compat -fvisibility-inlines-hidden")
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+endif()
+
 add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
@@ -40,7 +48,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_res
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
-if (ANDROID) 
+if (ANDROID)
     add_library(MikkTSpace MikkTSpace/mikktspace.c)
     set_target_properties(MikkTSpace PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/MikkTSpace/mikktspace.h")
     target_include_directories(MikkTSpace PUBLIC MikkTSpace)

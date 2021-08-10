@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 public class CesiumRuntime : ModuleRules
 {
@@ -145,7 +146,8 @@ public class CesiumRuntime : ModuleRules
             new string[]
             {
                 "SPDLOG_COMPILED_LIB",
-                "LIBASYNC_STATIC"
+                "LIBASYNC_STATIC",
+                // "CESIUM_TRACING_ENABLED"
             }
         );
 
@@ -181,5 +183,24 @@ public class CesiumRuntime : ModuleRules
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
+
+        if (Target.Platform == UnrealTargetPlatform.Android &&
+            Target.Version.MajorVersion == 4 &&
+            Target.Version.MinorVersion == 26 &&
+            Target.Version.PatchVersion < 2)
+        {
+            // In UE versions prior to 4.26.2, the Unreal Build Tool on Android
+            // (AndroidToolChain.cs) ignores the CppStandard property and just
+            // always uses C++14. Our plugin can't be compiled with C++14.
+            //
+            // So this hack uses reflection to add an additional argument to
+            // the compiler command-line to force C++17 mode. Clang ignores all
+            // but the last `-std=` argument, so the `-std=c++14` added by the
+            // UBT is ignored.
+            Type type = Target.GetType();
+            FieldInfo innerField = type.GetField("Inner", BindingFlags.Instance | BindingFlags.NonPublic);
+            TargetRules inner = (TargetRules)innerField.GetValue(Target);
+            inner.AdditionalCompilerArguments += " -std=c++17";
+        }
     }
 }

@@ -24,6 +24,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
+#include <string>
 
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
