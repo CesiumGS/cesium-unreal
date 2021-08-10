@@ -222,9 +222,10 @@ public:
   // Yeah, we're working on that...
 
   /**
-   * Returns the georeference origin position as an FVector. Only valid if
-   * the placement type is Cartographic Origin (i.e. Longitude / Latitude /
-   * Height).
+   * Returns the georeference origin position as an FVector where `X` is
+   * longitude (degrees), `Y` is latitude (degrees), and `Z` is height above the
+   * ellipsoid (meters). Only valid if the placement type is Cartographic Origin
+   * (i.e. Longitude / Latitude / Height).
    *
    * This converts the values to single-precision floating point values.
    * The double-precision values can be accessed via the
@@ -235,8 +236,9 @@ public:
 
   /**
    * This aligns the specified longitude in degrees (x), latitude in
-   * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
-   * moves the globe so that these coordinates exactly fall on the origin.
+   * degrees (y), and height above the ellipsoid in meters (z) to Unreal's world
+   * origin. I.e. it moves the globe so that these coordinates exactly fall on
+   * the origin.
    *
    * When the WorldOriginCamera of this instance is currently contained
    * the bounds of a sublevel, then this call has no effect.
@@ -244,9 +246,10 @@ public:
   void SetGeoreferenceOrigin(const glm::dvec3& TargetLongitudeLatitudeHeight);
 
   /**
-   * This aligns the specified longitude in degrees (x), latitude in
-   * degrees (y), and height in meters (z) to Unreal's world origin. I.e. it
-   * moves the globe so that these coordinates exactly fall on the origin.
+   * This aligns the specified longitude in degrees (X), latitude in
+   * degrees (Y), and height above the ellipsoid in meters (Z) to Unreal's world
+   * origin. I.e. it moves the globe so that these coordinates exactly fall on
+   * the origin.
    *
    * When the WorldOriginCamera of this instance is currently contained
    * the bounds of a sublevel, then this call has no effect.
@@ -269,8 +272,8 @@ public:
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height in meters (z) into Earth-Centered, Earth-Fixed
-   * (ECEF) coordinates.
+   * degrees (y), and height above the ellipsoid in meters (z) into
+   * Earth-Centered, Earth-Fixed (ECEF) coordinates.
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
@@ -282,16 +285,16 @@ public:
 
   /**
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
-   * meters (z).
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
+   * the ellipsoid in meters (z).
    */
   glm::dvec3
   TransformEcefToLongitudeLatitudeHeight(const glm::dvec3& Ecef) const;
 
   /**
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height in
-   * meters (z).
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
+   * the ellipsoid in meters (z).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
@@ -303,16 +306,16 @@ public:
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height in meters (z) into Unreal world coordinates
-   * (relative to the floating origin).
+   * degrees (y), and height above the ellipsoid in meters (z) into Unreal world
+   * coordinates (relative to the floating origin).
    */
   glm::dvec3 TransformLongitudeLatitudeHeightToUnreal(
       const glm::dvec3& longitudeLatitudeHeight) const;
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height in meters (z) into Unreal world coordinates
-   * (relative to the floating origin).
+   * degrees (y), and height above the ellipsoid in meters (z) into Unreal world
+   * coordinates (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
@@ -324,24 +327,24 @@ public:
 
   /**
    * Transforms Unreal world coordinates (relative to the floating origin) into
-   * longitude in degrees (x), latitude in degrees (y), and height in
-   * meters (z).
+   * longitude in degrees (x), latitude in degrees (y), and height above the
+   * ellipsoid in meters (z).
    */
   glm::dvec3
-  TransformUnrealToLongitudeLatitudeHeight(const glm::dvec3& ue) const;
+  TransformUnrealToLongitudeLatitudeHeight(const glm::dvec3& unreal) const;
 
   /**
    * Transforms Unreal world coordinates (relative to the floating origin) into
-   * longitude in degrees (x), latitude in degrees (y), and height in
-   * meters (z).
+   * longitude in degrees (x), latitude in degrees (y), and height above the
+   * ellipsoid in meters (z).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
    * TransformUnrealToLongitudeLatitudeHeight can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector
-  InaccurateTransformUnrealToLongitudeLatitudeHeight(const FVector& Ue) const;
+  FVector InaccurateTransformUnrealToLongitudeLatitudeHeight(
+      const FVector& Unreal) const;
 
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
@@ -364,7 +367,7 @@ public:
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
-  glm::dvec3 TransformUnrealToEcef(const glm::dvec3& ue) const;
+  glm::dvec3 TransformUnrealToEcef(const glm::dvec3& unreal) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
@@ -375,19 +378,19 @@ public:
    * TransformUnrealToEcef can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateTransformUnrealToEcef(const FVector& Ue) const;
+  FVector InaccurateTransformUnrealToEcef(const FVector& Unreal) const;
 
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
-   * Unreal relative world location (relative to the floating origin).
+   * Unreal world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorUnrealToEastNorthUp(
-      const glm::dquat& UeRotator,
-      const glm::dvec3& UeLocation) const;
+      const glm::dquat& UnrealRotator,
+      const glm::dvec3& UnrealLocation) const;
 
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
-   * Unreal relative world location (relative to the floating origin).
+   * Unreal world location (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
@@ -395,20 +398,20 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorUnrealToEastNorthUp(
-      const FRotator& UeRotator,
-      const FVector& UeLocation) const;
+      const FRotator& UnrealRotator,
+      const FVector& UnrealLocation) const;
 
   /**
    * Transforms a rotator from East-North-Up to Unreal world at the given
-   * Unreal relative world location (relative to the floating origin).
+   * Unreal world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorEastNorthUpToUnreal(
       const glm::dquat& EnuRotator,
-      const glm::dvec3& UeLocation) const;
+      const glm::dvec3& UnrealLocation) const;
 
   /**
    * Transforms a rotator from East-North-Up to Unreal world at the given
-   * Unreal relative world location (relative to the floating origin).
+   * Unreal world location (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
@@ -417,19 +420,19 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator InaccurateTransformRotatorEastNorthUpToUnreal(
       const FRotator& EnuRotator,
-      const FVector& UeLocation) const;
+      const FVector& UnrealLocation) const;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to Unreal at the
-   * specified Unreal relative world location (relative to the floating
+   * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    */
-  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& Ue) const;
+  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& unreal) const;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to Unreal at the
-   * specified Unreal relative world location (relative to the floating
+   * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    *
@@ -438,7 +441,7 @@ public:
    * ComputeEastNorthUpToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& Ue) const;
+  FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& Unreal) const;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to
@@ -502,7 +505,7 @@ public:
    * functions as this class, but performs the computations
    * in double precision.
    */
-  const GeoTransforms& getGeoTransforms() const noexcept {
+  const GeoTransforms& GetGeoTransforms() const noexcept {
     return _geoTransforms;
   }
 

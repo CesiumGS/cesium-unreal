@@ -166,7 +166,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
   // camera local space to ECEF
   glm::dmat4 cameraToECEF =
-      this->_geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform() *
+      this->_geoTransforms
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
       cameraToAbsolute;
 
   // Long/Lat/Height camera location, in degrees/meters (also our new target
@@ -189,7 +190,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // TODO: check for degeneracy ?
   glm::dmat4 newCameraTransform =
       absoluteToRelativeWorld *
-      this->_geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform() *
+      this->_geoTransforms
+          .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
       cameraToECEF;
   glm::dvec3 cameraFront = glm::normalize(newCameraTransform[0]);
   glm::dvec3 cameraRight =
@@ -399,7 +401,8 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
             level.LevelHeight));
 
     glm::dvec4 levelAbs =
-        this->_geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform() *
+        this->_geoTransforms
+            .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
         glm::dvec4(levelECEF, 1.0);
     FVector levelRelative =
         FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
@@ -434,7 +437,8 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
       VecMath::add4D(grabbedLocation, originLocation);
 
   glm::dvec3 grabbedLocationECEF =
-      this->_geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform() *
+      this->_geoTransforms
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
       grabbedLocationAbs;
 
   glm::dvec3 cartographic =
@@ -492,7 +496,8 @@ bool ACesiumGeoreference::_updateSublevelState() {
   glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
 
   glm::dvec3 cameraECEF =
-      this->_geoTransforms.GetUnrealWorldToEllipsoidCenteredTransform() *
+      this->_geoTransforms
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
       cameraAbsolute;
 
   bool isInsideSublevel = false;

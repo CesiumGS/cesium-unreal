@@ -52,19 +52,6 @@ public:
     updateTransforms();
   }
 
-  /** @brief Destructor */
-  ~GeoTransforms() {}
-
-  /** @brief Copy constructor */
-  GeoTransforms(const GeoTransforms& other)
-      : GeoTransforms(
-            other._ellipsoid,
-            other._center,
-            other._georeferencedToEcef,
-            other._ecefToGeoreferenced,
-            other._ueAbsToEcef,
-            other._ecefToUeAbs) {}
-
   /**
    * @brief Set the center position of this instance
    *
@@ -118,14 +105,14 @@ public:
 
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
-   * Unreal relative world (relative to the floating origin).
+   * Unreal world coordinates (relative to the floating origin).
    */
   glm::dvec3 TransformEcefToUnreal(
       const glm::dvec3& origin,
       const glm::dvec3& Ecef) const noexcept;
 
   /**
-   * Transforms the given point from Unreal relative world (relative to the
+   * Transforms the given point from Unreal world coordinates (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
    */
   glm::dvec3 TransformUnrealToEcef(
@@ -143,7 +130,7 @@ public:
 
   /**
    * Transforms a rotator from East-North-Up to Unreal world at the given
-   * Unreal relative world location (relative to the floating origin).
+   * Unreal world location (relative to the floating origin).
    */
   glm::dquat TransformRotatorEastNorthUpToUnreal(
       const glm::dvec3& origin,
@@ -152,7 +139,7 @@ public:
 
   /**
    * Computes the rotation matrix from the local East-North-Up to Unreal at the
-   * specified Unreal relative world location (relative to the floating
+   * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    */
@@ -201,30 +188,30 @@ public:
   }
 
   /**
-   * @brief Gets the transformation from the "Unreal World" reference frame to
-   * the "Ellipsoid-centered" reference frame (i.e. ECEF).
+   * @brief Gets the transformation from the _absolute_ "Unreal World" reference
+   * frame to the "Ellipsoid-centered" reference frame (i.e. ECEF).
    *
-   * Gets a matrix that transforms coordinates from the "Unreal World" reference
-   * frame (with respect to the absolute world origin, not the floating origin)
-   * to the "Ellipsoid-centered" reference frame (which is usually
-   * Earth-centered, Earth-fixed). See {@link reference-frames.md}.
+   * Gets a matrix that transforms coordinates from the absolute "Unreal World"
+   * reference frame (with respect to the absolute world origin, not the
+   * floating origin) to the "Ellipsoid-centered" reference frame (which is
+   * usually Earth-centered, Earth-fixed). See {@link reference-frames.md}.
    */
   const glm::dmat4&
-  GetUnrealWorldToEllipsoidCenteredTransform() const noexcept {
+  GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() const noexcept {
     return this->_ueAbsToEcef;
   }
 
   /**
    * @brief Gets the transformation from the "Ellipsoid-centered" reference
-   * frame (i.e. ECEF) to the "Unreal World" reference frame.
+   * frame (i.e. ECEF) to the absolute "Unreal World" reference frame.
    *
    * Gets a matrix that transforms coordinates from the "Ellipsoid-centered"
    * reference frame (which is usually Earth-centered, Earth-fixed) to the
-   * "Unreal world" reference frame (with respect to the absolute world origin,
-   * not the floating origin). See {@link reference-frames.md}.
+   * absolute "Unreal world" reference frame (with respect to the absolute world
+   * origin, not the floating origin). See {@link reference-frames.md}.
    */
   const glm::dmat4&
-  GetEllipsoidCenteredToUnrealWorldTransform() const noexcept {
+  GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() const noexcept {
     return this->_ecefToUeAbs;
   }
 
@@ -241,25 +228,6 @@ public:
   }
 
 private:
-  /**
-   * @brief Creates a new instance (for copy constructor).
-   */
-  GeoTransforms(
-      const CesiumGeospatial::Ellipsoid& ellipsoid,
-      const glm::dvec3& center,
-      const glm::dmat4 georeferencedToEcef,
-      const glm::dmat4 ecefToGeoreferenced,
-      const glm::dmat4 ueAbsToEcef,
-      const glm::dmat4 ecefToUeAbs)
-      : _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
-        _center(center),
-        _georeferencedToEcef(georeferencedToEcef),
-        _ecefToGeoreferenced(ecefToGeoreferenced),
-        _ueAbsToEcef(ueAbsToEcef),
-        _ecefToUeAbs(ecefToUeAbs) {
-    // No need to call updateTransforms here
-  }
-
   /**
    * Update the derived state (i.e. the matrices) when either
    * the center or the ellipsoid has changed.
