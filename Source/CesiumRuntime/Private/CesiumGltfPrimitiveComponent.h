@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "CesiumGltf/MeshPrimitive.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumMetadataPrimitive.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
@@ -16,6 +19,12 @@ public:
   // Sets default values for this component's properties
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
+
+  FCesiumMetadataPrimitive Metadata;
+
+  const CesiumGltf::Model* pModel;
+
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
 
   /**
    * The double-precision transformation matrix for this glTF node.

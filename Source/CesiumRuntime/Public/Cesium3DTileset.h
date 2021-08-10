@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTiles/ViewState.h"
+#include "Cesium3DTiles/ViewUpdateResult.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -12,6 +13,7 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+#include <vector>
 
 #include "Cesium3DTileset.generated.h"
 
@@ -314,6 +316,28 @@ private:
   FString IonAccessToken;
 
   /**
+   * Whether to always generate a correct tangent space basis for tiles that
+   * don't have them.
+   *
+   * Normally, a per-vertex tangent space basis is only required for glTF models
+   * with a normal map. However, a custom, user-supplied material may need a
+   * tangent space basis for other purposes. When this property is set to true,
+   * tiles lacking an explicit tangent vector will have one computed
+   * automatically using the MikkTSpace algorithm. When this property is false,
+   * load time will be improved by skipping the generation of the tangent
+   * vector, but the tangent space basis will be unreliable.
+   *
+   * Note that a tileset with "Enable Water Mask" set will include tangents
+   * for tiles containing water, regardless of the value of this property.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAlwaysIncludeTangents,
+      BlueprintSetter = SetAlwaysIncludeTangents,
+      Category = "Cesium|Rendering")
+  bool AlwaysIncludeTangents = false;
+
+  /**
    * Whether to request and render the water mask.
    *
    * Currently only applicable for quantized-mesh tilesets that support the
@@ -403,6 +427,12 @@ public:
   void SetIonAccessToken(FString InAccessToken);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
@@ -457,6 +487,8 @@ public:
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditUndo() override;
+  virtual void PostEditImport() override;
 #endif
 
 protected:
@@ -483,12 +515,6 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
-  void MarkTilesetDirty();
-  Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
-      const FVector2D& viewportSize,
-      const FVector& location,
-      const FRotator& rotation,
-      double fieldOfViewDegrees) const;
 
   struct UnrealCameraParameters {
     FVector2D viewportSize;
@@ -497,8 +523,37 @@ private:
     double fieldOfViewDegrees;
   };
 
-  std::optional<UnrealCameraParameters> GetCamera() const;
-  std::optional<UnrealCameraParameters> GetPlayerCamera() const;
+  static Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
+      const UnrealCameraParameters& camera,
+      const glm::dmat4& unrealWorldToTileset);
+
+  std::vector<UnrealCameraParameters> GetCameras() const;
+  std::vector<UnrealCameraParameters> GetPlayerCameras() const;
+
+  /**
+   * Writes the values of all properties of this actor into the
+   * TilesetOptions, to take them into account during the next
+   * traversal.
+   */
+  void updateTilesetOptionsFromProperties();
+
+  /**
+   * Update all the "_last..." fields of this instance based
+   * on the given ViewUpdateResult, printing a log message
+   * if any value changed.
+   *
+   * @param result The ViewUpdateREsult
+   */
+  void updateLastViewUpdateResultState(
+      const Cesium3DTiles::ViewUpdateResult& result);
+
+  /**
+   * Creates the visual representations of the given tiles to
+   * be rendered in the current frame.
+   *
+   * @param tiles The tiles
+   */
+  void showTilesToRender(const std::vector<Cesium3DTiles::Tile*>& tiles);
 
   void HandleGeoreferenceUpdated();
 
@@ -510,7 +565,7 @@ private:
   void AddFocusViewportDelegate();
 
 #if WITH_EDITOR
-  std::optional<UnrealCameraParameters> GetEditorCamera() const;
+  std::vector<UnrealCameraParameters> GetEditorCameras() const;
 
   /**
    * Will focus all viewports on this tileset.
@@ -526,12 +581,6 @@ private:
 
 private:
   Cesium3DTiles::Tileset* _pTileset;
-
-  /**
-   * Marks whether tileset should be updated in LoadTileset.
-   * Default to true so that tileset is created on construction.
-   */
-  bool _tilesetIsDirty = true;
 
   // For debug output
   uint32_t _lastTilesRendered;
@@ -551,4 +600,18 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  // This is used as a workaround for cesium-native#186
+  //
+  // The tiles that are no longer supposed to be rendered in the current
+  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // are kept in this list, and hidden in the NEXT frame, because some
+  // internal occlusion culling information from Unreal might prevent
+  // the tiles that are supposed to be rendered instead from appearing
+  // immediately.
+  //
+  // If we find a way to clear the wrong occlusion information in the
+  // Unreal Engine, then this field may be removed, and the
+  // tilesToNoLongerRenderThisFrame may be hidden immediately.
+  std::vector<Cesium3DTiles::Tile*> _tilesToNoLongerRenderNextFrame;
 };

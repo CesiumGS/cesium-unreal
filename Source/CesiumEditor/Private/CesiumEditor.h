@@ -43,6 +43,30 @@ public:
       const std::string& name,
       int64_t assetID);
 
+  /**
+   * Gets the first CesiumSunSky in the current level if there is one, or
+   * nullptr if there is not.
+   */
+  static AActor* GetCurrentLevelCesiumSunSky();
+
+  /**
+   * Gets the first DynamicPawn in the current level if there is one, or
+   * nullptr if there is not.
+   */
+  static AActor* GetCurrentLevelDynamicPawn();
+
+  /**
+   * Spawns a new actor with the _cesiumSunSkyBlueprintClass
+   * in the current level of the edited world.
+   */
+  static AActor* SpawnCesiumSunSky();
+
+  /**
+   * Spawns a new actor with the _dynamicPawnBlueprintClass
+   * in the current level of the edited world.
+   */
+  static AActor* SpawnDynamicPawn();
+
 private:
   TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
   TSharedRef<SDockTab>
@@ -52,4 +76,16 @@ private:
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;
+
+  /**
+   * Gets the class of the "Cesium Sun Sky" blueprint, loading it if necessary.
+   * Used for spawning the CesiumSunSky.
+   */
+  static UClass* GetCesiumSunSkyBlueprintClass();
+
+  /**
+   * Gets the class of the "Dynamic Pawn" blueprint, loading it if necessary.
+   * Used for spawning the DynamicPawn.
+   */
+  static UClass* GetDynamicPawnBlueprintClass();
 };

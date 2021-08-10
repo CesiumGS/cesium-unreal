@@ -101,6 +101,8 @@
         "shared_mutex": "cpp",
         "strstream": "cpp",
         "filesystem": "cpp",
-        "*.idl": "cpp"
+        "*.idl": "cpp",
+        "string_view": "cpp",
+        "xmemory0": "cpp"
     }
 }

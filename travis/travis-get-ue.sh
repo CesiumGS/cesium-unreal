@@ -1,16 +1,12 @@
-if [[ $TRAVIS_OS_NAME == "windows" && ! -d "/c/Program Files/Epic Games/UE_4.26" ]]
+if [[ $TRAVIS_OS_NAME == "windows" ]]
 then
     # Enable compression because disk space is limited on Travis.
     mkdir "C:\Program Files\Epic Games"
-    compact //c "//s:C:\Program Files\Epic Games"
-    mkdir "C:\Program Files (x86)\Epic Games"
-    compact //c "//s:C:\Program Files (x86)\Epic Games"
-    AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/windows-2021-05-19/UE_4.26.zip .
-    7z x UE_4.26.zip "-oC:\Program Files\Epic Games"
-    rm UE_4.26.zip
-    AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/windows-2021-05-07/Launcher.zip .
-    7z x Launcher.zip "-oC:\Program Files (x86)\Epic Games"
-    rm Launcher.zip
+    mkdir "C:\Program Files\Epic Games\UE_4.26"
+    compact //c "//s:C:\Program Files\Epic Games\UE_4.26"
+    AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/windows-2021-07-12/UnrealEngine-4-26-0-minimal.zip .
+    7z x UnrealEngine-4-26-0-minimal.zip "-oC:\Program Files\Epic Games\UE_4.26"
+    rm UnrealEngine-4-26-0-minimal.zip
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
     aws s3 cp s3://cesium-unreal-engine/macos-2021-04-13/UE_4.26.tar.gz .
