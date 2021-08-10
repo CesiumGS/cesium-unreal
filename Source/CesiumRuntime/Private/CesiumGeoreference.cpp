@@ -394,7 +394,8 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   if (!this->ShowLoadRadii) {
     return;
   }
-  const FIntVector& originLocation = world->OriginLocation;
+  const glm::dvec4 originLocation =
+      glm::dvec4(VecMath::createVector3D(world->OriginLocation), 1.0);
   for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
     glm::dvec3 levelECEF =
         _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
@@ -406,8 +407,7 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
         this->_geoTransforms
             .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
         glm::dvec4(levelECEF, 1.0);
-    FVector levelRelative =
-        FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
+    FVector levelRelative = VecMath::createVector(levelAbs - originLocation);
     DrawDebugSphere(
         world,
         levelRelative,
