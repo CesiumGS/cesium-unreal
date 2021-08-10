@@ -2,6 +2,10 @@
 
 ### v1.5.1 - 2021-08-09
 
+##### Breaking :mega:
+
+- Changed Cesium Native Cesium3DTiles's namespace to Cesium3DTilesSelection's namespace
+
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause mis-registration of feature metadata to the wrong features in Draco-compressed meshes.
