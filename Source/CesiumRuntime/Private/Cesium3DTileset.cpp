@@ -184,39 +184,32 @@ void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
 }
 
 void ACesium3DTileset::PlayMovieSequencer() {
-  // TODO GEOREF_REFACTORING: This should proably use the
-  // actual Georeference, and not obtain a new one, to make
-  // sure that the behavior in the sequencer is the
-  // same as in the non-sequencer run
-  ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultGeoreference(this);
-
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  this->_beforeMovieKeepWorldOriginNearCamera =
-      cesiumGeoreference->KeepWorldOriginNearCamera;
+  if (IsValid(this->Georeference)) {
+    this->_beforeMovieKeepWorldOriginNearCamera =
+        this->Georeference->KeepWorldOriginNearCamera;
+  }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  cesiumGeoreference->KeepWorldOriginNearCamera = false;
+  if (IsValid(this->Georeference)) {
+    this->Georeference->KeepWorldOriginNearCamera = false;
+  }
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
-  // TODO GEOREF_REFACTORING: This should proably use the
-  // actual Georeference, and not obtain a new one, to make
-  // sure that the behavior in the sequencer is the
-  // same as in the non-sequencer run
-  ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultGeoreference(this);
   this->_captureMovieMode = false;
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  cesiumGeoreference->KeepWorldOriginNearCamera =
-      this->_beforeMovieKeepWorldOriginNearCamera;
+  if (IsValid(this->Georeference)) {
+    this->Georeference->KeepWorldOriginNearCamera =
+        this->_beforeMovieKeepWorldOriginNearCamera;
+  }
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
