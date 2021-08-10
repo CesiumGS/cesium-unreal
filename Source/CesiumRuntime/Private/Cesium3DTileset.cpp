@@ -2,12 +2,12 @@
 
 #include "Cesium3DTileset.h"
 #include "Camera/PlayerCameraManager.h"
-#include "Cesium3DTiles/BingMapsRasterOverlay.h"
-#include "Cesium3DTiles/CreditSystem.h"
-#include "Cesium3DTiles/GltfContent.h"
-#include "Cesium3DTiles/IPrepareRendererResources.h"
-#include "Cesium3DTiles/Tileset.h"
-#include "Cesium3DTiles/TilesetOptions.h"
+#include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
+#include "Cesium3DTilesSelection/CreditSystem.h"
+#include "Cesium3DTilesSelection/GltfContent.h"
+#include "Cesium3DTilesSelection/IPrepareRendererResources.h"
+#include "Cesium3DTilesSelection/Tileset.h"
+#include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
@@ -255,12 +255,12 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     }
   };
 
-  const Cesium3DTiles::Tile* pRootTile = this->_pTileset->getRootTile();
+  const Cesium3DTilesSelection::Tile* pRootTile = this->_pTileset->getRootTile();
   if (!pRootTile) {
     return;
   }
 
-  const Cesium3DTiles::BoundingVolume& boundingVolume =
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       pRootTile->getBoundingVolume();
 
   // calculate unreal camera position
@@ -273,7 +273,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter =
-      Cesium3DTiles::getBoundingVolumeCenter(boundingVolume);
+      Cesium3DTilesSelection::getBoundingVolumeCenter(boundingVolume);
   glm::dvec3 unrealCenter = transform * glm::dvec4(ecefCenter, 1.0);
   glm::dvec3 unrealCameraFront =
       glm::normalize(unrealCenter - unrealCameraPosition);
@@ -325,7 +325,7 @@ bool ACesium3DTileset::IsBoundingVolumeReady() const {
   return this->_pTileset && this->_pTileset->getRootTile();
 }
 
-std::optional<Cesium3DTiles::BoundingVolume>
+std::optional<Cesium3DTilesSelection::BoundingVolume>
 ACesium3DTileset::GetBoundingVolume() const {
   if (!this->IsBoundingVolumeReady()) {
     return std::nullopt;
@@ -427,7 +427,7 @@ void ACesium3DTileset::NotifyHit(
   // std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
 
-class UnrealResourcePreparer : public Cesium3DTiles::IPrepareRendererResources {
+class UnrealResourcePreparer : public Cesium3DTilesSelection::IPrepareRendererResources {
 public:
   UnrealResourcePreparer(ACesium3DTileset* pActor)
       : _pActor(pActor)
@@ -455,9 +455,9 @@ public:
   }
 
   virtual void* prepareInMainThread(
-      Cesium3DTiles::Tile& tile,
+      Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
+    const Cesium3DTilesSelection::TileContentLoadResult* pContent = tile.getContent();
     if (pContent && pContent->model) {
       std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
@@ -475,7 +475,7 @@ public:
   }
 
   virtual void free(
-      Cesium3DTiles::Tile& tile,
+      Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
     if (pLoadThreadResult) {
@@ -496,7 +496,7 @@ public:
   }
 
   virtual void* prepareRasterInMainThread(
-      const Cesium3DTiles::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult) override {
     const CesiumGltf::ImageCesium& image = rasterTile.getImage();
     if (image.width <= 0 || image.height <= 0) {
@@ -523,7 +523,7 @@ public:
   }
 
   virtual void freeRaster(
-      const Cesium3DTiles::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
     UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
@@ -535,14 +535,14 @@ public:
   }
 
   virtual void attachRasterInMainThread(
-      const Cesium3DTiles::Tile& tile,
+      const Cesium3DTilesSelection::Tile& tile,
       uint32_t overlayTextureCoordinateID,
-      const Cesium3DTiles::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources,
       const CesiumGeometry::Rectangle& textureCoordinateRectangle,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
-    const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
+    const Cesium3DTilesSelection::TileContentLoadResult* pContent = tile.getContent();
     if (pContent && pContent->model) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
@@ -559,13 +559,13 @@ public:
   }
 
   virtual void detachRasterInMainThread(
-      const Cesium3DTiles::Tile& tile,
+      const Cesium3DTilesSelection::Tile& tile,
       uint32_t overlayTextureCoordinateID,
-      const Cesium3DTiles::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources,
       const CesiumGeometry::Rectangle& textureCoordinateRectangle) noexcept
       override {
-    const Cesium3DTiles::TileContentLoadResult* pContent = tile.getContent();
+    const Cesium3DTilesSelection::TileContentLoadResult* pContent = tile.getContent();
     if (pContent && pContent->model) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
@@ -663,7 +663,7 @@ void ACesium3DTileset::LoadTileset() {
     this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
   }
 
-  Cesium3DTiles::TilesetExternals externals{
+  Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
       asyncSystem,
@@ -673,7 +673,7 @@ void ACesium3DTileset::LoadTileset() {
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
-  Cesium3DTiles::TilesetOptions options;
+  Cesium3DTilesSelection::TilesetOptions options;
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
 #else
@@ -683,7 +683,7 @@ void ACesium3DTileset::LoadTileset() {
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-    this->_pTileset = new Cesium3DTiles::Tileset(
+    this->_pTileset = new Cesium3DTilesSelection::Tileset(
         externals,
         TCHAR_TO_UTF8(*this->Url),
         options);
@@ -694,7 +694,7 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
-    this->_pTileset = new Cesium3DTiles::Tileset(
+    this->_pTileset = new Cesium3DTilesSelection::Tileset(
         externals,
         static_cast<uint32_t>(this->IonAssetID),
         TCHAR_TO_UTF8(*this->IonAccessToken),
@@ -931,7 +931,7 @@ ACesium3DTileset::GetPlayerCameras() const {
   return cameras;
 }
 
-/*static*/ Cesium3DTiles::ViewState
+/*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const UnrealCameraParameters& camera,
     const glm::dmat4& unrealWorldToTileset) {
@@ -954,7 +954,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp =
       glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0));
 
-  return Cesium3DTiles::ViewState::create(
+  return Cesium3DTilesSelection::ViewState::create(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
@@ -1023,7 +1023,7 @@ namespace {
  */
 bool isInExclusionZone(
     const TArray<FCesiumExclusionZone>& exclusionZones,
-    Cesium3DTiles::Tile const* tile) {
+    Cesium3DTilesSelection::Tile const* tile) {
   if (exclusionZones.Num() == 0) {
     return false;
   }
@@ -1049,13 +1049,13 @@ bool isInExclusionZone(
 }
 
 void removeVisibleTilesFromList(
-    std::vector<Cesium3DTiles::Tile*>& list,
-    const std::vector<Cesium3DTiles::Tile*>& visibleTiles) {
+    std::vector<Cesium3DTilesSelection::Tile*>& list,
+    const std::vector<Cesium3DTilesSelection::Tile*>& visibleTiles) {
   if (list.empty()) {
     return;
   }
 
-  for (Cesium3DTiles::Tile* pTile : visibleTiles) {
+  for (Cesium3DTilesSelection::Tile* pTile : visibleTiles) {
     auto it = std::find(list.begin(), list.end(), pTile);
     if (it != list.end()) {
       list.erase(it);
@@ -1072,9 +1072,9 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTilesToNoLongerRender(const std::vector<Cesium3DTiles::Tile*>& tiles) {
-  for (Cesium3DTiles::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
+void hideTilesToNoLongerRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
       continue;
     }
 
@@ -1124,7 +1124,7 @@ void applyActorCollisionSettings(
 } // namespace
 
 void ACesium3DTileset::updateTilesetOptionsFromProperties() {
-  Cesium3DTiles::TilesetOptions& options = this->_pTileset->getOptions();
+  Cesium3DTilesSelection::TilesetOptions& options = this->_pTileset->getOptions();
   options.maximumScreenSpaceError =
       static_cast<double>(this->MaximumScreenSpaceError);
 
@@ -1142,7 +1142,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
-    const Cesium3DTiles::ViewUpdateResult& result) {
+    const Cesium3DTilesSelection::ViewUpdateResult& result) {
   if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
       result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
       result.tilesLoadingMediumPriority !=
@@ -1183,9 +1183,9 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 }
 
 void ACesium3DTileset::showTilesToRender(
-    const std::vector<Cesium3DTiles::Tile*>& tiles) {
-  for (Cesium3DTiles::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTiles::Tile::LoadState::Done) {
+    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
       continue;
     }
 
@@ -1221,7 +1221,7 @@ void ACesium3DTileset::showTilesToRender(
           this->RootComponent,
           FAttachmentTransformRules::KeepRelativeTransform);
       if (!attached) {
-        FString tileIdString(Cesium3DTiles::TileIdUtilities::createTileIdString(
+        FString tileIdString(Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
                                  pTile->getTileID())
                                  .c_str());
         UE_LOG(
@@ -1291,13 +1291,13 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   glm::dmat4 unrealWorldToTileset = glm::affineInverse(
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
-  std::vector<Cesium3DTiles::ViewState> frustums;
+  std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const UnrealCameraParameters& camera : cameras) {
     frustums.push_back(
         CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
   }
 
-  const Cesium3DTiles::ViewUpdateResult& result =
+  const Cesium3DTilesSelection::ViewUpdateResult& result =
       this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
                               : this->_pTileset->updateView(frustums);
   updateLastViewUpdateResultState(result);

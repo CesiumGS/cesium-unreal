@@ -1,41 +1,41 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumBingMapsRasterOverlay.h"
-#include "Cesium3DTiles/BingMapsRasterOverlay.h"
-#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
+#include "Cesium3DTilesSelection/Tileset.h"
 
-std::unique_ptr<Cesium3DTiles::RasterOverlay>
+std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumBingMapsRasterOverlay::CreateOverlay() {
   std::string mapStyle;
 
   switch (this->MapStyle) {
   case EBingMapsStyle::Aerial:
-    mapStyle = Cesium3DTiles::BingMapsStyle::AERIAL;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::AERIAL;
     break;
   case EBingMapsStyle::AerialWithLabelsOnDemand:
-    mapStyle = Cesium3DTiles::BingMapsStyle::AERIAL_WITH_LABELS_ON_DEMAND;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::AERIAL_WITH_LABELS_ON_DEMAND;
     break;
   case EBingMapsStyle::RoadOnDemand:
-    mapStyle = Cesium3DTiles::BingMapsStyle::ROAD_ON_DEMAND;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::ROAD_ON_DEMAND;
     break;
   case EBingMapsStyle::CanvasDark:
-    mapStyle = Cesium3DTiles::BingMapsStyle::CANVAS_DARK;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::CANVAS_DARK;
     break;
   case EBingMapsStyle::CanvasLight:
-    mapStyle = Cesium3DTiles::BingMapsStyle::CANVAS_LIGHT;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::CANVAS_LIGHT;
     break;
   case EBingMapsStyle::CanvasGray:
-    mapStyle = Cesium3DTiles::BingMapsStyle::CANVAS_GRAY;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::CANVAS_GRAY;
     break;
   case EBingMapsStyle::OrdnanceSurvey:
-    mapStyle = Cesium3DTiles::BingMapsStyle::ORDNANCE_SURVEY;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::ORDNANCE_SURVEY;
     break;
   case EBingMapsStyle::CollinsBart:
-    mapStyle = Cesium3DTiles::BingMapsStyle::COLLINS_BART;
+    mapStyle = Cesium3DTilesSelection::BingMapsStyle::COLLINS_BART;
     break;
   }
 
-  return std::make_unique<Cesium3DTiles::BingMapsRasterOverlay>(
+  return std::make_unique<Cesium3DTilesSelection::BingMapsRasterOverlay>(
       "https://dev.virtualearth.net",
       TCHAR_TO_UTF8(*this->BingMapsKey),
       mapStyle,
