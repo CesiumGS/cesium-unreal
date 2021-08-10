@@ -37,6 +37,7 @@
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
 #include "mikktspace.h"
+#include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
@@ -101,6 +102,7 @@ template <class T>
 static uint32_t updateTextureCoordinates(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
+    bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const std::optional<T>& texture,
@@ -112,6 +114,7 @@ static uint32_t updateTextureCoordinates(
   return updateTextureCoordinates(
       model,
       primitive,
+      duplicateVertices,
       vertices,
       indices,
       "TEXCOORD_" + std::to_string(texture.value().texCoord),
@@ -121,6 +124,7 @@ static uint32_t updateTextureCoordinates(
 uint32_t updateTextureCoordinates(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
+    bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const std::string& attributeName,
@@ -146,13 +150,24 @@ uint32_t updateTextureCoordinates(
     return 0;
   }
 
-  for (int64_t i = 0; i < indices.Num(); ++i) {
-    FStaticMeshBuildVertex& vertex = vertices[i];
-    uint32 vertexIndex = indices[i];
-    if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
-      vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
-    } else {
-      vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+  if (duplicateVertices) {
+    for (int64_t i = 0; i < indices.Num(); ++i) {
+      FStaticMeshBuildVertex& vertex = vertices[i];
+      uint32 vertexIndex = indices[i];
+      if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
+        vertex.UVs[textureCoordinateIndex] = uvAccessor[vertexIndex];
+      } else {
+        vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+      }
+    }
+  } else {
+    for (int64_t i = 0; i < vertices.Num(); ++i) {
+      FStaticMeshBuildVertex& vertex = vertices[i];
+      if (i >= 0 && i < uvAccessor.size()) {
+        vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
+      } else {
+        vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+      }
     }
   }
 
@@ -272,6 +287,7 @@ static const CesiumGltf::MaterialPBRMetallicRoughness
     defaultPbrMetallicRoughness;
 
 struct ColorVisitor {
+  bool duplicateVertices;
   TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
   const TArray<uint32>& indices;
 
@@ -283,14 +299,26 @@ struct ColorVisitor {
     }
 
     bool success = true;
-    for (int64_t i = 0; success && i < this->indices.Num(); ++i) {
-      FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
-      uint32 vertexIndex = this->indices[i];
-      if (vertexIndex >= colorView.size()) {
-        success = false;
-      } else {
-        success =
-            ColorVisitor::convertColor(colorView[vertexIndex], vertex.Color);
+    if (duplicateVertices) {
+      for (int64_t i = 0; success && i < this->indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
+        uint32 vertexIndex = this->indices[i];
+        if (vertexIndex >= colorView.size()) {
+          success = false;
+        } else {
+          success =
+              ColorVisitor::convertColor(colorView[vertexIndex], vertex.Color);
+        }
+      }
+    } else {
+      for (int64_t i = 0; success && i < this->StaticMeshBuildVertices.Num();
+           ++i) {
+        FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
+        if (i >= colorView.size()) {
+          success = false;
+        } else {
+          success = ColorVisitor::convertColor(colorView[i], vertex.Color);
+        }
       }
     }
 
@@ -556,6 +584,60 @@ static std::optional<LoadTextureResult> loadTexture(
   return result;
 }
 
+static void applyWaterMask(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive,
+    LoadModelResult& primitiveResult) {
+  // Initialize water mask if needed.
+  auto onlyWaterIt = primitive.extras.find("OnlyWater");
+  auto onlyLandIt = primitive.extras.find("OnlyLand");
+  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
+      onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
+    CESIUM_TRACE("water mask");
+    bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
+    bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
+    primitiveResult.onlyWater = onlyWater;
+    primitiveResult.onlyLand = onlyLand;
+    if (!onlyWater && !onlyLand) {
+      // We have to use the water mask
+      auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
+      if (waterMaskTextureIdIt != primitive.extras.end() &&
+          waterMaskTextureIdIt->second.isInt64()) {
+        int32_t waterMaskTextureId = static_cast<int32_t>(
+            waterMaskTextureIdIt->second.getInt64OrDefault(-1));
+        CesiumGltf::TextureInfo waterMaskInfo;
+        waterMaskInfo.index = waterMaskTextureId;
+        if (waterMaskTextureId >= 0 &&
+            waterMaskTextureId < model.textures.size()) {
+          primitiveResult.waterMaskTexture =
+              loadTexture(model, std::make_optional(waterMaskInfo));
+        }
+      }
+    }
+  } else {
+    primitiveResult.onlyWater = false;
+    primitiveResult.onlyLand = true;
+  }
+
+  auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
+  auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
+  auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
+
+  if (waterMaskTranslationXIt != primitive.extras.end() &&
+      waterMaskTranslationXIt->second.isDouble() &&
+      waterMaskTranslationYIt != primitive.extras.end() &&
+      waterMaskTranslationYIt->second.isDouble() &&
+      waterMaskScaleIt != primitive.extras.end() &&
+      waterMaskScaleIt->second.isDouble()) {
+    primitiveResult.waterMaskTranslationX =
+        waterMaskTranslationXIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskTranslationY =
+        waterMaskTranslationYIt->second.getDoubleOrDefault(0.0);
+    primitiveResult.waterMaskScale =
+        waterMaskScaleIt->second.getDoubleOrDefault(1.0);
+  }
+}
+
 static FCesiumMetadataPrimitive loadMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive) {
@@ -656,6 +738,69 @@ static void loadPrimitive(
     }
   }
 
+  auto normalAccessorIt = primitive.attributes.find("NORMAL");
+  CesiumGltf::AccessorView<FVector> normalAccessor;
+  bool hasNormals = false;
+  if (normalAccessorIt != primitive.attributes.end()) {
+    int normalAccessorID = normalAccessorIt->second;
+    normalAccessor = CesiumGltf::AccessorView<FVector>(model, normalAccessorID);
+    hasNormals =
+        normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid;
+    if (!hasNormals) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "%s: Invalid normal buffer. Flat normal will be auto-generated instead"),
+          UTF8_TO_TCHAR(name.c_str()));
+    }
+  }
+
+  int materialID = primitive.material;
+  const CesiumGltf::Material& material =
+      materialID >= 0 && materialID < model.materials.size()
+          ? model.materials[materialID]
+          : defaultMaterial;
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
+
+  bool hasNormalMap = material.normalTexture.has_value();
+  if (hasNormalMap) {
+    const CesiumGltf::Texture* pTexture =
+        Model::getSafe(&model.textures, material.normalTexture->index);
+    hasNormalMap = pTexture != nullptr &&
+                   Model::getSafe(&model.images, pTexture->source) != nullptr;
+  }
+
+  bool needsTangents = hasNormalMap || options.alwaysIncludeTangents;
+
+  bool hasTangents = false;
+  auto tangentAccessorIt = primitive.attributes.find("TANGENT");
+  CesiumGltf::AccessorView<FVector4> tangentAccessor;
+  if (tangentAccessorIt != primitive.attributes.end()) {
+    int tangentAccessorID = tangentAccessorIt->second;
+    tangentAccessor =
+        CesiumGltf::AccessorView<FVector4>(model, tangentAccessorID);
+    hasTangents =
+        tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid;
+    if (!hasTangents) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s: Invalid tangent buffer."),
+          UTF8_TO_TCHAR(name.c_str()));
+    }
+  }
+
+  applyWaterMask(model, primitive, primitiveResult);
+
+  // The water effect works by animating the normal, and the normal is
+  // expressed in tangent space. So if we have water, we need tangents.
+  if (primitiveResult.onlyWater || primitiveResult.waterMaskTexture) {
+    needsTangents = true;
+  }
+
   FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
   RenderData->AllocateLODResources(1);
 
@@ -704,21 +849,31 @@ static void loadPrimitive(
   } else {
     // assume TRIANGLE_STRIP because all others are rejected earlier.
     CESIUM_TRACE("copy TRIANGLE_STRIP indices");
+    indices.SetNum(
+        static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
       if (i % 2) {
-        indices.Add(indicesView[i]);
-        indices.Add(indicesView[i + 2]);
-        indices.Add(indicesView[i + 1]);
+        indices[3 * i] = indicesView[i];
+        indices[3 * i + 1] = indicesView[i + 2];
+        indices[3 * i + 2] = indicesView[i + 1];
       } else {
-        indices.Add(indicesView[i]);
-        indices.Add(indicesView[i + 1]);
-        indices.Add(indicesView[i + 2]);
+        indices[3 * i] = indicesView[i];
+        indices[3 * i + 1] = indicesView[i + 1];
+        indices[3 * i + 2] = indicesView[i + 2];
       }
     }
   }
 
+  // If we don't have normals, the gltf spec prescribes that the client
+  // implementation must generate flat normals, which requires duplicating
+  // vertices shared by multiple triangles. If we don't have tangents, but
+  // need them, we need to use a tangent space generation algorithm which
+  // requires duplicated vertices.
+  bool duplicateVertices = !hasNormals || (needsTangents && !hasTangents);
+
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
-  StaticMeshBuildVertices.SetNum(indices.Num());
+  StaticMeshBuildVertices.SetNum(
+      duplicateVertices ? indices.Num() : positionView.size());
 
   // The static mesh we construct will _not_ be indexed, even if the incoming
   // glTF is. This allows us to compute flat normals if the glTF doesn't include
@@ -727,16 +882,29 @@ static void loadPrimitive(
   // glTF.
 
   {
-    CESIUM_TRACE("copy positions");
-    for (int64_t i = 0; i < indices.Num(); ++i) {
-      FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-      uint32 vertexIndex = indices[i];
-      vertex.Position = positionView[vertexIndex];
-      vertex.UVs[0] = FVector2D(0.0f, 0.0f);
-      vertex.UVs[2] = FVector2D(0.0f, 0.0f);
-      RenderData->Bounds.SphereRadius = FMath::Max(
-          (vertex.Position - RenderData->Bounds.Origin).Size(),
-          RenderData->Bounds.SphereRadius);
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy duplicated positions");
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        vertex.Position = positionView[vertexIndex];
+        vertex.UVs[0] = FVector2D(0.0f, 0.0f);
+        vertex.UVs[2] = FVector2D(0.0f, 0.0f);
+        RenderData->Bounds.SphereRadius = FMath::Max(
+            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            RenderData->Bounds.SphereRadius);
+      }
+    } else {
+      CESIUM_TRACE("copy positions");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        vertex.Position = positionView[i];
+        vertex.UVs[0] = FVector2D(0.0f, 0.0f);
+        vertex.UVs[2] = FVector2D(0.0f, 0.0f);
+        RenderData->Bounds.SphereRadius = FMath::Max(
+            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            RenderData->Bounds.SphereRadius);
+      }
     }
   }
 
@@ -744,12 +912,9 @@ static void loadPrimitive(
   // TangentY: Bi-tangent
   // TangentZ: Normal
 
-  auto normalAccessorIt = primitive.attributes.find("NORMAL");
-  if (normalAccessorIt != primitive.attributes.end()) {
-    int normalAccessorID = normalAccessorIt->second;
-    CesiumGltf::AccessorView<FVector> normalAccessor(model, normalAccessorID);
-    if (normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
-      CESIUM_TRACE("copy normals");
+  if (hasNormals) {
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy normals for duplicated vertices");
       for (int64_t i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -758,50 +923,22 @@ static void loadPrimitive(
         vertex.TangentZ = normalAccessor[vertexIndex];
       }
     } else {
-      CESIUM_TRACE("compute flat normals");
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "%s: Invalid normal buffer. Flat normal will be auto-generated instead"),
-          UTF8_TO_TCHAR(name.c_str()));
-      computeFlatNormals(indices, StaticMeshBuildVertices);
+      CESIUM_TRACE("copy normals");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentZ = normalAccessor[i];
+      }
     }
   } else {
     CESIUM_TRACE("compute flat normals");
     computeFlatNormals(indices, StaticMeshBuildVertices);
   }
 
-  int materialID = primitive.material;
-  const CesiumGltf::Material& material =
-      materialID >= 0 && materialID < model.materials.size()
-          ? model.materials[materialID]
-          : defaultMaterial;
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
-
-  bool hasNormalMap = material.normalTexture.has_value();
-  if (hasNormalMap) {
-    const CesiumGltf::Texture* pTexture =
-        Model::getSafe(&model.textures, material.normalTexture->index);
-    hasNormalMap = pTexture != nullptr &&
-                   Model::getSafe(&model.images, pTexture->source) != nullptr;
-  }
-
-  bool needsTangents = hasNormalMap || options.alwaysIncludeTangents;
-
-  bool hasTangents = false;
-
-  auto tangentAccessorIt = primitive.attributes.find("TANGENT");
-  if (tangentAccessorIt != primitive.attributes.end()) {
-    int tangentAccessorID = tangentAccessorIt->second;
-    CesiumGltf::AccessorView<FVector4> tangentAccessor(
-        model,
-        tangentAccessorID);
-
-    if (tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid) {
-      CESIUM_TRACE("copy tangents");
+  if (hasTangents) {
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy tangents for duplicated vertices");
       for (int64_t i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -810,52 +947,16 @@ static void loadPrimitive(
         vertex.TangentY =
             FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
       }
-
-      hasTangents = true;
     } else {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("%s: Invalid tangent buffer."),
-          UTF8_TO_TCHAR(name.c_str()));
-    }
-  }
-
-  // Initialize water mask if needed.
-  auto onlyWaterIt = primitive.extras.find("OnlyWater");
-  auto onlyLandIt = primitive.extras.find("OnlyLand");
-  if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
-      onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
-    CESIUM_TRACE("water mask");
-    bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
-    bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
-    primitiveResult.onlyWater = onlyWater;
-    primitiveResult.onlyLand = onlyLand;
-    if (!onlyWater && !onlyLand) {
-      // We have to use the water mask
-      auto waterMaskTextureIdIt = primitive.extras.find("WaterMaskTex");
-      if (waterMaskTextureIdIt != primitive.extras.end() &&
-          waterMaskTextureIdIt->second.isInt64()) {
-        int32_t waterMaskTextureId = static_cast<int32_t>(
-            waterMaskTextureIdIt->second.getInt64OrDefault(-1));
-        CesiumGltf::TextureInfo waterMaskInfo;
-        waterMaskInfo.index = waterMaskTextureId;
-        if (waterMaskTextureId >= 0 &&
-            waterMaskTextureId < model.textures.size()) {
-          primitiveResult.waterMaskTexture =
-              loadTexture(model, std::make_optional(waterMaskInfo));
-        }
+      CESIUM_TRACE("copy tangents");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        const FVector4& tangent = tangentAccessor[i];
+        vertex.TangentX = tangent;
+        vertex.TangentY =
+            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
       }
     }
-  } else {
-    primitiveResult.onlyWater = false;
-    primitiveResult.onlyLand = true;
-  }
-
-  // The water effect works by animating the normal, and the normal is
-  // expressed in tangent space. So if we have water, we need tangents.
-  if (primitiveResult.onlyWater || primitiveResult.waterMaskTexture) {
-    needsTangents = true;
   }
 
   if (needsTangents && !hasTangents) {
@@ -873,7 +974,7 @@ static void loadPrimitive(
     hasVertexColors = CesiumGltf::createAccessorView(
         model,
         colorAccessorID,
-        ColorVisitor{StaticMeshBuildVertices, indices});
+        ColorVisitor{duplicateVertices, StaticMeshBuildVertices, indices});
   }
 
   LODResources.bHasColorVertexData = hasVertexColors;
@@ -903,6 +1004,7 @@ static void loadPrimitive(
         updateTextureCoordinates(
             model,
             primitive,
+            duplicateVertices,
             StaticMeshBuildVertices,
             indices,
             pbrMetallicRoughness.baseColorTexture,
@@ -911,6 +1013,7 @@ static void loadPrimitive(
         ["metallicRoughnessTextureCoordinateIndex"] = updateTextureCoordinates(
         model,
         primitive,
+        duplicateVertices,
         StaticMeshBuildVertices,
         indices,
         pbrMetallicRoughness.metallicRoughnessTexture,
@@ -920,6 +1023,7 @@ static void loadPrimitive(
         updateTextureCoordinates(
             model,
             primitive,
+            duplicateVertices,
             StaticMeshBuildVertices,
             indices,
             material.normalTexture,
@@ -929,6 +1033,7 @@ static void loadPrimitive(
         updateTextureCoordinates(
             model,
             primitive,
+            duplicateVertices,
             StaticMeshBuildVertices,
             indices,
             material.occlusionTexture,
@@ -938,6 +1043,7 @@ static void loadPrimitive(
         updateTextureCoordinates(
             model,
             primitive,
+            duplicateVertices,
             StaticMeshBuildVertices,
             indices,
             material.emissiveTexture,
@@ -952,6 +1058,7 @@ static void loadPrimitive(
         updateTextureCoordinates(
             model,
             primitive,
+            duplicateVertices,
             StaticMeshBuildVertices,
             indices,
             rasterOverlay0,
@@ -962,44 +1069,29 @@ static void loadPrimitive(
         updateTextureCoordinates(
             model,
             primitive,
+            duplicateVertices,
             StaticMeshBuildVertices,
             indices,
             rasterOverlay1,
             textureCoordinateMap);
   }
 
-  auto waterMaskTranslationXIt = primitive.extras.find("WaterMaskTranslationX");
-  auto waterMaskTranslationYIt = primitive.extras.find("WaterMaskTranslationY");
-  auto waterMaskScaleIt = primitive.extras.find("WaterMaskScale");
-
-  if (waterMaskTranslationXIt != primitive.extras.end() &&
-      waterMaskTranslationXIt->second.isDouble() &&
-      waterMaskTranslationYIt != primitive.extras.end() &&
-      waterMaskTranslationYIt->second.isDouble() &&
-      waterMaskScaleIt != primitive.extras.end() &&
-      waterMaskScaleIt->second.isDouble()) {
-    primitiveResult.waterMaskTranslationX =
-        waterMaskTranslationXIt->second.getDoubleOrDefault(0.0);
-    primitiveResult.waterMaskTranslationY =
-        waterMaskTranslationYIt->second.getDoubleOrDefault(0.0);
-    primitiveResult.waterMaskScale =
-        waterMaskScaleIt->second.getDoubleOrDefault(1.0);
-  }
-
   {
     CESIUM_TRACE("init buffers");
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
-        StaticMeshBuildVertices);
+        StaticMeshBuildVertices,
+        false);
 
     FColorVertexBuffer& ColorVertexBuffer =
         LODResources.VertexBuffers.ColorVertexBuffer;
     if (hasVertexColors) {
-      ColorVertexBuffer.Init(StaticMeshBuildVertices);
+      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
     }
 
     LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
         StaticMeshBuildVertices,
-        textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size());
+        textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size(),
+        false);
   }
 
   FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
@@ -1007,7 +1099,7 @@ static void loadPrimitive(
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
   section.bEnableCollision = true;
 
-  section.NumTriangles = StaticMeshBuildVertices.Num() / 3;
+  section.NumTriangles = indices.Num() / 3;
   section.FirstIndex = 0;
   section.MinVertexIndex = 0;
   section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
@@ -1017,10 +1109,17 @@ static void loadPrimitive(
   // Note that we're reversing the order of the indices, because the change
   // from the glTF right-handed to the Unreal left-handed coordinate system
   // reverses the winding order.
-  {
-    CESIUM_TRACE("reverse winding order");
+  if (duplicateVertices) {
+    CESIUM_TRACE("reverse winding order of duplicated vertices");
     for (int32 i = 0; i < indices.Num(); ++i) {
       indices[i] = indices.Num() - i - 1;
+    }
+  } else {
+    CESIUM_TRACE("reverse winding order");
+    // This takes n/3 swaps, so it is better than using std::reverse which
+    // would take n/2 swaps.
+    for (int32 i = 2; i < indices.Num(); i += 3) {
+      std::swap(indices[i - 2], indices[i]);
     }
   }
 
@@ -1061,13 +1160,13 @@ static void loadPrimitive(
     }
 
     TArray<FTriIndices> physicsIndices;
-    physicsIndices.SetNum(StaticMeshBuildVertices.Num() / 3);
+    physicsIndices.SetNum(indices.Num() / 3);
 
     // Reversing triangle winding order here, too.
-    for (size_t i = 0; i < StaticMeshBuildVertices.Num() / 3; ++i) {
-      physicsIndices[i].v0 = i * 3 + 2;
-      physicsIndices[i].v1 = i * 3 + 1;
-      physicsIndices[i].v2 = i * 3;
+    for (size_t i = 0; i < indices.Num() / 3; ++i) {
+      physicsIndices[i].v0 = indices[3 * i];
+      physicsIndices[i].v1 = indices[3 * i + 1];
+      physicsIndices[i].v2 = indices[3 * i + 2];
     }
 
     options.pPhysXCooking->CreateTriMesh(
