@@ -279,7 +279,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition = std::visit(
-      CalculateECEFCameraPosition{this->Georeference->getGeoTransforms()},
+      CalculateECEFCameraPosition{this->Georeference->GetGeoTransforms()},
       boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);

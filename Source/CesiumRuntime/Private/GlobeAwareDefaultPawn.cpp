@@ -76,8 +76,8 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     glm::dvec4 upEcef(
         CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
         0.0);
-    glm::dvec4 up = this->Georeference->getGeoTransforms()
-                        .GetEllipsoidCenteredToUnrealWorldTransform() *
+    glm::dvec4 up = this->Georeference->GetGeoTransforms()
+                        .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
                     upEcef;
 
     AddMovementInput(FVector(up.x, up.y, up.z), Val);

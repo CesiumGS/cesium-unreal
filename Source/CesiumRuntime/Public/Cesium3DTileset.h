@@ -555,8 +555,6 @@ private:
    */
   void showTilesToRender(const std::vector<Cesium3DTiles::Tile*>& tiles);
 
-  void HandleGeoreferenceUpdated();
-
   /**
    * Will be called after the tileset is loaded or spawned, to register
    * a delegate that calls OnFocusEditorViewportOnThis when this
