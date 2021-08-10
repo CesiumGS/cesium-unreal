@@ -25,7 +25,7 @@ struct Model;
 namespace Cesium3DTilesSelection {
 class Tile;
 class RasterOverlayTile;
-} // namespace Cesium3DTiles
+} // namespace Cesium3DTilesSelection
 
 namespace CesiumGeometry {
 struct Rectangle;

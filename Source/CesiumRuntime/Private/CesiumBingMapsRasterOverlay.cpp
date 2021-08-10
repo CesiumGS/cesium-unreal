@@ -13,7 +13,8 @@ UCesiumBingMapsRasterOverlay::CreateOverlay() {
     mapStyle = Cesium3DTilesSelection::BingMapsStyle::AERIAL;
     break;
   case EBingMapsStyle::AerialWithLabelsOnDemand:
-    mapStyle = Cesium3DTilesSelection::BingMapsStyle::AERIAL_WITH_LABELS_ON_DEMAND;
+    mapStyle =
+        Cesium3DTilesSelection::BingMapsStyle::AERIAL_WITH_LABELS_ON_DEMAND;
     break;
   case EBingMapsStyle::RoadOnDemand:
     mapStyle = Cesium3DTilesSelection::BingMapsStyle::ROAD_ON_DEMAND;

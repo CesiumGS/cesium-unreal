@@ -472,7 +472,9 @@ public:
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
   Cesium3DTilesSelection::Tileset* GetTileset() { return this->_pTileset; }
-  const Cesium3DTilesSelection::Tileset* GetTileset() const { return this->_pTileset; }
+  const Cesium3DTilesSelection::Tileset* GetTileset() const {
+    return this->_pTileset;
+  }
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
@@ -561,7 +563,8 @@ private:
    *
    * @param tiles The tiles
    */
-  void showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
+  void
+  showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register

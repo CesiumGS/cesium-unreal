@@ -255,7 +255,8 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     }
   };
 
-  const Cesium3DTilesSelection::Tile* pRootTile = this->_pTileset->getRootTile();
+  const Cesium3DTilesSelection::Tile* pRootTile =
+      this->_pTileset->getRootTile();
   if (!pRootTile) {
     return;
   }
@@ -427,7 +428,8 @@ void ACesium3DTileset::NotifyHit(
   // std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
 
-class UnrealResourcePreparer : public Cesium3DTilesSelection::IPrepareRendererResources {
+class UnrealResourcePreparer
+    : public Cesium3DTilesSelection::IPrepareRendererResources {
 public:
   UnrealResourcePreparer(ACesium3DTileset* pActor)
       : _pActor(pActor)
@@ -457,7 +459,8 @@ public:
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent = tile.getContent();
+    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
+        tile.getContent();
     if (pContent && pContent->model) {
       std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
@@ -542,7 +545,8 @@ public:
       const CesiumGeometry::Rectangle& textureCoordinateRectangle,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent = tile.getContent();
+    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
+        tile.getContent();
     if (pContent && pContent->model) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
@@ -565,7 +569,8 @@ public:
       void* pMainThreadRendererResources,
       const CesiumGeometry::Rectangle& textureCoordinateRectangle) noexcept
       override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent = tile.getContent();
+    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
+        tile.getContent();
     if (pContent && pContent->model) {
       UCesiumGltfComponent* pGltfContent =
           reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
@@ -1072,7 +1077,8 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTilesToNoLongerRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+void hideTilesToNoLongerRender(
+    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
       continue;
@@ -1124,7 +1130,8 @@ void applyActorCollisionSettings(
 } // namespace
 
 void ACesium3DTileset::updateTilesetOptionsFromProperties() {
-  Cesium3DTilesSelection::TilesetOptions& options = this->_pTileset->getOptions();
+  Cesium3DTilesSelection::TilesetOptions& options =
+      this->_pTileset->getOptions();
   options.maximumScreenSpaceError =
       static_cast<double>(this->MaximumScreenSpaceError);
 
@@ -1221,9 +1228,10 @@ void ACesium3DTileset::showTilesToRender(
           this->RootComponent,
           FAttachmentTransformRules::KeepRelativeTransform);
       if (!attached) {
-        FString tileIdString(Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
-                                 pTile->getTileID())
-                                 .c_str());
+        FString tileIdString(
+            Cesium3DTilesSelection::TileIdUtilities::createTileIdString(
+                pTile->getTileID())
+                .c_str());
         UE_LOG(
             LogCesium,
             Warning,
