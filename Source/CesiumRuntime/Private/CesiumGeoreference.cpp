@@ -36,8 +36,6 @@
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
     FName("DEFAULT_GEOREFERENCE");
 
-#define WGS84_ELLIPSOID_RADII 6378137.0, 6378137.0, 6356752.3142451793
-
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
   UWorld* world = WorldContextObject->GetWorld();
@@ -112,7 +110,10 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _ellipsoidRadii{WGS84_ELLIPSOID_RADII},
+    : _ellipsoidRadii{
+        CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
+        CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
+        CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
       _geoTransforms(),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
