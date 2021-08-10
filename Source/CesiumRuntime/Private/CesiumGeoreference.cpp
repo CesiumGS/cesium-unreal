@@ -667,7 +667,7 @@ FVector ACesiumGeoreference::InaccurateTransformEcefToUnreal(
     const FVector& ecef) const {
   glm::dvec3 ue = this->_geoTransforms.TransformEcefToUnreal(
       CesiumActors::getWorldOrigin4D(this),
-      VecMath::createVector3D(ecef);
+      VecMath::createVector3D(ecef));
   return FVector(ue.x, ue.y, ue.z);
 }
 
