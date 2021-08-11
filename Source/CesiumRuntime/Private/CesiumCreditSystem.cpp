@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumCreditSystem.h"
-#include "Cesium3DTiles/CreditSystem.h"
+#include "Cesium3DTilesSelection/CreditSystem.h"
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
 #include "Engine/World.h"
@@ -107,7 +107,7 @@ ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem()
-    : _pCreditSystem(std::make_shared<Cesium3DTiles::CreditSystem>()),
+    : _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
       _lastCreditsCount(0) {
   PrimaryActorTick.bCanEverTick = true;
 }
@@ -121,7 +121,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     return;
   }
 
-  const std::vector<Cesium3DTiles::Credit>& creditsToShowThisFrame =
+  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
       _pCreditSystem->getCreditsToShowThisFrame();
 
   // if the credit list has changed, we want to reformat the credits

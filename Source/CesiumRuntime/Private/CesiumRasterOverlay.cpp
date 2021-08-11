@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRasterOverlay.h"
-#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 
 // Sets default values for this component's properties
@@ -32,12 +32,12 @@ void UCesiumRasterOverlay::AddToTileset() {
     return;
   }
 
-  Cesium3DTiles::Tileset* pTileset = FindTileset();
+  Cesium3DTilesSelection::Tileset* pTileset = FindTileset();
   if (!pTileset) {
     return;
   }
 
-  std::unique_ptr<Cesium3DTiles::RasterOverlay> pOverlay =
+  std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
       this->CreateOverlay();
   this->_pOverlay = pOverlay.get();
 
@@ -49,7 +49,7 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
     return;
   }
 
-  Cesium3DTiles::Tileset* pTileset = FindTileset();
+  Cesium3DTilesSelection::Tileset* pTileset = FindTileset();
   if (!pTileset) {
     return;
   }
@@ -73,7 +73,7 @@ void UCesiumRasterOverlay::OnComponentDestroyed(bool bDestroyingHierarchy) {
   Super::OnComponentDestroyed(bDestroyingHierarchy);
 }
 
-Cesium3DTiles::Tileset* UCesiumRasterOverlay::FindTileset() const {
+Cesium3DTilesSelection::Tileset* UCesiumRasterOverlay::FindTileset() const {
   ACesium3DTileset* pActor = this->GetOwner<ACesium3DTileset>();
   if (!pActor) {
     return nullptr;

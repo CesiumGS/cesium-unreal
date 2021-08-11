@@ -236,7 +236,7 @@ bool UCesiumGeoreferenceComponent::IsBoundingVolumeReady() const {
   return false;
 }
 
-std::optional<Cesium3DTiles::BoundingVolume>
+std::optional<Cesium3DTilesSelection::BoundingVolume>
 UCesiumGeoreferenceComponent::GetBoundingVolume() const {
   return std::nullopt;
 }

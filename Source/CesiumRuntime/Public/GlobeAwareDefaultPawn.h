@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Cesium3DTiles/BoundingVolume.h"
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumGeoreferenceable.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
@@ -191,7 +191,7 @@ public:
 
   virtual bool IsBoundingVolumeReady() const override { return false; }
 
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  virtual std::optional<Cesium3DTilesSelection::BoundingVolume>
   GetBoundingVolume() const override {
     return std::nullopt;
   }
