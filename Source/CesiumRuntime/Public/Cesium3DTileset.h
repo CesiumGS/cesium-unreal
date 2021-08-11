@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTiles/ViewState.h"
-#include "Cesium3DTiles/ViewUpdateResult.h"
+#include "Cesium3DTilesSelection/ViewState.h"
+#include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -21,10 +21,10 @@
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 
-namespace Cesium3DTiles {
+namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
-} // namespace Cesium3DTiles
+} // namespace Cesium3DTilesSelection
 
 UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
@@ -484,14 +484,16 @@ public:
 
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
-  Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
-  const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
+  Cesium3DTilesSelection::Tileset* GetTileset() { return this->_pTileset; }
+  const Cesium3DTilesSelection::Tileset* GetTileset() const {
+    return this->_pTileset;
+  }
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
   // ICesiumGeoreferenceable implementation
   virtual bool IsBoundingVolumeReady() const override;
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  virtual std::optional<Cesium3DTilesSelection::BoundingVolume>
   GetBoundingVolume() const override;
   virtual void NotifyGeoreferenceUpdated();
 
@@ -544,7 +546,7 @@ private:
     double fieldOfViewDegrees;
   };
 
-  static Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
+  static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const UnrealCameraParameters& camera,
       const glm::dmat4& unrealWorldToTileset);
 
@@ -566,7 +568,7 @@ private:
    * @param result The ViewUpdateREsult
    */
   void updateLastViewUpdateResultState(
-      const Cesium3DTiles::ViewUpdateResult& result);
+      const Cesium3DTilesSelection::ViewUpdateResult& result);
 
   /**
    * Creates the visual representations of the given tiles to
@@ -574,7 +576,8 @@ private:
    *
    * @param tiles The tiles
    */
-  void showTilesToRender(const std::vector<Cesium3DTiles::Tile*>& tiles);
+  void
+  showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -599,7 +602,7 @@ private:
 #endif
 
 private:
-  Cesium3DTiles::Tileset* _pTileset;
+  Cesium3DTilesSelection::Tileset* _pTileset;
 
   // For debug output
   uint32_t _lastTilesRendered;
@@ -633,5 +636,5 @@ private:
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
   // tilesToNoLongerRenderThisFrame may be hidden immediately.
-  std::vector<Cesium3DTiles::Tile*> _tilesToNoLongerRenderNextFrame;
+  std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
 };

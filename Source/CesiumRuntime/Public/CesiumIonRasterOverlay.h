@@ -39,6 +39,6 @@ public:
   FString IonAccessToken;
 
 protected:
-  virtual std::unique_ptr<Cesium3DTiles::RasterOverlay>
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
   CreateOverlay() override;
 };

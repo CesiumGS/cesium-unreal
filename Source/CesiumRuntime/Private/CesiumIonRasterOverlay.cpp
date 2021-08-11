@@ -1,12 +1,12 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumIonRasterOverlay.h"
-#include "Cesium3DTiles/IonRasterOverlay.h"
-#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTilesSelection/IonRasterOverlay.h"
+#include "Cesium3DTilesSelection/Tileset.h"
 
-std::unique_ptr<Cesium3DTiles::RasterOverlay>
+std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumIonRasterOverlay::CreateOverlay() {
-  return std::make_unique<Cesium3DTiles::IonRasterOverlay>(
+  return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
       TCHAR_TO_UTF8(*this->Name),
       this->IonAssetID,
       TCHAR_TO_UTF8(*this->IonAccessToken));

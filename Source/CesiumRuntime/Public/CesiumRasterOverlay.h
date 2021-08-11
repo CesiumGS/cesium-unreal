@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "Cesium3DTiles/RasterOverlay.h"
+#include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include <memory>
 #include "CesiumRasterOverlay.generated.h"
 
-namespace Cesium3DTiles {
+namespace Cesium3DTilesSelection {
 class Tileset;
 }
 
@@ -50,10 +50,10 @@ protected:
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-  Cesium3DTiles::Tileset* FindTileset() const;
-  virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay()
+  Cesium3DTilesSelection::Tileset* FindTileset() const;
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay()
       PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
 
 private:
-  Cesium3DTiles::RasterOverlay* _pOverlay;
+  Cesium3DTilesSelection::RasterOverlay* _pOverlay;
 };

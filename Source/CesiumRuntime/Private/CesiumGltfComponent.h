@@ -22,10 +22,10 @@ namespace CesiumGltf {
 struct Model;
 }
 
-namespace Cesium3DTiles {
+namespace Cesium3DTilesSelection {
 class Tile;
 class RasterOverlayTile;
-} // namespace Cesium3DTiles
+} // namespace Cesium3DTilesSelection
 
 namespace CesiumGeometry {
 struct Rectangle;
@@ -83,16 +83,16 @@ public:
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
   void AttachRasterTile(
-      const Cesium3DTiles::Tile& Tile,
-      const Cesium3DTiles::RasterOverlayTile& RasterTile,
+      const Cesium3DTilesSelection::Tile& Tile,
+      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
       const CesiumGeometry::Rectangle& TextureCoordinateRectangle,
       const glm::dvec2& Translation,
       const glm::dvec2& Scale);
 
   void DetachRasterTile(
-      const Cesium3DTiles::Tile& Tile,
-      const Cesium3DTiles::RasterOverlayTile& RasterTile,
+      const Cesium3DTilesSelection::Tile& Tile,
+      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
       const CesiumGeometry::Rectangle& TextureCoordinateRectangle);
 
