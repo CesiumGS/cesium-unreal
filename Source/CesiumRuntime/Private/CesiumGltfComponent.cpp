@@ -1181,8 +1181,10 @@ static void loadPrimitive(
 #else
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
     CESIUM_TRACE("Chaos cook");
-    primitiveResult.pCollisionMesh =
-        BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+    primitiveResult.pCollisionMesh = BuildChaosTriangleMeshes(
+        duplicateVertices,
+        StaticMeshBuildVertices,
+        indices);
   }
 #endif
 
@@ -2003,6 +2005,7 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
 // input data.
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
+    bool duplicateVertices,
     const TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices) {
   UE_LOG(
