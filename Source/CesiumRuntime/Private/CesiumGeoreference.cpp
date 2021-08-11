@@ -228,26 +228,28 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     return;
   }
 
-  // Compute a new array of sublevels, based on the current
-  // streaming levels of the world
-  TArray<FCesiumSubLevel> newCesiumSubLevels;
+  // Update the array of sublevels, based on the current
+  // streaming levels of the world: Add all levels that
+  // are not yet contained in the array.
+  // (Levels that are not found in the streaming levels
+  // are NOT removed, because they might just be unloaded
+  // and not really deleted)
   const TArray<ULevelStreaming*>& streamedLevels = world->GetStreamingLevels();
   for (ULevelStreaming* streamedLevel : streamedLevels) {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
     levelName.RemoveFromStart(world->StreamingLevelsPrefix);
-    // If the level is already known, just add it to the new array
+    // Check if the level is already known
     bool found = false;
     for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
       if (levelName.Equals(subLevel.LevelName)) {
         found = true;
-        newCesiumSubLevels.Add(subLevel);
         break;
       }
     }
     // If the level was not known yet, create a new one
     if (!found) {
-      newCesiumSubLevels.Add(FCesiumSubLevel{
+      CesiumSubLevels.Add(FCesiumSubLevel{
           levelName,
           OriginLongitude,
           OriginLatitude,
@@ -256,8 +258,8 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
           false});
     }
   }
-  this->CesiumSubLevels = newCesiumSubLevels;
 }
+
 void ACesiumGeoreference::JumpToCurrentLevel() {
   if (this->CurrentLevelIndex < 0 ||
       this->CurrentLevelIndex >= this->CesiumSubLevels.Num()) {

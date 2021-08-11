@@ -110,7 +110,7 @@ public:
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
    */
-  UPROPERTY(EditAnywhere, EditFixedSize, Category = "CesiumSublevels")
+  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
@@ -551,8 +551,14 @@ private:
   void _jumpToLevel(const FCesiumSubLevel& level);
 
   /**
-   * Will make sure that the `CesiumSubLevels` array contains entries
-   * that exactly match the current streaming levels of the world
+   * Will make sure that the `CesiumSubLevels` array contains all
+   * of the current streaming levels of the world.
+   *
+   * NOTE: The array may afterwards still contain sublevels that
+   * have been unloaded and are no longer present in the world,
+   * but they are retained, because it's hard to distinguish
+   * between a level that was only UNLOADED, and a level that
+   * was actually DELETED.
    */
   void _updateCesiumSubLevels();
 
