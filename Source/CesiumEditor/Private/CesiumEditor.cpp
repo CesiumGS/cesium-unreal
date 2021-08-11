@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumEditor.h"
-#include "Cesium3DTiles/Tileset.h"
+#include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "CesiumCommands.h"
 #include "CesiumIonPanel.h"
@@ -268,7 +268,7 @@ ACesium3DTileset* FCesiumEditorModule::FindFirstTilesetSupportingOverlays() {
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); it; ++it) {
-    const Cesium3DTiles::Tileset* pTileset = it->GetTileset();
+    const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
     if (pTileset && pTileset->supportsRasterOverlays()) {
       return *it;
     }
@@ -286,7 +286,7 @@ FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
 
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !pTilesetActor && it;
        ++it) {
-    const Cesium3DTiles::Tileset* pTileset = it->GetTileset();
+    const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
     if (pTileset && pTileset->getIonAssetID() == assetID) {
       return *it;
     }
