@@ -2,7 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
-#include "Cesium3DTiles/Gltf.h"
+#include "Cesium3DTilesSelection/Gltf.h"
 #include "CesiumGltf/AccessorView.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -22,7 +22,7 @@
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "ChaosDerivedDataUtil.h"
 #endif
-#include "Cesium3DTiles/RasterOverlayTile.h"
+#include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -1860,8 +1860,8 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
 }
 
 void UCesiumGltfComponent::AttachRasterTile(
-    const Cesium3DTiles::Tile& tile,
-    const Cesium3DTiles::RasterOverlayTile& rasterTile,
+    const Cesium3DTilesSelection::Tile& tile,
+    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture,
     const CesiumGeometry::Rectangle& textureCoordinateRectangle,
     const glm::dvec2& translation,
@@ -1888,8 +1888,8 @@ void UCesiumGltfComponent::AttachRasterTile(
 }
 
 void UCesiumGltfComponent::DetachRasterTile(
-    const Cesium3DTiles::Tile& tile,
-    const Cesium3DTiles::RasterOverlayTile& rasterTile,
+    const Cesium3DTilesSelection::Tile& tile,
+    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture,
     const CesiumGeometry::Rectangle& textureCoordinateRectangle) {
   size_t numBefore = this->OverlayTiles.Num();

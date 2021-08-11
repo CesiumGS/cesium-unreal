@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Cesium3DTiles/BoundingVolume.h"
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include <optional>
@@ -33,7 +33,7 @@ public:
    * will be returned. Use
    * {@see IsBoundingVolumeReady} to determine which of these is the case.
    */
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  virtual std::optional<Cesium3DTilesSelection::BoundingVolume>
   GetBoundingVolume() const = 0;
 
   /**
