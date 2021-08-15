@@ -326,8 +326,10 @@ ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
       ->GetCesiumTilesetToUnrealRelativeWorldTransform();
 }
 
-void ACesium3DTileset::UpdateTransformFromCesium(
-    const glm::dmat4& CesiumToUnreal) {
+void ACesium3DTileset::UpdateTransformFromCesium() {
+
+  const glm::dmat4& CesiumToUnreal =
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   TArray<UCesiumGltfComponent*> gltfComponents;
   this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
@@ -1243,8 +1245,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   if (pRoot->IsTransformChanged()) {
-    this->UpdateTransformFromCesium(
-        this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+    this->UpdateTransformFromCesium();
     pRoot->MarkTransformUnchanged();
   }
 
