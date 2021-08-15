@@ -33,18 +33,7 @@ public:
    * relates to the coordinate system in this Unreal Engine level.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ACesiumGeoreference* Georeference;
-
-  /**
-   * Whether to automatically restore the precision of the Unreal transform from
-   * the source Earth-Centered, Earth-Fixed (ECEF) transform during
-   * origin-rebase. This is useful for maintaining high-precision for fixed
-   * objects like buildings. This may need to be disabled for objects where the
-   * Unreal transform is to be treated as the ground truth, e.g. Unreal physics
-   * objects, cameras, etc.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool FixTransformOnOriginRebase = true;
+  ACesiumGeoreference* Georeference = nullptr;
 
   /**
    * Using the teleport flag will move objects to the updated transform
@@ -162,15 +151,17 @@ public:
   FVector InaccurateGetECEF() const;
 
   /**
-   * Called by owner actor on position shifting. The Component should update
-   * all relevant data structures to reflect new actor location.
+   * Called by the owner actor when the world's OriginLocation changes (i.e.
+   * during origin rebasing). The Component will recompute the Actor's
+   * Location property based on the new OriginLocation and on this component's
+   * high-precision representation of the position.
    *
-   * Specifically, this is called during origin rebasing. Here, it
-   * will update the ECEF location, to take the new world origin
-   * location into account.
+   * This is scenario (5) in `georeference-component-scenarios.md`.
    */
   virtual void
   ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+
+  virtual void InitializeComponent();
 
 protected:
   /**
@@ -217,6 +208,8 @@ protected:
    */
   virtual void OnComponentCreated() override;
 
+  virtual void PostInitProperties() override;
+
   /**
    * Do any object-specific cleanup required immediately after
    * loading an object.
@@ -236,7 +229,7 @@ protected:
    * remove the `HandleGeoreferenceUpdated` callback from the
    * `OnGeoreferenceUpdated` delegate of the current georeference.
    */
-  void PreEditChange(FProperty* PropertyThatWillChange);
+  virtual void PreEditChange(FProperty* PropertyThatWillChange) override;
 
   /**
    * Called when a property on this object has been modified externally
@@ -257,6 +250,11 @@ protected:
    */
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
+  virtual void PostEditChangeChainProperty(
+      FPropertyChangedChainEvent& PropertyChangedEvent) override;
+  virtual void PreEditUndo() override;
+  virtual void PostEditUndo() override;
 #endif
 
 private:
@@ -363,6 +361,26 @@ private:
   void _debugLogState();
 
   /**
+   * Synchronizes the ECEF position from the Actor's current Location, but only
+   * if the current ECEF position is wrong.
+   *
+   * The current ECEF position is converted to Unreal coordinates and truncated
+   * to single-precision. If this matches the Actor's Location already, then
+   * this method does nothing more, because the ECEF is already correct and
+   * recomputing it would potentially cause loss of precision.
+   *
+   * If the computed Location is different, however, then the Actor's current
+   * Location is assumed to be correct and the ECEF position is assumed to be
+   * incorrect, so the ECEF position is recomputed from the Actor's Location.
+   *
+   * In other words, this method sets the ECEF position _unless_ we can prove
+   * that the Actor's Location was derived from the ECEF position.
+   *
+   * This method never modifies the Actor's transform, no matter what.
+   */
+  void _syncEcefFromActor();
+
+  /**
    * Whether an update of the actor transform is currently in progress,
    * and further calls that are issued by HandleActorTransformUpdated
    * should be ignored
@@ -389,7 +407,7 @@ private:
    *
    * This reflects the state that is obtained from the Georeference,
    * as the rotation component of the matrix that is returned from
-   * `geoTransforms.GetEllipsoidCenteredToUnrealWorldTransform()`.
+   * `geoTransforms.GetAbsoluteUnrealWorldToEllipsoidCenteredTransform()`.
    *
    * Whenever the Georeference is modified and `HandleGeoreferenceUpdated`
    * is called, this is used to compute the change in rotation from the
@@ -399,4 +417,7 @@ private:
    * of the underlying Georeference.
    */
   glm::dmat3 _currentUnrealToEcef;
+
+  UPROPERTY()
+  bool _ecefIsValid = false;
 };

@@ -500,6 +500,8 @@ public:
    */
   virtual void Tick(float DeltaTime) override;
 
+  virtual void PostLoad() override;
+
   /**
    * Returns the GeoTransforms that offers the same conversion
    * functions as this class, but performs the computations

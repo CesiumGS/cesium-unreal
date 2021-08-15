@@ -598,6 +598,19 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   _performOriginRebasing();
 }
 
+void ACesiumGeoreference::PostLoad() {
+  Super::PostLoad();
+
+  glm::dvec3 center(0.0, 0.0, 0.0);
+  if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+    center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+        this->OriginLongitude,
+        this->OriginLatitude,
+        this->OriginHeight));
+  }
+  _geoTransforms.setCenter(center);
+}
+
 /**
  * Useful Conversion Functions
  */
