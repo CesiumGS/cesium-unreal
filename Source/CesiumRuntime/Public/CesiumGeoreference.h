@@ -478,6 +478,9 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
+  UPROPERTY()
+  FGeoreferenceUpdated OnGeoreferenceInitialized;
+
   /**
    * Recomputes all world georeference transforms. Usually there is no need to
    * explicitly call this from external code.

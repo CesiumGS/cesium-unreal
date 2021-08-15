@@ -333,6 +333,7 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
       *this->GetName());
 
   this->UpdateGeoreference();
+  OnGeoreferenceInitialized.Broadcast();
 }
 
 void ACesiumGeoreference::UpdateGeoreference() {

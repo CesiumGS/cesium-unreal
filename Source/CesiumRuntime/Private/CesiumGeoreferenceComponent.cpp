@@ -20,10 +20,11 @@
 
 UCesiumGeoreferenceComponent::UCesiumGeoreferenceComponent()
     : _updatingActorTransform(false),
-      _currentEcef()
-// NOTE: _actorToECEF is initialized from property
+      _currentEcef(),
+      _currentUnrealToEcef(1.0)
 {
   this->bAutoActivate = true;
+  this->bWantsInitializeComponent = true;
   PrimaryComponentTick.bCanEverTick = false;
 }
 
@@ -333,10 +334,15 @@ void UCesiumGeoreferenceComponent::_initGeoreference() {
     this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
+    this->Georeference->OnGeoreferenceInitialized.AddUniqueDynamic(
+        this,
+        &UCesiumGeoreferenceComponent::HandleGeoreferenceInitialized);
     const glm::dmat3 unrealToEcef =
         glm::dmat3(Georeference->GetGeoTransforms()
                        .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform());
     this->_currentUnrealToEcef = unrealToEcef;
+
+    GlmLogging::logMatrix("_currentUnrealToEcef in _initGeoreference", glm::dmat4(unrealToEcef));
   }
 }
 
@@ -472,7 +478,31 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
 }
 #endif
 
+void UCesiumGeoreferenceComponent::HandleGeoreferenceInitialized() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called HandleGeoreferenceInitialized for %s"),
+      *this->GetName());
+  const glm::dmat3 unrealToEcef =
+      glm::dmat3(Georeference->GetGeoTransforms()
+                     .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform());
+  this->_currentUnrealToEcef = unrealToEcef;
+  georeferenceWasInitialized = true;
+}
+
 void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
+
+  if (!georeferenceWasInitialized)
+  {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Called HandleGeoreferenceUpdated for %s BUT IGNORED BECAUSE NOT INITIALIZED"),
+        *this->GetName());
+    return;
+  }
+
   UE_LOG(
       LogCesium,
       Verbose,
@@ -491,6 +521,11 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
   // Update the actor rotation based on the rotation change
   const glm::dmat3 oldActorRotation = _getRotationFromActor();
   const glm::dmat3 newActorRotation = rotationChange * oldActorRotation;
+
+  GlmLogging::logMatrix("  _currentUnrealToEcef", glm::dmat4(_currentUnrealToEcef));
+  GlmLogging::logMatrix("  rotationChange", glm::dmat4(rotationChange));
+  GlmLogging::logMatrix("  oldActorRotation", glm::dmat4(oldActorRotation));
+  GlmLogging::logMatrix("  newActorRotation", glm::dmat4(newActorRotation));
 
   // Store the new Unreal-to-ECEF rotation for further updates
   const glm::dmat3 unrealToEcef = glm::dmat3(
@@ -681,6 +716,16 @@ void UCesiumGeoreferenceComponent::_setECEF(
 
   GlmLogging::logVector("_setECEF done, _currentEcef now ", _currentEcef);
   _debugLogState();
+}
+
+void UCesiumGeoreferenceComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called InitializeComponent on component %s"),
+      *this->GetName());
 }
 
 void UCesiumGeoreferenceComponent::_updateDisplayLongitudeLatitudeHeight() {

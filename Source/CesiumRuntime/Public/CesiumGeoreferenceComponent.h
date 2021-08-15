@@ -195,6 +195,8 @@ protected:
    */
   virtual void OnUnregister() override;
 
+  void InitializeComponent();
+
   /**
    * Handle updates in the transform of the owning actor.
    *
@@ -266,6 +268,10 @@ private:
    */
   UFUNCTION()
   void HandleGeoreferenceUpdated();
+
+  UFUNCTION()
+  void HandleGeoreferenceInitialized();
+  bool georeferenceWasInitialized = false;
 
   /**
    * Initializes the `Georeference`.
