@@ -478,6 +478,14 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
+  /**
+   * A delegate that will be called in `OnConstruction`.
+   *
+   * This is only used internally. It allows internal classes
+   * to detect when the georeference has been initialized and
+   * its matrices (like the ECEF-to-Unreal matrix) have their
+   * initial state.
+   */
   UPROPERTY()
   FGeoreferenceUpdated OnGeoreferenceInitialized;
 

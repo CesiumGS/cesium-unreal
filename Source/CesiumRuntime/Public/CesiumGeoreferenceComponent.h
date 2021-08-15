@@ -195,8 +195,6 @@ protected:
    */
   virtual void OnUnregister() override;
 
-  void InitializeComponent();
-
   /**
    * Handle updates in the transform of the owning actor.
    *
@@ -263,15 +261,24 @@ protected:
 
 private:
   /**
-   * A function that is attached to the `OnGeoreferenceUpdated` delegate,
+   * A function that is attached to the `OnGeoreferenceUpdated` delegate
    * of the Georeference, and just calls `_updateActorTransform`.
    */
   UFUNCTION()
   void HandleGeoreferenceUpdated();
 
+  /**
+   * A function that is attached to `OnGeoreferenceInitialized` delegate
+   * of the Georeference, and tracks the initialization state.
+   */
   UFUNCTION()
   void HandleGeoreferenceInitialized();
-  bool georeferenceWasInitialized = false;
+
+  /**
+   * A flag indicating whether the Georeference was initialized and
+   * HandleGeoreferenceInitialized was already called.
+   */
+  bool _georeferenceWasInitialized = false;
 
   /**
    * Initializes the `Georeference`.
