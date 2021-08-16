@@ -121,6 +121,8 @@ public:
    * Returns the longitude in degrees (x), latitude in degrees (y),
    * and height in meters (z) of the actor, downcasted to a
    * single-precision floating point vector.
+   *
+   * The returned value may be invalid if this component is not yet registered.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateGetLongitudeLatitudeHeight() const;
@@ -143,9 +145,10 @@ public:
       bool MaintainRelativeOrientation = true);
 
   /**
-   * Returns the Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates of the actor, downcasted to a
-   * single-precision floating point vector.
+   * Returns the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor,
+   * downcasted to a single-precision floating point vector.
+   *
+   * The returned value may be invalid if this component is not yet registered.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateGetECEF() const;

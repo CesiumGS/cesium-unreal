@@ -29,5 +29,5 @@ Actions:
 * `OnRegister`: Update ECEF from Actor if ECEF is not yet valid
 * `HandleActorTransformUpdated`: Update ECEF, and mark it valid.
 * `PostEditChangeProperty`: If ECEF properties were changed, mark ECEF valid.
-* `PostEditUndo`: Nothing special, because ECEF validity state should be undone as well as necessary.
+* `PostEditUndo`: Nothing special, because ECEF validity state should be undone as well, as necessary.
 * `OnComponentCreated`: ECEF is marked invalid

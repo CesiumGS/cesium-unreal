@@ -598,17 +598,20 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   _performOriginRebasing();
 }
 
-void ACesiumGeoreference::PostLoad() {
-  Super::PostLoad();
+void ACesiumGeoreference::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
 
-  glm::dvec3 center(0.0, 0.0, 0.0);
-  if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-    center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-        this->OriginLongitude,
-        this->OriginLatitude,
-        this->OriginHeight));
+  // Recompute derived values on load.
+  if (Ar.IsLoading()) {
+    glm::dvec3 center(0.0, 0.0, 0.0);
+    if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+      center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+          this->OriginLongitude,
+          this->OriginLatitude,
+          this->OriginHeight));
+    }
+    _geoTransforms.setCenter(center);
   }
-  _geoTransforms.setCenter(center);
 }
 
 /**

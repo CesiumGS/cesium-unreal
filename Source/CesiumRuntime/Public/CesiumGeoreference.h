@@ -500,7 +500,7 @@ public:
    */
   virtual void Tick(float DeltaTime) override;
 
-  virtual void PostLoad() override;
+  virtual void Serialize(FArchive& Ar) override;
 
   /**
    * Returns the GeoTransforms that offers the same conversion
