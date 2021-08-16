@@ -164,8 +164,6 @@ public:
   virtual void
   ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 
-  virtual void InitializeComponent();
-
 protected:
   /**
    * Called when a component is registered.
@@ -211,8 +209,6 @@ protected:
    */
   virtual void OnComponentCreated() override;
 
-  virtual void PostInitProperties() override;
-
   /**
    * Do any object-specific cleanup required immediately after
    * loading an object.
@@ -224,15 +220,6 @@ protected:
   virtual void PostLoad() override;
 
 #if WITH_EDITOR
-
-  /**
-   * This is called when a property is about to be modified externally.
-   *
-   * When the georeference is about to be modified, then this will
-   * remove the `HandleGeoreferenceUpdated` callback from the
-   * `OnGeoreferenceUpdated` delegate of the current georeference.
-   */
-  virtual void PreEditChange(FProperty* PropertyThatWillChange) override;
 
   /**
    * Called when a property on this object has been modified externally
@@ -254,8 +241,6 @@ protected:
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
-  virtual void PostEditChangeChainProperty(
-      FPropertyChangedChainEvent& PropertyChangedEvent) override;
   virtual void PreEditUndo() override;
   virtual void PostEditUndo() override;
 #endif

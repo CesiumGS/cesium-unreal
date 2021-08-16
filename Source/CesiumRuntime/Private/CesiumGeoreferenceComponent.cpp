@@ -329,10 +329,6 @@ void UCesiumGeoreferenceComponent::OnComponentCreated() {
   this->_ecefIsValid = false;
 }
 
-void UCesiumGeoreferenceComponent::PostInitProperties() {
-  Super::PostInitProperties();
-}
-
 void UCesiumGeoreferenceComponent::PostLoad() {
   UE_LOG(
       LogCesium,
@@ -417,22 +413,7 @@ void UCesiumGeoreferenceComponent::ApplyWorldOffset(
   _updateActorTransform(actorRotation, newRelativeLocation);
 }
 
-void UCesiumGeoreferenceComponent::InitializeComponent() {
-  Super::InitializeComponent();
-}
-
 #if WITH_EDITOR
-void UCesiumGeoreferenceComponent::PreEditChange(
-    FProperty* PropertyThatWillChange) {
-  Super::PreEditChange(PropertyThatWillChange);
-
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Called PreEditChange for %s"),
-      *this->GetName());
-}
-
 void UCesiumGeoreferenceComponent::PostEditChangeProperty(
     FPropertyChangedEvent& event) {
   Super::PostEditChangeProperty(event);
@@ -468,11 +449,6 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
     this->MoveToECEF(glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
   }
-}
-
-void UCesiumGeoreferenceComponent::PostEditChangeChainProperty(
-    FPropertyChangedChainEvent& PropertyChangedEvent) {
-  Super::PostEditChangeChainProperty(PropertyChangedEvent);
 }
 
 void UCesiumGeoreferenceComponent::PreEditUndo() { Super::PreEditUndo(); }
