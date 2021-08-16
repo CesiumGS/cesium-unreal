@@ -2,7 +2,6 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
-#include "Cesium3DTilesSelection/Gltf.h"
 #include "CesiumGltf/AccessorView.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
