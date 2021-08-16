@@ -340,6 +340,22 @@ private:
   bool AlwaysIncludeTangents = false;
 
   /**
+   * Whether to generate smooth normals when normals are missing in the glTF.
+   *
+   * According to the Gltf spec: "When normals are not specified, client
+   * implementations should calculate flat normals." However, calculating flat
+   * normals requires duplicating vertices. This option allows the gltfs to be
+   * sent with explicit smooth normals when the original gltf was missing
+   * normals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetGenerateSmoothNormals,
+      BlueprintSetter = SetGenerateSmoothNormals,
+      Category = "Cesium|Rendering")
+  bool GenerateSmoothNormals = false;
+
+  /**
    * Whether to request and render the water mask.
    *
    * Currently only applicable for quantized-mesh tilesets that support the
@@ -433,6 +449,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetGenerateSmoothNormals() const { return GenerateSmoothNormals; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetGenerateSmoothNormals(bool bGenerateSmoothNormals);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }

@@ -152,6 +152,13 @@ void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   }
 }
 
+void ACesium3DTileset::SetGenerateSmoothNormals(bool bGenerateSmoothNormals) {
+  if (this->GenerateSmoothNormals != bGenerateSmoothNormals) {
+    this->GenerateSmoothNormals = bGenerateSmoothNormals;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
   if (this->EnableWaterMask != bEnableMask) {
     this->EnableWaterMask = bEnableMask;
@@ -679,6 +686,12 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.contentOptions.generateMissingNormalsSmooth =
+      this->GenerateSmoothNormals;
+  options.contentOptions.generateMissingNormalsFlat =
+      !this->GenerateSmoothNormals;
+
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
 #else
@@ -1361,6 +1374,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
