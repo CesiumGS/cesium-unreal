@@ -364,26 +364,6 @@ private:
   void _debugLogState();
 
   /**
-   * Synchronizes the ECEF position from the Actor's current Location, but only
-   * if the current ECEF position is wrong.
-   *
-   * The current ECEF position is converted to Unreal coordinates and truncated
-   * to single-precision. If this matches the Actor's Location already, then
-   * this method does nothing more, because the ECEF is already correct and
-   * recomputing it would potentially cause loss of precision.
-   *
-   * If the computed Location is different, however, then the Actor's current
-   * Location is assumed to be correct and the ECEF position is assumed to be
-   * incorrect, so the ECEF position is recomputed from the Actor's Location.
-   *
-   * In other words, this method sets the ECEF position _unless_ we can prove
-   * that the Actor's Location was derived from the ECEF position.
-   *
-   * This method never modifies the Actor's transform, no matter what.
-   */
-  void _syncEcefFromActor();
-
-  /**
    * Whether an update of the actor transform is currently in progress,
    * and further calls that are issued by HandleActorTransformUpdated
    * should be ignored
@@ -418,6 +398,9 @@ private:
    * between the old and the new rotation is applied to the actor
    * rotation, to keep its orientation consistent despite the change
    * of the underlying Georeference.
+   *
+   * This property is only valid while the Component is registered (i.e. when
+   * IsRegistered() returns true).
    */
   glm::dmat3 _currentUnrealToEcef;
 

@@ -181,6 +181,12 @@ void UCesiumGeoreferenceComponent::OnRegister() {
         &UCesiumGeoreferenceComponent::HandleActorTransformUpdated);
   }
 
+  this->_initGeoreference();
+
+  this->_currentUnrealToEcef =
+      this->Georeference->GetGeoTransforms()
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+
   if (!this->_ecefIsValid) {
     this->_updateFromActor();
   }
@@ -302,11 +308,24 @@ void UCesiumGeoreferenceComponent::OnComponentCreated() {
       TEXT("Called OnComponentCreated on component %s"),
       *this->GetName());
   Super::OnComponentCreated();
-  _initGeoreference();
 
   // When the component is first created, the ECEF position is unknown.
   // It will be computed in OnRegister if it hasn't been set or loaded prior to
-  // that.
+  // that. This happens both on creation of a brand-new Component and on paste
+  // of a Component into a new Actor.
+  //
+  // We could get rid of this if we instead has a way of _checking_ whether the
+  // ECEF position is accurate. For example, is the ECEF position stored in this
+  // component accurate for the Actor that the Component has just been attached
+  // to? In other words, is it equivalent to the Actor's Location (to the limits
+  // of the single-precision floating-point representation of the Location)?
+  // Maybe because the Component was cut from this same Actor seconds ago? If
+  // so, our ECEF is still valid. If not, we need to recompute the ECEF from the
+  // (new) Actor transform.
+  //
+  // But just assuming the ECEF is invalid in this scenario is simpler and
+  // nearly as good. It just means that on Paste we always recompute the ECEF
+  // from the Actor Location.
   this->_ecefIsValid = false;
 }
 
@@ -321,11 +340,9 @@ void UCesiumGeoreferenceComponent::PostLoad() {
       TEXT("Called PostLoad on component %s"),
       *this->GetName());
   Super::PostLoad();
-  _initGeoreference();
+
+  // TODO: do this in (de-)Serialize instead?
   this->_currentEcef = glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
-  this->_currentUnrealToEcef =
-      Georeference->GetGeoTransforms()
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
   this->_ecefIsValid = true;
 }
 
@@ -414,24 +431,8 @@ void UCesiumGeoreferenceComponent::PreEditChange(
       Verbose,
       TEXT("Called PreEditChange for %s"),
       *this->GetName());
-
-  // If the Georeference is modified, detach the `HandleGeoreferenceUpdated`
-  // callback from the current instance
-  // FName propertyName = PropertyThatWillChange->GetFName();
-  // if (propertyName ==
-  //    GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Georeference)) {
-  //  if (IsValid(this->Georeference)) {
-  //    this->Georeference->OnGeoreferenceUpdated.RemoveAll(this);
-
-  //    // The Georeference might be set to None/null, so a final update
-  //    // of the actor transform based on the last valid state.
-  //    // (TODO: This might not be necessary, but possible side effects
-  //    // of a null Georeference should be covered with tests)
-  //    _updateActorTransform();
-  //  }
-  //  return;
-  //}
 }
+
 void UCesiumGeoreferenceComponent::PostEditChangeProperty(
     FPropertyChangedEvent& event) {
   Super::PostEditChangeProperty(event);
@@ -466,17 +467,7 @@ void UCesiumGeoreferenceComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, ECEF_Z)) {
     this->MoveToECEF(glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
     return;
-  } /* else if (
-      propertyName ==
-      GET_MEMBER_NAME_CHECKED(UCesiumGeoreferenceComponent, Georeference)) {
-    if (IsValid(this->Georeference)) {
-      this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
-          this,
-          &UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated);
-      _updateActorTransform();
-    }
-    return;
-  }*/
+  }
 }
 
 void UCesiumGeoreferenceComponent::PostEditChangeChainProperty(
@@ -496,6 +487,16 @@ void UCesiumGeoreferenceComponent::HandleGeoreferenceUpdated() {
       *this->GetName());
 
   if (!this->_ecefIsValid) {
+    // We don't have a valid ECEF position, so no possible way to update the
+    // Actor Transform based on the Georeference change.
+    return;
+  }
+
+  if (!this->IsRegistered()) {
+    // While this component is not registered, it is not in control of the
+    // Actor's position. So a georeference change shouldn't affect the Actor's
+    // transform. Furthermore, _currentUnrealToEcef is invalid when
+    // unregistered, so we wouldn't know how to adjust the rotation.
     return;
   }
 
@@ -694,9 +695,6 @@ void UCesiumGeoreferenceComponent::_setECEF(
     this->_currentEcef = targetEcef;
   }
 
-  this->_currentUnrealToEcef =
-      this->Georeference->GetGeoTransforms()
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
   this->_ecefIsValid = true;
   _updateActorTransform(newActorRotation, newRelativeLocation);
   this->_updateDisplayLongitudeLatitudeHeight();
@@ -776,28 +774,4 @@ void UCesiumGeoreferenceComponent::_debugLogState() {
       "  relativeLocationFromActor   ",
       relativeLocationFromActor);
   GlmLogging::logMatrix("  actorRotation", glm::dmat4(actorRotation));
-}
-
-void UCesiumGeoreferenceComponent::_syncEcefFromActor() {
-  if (!IsValid(this->Georeference)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("CesiumGeoreferenceComponent does not have a valid Georeference"));
-    return;
-  }
-
-  glm::dvec3 relativeLocation = this->_computeRelativeLocation(
-      glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
-  FVector relativeLocationSingle = VecMath::createVector(relativeLocation);
-
-  // Do NOT use TransformUnrealToEcef, because it will assume
-  // that the given position is relative to the world origin
-  const glm::dvec3 absoluteLocation = _getAbsoluteLocationFromActor();
-  const glm::dmat4& unrealToEcef =
-      this->Georeference->GetGeoTransforms()
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
-  const glm::dvec3 ecef = unrealToEcef * glm::dvec4(absoluteLocation, 1.0);
-
-  _setECEF(ecef, true);
 }

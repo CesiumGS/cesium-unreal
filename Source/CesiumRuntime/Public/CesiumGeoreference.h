@@ -614,4 +614,10 @@ private:
    * or `OriginRebaseInsideSublevels` is enabled.
    */
   void _performOriginRebasing();
+
+  /**
+   * Updates _geoTransforms based on the current ellipsoid and center, and
+   * returns the old transforms.
+   */
+  void _updateGeoTransforms();
 };

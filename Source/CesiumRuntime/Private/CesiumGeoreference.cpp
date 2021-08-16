@@ -127,11 +127,6 @@ void ACesiumGeoreference::PostInitProperties() {
       *this->GetName());
 
   Super::PostInitProperties();
-
-  // Initialize the GeoTransforms with the state from the
-  // deserialized properties
-  _geoTransforms.setEllipsoid(CesiumGeospatial::Ellipsoid(
-      glm::dvec3(_ellipsoidRadii[0], _ellipsoidRadii[1], _ellipsoidRadii[2])));
   UpdateGeoreference();
 }
 
@@ -336,14 +331,7 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumGeoreference::UpdateGeoreference() {
-  glm::dvec3 center(0.0, 0.0, 0.0);
-  if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-    center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-        this->OriginLongitude,
-        this->OriginLatitude,
-        this->OriginHeight));
-  }
-  _geoTransforms.setCenter(center);
+  this->_updateGeoTransforms();
 
   UE_LOG(
       LogCesium,
@@ -586,6 +574,23 @@ void ACesiumGeoreference::_performOriginRebasing() {
   }
 }
 
+void ACesiumGeoreference::_updateGeoTransforms() {
+  glm::dvec3 center(0.0, 0.0, 0.0);
+  if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+    center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+        this->OriginLongitude,
+        this->OriginLatitude,
+        this->OriginHeight));
+  }
+
+  this->_geoTransforms = GeoTransforms(
+      CesiumGeospatial::Ellipsoid(
+          this->_ellipsoidRadii[0],
+          this->_ellipsoidRadii[1],
+          this->_ellipsoidRadii[2]),
+      center);
+}
+
 void ACesiumGeoreference::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
@@ -603,14 +608,7 @@ void ACesiumGeoreference::Serialize(FArchive& Ar) {
 
   // Recompute derived values on load.
   if (Ar.IsLoading()) {
-    glm::dvec3 center(0.0, 0.0, 0.0);
-    if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-      center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-          this->OriginLongitude,
-          this->OriginLatitude,
-          this->OriginHeight));
-    }
-    _geoTransforms.setCenter(center);
+    this->_updateGeoTransforms();
   }
 }
 
