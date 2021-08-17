@@ -1,5 +1,12 @@
 # Change Log
 
+### Next Release - ?
+
+##### Additions :tada:
+
+- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
+
+
 ### v1.5.1 - 2021-08-09
 
 ##### Breaking :mega:
@@ -17,7 +24,6 @@
 
 - Added support for reading per-feature metadata from glTFs with the `EXT_feature_metadata` extension or from 3D Tiles with a B3DM batch table and accessing it from Blueprints.
 - Added support for using multiple view frustums in `ACesium3DTileset` to inform the tile selection algorithm.
-- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
 
 ##### Fixes :wrench:
 
