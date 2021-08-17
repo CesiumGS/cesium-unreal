@@ -689,8 +689,6 @@ void ACesium3DTileset::LoadTileset() {
 
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
-  options.contentOptions.generateMissingNormalsFlat =
-      !this->GenerateSmoothNormals;
 
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
