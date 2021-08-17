@@ -1,5 +1,12 @@
 # Change Log
 
+### Next Release - ?
+
+##### Additions :tada:
+
+- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
+
+
 ### v1.5.1 - 2021-08-09
 
 ##### Breaking :mega:
