@@ -259,8 +259,8 @@ void UCesiumGeoreferenceComponent::_updateFromActor() {
 }
 
 glm::dvec3 UCesiumGeoreferenceComponent::_getAbsoluteLocationFromActor() {
-  const UWorld* pWorld = this->GetWorld();
-  if (!IsValid(pWorld)) {
+  const UWorld* world = this->GetWorld();
+  if (!IsValid(world)) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -268,8 +268,8 @@ glm::dvec3 UCesiumGeoreferenceComponent::_getAbsoluteLocationFromActor() {
         *this->GetName());
     return glm::dvec3();
   }
-  const AActor* pOwner = this->GetOwner();
-  if (!IsValid(pOwner)) {
+  const AActor* const owner = this->GetOwner();
+  if (!IsValid(owner)) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -278,15 +278,15 @@ glm::dvec3 UCesiumGeoreferenceComponent::_getAbsoluteLocationFromActor() {
     return glm::dvec3();
   }
   const glm::dvec3 worldOriginLocation =
-      VecMath::createVector3D(pWorld->OriginLocation);
-  const USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
+      VecMath::createVector3D(world->OriginLocation);
+  const USceneComponent* pOwnerRoot = owner->GetRootComponent();
   const FVector& relativeLocation = pOwnerRoot->GetComponentLocation();
   return worldOriginLocation + VecMath::createVector3D(relativeLocation);
 }
 
 glm::dmat3 UCesiumGeoreferenceComponent::_getRotationFromActor() {
-  const AActor* pOwner = this->GetOwner();
-  if (!IsValid(pOwner)) {
+  const AActor* owner = this->GetOwner();
+  if (!IsValid(owner)) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -294,9 +294,9 @@ glm::dmat3 UCesiumGeoreferenceComponent::_getRotationFromActor() {
         *this->GetName());
     return glm::dmat3(1.0);
   }
-  const USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
+  const USceneComponent* ownerRoot = owner->GetRootComponent();
   const FMatrix actorTransform =
-      pOwnerRoot->GetComponentTransform().ToMatrixWithScale();
+      ownerRoot->GetComponentTransform().ToMatrixWithScale();
   const glm::dmat3 actorRotation(VecMath::createMatrix4D(actorTransform));
   return actorRotation;
 }
