@@ -209,6 +209,11 @@ void UCesiumGeoreferenceComponent::OnUnregister() {
         *this->GetName());
     return;
   }
+
+  if (this->Georeference) {
+    this->Georeference->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+
   USceneComponent* ownerRoot = owner->GetRootComponent();
   if (ownerRoot) {
     ownerRoot->TransformUpdated.RemoveAll(this);
