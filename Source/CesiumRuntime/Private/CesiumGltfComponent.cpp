@@ -1530,104 +1530,13 @@ bool applyTexture(
   return true;
 }
 
-static void loadModelGameThreadPart(
-    UCesiumGltfComponent* pGltf,
+static void SetParameterValues(
     LoadModelResult& loadResult,
-    const glm::dmat4x4& cesiumToUnrealTransform) {
-  UCesiumGltfPrimitiveComponent* pMesh =
-      NewObject<UCesiumGltfPrimitiveComponent>(
-          pGltf,
-          FName(loadResult.name.c_str()));
-  pMesh->HighPrecisionNodeTransform = loadResult.transform;
-  pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
-
-  pMesh->bUseDefaultCollision = false;
-  pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-  pMesh->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMesh->Metadata = std::move(loadResult.Metadata);
-  pMesh->pModel = loadResult.pModel;
-  pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
-
-  UStaticMesh* pStaticMesh =
-      NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
-  pMesh->SetStaticMesh(pStaticMesh);
-
-  pStaticMesh->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pStaticMesh->bIsBuiltAtRuntime = true;
-  pStaticMesh->NeverStream = true;
-  pStaticMesh->RenderData =
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
-
-  const CesiumGltf::Model& model = *loadResult.pModel;
-  const CesiumGltf::Material& material =
-      loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
-
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
-      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
-                                    : defaultPbrMetallicRoughness;
-
-  const FName ImportedSlotName(
-      *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-
-  UMaterialInterface* pBaseMaterial = nullptr;
-
-  switch (material.alphaMode) {
-  case CesiumGltf::Material::AlphaMode::BLEND:
-    // TODO
-    pBaseMaterial = pGltf->OpacityMaskMaterial;
-    break;
-  case CesiumGltf::Material::AlphaMode::MASK:
-    pBaseMaterial = pGltf->OpacityMaskMaterial;
-    break;
-  case CesiumGltf::Material::AlphaMode::OPAQUE:
-  default:
-// TODO: figure out why water material crashes mac
-#if PLATFORM_MAC
-    pBaseMaterial = pGltf->BaseMaterial;
-#else
-    pBaseMaterial = (loadResult.onlyWater || !loadResult.onlyLand)
-                        ? pGltf->BaseMaterialWithWater
-                        : pGltf->BaseMaterial;
-#endif
-    break;
-  }
-
-  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
-      pBaseMaterial,
-      nullptr,
-      ImportedSlotName);
-
-  pMaterial->SetFlags(
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMaterial->OpacityMaskClipValue = material.alphaCutoff;
-
-  UCesiumMaterialUserData* pCesiumData =
-      pBaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
-  UMaterialInstance* pBaseAsMaterialInstance =
-      Cast<UMaterialInstance>(pGltf->BaseMaterial);
-
-  if (pBaseAsMaterialInstance && pCesiumData) {
-    const FStaticParameterSet& parameters =
-        pBaseAsMaterialInstance->GetStaticParameters();
-    const TArray<FStaticMaterialLayersParameter>& layerParameters =
-        parameters.MaterialLayersParameters;
-
-    for (const auto& layerParameter : layerParameters) {
-      if (layerParameter.ParameterInfo.Name != "Cesium")
-        continue;
-
-      for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
-        const FString& name = pCesiumData->LayerNames[i];
-        FMaterialParameterInfo parameter(
-            "baseColorFactor",
-            EMaterialParameterAssociation::LayerParameter,
-            i);
-      }
-    }
-  }
-
+    const CesiumGltf::Material& material,
+    const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValue(
         textureCoordinateSet.first.c_str(),
@@ -1703,6 +1612,105 @@ static void loadModelGameThreadPart(
           loadResult.customMaskTranslationX,
           loadResult.customMaskTranslationY,
           loadResult.customMaskScale));
+}
+
+static void loadModelGameThreadPart(
+    UCesiumGltfComponent* pGltf,
+    LoadModelResult& loadResult,
+    const glm::dmat4x4& cesiumToUnrealTransform) {
+  UCesiumGltfPrimitiveComponent* pMesh =
+      NewObject<UCesiumGltfPrimitiveComponent>(
+          pGltf,
+          FName(loadResult.name.c_str()));
+  pMesh->HighPrecisionNodeTransform = loadResult.transform;
+  pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+  pMesh->bUseDefaultCollision = false;
+  pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+  pMesh->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pMesh->Metadata = std::move(loadResult.Metadata);
+  pMesh->pModel = loadResult.pModel;
+  pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
+
+  UStaticMesh* pStaticMesh =
+      NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
+  pMesh->SetStaticMesh(pStaticMesh);
+
+  pStaticMesh->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pStaticMesh->bIsBuiltAtRuntime = true;
+  pStaticMesh->NeverStream = true;
+  pStaticMesh->RenderData =
+      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+
+  const CesiumGltf::Model& model = *loadResult.pModel;
+  const CesiumGltf::Material& material =
+      loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
+
+  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
+      material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
+                                    : defaultPbrMetallicRoughness;
+
+  const FName ImportedSlotName(
+      *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+
+  UMaterialInterface* pBaseMaterial = nullptr;
+
+  switch (material.alphaMode) {
+  case CesiumGltf::Material::AlphaMode::BLEND:
+    // TODO
+    pBaseMaterial = pGltf->OpacityMaskMaterial;
+    break;
+  case CesiumGltf::Material::AlphaMode::MASK:
+    pBaseMaterial = pGltf->OpacityMaskMaterial;
+    break;
+  case CesiumGltf::Material::AlphaMode::OPAQUE:
+  default:
+// TODO: figure out why water material crashes mac
+#if PLATFORM_MAC
+    pBaseMaterial = pGltf->BaseMaterial;
+#else
+    pBaseMaterial = (loadResult.onlyWater || !loadResult.onlyLand)
+                        ? pGltf->BaseMaterialWithWater
+                        : pGltf->BaseMaterial;
+#endif
+    break;
+  }
+
+  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
+      pBaseMaterial,
+      nullptr,
+      ImportedSlotName);
+
+  pMaterial->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pMaterial->OpacityMaskClipValue = material.alphaCutoff;
+
+  SetParameterValues(
+      loadResult,
+      material,
+      pbr,
+      pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+
+  UMaterialInstance* pBaseAsMaterialInstance =
+      Cast<UMaterialInstance>(pBaseMaterial);
+  UCesiumMaterialUserData* pCesiumData =
+      pBaseAsMaterialInstance
+          ? pBaseAsMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>()
+          : nullptr;
+
+  if (pCesiumData) {
+    SetParameterValues(
+        loadResult,
+        material,
+        pbr,
+        pMaterial,
+        EMaterialParameterAssociation::LayerParameter,
+        0);
+  }
 
   pMaterial->TwoSided = true;
 
