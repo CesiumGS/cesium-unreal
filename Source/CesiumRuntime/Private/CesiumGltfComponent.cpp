@@ -30,6 +30,7 @@
 #include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumMaterialUserData.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -1569,41 +1570,63 @@ static void loadModelGameThreadPart(
 
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-  UMaterialInstanceDynamic* pMaterial;
+
+  UMaterialInterface* pBaseMaterial = nullptr;
 
   switch (material.alphaMode) {
   case CesiumGltf::Material::AlphaMode::BLEND:
     // TODO
-    pMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->OpacityMaskMaterial,
-        nullptr,
-        ImportedSlotName);
+    pBaseMaterial = pGltf->OpacityMaskMaterial;
     break;
   case CesiumGltf::Material::AlphaMode::MASK:
-    pMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->OpacityMaskMaterial,
-        nullptr,
-        ImportedSlotName);
+    pBaseMaterial = pGltf->OpacityMaskMaterial;
     break;
   case CesiumGltf::Material::AlphaMode::OPAQUE:
   default:
-    pMaterial = UMaterialInstanceDynamic::Create(
 // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
-        pGltf->BaseMaterial,
+    pBaseMaterial = pGltf->BaseMaterial;
 #else
-        (loadResult.onlyWater || !loadResult.onlyLand)
-            ? pGltf->BaseMaterialWithWater
-            : pGltf->BaseMaterial,
+    pBaseMaterial = (loadResult.onlyWater || !loadResult.onlyLand)
+                        ? pGltf->BaseMaterialWithWater
+                        : pGltf->BaseMaterial;
 #endif
-        nullptr,
-        ImportedSlotName);
     break;
   }
+
+  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
+      pBaseMaterial,
+      nullptr,
+      ImportedSlotName);
 
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMaterial->OpacityMaskClipValue = material.alphaCutoff;
+
+  UCesiumMaterialUserData* pCesiumData =
+      pBaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
+  UMaterialInstance* pBaseAsMaterialInstance =
+      Cast<UMaterialInstance>(pGltf->BaseMaterial);
+
+  if (pBaseAsMaterialInstance && pCesiumData) {
+    const FStaticParameterSet& parameters =
+        pBaseAsMaterialInstance->GetStaticParameters();
+    const TArray<FStaticMaterialLayersParameter>& layerParameters =
+        parameters.MaterialLayersParameters;
+
+    for (const auto& layerParameter : layerParameters) {
+      if (layerParameter.ParameterInfo.Name != "Cesium")
+        continue;
+
+      for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+        const FString& name = pCesiumData->LayerNames[i];
+        FMaterialParameterInfo parameter(
+            "baseColorFactor",
+            EMaterialParameterAssociation::LayerParameter,
+            i);
+      }
+    }
+  }
 
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValue(
@@ -1705,9 +1728,9 @@ static void loadModelGameThreadPart(
 #endif
   }
 
-  // Mark physics meshes created, no matter if we actually have a collision mesh
-  // or not. We don't want the editor creating collision meshes itself in the
-  // game thread, because that would be slow.
+  // Mark physics meshes created, no matter if we actually have a collision
+  // mesh or not. We don't want the editor creating collision meshes itself in
+  // the game thread, because that would be slow.
   pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
@@ -1855,8 +1878,8 @@ void UCesiumGltfComponent::DetachRasterTile(
        &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
         return /*tile.OverlayName == overlayName &&*/
             tile.Texture == pTexture &&
-            // TODO: can we remove the texcoord rect check now that only there's
-            // only one texture per tile per overlay?
+            // TODO: can we remove the texcoord rect check now that only
+            // there's only one texture per tile per overlay?
             tile.TextureCoordinateRectangle.Equals(FLinearColor(
                 textureCoordinateRectangle.minimumX,
                 textureCoordinateRectangle.minimumY,
@@ -1914,6 +1937,15 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
         continue;
       }
 
+      UMaterialInterface* pBaseMaterial = pMaterial->Parent;
+      UMaterialInstance* pBaseAsMaterialInstance =
+          Cast<UMaterialInstance>(pBaseMaterial);
+      UCesiumMaterialUserData* pCesiumData =
+          pBaseAsMaterialInstance
+              ? pBaseAsMaterialInstance
+                    ->GetAssetUserData<UCesiumMaterialUserData>()
+              : nullptr;
+
       for (FRasterOverlayTile& overlayTile : this->OverlayTiles) {
         pMaterial->SetTextureParameterValue(
             TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_Texture")),
@@ -1924,6 +1956,55 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
         pMaterial->SetVectorParameterValue(
             TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_TranslationScale")),
             overlayTile.TranslationAndScale);
+
+        // If this material uses material layers and has the Cesium user data,
+        // set the parameters on each material layer that maps to this overlay
+        // tile.
+        if (pCesiumData) {
+          for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+            if (pCesiumData->LayerNames[i] != overlayTile.OverlayName) {
+              continue;
+            }
+
+            pMaterial->SetTextureParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "Texture",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                overlayTile.Texture);
+            pMaterial->SetVectorParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "Rect",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                overlayTile.TextureCoordinateRectangle);
+            pMaterial->SetVectorParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "TranslationScale",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                overlayTile.TranslationAndScale);
+          }
+        }
+        // if (pBaseAsMaterialInstance && pCesiumData) {
+        //  const FStaticParameterSet& parameters =
+        //      pBaseAsMaterialInstance->GetStaticParameters();
+        //  const TArray<FStaticMaterialLayersParameter>& layerParameters =
+        //      parameters.MaterialLayersParameters;
+
+        //  for (const auto& layerParameter : layerParameters) {
+        //    if (layerParameter.ParameterInfo.Name != "Cesium")
+        //      continue;
+
+        //    for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+        //      const FString& name = pCesiumData->LayerNames[i];
+        //      FMaterialParameterInfo parameter(
+        //          "baseColorFactor",
+        //          EMaterialParameterAssociation::LayerParameter,
+        //          i);
+        //    }
+        //  }
+        //}
       }
       /*
       for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {

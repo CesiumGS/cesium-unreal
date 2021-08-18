@@ -740,9 +740,8 @@ void ACesium3DTileset::LoadTileset() {
   for (int i = 0; i < this->CartographicSelections.Num(); ++i) {
     ACesiumCartographicSelection* pCartographicSelection =
         this->CartographicSelections[i];
-    if (pCartographicSelection)
-    {
-        pCartographicSelection->UpdateSelection();
+    if (pCartographicSelection) {
+      pCartographicSelection->UpdateSelection();
     }
     if (!pCartographicSelection || addedSelections[i]) {
       continue;

@@ -125,7 +125,8 @@ public class CesiumRuntime : ModuleRules
                 "StaticMeshDescription",
                 "HTTP",
                 "LevelSequence",
-                "Projects"
+                "Projects",
+                "RenderCore"
             }
         );
 
