@@ -90,14 +90,15 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
           .VAlign(VAlign_Top)
           .HAlign(HAlign_Center)
           .Padding(5)
-          .AutoHeight()[SNew(SButton)
-                            .OnClicked(this, &IonLoginPanel::SignIn)
-                            .Text(FText::FromString(TEXT("Connect")))
-                            .IsEnabled_Lambda([this]() {
-                              return !FCesiumEditorModule::ion()
-                                          .isConnecting() &&
-                                     !FCesiumEditorModule::ion().isResuming();
-                            })] +
+          .AutoHeight()
+              [SNew(SButton)
+                   .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                   .OnClicked(this, &IonLoginPanel::SignIn)
+                   .Text(FText::FromString(TEXT("Connect")))
+                   .IsEnabled_Lambda([this]() {
+                     return !FCesiumEditorModule::ion().isConnecting() &&
+                            !FCesiumEditorModule::ion().isResuming();
+                   })] +
       SVerticalBox::Slot()
           .VAlign(VAlign_Top)
           .Padding(5, 15, 5, 5)

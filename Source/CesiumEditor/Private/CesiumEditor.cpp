@@ -11,6 +11,7 @@
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
+#include "EditorStyleSet.h"
 #include "EngineUtils.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
@@ -160,6 +161,18 @@ void FCesiumEditorModule::StartupModule() {
         FTextBlockStyle()
             .SetColorAndOpacity(FSlateColor::UseForeground())
             .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 9)));
+
+    const FButtonStyle& DefaultFlatButtonStyle =
+        FEditorStyle::Get().GetWidgetStyle<FButtonStyle>("FlatButton.Default");
+    const FLinearColor CesiumBlue(0.452f, 0.667f, 0.890f, 1.0f);
+    const FLinearColor CesiumBlueBrighter(0.582f, 0.797f, 1.000f, 1.0f);
+    const FLinearColor CesiumBlueDarker(0.332f, 0.547f, 0.804f, 1.0f);
+    const FButtonStyle CesiumButtonStyle =
+        FButtonStyle(DefaultFlatButtonStyle)
+            .SetNormal(FSlateColorBrush(CesiumBlue))
+            .SetHovered(FSlateColorBrush(CesiumBlueBrighter))
+            .SetPressed(FSlateColorBrush(CesiumBlueDarker));
+    StyleSet->Set("CesiumButton", CesiumButtonStyle);
 
     FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
   }

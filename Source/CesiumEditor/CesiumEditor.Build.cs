@@ -101,6 +101,7 @@ public class CesiumEditor : ModuleRules
             {
                 "CoreUObject",
                 "Engine",
+                "EditorStyle",
                 "ApplicationCore",
                 "Slate",
                 "SlateCore",
