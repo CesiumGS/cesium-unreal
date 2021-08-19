@@ -55,6 +55,7 @@ struct LoadTextureResult {
   TextureAddress addressX;
   TextureAddress addressY;
   TextureFilter filter;
+  UTexture2D* pTexture = nullptr;
 };
 
 struct CustomMask {
@@ -1510,23 +1511,30 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 
 bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
-    FName parameterName,
-    const std::optional<LoadTextureResult>& loadedTexture) {
+    const FMaterialParameterInfo& info,
+    std::optional<LoadTextureResult>& loadedTexture) {
   if (!loadedTexture) {
     return false;
   }
 
-  UTexture2D* pTexture = NewObject<UTexture2D>(
-      GetTransientPackage(),
-      NAME_None,
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UTexture2D* pTexture = loadedTexture->pTexture;
+  if (!pTexture) {
+    pTexture = NewObject<UTexture2D>(
+        GetTransientPackage(),
+        NAME_None,
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  pTexture->PlatformData = loadedTexture->pTextureData;
-  pTexture->AddressX = loadedTexture->addressX;
-  pTexture->AddressY = loadedTexture->addressY;
-  pTexture->Filter = loadedTexture->filter;
-  pTexture->UpdateResource();
-  pMaterial->SetTextureParameterValue(parameterName, pTexture);
+    pTexture->PlatformData = loadedTexture->pTextureData;
+    pTexture->AddressX = loadedTexture->addressX;
+    pTexture->AddressY = loadedTexture->addressY;
+    pTexture->Filter = loadedTexture->filter;
+    pTexture->UpdateResource();
+
+    loadedTexture->pTexture = pTexture;
+  }
+
+  pMaterial->SetTextureParameterValueByInfo(info, pTexture);
+
   return true;
 }
 
@@ -1538,36 +1546,56 @@ static void SetParameterValues(
     EMaterialParameterAssociation assocation,
     int32 index) {
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
-    pMaterial->SetScalarParameterValue(
-        textureCoordinateSet.first.c_str(),
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            textureCoordinateSet.first.c_str(),
+            assocation,
+            index),
         textureCoordinateSet.second);
   }
 
   if (pbr.baseColorFactor.size() >= 3) {
-    pMaterial->SetVectorParameterValue(
-        "baseColorFactor",
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("baseColorFactor", assocation, index),
         FVector(
             pbr.baseColorFactor[0],
             pbr.baseColorFactor[1],
             pbr.baseColorFactor[2]));
   }
-  pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
-  pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
-  pMaterial->SetScalarParameterValue("opacityMask", 1.0);
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("metallicFactor", assocation, index),
+      pbr.metallicFactor);
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("roughnessFactor", assocation, index),
+      pbr.roughnessFactor);
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("opacityMask", assocation, index),
+      1.0);
 
-  applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
   applyTexture(
       pMaterial,
-      "metallicRoughnessTexture",
+      FMaterialParameterInfo("baseColorTexture", assocation, index),
+      loadResult.baseColorTexture);
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("metallicRoughnessTexture", assocation, index),
       loadResult.metallicRoughnessTexture);
-  applyTexture(pMaterial, "normalTexture", loadResult.normalTexture);
-  bool hasEmissiveTexture =
-      applyTexture(pMaterial, "emissiveTexture", loadResult.emissiveTexture);
-  applyTexture(pMaterial, "occlusionTexture", loadResult.occlusionTexture);
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("normalTexture", assocation, index),
+      loadResult.normalTexture);
+  bool hasEmissiveTexture = applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("emissiveTexture", assocation, index),
+      loadResult.emissiveTexture);
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("occlusionTexture", assocation, index),
+      loadResult.occlusionTexture);
 
   if (material.emissiveFactor.size() >= 3) {
-    pMaterial->SetVectorParameterValue(
-        "emissiveFactor",
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveFactor", assocation, index),
         FVector(
             material.emissiveFactor[0],
             material.emissiveFactor[1],
@@ -1576,38 +1604,44 @@ static void SetParameterValues(
     // When we have an emissive texture but not a factor, we need to use a
     // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
     // from the texture.
-    pMaterial->SetVectorParameterValue(
-        "emissiveFactor",
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveFactor", assocation, index),
         FVector(1.0f, 1.0f, 1.0f));
   }
 
-  pMaterial->SetScalarParameterValue(
-      "OnlyLand",
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("OnlyLand", assocation, index),
       static_cast<float>(loadResult.onlyLand));
-  pMaterial->SetScalarParameterValue(
-      "OnlyWater",
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("OnlyWater", assocation, index),
       static_cast<float>(loadResult.onlyWater));
 
   if (!loadResult.onlyLand && !loadResult.onlyWater) {
-    applyTexture(pMaterial, "WaterMask", loadResult.waterMaskTexture);
+    applyTexture(
+        pMaterial,
+        FMaterialParameterInfo("WaterMask", assocation, index),
+        loadResult.waterMaskTexture);
   }
 
-  pMaterial->SetVectorParameterValue(
-      "WaterMaskTranslationScale",
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo("WaterMaskTranslationScale", assocation, index),
       FLinearColor(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
 
-  for (const CustomMask& customMask : loadResult.customMaskTextures) {
+  for (CustomMask& customMask : loadResult.customMaskTextures) {
     applyTexture(
         pMaterial,
-        UTF8_TO_TCHAR(customMask.name.c_str()),
+        FMaterialParameterInfo(
+            UTF8_TO_TCHAR(customMask.name.c_str()),
+            assocation,
+            index),
         customMask.loadTextureResult);
   }
 
-  pMaterial->SetVectorParameterValue(
-      "CustomMaskTranslationScale",
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo("CustomMaskTranslationScale", assocation, index),
       FLinearColor(
           loadResult.customMaskTranslationX,
           loadResult.customMaskTranslationY,
@@ -1994,25 +2028,6 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
                 overlayTile.TranslationAndScale);
           }
         }
-        // if (pBaseAsMaterialInstance && pCesiumData) {
-        //  const FStaticParameterSet& parameters =
-        //      pBaseAsMaterialInstance->GetStaticParameters();
-        //  const TArray<FStaticMaterialLayersParameter>& layerParameters =
-        //      parameters.MaterialLayersParameters;
-
-        //  for (const auto& layerParameter : layerParameters) {
-        //    if (layerParameter.ParameterInfo.Name != "Cesium")
-        //      continue;
-
-        //    for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
-        //      const FString& name = pCesiumData->LayerNames[i];
-        //      FMaterialParameterInfo parameter(
-        //          "baseColorFactor",
-        //          EMaterialParameterAssociation::LayerParameter,
-        //          i);
-        //    }
-        //  }
-        //}
       }
       /*
       for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
