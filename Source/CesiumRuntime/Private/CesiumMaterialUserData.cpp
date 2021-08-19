@@ -4,6 +4,7 @@
 void UCesiumMaterialUserData::PostEditChangeOwner() {
   Super::PostEditChangeOwner();
 
+#if WITH_EDITORONLY_DATA
   this->LayerNames.Empty();
 
   UMaterialInstance* pMaterial = Cast<UMaterialInstance>(this->GetOuter());
@@ -23,4 +24,5 @@ void UCesiumMaterialUserData::PostEditChangeOwner() {
       }
     }
   }
+#endif
 }

@@ -36,6 +36,7 @@
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
+#include "ScopedTransaction.h"
 #include "StaticMeshOperations.h"
 #include "mikktspace.h"
 #include <glm/ext/matrix_transform.hpp>
@@ -1735,6 +1736,34 @@ static void loadModelGameThreadPart(
       pBaseAsMaterialInstance
           ? pBaseAsMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>()
           : nullptr;
+
+  // If possible and necessary, attach the CesiumMaterialUserData now.
+#if WITH_EDITORONLY_DATA
+  if (pBaseAsMaterialInstance && !pCesiumData) {
+    const FStaticParameterSet& parameters =
+        pBaseAsMaterialInstance->GetStaticParameters();
+    const TArray<FStaticMaterialLayersParameter>& layerParameters =
+        parameters.MaterialLayersParameters;
+
+    const FStaticMaterialLayersParameter* pCesiumLayers =
+        layerParameters.FindByPredicate(
+            [](const FStaticMaterialLayersParameter& layerParameter) {
+              return layerParameter.ParameterInfo.Name == "Cesium";
+            });
+
+    if (pCesiumLayers) {
+      FScopedTransaction transaction(
+          FText::FromString("Add Cesium User Data to Material"));
+      pBaseAsMaterialInstance->Modify();
+      pCesiumData = NewObject<UCesiumMaterialUserData>(
+          pBaseAsMaterialInstance,
+          NAME_None,
+          RF_Public);
+      pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
+      pCesiumData->PostEditChangeOwner();
+    }
+  }
+#endif
 
   if (pCesiumData) {
     SetParameterValues(
