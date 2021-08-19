@@ -30,10 +30,13 @@
 #include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumPointCloudComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
+#include "LidarPointCloud.h"
+#include "LidarPointCloudShared.h"
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
 #include "mikktspace.h"
@@ -59,6 +62,7 @@ struct LoadTextureResult {
 struct LoadModelResult {
   FCesiumMetadataPrimitive Metadata;
   FStaticMeshRenderData* RenderData;
+  std::optional<TArray<FLidarPointCloudPoint>> pointCloudBuffer;
   const CesiumGltf::Model* pModel;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive;
   const CesiumGltf::Material* pMaterial;
@@ -578,6 +582,8 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
       *primitiveMetadata);
 }
 
+static void loadPointCloudPrimitive() {}
+
 template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
@@ -593,7 +599,8 @@ static void loadPrimitive(
   CESIUM_TRACE("loadPrimitive<T>");
 
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP &&
+      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
     // TODO: add support for primitive types other than triangles.
     UE_LOG(
         LogCesium,
@@ -604,6 +611,9 @@ static void loadPrimitive(
   }
 
   LoadModelResult primitiveResult;
+  primitiveResult.pModel = &model;
+  primitiveResult.pMeshPrimitive = &primitive;
+  primitiveResult.transform = transform;
 
   std::string name = "glTF";
 
@@ -654,6 +664,22 @@ static void loadPrimitive(
           UTF8_TO_TCHAR(name.c_str()));
       return;
     }
+  }
+
+  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    size_t pointsSize = positionView.size();
+    primitiveResult.pointCloudBuffer = TArray<FLidarPointCloudPoint>();
+    primitiveResult.pointCloudBuffer->SetNum(pointsSize);
+
+    for (size_t i = 0; i < pointsSize; ++i) {
+      FLidarPointCloudPoint& point =
+          primitiveResult.pointCloudBuffer.value()[i];
+      point.Location = positionView[i];
+      point.Color = FColor::Red;
+    }
+
+    result.push_back(std::move(primitiveResult));
+    return;
   }
 
   FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
@@ -1038,10 +1064,7 @@ static void loadPrimitive(
   LODResources.bHasReversedDepthOnlyIndices = false;
   LODResources.bHasAdjacencyInfo = false;
 
-  primitiveResult.pModel = &model;
-  primitiveResult.pMeshPrimitive = &primitive;
   primitiveResult.RenderData = RenderData;
-  primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
 
   section.MaterialIndex = 0;
@@ -1303,6 +1326,16 @@ static void loadNode(
       rotationQuat[1] = node.rotation[1];
       rotationQuat[2] = node.rotation[2];
       rotationQuat[3] = node.rotation[3];
+
+      // TODO: is it actually: ??
+      /*
+
+      rotationQuat[0] = node.rotation[3];
+      rotationQuat[1] = node.rotation[0];
+      rotationQuat[2] = node.rotation[1];
+      rotationQuat[3] = node.rotation[2];
+
+      */
     }
 
     glm::dmat4 scale(1.0);
@@ -1488,10 +1521,68 @@ bool applyTexture(
   return true;
 }
 
+static void loadPointCloud(
+    UCesiumGltfComponent* pGltf,
+    LoadModelResult& loadResult,
+    const glm::dmat4x4& cesiumToUnrealTransform) {
+  if (!loadResult.pointCloudBuffer) {
+    return;
+  }
+
+  UCesiumPointCloudComponent* pMesh = NewObject<UCesiumPointCloudComponent>(
+      pGltf,
+      FName(loadResult.name.c_str()));
+  pMesh->HighPrecisionNodeTransform = loadResult.transform;
+  pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
+
+  // pMesh->bUseDefaultCollision = false;
+  // pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+  pMesh->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  pMesh->Metadata = std::move(loadResult.Metadata);
+  pMesh->pModel = loadResult.pModel;
+  pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
+
+  ULidarPointCloud* pPointCloud =
+      NewObject<ULidarPointCloud>(pMesh, FName(loadResult.name.c_str()));
+
+  // TODO: try async load here
+  ELidarPointCloudAsyncMode asyncPointCloudResult =
+      ELidarPointCloudAsyncMode::Progress;
+  float progress = 0.0f;
+  ULidarPointCloudBlueprintLibrary::CreatePointCloudFromData(
+      pMesh,
+      *loadResult.pointCloudBuffer,
+      false,
+      FLatentActionInfo(),
+      asyncPointCloudResult,
+      progress,
+      pPointCloud);
+
+  pMesh->SetPointCloud(pPointCloud);
+
+  // TODO: add back in material code
+
+  pMesh->SetMobility(EComponentMobility::Movable);
+
+  // pMesh->bDrawMeshCollisionIfComplex = true;
+  // pMesh->bDrawMeshCollisionIfSimple = true;
+  pMesh->SetupAttachment(pGltf);
+  pMesh->RegisterComponent();
+}
+
 static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadModelResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
+
+  if (loadResult.pMeshPrimitive &&
+      loadResult.pMeshPrimitive->mode ==
+          CesiumGltf::MeshPrimitive::Mode::POINTS) {
+    loadPointCloud(pGltf, loadResult, cesiumToUnrealTransform);
+    return;
+  }
+
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(
           pGltf,
@@ -1754,6 +1845,12 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
         Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
     if (pPrimitive) {
       pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
+    }
+
+    UCesiumPointCloudComponent* pPointCloud =
+        Cast<UCesiumPointCloudComponent>(pSceneComponent);
+    if (pPointCloud) {
+      pPointCloud->UpdateTransformFromCesium(cesiumToUnrealTransform);
     }
   }
 }

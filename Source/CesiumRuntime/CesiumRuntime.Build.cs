@@ -25,6 +25,8 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
+        PrivateIncludePathModuleNames.AddRange(new string[] { "LidarPointCloudRuntime" });
+
         string libPrefix;
         string libPostfix;
         string platform;
@@ -111,6 +113,7 @@ public class CesiumRuntime : ModuleRules
             {
                 "Core",
                 // ... add other public dependencies that you statically link with here ...
+                "LidarPointCloudRuntime"
             }
         );
 
