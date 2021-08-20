@@ -105,13 +105,21 @@ public:
    *
    * @param FeatureID The ID of the feature.
    */
-  TMap<FString, FString> static GetPropertiesAsStringsForFeatureID(
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTable")
+  static TMap<FString, FString> GetPropertiesAsStringsForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
       int64 FeatureID);
 
   /**
    * Gets all the properties of the feature table.
    */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTable")
   static const TMap<FString, FCesiumMetadataProperty>&
   GetProperties(UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable);
 };
