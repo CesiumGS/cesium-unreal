@@ -6,6 +6,9 @@
 
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
 
+##### Fixes :wrench:
+
+- Added missing `UFUNCTION` annotation for `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID()`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties()`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID()`
 
 ### v1.5.1 - 2021-08-09
 
