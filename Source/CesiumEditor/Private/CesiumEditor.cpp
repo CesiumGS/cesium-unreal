@@ -164,7 +164,7 @@ void FCesiumEditorModule::StartupModule() {
 
     const FButtonStyle& DefaultFlatButtonStyle =
         FEditorStyle::Get().GetWidgetStyle<FButtonStyle>("FlatButton.Default");
-    const FLinearColor CesiumBlue(0.452f, 0.667f, 0.890f, 1.0f);
+    const FLinearColor CesiumBlue(0.16863f, 0.52941f, 0.76863f, 1.0f);
     const FLinearColor CesiumBlueBrighter(0.582f, 0.797f, 1.000f, 1.0f);
     const FLinearColor CesiumBlueDarker(0.332f, 0.547f, 0.804f, 1.0f);
     const FButtonStyle CesiumButtonStyle =
@@ -173,6 +173,13 @@ void FCesiumEditorModule::StartupModule() {
             .SetHovered(FSlateColorBrush(CesiumBlueBrighter))
             .SetPressed(FSlateColorBrush(CesiumBlueDarker));
     StyleSet->Set("CesiumButton", CesiumButtonStyle);
+
+    const FTextBlockStyle CesiumButtonTextStyle =
+        FTextBlockStyle()
+            .SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 10));
+    StyleSet->Set("CesiumButtonText", CesiumButtonTextStyle);
+
 
     FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
   }

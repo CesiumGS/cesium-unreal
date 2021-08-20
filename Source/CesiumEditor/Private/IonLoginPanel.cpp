@@ -93,8 +93,9 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
           .AutoHeight()
               [SNew(SButton)
                    .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                   .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
                    .OnClicked(this, &IonLoginPanel::SignIn)
-                   .Text(FText::FromString(TEXT("Connect")))
+                   .Text(FText::FromString(TEXT("Connect to Cesium ion")))
                    .IsEnabled_Lambda([this]() {
                      return !FCesiumEditorModule::ion().isConnecting() &&
                             !FCesiumEditorModule::ion().isResuming();
@@ -129,7 +130,14 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                [SNew(STextBlock)
                     .AutoWrapText(true)
                     .Text(FText::FromString(TEXT(
-                        "Sign in to Cesium ion to access global high-resolution 3D content, including photogrammetry, terrain, imagery, and buildings. Bring your own data for tiling, hosting, and streaming to Unreal Engine.")))] +
+                        "Access global high-resolution 3D content, including photogrammetry, terrain, imagery, and buildings. Bring your own data for tiling, hosting, and streaming to Unreal Engine.")))] +
+       SScrollBox::Slot()
+           .VAlign(VAlign_Top)
+           .Padding(10)
+               [SNew(STextBlock)
+                    .AutoWrapText(true)
+                    .Text(FText::FromString(TEXT(
+                        "Use your Epic Games account to log in to Cesium ion, or create a Cesium ion account.")))] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Center)
