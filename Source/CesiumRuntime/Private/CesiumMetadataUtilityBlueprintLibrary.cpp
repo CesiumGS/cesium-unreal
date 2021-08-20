@@ -36,7 +36,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
 
-  return UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
+  return UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
       featureTable,
       featureID);
 }
@@ -65,7 +65,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
   }
 
   return UCesiumMetadataFeatureTableBlueprintLibrary::
-      GetPropertiesAsStringsForFeatureID(featureTable, featureID);
+      GetMetadataValuesAsStringForFeatureID(featureTable, featureID);
 }
 
 int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(

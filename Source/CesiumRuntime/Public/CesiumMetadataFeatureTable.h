@@ -95,7 +95,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable")
-  static TMap<FString, FCesiumMetadataGenericValue> GetPropertiesForFeatureID(
+  static TMap<FString, FCesiumMetadataGenericValue> GetMetadataValuesForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 FeatureID);
 
@@ -109,7 +109,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable")
-  static TMap<FString, FString> GetPropertiesAsStringsForFeatureID(
+  static TMap<FString, FString> GetMetadataValuesAsStringForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
       int64 FeatureID);
 
