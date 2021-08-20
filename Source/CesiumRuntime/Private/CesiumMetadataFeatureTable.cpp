@@ -92,10 +92,10 @@ UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
   return feature;
 }
 
-TMap<FString, FString>
-UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
-    int64 featureID) {
+TMap<FString, FString> UCesiumMetadataFeatureTableBlueprintLibrary::
+    GetMetadataValuesAsStringForFeatureID(
+        UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+        int64 featureID) {
   TMap<FString, FString> feature;
   for (const auto& pair : FeatureTable._properties) {
     feature.Add(

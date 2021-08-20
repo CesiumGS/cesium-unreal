@@ -36,9 +36,8 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
 
-  return UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
-      featureTable,
-      featureID);
+  return UCesiumMetadataFeatureTableBlueprintLibrary::
+      GetMetadataValuesForFeatureID(featureTable, featureID);
 }
 
 TMap<FString, FString>
