@@ -318,6 +318,20 @@ private:
   FString IonAccessToken;
 
   /**
+   * Whether to generate physics meshes for this tileset.
+   *
+   * Disabling this option will improve the performance of tile loading, but it
+   * will no longer be possible to collide with the tileset since the physics
+   * meshes will not be created.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetCreatePhysicsMeshes,
+      BlueprintSetter = SetCreatePhysicsMeshes,
+      Category = "Cesium|Physics")
+  bool CreatePhysicsMeshes = true;
+
+  /**
    * Whether to always generate a correct tangent space basis for tiles that
    * don't have them.
    *
@@ -443,6 +457,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
+  bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
+  void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }

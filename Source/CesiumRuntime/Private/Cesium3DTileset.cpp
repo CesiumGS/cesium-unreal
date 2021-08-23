@@ -145,6 +145,13 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
   }
 }
 
+void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
+  if (this->CreatePhysicsMeshes != bCreatePhysicsMeshes) {
+    this->CreatePhysicsMeshes = bCreatePhysicsMeshes;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
@@ -442,7 +449,10 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+        _pPhysXCooking(
+            pActor->GetCreatePhysicsMeshes()
+                ? GetPhysXCookingModule()->GetPhysXCooking()
+                : nullptr)
 #endif
   {
   }
@@ -1370,6 +1380,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
       PropName ==
