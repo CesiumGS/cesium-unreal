@@ -287,7 +287,12 @@ void ACesiumGeoreference::AddGeoreferencedObject(
     }
   }
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
   this->_georeferencedObjects.Add(*Object);
+#else
+  this->_georeferencedObjects.Add(
+      TWeakInterfacePtr<ICesiumGeoreferenceable>(Object));
+#endif
 
   // If this object is an Actor or UActorComponent, make sure it ticks _after_
   // the CesiumGeoreference.
