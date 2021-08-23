@@ -1752,9 +1752,11 @@ static void loadModelGameThreadPart(
             });
 
     if (pCesiumLayers) {
+#if WITH_EDITOR
       FScopedTransaction transaction(
           FText::FromString("Add Cesium User Data to Material"));
       pBaseAsMaterialInstance->Modify();
+#endif
       pCesiumData = NewObject<UCesiumMaterialUserData>(
           pBaseAsMaterialInstance,
           NAME_None,
