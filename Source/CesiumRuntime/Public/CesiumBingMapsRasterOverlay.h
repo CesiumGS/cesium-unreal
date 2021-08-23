@@ -29,12 +29,6 @@ class CESIUMRUNTIME_API UCesiumBingMapsRasterOverlay
 
 public:
   /**
-   * The name to use for this overlay.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  FString Name = "BingMaps";
-
-  /**
    * The Bing Maps API key to use.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")

@@ -5,6 +5,7 @@
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumRasterOverlays.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
@@ -30,6 +31,8 @@ public:
    * The double-precision transformation matrix for this glTF node.
    */
   glm::dmat4x4 HighPrecisionNodeTransform;
+
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
 
   /**
    * Updates this component's transform from a new double-precision

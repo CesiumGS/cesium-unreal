@@ -577,7 +577,8 @@ public:
             static_cast<UTexture2D*>(pMainThreadRendererResources),
             textureCoordinateRectangle,
             translation,
-            scale);
+            scale,
+            overlayTextureCoordinateID);
       }
     }
   }

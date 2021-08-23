@@ -43,6 +43,7 @@ struct FRasterOverlayTile {
 
   FLinearColor TextureCoordinateRectangle;
   FLinearColor TranslationAndScale;
+  int32 TextureCoordinateID;
 };
 
 UCLASS()
@@ -88,7 +89,8 @@ public:
       UTexture2D* Texture,
       const CesiumGeometry::Rectangle& TextureCoordinateRectangle,
       const glm::dvec2& Translation,
-      const glm::dvec2& Scale);
+      const glm::dvec2& Scale,
+      int32_t TextureCoordinateID);
 
   void DetachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,

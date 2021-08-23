@@ -31,6 +31,7 @@
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -98,11 +99,9 @@ struct LoadModelResult {
   double customMaskTranslationX;
   double customMaskTranslationY;
   double customMaskScale;
-};
 
-static const std::string rasterOverlayWebMercator =
-    "_CESIUMOVERLAY_WEB_MERCATOR";
-static const std::string rasterOverlayGeographic = "_CESIUMOVERLAY_GEOGRAPHIC";
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
+};
 
 template <class... T> struct IsAccessorView;
 
@@ -989,25 +988,24 @@ static void loadPrimitive(
             material.emissiveTexture,
             textureCoordinateMap);
 
-    primitiveResult
-        .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
-        updateTextureCoordinates(
-            model,
-            primitive,
-            StaticMeshBuildVertices,
-            indices,
-            rasterOverlayWebMercator,
-            textureCoordinateMap);
-
-    primitiveResult
-        .textureCoordinateParameters["geographicTextureCoordinateIndex"] =
-        updateTextureCoordinates(
-            model,
-            primitive,
-            StaticMeshBuildVertices,
-            indices,
-            rasterOverlayGeographic,
-            textureCoordinateMap);
+    for (size_t i = 0;
+         i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
+         ++i) {
+      std::string attributeName = "_CESIUMOVERLAY_" + std::to_string(i);
+      auto overlayIt = primitive.attributes.find(attributeName);
+      if (overlayIt != primitive.attributes.end()) {
+        primitiveResult.overlayTextureCoordinateIDToUVIndex[i] =
+            updateTextureCoordinates(
+                model,
+                primitive,
+                StaticMeshBuildVertices,
+                indices,
+                attributeName,
+                textureCoordinateMap);
+      } else {
+        primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
+      }
+    }
   }
 
   // TODO: put watermask related code in helper function
@@ -1657,6 +1655,8 @@ static void loadModelGameThreadPart(
       NewObject<UCesiumGltfPrimitiveComponent>(
           pGltf,
           FName(loadResult.name.c_str()));
+  pMesh->overlayTextureCoordinateIDToUVIndex =
+      loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
@@ -1913,7 +1913,8 @@ void UCesiumGltfComponent::AttachRasterTile(
     UTexture2D* pTexture,
     const CesiumGeometry::Rectangle& textureCoordinateRectangle,
     const glm::dvec2& translation,
-    const glm::dvec2& scale) {
+    const glm::dvec2& scale,
+    int32 textureCoordinateID) {
   if (this->OverlayTiles.Num() == 0) {
     // First overlay tile, generate texture coordinates
     // TODO
@@ -1927,7 +1928,8 @@ void UCesiumGltfComponent::AttachRasterTile(
           textureCoordinateRectangle.minimumY,
           textureCoordinateRectangle.maximumX,
           textureCoordinateRectangle.maximumY),
-      FLinearColor(translation.x, translation.y, scale.x, scale.y)});
+      FLinearColor(translation.x, translation.y, scale.x, scale.y),
+      textureCoordinateID});
 
   // if (this->OverlayTiles.Num() > 3) {
   //  UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
@@ -2027,6 +2029,11 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
         pMaterial->SetVectorParameterValue(
             TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_TranslationScale")),
             overlayTile.TranslationAndScale);
+        pMaterial->SetScalarParameterValue(
+            TCHAR_TO_UTF8(
+                *(overlayTile.OverlayName + "_TextureCoordinateIndex")),
+            pPrimitive->overlayTextureCoordinateIDToUVIndex
+                [overlayTile.TextureCoordinateID]);
 
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
@@ -2055,6 +2062,13 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
                     EMaterialParameterAssociation::LayerParameter,
                     i),
                 overlayTile.TranslationAndScale);
+            pMaterial->SetScalarParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "TextureCoordinateIndex",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                pPrimitive->overlayTextureCoordinateIDToUVIndex
+                    [overlayTile.TextureCoordinateID]);
           }
         }
       }
