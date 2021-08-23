@@ -20,7 +20,6 @@ void UCesiumPointCloudComponent::UpdateTransformFromCesium(
   this->SetUsingAbsoluteRotation(true);
   this->SetUsingAbsoluteScale(true);
 
-  // TODO : for debug purposes
   const glm::dmat4x4& transform =
       CesiumToUnrealTransform * this->HighPrecisionNodeTransform;
 

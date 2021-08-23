@@ -582,8 +582,6 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
       *primitiveMetadata);
 }
 
-static void loadPointCloudPrimitive() {}
-
 template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
@@ -667,6 +665,21 @@ static void loadPrimitive(
   }
 
   if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
+
+    // TODO: use regular vertex colors instead of special RGB attribute
+    struct RGB24 {
+      uint8_t red;
+      uint8_t green;
+      uint8_t blue;
+    };
+
+    std::optional<CesiumGltf::AccessorView<RGB24>> colorView = std::nullopt;
+
+    auto colorAccessorIdIt = primitive.attributes.find("RGB");
+    if (colorAccessorIdIt != primitive.attributes.end()) {
+      int32_t colorAccessorId = colorAccessorIdIt->second;
+      colorView = CesiumGltf::AccessorView<RGB24>(model, colorAccessorId);
+    }
     size_t pointsSize = positionView.size();
     primitiveResult.pointCloudBuffer = TArray<FLidarPointCloudPoint>();
     primitiveResult.pointCloudBuffer->SetNum(pointsSize);
@@ -676,6 +689,16 @@ static void loadPrimitive(
           primitiveResult.pointCloudBuffer.value()[i];
       point.Location = positionView[i];
       point.Color = FColor::Red;
+    }
+
+    if (colorView &&
+        colorView->status() == CesiumGltf::AccessorViewStatus::Valid) {
+      for (size_t i = 0; i < pointsSize; ++i) {
+        FLidarPointCloudPoint& point =
+            primitiveResult.pointCloudBuffer.value()[i];
+        const RGB24& color = colorView.value()[i];
+        point.Color = FColor(color.red, color.green, color.blue, 0xff);
+      }
     }
 
     result.push_back(std::move(primitiveResult));
@@ -1560,6 +1583,8 @@ static void loadPointCloud(
       pPointCloud);
 
   pMesh->SetPointCloud(pPointCloud);
+  pMesh->PointSize = 1000.0f / pMesh->Bounds.SphereRadius;
+  pMesh->PointShape = ELidarPointCloudSpriteShape::Circle;
 
   // TODO: add back in material code
 
