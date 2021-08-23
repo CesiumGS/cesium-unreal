@@ -37,12 +37,15 @@
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
 #include "PixelFormat.h"
-#include "ScopedTransaction.h"
 #include "StaticMeshOperations.h"
 #include "mikktspace.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
+
+#if WITH_EDITOR
+#include "ScopedTransaction.h"
+#endif
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include <cstddef>
