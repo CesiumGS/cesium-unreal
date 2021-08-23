@@ -32,9 +32,6 @@ CesiumIonPanel::CesiumIonPanel()
       _assetsUpdatedDelegateHandle(),
       _pListView(nullptr),
       _assets(),
-      _refreshInProgress(false),
-      _refreshNeeded(false),
-      _pDetails(nullptr),
       _pSelection(nullptr) {
   this->_connectionUpdatedDelegateHandle =
       FCesiumEditorModule::ion().ConnectionUpdated.AddRaw(
@@ -97,31 +94,55 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
                       this,
                       &CesiumIonPanel::OnSortChange)));
 
-  this->_pDetails = this->AssetDetails();
+  TSharedPtr<SWidget> pDetails = this->AssetDetails();
 
-  ChildSlot
-      [SNew(SSplitter).Orientation(EOrientation::Orient_Horizontal) +
-       SSplitter::Slot().Value(0.66f)[
-           // Add the search bar at the upper right
-           SNew(SVerticalBox) +
-           SVerticalBox::Slot().AutoHeight()
-               [SNew(SUniformGridPanel).SlotPadding(FMargin(5.0f)) +
-                SUniformGridPanel::Slot(1, 0).HAlign(
-                    HAlign_Right)[SAssignNew(SearchBox, SSearchBox)
-                                      .OnTextChanged(
-                                          this,
-                                          &CesiumIonPanel::OnSearchTextChange)
-                                      .MinDesiredWidth(200.f)]] +
-           SVerticalBox::Slot()[this->_pListView.ToSharedRef()]] +
-       SSplitter::Slot().Value(
-           0.34f)[SNew(SBorder).Padding(10)
-                      [SNew(SVerticalBox) +
-                       SVerticalBox::Slot()[this->_pDetails.ToSharedRef()] +
-                       SVerticalBox::Slot()
-                           [SNew(STextBlock).Visibility_Lambda([this]() {
-                             return this->_pSelection ? EVisibility::Collapsed
-                                                      : EVisibility::Visible;
-                           })]]]];
+  // Create a splitter where the left shows the actual asset list
+  // (with the controls (search, refresh) on top), and the right
+  // shows the AssetDetails panel
+
+  // clang-format off
+  ChildSlot[
+    SNew(SSplitter).Orientation(EOrientation::Orient_Horizontal) +
+      SSplitter::Slot().Value(0.66f)
+        [
+          SNew(SVerticalBox) +
+            SVerticalBox::Slot().AutoHeight()
+            [
+              SNew(SHorizontalBox) +
+                // Add the refresh button at the upper left
+                SHorizontalBox::Slot().HAlign(HAlign_Left).Padding(5.0f)
+                [
+                  SNew(SButton)
+                    .HAlign(EHorizontalAlignment::HAlign_Center)
+                    .Text(FText::FromString(TEXT("Refresh")))
+                    .OnClicked_Lambda([this]() {
+                      FCesiumEditorModule::ion().refreshAssets();
+                      Refresh();
+                      return FReply::Handled();
+                    })
+                ] +
+                // Add the search bar at the upper right
+                SHorizontalBox::Slot().HAlign(HAlign_Right).Padding(5.0f)
+                [
+                  SAssignNew(SearchBox, SSearchBox).OnTextChanged(
+                      this, &CesiumIonPanel::OnSearchTextChange)
+                    .MinDesiredWidth(200.f)
+                ]
+            ] +
+            SVerticalBox::Slot()
+            [
+              this->_pListView.ToSharedRef()
+            ]
+          ] +
+          SSplitter::Slot().Value(0.34f)
+          [
+            SNew(SBorder).Padding(10)
+            [
+              pDetails.ToSharedRef()
+            ]
+          ]
+        ];
+  // clang-format on
 
   FCesiumEditorModule::ion().refreshAssets();
 }

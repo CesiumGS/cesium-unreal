@@ -75,9 +75,6 @@ private:
   FDelegateHandle _assetsUpdatedDelegateHandle;
   TSharedPtr<SListView<TSharedPtr<CesiumIonClient::Asset>>> _pListView;
   TArray<TSharedPtr<CesiumIonClient::Asset>> _assets;
-  bool _refreshInProgress;
-  bool _refreshNeeded;
-  TSharedPtr<SWidget> _pDetails;
   TSharedPtr<CesiumIonClient::Asset> _pSelection;
 
   /**
