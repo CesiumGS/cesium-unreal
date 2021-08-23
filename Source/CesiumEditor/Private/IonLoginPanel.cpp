@@ -93,7 +93,9 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
           .AutoHeight()
               [SNew(SButton)
                    .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
-                   .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+                   .TextStyle(
+                       FCesiumEditorModule::GetStyle(),
+                       "CesiumButtonText")
                    .OnClicked(this, &IonLoginPanel::SignIn)
                    .Text(FText::FromString(TEXT("Connect to Cesium ion")))
                    .IsEnabled_Lambda([this]() {

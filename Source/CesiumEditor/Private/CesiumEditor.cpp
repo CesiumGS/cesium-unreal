@@ -183,7 +183,6 @@ void FCesiumEditorModule::StartupModule() {
             .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
     StyleSet->Set("CesiumButtonText", CesiumButtonTextStyle);
 
-
     FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
   }
 
