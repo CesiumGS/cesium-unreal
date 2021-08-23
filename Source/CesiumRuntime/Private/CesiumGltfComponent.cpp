@@ -3,29 +3,11 @@
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
 #include "Cesium3DTilesSelection/Gltf.h"
-#include "CesiumGltf/AccessorView.h"
-#include "Engine/CollisionProfile.h"
-#include "Engine/StaticMesh.h"
-#include "HttpModule.h"
-#include "Interfaces/IHttpResponse.h"
-#include "Materials/Material.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "MeshTypes.h"
-#include "PhysicsEngine/BodySetup.h"
-#include "StaticMeshResources.h"
-#include "UObject/ConstructorHelpers.h"
-#include <iostream>
-#if PHYSICS_INTERFACE_PHYSX
-#include "IPhysXCooking.h"
-#else
-#include "Chaos/CollisionConvexMesh.h"
-#include "Chaos/TriangleMeshImplicitObject.h"
-#include "ChaosDerivedDataUtil.h"
-#endif
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/GltfReader.h"
 #include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
 #include "CesiumGltf/TextureInfo.h"
@@ -36,20 +18,37 @@
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
+#include "Engine/CollisionProfile.h"
+#include "Engine/StaticMesh.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpResponse.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "MeshTypes.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "PixelFormat.h"
 #include "StaticMeshOperations.h"
+#include "StaticMeshResources.h"
+#include "UObject/ConstructorHelpers.h"
 #include "mikktspace.h"
+#include <cstddef>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
+#include <iostream>
+#include <stb_image_resize.h>
+
+#if PHYSICS_INTERFACE_PHYSX
+#include "IPhysXCooking.h"
+#else
+#include "Chaos/CollisionConvexMesh.h"
+#include "Chaos/TriangleMeshImplicitObject.h"
+#include "ChaosDerivedDataUtil.h"
+#endif
 
 #if WITH_EDITOR
 #include "ScopedTransaction.h"
 #endif
-
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include <cstddef>
-#include <stb_image_resize.h>
 
 using namespace CesiumGltf;
 
