@@ -164,20 +164,23 @@ void FCesiumEditorModule::StartupModule() {
 
     const FButtonStyle& DefaultFlatButtonStyle =
         FEditorStyle::Get().GetWidgetStyle<FButtonStyle>("FlatButton.Default");
-    const FLinearColor CesiumBlue(0.16863f, 0.52941f, 0.76863f, 1.0f);
-    const FLinearColor CesiumBlueBrighter(0.582f, 0.797f, 1.000f, 1.0f);
-    const FLinearColor CesiumBlueDarker(0.332f, 0.547f, 0.804f, 1.0f);
+    const FLinearColor CesiumBlue(0.42745f, 0.67059f, 0.89412f, 1.0f);
+    const FLinearColor CesiumButtonLighter(0.16863f, 0.52941f, 0.76863f, 1.0f);
+    const FLinearColor CesiumButton(0.07059f, 0.35686f, 0.59216f, 1.0f);
+    const FLinearColor CesiumButtonDarker(0.05490f, 0.29412f, 0.45882f, 1.0f);
     const FButtonStyle CesiumButtonStyle =
         FButtonStyle(DefaultFlatButtonStyle)
-            .SetNormal(FSlateColorBrush(CesiumBlue))
-            .SetHovered(FSlateColorBrush(CesiumBlueBrighter))
-            .SetPressed(FSlateColorBrush(CesiumBlueDarker));
+            .SetNormalPadding(FMargin(10, 5, 10, 5))
+            .SetPressedPadding(FMargin(10, 5, 10, 5))
+            .SetNormal(FSlateColorBrush(CesiumButton))
+            .SetHovered(FSlateColorBrush(CesiumButtonLighter))
+            .SetPressed(FSlateColorBrush(CesiumButtonDarker));
     StyleSet->Set("CesiumButton", CesiumButtonStyle);
 
     const FTextBlockStyle CesiumButtonTextStyle =
         FTextBlockStyle()
             .SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
-            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 10));
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
     StyleSet->Set("CesiumButtonText", CesiumButtonTextStyle);
 
 

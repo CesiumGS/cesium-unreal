@@ -126,18 +126,18 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                             TEXT("Cesium.Logo")))]] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
-           .Padding(10)
+           .Padding(30, 10, 30, 10)
                [SNew(STextBlock)
                     .AutoWrapText(true)
                     .Text(FText::FromString(TEXT(
                         "Access global high-resolution 3D content, including photogrammetry, terrain, imagery, and buildings. Bring your own data for tiling, hosting, and streaming to Unreal Engine.")))] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
-           .Padding(10)
+           .Padding(30, 10, 30, 10)
                [SNew(STextBlock)
                     .AutoWrapText(true)
                     .Text(FText::FromString(TEXT(
-                        "Use your Epic Games account to log in to Cesium ion, or create a Cesium ion account.")))] +
+                        "Log in with your Epic Games account, or create a Cesium ion account.")))] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Center)
