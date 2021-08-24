@@ -5,7 +5,7 @@
 ##### Additions :tada:
 
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
-
+- Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread. 
 
 ### v1.5.1 - 2021-08-09
 
