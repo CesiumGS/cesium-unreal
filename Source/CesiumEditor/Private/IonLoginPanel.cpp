@@ -108,9 +108,7 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
           .AutoHeight()
               [SNew(STextBlock)
                    .AutoWrapText(true)
-                   .TextStyle(
-                      FCesiumEditorModule::GetStyle(),
-                      "BodyBold")
+                   .TextStyle(FCesiumEditorModule::GetStyle(), "BodyBold")
                    .Text(FText::FromString(TEXT(
                        "You can now sign in with your Epic Games account!")))
                    .IsEnabled_Lambda([this]() {
