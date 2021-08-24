@@ -24,6 +24,7 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "CreateModelOptions.h"
@@ -505,48 +506,15 @@ public:
 
   virtual void*
   prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return nullptr;
+    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(image);
   }
 
   virtual void* prepareRasterInMainThread(
-      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
       void* pLoadThreadResult) override {
-    const CesiumGltf::ImageCesium& image = rasterTile.getImage();
-    if (image.width <= 0 || image.height <= 0) {
-      return nullptr;
-    }
-
-    EPixelFormat pixelFormat;
-    switch (image.channels) {
-    case 1:
-      pixelFormat = PF_R8;
-      break;
-    case 2:
-      pixelFormat = PF_R8G8;
-      break;
-    case 3:
-    case 4:
-    default:
-      pixelFormat = PF_R8G8B8A8;
-    };
-
-    UTexture2D* pTexture =
-        UTexture2D::CreateTransient(image.width, image.height, pixelFormat);
-    pTexture->AddToRoot();
-    pTexture->AddressX = TextureAddress::TA_Clamp;
-    pTexture->AddressY = TextureAddress::TA_Clamp;
-
-    unsigned char* pTextureData = static_cast<unsigned char*>(
-        pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-    FMemory::Memcpy(
-        pTextureData,
-        image.pixelData.data(),
-        image.pixelData.size());
-    pTexture->PlatformData->Mips[0].BulkData.Unlock();
-
-    pTexture->UpdateResource();
-
-    return pTexture;
+    return (void*)CesiumTextureUtility::loadTextureGameThreadPart(
+        static_cast<CesiumTextureUtility::HalfLoadedTexture*>(
+            pLoadThreadResult));
   }
 
   virtual void freeRaster(
