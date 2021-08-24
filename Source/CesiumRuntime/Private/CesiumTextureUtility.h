@@ -19,7 +19,9 @@ public:
   // TODO: documentation
   static HalfLoadedTexture* loadTextureAnyThreadPart(
       const CesiumGltf::ImageCesium& image,
-      const std::optional<CesiumGltf::Sampler>& sampler = std::nullopt);
+      const TextureAddress& addressX,
+      const TextureAddress& addressY,
+      const TextureFilter& filter);
 
   static HalfLoadedTexture* loadTextureAnyThreadPart(
       const CesiumGltf::Model& model,

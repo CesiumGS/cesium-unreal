@@ -36,7 +36,9 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
 /*static*/ CesiumTextureUtility::HalfLoadedTexture*
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
-    const std::optional<CesiumGltf::Sampler>& sampler) {
+    const TextureAddress& addressX,
+    const TextureAddress& addressY,
+    const TextureFilter& filter) {
 
   EPixelFormat pixelFormat;
   switch (image.channels) {
@@ -58,68 +60,9 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   if (!pResult->pTextureData) {
     return nullptr;
   }
-
-  if (sampler) {
-    switch (sampler->wrapS) {
-    case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
-      pResult->addressX = TextureAddress::TA_Clamp;
-      break;
-    case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
-      pResult->addressX = TextureAddress::TA_Mirror;
-      break;
-    case CesiumGltf::Sampler::WrapS::REPEAT:
-      pResult->addressX = TextureAddress::TA_Wrap;
-      break;
-    }
-
-    switch (sampler->wrapT) {
-    case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
-      pResult->addressY = TextureAddress::TA_Clamp;
-      break;
-    case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
-      pResult->addressY = TextureAddress::TA_Mirror;
-      break;
-    case CesiumGltf::Sampler::WrapT::REPEAT:
-      pResult->addressY = TextureAddress::TA_Wrap;
-      break;
-    }
-
-    // Unreal Engine's available filtering modes are only nearest, bilinear, and
-    // trilinear, and are not specified separately for minification and
-    // magnification. So we get as close as we can.
-    if (!sampler->minFilter && !sampler->magFilter) {
-      pResult->filter = TextureFilter::TF_Default;
-    } else if (
-        (!sampler->minFilter ||
-         sampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
-        (!sampler->magFilter ||
-         sampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)) {
-      pResult->filter = TextureFilter::TF_Nearest;
-    } else if (sampler->minFilter) {
-      switch (sampler->minFilter.value()) {
-      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
-      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
-      case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
-      case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
-        pResult->filter = TextureFilter::TF_Trilinear;
-        break;
-      default:
-        pResult->filter = TextureFilter::TF_Bilinear;
-        break;
-      }
-    } else if (sampler->magFilter) {
-      pResult->filter =
-          sampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::LINEAR
-              ? TextureFilter::TF_Bilinear
-              : TextureFilter::TF_Nearest;
-    }
-  } else {
-    // glTF spec: "When undefined, a sampler with repeat wrapping and auto
-    // filtering should be used."
-    pResult->addressX = TextureAddress::TA_Wrap;
-    pResult->addressY = TextureAddress::TA_Wrap;
-    pResult->filter = TextureFilter::TF_Default;
-  }
+  pResult->addressX = addressX;
+  pResult->addressY = addressY;
+  pResult->filter = filter;
 
   void* pTextureData = static_cast<unsigned char*>(
       pResult->pTextureData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
@@ -205,9 +148,69 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   const CesiumGltf::Sampler* pSampler =
       CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
 
-  return loadTextureAnyThreadPart(
-      image,
-      pSampler ? std::make_optional(*pSampler) : std::nullopt);
+  // glTF spec: "When undefined, a sampler with repeat wrapping and auto
+  // filtering should be used."
+  TextureAddress addressX = TextureAddress::TA_Wrap;
+  TextureAddress addressY = TextureAddress::TA_Wrap;
+  ;
+  TextureFilter filter = TextureFilter::TF_Default;
+
+  if (pSampler) {
+    switch (pSampler->wrapS) {
+    case CesiumGltf::Sampler::WrapS::CLAMP_TO_EDGE:
+      addressX = TextureAddress::TA_Clamp;
+      break;
+    case CesiumGltf::Sampler::WrapS::MIRRORED_REPEAT:
+      addressX = TextureAddress::TA_Mirror;
+      break;
+    case CesiumGltf::Sampler::WrapS::REPEAT:
+      addressX = TextureAddress::TA_Wrap;
+      break;
+    }
+
+    switch (pSampler->wrapT) {
+    case CesiumGltf::Sampler::WrapT::CLAMP_TO_EDGE:
+      addressY = TextureAddress::TA_Clamp;
+      break;
+    case CesiumGltf::Sampler::WrapT::MIRRORED_REPEAT:
+      addressY = TextureAddress::TA_Mirror;
+      break;
+    case CesiumGltf::Sampler::WrapT::REPEAT:
+      addressY = TextureAddress::TA_Wrap;
+      break;
+    }
+
+    // Unreal Engine's available filtering modes are only nearest, bilinear, and
+    // trilinear, and are not specified separately for minification and
+    // magnification. So we get as close as we can.
+    if (!pSampler->minFilter && !pSampler->magFilter) {
+      filter = TextureFilter::TF_Default;
+    } else if (
+        (!pSampler->minFilter ||
+         pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
+        (!pSampler->magFilter ||
+         pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)) {
+      filter = TextureFilter::TF_Nearest;
+    } else if (pSampler->minFilter) {
+      switch (pSampler->minFilter.value()) {
+      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+      case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+      case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+        filter = TextureFilter::TF_Trilinear;
+        break;
+      default:
+        filter = TextureFilter::TF_Bilinear;
+        break;
+      }
+    } else if (pSampler->magFilter) {
+      filter = pSampler->magFilter == CesiumGltf::Sampler::MagFilter::LINEAR
+                   ? TextureFilter::TF_Bilinear
+                   : TextureFilter::TF_Nearest;
+    }
+  }
+
+  return loadTextureAnyThreadPart(image, addressX, addressY, filter);
 }
 
 /*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(

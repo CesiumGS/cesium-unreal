@@ -31,6 +31,7 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/SceneCapture2D.h"
+#include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
@@ -506,7 +507,11 @@ public:
 
   virtual void*
   prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(image);
+    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(
+        image,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Trilinear);
   }
 
   virtual void* prepareRasterInMainThread(
