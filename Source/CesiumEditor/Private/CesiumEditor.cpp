@@ -170,6 +170,12 @@ void FCesiumEditorModule::StartupModule() {
             .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 12)));
 
     StyleSet->Set(
+        "BodyBold",
+        FTextBlockStyle()
+            .SetColorAndOpacity(FSlateColor::UseForeground())
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 9)));
+
+    StyleSet->Set(
         "AssetDetailsFieldHeader",
         FTextBlockStyle()
             .SetColorAndOpacity(FSlateColor::UseForeground())
