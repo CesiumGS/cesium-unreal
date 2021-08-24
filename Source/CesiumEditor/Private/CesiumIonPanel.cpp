@@ -14,6 +14,7 @@
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
 #include "Styling/SlateStyleRegistry.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -115,11 +116,17 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
                   SNew(SButton)
                     .HAlign(EHorizontalAlignment::HAlign_Center)
                     .Text(FText::FromString(TEXT("Refresh")))
+                    .ToolTipText(FText::FromString(TEXT("Refresh the asset list")))
                     .OnClicked_Lambda([this]() {
                       FCesiumEditorModule::ion().refreshAssets();
                       Refresh();
                       return FReply::Handled();
                     })
+                    [
+                      SNew(SImage).Image(
+                        FCesiumEditorModule::GetStyle()->GetBrush(
+                          TEXT("Cesium.Common.Refresh")))
+                    ]
                 ] +
                 // Add the search bar at the upper right
                 SHorizontalBox::Slot().HAlign(HAlign_Right).Padding(5.0f)
