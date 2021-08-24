@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Added an editor option in `ACesium3DTileset` to optionally generate smooth normals for glTFs that originally did not have normals.
+- Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
 
 ##### Fixes :wrench:
 
