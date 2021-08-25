@@ -8,8 +8,9 @@
 
 ##### Additions :tada:
 
+- The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
+- Multiple raster overlays per tileset are now supported.
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
-
 
 ### v1.5.1 - 2021-08-09
 
