@@ -33,7 +33,7 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   }
 }
 
-/*static*/ CesiumTextureUtility::HalfLoadedTexture*
+/*static*/ CesiumTextureUtility::LoadedTextureResult*
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
@@ -54,7 +54,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     pixelFormat = PF_R8G8B8A8;
   };
 
-  HalfLoadedTexture* pResult = new HalfLoadedTexture{};
+  LoadedTextureResult* pResult = new LoadedTextureResult{};
   pResult->pTextureData =
       createTexturePlatformData(image.width, image.height, pixelFormat);
   if (!pResult->pTextureData) {
@@ -128,7 +128,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return pResult;
 }
 
-/*static*/ CesiumTextureUtility::HalfLoadedTexture*
+/*static*/ CesiumTextureUtility::LoadedTextureResult*
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
@@ -213,24 +213,26 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return loadTextureAnyThreadPart(image, addressX, addressY, filter);
 }
 
-/*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
-    HalfLoadedTexture* pHalfLoadedTexture) {
+/*static*/ bool CesiumTextureUtility::loadTextureGameThreadPart(
+    LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
-    return nullptr;
+    return false;
   }
 
-  UTexture2D* pTexture = NewObject<UTexture2D>(
-      GetTransientPackage(),
-      NAME_None,
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UTexture2D*& pTexture = pHalfLoadedTexture->pTexture;
 
-  pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
-  pTexture->AddressX = pHalfLoadedTexture->addressX;
-  pTexture->AddressY = pHalfLoadedTexture->addressY;
-  pTexture->Filter = pHalfLoadedTexture->filter;
-  pTexture->UpdateResource();
+  if (!pTexture) {
+    pTexture = NewObject<UTexture2D>(
+        GetTransientPackage(),
+        NAME_None,
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  delete pHalfLoadedTexture;
+    pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
+    pTexture->AddressX = pHalfLoadedTexture->addressX;
+    pTexture->AddressY = pHalfLoadedTexture->addressY;
+    pTexture->Filter = pHalfLoadedTexture->filter;
+    pTexture->UpdateResource();
+  }
 
-  return pTexture;
+  return true;
 }

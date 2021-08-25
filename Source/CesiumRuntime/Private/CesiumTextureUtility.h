@@ -9,24 +9,25 @@
 
 class CesiumTextureUtility {
 public:
-  struct HalfLoadedTexture {
+  struct LoadedTextureResult {
     FTexturePlatformData* pTextureData;
     TextureAddress addressX;
     TextureAddress addressY;
     TextureFilter filter;
+    UTexture2D* pTexture;
   };
 
   // TODO: documentation
-  static HalfLoadedTexture* loadTextureAnyThreadPart(
+  static LoadedTextureResult* loadTextureAnyThreadPart(
       const CesiumGltf::ImageCesium& image,
       const TextureAddress& addressX,
       const TextureAddress& addressY,
       const TextureFilter& filter);
 
-  static HalfLoadedTexture* loadTextureAnyThreadPart(
+  static LoadedTextureResult* loadTextureAnyThreadPart(
       const CesiumGltf::Model& model,
       const CesiumGltf::Texture& texture);
 
-  static UTexture2D*
-  loadTextureGameThreadPart(HalfLoadedTexture* pHalfLoadedTexture);
+  static bool
+  loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 };

@@ -505,9 +505,18 @@ public:
   virtual void* prepareRasterInMainThread(
       const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
       void* pLoadThreadResult) override {
-    return (void*)CesiumTextureUtility::loadTextureGameThreadPart(
-        static_cast<CesiumTextureUtility::HalfLoadedTexture*>(
-            pLoadThreadResult));
+
+    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+        static_cast<CesiumTextureUtility::LoadedTextureResult*>(
+            pLoadThreadResult);
+
+    CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+
+    if (!pLoadedTexture) {
+      return nullptr;
+    }
+
+    return (void*)pLoadedTexture->pTexture;
   }
 
   virtual void freeRaster(

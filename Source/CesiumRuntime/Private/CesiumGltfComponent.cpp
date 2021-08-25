@@ -56,7 +56,7 @@ static uint32_t nextMaterialId = 0;
 
 struct CustomMask {
   std::string name;
-  CesiumTextureUtility::HalfLoadedTexture* loadTextureResult;
+  CesiumTextureUtility::LoadedTextureResult* loadTextureResult;
 };
 
 struct LoadModelResult {
@@ -74,12 +74,12 @@ struct LoadModelResult {
 #endif
   std::string name;
 
-  CesiumTextureUtility::HalfLoadedTexture* baseColorTexture;
-  CesiumTextureUtility::HalfLoadedTexture* metallicRoughnessTexture;
-  CesiumTextureUtility::HalfLoadedTexture* normalTexture;
-  CesiumTextureUtility::HalfLoadedTexture* emissiveTexture;
-  CesiumTextureUtility::HalfLoadedTexture* occlusionTexture;
-  CesiumTextureUtility::HalfLoadedTexture* waterMaskTexture;
+  CesiumTextureUtility::LoadedTextureResult* baseColorTexture;
+  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture;
+  CesiumTextureUtility::LoadedTextureResult* normalTexture;
+  CesiumTextureUtility::LoadedTextureResult* emissiveTexture;
+  CesiumTextureUtility::LoadedTextureResult* occlusionTexture;
+  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture;
   std::vector<CustomMask> customMaskTextures;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
@@ -344,7 +344,7 @@ struct ColorVisitor {
 };
 
 template <class T>
-static CesiumTextureUtility::HalfLoadedTexture* loadTexture(
+static CesiumTextureUtility::LoadedTextureResult* loadTexture(
     const CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
@@ -1274,11 +1274,13 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
-    CesiumTextureUtility::HalfLoadedTexture* pLoadedTexture) {
+    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
 
-  UTexture2D* pTexture =
-      CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+  if (!CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture)) {
+    return false;
+  }
 
+  UTexture2D* pTexture = pLoadedTexture->pTexture;
   if (!pTexture) {
     return false;
   }
