@@ -211,8 +211,12 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                            .c_str()));
                  })] +
          SScrollBox::Slot().Padding(10).HAlign(
-             EHorizontalAlignment::HAlign_Fill)
+             EHorizontalAlignment::HAlign_Center)
              [SNew(SButton)
+                  .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                  .TextStyle(
+                      FCesiumEditorModule::GetStyle(),
+                      "CesiumButtonText")
                   .Visibility_Lambda([this]() {
                     return isSupportedTileset(this->_pSelection)
                                ? EVisibility::Visible
@@ -225,8 +229,12 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                     return FReply::Handled();
                   })] +
          SScrollBox::Slot().Padding(10).HAlign(
-             EHorizontalAlignment::HAlign_Fill)
+             EHorizontalAlignment::HAlign_Center)
              [SNew(SButton)
+                  .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                  .TextStyle(
+                      FCesiumEditorModule::GetStyle(),
+                      "CesiumButtonText")
                   .Visibility_Lambda([this]() {
                     return isSupportedImagery(this->_pSelection)
                                ? EVisibility::Visible
@@ -239,8 +247,12 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                     return FReply::Handled();
                   })] +
          SScrollBox::Slot().Padding(10).HAlign(
-             EHorizontalAlignment::HAlign_Fill)
+             EHorizontalAlignment::HAlign_Center)
              [SNew(SButton)
+                  .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                  .TextStyle(
+                      FCesiumEditorModule::GetStyle(),
+                      "CesiumButtonText")
                   .Visibility_Lambda([this]() {
                     return !isSupportedTileset(this->_pSelection) &&
                                    !isSupportedImagery(this->_pSelection)

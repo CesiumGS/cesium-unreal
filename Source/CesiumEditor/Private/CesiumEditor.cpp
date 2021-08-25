@@ -30,6 +30,11 @@ DEFINE_LOG_CATEGORY(LogCesiumEditor);
       FCesiumEditorModule::InContent(RelativePath, ".png"),                    \
       __VA_ARGS__)
 
+#define BOX_BRUSH(RelativePath, ...)                                           \
+  FSlateBoxBrush(                                                              \
+      FCesiumEditorModule::InContent(RelativePath, ".png"),                    \
+      __VA_ARGS__)
+
 FString FCesiumEditorModule::InContent(
     const FString& RelativePath,
     const ANSICHAR* Extension) {
@@ -68,6 +73,21 @@ void registerIcon(
       FName(propertyName + ".Small"),
       new IMAGE_BRUSH(relativePath, Icon20x20));
 }
+/**
+ * Create a slate box brush that can be used as the
+ * normal-, hovered-, or pressed-brush for a button,
+ * based on a resource with the given name, that
+ * contains a slate box image with a margin of 4 pixels.
+ *
+ * @param name The name of the image (without extension, PNG is assumed)
+ * @param color The color used for "dyeing" the image
+ * @return The box brush
+ */
+FSlateBoxBrush
+createButtonBoxBrush(const FString& name, const FLinearColor& color) {
+  return BOX_BRUSH(name, FMargin(4 / 16.0f), color);
+}
+
 } // namespace
 
 void FCesiumEditorModule::StartupModule() {
@@ -158,6 +178,12 @@ void FCesiumEditorModule::StartupModule() {
             .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 12)));
 
     StyleSet->Set(
+        "BodyBold",
+        FTextBlockStyle()
+            .SetColorAndOpacity(FSlateColor::UseForeground())
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 9)));
+
+    StyleSet->Set(
         "AssetDetailsFieldHeader",
         FTextBlockStyle()
             .SetColorAndOpacity(FSlateColor::UseForeground())
@@ -168,6 +194,26 @@ void FCesiumEditorModule::StartupModule() {
         FTextBlockStyle()
             .SetColorAndOpacity(FSlateColor::UseForeground())
             .SetFont(FCoreStyle::GetDefaultFontStyle("Regular", 9)));
+
+    const FLinearColor CesiumButtonLighter(0.16863f, 0.52941f, 0.76863f, 1.0f);
+    const FLinearColor CesiumButton(0.07059f, 0.35686f, 0.59216f, 1.0f);
+    const FLinearColor CesiumButtonDarker(0.05490f, 0.29412f, 0.45882f, 1.0f);
+    const FButtonStyle CesiumButtonStyle =
+        FButtonStyle()
+            .SetNormalPadding(FMargin(10, 5, 10, 5))
+            .SetPressedPadding(FMargin(10, 5, 10, 5))
+            .SetNormal(createButtonBoxBrush("CesiumButton", CesiumButton))
+            .SetHovered(
+                createButtonBoxBrush("CesiumButton", CesiumButtonLighter))
+            .SetPressed(
+                createButtonBoxBrush("CesiumButton", CesiumButtonDarker));
+    StyleSet->Set("CesiumButton", CesiumButtonStyle);
+
+    const FTextBlockStyle CesiumButtonTextStyle =
+        FTextBlockStyle()
+            .SetColorAndOpacity(FLinearColor(1.0f, 1.0f, 1.0f, 1.0f))
+            .SetFont(FCoreStyle::GetDefaultFontStyle("Bold", 12));
+    StyleSet->Set("CesiumButtonText", CesiumButtonTextStyle);
 
     FSlateStyleRegistry::RegisterSlateStyle(*StyleSet.Get());
   }
