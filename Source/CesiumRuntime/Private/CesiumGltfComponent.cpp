@@ -1639,7 +1639,7 @@ static void loadModelGameThreadPart(
 
 #if PLATFORM_MAC
   // TODO: figure out why water material crashes mac
-  pBaseMaterial = pGltf->BaseMaterial;
+  UMaterialInterface* pBaseMaterial = pGltf->BaseMaterial;
 #else
   UMaterialInterface* pBaseMaterial =
       (loadResult.onlyWater || !loadResult.onlyLand)
