@@ -66,8 +66,7 @@ public:
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseWaterMaterial,
-      UMaterialInterface* BaseOpacityMaterial);
+      UMaterialInterface* BaseWaterMaterial);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
@@ -77,9 +76,6 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
-
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* OpacityMaskMaterial;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

@@ -179,13 +179,6 @@ void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   }
 }
 
-void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
-  if (this->OpacityMaskMaterial != InMaterial) {
-    this->OpacityMaskMaterial = InMaterial;
-    this->DestroyTileset();
-  }
-}
-
 void ACesium3DTileset::PlayMovieSequencer() {
   ACesiumGeoreference* cesiumGeoreference =
       ACesiumGeoreference::GetDefaultForActor(this);
@@ -476,8 +469,7 @@ public:
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
-          this->_pActor->GetWaterMaterial(),
-          this->_pActor->GetOpacityMaskMaterial());
+          this->_pActor->GetWaterMaterial());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -1446,9 +1438,7 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
-      PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, OpacityMaskMaterial)) {
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
     this->DestroyTileset();
   }
 

@@ -2,6 +2,10 @@
 
 ### Next Release - ?
 
+##### Breaking Changes :mega:
+
+- Removed `ACesium3DTileset::OpacityMaskMaterial`. The regular `Material` property is used instead.
+
 ##### Additions :tada:
 
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.

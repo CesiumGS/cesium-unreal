@@ -395,20 +395,6 @@ private:
       Category = "Cesium|Rendering")
   UMaterialInterface* WaterMaterial = nullptr;
 
-  /**
-   * A custom Material to use to render this tileset in areas using opacity
-   * masks, in order to implement custom visual effects.
-   *
-   * The custom material should generally be created by copying the
-   * "M_CesiumDefaultMasked" material and customizing it as desired.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetOpacityMaskMaterial,
-      BlueprintSetter = SetOpacityMaskMaterial,
-      Category = "Cesium|Rendering")
-  UMaterialInterface* OpacityMaskMaterial = nullptr;
-
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -461,14 +447,6 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetWaterMaterial(UMaterialInterface* InMaterial);
-
-  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
-  UMaterialInterface* GetOpacityMaskMaterial() const {
-    return OpacityMaskMaterial;
-  }
-
-  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
-  void SetOpacityMaskMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();

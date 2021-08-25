@@ -1637,28 +1637,15 @@ static void loadModelGameThreadPart(
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
-  UMaterialInterface* pBaseMaterial = nullptr;
-
-  switch (material.alphaMode) {
-  case CesiumGltf::Material::AlphaMode::BLEND:
-    // TODO
-    pBaseMaterial = pGltf->OpacityMaskMaterial;
-    break;
-  case CesiumGltf::Material::AlphaMode::MASK:
-    pBaseMaterial = pGltf->OpacityMaskMaterial;
-    break;
-  case CesiumGltf::Material::AlphaMode::OPAQUE:
-  default:
-// TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
-    pBaseMaterial = pGltf->BaseMaterial;
+  // TODO: figure out why water material crashes mac
+  pBaseMaterial = pGltf->BaseMaterial;
 #else
-    pBaseMaterial = (loadResult.onlyWater || !loadResult.onlyLand)
-                        ? pGltf->BaseMaterialWithWater
-                        : pGltf->BaseMaterial;
+  UMaterialInterface* pBaseMaterial =
+      (loadResult.onlyWater || !loadResult.onlyLand)
+          ? pGltf->BaseMaterialWithWater
+          : pGltf->BaseMaterial;
 #endif
-    break;
-  }
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
       pBaseMaterial,
@@ -1667,7 +1654,6 @@ static void loadModelGameThreadPart(
 
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
   SetGltfParameterValues(
       loadResult,
@@ -1799,8 +1785,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
-    UMaterialInterface* pBaseWaterMaterial,
-    UMaterialInterface* pBaseOpacityMaterial) {
+    UMaterialInterface* pBaseWaterMaterial) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -1820,10 +1805,6 @@ UCesiumGltfComponent::CreateOffGameThread(
     Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  if (pBaseOpacityMaterial) {
-    Gltf->OpacityMaskMaterial = pBaseOpacityMaterial;
-  }
-
   for (LoadModelResult& model : result) {
     loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
   }
@@ -1835,23 +1816,19 @@ UCesiumGltfComponent::CreateOffGameThread(
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
-    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterialWithWater;
-    ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlays.MI_CesiumTwoOverlays")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlayWater.M_CesiumOverlayWater")),
-          OpacityMaskMaterial(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlaysAndWater.MI_CesiumTwoOverlaysAndWater")) {
     }
   };
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
-  this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
 }
