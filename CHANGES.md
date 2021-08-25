@@ -2,8 +2,14 @@
 
 ### Next Release - ?
 
+##### Breaking Changes :mega:
+
+- Removed `ACesium3DTileset::OpacityMaskMaterial`. The regular `Material` property is used instead.
+
 ##### Additions :tada:
 
+- The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
+- Multiple raster overlays per tileset are now supported.
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
 - Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread. 
 

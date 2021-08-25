@@ -90,10 +90,6 @@ struct LoadModelResult {
   double waterMaskTranslationY;
   double waterMaskScale;
 
-  double customMaskTranslationX;
-  double customMaskTranslationY;
-  double customMaskScale;
-
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
 };
 
@@ -368,38 +364,6 @@ static CesiumTextureUtility::HalfLoadedTexture* loadTexture(
       model.textures[gltfTexture.value().index];
 
   return CesiumTextureUtility::loadTextureAnyThreadPart(model, texture);
-}
-
-static void
-applyCustomMasks(const CesiumGltf::Model& model, LoadModelResult& modelResult) {
-  for (auto extra : model.extras) {
-    if (extra.first.find("CUSTOM_MASK_") == 0 && extra.second.isInt64()) {
-      CesiumGltf::TextureInfo textureInfo;
-      textureInfo.index =
-          static_cast<int32_t>(extra.second.getInt64OrDefault(-1));
-      modelResult.customMaskTextures.push_back(CustomMask{
-          extra.first.substr(12, extra.first.size()),
-          loadTexture(model, std::make_optional(textureInfo))});
-    }
-  }
-
-  auto customMaskTranslationXIt = model.extras.find("customMaskTranslationX");
-  auto customMaskTranslationYIt = model.extras.find("customMaskTranslationY");
-  auto customMaskScaleIt = model.extras.find("customMaskScale");
-
-  if (customMaskTranslationXIt != model.extras.end() &&
-      customMaskTranslationXIt->second.isDouble() &&
-      customMaskTranslationYIt != model.extras.end() &&
-      customMaskTranslationYIt->second.isDouble() &&
-      customMaskScaleIt != model.extras.end() &&
-      customMaskScaleIt->second.isDouble()) {
-    modelResult.customMaskTranslationX =
-        customMaskTranslationXIt->second.getDoubleOrDefault(0.0);
-    modelResult.customMaskTranslationY =
-        customMaskTranslationYIt->second.getDoubleOrDefault(0.0);
-    modelResult.customMaskScale =
-        customMaskScaleIt->second.getDoubleOrDefault(1.0);
-  }
 }
 
 static FCesiumMetadataPrimitive loadMetadataPrimitive(
@@ -827,8 +791,6 @@ static void loadPrimitive(
     primitiveResult.waterMaskScale =
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
-
-  applyCustomMasks(model, primitiveResult);
 
   {
     CESIUM_TRACE("init buffers");
@@ -1326,7 +1288,7 @@ bool applyTexture(
   return true;
 }
 
-static void SetParameterValues(
+static void SetGltfParameterValues(
     LoadModelResult& loadResult,
     const CesiumGltf::Material& material,
     const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
@@ -1396,7 +1358,13 @@ static void SetParameterValues(
         FMaterialParameterInfo("emissiveFactor", assocation, index),
         FVector(1.0f, 1.0f, 1.0f));
   }
+}
 
+void SetWaterParameterValues(
+    LoadModelResult& loadResult,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("OnlyLand", assocation, index),
       static_cast<float>(loadResult.onlyLand));
@@ -1417,23 +1385,6 @@ static void SetParameterValues(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
-
-  for (CustomMask& customMask : loadResult.customMaskTextures) {
-    applyTexture(
-        pMaterial,
-        FMaterialParameterInfo(
-            UTF8_TO_TCHAR(customMask.name.c_str()),
-            assocation,
-            index),
-        customMask.loadTextureResult);
-  }
-
-  pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo("CustomMaskTranslationScale", assocation, index),
-      FLinearColor(
-          loadResult.customMaskTranslationX,
-          loadResult.customMaskTranslationY,
-          loadResult.customMaskScale));
 }
 
 static void loadModelGameThreadPart(
@@ -1479,28 +1430,15 @@ static void loadModelGameThreadPart(
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
-  UMaterialInterface* pBaseMaterial = nullptr;
-
-  switch (material.alphaMode) {
-  case CesiumGltf::Material::AlphaMode::BLEND:
-    // TODO
-    pBaseMaterial = pGltf->OpacityMaskMaterial;
-    break;
-  case CesiumGltf::Material::AlphaMode::MASK:
-    pBaseMaterial = pGltf->OpacityMaskMaterial;
-    break;
-  case CesiumGltf::Material::AlphaMode::OPAQUE:
-  default:
-// TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
-    pBaseMaterial = pGltf->BaseMaterial;
+  // TODO: figure out why water material crashes mac
+  UMaterialInterface* pBaseMaterial = pGltf->BaseMaterial;
 #else
-    pBaseMaterial = (loadResult.onlyWater || !loadResult.onlyLand)
-                        ? pGltf->BaseMaterialWithWater
-                        : pGltf->BaseMaterial;
+  UMaterialInterface* pBaseMaterial =
+      (loadResult.onlyWater || !loadResult.onlyLand)
+          ? pGltf->BaseMaterialWithWater
+          : pGltf->BaseMaterial;
 #endif
-    break;
-  }
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
       pBaseMaterial,
@@ -1509,12 +1447,16 @@ static void loadModelGameThreadPart(
 
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
-  SetParameterValues(
+  SetGltfParameterValues(
       loadResult,
       material,
       pbr,
+      pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+  SetWaterParameterValues(
+      loadResult,
       pMaterial,
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
@@ -1557,13 +1499,23 @@ static void loadModelGameThreadPart(
 #endif
 
   if (pCesiumData) {
-    SetParameterValues(
+    SetGltfParameterValues(
         loadResult,
         material,
         pbr,
         pMaterial,
         EMaterialParameterAssociation::LayerParameter,
         0);
+
+    // If there's a "Water" layer, set its parameters
+    int32 waterIndex = pCesiumData->LayerNames.Find("Water");
+    if (waterIndex >= 0) {
+      SetWaterParameterValues(
+          loadResult,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          waterIndex);
+    }
   }
 
   pMaterial->TwoSided = true;
@@ -1626,8 +1578,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
-    UMaterialInterface* pBaseWaterMaterial,
-    UMaterialInterface* pBaseOpacityMaterial) {
+    UMaterialInterface* pBaseWaterMaterial) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -1647,10 +1598,6 @@ UCesiumGltfComponent::CreateOffGameThread(
     Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  if (pBaseOpacityMaterial) {
-    Gltf->OpacityMaskMaterial = pBaseOpacityMaterial;
-  }
-
   for (LoadModelResult& model : result) {
     loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
   }
@@ -1662,23 +1609,19 @@ UCesiumGltfComponent::CreateOffGameThread(
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
-    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterialWithWater;
-    ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlays.MI_CesiumTwoOverlays")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlayWater.M_CesiumOverlayWater")),
-          OpacityMaskMaterial(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlaysAndWater.MI_CesiumTwoOverlaysAndWater")) {
     }
   };
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
-  this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
 }
@@ -1706,11 +1649,6 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& translation,
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
-  if (this->OverlayTiles.Num() == 0) {
-    // First overlay tile, generate texture coordinates
-    // TODO
-  }
-
   this->OverlayTiles.Add(FRasterOverlayTile{
       UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()),
       pTexture,
@@ -1721,10 +1659,6 @@ void UCesiumGltfComponent::AttachRasterTile(
           textureCoordinateRectangle.maximumY),
       FLinearColor(translation.x, translation.y, scale.x, scale.y),
       textureCoordinateID});
-
-  // if (this->OverlayTiles.Num() > 3) {
-  //  UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
-  //}
 
   this->UpdateRasterOverlays();
 }
@@ -1863,47 +1797,6 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
           }
         }
       }
-      /*
-      for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
-        FRasterOverlayTile& overlayTile = this->OverlayTiles[i];
-        std::string is = std::to_string(i + 1);
-        pMaterial->SetTextureParameterValue(
-            ("OverlayTexture" + is).c_str(),
-            overlayTile.Texture);
-
-        if (!overlayTile.Texture) {
-          // The texture is null so don't use it.
-          pMaterial->SetVectorParameterValue(
-              ("OverlayRect" + is).c_str(),
-              FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-        } else {
-          pMaterial->SetVectorParameterValue(
-              ("OverlayRect" + is).c_str(),
-              overlayTile.TextureCoordinateRectangle);
-        }
-
-        pMaterial->SetVectorParameterValue(
-            ("OverlayTranslationScale" + is).c_str(),
-            overlayTile.TranslationAndScale);
-      }
-
-      for (size_t i = this->OverlayTiles.Num(); i < 3; ++i) {
-        std::string is = std::to_string(i + 1);
-        pMaterial->SetTextureParameterValue(
-            ("OverlayTexture" + is).c_str(),
-            nullptr);
-        pMaterial->SetVectorParameterValue(
-            ("OverlayRect" + is).c_str(),
-            FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-        pMaterial->SetVectorParameterValue(
-            ("OverlayTranslationScale" + is).c_str(),
-            FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-      }
-
-      pMaterial->SetScalarParameterValue(
-          "opacityMask",
-          this->OverlayTiles.Num() > 0 ? 0.0 : 1.0);
-      */
     }
   }
 }

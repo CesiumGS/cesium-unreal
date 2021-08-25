@@ -4,21 +4,17 @@
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
-#include "Cesium3DTilesSelection/CartographicSelection.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
-#include "Cesium3DTilesSelection/RasterizedPolygonsOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
-#include "CesiumCartographicSelection.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/GeographicProjection.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -181,13 +177,6 @@ void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
 void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   if (this->WaterMaterial != InMaterial) {
     this->WaterMaterial = InMaterial;
-    this->DestroyTileset();
-  }
-}
-
-void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
-  if (this->OpacityMaskMaterial != InMaterial) {
-    this->OpacityMaskMaterial = InMaterial;
     this->DestroyTileset();
   }
 }
@@ -482,8 +471,7 @@ public:
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
-          this->_pActor->GetWaterMaterial(),
-          this->_pActor->GetOpacityMaskMaterial());
+          this->_pActor->GetWaterMaterial());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -677,15 +665,6 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
-  /*
-  for (ACesiumCartographicSelection* pCartographicSelection :
-       this->CartographicSelections) {
-    if (pCartographicSelection) {
-      pCartographicSelection->UpdateSelection();
-      options.cartographicSelections.push_back(
-          pCartographicSelection->CreateCesiumCartographicSelection());
-    }
-  }*/
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
 #else
@@ -712,41 +691,6 @@ void ACesium3DTileset::LoadTileset() {
         TCHAR_TO_UTF8(*this->IonAccessToken),
         options);
     break;
-  }
-
-  std::vector<bool> addedSelections(this->CartographicSelections.Num());
-  for (int i = 0; i < this->CartographicSelections.Num(); ++i) {
-    ACesiumCartographicSelection* pCartographicSelection =
-        this->CartographicSelections[i];
-    if (pCartographicSelection) {
-      pCartographicSelection->UpdateSelection();
-    }
-    if (!pCartographicSelection || addedSelections[i]) {
-      continue;
-    }
-
-    FString textureName = pCartographicSelection->TargetTexture;
-    std::vector<Cesium3DTilesSelection::CartographicSelection> polygons;
-
-    for (int j = i; j < this->CartographicSelections.Num(); ++j) {
-      ACesiumCartographicSelection* pCartographicSelection2 =
-          this->CartographicSelections[j];
-      if (!pCartographicSelection2 || addedSelections[j]) {
-        continue;
-      }
-      if (pCartographicSelection2->TargetTexture == textureName) {
-        polygons.push_back(
-            pCartographicSelection2->CreateCesiumCartographicSelection());
-        addedSelections[j] = true;
-      }
-    }
-
-    this->_pTileset->getOverlays().add(
-        std::make_unique<Cesium3DTilesSelection::RasterizedPolygonsOverlay>(
-            TCHAR_TO_UTF8(*textureName),
-            polygons,
-            CesiumGeospatial::Ellipsoid::WGS84,
-            CesiumGeospatial::GeographicProjection()));
   }
 
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
@@ -1467,9 +1411,7 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
-      PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, OpacityMaskMaterial)) {
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
     this->DestroyTileset();
   }
 
