@@ -114,6 +114,10 @@ void CesiumIonPanel::Construct(const FArguments& InArgs) {
                 SHorizontalBox::Slot().HAlign(HAlign_Left).Padding(5.0f)
                 [
                   SNew(SButton)
+                    .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                    .TextStyle(
+                      FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+                    .ContentPadding(FMargin(1.0, 1.0))
                     .HAlign(EHorizontalAlignment::HAlign_Center)
                     .Text(FText::FromString(TEXT("Refresh")))
                     .ToolTipText(FText::FromString(TEXT("Refresh the asset list")))
