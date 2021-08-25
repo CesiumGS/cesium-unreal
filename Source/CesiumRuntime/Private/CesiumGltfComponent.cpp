@@ -1495,7 +1495,7 @@ bool applyTexture(
   return true;
 }
 
-static void SetParameterValues(
+static void SetGltfParameterValues(
     LoadModelResult& loadResult,
     const CesiumGltf::Material& material,
     const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
@@ -1565,7 +1565,13 @@ static void SetParameterValues(
         FMaterialParameterInfo("emissiveFactor", assocation, index),
         FVector(1.0f, 1.0f, 1.0f));
   }
+}
 
+void SetWaterParameterValues(
+    LoadModelResult& loadResult,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("OnlyLand", assocation, index),
       static_cast<float>(loadResult.onlyLand));
@@ -1663,10 +1669,15 @@ static void loadModelGameThreadPart(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
-  SetParameterValues(
+  SetGltfParameterValues(
       loadResult,
       material,
       pbr,
+      pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+  SetWaterParameterValues(
+      loadResult,
       pMaterial,
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
@@ -1709,13 +1720,23 @@ static void loadModelGameThreadPart(
 #endif
 
   if (pCesiumData) {
-    SetParameterValues(
+    SetGltfParameterValues(
         loadResult,
         material,
         pbr,
         pMaterial,
         EMaterialParameterAssociation::LayerParameter,
         0);
+
+    // If there's a "Water" layer, set its parameters
+    int32 waterIndex = pCesiumData->LayerNames.Find("Water");
+    if (waterIndex >= 0) {
+      SetWaterParameterValues(
+          loadResult,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          waterIndex);
+    }
   }
 
   pMaterial->TwoSided = true;
