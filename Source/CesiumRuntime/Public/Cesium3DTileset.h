@@ -244,16 +244,13 @@ public:
   float CulledScreenSpaceError = 64.0;
 
   /**
-   *  TODO: should this be under rendering
+   * Refreshes this tileset, ensuring that all materials and other settings are
+   * applied. It is not usually necessary to invoke this, but when
+   * behind-the-scenes changes are made and not reflected in the tileset, this
+   * function can help.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium|Rendering")
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
   void RefreshTileset();
-
-  /**
-   *
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  TArray<ACesiumCartographicSelection*> CartographicSelections;
 
   /**
    * Pauses level-of-detail and culling updates of this tileset.

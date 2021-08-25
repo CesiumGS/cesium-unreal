@@ -62,11 +62,6 @@ struct LoadTextureResult {
   UTexture2D* pTexture = nullptr;
 };
 
-struct CustomMask {
-  std::string name;
-  std::optional<LoadTextureResult> loadTextureResult;
-};
-
 struct LoadModelResult {
   FCesiumMetadataPrimitive Metadata;
   FStaticMeshRenderData* RenderData;
@@ -88,7 +83,6 @@ struct LoadModelResult {
   std::optional<LoadTextureResult> emissiveTexture;
   std::optional<LoadTextureResult> occlusionTexture;
   std::optional<LoadTextureResult> waterMaskTexture;
-  std::vector<CustomMask> customMaskTextures;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand;
@@ -97,10 +91,6 @@ struct LoadModelResult {
   double waterMaskTranslationX;
   double waterMaskTranslationY;
   double waterMaskScale;
-
-  double customMaskTranslationX;
-  double customMaskTranslationY;
-  double customMaskScale;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
 };
@@ -571,38 +561,6 @@ static std::optional<LoadTextureResult> loadTexture(
   return result;
 }
 
-static void
-applyCustomMasks(const CesiumGltf::Model& model, LoadModelResult& modelResult) {
-  for (auto extra : model.extras) {
-    if (extra.first.find("CUSTOM_MASK_") == 0 && extra.second.isInt64()) {
-      CesiumGltf::TextureInfo textureInfo;
-      textureInfo.index =
-          static_cast<int32_t>(extra.second.getInt64OrDefault(-1));
-      modelResult.customMaskTextures.push_back(CustomMask{
-          extra.first.substr(12, extra.first.size()),
-          loadTexture(model, std::make_optional(textureInfo))});
-    }
-  }
-
-  auto customMaskTranslationXIt = model.extras.find("customMaskTranslationX");
-  auto customMaskTranslationYIt = model.extras.find("customMaskTranslationY");
-  auto customMaskScaleIt = model.extras.find("customMaskScale");
-
-  if (customMaskTranslationXIt != model.extras.end() &&
-      customMaskTranslationXIt->second.isDouble() &&
-      customMaskTranslationYIt != model.extras.end() &&
-      customMaskTranslationYIt->second.isDouble() &&
-      customMaskScaleIt != model.extras.end() &&
-      customMaskScaleIt->second.isDouble()) {
-    modelResult.customMaskTranslationX =
-        customMaskTranslationXIt->second.getDoubleOrDefault(0.0);
-    modelResult.customMaskTranslationY =
-        customMaskTranslationYIt->second.getDoubleOrDefault(0.0);
-    modelResult.customMaskScale =
-        customMaskScaleIt->second.getDoubleOrDefault(1.0);
-  }
-}
-
 static FCesiumMetadataPrimitive loadMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive) {
@@ -1028,8 +986,6 @@ static void loadPrimitive(
     primitiveResult.waterMaskScale =
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
-
-  applyCustomMasks(model, primitiveResult);
 
   {
     CESIUM_TRACE("init buffers");
@@ -1630,23 +1586,6 @@ static void SetParameterValues(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
-
-  for (CustomMask& customMask : loadResult.customMaskTextures) {
-    applyTexture(
-        pMaterial,
-        FMaterialParameterInfo(
-            UTF8_TO_TCHAR(customMask.name.c_str()),
-            assocation,
-            index),
-        customMask.loadTextureResult);
-  }
-
-  pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo("CustomMaskTranslationScale", assocation, index),
-      FLinearColor(
-          loadResult.customMaskTranslationX,
-          loadResult.customMaskTranslationY,
-          loadResult.customMaskScale));
 }
 
 static void loadModelGameThreadPart(
@@ -1919,11 +1858,6 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& translation,
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
-  if (this->OverlayTiles.Num() == 0) {
-    // First overlay tile, generate texture coordinates
-    // TODO
-  }
-
   this->OverlayTiles.Add(FRasterOverlayTile{
       UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()),
       pTexture,
@@ -1934,10 +1868,6 @@ void UCesiumGltfComponent::AttachRasterTile(
           textureCoordinateRectangle.maximumY),
       FLinearColor(translation.x, translation.y, scale.x, scale.y),
       textureCoordinateID});
-
-  // if (this->OverlayTiles.Num() > 3) {
-  //  UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
-  //}
 
   this->UpdateRasterOverlays();
 }
@@ -2076,47 +2006,6 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
           }
         }
       }
-      /*
-      for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
-        FRasterOverlayTile& overlayTile = this->OverlayTiles[i];
-        std::string is = std::to_string(i + 1);
-        pMaterial->SetTextureParameterValue(
-            ("OverlayTexture" + is).c_str(),
-            overlayTile.Texture);
-
-        if (!overlayTile.Texture) {
-          // The texture is null so don't use it.
-          pMaterial->SetVectorParameterValue(
-              ("OverlayRect" + is).c_str(),
-              FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-        } else {
-          pMaterial->SetVectorParameterValue(
-              ("OverlayRect" + is).c_str(),
-              overlayTile.TextureCoordinateRectangle);
-        }
-
-        pMaterial->SetVectorParameterValue(
-            ("OverlayTranslationScale" + is).c_str(),
-            overlayTile.TranslationAndScale);
-      }
-
-      for (size_t i = this->OverlayTiles.Num(); i < 3; ++i) {
-        std::string is = std::to_string(i + 1);
-        pMaterial->SetTextureParameterValue(
-            ("OverlayTexture" + is).c_str(),
-            nullptr);
-        pMaterial->SetVectorParameterValue(
-            ("OverlayRect" + is).c_str(),
-            FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-        pMaterial->SetVectorParameterValue(
-            ("OverlayTranslationScale" + is).c_str(),
-            FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-      }
-
-      pMaterial->SetScalarParameterValue(
-          "opacityMask",
-          this->OverlayTiles.Num() > 0 ? 0.0 : 1.0);
-      */
     }
   }
 }
