@@ -499,7 +499,7 @@ public:
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        TextureFilter::TF_Trilinear);
+        TextureFilter::TF_Bilinear);
   }
 
   virtual void* prepareRasterInMainThread(
