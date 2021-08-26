@@ -554,7 +554,6 @@ public:
       int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources,
-      const CesiumGeometry::Rectangle& textureCoordinateRectangle,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
     const Cesium3DTilesSelection::TileContentLoadResult* pContent =
@@ -567,7 +566,6 @@ public:
             tile,
             rasterTile,
             static_cast<UTexture2D*>(pMainThreadRendererResources),
-            textureCoordinateRectangle,
             translation,
             scale,
             overlayTextureCoordinateID);
@@ -579,9 +577,7 @@ public:
       const Cesium3DTilesSelection::Tile& tile,
       int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
-      void* pMainThreadRendererResources,
-      const CesiumGeometry::Rectangle& textureCoordinateRectangle) noexcept
-      override {
+      void* pMainThreadRendererResources) noexcept override {
     const Cesium3DTilesSelection::TileContentLoadResult* pContent =
         tile.getContent();
     if (pContent && pContent->model) {
@@ -591,8 +587,7 @@ public:
         pGltfContent->DetachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources),
-            textureCoordinateRectangle);
+            static_cast<UTexture2D*>(pMainThreadRendererResources));
       }
     }
   }
