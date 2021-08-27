@@ -1513,10 +1513,17 @@ static void loadModelGameThreadPart(
 
   pStaticMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pStaticMesh->bIsBuiltAtRuntime = true;
   pStaticMesh->NeverStream = true;
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
+  pStaticMesh->bIsBuiltAtRuntime = true;
   pStaticMesh->RenderData =
       TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+#else
+  pStaticMesh->SetIsBuiltAtRuntime(true);
+  pStaticMesh->SetRenderData(
+      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+#endif
 
   const CesiumGltf::Model& model = *loadResult.pModel;
   const CesiumGltf::Material& material =
@@ -1635,7 +1642,11 @@ static void loadModelGameThreadPart(
   // Set up RenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
   pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
+#else
+  pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+#endif
   pStaticMesh->CreateBodySetup();
 
   // pMesh->UpdateCollisionFromStaticMesh();

@@ -2,18 +2,16 @@
 
 ### Next Release - ?
 
-##### Additions :tada:
-
-- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
-
 ##### Breaking :mega:
 
-- Changed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID()` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID()`
+- Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID`. This is a breaking change for C++ code but Blueprints should be unaffected because of a CoreRedirect.
+- Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`. This is a breaking change for C++ code but it was not previously exposed to Blueprints.
 
-##### Fixes :wrench:
+##### Additions :tada:
 
-- Changed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID()` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID()`
-- Added `UFUNCTION` to expose `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID()`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties()`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID()`
+- Added support for Unreal Engine v4.27.
+- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
+- Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
 
 ### v1.5.1 - 2021-08-09
 
