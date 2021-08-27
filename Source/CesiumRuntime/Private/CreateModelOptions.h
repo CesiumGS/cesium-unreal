@@ -2,7 +2,7 @@
 
 #pragma once
 
-struct CESIUMRUNTIME_API CreateModelOptions {
+struct CreateModelOptions {
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCooking* pPhysXCooking = nullptr;
