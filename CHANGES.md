@@ -15,6 +15,7 @@
 - Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
 - The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
 - Multiple raster overlays per tileset are now supported.
+- Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread.
 
 ### v1.5.1 - 2021-08-09
 

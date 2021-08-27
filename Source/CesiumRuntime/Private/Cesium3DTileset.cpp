@@ -20,12 +20,14 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "CreateModelOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/SceneCapture2D.h"
+#include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
@@ -493,48 +495,28 @@ public:
 
   virtual void*
   prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return nullptr;
+    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(
+        image,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Bilinear);
   }
 
   virtual void* prepareRasterInMainThread(
-      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
       void* pLoadThreadResult) override {
-    const CesiumGltf::ImageCesium& image = rasterTile.getImage();
-    if (image.width <= 0 || image.height <= 0) {
+
+    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+        static_cast<CesiumTextureUtility::LoadedTextureResult*>(
+            pLoadThreadResult);
+
+    CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+
+    if (!pLoadedTexture) {
       return nullptr;
     }
 
-    EPixelFormat pixelFormat;
-    switch (image.channels) {
-    case 1:
-      pixelFormat = PF_R8;
-      break;
-    case 2:
-      pixelFormat = PF_R8G8;
-      break;
-    case 3:
-    case 4:
-    default:
-      pixelFormat = PF_R8G8B8A8;
-    };
-
-    UTexture2D* pTexture =
-        UTexture2D::CreateTransient(image.width, image.height, pixelFormat);
-    pTexture->AddToRoot();
-    pTexture->AddressX = TextureAddress::TA_Clamp;
-    pTexture->AddressY = TextureAddress::TA_Clamp;
-
-    unsigned char* pTextureData = static_cast<unsigned char*>(
-        pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-    FMemory::Memcpy(
-        pTextureData,
-        image.pixelData.data(),
-        image.pixelData.size());
-    pTexture->PlatformData->Mips[0].BulkData.Unlock();
-
-    pTexture->UpdateResource();
-
-    return pTexture;
+    return (void*)pLoadedTexture->pTexture;
   }
 
   virtual void freeRaster(
