@@ -4,8 +4,8 @@
 
 ##### Additions :tada:
 
+- Added support for Unreal Engine v4.27.
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
-
 
 ### v1.5.1 - 2021-08-09
 
