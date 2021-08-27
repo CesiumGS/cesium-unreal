@@ -467,6 +467,13 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PauseMovieSequencer();
 
+  /**
+   * This method is not supposed to be called by clients. It is currently
+   * only required by the UnrealResourcePreparer.
+   *
+   * See {@link
+   * Cesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
   Cesium3DTilesSelection::Tileset* GetTileset() { return this->_pTileset; }
@@ -474,9 +481,7 @@ public:
     return this->_pTileset;
   }
 
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
-
-  // AActor overrides
+  // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
   virtual void BeginDestroy() override;
@@ -531,6 +536,15 @@ private:
 
   std::vector<UnrealCameraParameters> GetCameras() const;
   std::vector<UnrealCameraParameters> GetPlayerCameras() const;
+
+  /**
+   * Update the transforms of the glTF components based on the
+   * the transform of the root component.
+   *
+   * This is supposed to be called during Tick, if the transform of
+   * the root component has changed since the previous Tick.
+   */
+  void UpdateTransformFromCesium();
 
   /**
    * Writes the values of all properties of this actor into the

@@ -32,13 +32,7 @@ public:
    * After calling this function, {@link IsTransformChanged} will return false
    * until the next time that the transform changes.
    */
-  void MarkTransformUnchanged();
-
-  /**
-   * @brief Recalculates {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * and marks it changed.
-   */
-  void RecalculateTransform();
+  void MarkTransformUnchanged() { this->_isDirty = false; }
 
   /**
    * @brief Gets the transform from the "Cesium Tileset" reference frame to the
