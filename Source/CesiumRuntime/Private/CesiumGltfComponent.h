@@ -41,13 +41,12 @@ struct FRasterOverlayTile {
   UPROPERTY()
   UTexture2D* Texture;
 
-  FLinearColor TextureCoordinateRectangle;
   FLinearColor TranslationAndScale;
   int32 TextureCoordinateID;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumGltfComponent : public USceneComponent {
+class UCesiumGltfComponent : public USceneComponent {
   GENERATED_BODY()
 
 public:
@@ -83,7 +82,6 @@ public:
       const Cesium3DTilesSelection::Tile& Tile,
       const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
-      const CesiumGeometry::Rectangle& TextureCoordinateRectangle,
       const glm::dvec2& Translation,
       const glm::dvec2& Scale,
       int32_t TextureCoordinateID);
@@ -91,8 +89,7 @@ public:
   void DetachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
       const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
-      UTexture2D* Texture,
-      const CesiumGeometry::Rectangle& TextureCoordinateRectangle);
+      UTexture2D* Texture);
 
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
