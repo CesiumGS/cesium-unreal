@@ -54,16 +54,6 @@ using namespace CesiumGltf;
 
 static uint32_t nextMaterialId = 0;
 
-struct CustomMask {
-  std::string name;
-  CesiumTextureUtility::LoadedTextureResult* loadTextureResult;
-};
-
-struct CustomMask {
-  std::string name;
-  std::optional<LoadTextureResult> loadTextureResult;
-};
-
 struct LoadModelResult {
   FCesiumMetadataPrimitive Metadata;
   FStaticMeshRenderData* RenderData;
@@ -85,7 +75,6 @@ struct LoadModelResult {
   CesiumTextureUtility::LoadedTextureResult* emissiveTexture;
   CesiumTextureUtility::LoadedTextureResult* occlusionTexture;
   CesiumTextureUtility::LoadedTextureResult* waterMaskTexture;
-  std::vector<CustomMask> customMaskTextures;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand;
@@ -94,10 +83,6 @@ struct LoadModelResult {
   double waterMaskTranslationX;
   double waterMaskTranslationY;
   double waterMaskScale;
-
-  double customMaskTranslationX;
-  double customMaskTranslationY;
-  double customMaskScale;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
 };
@@ -373,38 +358,6 @@ static CesiumTextureUtility::LoadedTextureResult* loadTexture(
       model.textures[gltfTexture.value().index];
 
   return CesiumTextureUtility::loadTextureAnyThreadPart(model, texture);
-}
-
-static void
-applyCustomMasks(const CesiumGltf::Model& model, LoadModelResult& modelResult) {
-  for (auto extra : model.extras) {
-    if (extra.first.find("CUSTOM_MASK_") == 0 && extra.second.isInt64()) {
-      CesiumGltf::TextureInfo textureInfo;
-      textureInfo.index =
-          static_cast<int32_t>(extra.second.getInt64OrDefault(-1));
-      modelResult.customMaskTextures.push_back(CustomMask{
-          extra.first.substr(12, extra.first.size()),
-          loadTexture(model, std::make_optional(textureInfo))});
-    }
-  }
-
-  auto customMaskTranslationXIt = model.extras.find("customMaskTranslationX");
-  auto customMaskTranslationYIt = model.extras.find("customMaskTranslationY");
-  auto customMaskScaleIt = model.extras.find("customMaskScale");
-
-  if (customMaskTranslationXIt != model.extras.end() &&
-      customMaskTranslationXIt->second.isDouble() &&
-      customMaskTranslationYIt != model.extras.end() &&
-      customMaskTranslationYIt->second.isDouble() &&
-      customMaskScaleIt != model.extras.end() &&
-      customMaskScaleIt->second.isDouble()) {
-    modelResult.customMaskTranslationX =
-        customMaskTranslationXIt->second.getDoubleOrDefault(0.0);
-    modelResult.customMaskTranslationY =
-        customMaskTranslationYIt->second.getDoubleOrDefault(0.0);
-    modelResult.customMaskScale =
-        customMaskScaleIt->second.getDoubleOrDefault(1.0);
-  }
 }
 
 static FCesiumMetadataPrimitive loadMetadataPrimitive(
@@ -832,8 +785,6 @@ static void loadPrimitive(
     primitiveResult.waterMaskScale =
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
-
-  applyCustomMasks(model, primitiveResult);
 
   {
     CESIUM_TRACE("init buffers");
@@ -1430,23 +1381,6 @@ void SetWaterParameterValues(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
-
-  for (CustomMask& customMask : loadResult.customMaskTextures) {
-    applyTexture(
-        pMaterial,
-        FMaterialParameterInfo(
-            UTF8_TO_TCHAR(customMask.name.c_str()),
-            assocation,
-            index),
-        customMask.loadTextureResult);
-  }
-
-  pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo("CustomMaskTranslationScale", assocation, index),
-      FLinearColor(
-          loadResult.customMaskTranslationX,
-          loadResult.customMaskTranslationY,
-          loadResult.customMaskScale));
 }
 
 static void loadModelGameThreadPart(
