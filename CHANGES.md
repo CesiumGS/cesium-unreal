@@ -12,6 +12,7 @@
 - Added support for Unreal Engine v4.27.
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
 - Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
+- Added a Refresh button on the Cesium ion Assets panel.
 
 ### v1.5.1 - 2021-08-09
 
