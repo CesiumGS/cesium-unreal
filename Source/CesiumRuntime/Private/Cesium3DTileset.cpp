@@ -157,9 +157,23 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
   }
 }
 
+void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
+  if (this->CreatePhysicsMeshes != bCreatePhysicsMeshes) {
+    this->CreatePhysicsMeshes = bCreatePhysicsMeshes;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetGenerateSmoothNormals(bool bGenerateSmoothNormals) {
+  if (this->GenerateSmoothNormals != bGenerateSmoothNormals) {
+    this->GenerateSmoothNormals = bGenerateSmoothNormals;
     this->DestroyTileset();
   }
 }
@@ -440,7 +454,10 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+        _pPhysXCooking(
+            pActor->GetCreatePhysicsMeshes()
+                ? GetPhysXCookingModule()->GetPhysXCooking()
+                : nullptr)
 #endif
   {
   }
@@ -520,19 +537,29 @@ public:
       return nullptr;
     }
 
-    return (void*)pLoadedTexture->pTexture;
+    UTexture2D* pTexture = pLoadedTexture->pTexture;
+    pTexture->AddToRoot();
+
+    delete pLoadedTexture;
+
+    return (void*)pTexture;
   }
 
   virtual void freeRaster(
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
-    UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
-    if (!pTexture) {
-      return;
+    if (pLoadThreadResult) {
+      CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+          static_cast<CesiumTextureUtility::LoadedTextureResult*>(
+              pLoadThreadResult);
+      delete pLoadedTexture;
     }
 
-    pTexture->RemoveFromRoot();
+    if (pMainThreadResult) {
+      UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+      pTexture->RemoveFromRoot();
+    }
   }
 
   virtual void attachRasterInMainThread(
@@ -682,6 +709,10 @@ void ACesium3DTileset::LoadTileset() {
           pCartographicSelection->CreateCesiumCartographicSelection());
     }
   }*/
+
+  options.contentOptions.generateMissingNormalsSmooth =
+      this->GenerateSmoothNormals;
+
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
 #else
@@ -1460,7 +1491,11 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
       PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
+      PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
