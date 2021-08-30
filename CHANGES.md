@@ -14,6 +14,7 @@
 - Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
 - Added a Refresh button on the Cesium ion Assets panel.
 - Added an editor option in `ACesium3DTileset` to optionally generate smooth normals for glTFs that originally did not have normals.
+- Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
 
 ##### Fixes :wrench:
 
