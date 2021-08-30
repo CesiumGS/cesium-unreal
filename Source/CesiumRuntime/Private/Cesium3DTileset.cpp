@@ -151,9 +151,23 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
   }
 }
 
+void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
+  if (this->CreatePhysicsMeshes != bCreatePhysicsMeshes) {
+    this->CreatePhysicsMeshes = bCreatePhysicsMeshes;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetGenerateSmoothNormals(bool bGenerateSmoothNormals) {
+  if (this->GenerateSmoothNormals != bGenerateSmoothNormals) {
+    this->GenerateSmoothNormals = bGenerateSmoothNormals;
     this->DestroyTileset();
   }
 }
@@ -434,7 +448,10 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+        _pPhysXCooking(
+            pActor->GetCreatePhysicsMeshes()
+                ? GetPhysXCookingModule()->GetPhysXCooking()
+                : nullptr)
 #endif
   {
   }
@@ -687,6 +704,10 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.contentOptions.generateMissingNormalsSmooth =
+      this->GenerateSmoothNormals;
+
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
 #else
@@ -1430,7 +1451,11 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
       PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
+      PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {

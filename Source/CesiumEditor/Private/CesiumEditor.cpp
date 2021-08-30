@@ -129,6 +129,9 @@ void FCesiumEditorModule::StartupModule() {
         "ClassThumbnail.CesiumGeoreference",
         new IMAGE_BRUSH(TEXT("Cesium-64x64"), Icon64x64));
 
+    // Icons for the toolbar. These will be registered with
+    // a default size, and a ".Small" suffix for the case
+    // that the useSmallToolbarIcons preference is enabled
     registerIcon(
         StyleSet,
         "Cesium.Common.AddFromIon",
@@ -149,7 +152,12 @@ void FCesiumEditorModule::StartupModule() {
         StyleSet,
         "Cesium.Common.OpenSupport",
         "FontAwesome/hands-helping-solid");
+
     registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
+
+    StyleSet->Set(
+        "Cesium.Common.Refresh",
+        new IMAGE_BRUSH(TEXT("FontAwesome/sync-alt-solid"), Icon16x16));
 
     StyleSet->Set(
         "Cesium.Logo",

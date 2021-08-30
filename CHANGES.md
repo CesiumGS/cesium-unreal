@@ -13,8 +13,15 @@
 - Added support for Unreal Engine v4.27.
 - Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
 - Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
+- Added a Refresh button on the Cesium ion Assets panel.
+- Added an editor option in `ACesium3DTileset` to optionally generate smooth normals for glTFs that originally did not have normals.
+- Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
 - The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
 - Multiple raster overlays per tileset are now supported.
+
+##### Fixes :wrench:
+
+- Fixed indexed vertices being duplicated unnecessarily in certain situations in `UCesiumGltfComponent`.
 
 ### v1.5.1 - 2021-08-09
 
