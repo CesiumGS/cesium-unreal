@@ -4,7 +4,6 @@
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
-#include "Cesium3DTilesSelection/CartographicSelection.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
@@ -17,6 +16,7 @@
 #include "CesiumCartographicSelection.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumGeospatial/CartographicPolygon.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/GeographicProjection.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -753,7 +753,7 @@ void ACesium3DTileset::LoadTileset() {
     }
 
     FString textureName = pCartographicSelection->TargetTexture;
-    std::vector<Cesium3DTilesSelection::CartographicSelection> polygons;
+    std::vector<CesiumGeospatial::CartographicPolygon> polygons;
 
     for (int j = i; j < this->CartographicSelections.Num(); ++j) {
       ACesiumCartographicSelection* pCartographicSelection2 =

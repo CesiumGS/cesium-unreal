@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Cesium3DTilesSelection/CartographicSelection.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceComponent.h"
+#include "CesiumGeospatial/CartographicPolygon.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
@@ -66,7 +66,7 @@ public:
    * Creates and returns a Cesium3DTilesSelection::CartographicSelection object
    * out of the current spline selection.
    */
-  Cesium3DTilesSelection::CartographicSelection
+  CesiumGeospatial::CartographicPolygon
   CreateCesiumCartographicSelection() const;
 
 protected:

@@ -59,9 +59,9 @@ void ACesiumCartographicSelection::UpdateSelection() {
   }
 }
 
-Cesium3DTilesSelection::CartographicSelection
+CesiumGeospatial::CartographicPolygon
 ACesiumCartographicSelection::CreateCesiumCartographicSelection() const {
-  return Cesium3DTilesSelection::CartographicSelection(
+  return CesiumGeospatial::CartographicPolygon(
       TCHAR_TO_UTF8(*this->TargetTexture),
       this->_cartographicSelection,
       this->IsForCulling);
