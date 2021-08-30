@@ -53,11 +53,6 @@ using namespace CesiumGltf;
 
 static uint32_t nextMaterialId = 0;
 
-struct CustomMask {
-  std::string name;
-  CesiumTextureUtility::LoadedTextureResult* loadTextureResult;
-};
-
 struct LoadModelResult {
   FCesiumMetadataPrimitive Metadata;
   FStaticMeshRenderData* RenderData;
@@ -79,7 +74,6 @@ struct LoadModelResult {
   CesiumTextureUtility::LoadedTextureResult* emissiveTexture;
   CesiumTextureUtility::LoadedTextureResult* occlusionTexture;
   CesiumTextureUtility::LoadedTextureResult* waterMaskTexture;
-  std::vector<CustomMask> customMaskTextures;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand;
