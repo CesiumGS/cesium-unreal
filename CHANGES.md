@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.5.2 - 2021-08-30
+
+##### Additions :tada:
+
+- Added support for Unreal Engine v4.27.
+
 ### v1.5.1 - 2021-08-09
 
 ##### Fixes :wrench:
