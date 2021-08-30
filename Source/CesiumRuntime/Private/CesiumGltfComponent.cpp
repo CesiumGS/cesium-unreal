@@ -1108,15 +1108,17 @@ static void loadPrimitive(
   // Note that we're reversing the order of the indices, because the change
   // from the glTF right-handed to the Unreal left-handed coordinate system
   // reverses the winding order.
+  // Note also that we don't want to just flip the index buffer, since that
+  // will change the order of the faces.
   if (duplicateVertices) {
     CESIUM_TRACE("reverse winding order of duplicated vertices");
-    for (int32 i = 0; i < indices.Num(); ++i) {
-      indices[i] = indices.Num() - i - 1;
+    for (int32 i = 2; i < indices.Num(); i += 3) {
+      indices[i - 2] = i;
+      indices[i - 1] = i - 1;
+      indices[i] = i - 2;
     }
   } else {
     CESIUM_TRACE("reverse winding order");
-    // This takes n/3 swaps, so it is better than using std::reverse which
-    // would take n/2 swaps.
     for (int32 i = 2; i < indices.Num(); i += 3) {
       std::swap(indices[i - 2], indices[i]);
     }
@@ -1161,7 +1163,6 @@ static void loadPrimitive(
     TArray<FTriIndices> physicsIndices;
     physicsIndices.SetNum(indices.Num() / 3);
 
-    // Reversing triangle winding order here, too.
     for (size_t i = 0; i < indices.Num() / 3; ++i) {
       physicsIndices[i].v0 = indices[3 * i];
       physicsIndices[i].v1 = indices[3 * i + 1];
@@ -1613,10 +1614,17 @@ static void loadModelGameThreadPart(
 
   pStaticMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pStaticMesh->bIsBuiltAtRuntime = true;
   pStaticMesh->NeverStream = true;
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
+  pStaticMesh->bIsBuiltAtRuntime = true;
   pStaticMesh->RenderData =
       TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+#else
+  pStaticMesh->SetIsBuiltAtRuntime(true);
+  pStaticMesh->SetRenderData(
+      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+#endif
 
   const CesiumGltf::Model& model = *loadResult.pModel;
   const CesiumGltf::Material& material =
@@ -1735,7 +1743,11 @@ static void loadModelGameThreadPart(
   // Set up RenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
   pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
+#else
+  pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
+#endif
   pStaticMesh->CreateBodySetup();
 
   // pMesh->UpdateCollisionFromStaticMesh();

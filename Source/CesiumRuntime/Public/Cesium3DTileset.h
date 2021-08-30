@@ -581,6 +581,7 @@ private:
 
   std::vector<UnrealCameraParameters> GetCameras() const;
   std::vector<UnrealCameraParameters> GetPlayerCameras() const;
+  std::vector<UnrealCameraParameters> GetSceneCaptures() const;
 
   /**
    * Writes the values of all properties of this actor into the

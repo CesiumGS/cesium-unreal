@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+#include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
@@ -20,10 +21,13 @@
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "CreateModelOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/SceneCapture2D.h"
 #include "Engine/Texture2D.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
@@ -803,6 +807,12 @@ std::vector<ACesium3DTileset::UnrealCameraParameters>
 ACesium3DTileset::GetCameras() const {
   std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
 
+  std::vector<UnrealCameraParameters> sceneCaptures = this->GetSceneCaptures();
+  cameras.insert(
+      cameras.end(),
+      std::make_move_iterator(sceneCaptures.begin()),
+      std::make_move_iterator(sceneCaptures.end()));
+
 #if WITH_EDITOR
   std::vector<UnrealCameraParameters> editorCameras = this->GetEditorCameras();
   cameras.insert(
@@ -957,6 +967,62 @@ ACesium3DTileset::GetPlayerCameras() const {
   return cameras;
 }
 
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetSceneCaptures() const {
+  // TODO: really USceneCaptureComponent2D can be attached to any actor, is it
+  // worth searching every actor? Might it be better to provide an interface
+  // where users can volunteer cameras to be used with the tile selection as
+  // needed?
+  TArray<AActor*> sceneCaptures;
+  static TSubclassOf<ASceneCapture2D> SceneCapture2D =
+      ASceneCapture2D::StaticClass();
+  UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  cameras.reserve(sceneCaptures.Num());
+
+  for (AActor* pActor : sceneCaptures) {
+    ASceneCapture2D* pSceneCapture = static_cast<ASceneCapture2D*>(pActor);
+    if (!pSceneCapture) {
+      continue;
+    }
+
+    USceneCaptureComponent2D* pSceneCaptureComponent =
+        pSceneCapture->GetCaptureComponent2D();
+    if (!pSceneCaptureComponent) {
+      continue;
+    }
+
+    if (pSceneCaptureComponent->ProjectionType !=
+        ECameraProjectionMode::Type::Perspective) {
+      continue;
+    }
+
+    UTextureRenderTarget2D* pRenderTarget =
+        pSceneCaptureComponent->TextureTarget;
+    if (!pRenderTarget) {
+      continue;
+    }
+
+    FVector2D renderTargetSize(pRenderTarget->SizeX, pRenderTarget->SizeY);
+    if (renderTargetSize.X < 1.0 || renderTargetSize.Y < 1.0) {
+      continue;
+    }
+
+    FVector captureLocation = pSceneCaptureComponent->GetComponentLocation();
+    FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
+    float captureFov = pSceneCaptureComponent->FOVAngle;
+
+    cameras.push_back(UnrealCameraParameters{
+        renderTargetSize,
+        captureLocation,
+        captureRotation,
+        captureFov});
+  }
+
+  return cameras;
+}
+
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const UnrealCameraParameters& camera,
@@ -1067,7 +1133,7 @@ bool isInExclusionZone(
             ExclusionZone.South,
             ExclusionZone.East,
             ExclusionZone.North);
-    if (cgExclusionZone.intersect(pRegion->getRectangle())) {
+    if (cgExclusionZone.computeIntersection(pRegion->getRectangle())) {
       return true;
     }
   }

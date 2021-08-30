@@ -90,14 +90,31 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
           .VAlign(VAlign_Top)
           .HAlign(HAlign_Center)
           .Padding(5)
-          .AutoHeight()[SNew(SButton)
-                            .OnClicked(this, &IonLoginPanel::SignIn)
-                            .Text(FText::FromString(TEXT("Connect")))
-                            .IsEnabled_Lambda([this]() {
-                              return !FCesiumEditorModule::ion()
-                                          .isConnecting() &&
-                                     !FCesiumEditorModule::ion().isResuming();
-                            })] +
+          .AutoHeight()
+              [SNew(SButton)
+                   .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                   .TextStyle(
+                       FCesiumEditorModule::GetStyle(),
+                       "CesiumButtonText")
+                   .OnClicked(this, &IonLoginPanel::SignIn)
+                   .Text(FText::FromString(TEXT("Connect to Cesium ion")))
+                   .IsEnabled_Lambda([this]() {
+                     return !FCesiumEditorModule::ion().isConnecting() &&
+                            !FCesiumEditorModule::ion().isResuming();
+                   })] +
+      SVerticalBox::Slot()
+          .VAlign(VAlign_Top)
+          .Padding(10, 10, 10, 5)
+          .AutoHeight()
+              [SNew(STextBlock)
+                   .AutoWrapText(true)
+                   .TextStyle(FCesiumEditorModule::GetStyle(), "BodyBold")
+                   .Text(FText::FromString(TEXT(
+                       "You can now sign in with your Epic Games account!")))
+                   .IsEnabled_Lambda([this]() {
+                     return !FCesiumEditorModule::ion().isConnecting() &&
+                            !FCesiumEditorModule::ion().isResuming();
+                   })] +
       SVerticalBox::Slot()
           .VAlign(VAlign_Top)
           .Padding(5, 15, 5, 5)
@@ -124,11 +141,11 @@ void IonLoginPanel::Construct(const FArguments& InArgs) {
                             TEXT("Cesium.Logo")))]] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
-           .Padding(10)
+           .Padding(30, 10, 30, 10)
                [SNew(STextBlock)
                     .AutoWrapText(true)
                     .Text(FText::FromString(TEXT(
-                        "Sign in to Cesium ion to access global high-resolution 3D content, including photogrammetry, terrain, imagery, and buildings. Bring your own data for tiling, hosting, and streaming to Unreal Engine.")))] +
+                        "Access global high-resolution 3D content, including photogrammetry, terrain, imagery, and buildings. Bring your own data for tiling, hosting, and streaming to Unreal Engine.")))] +
        SScrollBox::Slot()
            .VAlign(VAlign_Top)
            .HAlign(HAlign_Center)

@@ -2,8 +2,17 @@
 
 ### Next Release - ?
 
+##### Breaking :mega:
+
+- Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID`. This is a breaking change for C++ code but Blueprints should be unaffected because of a CoreRedirect.
+- Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`. This is a breaking change for C++ code but it was not previously exposed to Blueprints.
+
 ##### Additions :tada:
 
+- Added support for Unreal Engine v4.27.
+- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
+- Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
+- Added a Refresh button on the Cesium ion Assets panel.
 - Added an editor option in `ACesium3DTileset` to optionally generate smooth normals for glTFs that originally did not have normals.
 - Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
 
