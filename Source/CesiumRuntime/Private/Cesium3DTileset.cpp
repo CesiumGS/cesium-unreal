@@ -533,19 +533,29 @@ public:
       return nullptr;
     }
 
-    return (void*)pLoadedTexture->pTexture;
+    UTexture2D* pTexture = pLoadedTexture->pTexture;
+    pTexture->AddToRoot();
+
+    delete pLoadedTexture;
+
+    return (void*)pTexture;
   }
 
   virtual void freeRaster(
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
-    UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
-    if (!pTexture) {
-      return;
+    if (pLoadThreadResult) {
+      CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+          static_cast<CesiumTextureUtility::LoadedTextureResult*>(
+              pLoadThreadResult);
+      delete pLoadedTexture;
     }
 
-    pTexture->RemoveFromRoot();
+    if (pMainThreadResult) {
+      UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+      pTexture->RemoveFromRoot();
+    }
   }
 
   virtual void attachRasterInMainThread(
