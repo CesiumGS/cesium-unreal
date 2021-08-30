@@ -1123,7 +1123,7 @@ bool isInExclusionZone(
             ExclusionZone.South,
             ExclusionZone.East,
             ExclusionZone.North);
-    if (cgExclusionZone.intersect(pRegion->getRectangle())) {
+    if (cgExclusionZone.computeIntersection(pRegion->getRectangle())) {
       return true;
     }
   }
