@@ -11,8 +11,7 @@
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumGltfPrimitiveComponent
-    : public UStaticMeshComponent {
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
   GENERATED_BODY()
 
 public:

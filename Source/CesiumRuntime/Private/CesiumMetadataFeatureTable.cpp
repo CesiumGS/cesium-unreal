@@ -77,7 +77,7 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
 }
 
 TMap<FString, FCesiumMetadataGenericValue>
-UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
+UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 featureID) {
   TMap<FString, FCesiumMetadataGenericValue> feature;
@@ -92,10 +92,10 @@ UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
   return feature;
 }
 
-TMap<FString, FString>
-UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
-    int64 featureID) {
+TMap<FString, FString> UCesiumMetadataFeatureTableBlueprintLibrary::
+    GetMetadataValuesAsStringForFeatureID(
+        UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+        int64 featureID) {
   TMap<FString, FString> feature;
   for (const auto& pair : FeatureTable._properties) {
     feature.Add(
