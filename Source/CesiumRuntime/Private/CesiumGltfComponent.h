@@ -97,7 +97,6 @@ public:
   virtual void FinishDestroy() override;
 
 private:
-  void UpdateRasterOverlays();
-
-  TArray<FRasterOverlayTile> OverlayTiles;
+  UPROPERTY()
+  UTexture2D* Transparent1x1;
 };
