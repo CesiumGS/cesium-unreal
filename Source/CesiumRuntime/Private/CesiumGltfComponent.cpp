@@ -2,6 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
+#include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
@@ -1716,17 +1717,21 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
+    ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
         : BaseMaterial(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlays.MI_CesiumTwoOverlays")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlaysAndWater.MI_CesiumTwoOverlaysAndWater")) {
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlaysAndWater.MI_CesiumTwoOverlaysAndWater")),
+          Transparent1x1(
+              TEXT("/CesiumForUnreal/Textures/transparent1x1.transparent1x1")) {
     }
   };
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
+  this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
 }
@@ -1746,66 +1751,11 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
   }
 }
 
-void UCesiumGltfComponent::AttachRasterTile(
-    const Cesium3DTilesSelection::Tile& tile,
-    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
-    UTexture2D* pTexture,
-    const glm::dvec2& translation,
-    const glm::dvec2& scale,
-    int32 textureCoordinateID) {
-  this->OverlayTiles.Add(FRasterOverlayTile{
-      UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()),
-      pTexture,
-      FLinearColor(translation.x, translation.y, scale.x, scale.y),
-      textureCoordinateID});
+namespace {
 
-  this->UpdateRasterOverlays();
-}
-
-void UCesiumGltfComponent::DetachRasterTile(
-    const Cesium3DTilesSelection::Tile& tile,
-    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
-    UTexture2D* pTexture) {
-  size_t numBefore = this->OverlayTiles.Num();
-  this->OverlayTiles.RemoveAll(
-      [/*overlayName =
-          UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()),*/
-       pTexture](const FRasterOverlayTile& tile) {
-        return /*tile.OverlayName == overlayName &&*/
-            tile.Texture == pTexture;
-      });
-  size_t numAfter = this->OverlayTiles.Num();
-
-  if (numBefore - 1 != numAfter) {
-    UE_LOG(
-        LogCesium,
-        VeryVerbose,
-        TEXT("Raster tiles detached: %d, pTexture: %d"),
-        numBefore - numAfter,
-        pTexture);
-  }
-
-  this->UpdateRasterOverlays();
-}
-
-void UCesiumGltfComponent::SetCollisionEnabled(
-    ECollisionEnabled::Type NewType) {
-  for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
-    if (pPrimitive) {
-      pPrimitive->SetCollisionEnabled(NewType);
-    }
-  }
-}
-
-void UCesiumGltfComponent::FinishDestroy() {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("UCesiumGltfComponent::FinishDestroy"));
-  Super::FinishDestroy();
-}
-
-void UCesiumGltfComponent::UpdateRasterOverlays() {
-  for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+template <typename Func>
+void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
+  for (USceneComponent* pSceneComponent : pGltf->GetAttachChildren()) {
     UCesiumGltfPrimitiveComponent* pPrimitive =
         Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
     if (pPrimitive) {
@@ -1829,25 +1779,43 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
                     ->GetAssetUserData<UCesiumMaterialUserData>()
               : nullptr;
 
-      for (FRasterOverlayTile& overlayTile : this->OverlayTiles) {
-        pMaterial->SetTextureParameterValue(
-            TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_Texture")),
-            overlayTile.Texture);
-        pMaterial->SetVectorParameterValue(
-            TCHAR_TO_UTF8(*(overlayTile.OverlayName + "_TranslationScale")),
-            overlayTile.TranslationAndScale);
-        pMaterial->SetScalarParameterValue(
-            TCHAR_TO_UTF8(
-                *(overlayTile.OverlayName + "_TextureCoordinateIndex")),
-            pPrimitive->overlayTextureCoordinateIDToUVIndex
-                [overlayTile.TextureCoordinateID]);
+      f(pPrimitive, pMaterial, pCesiumData);
+    }
+  }
+}
 
+} // namespace
+
+void UCesiumGltfComponent::AttachRasterTile(
+    const Cesium3DTilesSelection::Tile& tile,
+    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+    UTexture2D* pTexture,
+    const glm::dvec2& translation,
+    const glm::dvec2& scale,
+    int32 textureCoordinateID) {
+  const Cesium3DTilesSelection::RasterOverlay& overlay =
+      rasterTile.getOverlay();
+
+  FLinearColor translationAndScale(
+      translation.x,
+      translation.y,
+      scale.x,
+      scale.y);
+
+  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
+
+  forEachPrimitiveComponent(
+      this,
+      [&name, &rasterTile, pTexture, &translationAndScale, textureCoordinateID](
+          UCesiumGltfPrimitiveComponent* pPrimitive,
+          UMaterialInstanceDynamic* pMaterial,
+          UCesiumMaterialUserData* pCesiumData) {
         // If this material uses material layers and has the Cesium user data,
         // set the parameters on each material layer that maps to this overlay
         // tile.
         if (pCesiumData) {
           for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
-            if (pCesiumData->LayerNames[i] != overlayTile.OverlayName) {
+            if (pCesiumData->LayerNames[i] != name) {
               continue;
             }
 
@@ -1856,25 +1824,89 @@ void UCesiumGltfComponent::UpdateRasterOverlays() {
                     "Texture",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                overlayTile.Texture);
+                pTexture);
             pMaterial->SetVectorParameterValueByInfo(
                 FMaterialParameterInfo(
                     "TranslationScale",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                overlayTile.TranslationAndScale);
+                translationAndScale);
             pMaterial->SetScalarParameterValueByInfo(
                 FMaterialParameterInfo(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                pPrimitive->overlayTextureCoordinateIDToUVIndex
-                    [overlayTile.TextureCoordinateID]);
+                pPrimitive
+                    ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
           }
+        } else {
+          pMaterial->SetTextureParameterValue(
+              FName(name + "_Texture"),
+              pTexture);
+          pMaterial->SetVectorParameterValue(
+              FName(name + "_TranslationScale"),
+              translationAndScale);
+          pMaterial->SetScalarParameterValue(
+              FName(name + "_TextureCoordinateIndex"),
+              pPrimitive
+                  ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
         }
-      }
+      });
+}
+
+void UCesiumGltfComponent::DetachRasterTile(
+    const Cesium3DTilesSelection::Tile& tile,
+    const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+    UTexture2D* pTexture) {
+  const Cesium3DTilesSelection::RasterOverlay& overlay =
+      rasterTile.getOverlay();
+
+  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
+
+  forEachPrimitiveComponent(
+      this,
+      [this, &name, &rasterTile, pTexture](
+          UCesiumGltfPrimitiveComponent* pPrimitive,
+          UMaterialInstanceDynamic* pMaterial,
+          UCesiumMaterialUserData* pCesiumData) {
+        // If this material uses material layers and has the Cesium user data,
+        // clear the parameters on each material layer that maps to this overlay
+        // tile.
+        if (pCesiumData) {
+          for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+            if (pCesiumData->LayerNames[i] != name) {
+              continue;
+            }
+
+            pMaterial->SetTextureParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "Texture",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                this->Transparent1x1);
+          }
+        } else {
+          pMaterial->SetTextureParameterValue(
+              FName(name + "_Texture"),
+              this->Transparent1x1);
+        }
+      });
+}
+
+void UCesiumGltfComponent::SetCollisionEnabled(
+    ECollisionEnabled::Type NewType) {
+  for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
+    UCesiumGltfPrimitiveComponent* pPrimitive =
+        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+    if (pPrimitive) {
+      pPrimitive->SetCollisionEnabled(NewType);
     }
   }
+}
+
+void UCesiumGltfComponent::FinishDestroy() {
+  UE_LOG(LogCesium, VeryVerbose, TEXT("UCesiumGltfComponent::FinishDestroy"));
+  Super::FinishDestroy();
 }
 
 #if !PHYSICS_INTERFACE_PHYSX
