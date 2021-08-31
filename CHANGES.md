@@ -24,6 +24,7 @@
 ##### Fixes :wrench:
 
 - Fixed indexed vertices being duplicated unnecessarily in certain situations in `UCesiumGltfComponent`.
+- Fixed an issue where the "Drape Over Terrain Tileset" button in the Cesium Ion Asset panel deleted all existing overlays.
 
 ### v1.5.1 - 2021-08-09
 

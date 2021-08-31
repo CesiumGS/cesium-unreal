@@ -374,16 +374,6 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
     ACesium3DTileset* pTilesetActor,
     const std::string& name,
     int64_t assetID) {
-  // Remove any existing overlays and add the new one.
-  // TODO: ideally we wouldn't remove the old overlays but the number of overlay
-  // textures we can support is currently very limited.
-  TArray<UCesiumRasterOverlay*> rasterOverlays;
-  pTilesetActor->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
-  for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
-    pOverlay->DestroyComponent(false);
-  }
-
   UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
       pTilesetActor,
       FName(name.c_str()),
