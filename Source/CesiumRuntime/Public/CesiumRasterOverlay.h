@@ -23,16 +23,16 @@ class CESIUMRUNTIME_API UCesiumRasterOverlay : public UActorComponent {
 
 public:
   /**
-   * The name to use for this overlay.
+   * The key to use to match this overlay to a material layer.
    *
-   * When using Material Layers, any material layers with a name that matches
-   * this name will have their Texture, TranslationScale, and
-   * TextureCoordinateIndex properties set automatically so that a
-   * ML_CesiumOverlay layer function (or similar) will correctly sample from
-   * this overlay.
+   * When using Material Layers, any material layers inside a "Cesium" layer
+   * stack with a name that matches this name will have their Texture,
+   * TranslationScale, and TextureCoordinateIndex properties set automatically
+   * so that a ML_CesiumOverlay layer function (or similar) will correctly
+   * sample from this overlay.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  FString Name = "Overlay0";
+  FString MaterialLayerKey = "Overlay0";
 
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
