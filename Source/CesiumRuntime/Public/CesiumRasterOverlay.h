@@ -63,8 +63,15 @@ protected:
 #endif
 
   Cesium3DTilesSelection::Tileset* FindTileset() const;
+
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay()
       PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
+  virtual void OnAdd(
+      Cesium3DTilesSelection::Tileset* pTileset,
+      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
+  virtual void OnRemove(
+      Cesium3DTilesSelection::Tileset* pTileset,
+      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
 
 private:
   Cesium3DTilesSelection::RasterOverlay* _pOverlay;
