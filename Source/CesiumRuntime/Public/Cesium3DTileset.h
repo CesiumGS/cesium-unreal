@@ -253,12 +253,6 @@ public:
   void RefreshTileset();
 
   /**
-   *
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  TArray<ACesiumCartographicSelection*> CartographicSelections;
-
-  /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")

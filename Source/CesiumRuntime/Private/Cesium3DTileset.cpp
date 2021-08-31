@@ -741,41 +741,6 @@ void ACesium3DTileset::LoadTileset() {
     break;
   }
 
-  std::vector<bool> addedSelections(this->CartographicSelections.Num());
-  for (int i = 0; i < this->CartographicSelections.Num(); ++i) {
-    ACesiumCartographicSelection* pCartographicSelection =
-        this->CartographicSelections[i];
-    if (pCartographicSelection) {
-      pCartographicSelection->UpdateSelection();
-    }
-    if (!pCartographicSelection || addedSelections[i]) {
-      continue;
-    }
-
-    FString textureName = pCartographicSelection->TargetTexture;
-    std::vector<CesiumGeospatial::CartographicPolygon> polygons;
-
-    for (int j = i; j < this->CartographicSelections.Num(); ++j) {
-      ACesiumCartographicSelection* pCartographicSelection2 =
-          this->CartographicSelections[j];
-      if (!pCartographicSelection2 || addedSelections[j]) {
-        continue;
-      }
-      if (pCartographicSelection2->TargetTexture == textureName) {
-        polygons.push_back(
-            pCartographicSelection2->CreateCesiumCartographicSelection());
-        addedSelections[j] = true;
-      }
-    }
-
-    this->_pTileset->getOverlays().add(
-        std::make_unique<Cesium3DTilesSelection::RasterizedPolygonsOverlay>(
-            TCHAR_TO_UTF8(*textureName),
-            polygons,
-            CesiumGeospatial::Ellipsoid::WGS84,
-            CesiumGeospatial::GeographicProjection()));
-  }
-
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
       pOverlay->AddToTileset();
