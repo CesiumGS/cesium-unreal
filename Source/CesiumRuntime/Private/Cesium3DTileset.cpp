@@ -7,7 +7,6 @@
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
-#include "Cesium3DTilesSelection/RasterizedPolygonsOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetRoot.h"
@@ -15,9 +14,7 @@
 #include "CesiumAsync/SqliteCache.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
-#include "CesiumGeospatial/CartographicPolygon.h"
 #include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/GeographicProjection.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -699,15 +696,6 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
-  /*
-  for (ACesiumCartographicSelection* pCartographicSelection :
-       this->CartographicSelections) {
-    if (pCartographicSelection) {
-      pCartographicSelection->UpdateSelection();
-      options.cartographicSelections.push_back(
-          pCartographicSelection->CreateCesiumCartographicSelection());
-    }
-  }*/
 
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;

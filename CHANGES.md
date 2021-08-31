@@ -19,6 +19,7 @@
 - The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
 - Multiple raster overlays per tileset are now supported.
 - Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread.
+- Added the ability to define a "Cesium Cartographic Polygon" and then use it to clip away part of a Cesium 3D Tileset.
 
 ##### Fixes :wrench:
 
