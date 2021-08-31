@@ -18,6 +18,7 @@
 - Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
 - The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
 - Multiple raster overlays per tileset are now supported.
+- Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread.
 
 ##### Fixes :wrench:
 
