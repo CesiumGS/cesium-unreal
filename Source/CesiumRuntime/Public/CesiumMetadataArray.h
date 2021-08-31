@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumGltf/MetadataArrayView.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
