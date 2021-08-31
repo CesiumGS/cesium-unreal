@@ -2,7 +2,22 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
+#include "Cesium3DTilesSelection/RasterOverlay.h"
+#include "Cesium3DTilesSelection/RasterOverlayTile.h"
+#include "CesiumGeometry/Axis.h"
+#include "CesiumGeometry/AxisTransforms.h"
+#include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/GltfReader.h"
+#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
+#include "CesiumGltf/TextureInfo.h"
+#include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumMaterialUserData.h"
+#include "CesiumRasterOverlays.h"
+#include "CesiumRuntime.h"
+#include "CesiumTransforms.h"
+#include "CesiumUtility/Tracing.h"
+#include "CesiumUtility/joinToString.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "HttpModule.h"
@@ -11,9 +26,18 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "PixelFormat.h"
+#include "StaticMeshOperations.h"
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
+#include "mikktspace.h"
+#include <cstddef>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/mat3x3.hpp>
 #include <iostream>
+#include <stb_image_resize.h>
+
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
 #else
@@ -21,29 +45,10 @@
 #include "Chaos/TriangleMeshImplicitObject.h"
 #include "ChaosDerivedDataUtil.h"
 #endif
-#include "Cesium3DTilesSelection/RasterOverlayTile.h"
-#include "CesiumGeometry/Axis.h"
-#include "CesiumGeometry/AxisTransforms.h"
-#include "CesiumGeometry/Rectangle.h"
-#include "CesiumGltf/GltfReader.h"
-#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
-#include "CesiumGltf/TextureInfo.h"
-#include "CesiumGltfPrimitiveComponent.h"
-#include "CesiumRuntime.h"
-#include "CesiumTransforms.h"
-#include "CesiumUtility/Tracing.h"
-#include "CesiumUtility/joinToString.h"
-#include "PixelFormat.h"
-#include "StaticMeshOperations.h"
-#include "mikktspace.h"
-#include <algorithm>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/mat3x3.hpp>
 
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include <cstddef>
-#include <stb_image_resize.h>
+#if WITH_EDITOR
+#include "ScopedTransaction.h"
+#endif
 
 using namespace CesiumGltf;
 
@@ -54,6 +59,7 @@ struct LoadTextureResult {
   TextureAddress addressX;
   TextureAddress addressY;
   TextureFilter filter;
+  UTexture2D* pTexture = nullptr;
 };
 
 struct LoadModelResult {
@@ -85,10 +91,9 @@ struct LoadModelResult {
   double waterMaskTranslationX;
   double waterMaskTranslationY;
   double waterMaskScale;
-};
 
-static const std::string rasterOverlay0 = "_CESIUMOVERLAY_0";
-static const std::string rasterOverlay1 = "_CESIUMOVERLAY_1";
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
+};
 
 template <class... T> struct IsAccessorView;
 
@@ -1048,31 +1053,25 @@ static void loadPrimitive(
             material.emissiveTexture,
             textureCoordinateMap);
 
-    // Currently only one set of raster overlay texture coordinates is
-    // supported.
-    // TODO: Support more texture coordinate sets (e.g. web mercator and
-    // geographic)
-    primitiveResult
-        .textureCoordinateParameters["webMercatorTextureCoordinateIndex"] =
-        updateTextureCoordinates(
-            model,
-            primitive,
-            duplicateVertices,
-            StaticMeshBuildVertices,
-            indices,
-            rasterOverlay0,
-            textureCoordinateMap);
-
-    primitiveResult
-        .textureCoordinateParameters["geographicTextureCoordinateIndex"] =
-        updateTextureCoordinates(
-            model,
-            primitive,
-            duplicateVertices,
-            StaticMeshBuildVertices,
-            indices,
-            rasterOverlay1,
-            textureCoordinateMap);
+    for (size_t i = 0;
+         i < primitiveResult.overlayTextureCoordinateIDToUVIndex.size();
+         ++i) {
+      std::string attributeName = "_CESIUMOVERLAY_" + std::to_string(i);
+      auto overlayIt = primitive.attributes.find(attributeName);
+      if (overlayIt != primitive.attributes.end()) {
+        primitiveResult.overlayTextureCoordinateIDToUVIndex[i] =
+            updateTextureCoordinates(
+                model,
+                primitive,
+                duplicateVertices,
+                StaticMeshBuildVertices,
+                indices,
+                attributeName,
+                textureCoordinateMap);
+      } else {
+        primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
+      }
+    }
   }
 
   {
@@ -1523,7 +1522,6 @@ void applyGltfUpAxisTransform(
         gltfUpAxisValue);
   }
 }
-
 } // namespace
 
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
@@ -1569,24 +1567,130 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 
 bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
-    FName parameterName,
-    const std::optional<LoadTextureResult>& loadedTexture) {
+    const FMaterialParameterInfo& info,
+    std::optional<LoadTextureResult>& loadedTexture) {
   if (!loadedTexture) {
     return false;
   }
 
-  UTexture2D* pTexture = NewObject<UTexture2D>(
-      GetTransientPackage(),
-      NAME_None,
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UTexture2D* pTexture = loadedTexture->pTexture;
+  if (!pTexture) {
+    pTexture = NewObject<UTexture2D>(
+        GetTransientPackage(),
+        NAME_None,
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  pTexture->PlatformData = loadedTexture->pTextureData;
-  pTexture->AddressX = loadedTexture->addressX;
-  pTexture->AddressY = loadedTexture->addressY;
-  pTexture->Filter = loadedTexture->filter;
-  pTexture->UpdateResource();
-  pMaterial->SetTextureParameterValue(parameterName, pTexture);
+    pTexture->PlatformData = loadedTexture->pTextureData;
+    pTexture->AddressX = loadedTexture->addressX;
+    pTexture->AddressY = loadedTexture->addressY;
+    pTexture->Filter = loadedTexture->filter;
+    pTexture->UpdateResource();
+
+    loadedTexture->pTexture = pTexture;
+  }
+
+  pMaterial->SetTextureParameterValueByInfo(info, pTexture);
+
   return true;
+}
+
+static void SetGltfParameterValues(
+    LoadModelResult& loadResult,
+    const CesiumGltf::Material& material,
+    const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
+  for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            textureCoordinateSet.first.c_str(),
+            assocation,
+            index),
+        textureCoordinateSet.second);
+  }
+
+  if (pbr.baseColorFactor.size() >= 3) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("baseColorFactor", assocation, index),
+        FVector(
+            pbr.baseColorFactor[0],
+            pbr.baseColorFactor[1],
+            pbr.baseColorFactor[2]));
+  }
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("metallicFactor", assocation, index),
+      pbr.metallicFactor);
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("roughnessFactor", assocation, index),
+      pbr.roughnessFactor);
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("opacityMask", assocation, index),
+      1.0);
+
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("baseColorTexture", assocation, index),
+      loadResult.baseColorTexture);
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("metallicRoughnessTexture", assocation, index),
+      loadResult.metallicRoughnessTexture);
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("normalTexture", assocation, index),
+      loadResult.normalTexture);
+  bool hasEmissiveTexture = applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("emissiveTexture", assocation, index),
+      loadResult.emissiveTexture);
+  applyTexture(
+      pMaterial,
+      FMaterialParameterInfo("occlusionTexture", assocation, index),
+      loadResult.occlusionTexture);
+
+  if (material.emissiveFactor.size() >= 3) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveFactor", assocation, index),
+        FVector(
+            material.emissiveFactor[0],
+            material.emissiveFactor[1],
+            material.emissiveFactor[2]));
+  } else if (hasEmissiveTexture) {
+    // When we have an emissive texture but not a factor, we need to use a
+    // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
+    // from the texture.
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("emissiveFactor", assocation, index),
+        FVector(1.0f, 1.0f, 1.0f));
+  }
+}
+
+void SetWaterParameterValues(
+    LoadModelResult& loadResult,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("OnlyLand", assocation, index),
+      static_cast<float>(loadResult.onlyLand));
+  pMaterial->SetScalarParameterValueByInfo(
+      FMaterialParameterInfo("OnlyWater", assocation, index),
+      static_cast<float>(loadResult.onlyWater));
+
+  if (!loadResult.onlyLand && !loadResult.onlyWater) {
+    applyTexture(
+        pMaterial,
+        FMaterialParameterInfo("WaterMask", assocation, index),
+        loadResult.waterMaskTexture);
+  }
+
+  pMaterial->SetVectorParameterValueByInfo(
+      FMaterialParameterInfo("WaterMaskTranslationScale", assocation, index),
+      FLinearColor(
+          loadResult.waterMaskTranslationX,
+          loadResult.waterMaskTranslationY,
+          loadResult.waterMaskScale));
 }
 
 static void loadModelGameThreadPart(
@@ -1597,6 +1701,8 @@ static void loadModelGameThreadPart(
       NewObject<UCesiumGltfPrimitiveComponent>(
           pGltf,
           FName(loadResult.name.c_str()));
+  pMesh->overlayTextureCoordinateIDToUVIndex =
+      loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
@@ -1636,103 +1742,94 @@ static void loadModelGameThreadPart(
 
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-  UMaterialInstanceDynamic* pMaterial;
 
-  switch (material.alphaMode) {
-  case CesiumGltf::Material::AlphaMode::BLEND:
-    // TODO
-    pMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->OpacityMaskMaterial,
-        nullptr,
-        ImportedSlotName);
-    break;
-  case CesiumGltf::Material::AlphaMode::MASK:
-    pMaterial = UMaterialInstanceDynamic::Create(
-        pGltf->OpacityMaskMaterial,
-        nullptr,
-        ImportedSlotName);
-    break;
-  case CesiumGltf::Material::AlphaMode::OPAQUE:
-  default:
-    pMaterial = UMaterialInstanceDynamic::Create(
-// TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
-        pGltf->BaseMaterial,
+  // TODO: figure out why water material crashes mac
+  UMaterialInterface* pBaseMaterial = pGltf->BaseMaterial;
 #else
-        (loadResult.onlyWater || !loadResult.onlyLand)
-            ? pGltf->BaseMaterialWithWater
-            : pGltf->BaseMaterial,
+  UMaterialInterface* pBaseMaterial =
+      (loadResult.onlyWater || !loadResult.onlyLand)
+          ? pGltf->BaseMaterialWithWater
+          : pGltf->BaseMaterial;
 #endif
-        nullptr,
-        ImportedSlotName);
-    break;
-  }
+
+  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
+      pBaseMaterial,
+      nullptr,
+      ImportedSlotName);
 
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMaterial->OpacityMaskClipValue = material.alphaCutoff;
 
-  for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
-    pMaterial->SetScalarParameterValue(
-        textureCoordinateSet.first.c_str(),
-        textureCoordinateSet.second);
-  }
-
-  if (pbr.baseColorFactor.size() >= 3) {
-    pMaterial->SetVectorParameterValue(
-        "baseColorFactor",
-        FVector(
-            pbr.baseColorFactor[0],
-            pbr.baseColorFactor[1],
-            pbr.baseColorFactor[2]));
-  }
-  pMaterial->SetScalarParameterValue("metallicFactor", pbr.metallicFactor);
-  pMaterial->SetScalarParameterValue("roughnessFactor", pbr.roughnessFactor);
-  pMaterial->SetScalarParameterValue("opacityMask", 1.0);
-
-  applyTexture(pMaterial, "baseColorTexture", loadResult.baseColorTexture);
-  applyTexture(
+  SetGltfParameterValues(
+      loadResult,
+      material,
+      pbr,
       pMaterial,
-      "metallicRoughnessTexture",
-      loadResult.metallicRoughnessTexture);
-  applyTexture(pMaterial, "normalTexture", loadResult.normalTexture);
-  bool hasEmissiveTexture =
-      applyTexture(pMaterial, "emissiveTexture", loadResult.emissiveTexture);
-  applyTexture(pMaterial, "occlusionTexture", loadResult.occlusionTexture);
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
+  SetWaterParameterValues(
+      loadResult,
+      pMaterial,
+      EMaterialParameterAssociation::GlobalParameter,
+      INDEX_NONE);
 
-  if (material.emissiveFactor.size() >= 3) {
-    pMaterial->SetVectorParameterValue(
-        "emissiveFactor",
-        FVector(
-            material.emissiveFactor[0],
-            material.emissiveFactor[1],
-            material.emissiveFactor[2]));
-  } else if (hasEmissiveTexture) {
-    // When we have an emissive texture but not a factor, we need to use a
-    // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
-    // from the texture.
-    pMaterial->SetVectorParameterValue(
-        "emissiveFactor",
-        FVector(1.0f, 1.0f, 1.0f));
+  UMaterialInstance* pBaseAsMaterialInstance =
+      Cast<UMaterialInstance>(pBaseMaterial);
+  UCesiumMaterialUserData* pCesiumData =
+      pBaseAsMaterialInstance
+          ? pBaseAsMaterialInstance->GetAssetUserData<UCesiumMaterialUserData>()
+          : nullptr;
+
+  // If possible and necessary, attach the CesiumMaterialUserData now.
+#if WITH_EDITORONLY_DATA
+  if (pBaseAsMaterialInstance && !pCesiumData) {
+    const FStaticParameterSet& parameters =
+        pBaseAsMaterialInstance->GetStaticParameters();
+    const TArray<FStaticMaterialLayersParameter>& layerParameters =
+        parameters.MaterialLayersParameters;
+
+    const FStaticMaterialLayersParameter* pCesiumLayers =
+        layerParameters.FindByPredicate(
+            [](const FStaticMaterialLayersParameter& layerParameter) {
+              return layerParameter.ParameterInfo.Name == "Cesium";
+            });
+
+    if (pCesiumLayers) {
+#if WITH_EDITOR
+      FScopedTransaction transaction(
+          FText::FromString("Add Cesium User Data to Material"));
+      pBaseAsMaterialInstance->Modify();
+#endif
+      pCesiumData = NewObject<UCesiumMaterialUserData>(
+          pBaseAsMaterialInstance,
+          NAME_None,
+          RF_Public);
+      pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
+      pCesiumData->PostEditChangeOwner();
+    }
   }
+#endif
 
-  pMaterial->SetScalarParameterValue(
-      "OnlyLand",
-      static_cast<float>(loadResult.onlyLand));
-  pMaterial->SetScalarParameterValue(
-      "OnlyWater",
-      static_cast<float>(loadResult.onlyWater));
+  if (pCesiumData) {
+    SetGltfParameterValues(
+        loadResult,
+        material,
+        pbr,
+        pMaterial,
+        EMaterialParameterAssociation::LayerParameter,
+        0);
 
-  if (!loadResult.onlyLand && !loadResult.onlyWater) {
-    applyTexture(pMaterial, "WaterMask", loadResult.waterMaskTexture);
+    // If there's a "Water" layer, set its parameters
+    int32 waterIndex = pCesiumData->LayerNames.Find("Water");
+    if (waterIndex >= 0) {
+      SetWaterParameterValues(
+          loadResult,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          waterIndex);
+    }
   }
-
-  pMaterial->SetVectorParameterValue(
-      "WaterMaskTranslationScale",
-      FLinearColor(
-          loadResult.waterMaskTranslationX,
-          loadResult.waterMaskTranslationY,
-          loadResult.waterMaskScale));
 
   pMaterial->TwoSided = true;
 
@@ -1762,9 +1859,9 @@ static void loadModelGameThreadPart(
 #endif
   }
 
-  // Mark physics meshes created, no matter if we actually have a collision mesh
-  // or not. We don't want the editor creating collision meshes itself in the
-  // game thread, because that would be slow.
+  // Mark physics meshes created, no matter if we actually have a collision
+  // mesh or not. We don't want the editor creating collision meshes itself in
+  // the game thread, because that would be slow.
   pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
@@ -1798,8 +1895,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
-    UMaterialInterface* pBaseWaterMaterial,
-    UMaterialInterface* pBaseOpacityMaterial) {
+    UMaterialInterface* pBaseWaterMaterial) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -1819,10 +1915,6 @@ UCesiumGltfComponent::CreateOffGameThread(
     Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
 
-  if (pBaseOpacityMaterial) {
-    Gltf->OpacityMaskMaterial = pBaseOpacityMaterial;
-  }
-
   for (LoadModelResult& model : result) {
     loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
   }
@@ -1834,23 +1926,23 @@ UCesiumGltfComponent::CreateOffGameThread(
 UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
-    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterial;
-    ConstructorHelpers::FObjectFinder<UMaterial> BaseMaterialWithWater;
-    ConstructorHelpers::FObjectFinder<UMaterial> OpacityMaskMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
+    ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlay.M_CesiumOverlay")),
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlays.MI_CesiumTwoOverlays")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumOverlayWater.M_CesiumOverlayWater")),
-          OpacityMaskMaterial(TEXT(
-              "/CesiumForUnreal/Materials/M_CesiumDefaultMasked.M_CesiumDefaultMasked")) {
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlaysAndWater.MI_CesiumTwoOverlaysAndWater")),
+          Transparent1x1(
+              TEXT("/CesiumForUnreal/Textures/transparent1x1.transparent1x1")) {
     }
   };
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
-  this->OpacityMaskMaterial = ConstructorStatics.OpacityMaskMaterial.Object;
+  this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
   PrimaryComponentTick.bCanEverTick = false;
 }
@@ -1870,66 +1962,146 @@ void UCesiumGltfComponent::UpdateTransformFromCesium(
   }
 }
 
+namespace {
+
+template <typename Func>
+void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
+  for (USceneComponent* pSceneComponent : pGltf->GetAttachChildren()) {
+    UCesiumGltfPrimitiveComponent* pPrimitive =
+        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
+    if (pPrimitive) {
+      UMaterialInstanceDynamic* pMaterial =
+          Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
+
+      if (pMaterial->IsPendingKillOrUnreachable()) {
+        // Don't try to update the material while it's in the process of being
+        // destroyed. This can lead to the render thread freaking out when
+        // it's asked to update a parameter for a material that has been
+        // marked for garbage collection.
+        continue;
+      }
+
+      UMaterialInterface* pBaseMaterial = pMaterial->Parent;
+      UMaterialInstance* pBaseAsMaterialInstance =
+          Cast<UMaterialInstance>(pBaseMaterial);
+      UCesiumMaterialUserData* pCesiumData =
+          pBaseAsMaterialInstance
+              ? pBaseAsMaterialInstance
+                    ->GetAssetUserData<UCesiumMaterialUserData>()
+              : nullptr;
+
+      f(pPrimitive, pMaterial, pCesiumData);
+    }
+  }
+}
+
+} // namespace
+
 void UCesiumGltfComponent::AttachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
     const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture,
-    const CesiumGeometry::Rectangle& textureCoordinateRectangle,
     const glm::dvec2& translation,
-    const glm::dvec2& scale) {
-  if (this->OverlayTiles.Num() == 0) {
-    // First overlay tile, generate texture coordinates
-    // TODO
-  }
+    const glm::dvec2& scale,
+    int32 textureCoordinateID) {
+  const Cesium3DTilesSelection::RasterOverlay& overlay =
+      rasterTile.getOverlay();
 
-  this->OverlayTiles.Add(FRasterOverlayTile{
-      pTexture,
-      FLinearColor(
-          textureCoordinateRectangle.minimumX,
-          textureCoordinateRectangle.minimumY,
-          textureCoordinateRectangle.maximumX,
-          textureCoordinateRectangle.maximumY),
-      FLinearColor(translation.x, translation.y, scale.x, scale.y)});
+  FLinearColor translationAndScale(
+      translation.x,
+      translation.y,
+      scale.x,
+      scale.y);
 
-  if (this->OverlayTiles.Num() > 3) {
-    UE_LOG(LogCesium, Warning, TEXT("Too many raster overlays"));
-  }
+  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
 
-  this->UpdateRasterOverlays();
+  forEachPrimitiveComponent(
+      this,
+      [&name, &rasterTile, pTexture, &translationAndScale, textureCoordinateID](
+          UCesiumGltfPrimitiveComponent* pPrimitive,
+          UMaterialInstanceDynamic* pMaterial,
+          UCesiumMaterialUserData* pCesiumData) {
+        // If this material uses material layers and has the Cesium user data,
+        // set the parameters on each material layer that maps to this overlay
+        // tile.
+        if (pCesiumData) {
+          for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+            if (pCesiumData->LayerNames[i] != name) {
+              continue;
+            }
+
+            pMaterial->SetTextureParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "Texture",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                pTexture);
+            pMaterial->SetVectorParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "TranslationScale",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                translationAndScale);
+            pMaterial->SetScalarParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "TextureCoordinateIndex",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                pPrimitive
+                    ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
+          }
+        } else {
+          pMaterial->SetTextureParameterValue(
+              FName(name + "_Texture"),
+              pTexture);
+          pMaterial->SetVectorParameterValue(
+              FName(name + "_TranslationScale"),
+              translationAndScale);
+          pMaterial->SetScalarParameterValue(
+              FName(name + "_TextureCoordinateIndex"),
+              pPrimitive
+                  ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
+        }
+      });
 }
 
 void UCesiumGltfComponent::DetachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
     const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
-    UTexture2D* pTexture,
-    const CesiumGeometry::Rectangle& textureCoordinateRectangle) {
-  size_t numBefore = this->OverlayTiles.Num();
-  this->OverlayTiles.RemoveAll(
-      [pTexture, &textureCoordinateRectangle](const FRasterOverlayTile& tile) {
-        return tile.Texture == pTexture &&
-               tile.TextureCoordinateRectangle.Equals(FLinearColor(
-                   textureCoordinateRectangle.minimumX,
-                   textureCoordinateRectangle.minimumY,
-                   textureCoordinateRectangle.maximumX,
-                   textureCoordinateRectangle.maximumY));
+    UTexture2D* pTexture) {
+  const Cesium3DTilesSelection::RasterOverlay& overlay =
+      rasterTile.getOverlay();
+
+  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
+
+  forEachPrimitiveComponent(
+      this,
+      [this, &name, &rasterTile, pTexture](
+          UCesiumGltfPrimitiveComponent* pPrimitive,
+          UMaterialInstanceDynamic* pMaterial,
+          UCesiumMaterialUserData* pCesiumData) {
+        // If this material uses material layers and has the Cesium user data,
+        // clear the parameters on each material layer that maps to this overlay
+        // tile.
+        if (pCesiumData) {
+          for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
+            if (pCesiumData->LayerNames[i] != name) {
+              continue;
+            }
+
+            pMaterial->SetTextureParameterValueByInfo(
+                FMaterialParameterInfo(
+                    "Texture",
+                    EMaterialParameterAssociation::LayerParameter,
+                    i),
+                this->Transparent1x1);
+          }
+        } else {
+          pMaterial->SetTextureParameterValue(
+              FName(name + "_Texture"),
+              this->Transparent1x1);
+        }
       });
-  size_t numAfter = this->OverlayTiles.Num();
-
-  if (numBefore - 1 != numAfter) {
-    UE_LOG(
-        LogCesium,
-        VeryVerbose,
-        TEXT(
-            "Raster tiles detached: %d, pTexture: %d, minX: %f, minY: %f, maxX: %f, maxY: %f"),
-        numBefore - numAfter,
-        pTexture,
-        textureCoordinateRectangle.minimumX,
-        textureCoordinateRectangle.minimumY,
-        textureCoordinateRectangle.maximumX,
-        textureCoordinateRectangle.maximumY);
-  }
-
-  this->UpdateRasterOverlays();
 }
 
 void UCesiumGltfComponent::SetCollisionEnabled(
@@ -1946,65 +2118,6 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 void UCesiumGltfComponent::FinishDestroy() {
   UE_LOG(LogCesium, VeryVerbose, TEXT("UCesiumGltfComponent::FinishDestroy"));
   Super::FinishDestroy();
-}
-
-void UCesiumGltfComponent::UpdateRasterOverlays() {
-  for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
-    if (pPrimitive) {
-      UMaterialInstanceDynamic* pMaterial =
-          Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
-
-      if (pMaterial->IsPendingKillOrUnreachable()) {
-        // Don't try to update the material while it's in the process of being
-        // destroyed. This can lead to the render thread freaking out when
-        // it's asked to update a parameter for a material that has been
-        // marked for garbage collection.
-        continue;
-      }
-
-      for (size_t i = 0; i < this->OverlayTiles.Num(); ++i) {
-        FRasterOverlayTile& overlayTile = this->OverlayTiles[i];
-        std::string is = std::to_string(i + 1);
-        pMaterial->SetTextureParameterValue(
-            ("OverlayTexture" + is).c_str(),
-            overlayTile.Texture);
-
-        if (!overlayTile.Texture) {
-          // The texture is null so don't use it.
-          pMaterial->SetVectorParameterValue(
-              ("OverlayRect" + is).c_str(),
-              FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-        } else {
-          pMaterial->SetVectorParameterValue(
-              ("OverlayRect" + is).c_str(),
-              overlayTile.TextureCoordinateRectangle);
-        }
-
-        pMaterial->SetVectorParameterValue(
-            ("OverlayTranslationScale" + is).c_str(),
-            overlayTile.TranslationAndScale);
-      }
-
-      for (size_t i = this->OverlayTiles.Num(); i < 3; ++i) {
-        std::string is = std::to_string(i + 1);
-        pMaterial->SetTextureParameterValue(
-            ("OverlayTexture" + is).c_str(),
-            nullptr);
-        pMaterial->SetVectorParameterValue(
-            ("OverlayRect" + is).c_str(),
-            FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-        pMaterial->SetVectorParameterValue(
-            ("OverlayTranslationScale" + is).c_str(),
-            FLinearColor(0.0f, 0.0f, 0.0f, 0.0f));
-      }
-
-      pMaterial->SetScalarParameterValue(
-          "opacityMask",
-          this->OverlayTiles.Num() > 0 ? 0.0 : 1.0);
-    }
-  }
 }
 
 #if !PHYSICS_INTERFACE_PHYSX

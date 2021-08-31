@@ -9,8 +9,8 @@
 
 /**
  * A raster overlay that directly accesses a Tile Map Service (TMS) server. If
- * you're using Bing Maps via Cesium ion, use the "Cesium ion Raster Overlay"
- * component instead.
+ * you're using a Tile Map Service via Cesium ion, use the "Cesium ion Raster
+ * Overlay" component instead.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumTileMapServiceRasterOverlay

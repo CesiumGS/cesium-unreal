@@ -2,8 +2,9 @@
 
 ### Next Release - ?
 
-##### Breaking :mega:
+##### Breaking Changes :mega:
 
+- Removed `ACesium3DTileset::OpacityMaskMaterial`. The regular `Material` property is used instead.
 - Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID`. This is a breaking change for C++ code but Blueprints should be unaffected because of a CoreRedirect.
 - Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`. This is a breaking change for C++ code but it was not previously exposed to Blueprints.
 
@@ -15,6 +16,8 @@
 - Added a Refresh button on the Cesium ion Assets panel.
 - Added an editor option in `ACesium3DTileset` to optionally generate smooth normals for glTFs that originally did not have normals.
 - Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
+- The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
+- Multiple raster overlays per tileset are now supported.
 
 ##### Fixes :wrench:
 
