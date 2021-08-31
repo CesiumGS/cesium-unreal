@@ -1720,9 +1720,9 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
     ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
         : BaseMaterial(TEXT(
-              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlays.MI_CesiumTwoOverlays")),
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClipping.MI_CesiumThreeOverlaysAndClipping")),
           BaseMaterialWithWater(TEXT(
-              "/CesiumForUnreal/Materials/Instances/MI_CesiumTwoOverlaysAndWater.MI_CesiumTwoOverlaysAndWater")),
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingAndWater.MI_CesiumThreeOverlaysAndClippingAndWater")),
           Transparent1x1(
               TEXT("/CesiumForUnreal/Textures/transparent1x1.transparent1x1")) {
     }
