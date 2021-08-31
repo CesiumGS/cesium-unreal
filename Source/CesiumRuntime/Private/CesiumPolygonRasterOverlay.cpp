@@ -9,7 +9,7 @@ using namespace CesiumGeospatial;
 
 UCesiumPolygonRasterOverlay::UCesiumPolygonRasterOverlay()
     : UCesiumRasterOverlay() {
-  this->Name = TEXT("Clipping");
+  this->MaterialLayerKey = TEXT("Clipping");
 }
 
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
@@ -28,7 +28,7 @@ UCesiumPolygonRasterOverlay::CreateOverlay() {
   }
 
   return std::make_unique<Cesium3DTilesSelection::RasterizedPolygonsOverlay>(
-      TCHAR_TO_UTF8(*this->Name),
+      TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
       CesiumGeospatial::Ellipsoid::WGS84,
       CesiumGeospatial::GeographicProjection());
