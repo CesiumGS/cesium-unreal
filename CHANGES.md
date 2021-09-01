@@ -20,11 +20,11 @@
 - Multiple raster overlays per tileset are now supported.
 - Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread.
 - Added the ability to define a "Cesium Cartographic Polygon" and then use it to clip away part of a Cesium 3D Tileset.
+- The Cesium ion Assets panel now has two buttons for imagery assets, allowing the user to select whether the asset should replace the base overlay or be added on top.
 
 ##### Fixes :wrench:
 
 - Fixed indexed vertices being duplicated unnecessarily in certain situations in `UCesiumGltfComponent`.
-- Fixed an issue where the "Drape Over Terrain Tileset" button in the Cesium Ion Asset panel deleted all existing overlays.
 
 ### v1.5.1 - 2021-08-09
 
