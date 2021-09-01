@@ -22,6 +22,8 @@
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
 
+constexpr int MaximumOverlaysWithDefaultMaterial = 3;
+
 IMPLEMENT_MODULE(FCesiumEditorModule, CesiumEditor)
 DEFINE_LOG_CATEGORY(LogCesiumEditor);
 
@@ -374,10 +376,51 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
     ACesium3DTileset* pTilesetActor,
     const std::string& name,
     int64_t assetID) {
+  // Remove an existing component with the same name but different types.
+  // This is necessary because UE will die immediately if we create two
+  // components with the same name.
+  FName newName = FName(name.c_str());
+  UObject* pExisting = static_cast<UObject*>(
+      FindObjectWithOuter(pTilesetActor, nullptr, newName));
+  if (pExisting) {
+    UCesiumRasterOverlay* pCesiumOverlay =
+        Cast<UCesiumRasterOverlay>(pExisting);
+    if (pCesiumOverlay) {
+      pCesiumOverlay->DestroyComponent();
+    } else {
+      // There's some object using our name, but it's not ours.
+      // We could do complicated things here, but this should be a very uncommon
+      // scenario so let's just log.
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT(
+              "Cannot create raster overlay component %s because the name is already in use."),
+          *newName.ToString());
+    }
+  }
+
+  // Find the first available `OverlayN` MaterialLayerKey.
+  TArray<UCesiumRasterOverlay*> rasterOverlays;
+  pTilesetActor->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+  FString overlayKey = TEXT("Overlay0");
+  auto materialLayerKeyMatches = [&newName,
+                                  &overlayKey](UCesiumRasterOverlay* pOverlay) {
+    return pOverlay->MaterialLayerKey == overlayKey;
+  };
+
+  int i = 0;
+  while (rasterOverlays.FindByPredicate(materialLayerKeyMatches)) {
+    ++i;
+    overlayKey = FString(TEXT("Overlay")) + FString::FromInt(i);
+  }
+
   UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
       pTilesetActor,
       FName(name.c_str()),
       RF_Public | RF_Transactional);
+  pOverlay->MaterialLayerKey = overlayKey;
   pOverlay->IonAssetID = assetID;
   pOverlay->IonAccessToken = UTF8_TO_TCHAR(
       FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
@@ -386,7 +429,34 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
 
   pTilesetActor->AddInstanceComponent(pOverlay);
 
+  if (i >= MaximumOverlaysWithDefaultMaterial) {
+    UE_LOG(
+        LogCesiumEditor,
+        Warning,
+        TEXT(
+            "The default material only supports up to %d raster overlays, and your tileset is now using %d, so the extra overlays will be ignored. Consider creating a custom Material Instance with support for more overlays."),
+        MaximumOverlaysWithDefaultMaterial,
+        i + 1);
+  }
+
   return pOverlay;
+}
+
+UCesiumIonRasterOverlay* FCesiumEditorModule::AddBaseOverlay(
+    ACesium3DTileset* pTilesetActor,
+    const std::string& name,
+    int64_t assetID) {
+  // Remove Overlay0 (if it exists) and add the new one.
+  TArray<UCesiumRasterOverlay*> rasterOverlays;
+  pTilesetActor->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+  for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+    if (pOverlay->MaterialLayerKey == TEXT("Overlay0")) {
+      pOverlay->DestroyComponent(false);
+    }
+  }
+
+  return FCesiumEditorModule::AddOverlay(pTilesetActor, name, assetID);
 }
 
 namespace {

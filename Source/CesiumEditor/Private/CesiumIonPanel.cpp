@@ -245,9 +245,32 @@ TSharedRef<SWidget> CesiumIonPanel::AssetDetails() {
                                : EVisibility::Collapsed;
                   })
                   .HAlign(EHorizontalAlignment::HAlign_Center)
-                  .Text(FText::FromString(TEXT("Drape Over Terrain Tileset")))
+                  .Text(FText::FromString(
+                      TEXT("Use as Terrain Tileset Base Layer")))
+                  .ToolTipText(FText::FromString(TEXT(
+                      "Makes this asset the base overlay on the terrain tileset, underlying all others, by setting its MaterialLayerKey to 'Overlay0'. If the terrain tileset already has an 'Overlay0' it is removed. If no terrain tileset exists in the level, Cesium World Terrain is added.")))
                   .OnClicked_Lambda([this]() {
-                    this->AddOverlayToTerrain(this->_pSelection);
+                    this->AddOverlayToTerrain(this->_pSelection, true);
+                    return FReply::Handled();
+                  })] +
+         SScrollBox::Slot().Padding(10).HAlign(
+             EHorizontalAlignment::HAlign_Center)
+             [SNew(SButton)
+                  .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                  .TextStyle(
+                      FCesiumEditorModule::GetStyle(),
+                      "CesiumButtonText")
+                  .Visibility_Lambda([this]() {
+                    return isSupportedImagery(this->_pSelection)
+                               ? EVisibility::Visible
+                               : EVisibility::Collapsed;
+                  })
+                  .HAlign(EHorizontalAlignment::HAlign_Center)
+                  .Text(FText::FromString(TEXT("Drape Over Terrain Tileset")))
+                  .ToolTipText(FText::FromString(TEXT(
+                      "Adds this asset to any existing overlays on the terrain tileset by assigning it the first unused 'OverlayN` MaterialLayerKey. If no terrain tileset exists in the level, Cesium World Terrain is added.")))
+                  .OnClicked_Lambda([this]() {
+                    this->AddOverlayToTerrain(this->_pSelection, false);
                     return FReply::Handled();
                   })] +
          SScrollBox::Slot().Padding(10).HAlign(
@@ -407,7 +430,8 @@ void CesiumIonPanel::AssetSelected(
 void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 
   if (isSupportedImagery(item)) {
-    this->AddOverlayToTerrain(item);
+    // Don't add imagery on double-click, because we don't know if we should
+    // replace the base layer or add a new layer.
   } else if (isSupportedTileset(item)) {
     this->AddAssetToLevel(item);
   } else {
@@ -439,7 +463,8 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
 }
 
 void CesiumIonPanel::AddOverlayToTerrain(
-    TSharedPtr<CesiumIonClient::Asset> item) {
+    TSharedPtr<CesiumIonClient::Asset> item,
+    bool useAsBaseLayer) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
@@ -450,8 +475,15 @@ void CesiumIonPanel::AddOverlayToTerrain(
         FCesiumEditorModule::CreateTileset("Cesium World Terrain", 1);
   }
 
-  UCesiumRasterOverlay* pOverlay =
-      FCesiumEditorModule::AddOverlay(pTilesetActor, item->name, item->id);
+  UCesiumRasterOverlay* pOverlay = useAsBaseLayer
+                                       ? FCesiumEditorModule::AddBaseOverlay(
+                                             pTilesetActor,
+                                             item->name,
+                                             item->id)
+                                       : FCesiumEditorModule::AddOverlay(
+                                             pTilesetActor,
+                                             item->name,
+                                             item->id);
 
   pTilesetActor->RerunConstructionScripts();
 
