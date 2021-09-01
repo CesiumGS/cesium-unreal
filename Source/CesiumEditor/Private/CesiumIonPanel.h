@@ -36,7 +36,9 @@ private:
       TSharedPtr<CesiumIonClient::Asset> item,
       const TSharedRef<STableViewBase>& list);
   void AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item);
-  void AddOverlayToTerrain(TSharedPtr<CesiumIonClient::Asset> item);
+  void AddOverlayToTerrain(
+      TSharedPtr<CesiumIonClient::Asset> item,
+      bool useAsBaseLayer);
   void AddAsset(TSharedPtr<CesiumIonClient::Asset> item);
   void AssetSelected(
       TSharedPtr<CesiumIonClient::Asset> item,
