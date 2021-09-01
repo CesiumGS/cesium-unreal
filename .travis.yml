@@ -178,4 +178,4 @@ jobs:
     - zip -r CesiumForUnreal-${CESIUM_UNREAL_VERSION}-UE427.zip CesiumForUnreal
     - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}-UE427.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}-UE427.zip --expires-in 315360000)
-    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-combined "target_url=${PACKAGE_LINK}" --ignore-stdin
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=source-package-427 "target_url=${PACKAGE_LINK}" --ignore-stdin
