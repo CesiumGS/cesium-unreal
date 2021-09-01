@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
+#include "CesiumRuntime.h"
 #include "PixelFormat.h"
 
 #include <stb_image_resize.h>
