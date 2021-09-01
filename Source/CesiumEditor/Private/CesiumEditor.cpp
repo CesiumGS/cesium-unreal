@@ -376,7 +376,7 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
     ACesium3DTileset* pTilesetActor,
     const std::string& name,
     int64_t assetID) {
-  // Remove an existing component with the same name.
+  // Remove an existing component with the same name but different types.
   // This is necessary because UE will die immediately if we create two
   // components with the same name.
   FName newName = FName(name.c_str());
