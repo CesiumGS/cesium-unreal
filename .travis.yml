@@ -228,7 +228,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
+    - travis_wait 30 "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
     before_script:
     - export UNREAL_ENGINE_DIR=/c/Program\ Files/Epic\ Games/UE_4.27/Engine
