@@ -294,13 +294,13 @@ jobs:
     - sudo apt-get install unzip zip awscli httpie
     script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
-    # - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}.zip .
     # - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}.zip .
     - mkdir -p build/package
     - cd build/package
-    # - unzip ../../CesiumForUnreal-linux-${CESIUM_UNREAL_VERSION}.zip
+    - unzip ../../CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}.zip
     # - unzip -o ../../CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}.zip
