@@ -213,6 +213,47 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.26-Linux "target_url=${PACKAGE_LINK}" --ignore-stdin
+  - name: Linux 4.27
+    os: windows
+    cache:
+      timeout: 1000
+      directories:
+      - $HOME/android-ndk-r21e
+    install:
+    - choco install 7zip.portable
+    - choco install python --version 3.9.2
+    - choco install wget
+    - choco install ninja
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
+    - pip3 install httpie
+    - travis_wait 30 "./travis/travis-get-ue-427.sh"
+    - travis_wait 30 "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
+    before_script:
+    - export UNREAL_ENGINE_DIR=/c/Program\ Files/Epic\ Games/UE_4.27/Engine
+    - export UNREAL_ENGINE_COMPILER_DIR=/c/UnrealToolchains/v19_clang-11.0.1-centos7/x86_64-unknown-linux-gnu
+    - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}
+    - mkdir -p extern/build
+    - cd extern/build
+    - cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+    - cd ../..
+    script:
+    - cd extern/build
+    - cmake --build . --config Release --target install
+    - cd ../..
+    - rm -rf extern
+    - export CLONEDIR=$PWD
+    - cd /c/Program\ Files/Epic\ Games/UE_4.27/Engine/Build/BatchFiles
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
+    - cd "$CLONEDIR/../packages"
+    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.27-Linux "target_url=${PACKAGE_LINK}" --ignore-stdin
+    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - stage: Combine Packages 4.26
     os: linux
     dist: focal
