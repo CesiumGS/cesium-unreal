@@ -230,20 +230,17 @@ jobs:
     - pip3 install httpie
     - travis_wait 30 "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
-    before_script:
+    script:
     - export UNREAL_ENGINE_DIR=/c/Program\ Files/Epic\ Games/UE_4.27/Engine
     - export UNREAL_ENGINE_COMPILER_DIR=/c/UnrealToolchains/v19_clang-11.0.1-centos7/x86_64-unknown-linux-gnu
     - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build
-    - cd extern/build
+    - cd extern
     - cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cd ../..
-    script:
-    - cd extern/build
-    - cmake --build . --config Release --target install
-    - cd ../..
+    - cmake --build build -j 4 --target install
+    - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.27/Engine/Build/BatchFiles
