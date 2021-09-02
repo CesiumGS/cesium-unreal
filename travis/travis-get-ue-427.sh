@@ -5,8 +5,8 @@ then
     mkdir "C:\Program Files\Epic Games\UE_4.27"
     compact //c "//s:C:\Program Files\Epic Games\UE_4.27"
     AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/4.27.0/Windows/UE_4.27-minimal.zip .
-    7z x UE_4.27.zip "-oC:\Program Files\Epic Games\UE_4.27"
-    rm UE_4.27.zip
+    7z x UE_4.27-minimal.zip "-oC:\Program Files\Epic Games\UE_4.27"
+    rm UE_4.27-minimal.zip
 # elif [[ $TRAVIS_OS_NAME == "osx" ]]
 # then
 #     aws s3 cp s3://cesium-unreal-engine/macos-2021-04-13/UE_4.26.tar.gz .
