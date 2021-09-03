@@ -5,7 +5,6 @@
 ##### Fixes :wrench:
 
 - Fixed strange behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
-- Fixed crash when `GlobeAwareDefaultPawn::FlyToLocation` was called when the pawn was not possessed.
 
 ### v1.6.0 - 2021-09-01
 
