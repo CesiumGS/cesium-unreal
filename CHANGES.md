@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.6.1 - ????
+
+##### Fixes :wrench:
+
+- Fixed strange behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
+
 ### v1.6.0 - 2021-09-01
 
 ##### Breaking Changes :mega:

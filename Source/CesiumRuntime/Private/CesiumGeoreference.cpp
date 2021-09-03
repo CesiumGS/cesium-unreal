@@ -554,7 +554,9 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
 
-  bool isInsideSublevel = false;
+  ULevelStreaming* currentSublevel = nullptr;
+  FCesiumSubLevel* currentCesiumSublevel = nullptr;
+  double closestLevelDistance = TNumericLimits<double>::Max();
 
   const TArray<ULevelStreaming*>& streamedLevels =
       this->GetWorld()->GetStreamingLevels();
@@ -562,9 +564,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
     levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
-    // TODO: maybe we should precalculate the level ECEF from level
-    // long/lat/height
-    // TODO: consider the case where we're intersecting multiple level radii
+
     for (FCesiumSubLevel& level : this->CesiumSubLevels) {
       // if this is a known level, we need to tell it whether or not it should
       // be loaded
@@ -576,14 +576,20 @@ bool ACesiumGeoreference::_updateSublevelState() {
                     level.LevelLatitude,
                     level.LevelHeight));
 
-        if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
-          isInsideSublevel = true;
-          if (!level.CurrentlyLoaded) {
-            this->_jumpToLevel(level);
-            streamedLevel->SetShouldBeLoaded(true);
-            streamedLevel->SetShouldBeVisible(true);
-            level.CurrentlyLoaded = true;
+        double levelDistance = glm::length(levelECEF - cameraECEF);
+        if (levelDistance < level.LoadRadius &&
+            levelDistance < closestLevelDistance) {
+
+          if (currentSublevel && currentCesiumSublevel &&
+              currentCesiumSublevel->CurrentlyLoaded) {
+            currentSublevel->SetShouldBeLoaded(false);
+            currentSublevel->SetShouldBeVisible(false);
+            currentCesiumSublevel->CurrentlyLoaded = false;
           }
+
+          currentSublevel = streamedLevel;
+          currentCesiumSublevel = &level;
+          closestLevelDistance = levelDistance;
         } else {
           if (level.CurrentlyLoaded) {
             streamedLevel->SetShouldBeLoaded(false);
@@ -595,7 +601,16 @@ bool ACesiumGeoreference::_updateSublevelState() {
       }
     }
   }
-  return isInsideSublevel;
+
+  if (currentSublevel && currentCesiumSublevel &&
+      !currentCesiumSublevel->CurrentlyLoaded) {
+    this->_jumpToLevel(*currentCesiumSublevel);
+    currentSublevel->SetShouldBeLoaded(true);
+    currentSublevel->SetShouldBeVisible(true);
+    currentCesiumSublevel->CurrentlyLoaded = true;
+  }
+
+  return currentSublevel && currentCesiumSublevel;
 }
 
 void ACesiumGeoreference::_performOriginRebasing() {
