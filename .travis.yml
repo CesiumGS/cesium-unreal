@@ -62,7 +62,7 @@ jobs:
     - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
-    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal/CesiumForUnreal.uplugin"
+    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
@@ -143,7 +143,7 @@ jobs:
     - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
-    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal/CesiumForUnreal.uplugin"
+    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
     - cd "$CLONEDIR/../packages"
@@ -248,7 +248,7 @@ jobs:
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
-    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal/CesiumForUnreal.uplugin"
+    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
     - cd "$CLONEDIR/../packages"
