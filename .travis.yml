@@ -239,6 +239,7 @@ jobs:
     - mkdir -p extern/build
     - cd extern
     - cmake -G Ninja -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-from-windows-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+    - cat /c/Users/travis/build/CesiumGS/cesium-unreal/extern/build/CMakeFiles/CMakeError.log
     - cmake --build build -j 4 --target install
     - cd ..
     - rm -rf extern
