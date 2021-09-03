@@ -232,7 +232,8 @@ jobs:
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
     script:
     - export UNREAL_ENGINE_DIR=/c/Epic/UE_4.27
-    - export UNREAL_ENGINE_COMPILER_DIR=/c/UnrealToolchains/v19_clang-11.0.1-centos7/x86_64-unknown-linux-gnu
+    - export LINUX_MULTIARCH_ROOT=/c/UnrealToolchains/v19_clang-11.0.1-centos7/
+    - export UNREAL_ENGINE_COMPILER_DIR=${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu
     - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}
