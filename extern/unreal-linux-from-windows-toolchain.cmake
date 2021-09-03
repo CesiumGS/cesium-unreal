@@ -10,7 +10,8 @@ SET(CMAKE_POSITION_INDEPENDENT_CODE on)
 
 set(CMAKE_C_COMPILER_TARGET x86_64-unknown-linux-gnu)
 set(CMAKE_CXX_COMPILER_TARGET x86_64-unknown-linux-gnu)
-SET(CMAKE_CXX_FLAGS "-nostdinc++ -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include/c++/v1 -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include/c++/v1")
+SET(CMAKE_CXX_FLAGS "-nostdinc++ -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include/c++/v1 -I$ENV{UNREAL_ENGINE_LIBCXX_DIR}/include/c++/v1 -v")
+SET(CMAKE_C_FLAGS "-v")
 
 # search for programs in the build host directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
