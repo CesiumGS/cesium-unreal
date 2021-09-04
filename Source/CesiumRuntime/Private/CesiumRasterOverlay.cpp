@@ -42,6 +42,8 @@ void UCesiumRasterOverlay::AddToTileset() {
   this->_pOverlay = pOverlay.get();
 
   pTileset->getOverlays().add(std::move(pOverlay));
+
+  this->OnAdd(pTileset, this->_pOverlay);
 }
 
 void UCesiumRasterOverlay::RemoveFromTileset() {
@@ -54,6 +56,7 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
     return;
   }
 
+  this->OnRemove(pTileset, this->_pOverlay);
   pTileset->getOverlays().remove(this->_pOverlay);
   this->_pOverlay = nullptr;
 }

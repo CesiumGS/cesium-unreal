@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+#include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
@@ -19,11 +20,16 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "CreateModelOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/SceneCapture2D.h"
+#include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
@@ -87,6 +93,8 @@ ACesium3DTileset::ACesium3DTileset()
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
+void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
+
 void ACesium3DTileset::AddFocusViewportDelegate() {
 #if WITH_EDITOR
   FEditorDelegates::OnFocusViewportOnActors.AddLambda(
@@ -148,9 +156,23 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
   }
 }
 
+void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
+  if (this->CreatePhysicsMeshes != bCreatePhysicsMeshes) {
+    this->CreatePhysicsMeshes = bCreatePhysicsMeshes;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetGenerateSmoothNormals(bool bGenerateSmoothNormals) {
+  if (this->GenerateSmoothNormals != bGenerateSmoothNormals) {
+    this->GenerateSmoothNormals = bGenerateSmoothNormals;
     this->DestroyTileset();
   }
 }
@@ -172,13 +194,6 @@ void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
 void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   if (this->WaterMaterial != InMaterial) {
     this->WaterMaterial = InMaterial;
-    this->DestroyTileset();
-  }
-}
-
-void ACesium3DTileset::SetOpacityMaskMaterial(UMaterialInterface* InMaterial) {
-  if (this->OpacityMaskMaterial != InMaterial) {
-    this->OpacityMaskMaterial = InMaterial;
     this->DestroyTileset();
   }
 }
@@ -414,7 +429,10 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(GetPhysXCookingModule()->GetPhysXCooking())
+        _pPhysXCooking(
+            pActor->GetCreatePhysicsMeshes()
+                ? GetPhysXCookingModule()->GetPhysXCooking()
+                : nullptr)
 #endif
   {
   }
@@ -449,8 +467,7 @@ public:
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
-          this->_pActor->GetWaterMaterial(),
-          this->_pActor->GetOpacityMaskMaterial());
+          this->_pActor->GetWaterMaterial());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -474,54 +491,57 @@ public:
 
   virtual void*
   prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return nullptr;
+    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(
+        image,
+        TextureAddress::TA_Clamp,
+        TextureAddress::TA_Clamp,
+        TextureFilter::TF_Bilinear);
   }
 
   virtual void* prepareRasterInMainThread(
-      const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
+      const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
       void* pLoadThreadResult) override {
-    const CesiumGltf::ImageCesium& image = rasterTile.getImage();
-    if (image.width <= 0 || image.height <= 0) {
+
+    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+        static_cast<CesiumTextureUtility::LoadedTextureResult*>(
+            pLoadThreadResult);
+
+    CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+
+    if (!pLoadedTexture) {
       return nullptr;
     }
 
-    UTexture2D* pTexture =
-        UTexture2D::CreateTransient(image.width, image.height, PF_R8G8B8A8);
+    UTexture2D* pTexture = pLoadedTexture->pTexture;
     pTexture->AddToRoot();
-    pTexture->AddressX = TextureAddress::TA_Clamp;
-    pTexture->AddressY = TextureAddress::TA_Clamp;
 
-    unsigned char* pTextureData = static_cast<unsigned char*>(
-        pTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-    FMemory::Memcpy(
-        pTextureData,
-        image.pixelData.data(),
-        image.pixelData.size());
-    pTexture->PlatformData->Mips[0].BulkData.Unlock();
+    delete pLoadedTexture;
 
-    pTexture->UpdateResource();
-
-    return pTexture;
+    return (void*)pTexture;
   }
 
   virtual void freeRaster(
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult,
       void* pMainThreadResult) noexcept override {
-    UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
-    if (!pTexture) {
-      return;
+    if (pLoadThreadResult) {
+      CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+          static_cast<CesiumTextureUtility::LoadedTextureResult*>(
+              pLoadThreadResult);
+      delete pLoadedTexture;
     }
 
-    pTexture->RemoveFromRoot();
+    if (pMainThreadResult) {
+      UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+      pTexture->RemoveFromRoot();
+    }
   }
 
   virtual void attachRasterInMainThread(
       const Cesium3DTilesSelection::Tile& tile,
-      uint32_t overlayTextureCoordinateID,
+      int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources,
-      const CesiumGeometry::Rectangle& textureCoordinateRectangle,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
     const Cesium3DTilesSelection::TileContentLoadResult* pContent =
@@ -534,20 +554,18 @@ public:
             tile,
             rasterTile,
             static_cast<UTexture2D*>(pMainThreadRendererResources),
-            textureCoordinateRectangle,
             translation,
-            scale);
+            scale,
+            overlayTextureCoordinateID);
       }
     }
   }
 
   virtual void detachRasterInMainThread(
       const Cesium3DTilesSelection::Tile& tile,
-      uint32_t overlayTextureCoordinateID,
+      int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
-      void* pMainThreadRendererResources,
-      const CesiumGeometry::Rectangle& textureCoordinateRectangle) noexcept
-      override {
+      void* pMainThreadRendererResources) noexcept override {
     const Cesium3DTilesSelection::TileContentLoadResult* pContent =
         tile.getContent();
     if (pContent && pContent->model) {
@@ -557,8 +575,7 @@ public:
         pGltfContent->DetachRasterTile(
             tile,
             rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources),
-            textureCoordinateRectangle);
+            static_cast<UTexture2D*>(pMainThreadRendererResources));
       }
     }
   }
@@ -667,6 +684,10 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.contentOptions.generateMissingNormalsSmooth =
+      this->GenerateSmoothNormals;
+
   // TODO: figure out why water material crashes mac
 #if PLATFORM_MAC
 #else
@@ -769,6 +790,12 @@ void ACesium3DTileset::DestroyTileset() {
 std::vector<ACesium3DTileset::UnrealCameraParameters>
 ACesium3DTileset::GetCameras() const {
   std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
+
+  std::vector<UnrealCameraParameters> sceneCaptures = this->GetSceneCaptures();
+  cameras.insert(
+      cameras.end(),
+      std::make_move_iterator(sceneCaptures.begin()),
+      std::make_move_iterator(sceneCaptures.end()));
 
 #if WITH_EDITOR
   std::vector<UnrealCameraParameters> editorCameras = this->GetEditorCameras();
@@ -924,6 +951,62 @@ ACesium3DTileset::GetPlayerCameras() const {
   return cameras;
 }
 
+std::vector<ACesium3DTileset::UnrealCameraParameters>
+ACesium3DTileset::GetSceneCaptures() const {
+  // TODO: really USceneCaptureComponent2D can be attached to any actor, is it
+  // worth searching every actor? Might it be better to provide an interface
+  // where users can volunteer cameras to be used with the tile selection as
+  // needed?
+  TArray<AActor*> sceneCaptures;
+  static TSubclassOf<ASceneCapture2D> SceneCapture2D =
+      ASceneCapture2D::StaticClass();
+  UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
+
+  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  cameras.reserve(sceneCaptures.Num());
+
+  for (AActor* pActor : sceneCaptures) {
+    ASceneCapture2D* pSceneCapture = static_cast<ASceneCapture2D*>(pActor);
+    if (!pSceneCapture) {
+      continue;
+    }
+
+    USceneCaptureComponent2D* pSceneCaptureComponent =
+        pSceneCapture->GetCaptureComponent2D();
+    if (!pSceneCaptureComponent) {
+      continue;
+    }
+
+    if (pSceneCaptureComponent->ProjectionType !=
+        ECameraProjectionMode::Type::Perspective) {
+      continue;
+    }
+
+    UTextureRenderTarget2D* pRenderTarget =
+        pSceneCaptureComponent->TextureTarget;
+    if (!pRenderTarget) {
+      continue;
+    }
+
+    FVector2D renderTargetSize(pRenderTarget->SizeX, pRenderTarget->SizeY);
+    if (renderTargetSize.X < 1.0 || renderTargetSize.Y < 1.0) {
+      continue;
+    }
+
+    FVector captureLocation = pSceneCaptureComponent->GetComponentLocation();
+    FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
+    float captureFov = pSceneCaptureComponent->FOVAngle;
+
+    cameras.push_back(UnrealCameraParameters{
+        renderTargetSize,
+        captureLocation,
+        captureRotation,
+        captureFov});
+  }
+
+  return cameras;
+}
+
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const UnrealCameraParameters& camera,
@@ -1007,7 +1090,7 @@ namespace {
  * TODO Add details here what that means
  * Old comment:
  * Consider Exclusion zone to drop this tile... Ideally, should be
- * considered in Cesium3DTiles::ViewState to avoid loading the tile
+ * considered in Cesium3DTilesSelection::ViewState to avoid loading the tile
  * first...
  *
  * @param exclusionZones The exclusion zones
@@ -1034,7 +1117,7 @@ bool isInExclusionZone(
             ExclusionZone.South,
             ExclusionZone.East,
             ExclusionZone.North);
-    if (cgExclusionZone.intersect(pRegion->getRectangle())) {
+    if (cgExclusionZone.computeIntersection(pRegion->getRectangle())) {
       return true;
     }
   }
@@ -1189,7 +1272,7 @@ void ACesium3DTileset::showTilesToRender(
     }
 
     // That looks like some reeeally entertaining debug session...:
-    // const Cesium3DTiles::TileID& id = pTile->getTileID();
+    // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
     // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
     // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
     // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
@@ -1339,12 +1422,14 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
       PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
+      PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
-      PropName ==
-          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, OpacityMaskMaterial)) {
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
     this->DestroyTileset();
   } else if (
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {

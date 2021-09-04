@@ -1,5 +1,45 @@
 # Change Log
 
+### v1.6.1 - ????
+
+##### Fixes :wrench:
+
+- Fixed strange behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
+- Fixed crash when `GlobeAwareDefaultPawn::FlyToLocation` was called when the pawn was not possessed.
+
+### v1.6.0 - 2021-09-01
+
+##### Breaking Changes :mega:
+
+- Removed `ACesium3DTileset::OpacityMaskMaterial`. The regular `Material` property is used instead.
+- Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID`. This is a breaking change for C++ code but Blueprints should be unaffected because of a CoreRedirect.
+- Renamed `UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID` to `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`. This is a breaking change for C++ code but it was not previously exposed to Blueprints.
+
+##### Additions :tada:
+
+- Added the ability to define a "Cesium Cartographic Polygon" and then use it to clip away part of a Cesium 3D Tileset.
+- Multiple raster overlays per tileset are now supported.
+- The default materials used to render Cesium 3D Tilesets are now built around Material Layers, making them easier to compose and customize.
+- Added support for using `ASceneCapture2D` with `ACesium3DTileset` actors.
+- Added an editor option in `ACesium3DTileset` to optionally generate smooth normals for glTFs that originally did not have normals.
+- Added an editor option in `ACesium3DTileset` to disable the creation of physics meshes for its tiles.
+- Added a Refresh button on the Cesium ion Assets panel.
+- Made `UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesAsStringForFeatureID`, `UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties`, and `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` callable from Blueprints.
+- Consolidated texture preparation code. Now raster overlay textures can generate mip-maps and the overlay texture preparation can happen partially on the load thread.
+- The Cesium ion Assets panel now has two buttons for imagery assets, allowing the user to select whether the asset should replace the base overlay or be added on top.
+
+##### Fixes :wrench:
+
+- Fixed indexed vertices being duplicated unnecessarily in certain situations in `UCesiumGltfComponent`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.6.0 to v0.7.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.5.2 - 2021-08-30
+
+##### Additions :tada:
+
+- Added support for Unreal Engine v4.27.
+
 ### v1.5.1 - 2021-08-09
 
 ##### Breaking :mega:

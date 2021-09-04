@@ -117,6 +117,9 @@ jobs:
     os: linux
     dist: focal
     install:
+    - # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
+    - # and breaks our ability to update. We don't need it, so remove it.
+    - sudo rm /etc/apt/sources.list.d/rabbitmq.list
     - sudo apt-get update
     - sudo apt-get install unzip zip awscli httpie
     - chmod +x "./travis/travis-get-ue.sh"
@@ -147,6 +150,9 @@ jobs:
     git:
       submodules: false
     install:
+    - # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
+    - # and breaks our ability to update. We don't need it, so remove it.
+    - sudo rm /etc/apt/sources.list.d/rabbitmq.list
     - sudo apt-get update
     - sudo apt-get install unzip zip awscli httpie
     script:
@@ -165,3 +171,11 @@ jobs:
     - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=plugin-package-combined "target_url=${PACKAGE_LINK}" --ignore-stdin
+    - # Make a hacky distribution for UE 4.27
+    - rm -rf CesiumForUnreal/Binaries
+    - rm -rf CesiumForUnreal/Intermediate
+    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal/CesiumForUnreal.uplugin"
+    - zip -r CesiumForUnreal-${CESIUM_UNREAL_VERSION}-UE427.zip CesiumForUnreal
+    - aws s3 cp CesiumForUnreal-${CESIUM_UNREAL_VERSION}-UE427.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-${CESIUM_UNREAL_VERSION}-UE427.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=source-package-427 "target_url=${PACKAGE_LINK}" --ignore-stdin

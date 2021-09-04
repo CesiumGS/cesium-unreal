@@ -10,7 +10,8 @@ struct FeatureIDFromAccessor {
   int64 operator()(std::monostate) { return -1; }
 
   int64 operator()(
-      const CesiumGltf::AccessorView<AccessorTypes::SCALAR<float>>& value) {
+      const CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>&
+          value) {
     return static_cast<int64>(glm::round(value[vertexIdx].value[0]));
   }
 
@@ -69,7 +70,8 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
   featureTableView.forEachProperty([&properties = _properties](
                                        const std::string& propertyName,
                                        auto propertyValue) mutable {
-    if (propertyValue.status() == MetadataPropertyViewStatus::Valid) {
+    if (propertyValue.status() ==
+        CesiumGltf::MetadataPropertyViewStatus::Valid) {
       FString key(propertyName.size(), propertyName.data());
       properties.Add(key, FCesiumMetadataProperty(propertyValue));
     }
@@ -77,7 +79,7 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
 }
 
 TMap<FString, FCesiumMetadataGenericValue>
-UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
+UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 featureID) {
   TMap<FString, FCesiumMetadataGenericValue> feature;
@@ -92,10 +94,10 @@ UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesForFeatureID(
   return feature;
 }
 
-TMap<FString, FString>
-UCesiumMetadataFeatureTableBlueprintLibrary::GetPropertiesAsStringsForFeatureID(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
-    int64 featureID) {
+TMap<FString, FString> UCesiumMetadataFeatureTableBlueprintLibrary::
+    GetMetadataValuesAsStringForFeatureID(
+        UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+        int64 featureID) {
   TMap<FString, FString> feature;
   for (const auto& pair : FeatureTable._properties) {
     feature.Add(

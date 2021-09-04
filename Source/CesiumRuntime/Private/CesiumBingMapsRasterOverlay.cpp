@@ -37,6 +37,7 @@ UCesiumBingMapsRasterOverlay::CreateOverlay() {
   }
 
   return std::make_unique<Cesium3DTilesSelection::BingMapsRasterOverlay>(
+      TCHAR_TO_UTF8(*this->MaterialLayerKey),
       "https://dev.virtualearth.net",
       TCHAR_TO_UTF8(*this->BingMapsKey),
       mapStyle,
