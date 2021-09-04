@@ -30,12 +30,6 @@ void UCesium3DTilesetRoot::ApplyWorldOffset(
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
-void UCesium3DTilesetRoot::MarkTransformUnchanged() { this->_isDirty = false; }
-
-void UCesium3DTilesetRoot::RecalculateTransform() {
-  this->_updateTilesetToUnrealRelativeWorldTransform();
-}
-
 void UCesium3DTilesetRoot::HandleGeoreferenceUpdated() {
   UE_LOG(
       LogCesium,

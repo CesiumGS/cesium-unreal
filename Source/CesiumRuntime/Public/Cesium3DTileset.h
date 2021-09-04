@@ -18,6 +18,7 @@
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
+class ACesiumCartographicSelection;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -241,6 +242,15 @@ public:
   float CulledScreenSpaceError = 64.0;
 
   /**
+   * Refreshes this tileset, ensuring that all materials and other settings are
+   * applied. It is not usually necessary to invoke this, but when
+   * behind-the-scenes changes are made and not reflected in the tileset, this
+   * function can help.
+   */
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
+  void RefreshTileset();
+
+  /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
@@ -316,6 +326,20 @@ private:
   FString IonAccessToken;
 
   /**
+   * Whether to generate physics meshes for this tileset.
+   *
+   * Disabling this option will improve the performance of tile loading, but it
+   * will no longer be possible to collide with the tileset since the physics
+   * meshes will not be created.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetCreatePhysicsMeshes,
+      BlueprintSetter = SetCreatePhysicsMeshes,
+      Category = "Cesium|Physics")
+  bool CreatePhysicsMeshes = true;
+
+  /**
    * Whether to always generate a correct tangent space basis for tiles that
    * don't have them.
    *
@@ -336,6 +360,22 @@ private:
       BlueprintSetter = SetAlwaysIncludeTangents,
       Category = "Cesium|Rendering")
   bool AlwaysIncludeTangents = false;
+
+  /**
+   * Whether to generate smooth normals when normals are missing in the glTF.
+   *
+   * According to the Gltf spec: "When normals are not specified, client
+   * implementations should calculate flat normals." However, calculating flat
+   * normals requires duplicating vertices. This option allows the gltfs to be
+   * sent with explicit smooth normals when the original gltf was missing
+   * normals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetGenerateSmoothNormals,
+      BlueprintSetter = SetGenerateSmoothNormals,
+      Category = "Cesium|Rendering")
+  bool GenerateSmoothNormals = false;
 
   /**
    * Whether to request and render the water mask.
@@ -383,20 +423,6 @@ private:
       Category = "Cesium|Rendering")
   UMaterialInterface* WaterMaterial = nullptr;
 
-  /**
-   * A custom Material to use to render this tileset in areas using opacity
-   * masks, in order to implement custom visual effects.
-   *
-   * The custom material should generally be created by copying the
-   * "M_CesiumDefaultMasked" material and customizing it as desired.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetOpacityMaskMaterial,
-      BlueprintSetter = SetOpacityMaskMaterial,
-      Category = "Cesium|Rendering")
-  UMaterialInterface* OpacityMaskMaterial = nullptr;
-
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -426,11 +452,23 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
+  bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
+  void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetGenerateSmoothNormals() const { return GenerateSmoothNormals; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetGenerateSmoothNormals(bool bGenerateSmoothNormals);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }
@@ -450,14 +488,6 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetWaterMaterial(UMaterialInterface* InMaterial);
 
-  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
-  UMaterialInterface* GetOpacityMaskMaterial() const {
-    return OpacityMaskMaterial;
-  }
-
-  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
-  void SetOpacityMaskMaterial(UMaterialInterface* InMaterial);
-
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
 
@@ -467,6 +497,13 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PauseMovieSequencer();
 
+  /**
+   * This method is not supposed to be called by clients. It is currently
+   * only required by the UnrealResourcePreparer.
+   *
+   * See {@link
+   * Cesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
+   */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
   Cesium3DTilesSelection::Tileset* GetTileset() { return this->_pTileset; }
@@ -474,9 +511,7 @@ public:
     return this->_pTileset;
   }
 
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
-
-  // AActor overrides
+  // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
   virtual void BeginDestroy() override;
@@ -531,6 +566,16 @@ private:
 
   std::vector<UnrealCameraParameters> GetCameras() const;
   std::vector<UnrealCameraParameters> GetPlayerCameras() const;
+  std::vector<UnrealCameraParameters> GetSceneCaptures() const;
+
+  /**
+   * Update the transforms of the glTF components based on the
+   * the transform of the root component.
+   *
+   * This is supposed to be called during Tick, if the transform of
+   * the root component has changed since the previous Tick.
+   */
+  void UpdateTransformFromCesium();
 
   /**
    * Writes the values of all properties of this actor into the

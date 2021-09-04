@@ -7,6 +7,7 @@
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumIonRasterOverlay::CreateOverlay() {
   return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
+      TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->IonAssetID,
       TCHAR_TO_UTF8(*this->IonAccessToken));
 }

@@ -1,6 +1,6 @@
 {
   "name": "cesium-unreal",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Cesium for Unreal",
   "main": "index.js",
   "directories": {

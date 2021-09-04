@@ -36,7 +36,9 @@ private:
       TSharedPtr<CesiumIonClient::Asset> item,
       const TSharedRef<STableViewBase>& list);
   void AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item);
-  void AddOverlayToTerrain(TSharedPtr<CesiumIonClient::Asset> item);
+  void AddOverlayToTerrain(
+      TSharedPtr<CesiumIonClient::Asset> item,
+      bool useAsBaseLayer);
   void AddAsset(TSharedPtr<CesiumIonClient::Asset> item);
   void AssetSelected(
       TSharedPtr<CesiumIonClient::Asset> item,
@@ -75,9 +77,6 @@ private:
   FDelegateHandle _assetsUpdatedDelegateHandle;
   TSharedPtr<SListView<TSharedPtr<CesiumIonClient::Asset>>> _pListView;
   TArray<TSharedPtr<CesiumIonClient::Asset>> _assets;
-  bool _refreshInProgress;
-  bool _refreshNeeded;
-  TSharedPtr<SWidget> _pDetails;
   TSharedPtr<CesiumIonClient::Asset> _pSelection;
 
   /**

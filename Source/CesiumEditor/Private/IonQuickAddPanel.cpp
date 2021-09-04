@@ -210,7 +210,7 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
           FCesiumEditorModule::ion().getAssets();
 
           if (item->overlayID > 0) {
-            FCesiumEditorModule::AddOverlay(
+            FCesiumEditorModule::AddBaseOverlay(
                 pTileset,
                 item->overlayName,
                 item->overlayID);
