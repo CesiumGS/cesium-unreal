@@ -30,8 +30,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
  * the direction of the intersection of the Equator and the Prime Meridian (zero
  * degrees longitude), +Y is in the direction of the intersection of the Equator
  * and +90 degrees longitude, and +Z is through the North Pole. This Actor is
- * used by other Cesium Actors to control how this coordinate system is mapped
- * into an Unreal Engine world and level.
+ * used by other Cesium Actors and components to control how this coordinate
+ * system is mapped into an Unreal Engine world and level.
  */
 UCLASS()
 class CESIUMRUNTIME_API ACesiumGeoreference : public AActor {
