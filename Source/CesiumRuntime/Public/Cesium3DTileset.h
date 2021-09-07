@@ -133,12 +133,9 @@ public:
   int32 MaximumSimultaneousTileLoads = 20;
 
   /**
-  * The maximum number of cached bytes
-  */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Tile Loading")
+   * The maximum number of cached bytes
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   int32 maxiumCachedBytes = 256;
 
   /**

@@ -2,6 +2,8 @@
 
 ### v1.6.1 - ????
 
+- Fixed #633 which was related to introduce maxiumCachedBytes as a UPROPERTY.
+
 ##### Fixes :wrench:
 
 - Fixed strange behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
