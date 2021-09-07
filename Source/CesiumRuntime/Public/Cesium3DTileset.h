@@ -133,6 +133,15 @@ public:
   int32 MaximumSimultaneousTileLoads = 20;
 
   /**
+  * The maximum number of cached bytes
+  */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Loading")
+  int32 maxiumCachedBytes = 256;
+
+  /**
    * The number of loading descendents a tile should allow before deciding to
    * render itself instead of waiting.
    *
