@@ -212,6 +212,36 @@ FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
   return levelName;
 }
 
+struct WorldCompositionLevelPair {
+  FWorldCompositionTile* pTile;
+  ULevelStreaming* pLevelStreaming;
+};
+
+WorldCompositionLevelPair findWorldCompositionLevel(
+    UWorldComposition* pWorldComposition,
+    const FName& packageName) {
+
+  UWorldComposition::FTilesList& tiles = pWorldComposition->GetTilesList();
+  const TArray<ULevelStreaming*>& levels = pWorldComposition->TilesStreaming;
+
+  for (int32 i = 0; i < tiles.Num(); ++i) {
+    FWorldCompositionTile& tile = tiles[i];
+
+    if (tile.Info.Layer.DistanceStreamingEnabled) {
+      // UE itself is managing distance-based streaming for this level, ignore
+      // it.
+      continue;
+    }
+
+    if (tile.PackageName == packageName) {
+      assert(i < levels.Num());
+      return {&tile, levels[i]};
+    }
+  }
+
+  return {nullptr, nullptr};
+}
+
 } // namespace
 
 #if WITH_EDITOR
@@ -229,31 +259,28 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     return;
   }
 
-  // Update the array of sublevels, based on the current
-  // streaming levels of the world: Add all levels that
-  // are not yet contained in the array.
-  // (Levels that are not found in the streaming levels
-  // are NOT removed, because they might just be unloaded
-  // and not really deleted)
-  FWorldBrowserModule& worldBrowserModule =
-      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
-  TSharedPtr<FLevelCollectionModel> pWorldModel =
-      worldBrowserModule.SharedWorldModel(pWorld);
+  const UWorldComposition::FTilesList& allLevels =
+      pWorld->WorldComposition->GetTilesList();
 
   TArray<int32> newSubLevels;
   TArray<int32> missingSubLevels;
 
-  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
+  // const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
 
   // Find new sub-levels that we don't know about on the Cesium side.
   for (int32 i = 0; i < allLevels.Num(); ++i) {
-    const TSharedPtr<FLevelModel>& pLevel = allLevels[i];
-    if (pLevel->IsPersistent()) {
+    const FWorldCompositionTile& level = allLevels[i];
+    if (level.Info.Layer.DistanceStreamingEnabled) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "Ignoring sub-level %s because it is in a layer with distance streaming enabled."),
+          *level.PackageName.ToString());
       continue;
     }
 
-    FString levelName =
-        longPackageNameToCesiumName(pWorld, pLevel->GetLongPackageName());
+    FString levelName = longPackageNameToCesiumName(pWorld, level.PackageName);
 
     // Check if the level is already known
     FCesiumSubLevel* pFound = this->CesiumSubLevels.FindByPredicate(
@@ -270,11 +297,10 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
     FCesiumSubLevel& cesiumLevel = this->CesiumSubLevels[i];
 
-    const TSharedPtr<FLevelModel>* ppLevel = allLevels.FindByPredicate(
-        [&cesiumLevel, pWorld](const TSharedPtr<FLevelModel>& pLevel) {
-          return longPackageNameToCesiumName(
-                     pWorld,
-                     pLevel->GetLongPackageName()) == cesiumLevel.LevelName;
+    const FWorldCompositionTile* ppLevel = allLevels.FindByPredicate(
+        [&cesiumLevel, pWorld](const FWorldCompositionTile& level) {
+          return longPackageNameToCesiumName(pWorld, level.PackageName) ==
+                 cesiumLevel.LevelName;
         });
 
     if (!ppLevel) {
@@ -284,9 +310,9 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
   if (newSubLevels.Num() == 1 && missingSubLevels.Num() == 1) {
     // There is exactly one missing and one new, assume it's been renamed.
-    const TSharedPtr<FLevelModel>& pLevel = allLevels[newSubLevels[0]];
+    const FWorldCompositionTile& level = allLevels[newSubLevels[0]];
     this->CesiumSubLevels[missingSubLevels[0]].LevelName =
-        longPackageNameToCesiumName(pWorld, pLevel->GetLongPackageName());
+        longPackageNameToCesiumName(pWorld, level.PackageName);
   } else if (newSubLevels.Num() > 0 || missingSubLevels.Num() > 0) {
     // Remove our record of the sub-levels that no longer exist.
     // Do this in reverse order so the indices don't get invalidated.
@@ -296,9 +322,9 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
     // Add new Cesium records for the new sub-levels
     for (int32 i = 0; i < newSubLevels.Num(); ++i) {
-      const TSharedPtr<FLevelModel>& pLevel = allLevels[newSubLevels[i]];
+      const FWorldCompositionTile& level = allLevels[newSubLevels[i]];
       this->CesiumSubLevels.Add(FCesiumSubLevel{
-          longPackageNameToCesiumName(pWorld, pLevel->GetLongPackageName()),
+          longPackageNameToCesiumName(pWorld, level.PackageName),
           OriginLongitude,
           OriginLatitude,
           OriginHeight,
@@ -414,16 +440,25 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
           pWorldBrowserModule->OnBrowseWorld.AddUObject(
               this,
               &ACesiumGeoreference::_onBrowseWorld);
-
-      // On Editor close, Unreal Engine unhelpfully shuts down the WoldBrowser
-      // module before it calls BeginDestroy on this Actor. And WorldBrowser
-      // shutdown asserts that no one else is holding a reference to the world
-      // model. So, we need to catch engine exit and detach ourselves.
-      this->_onEnginePreExitSubscription =
-          FCoreDelegates::OnEnginePreExit.AddUObject(
-              this,
-              &ACesiumGeoreference::_removeSubscriptions);
     }
+  }
+
+  if (!this->_onEnginePreExitSubscription.IsValid()) {
+    // On Editor close, Unreal Engine unhelpfully shuts down the WoldBrowser
+    // module before it calls BeginDestroy on this Actor. And WorldBrowser
+    // shutdown asserts that no one else is holding a reference to the world
+    // model. So, we need to catch engine exit and detach ourselves.
+    this->_onEnginePreExitSubscription =
+        FCoreDelegates::OnEnginePreExit.AddUObject(
+            this,
+            &ACesiumGeoreference::_removeSubscriptions);
+  }
+
+  if (!this->_newCurrentLevelSubscription.IsValid()) {
+    this->_newCurrentLevelSubscription =
+        FEditorDelegates::NewCurrentLevel.AddUObject(
+            this,
+            &ACesiumGeoreference::_onNewCurrentLevel);
   }
 #endif
 
@@ -470,10 +505,6 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)) {
     this->UpdateGeoreference();
     return;
-  } else if (
-      propertyName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CurrentLevelIndex)) {
-    this->SwitchToLevel(this->CurrentLevelIndex);
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
@@ -963,6 +994,31 @@ ACesiumGeoreference::_findLevelStreamingByName(const FString& name) {
   }
 }
 
+FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
+    const FName& packageName,
+    bool createIfDoesNotExist) {
+  FString cesiumName =
+      longPackageNameToCesiumName(this->GetWorld(), packageName);
+
+  FCesiumSubLevel* pCesiumLevel = this->CesiumSubLevels.FindByPredicate(
+      [cesiumName](const FCesiumSubLevel& level) {
+        return cesiumName == level.LevelName;
+      });
+
+  if (!pCesiumLevel && createIfDoesNotExist) {
+    // No Cesium sub-level exists, so create it now.
+    this->CesiumSubLevels.Add(FCesiumSubLevel{
+        cesiumName,
+        this->OriginLongitude,
+        this->OriginLatitude,
+        this->OriginHeight,
+        1000.0});
+    pCesiumLevel = &this->CesiumSubLevels.Last();
+  }
+
+  return pCesiumLevel;
+}
+
 #if WITH_EDITOR
 void ACesiumGeoreference::_onBrowseWorld(UWorld* pWorld) {
   if (this->_levelsCollectionSubscription.IsValid()) {
@@ -1003,6 +1059,12 @@ void ACesiumGeoreference::_removeSubscriptions() {
           this->_onBrowseWorldSubscription);
       this->_onBrowseWorldSubscription.Reset();
     }
+  }
+
+  if (this->_newCurrentLevelSubscription.IsValid()) {
+    FEditorDelegates::NewCurrentLevel.Remove(
+        this->_newCurrentLevelSubscription);
+    this->_newCurrentLevelSubscription.Reset();
   }
 }
 
@@ -1055,6 +1117,92 @@ bool ACesiumGeoreference::_switchToLevelInEditor(FCesiumSubLevel* pLevel) {
   pWorldModel->HideLevels(levelsToHide);
 
   return result;
+}
+
+void ACesiumGeoreference::_onNewCurrentLevel() {
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    return;
+  }
+
+  UWorldComposition* pWorldComposition = pWorld->WorldComposition;
+  if (!pWorldComposition) {
+    return;
+  }
+
+  ULevel* pCurrent = pWorld->GetCurrentLevel();
+  UPackage* pLevelPackage = pCurrent->GetOutermost();
+
+  // Find the world composition details for the new level.
+  WorldCompositionLevelPair worldCompositionLevelPair =
+      findWorldCompositionLevel(pWorldComposition, pLevelPackage->GetFName());
+
+  FWorldCompositionTile* pTile = worldCompositionLevelPair.pTile;
+  ULevelStreaming* pLevelStreaming = worldCompositionLevelPair.pLevelStreaming;
+
+  if (!pTile || !pLevelStreaming) {
+    // The new level doesn't appear to participate in world composition, so
+    // ignore it.
+    return;
+  }
+
+  // Find the corresponding FCesiumSubLevel, creating it if necessary.
+  FCesiumSubLevel* pCesiumLevel =
+      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
+
+  // Hide all other levels.
+  // I initially thought we could call handy methods like SetShouldBeVisible
+  // here, but I was be wrong. That works ok in a game, but in the Editor
+  // there's a much more elaborate dance required. Rather than try to figure out
+  // all the steps, let's just ask the Editor to do it for us.
+  FWorldBrowserModule& worldBrowserModule =
+      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
+  TSharedPtr<FLevelCollectionModel> pWorldModel =
+      worldBrowserModule.SharedWorldModel(pWorld);
+
+  // Build a list of levels to hide, starting with _all_ the levels.
+  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
+  FLevelModelList levelsToHide = allLevels;
+
+  // Remove levels from the list that we don't want to hide for various reasons.
+  levelsToHide.RemoveAll(
+      [pCurrent, pWorldComposition](const TSharedPtr<FLevelModel>& pLevel) {
+        // Remove persistent levels.
+        if (pLevel->IsPersistent()) {
+          return true;
+        }
+
+        // Remove the now-current level.
+        if (pLevel->GetLevelObject() == pCurrent) {
+          return true;
+        }
+
+        WorldCompositionLevelPair compositionLevel = findWorldCompositionLevel(
+            pWorldComposition,
+            pLevel->GetLongPackageName());
+
+        // Remove levels that are not part of the world composition.
+        if (!compositionLevel.pLevelStreaming || !compositionLevel.pTile) {
+          return true;
+        }
+
+        // Remove levels that Unreal Engine is handling distance-based streaming
+        // for. Hiding such a level that UE thinks should be shown would cause
+        // the level to toggle on and off continually.
+        if (compositionLevel.pTile->Info.Layer.DistanceStreamingEnabled) {
+          return true;
+        }
+
+        return false;
+      });
+
+  pWorldModel->HideLevels(levelsToHide);
+
+  // Set the georeference origin for the new level
+  this->SetGeoreferenceOrigin(glm::dvec3(
+      pCesiumLevel->LevelLongitude,
+      pCesiumLevel->LevelLatitude,
+      pCesiumLevel->LevelHeight));
 }
 #endif
 

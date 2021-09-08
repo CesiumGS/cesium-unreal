@@ -88,22 +88,6 @@ public:
   bool SwitchToLevel(int32 Index);
 
   /*
-   * The index of the level the georeference origin should be set to. This
-   * aligns the globe with the specified level so that it can be worked on in
-   * the editor.
-   *
-   * Warning: Before changing, ensure the last level you worked on has been
-   * properly georeferenced. Ensure all actors are georeferenced, either by
-   * inclusion in a georeferenced sublevel, by adding the
-   * "CesiumGeoreferenceComponent", or by attaching to an actor with one.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "CesiumSublevels",
-      meta = (ArrayClamp = "CesiumSubLevels"))
-  int CurrentLevelIndex;
-
-  /*
    * The list of georeferenced sublevels. Each of these has a corresponding
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
@@ -551,6 +535,7 @@ private:
   FDelegateHandle _levelsCollectionSubscription;
   FDelegateHandle _onBrowseWorldSubscription;
   FDelegateHandle _onEnginePreExitSubscription;
+  FDelegateHandle _newCurrentLevelSubscription;
 #endif
 
   // TODO: add option to set georeference directly from ECEF
@@ -639,10 +624,15 @@ private:
    */
   ULevelStreaming* _findLevelStreamingByName(const FString& name);
 
+  FCesiumSubLevel* _findCesiumSubLevelByName(
+      const FName& packageName,
+      bool createIfDoesNotExist);
+
 #if WITH_EDITOR
   void _onBrowseWorld(UWorld* pWorld);
   void _removeSubscriptions();
   bool _switchToLevelInEditor(FCesiumSubLevel* pLevel);
+  void _onNewCurrentLevel();
 #endif
 
   bool _switchToLevelInGame(FCesiumSubLevel* pLevel);
