@@ -465,6 +465,61 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
       *primitiveMetadata);
 }
 
+namespace {
+
+/**
+ * @brief Constrains the given string to the given length.
+ *
+ * If the given string is longer than the maximum length,
+ * then a log message will be printed and a suffix of the
+ * string with the maximum length will be returned.
+ * Otherwise, the string is returned as it is.
+ *
+ * @param s The string
+ * @param maxLength The maximum length
+ * @return The constrained string
+ */
+std::string
+constrainToLengthSuffix(const std::string& s, const size_t maxLength) {
+  if (s.length() > maxLength) {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Truncating string to suffix of length %d"),
+        maxLength);
+    return s.substr(s.length() - maxLength, maxLength);
+  }
+  return s;
+}
+
+/**
+ * @brief Create an FName from the given strings.
+ *
+ * This will combine the prefix and the suffix and create an FName.
+ * If the string would be longer than the given length, then
+ * the beginning of the prefix will be removed, to constrain the
+ * result to a length of maxLength.
+ *
+ * The default maximum length is 256, because Unreal may in turn
+ * add a prefix like the `/Internal/Path/Name` to this name.
+ *
+ * @param prefix The prefix input string
+ * @param suffix The suffix input string
+ * @param maxLength The maximum length
+ * @return The FName
+ */
+FName createSafeName(
+    const std::string& prefix,
+    const std::string& suffix,
+    const size_t maxLength = 256) {
+  std::string constrainedPrefix =
+      constrainToLengthSuffix(prefix, maxLength - suffix.length());
+  std::string combined = constrainedPrefix + suffix;
+  return FName(combined.c_str());
+}
+
+} // namespace
+
 template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
@@ -497,6 +552,7 @@ static void loadPrimitive(
   auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
   if (urlIt != model.extras.end()) {
     name = urlIt->second.getStringOrDefault("glTF");
+    name = constrainToLengthSuffix(name, 256);
   }
 
   auto meshIt = std::find_if(
@@ -1488,10 +1544,10 @@ static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadModelResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
+
+  FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
-      NewObject<UCesiumGltfPrimitiveComponent>(
-          pGltf,
-          FName(loadResult.name.c_str()));
+      NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
@@ -1505,8 +1561,7 @@ static void loadModelGameThreadPart(
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
 
-  UStaticMesh* pStaticMesh =
-      NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
+  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(
@@ -1795,8 +1850,6 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& translation,
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
-  const Cesium3DTilesSelection::RasterOverlay& overlay =
-      rasterTile.getOverlay();
 
   FLinearColor translationAndScale(
       translation.x,
@@ -1804,11 +1857,9 @@ void UCesiumGltfComponent::AttachRasterTile(
       scale.x,
       scale.y);
 
-  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
-
   forEachPrimitiveComponent(
       this,
-      [&name, &rasterTile, pTexture, &translationAndScale, textureCoordinateID](
+      [&rasterTile, pTexture, &translationAndScale, textureCoordinateID](
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
@@ -1816,6 +1867,9 @@ void UCesiumGltfComponent::AttachRasterTile(
         // set the parameters on each material layer that maps to this overlay
         // tile.
         if (pCesiumData) {
+          FString name(
+              UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
+
           for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
             if (pCesiumData->LayerNames[i] != name) {
               continue;
@@ -1843,13 +1897,17 @@ void UCesiumGltfComponent::AttachRasterTile(
           }
         } else {
           pMaterial->SetTextureParameterValue(
-              FName(name + "_Texture"),
+              createSafeName(rasterTile.getOverlay().getName(), "_Texture"),
               pTexture);
           pMaterial->SetVectorParameterValue(
-              FName(name + "_TranslationScale"),
+              createSafeName(
+                  rasterTile.getOverlay().getName(),
+                  "_TranslationScale"),
               translationAndScale);
           pMaterial->SetScalarParameterValue(
-              FName(name + "_TextureCoordinateIndex"),
+              createSafeName(
+                  rasterTile.getOverlay().getName(),
+                  "_TextureCoordinateIndex"),
               pPrimitive
                   ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
         }
@@ -1860,14 +1918,10 @@ void UCesiumGltfComponent::DetachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
     const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture) {
-  const Cesium3DTilesSelection::RasterOverlay& overlay =
-      rasterTile.getOverlay();
-
-  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
 
   forEachPrimitiveComponent(
       this,
-      [this, &name, &rasterTile, pTexture](
+      [this, &rasterTile, pTexture](
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
@@ -1875,6 +1929,8 @@ void UCesiumGltfComponent::DetachRasterTile(
         // clear the parameters on each material layer that maps to this overlay
         // tile.
         if (pCesiumData) {
+          FString name(
+              UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
           for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
             if (pCesiumData->LayerNames[i] != name) {
               continue;
@@ -1889,7 +1945,7 @@ void UCesiumGltfComponent::DetachRasterTile(
           }
         } else {
           pMaterial->SetTextureParameterValue(
-              FName(name + "_Texture"),
+              createSafeName(rasterTile.getOverlay().getName(), "_Texture"),
               this->Transparent1x1);
         }
       });
