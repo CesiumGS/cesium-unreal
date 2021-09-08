@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "CesiumSubLevel.generated.h"
 
+class ULevelStreaming;
+
 /*
  * Sublevels can be georeferenced to the globe by filling out this struct.
  */
@@ -51,9 +53,4 @@ struct FCesiumSubLevel {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
   double LoadRadius = 0.0;
-
-  /**
-   * Whether or not this level is currently loaded. Not relevant in the editor.
-   */
-  bool CurrentlyLoaded = false;
 };

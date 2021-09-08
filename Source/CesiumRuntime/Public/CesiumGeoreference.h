@@ -14,6 +14,7 @@
 #include "CesiumGeoreference.generated.h"
 
 class APlayerCameraManager;
+class FLevelCollectionModel;
 
 /**
  * The delegate for the ACesiumGeoreference::OnGeoreferenceUpdated,
@@ -72,22 +73,19 @@ public:
   bool ShowLoadRadii = true;
 
   /*
-   * Rescan for sublevels that have not been georeferenced yet. New levels are
-   * placed at the Unreal origin and georeferenced automatically.
-   */
-  UFUNCTION(CallInEditor, Category = "CesiumSublevels")
-  void CheckForNewSubLevels();
-
-  /*
-   * Jump to the level specified by "Current Level Index".
+   * Switches to the specified level. Sets the georeference origin to the given
+   * level's origin, shows the given level, and hides all other levels.
    *
-   * Warning: Before clicking, ensure that all non-Cesium objects in the
-   * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
-   * or attached to a an actor with that component. Ensure that static actors
-   * only exist in georeferenced sublevels.
+   * If Index is negative or otherwise outside the range of valid indices
+   *
+   * Warning: Before calling, ensure that all Actors are in their appropriate
+   * sub-levels.
+   *
+   * @returns true if a new sub-level is active, or false if the Index was
+   * outside the valid range and so no sub-level is active.
    */
-  UFUNCTION(CallInEditor, Category = "CesiumSublevels")
-  void JumpToCurrentLevel();
+  UFUNCTION(BlueprintCallable, Category = "CesiumSublevels")
+  bool SwitchToLevel(int32 Index);
 
   /*
    * The index of the level the georeference origin should be set to. This
@@ -500,6 +498,14 @@ public:
    */
   virtual void Tick(float DeltaTime) override;
 
+  /**
+   * Handles reading, writing, and reference collecting using FArchive.
+   * This implementation handles all FProperty serialization, but can be
+   * overridden for native variables.
+   *
+   * This class overrides this method to ensure internal variables are
+   * immediately synchronized with newly-loaded values.
+   */
   virtual void Serialize(FArchive& Ar) override;
 
   /**
@@ -515,17 +521,12 @@ protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void BeginDestroy() override;
 
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
-
-  /**
-   * Called after the C++ constructor and after the properties have
-   * been initialized, including those loaded from config.
-   */
-  void PostInitProperties() override;
 
 private:
   /**
@@ -545,6 +546,13 @@ private:
 
   bool _insideSublevel;
 
+#if WITH_EDITOR
+  TSharedPtr<FLevelCollectionModel> _pWorldModel = nullptr;
+  FDelegateHandle _levelsCollectionSubscription;
+  FDelegateHandle _onBrowseWorldSubscription;
+  FDelegateHandle _onEnginePreExitSubscription;
+#endif
+
   // TODO: add option to set georeference directly from ECEF
   void _setGeoreferenceOrigin(
       double targetLongitude,
@@ -552,6 +560,7 @@ private:
       double targetHeight);
   void _jumpToLevel(const FCesiumSubLevel& level);
 
+#if WITH_EDITOR
   /**
    * Will make sure that the `CesiumSubLevels` array contains all
    * of the current streaming levels of the world.
@@ -563,6 +572,7 @@ private:
    * was actually DELETED.
    */
   void _updateCesiumSubLevels();
+#endif
 
 #if WITH_EDITOR
   void _lineTraceViewportMouse(
@@ -620,4 +630,20 @@ private:
    * returns the old transforms.
    */
   void _updateGeoTransforms();
+
+  /**
+   * @brief Finds the ULevelStreaming with given name.
+   *
+   * @returns The ULevelStreaming, or nullptr if the provided name does not
+   * exist.
+   */
+  ULevelStreaming* _findLevelStreamingByName(const FString& name);
+
+#if WITH_EDITOR
+  void _onBrowseWorld(UWorld* pWorld);
+  void _removeSubscriptions();
+  bool _switchToLevelInEditor(FCesiumSubLevel* pLevel);
+#endif
+
+  bool _switchToLevelInGame(FCesiumSubLevel* pLevel);
 };

@@ -9,6 +9,7 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
+#include "Engine/WorldComposition.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTransforms.h"
@@ -20,6 +21,7 @@
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
 #include "VecMath.h"
+#include "WorldBrowserModule.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -31,6 +33,11 @@
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
+
+// These are in the Private directory, yet they are exported, so we're able to
+// use them. And there's no other way (AFAIK) to get details of unloaded levels.
+#include "../Private/LevelCollectionModel.h"
+#include "../Private/LevelModel.h"
 #endif
 
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
@@ -119,17 +126,6 @@ ACesiumGeoreference::ACesiumGeoreference()
   PrimaryActorTick.bCanEverTick = true;
 }
 
-void ACesiumGeoreference::PostInitProperties() {
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Called PostInitProperties on actor %s"),
-      *this->GetName());
-
-  Super::PostInitProperties();
-  UpdateGeoreference();
-}
-
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #if WITH_EDITOR
   // TODO: should we just assume origin rebasing isn't happening since this is
@@ -207,11 +203,21 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #endif
 }
 
-void ACesiumGeoreference::CheckForNewSubLevels() { _updateCesiumSubLevels(); }
+namespace {
 
+template <typename TStringish>
+FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
+  FString levelName = FPackageName::GetShortName(name);
+  levelName.RemoveFromStart(pWorld->StreamingLevelsPrefix);
+  return levelName;
+}
+
+} // namespace
+
+#if WITH_EDITOR
 void ACesiumGeoreference::_updateCesiumSubLevels() {
-  UWorld* world = this->GetWorld();
-  if (!IsValid(world)) {
+  UWorld* pWorld = this->GetWorld();
+  if (!IsValid(pWorld)) {
     // This happens for the georeference that is shown in the
     // content browser. Might omit this message.
     UE_LOG(
@@ -229,45 +235,96 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   // (Levels that are not found in the streaming levels
   // are NOT removed, because they might just be unloaded
   // and not really deleted)
-  const TArray<ULevelStreaming*>& streamedLevels = world->GetStreamingLevels();
-  for (ULevelStreaming* streamedLevel : streamedLevels) {
-    FString levelName =
-        FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-    levelName.RemoveFromStart(world->StreamingLevelsPrefix);
-    // Check if the level is already known
-    bool found = false;
-    for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
-      if (levelName.Equals(subLevel.LevelName)) {
-        found = true;
-        break;
-      }
+  FWorldBrowserModule& worldBrowserModule =
+      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
+  TSharedPtr<FLevelCollectionModel> pWorldModel =
+      worldBrowserModule.SharedWorldModel(pWorld);
+
+  TArray<int32> newSubLevels;
+  TArray<int32> missingSubLevels;
+
+  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
+
+  // Find new sub-levels that we don't know about on the Cesium side.
+  for (int32 i = 0; i < allLevels.Num(); ++i) {
+    const TSharedPtr<FLevelModel>& pLevel = allLevels[i];
+    if (pLevel->IsPersistent()) {
+      continue;
     }
-    // If the level was not known yet, create a new one
-    if (!found) {
-      CesiumSubLevels.Add(FCesiumSubLevel{
-          levelName,
+
+    FString levelName =
+        longPackageNameToCesiumName(pWorld, pLevel->GetLongPackageName());
+
+    // Check if the level is already known
+    FCesiumSubLevel* pFound = this->CesiumSubLevels.FindByPredicate(
+        [&levelName](FCesiumSubLevel& subLevel) {
+          return levelName.Equals(subLevel.LevelName);
+        });
+
+    if (!pFound) {
+      newSubLevels.Add(i);
+    }
+  }
+
+  // Find any Cesium sub-levels that don't exist anymore.
+  for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
+    FCesiumSubLevel& cesiumLevel = this->CesiumSubLevels[i];
+
+    const TSharedPtr<FLevelModel>* ppLevel = allLevels.FindByPredicate(
+        [&cesiumLevel, pWorld](const TSharedPtr<FLevelModel>& pLevel) {
+          return longPackageNameToCesiumName(
+                     pWorld,
+                     pLevel->GetLongPackageName()) == cesiumLevel.LevelName;
+        });
+
+    if (!ppLevel) {
+      missingSubLevels.Add(i);
+    }
+  }
+
+  if (newSubLevels.Num() == 1 && missingSubLevels.Num() == 1) {
+    // There is exactly one missing and one new, assume it's been renamed.
+    const TSharedPtr<FLevelModel>& pLevel = allLevels[newSubLevels[0]];
+    this->CesiumSubLevels[missingSubLevels[0]].LevelName =
+        longPackageNameToCesiumName(pWorld, pLevel->GetLongPackageName());
+  } else if (newSubLevels.Num() > 0 || missingSubLevels.Num() > 0) {
+    // Remove our record of the sub-levels that no longer exist.
+    // Do this in reverse order so the indices don't get invalidated.
+    for (int32 i = missingSubLevels.Num() - 1; i >= 0; --i) {
+      this->CesiumSubLevels.RemoveAt(missingSubLevels[i]);
+    }
+
+    // Add new Cesium records for the new sub-levels
+    for (int32 i = 0; i < newSubLevels.Num(); ++i) {
+      const TSharedPtr<FLevelModel>& pLevel = allLevels[newSubLevels[i]];
+      this->CesiumSubLevels.Add(FCesiumSubLevel{
+          longPackageNameToCesiumName(pWorld, pLevel->GetLongPackageName()),
           OriginLongitude,
           OriginLatitude,
           OriginHeight,
-          1000.0, // TODO: figure out better default radius
-          false});
+          1000.0});
     }
   }
 }
+#endif
 
-void ACesiumGeoreference::JumpToCurrentLevel() {
-  if (this->CurrentLevelIndex < 0 ||
-      this->CurrentLevelIndex >= this->CesiumSubLevels.Num()) {
-    return;
+bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
+  FCesiumSubLevel* pCurrentLevel = nullptr;
+
+  if (Index >= 0 && Index < this->CesiumSubLevels.Num()) {
+    pCurrentLevel = &this->CesiumSubLevels[Index];
   }
 
-  const FCesiumSubLevel& currentLevel =
-      this->CesiumSubLevels[this->CurrentLevelIndex];
+#if WITH_EDITOR
+  // In the Editor, use the Editor API to make the selected level the current
+  // one. When running in the Editor, GetStreamingLevels only includes levels
+  // that are already loaded.
+  if (GEditor) {
+    return this->_switchToLevelInEditor(pCurrentLevel);
+  }
+#endif
 
-  this->SetGeoreferenceOrigin(glm::dvec3(
-      currentLevel.LevelLongitude,
-      currentLevel.LevelLatitude,
-      currentLevel.LevelHeight));
+  return this->_switchToLevelInEditor(pCurrentLevel);
 }
 
 FVector
@@ -301,33 +358,84 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();
 
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGeoreference does not have a World in BeginPlay."));
+    return;
+  }
+
   if (!this->WorldOriginCamera) {
     // Find the first player's camera manager
-    APlayerController* pPlayerController =
-        this->GetWorld()->GetFirstPlayerController();
+    APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
     if (pPlayerController) {
       this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
+    }
+
+    if (!this->WorldOriginCamera) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "CesiumGeoreference could not find a FirstPlayerController or a corresponding PlayerCameraManager."));
     }
   }
 
   // initialize sublevels as unloaded
-  for (FCesiumSubLevel& level : CesiumSubLevels) {
-    level.CurrentlyLoaded = false;
+  for (ULevelStreaming* pLevel : pWorld->GetStreamingLevels()) {
+    pLevel->SetShouldBeLoaded(false);
+    pLevel->SetShouldBeVisible(false);
   }
+
   UpdateGeoreference();
 }
 
 /** In case the CesiumGeoreference gets spawned at run time, instead of design
  *  time, ensure that frames are updated */
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
-
   UE_LOG(
       LogCesium,
       Verbose,
       TEXT("Called OnConstruction on actor %s"),
       *this->GetName());
 
+#if WITH_EDITOR
+  // Subscribe to "browse a new world" events if we haven't already.
+  // When we start browsing a new world, we'll subscribe to be notified
+  // of new sub-levels in that world.
+  if (!this->_onBrowseWorldSubscription.IsValid()) {
+    FWorldBrowserModule* pWorldBrowserModule =
+        static_cast<FWorldBrowserModule*>(
+            FModuleManager::Get().GetModule("WorldBrowser"));
+    if (pWorldBrowserModule) {
+      this->_onBrowseWorldSubscription =
+          pWorldBrowserModule->OnBrowseWorld.AddUObject(
+              this,
+              &ACesiumGeoreference::_onBrowseWorld);
+
+      // On Editor close, Unreal Engine unhelpfully shuts down the WoldBrowser
+      // module before it calls BeginDestroy on this Actor. And WorldBrowser
+      // shutdown asserts that no one else is holding a reference to the world
+      // model. So, we need to catch engine exit and detach ourselves.
+      this->_onEnginePreExitSubscription =
+          FCoreDelegates::OnEnginePreExit.AddUObject(
+              this,
+              &ACesiumGeoreference::_removeSubscriptions);
+    }
+  }
+#endif
+
   this->UpdateGeoreference();
+}
+
+void ACesiumGeoreference::BeginDestroy() {
+#if WITH_EDITOR
+  this->_removeSubscriptions();
+#endif
+
+  Super::BeginDestroy();
 }
 
 void ACesiumGeoreference::UpdateGeoreference() {
@@ -365,7 +473,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CurrentLevelIndex)) {
-    this->JumpToCurrentLevel();
+    this->SwitchToLevel(this->CurrentLevelIndex);
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
@@ -475,13 +583,20 @@ int32 clampedAdd(float f, int32 i) {
 } // namespace
 
 bool ACesiumGeoreference::_updateSublevelState() {
-
   if (!IsValid(WorldOriginCamera)) {
     return false;
   }
 
-  UWorld* world = this->GetWorld();
-  const FIntVector& originLocation = world->OriginLocation;
+  if (this->CesiumSubLevels.Num() == 0) {
+    // If we don't have any known sublevels, don't do any sublevel things.
+    // This is important in the unfortunate case where a sublevel has a
+    // CesiumGeoreference of its own. The sublevel Georeference would end up
+    // deactivating the sublevel.
+    return false;
+  }
+
+  UWorld* pWorld = this->GetWorld();
+  const FIntVector& originLocation = pWorld->OriginLocation;
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
 
@@ -492,61 +607,27 @@ bool ACesiumGeoreference::_updateSublevelState() {
           .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
       cameraAbsolute;
 
-  ULevelStreaming* currentSublevel = nullptr;
-  FCesiumSubLevel* currentCesiumSublevel = nullptr;
-  double closestLevelDistance = TNumericLimits<double>::Max();
+  int32 activeLevel = -1;
+  double closestLevelDistance = std::numeric_limits<double>::max();
 
-  const TArray<ULevelStreaming*>& streamedLevels = world->GetStreamingLevels();
-  for (ULevelStreaming* streamedLevel : streamedLevels) {
-    FString levelName =
-        FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-    levelName.RemoveFromStart(world->StreamingLevelsPrefix);
+  for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
+    const FCesiumSubLevel& level = this->CesiumSubLevels[i];
 
-    for (FCesiumSubLevel& level : this->CesiumSubLevels) {
-      // if this is a known level, we need to tell it whether or not it should
-      // be loaded
-      if (levelName.Equals(level.LevelName)) {
-        glm::dvec3 levelECEF =
-            _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-                level.LevelLongitude,
-                level.LevelLatitude,
-                level.LevelHeight));
+    glm::dvec3 levelECEF =
+        _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+            level.LevelLongitude,
+            level.LevelLatitude,
+            level.LevelHeight));
 
-        double levelDistance = glm::length(levelECEF - cameraECEF);
-        if (levelDistance < level.LoadRadius &&
-            levelDistance < closestLevelDistance) {
-
-          if (currentSublevel && currentCesiumSublevel &&
-              currentCesiumSublevel->CurrentlyLoaded) {
-            currentSublevel->SetShouldBeLoaded(false);
-            currentSublevel->SetShouldBeVisible(false);
-            currentCesiumSublevel->CurrentlyLoaded = false;
-          }
-
-          currentSublevel = streamedLevel;
-          currentCesiumSublevel = &level;
-          closestLevelDistance = levelDistance;
-        } else {
-          if (level.CurrentlyLoaded) {
-            streamedLevel->SetShouldBeLoaded(false);
-            streamedLevel->SetShouldBeVisible(false);
-            level.CurrentlyLoaded = false;
-          }
-        }
-        break;
-      }
+    double levelDistance = glm::length(levelECEF - cameraECEF);
+    if (levelDistance < level.LoadRadius &&
+        levelDistance < closestLevelDistance) {
+      activeLevel = i;
     }
   }
 
-  if (currentSublevel && currentCesiumSublevel &&
-      !currentCesiumSublevel->CurrentlyLoaded) {
-    this->_jumpToLevel(*currentCesiumSublevel);
-    currentSublevel->SetShouldBeLoaded(true);
-    currentSublevel->SetShouldBeVisible(true);
-    currentCesiumSublevel->CurrentlyLoaded = true;
-  }
-
-  return currentSublevel && currentCesiumSublevel;
+  // activeLevel may be -1, in which case all levels will be deactivated.
+  return this->SwitchToLevel(activeLevel);
 }
 
 void ACesiumGeoreference::_performOriginRebasing() {
@@ -861,3 +942,165 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
   }
 }
 #endif
+
+ULevelStreaming*
+ACesiumGeoreference::_findLevelStreamingByName(const FString& name) {
+  UWorld* pWorld = this->GetWorld();
+  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
+  const FString& streamingLevelPrefix = pWorld->StreamingLevelsPrefix;
+
+  ULevelStreaming* const* ppStreamedLevel =
+      levels.FindByPredicate([&name, pWorld](ULevelStreaming* pStreamedLevel) {
+        return longPackageNameToCesiumName(
+                   pWorld,
+                   pStreamedLevel->GetWorldAssetPackageName()) == name;
+      });
+
+  if (ppStreamedLevel == nullptr) {
+    return nullptr;
+  } else {
+    return *ppStreamedLevel;
+  }
+}
+
+#if WITH_EDITOR
+void ACesiumGeoreference::_onBrowseWorld(UWorld* pWorld) {
+  if (this->_levelsCollectionSubscription.IsValid()) {
+    this->_pWorldModel->CollectionChanged.Remove(
+        this->_levelsCollectionSubscription);
+    this->_levelsCollectionSubscription.Reset();
+    this->_pWorldModel.Reset();
+  }
+
+  if (pWorld) {
+    FWorldBrowserModule& worldBrowserModule =
+        FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
+    this->_pWorldModel = worldBrowserModule.SharedWorldModel(pWorld);
+
+    if (this->_pWorldModel) {
+      this->_levelsCollectionSubscription =
+          this->_pWorldModel->CollectionChanged.AddUObject(
+              this,
+              &ACesiumGeoreference::_updateCesiumSubLevels);
+    }
+  }
+}
+
+void ACesiumGeoreference::_removeSubscriptions() {
+  this->_onBrowseWorld(nullptr);
+
+  if (this->_onEnginePreExitSubscription.IsValid()) {
+    FCoreDelegates::OnEnginePreExit.Remove(this->_onEnginePreExitSubscription);
+    this->_onEnginePreExitSubscription.Reset();
+  }
+
+  if (this->_onBrowseWorldSubscription.IsValid()) {
+    FWorldBrowserModule* pWorldBrowserModule =
+        static_cast<FWorldBrowserModule*>(
+            FModuleManager::Get().GetModule("WorldBrowser"));
+    if (pWorldBrowserModule) {
+      pWorldBrowserModule->OnBrowseWorld.Remove(
+          this->_onBrowseWorldSubscription);
+      this->_onBrowseWorldSubscription.Reset();
+    }
+  }
+}
+
+bool ACesiumGeoreference::_switchToLevelInEditor(FCesiumSubLevel* pLevel) {
+  UWorld* pWorld = this->GetWorld();
+
+  FWorldBrowserModule& worldBrowserModule =
+      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
+  TSharedPtr<FLevelCollectionModel> pWorldModel =
+      worldBrowserModule.SharedWorldModel(pWorld);
+
+  if (!pWorldModel) {
+    return false;
+  }
+
+  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
+  FLevelModelList levelsToHide = allLevels;
+
+  // Don't hide persistent levels.
+  levelsToHide.RemoveAll([](const TSharedPtr<FLevelModel>& pLevel) {
+    return pLevel->IsPersistent();
+  });
+
+  bool result = false;
+
+  if (pLevel) {
+    // Find the one level we want active.
+    const TSharedPtr<FLevelModel>* ppLevel = allLevels.FindByPredicate(
+        [pLevel, pWorld](const TSharedPtr<FLevelModel>& pLevelModel) {
+          return longPackageNameToCesiumName(
+                     pWorld,
+                     pLevelModel->GetLongPackageName()) == pLevel->LevelName;
+        });
+
+    if (ppLevel && *ppLevel) {
+      levelsToHide.Remove(*ppLevel);
+
+      (*ppLevel)->MakeLevelCurrent();
+
+      this->SetGeoreferenceOrigin(glm::dvec3(
+          pLevel->LevelLongitude,
+          pLevel->LevelLatitude,
+          pLevel->LevelHeight));
+
+      result = true;
+    }
+  }
+
+  // Unload all other levels.
+  pWorldModel->HideLevels(levelsToHide);
+
+  return result;
+}
+#endif
+
+bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
+  UWorld* pWorld = this->GetWorld();
+  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
+
+  ULevelStreaming* pStreamedLevel = nullptr;
+
+  if (pLevel) {
+    this->SetGeoreferenceOrigin(glm::dvec3(
+        pLevel->LevelLongitude,
+        pLevel->LevelLatitude,
+        pLevel->LevelHeight));
+
+    // Find the streaming level with this name.
+    pStreamedLevel = this->_findLevelStreamingByName(pLevel->LevelName);
+    if (!pStreamedLevel) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("No streaming level found with name %s"),
+          *pLevel->LevelName);
+    }
+  }
+
+  // Deactivate all other streaming levels
+  for (ULevelStreaming* pOtherLevel : levels) {
+    if (pOtherLevel == pStreamedLevel) {
+      continue;
+    }
+
+    if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
+      pOtherLevel->SetShouldBeLoaded(false);
+      pOtherLevel->SetShouldBeVisible(false);
+    }
+  }
+
+  // Activate the new streaming level (if any)
+  if (pStreamedLevel) {
+    if (!pStreamedLevel->ShouldBeVisible() ||
+        !pStreamedLevel->ShouldBeLoaded()) {
+      pStreamedLevel->SetShouldBeLoaded(true);
+      pStreamedLevel->SetShouldBeVisible(true);
+    }
+  }
+
+  return pStreamedLevel != nullptr;
+}
