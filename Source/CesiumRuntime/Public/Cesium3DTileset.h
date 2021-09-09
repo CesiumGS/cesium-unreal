@@ -511,6 +511,8 @@ public:
     return this->_pTileset;
   }
 
+  ACesiumGeoreference* GetResolvedGeoreference();
+
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -625,7 +627,20 @@ private:
   void OnFocusEditorViewportOnThis();
 #endif
 
+  void InvalidateResolvedGeoreference();
+
 private:
+  /**
+   * The resolved georeference used by this Tileset. This is not serialized
+   * because it may point to a Georeference in the PersistentLevel while this
+   * tileset is in a sublevel. If the Georeference property is specified,
+   * however then this property will have the same value.
+   *
+   * Use GetCurrentGeoreference rather than accessing this directly.
+   */
+  UPROPERTY(Transient)
+  ACesiumGeoreference* ResolvedGeoreference;
+
   Cesium3DTilesSelection::Tileset* _pTileset;
 
   // For debug output

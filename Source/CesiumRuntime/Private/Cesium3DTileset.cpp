@@ -77,7 +77,8 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
-      _tilesToNoLongerRenderNextFrame{} {
+      _tilesToNoLongerRenderNextFrame{},
+      ResolvedGeoreference(nullptr) {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -114,10 +115,6 @@ void ACesium3DTileset::PostInitProperties() {
       *this->GetName());
 
   Super::PostInitProperties();
-
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
 
   AddFocusViewportDelegate();
 }
@@ -202,17 +199,17 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  if (IsValid(this->Georeference)) {
+  if (IsValid(this->GetResolvedGeoreference())) {
     this->_beforeMovieKeepWorldOriginNearCamera =
-        this->Georeference->KeepWorldOriginNearCamera;
+        this->GetResolvedGeoreference()->KeepWorldOriginNearCamera;
   }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  if (IsValid(this->Georeference)) {
-    this->Georeference->KeepWorldOriginNearCamera = false;
+  if (IsValid(this->GetResolvedGeoreference())) {
+    this->GetResolvedGeoreference()->KeepWorldOriginNearCamera = false;
   }
 }
 
@@ -221,8 +218,8 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  if (IsValid(this->Georeference)) {
-    this->Georeference->KeepWorldOriginNearCamera =
+  if (IsValid(this->GetResolvedGeoreference())) {
+    this->GetResolvedGeoreference()->KeepWorldOriginNearCamera =
         this->_beforeMovieKeepWorldOriginNearCamera;
   }
 }
@@ -288,7 +285,8 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition = std::visit(
-      CalculateECEFCameraPosition{this->Georeference->GetGeoTransforms()},
+      CalculateECEFCameraPosition{
+          this->GetResolvedGeoreference()->GetGeoTransforms()},
       boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);
@@ -334,6 +332,13 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   }
 }
 #endif
+
+void ACesium3DTileset::InvalidateResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+  this->ResolvedGeoreference = nullptr;
+}
 
 const glm::dmat4&
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
@@ -653,21 +658,6 @@ void ACesium3DTileset::LoadTileset() {
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
-
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    if (!IsValid(this->Georeference)) {
-      UE_LOG(
-          LogCesium,
-          Verbose,
-          TEXT("Tileset %s does not have a valid Georeference"),
-          *this->GetName());
-    } else {
-      this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
-          pRoot,
-          &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-    }
-  }
 
   if (!this->CreditSystem) {
     this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
@@ -1075,6 +1065,28 @@ ACesium3DTileset::GetEditorCameras() const {
 }
 #endif
 
+ACesiumGeoreference* ACesium3DTileset::GetResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    return this->ResolvedGeoreference;
+  }
+
+  if (IsValid(this->Georeference)) {
+    this->ResolvedGeoreference = this->Georeference;
+  } else {
+    this->ResolvedGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+
+  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+  if (pRoot) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        pRoot,
+        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+  }
+
+  return this->ResolvedGeoreference;
+}
+
 bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
   return this->UpdateInEditor;
 }
@@ -1433,15 +1445,7 @@ void ACesium3DTileset::PostEditChangeProperty(
     this->DestroyTileset();
   } else if (
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
-    if (IsValid(this->Georeference)) {
-      UCesium3DTilesetRoot* pRoot =
-          Cast<UCesium3DTilesetRoot>(this->RootComponent);
-      if (pRoot) {
-        this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
-            pRoot,
-            &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-      }
-    }
+    this->InvalidateResolvedGeoreference();
   }
 }
 
@@ -1463,6 +1467,7 @@ void ACesium3DTileset::PostEditImport() {
 #endif
 
 void ACesium3DTileset::BeginDestroy() {
+  this->InvalidateResolvedGeoreference();
   this->DestroyTileset();
 
   AActor::BeginDestroy();

@@ -77,18 +77,15 @@ void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
   const FVector& newLocation = this->GetRelativeLocation();
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
   this->_absoluteLocation = VecMath::add3D(originLocation, newLocation);
+  this->_worldOriginLocation = VecMath::createVector3D(originLocation);
 }
 
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
-  if (!IsValid(pTileset->Georeference)) {
-    this->_tilesetToUnrealRelativeWorld = glm::dmat4(1.0);
-    this->_isDirty = true;
-    return;
-  }
 
   const glm::dmat4& ellipsoidCenteredToUnrealWorld =
-      pTileset->Georeference->GetGeoTransforms()
+      pTileset->GetResolvedGeoreference()
+          ->GetGeoTransforms()
           .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
 
   glm::dvec3 relativeLocation =

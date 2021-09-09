@@ -345,12 +345,12 @@ bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
   // In the Editor, use the Editor API to make the selected level the current
   // one. When running in the Editor, GetStreamingLevels only includes levels
   // that are already loaded.
-  if (GEditor) {
+  if (GEditor && this->GetWorld() && !this->GetWorld()->IsGameWorld()) {
     return this->_switchToLevelInEditor(pCurrentLevel);
   }
 #endif
 
-  return this->_switchToLevelInEditor(pCurrentLevel);
+  return this->_switchToLevelInGame(pCurrentLevel);
 }
 
 FVector
@@ -416,6 +416,10 @@ void ACesiumGeoreference::BeginPlay() {
   }
 
   UpdateGeoreference();
+}
+
+void ACesiumGeoreference::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+  Super::EndPlay(EndPlayReason);
 }
 
 /** In case the CesiumGeoreference gets spawned at run time, instead of design
@@ -614,15 +618,13 @@ int32 clampedAdd(float f, int32 i) {
 } // namespace
 
 bool ACesiumGeoreference::_updateSublevelState() {
-  if (!IsValid(WorldOriginCamera)) {
+  if (this->CesiumSubLevels.Num() == 0) {
+    // If we don't have any known sublevels, bail quickly to save ourselves a
+    // little work.
     return false;
   }
 
-  if (this->CesiumSubLevels.Num() == 0) {
-    // If we don't have any known sublevels, don't do any sublevel things.
-    // This is important in the unfortunate case where a sublevel has a
-    // CesiumGeoreference of its own. The sublevel Georeference would end up
-    // deactivating the sublevel.
+  if (!IsValid(WorldOriginCamera)) {
     return false;
   }
 
@@ -720,6 +722,11 @@ void ACesiumGeoreference::_updateGeoTransforms() {
 
 void ACesiumGeoreference::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
+
+  // A Georeference inside a sublevel should not do anything.
+  if (!this->GetLevel()->IsPersistentLevel()) {
+    return;
+  }
 
 #if WITH_EDITOR
   _showSubLevelLoadRadii();
@@ -1159,6 +1166,9 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
       FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
   TSharedPtr<FLevelCollectionModel> pWorldModel =
       worldBrowserModule.SharedWorldModel(pWorld);
+  if (!pWorldModel) {
+    return;
+  }
 
   // Build a list of levels to hide, starting with _all_ the levels.
   const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
@@ -1229,11 +1239,14 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
     }
   }
 
-  // Deactivate all other streaming levels
-  for (ULevelStreaming* pOtherLevel : levels) {
-    if (pOtherLevel == pStreamedLevel) {
+  // Deactivate all other streaming levels controlled by Cesium
+  for (const FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
+    if (&subLevel == pLevel) {
       continue;
     }
+
+    ULevelStreaming* pOtherLevel =
+        this->_findLevelStreamingByName(subLevel.LevelName);
 
     if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
       pOtherLevel->SetShouldBeLoaded(false);
