@@ -468,28 +468,32 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
 namespace {
 
 /**
- * @brief Constrains the given string to the given length.
+ * @brief Constrain the length of the given string.
  *
- * If the given string is longer than the maximum length,
- * then a log message will be printed and a suffix of the
- * string with the maximum length will be returned.
- * Otherwise, the string is returned as it is.
+ * If the string is shorter than the maximum length, it is returned.
+ * If it is not longer than 3 characters, the first maxLength
+ * characters will be returned.
+ * Otherwise, the result will be of the form `prefix + "..." + suffix`,
+ * with the prefix and suffix chosen so that the length of the result
+ * is maxLength
  *
- * @param s The string
- * @param maxLength The maximum length
+ * @param s The input string
+ * @param maxLength The maximum length.
  * @return The constrained string
  */
-std::string
-constrainToLengthSuffix(const std::string& s, const size_t maxLength) {
-  if (s.length() > maxLength) {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Truncating string to suffix of length %d"),
-        maxLength);
-    return s.substr(s.length() - maxLength, maxLength);
+std::string constrainLength(const std::string& s, const size_t maxLength) {
+  if (s.length() <= maxLength) {
+    return s;
   }
-  return s;
+  if (maxLength <= 3) {
+    return s.substr(0, maxLength);
+  }
+  const std::string ellipsis("...");
+  const size_t prefixLength = ((maxLength - ellipsis.length()) + 1) / 2;
+  const size_t suffixLength = (maxLength - ellipsis.length()) / 2;
+  const std::string prefix = s.substr(0, prefixLength);
+  const std::string suffix = s.substr(s.length() - suffixLength, suffixLength);
+  return prefix + ellipsis + suffix;
 }
 
 /**
@@ -497,8 +501,8 @@ constrainToLengthSuffix(const std::string& s, const size_t maxLength) {
  *
  * This will combine the prefix and the suffix and create an FName.
  * If the string would be longer than the given length, then
- * the beginning of the prefix will be removed, to constrain the
- * result to a length of maxLength.
+ * the prefix will be shortened (in an unspecified way), to
+ * constrain the result to a length of maxLength.
  *
  * The default maximum length is 256, because Unreal may in turn
  * add a prefix like the `/Internal/Path/Name` to this name.
@@ -513,7 +517,7 @@ FName createSafeName(
     const std::string& suffix,
     const size_t maxLength = 256) {
   std::string constrainedPrefix =
-      constrainToLengthSuffix(prefix, maxLength - suffix.length());
+      constrainLength(prefix, maxLength - suffix.length());
   std::string combined = constrainedPrefix + suffix;
   return FName(combined.c_str());
 }
@@ -552,7 +556,7 @@ static void loadPrimitive(
   auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
   if (urlIt != model.extras.end()) {
     name = urlIt->second.getStringOrDefault("glTF");
-    name = constrainToLengthSuffix(name, 256);
+    name = constrainLength(name, 256);
   }
 
   auto meshIt = std::find_if(
