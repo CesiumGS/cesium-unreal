@@ -132,11 +132,17 @@ public:
       meta = (ClampMin = 0))
   int32 MaximumSimultaneousTileLoads = 20;
 
-  /**
-   * The maximum number of cached bytes
+/**
+   * @brief The maximum number of bytes that may be cached.
+   *
+   * Note that this value, even if 0, will never
+   * cause tiles that are needed for rendering to be unloaded. However, if the
+   * total number of loaded bytes is greater than this value, tiles will be
+   * unloaded until the total is under this number or until only required tiles
+   * remain, whichever comes first.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
-  int32 maxiumCachedBytes = 256;
+  int64 MaximumCachedBytes = 256 * 1024 * 1024;
 
   /**
    * The number of loading descendents a tile should allow before deciding to
