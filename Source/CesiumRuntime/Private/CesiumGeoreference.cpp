@@ -200,6 +200,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
+
+  this->_enableAndGeoreferenceCurrentSubLevel();
 #endif
 }
 
@@ -270,15 +272,6 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   // Find new sub-levels that we don't know about on the Cesium side.
   for (int32 i = 0; i < allLevels.Num(); ++i) {
     const FWorldCompositionTile& level = allLevels[i];
-    if (level.Info.Layer.DistanceStreamingEnabled) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "Ignoring sub-level %s because it is in a layer with distance streaming enabled."),
-          *level.PackageName.ToString());
-      continue;
-    }
 
     FString levelName = longPackageNameToCesiumName(pWorld, level.PackageName);
 
@@ -288,7 +281,12 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
           return levelName.Equals(subLevel.LevelName);
         });
 
-    if (!pFound) {
+    if (pFound) {
+      pFound->CanBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
+      if (!pFound->CanBeEnabled) {
+        pFound->Enabled = false;
+      }
+    } else {
       newSubLevels.Add(i);
     }
   }
@@ -297,13 +295,13 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
     FCesiumSubLevel& cesiumLevel = this->CesiumSubLevels[i];
 
-    const FWorldCompositionTile* ppLevel = allLevels.FindByPredicate(
+    const FWorldCompositionTile* pLevel = allLevels.FindByPredicate(
         [&cesiumLevel, pWorld](const FWorldCompositionTile& level) {
           return longPackageNameToCesiumName(pWorld, level.PackageName) ==
                  cesiumLevel.LevelName;
         });
 
-    if (!ppLevel) {
+    if (!pLevel) {
       missingSubLevels.Add(i);
     }
   }
@@ -323,12 +321,15 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     // Add new Cesium records for the new sub-levels
     for (int32 i = 0; i < newSubLevels.Num(); ++i) {
       const FWorldCompositionTile& level = allLevels[newSubLevels[i]];
+      bool canBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
       this->CesiumSubLevels.Add(FCesiumSubLevel{
           longPackageNameToCesiumName(pWorld, level.PackageName),
+          canBeEnabled,
           OriginLongitude,
           OriginLatitude,
           OriginHeight,
-          1000.0});
+          1000.0,
+          canBeEnabled});
     }
   }
 }
@@ -383,6 +384,8 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();
+
+  PrimaryActorTick.TickGroup = TG_PostUpdateWork;
 
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
@@ -507,6 +510,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)) {
+    this->_enableAndGeoreferenceCurrentSubLevel();
     this->UpdateGeoreference();
     return;
   } else if (
@@ -645,6 +649,9 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
     const FCesiumSubLevel& level = this->CesiumSubLevels[i];
+    if (!level.Enabled) {
+      continue;
+    }
 
     glm::dvec3 levelECEF =
         _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
@@ -729,6 +736,14 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   }
 
 #if WITH_EDITOR
+  // There doesn't appear to be a good way to be notified about the wide variety
+  // of level manipulations we care about, so in the Editor we'll poll.
+  if (GEditor && IsValid(this->GetWorld()) &&
+      IsValid(this->GetWorld()->WorldComposition) &&
+      !this->GetWorld()->IsGameWorld()) {
+    this->_updateCesiumSubLevels();
+  }
+
   _showSubLevelLoadRadii();
   _handleViewportOriginEditing();
 #endif
@@ -1016,10 +1031,12 @@ FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
     // No Cesium sub-level exists, so create it now.
     this->CesiumSubLevels.Add(FCesiumSubLevel{
         cesiumName,
+        true,
         this->OriginLongitude,
         this->OriginLatitude,
         this->OriginHeight,
-        1000.0});
+        1000.0,
+        true});
     pCesiumLevel = &this->CesiumSubLevels.Last();
   }
 
@@ -1156,6 +1173,9 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
   // Find the corresponding FCesiumSubLevel, creating it if necessary.
   FCesiumSubLevel* pCesiumLevel =
       this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
+  if (!pCesiumLevel->Enabled) {
+    return;
+  }
 
   // Hide all other levels.
   // I initially thought we could call handy methods like SetShouldBeVisible
@@ -1214,6 +1234,28 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
       pCesiumLevel->LevelLatitude,
       pCesiumLevel->LevelHeight));
 }
+
+void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
+  // If a sub-level is active, enable it and also update the sub-level's
+  // location.
+  ULevel* pCurrent = this->GetWorld()->GetCurrentLevel();
+  if (!pCurrent || pCurrent->IsPersistentLevel()) {
+    return;
+  }
+
+  UPackage* pLevelPackage = pCurrent->GetOutermost();
+  FCesiumSubLevel* pLevel =
+      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), false);
+
+  if (pLevel) {
+    pLevel->LevelLongitude = this->OriginLongitude;
+    pLevel->LevelLatitude = this->OriginLatitude;
+    pLevel->LevelHeight = this->OriginHeight;
+  }
+
+  pLevel->Enabled = pLevel->CanBeEnabled;
+}
+
 #endif
 
 bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
@@ -1223,11 +1265,6 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
   ULevelStreaming* pStreamedLevel = nullptr;
 
   if (pLevel) {
-    this->SetGeoreferenceOrigin(glm::dvec3(
-        pLevel->LevelLongitude,
-        pLevel->LevelLatitude,
-        pLevel->LevelHeight));
-
     // Find the streaming level with this name.
     pStreamedLevel = this->_findLevelStreamingByName(pLevel->LevelName);
     if (!pStreamedLevel) {
@@ -1254,13 +1291,16 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
     }
   }
 
-  // Activate the new streaming level (if any)
-  if (pStreamedLevel) {
-    if (!pStreamedLevel->ShouldBeVisible() ||
-        !pStreamedLevel->ShouldBeLoaded()) {
-      pStreamedLevel->SetShouldBeLoaded(true);
-      pStreamedLevel->SetShouldBeVisible(true);
-    }
+  // Activate the new streaming level if it's not already active.
+  if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
+                         !pStreamedLevel->ShouldBeLoaded())) {
+    this->_setGeoreferenceOrigin(
+        pLevel->LevelLongitude,
+        pLevel->LevelLatitude,
+        pLevel->LevelHeight);
+
+    pStreamedLevel->SetShouldBeLoaded(true);
+    pStreamedLevel->SetShouldBeVisible(true);
   }
 
   return pStreamedLevel != nullptr;

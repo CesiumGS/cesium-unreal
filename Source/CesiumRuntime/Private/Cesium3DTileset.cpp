@@ -60,6 +60,7 @@
 ACesium3DTileset::ACesium3DTileset()
     : Georeference(nullptr),
       CreditSystem(nullptr),
+      ResolvedGeoreference(nullptr),
 
       _pTileset(nullptr),
 
@@ -77,8 +78,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
-      _tilesToNoLongerRenderNextFrame{},
-      ResolvedGeoreference(nullptr) {
+      _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;

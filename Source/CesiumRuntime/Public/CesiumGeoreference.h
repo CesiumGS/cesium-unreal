@@ -91,6 +91,11 @@ public:
    * The list of georeferenced sublevels. Each of these has a corresponding
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
+   *
+   * New levels added in the Editor should appear in this list automatically. If
+   * any are missing, check that "World Composition" is enabled in World
+   * Settings and that the level is in a Layer with Distance Based Streaming
+   * DISABLED.
    */
   UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
   TArray<FCesiumSubLevel> CesiumSubLevels;
@@ -550,12 +555,6 @@ private:
   /**
    * Will make sure that the `CesiumSubLevels` array contains all
    * of the current streaming levels of the world.
-   *
-   * NOTE: The array may afterwards still contain sublevels that
-   * have been unloaded and are no longer present in the world,
-   * but they are retained, because it's hard to distinguish
-   * between a level that was only UNLOADED, and a level that
-   * was actually DELETED.
    */
   void _updateCesiumSubLevels();
 #endif
@@ -634,6 +633,7 @@ private:
   void _removeSubscriptions();
   bool _switchToLevelInEditor(FCesiumSubLevel* pLevel);
   void _onNewCurrentLevel();
+  void _enableAndGeoreferenceCurrentSubLevel();
 #endif
 
   bool _switchToLevelInGame(FCesiumSubLevel* pLevel);

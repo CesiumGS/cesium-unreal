@@ -161,7 +161,10 @@ void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
   ADefaultPawn::SetActorLocation(FVector(
       static_cast<float>(ue.x),
       static_cast<float>(ue.y),
-      static_cast<float>(ue.z)));
+          static_cast<float>(ue.z)),
+      false,
+      nullptr,
+      ETeleportType::TeleportPhysics);
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
