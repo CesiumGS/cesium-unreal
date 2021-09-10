@@ -6,6 +6,9 @@
 
 - Fixed strange behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
 - Fixed crash when `GlobeAwareDefaultPawn::FlyToLocation` was called when the pawn was not possessed.
+- Fixed a bug that caused clipping to work incorrectly for tiles that are partially water.
+- Limited the length of names assigned to the ActorComponents created for 3D Tiles, to avoid a crash caused by an FName being too long even with extremely long tileset URLs.
+- Fixed a bug that caused 3D Tiles tile selection to take into account Editor viewports even when in Play-in-Editor mode.
 
 ### v1.6.0 - 2021-09-01
 

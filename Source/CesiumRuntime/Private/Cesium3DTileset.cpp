@@ -1036,6 +1036,17 @@ ACesium3DTileset::GetEditorCameras() const {
     return {};
   }
 
+  UWorld* pWorld = this->GetWorld();
+  if (!IsValid(pWorld)) {
+    return {};
+  }
+
+  // Do not include editor cameras when running in a game world (which includes
+  // Play-in-Editor)
+  if (pWorld->IsGameWorld()) {
+    return {};
+  }
+
   const TArray<FEditorViewportClient*>& viewportClients =
       GEditor->GetAllViewportClients();
 
