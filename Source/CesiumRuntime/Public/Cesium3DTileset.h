@@ -132,7 +132,7 @@ public:
       meta = (ClampMin = 0))
   int32 MaximumSimultaneousTileLoads = 20;
 
-/**
+  /**
    * @brief The maximum number of bytes that may be cached.
    *
    * Note that this value, even if 0, will never
