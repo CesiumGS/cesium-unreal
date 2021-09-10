@@ -385,7 +385,7 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();
 
-  PrimaryActorTick.TickGroup = TG_PostUpdateWork;
+  PrimaryActorTick.TickGroup = TG_PrePhysics;
 
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
@@ -728,6 +728,8 @@ void ACesiumGeoreference::_updateGeoTransforms() {
 }
 
 void ACesiumGeoreference::Tick(float DeltaTime) {
+  uint64 frameCounter = GFrameCounter;
+
   Super::Tick(DeltaTime);
 
   // A Georeference inside a sublevel should not do anything.
@@ -1173,9 +1175,6 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
   // Find the corresponding FCesiumSubLevel, creating it if necessary.
   FCesiumSubLevel* pCesiumLevel =
       this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
-  if (!pCesiumLevel->Enabled) {
-    return;
-  }
 
   // Hide all other levels.
   // I initially thought we could call handy methods like SetShouldBeVisible
@@ -1228,11 +1227,13 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
 
   pWorldModel->HideLevels(levelsToHide);
 
-  // Set the georeference origin for the new level
-  this->SetGeoreferenceOrigin(glm::dvec3(
-      pCesiumLevel->LevelLongitude,
-      pCesiumLevel->LevelLatitude,
-      pCesiumLevel->LevelHeight));
+  // Set the georeference origin for the new level if it's enabled.
+  if (pCesiumLevel->Enabled) {
+    this->_setGeoreferenceOrigin(
+        pCesiumLevel->LevelLongitude,
+        pCesiumLevel->LevelLatitude,
+        pCesiumLevel->LevelHeight);
+  }
 }
 
 void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
@@ -1294,6 +1295,9 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
   // Activate the new streaming level if it's not already active.
   if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
                          !pStreamedLevel->ShouldBeLoaded())) {
+    uint64 frameCounter = GFrameCounter;
+    UE_LOG(LogCesium, VeryVerbose, TEXT("Frame Counter %d"), frameCounter);
+
     this->_setGeoreferenceOrigin(
         pLevel->LevelLongitude,
         pLevel->LevelLatitude,

@@ -570,6 +570,7 @@ private:
   std::vector<UnrealCameraParameters> GetPlayerCameras() const;
   std::vector<UnrealCameraParameters> GetSceneCaptures() const;
 
+public:
   /**
    * Update the transforms of the glTF components based on the
    * the transform of the root component.
@@ -579,6 +580,7 @@ private:
    */
   void UpdateTransformFromCesium();
 
+private:
   /**
    * Writes the values of all properties of this actor into the
    * TilesetOptions, to take them into account during the next

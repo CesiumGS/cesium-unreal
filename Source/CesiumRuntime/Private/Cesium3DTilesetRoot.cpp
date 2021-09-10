@@ -99,5 +99,7 @@ void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   this->_tilesetToUnrealRelativeWorld =
       ueAbsoluteToUeLocal * ellipsoidCenteredToUnrealWorld;
 
-  this->_isDirty = true;
+  //this->_isDirty = true;
+  pTileset->UpdateTransformFromCesium();
+  this->_isDirty = false;
 }
