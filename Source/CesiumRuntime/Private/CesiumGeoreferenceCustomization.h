@@ -5,6 +5,7 @@
 #include "IDetailCustomization.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/Input/SSpinBox.h"
+#include "Widgets/Input/STextComboBox.h"
 
 class FCesiumGeoreferenceCustomization: public IDetailCustomization
 {
@@ -22,6 +23,12 @@ private:
   TSharedPtr<SSpinBox<int32>> OriginLongitudeMinutesSpinBox;
   TSharedPtr<SSpinBox<double>> OriginLongitudeSecondsSpinBox;
 
+  TSharedPtr<FString> NegativeIndicator;
+  TSharedPtr<FString> PositiveIndicator;
+
+  TArray<TSharedPtr<FString>> SignComboBoxItems;
+  TSharedPtr<STextComboBox> SignComboBox;
+
   double GetOriginLongitudeFromProperty() const;
   void SetOriginLongitudeOnProperty( double NewValue);
 
@@ -34,4 +41,5 @@ private:
   double GetOriginLongitudeSeconds() const;
   void SetOriginLongitudeSeconds( double NewValue);
 
+  void SignChanged(TSharedPtr<FString> StringItem, ESelectInfo::Type SelectInfo);
 };
