@@ -2,12 +2,12 @@
 
 #include "CesiumRuntime.h"
 #include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
+#include "CesiumGeoreference.h"
+#include "CesiumGeoreferenceCustomization.h"
 #include "CesiumUtility/Tracing.h"
+#include "PropertyEditorModule.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
-#include "PropertyEditorModule.h"
-#include "CesiumGeoreferenceCustomization.h"
-#include "CesiumGeoreference.h"
 #include <spdlog/spdlog.h>
 
 #if CESIUM_TRACING_ENABLED
@@ -28,14 +28,16 @@ void FCesiumRuntimeModule::StartupModule() {
 
   // Register detail customization for CesiumGeoreference
   {
-      auto& PropertyModule = FModuleManager::LoadModuleChecked< FPropertyEditorModule >("PropertyEditor");
+    auto& PropertyModule =
+        FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+            "PropertyEditor");
 
-      PropertyModule.RegisterCustomClassLayout(
-          ACesiumGeoreference::StaticClass()->GetFName(),
-          FOnGetDetailCustomizationInstance::CreateStatic(&FCesiumGeoreferenceCustomization::MakeInstance)
-          );
+    PropertyModule.RegisterCustomClassLayout(
+        ACesiumGeoreference::StaticClass()->GetFName(),
+        FOnGetDetailCustomizationInstance::CreateStatic(
+            &FCesiumGeoreferenceCustomization::MakeInstance));
 
-      PropertyModule.NotifyCustomizationModuleChanged();
+    PropertyModule.NotifyCustomizationModuleChanged();
   }
 
   CESIUM_TRACE_INIT(
@@ -50,11 +52,13 @@ void FCesiumRuntimeModule::StartupModule() {
 void FCesiumRuntimeModule::ShutdownModule() {
 
   // Unregister the detail customization for CesiumGeoreference
-if(FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
-{
-    auto& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-    PropertyModule.UnregisterCustomClassLayout(ACesiumGeoreference::StaticClass()->GetFName());
-}
+  if (FModuleManager::Get().IsModuleLoaded("PropertyEditor")) {
+    auto& PropertyModule =
+        FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+            "PropertyEditor");
+    PropertyModule.UnregisterCustomClassLayout(
+        ACesiumGeoreference::StaticClass()->GetFName());
+  }
 
   CESIUM_TRACE_SHUTDOWN();
 }
