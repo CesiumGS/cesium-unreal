@@ -120,6 +120,16 @@ public class CesiumRuntime : ModuleRules
             {
                 "RHI",
                 "CoreUObject",
+
+                // TODO Heck, how to find out which of these are required?
+                "UMG",
+                "Slate",
+                "SlateCore",
+                "InputCore",
+                "EditorWidgets",
+                "PropertyEditor",
+                // TODO Heck, how to find out which of these are required?
+
                 "Engine",
                 "MeshDescription",
                 "StaticMeshDescription",

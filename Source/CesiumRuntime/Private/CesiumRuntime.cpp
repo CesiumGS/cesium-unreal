@@ -5,6 +5,8 @@
 #include "CesiumUtility/Tracing.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
+#include "PropertyEditorModule.h"
+#include "CesiumGeoreferenceCustomization.h"
 #include <spdlog/spdlog.h>
 
 #if CESIUM_TRACING_ENABLED
@@ -23,6 +25,18 @@ void FCesiumRuntimeModule::StartupModule() {
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
 
+  // Register detail customization for CesiumGeoreference
+  {
+      auto& PropertyModule = FModuleManager::LoadModuleChecked< FPropertyEditorModule >("PropertyEditor");
+
+      PropertyModule.RegisterCustomClassLayout(
+          "CesiumGeoreference",
+          FOnGetDetailCustomizationInstance::CreateStatic(&FCesiumGeoreferenceCustomization::MakeInstance)
+          );
+
+      PropertyModule.NotifyCustomizationModuleChanged();
+  }
+
   CESIUM_TRACE_INIT(
       "cesium-trace-" +
       std::to_string(std::chrono::time_point_cast<std::chrono::microseconds>(
@@ -32,7 +46,18 @@ void FCesiumRuntimeModule::StartupModule() {
       ".json");
 }
 
-void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
+void FCesiumRuntimeModule::ShutdownModule() {
+
+  // Unregister the detail customization for CesiumGeoreference
+if(FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+{
+    auto& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+    PropertyModule.UnregisterCustomClassLayout("CesiumGeoreference");
+}
+
+  CESIUM_TRACE_SHUTDOWN();
+}
 
 #undef LOCTEXT_NAMESPACE
 
