@@ -7,6 +7,7 @@
 #include <Modules/ModuleManager.h>
 #include "PropertyEditorModule.h"
 #include "CesiumGeoreferenceCustomization.h"
+#include "CesiumGeoreference.h"
 #include <spdlog/spdlog.h>
 
 #if CESIUM_TRACING_ENABLED
@@ -30,7 +31,7 @@ void FCesiumRuntimeModule::StartupModule() {
       auto& PropertyModule = FModuleManager::LoadModuleChecked< FPropertyEditorModule >("PropertyEditor");
 
       PropertyModule.RegisterCustomClassLayout(
-          "CesiumGeoreference",
+          ACesiumGeoreference::StaticClass()->GetFName(),
           FOnGetDetailCustomizationInstance::CreateStatic(&FCesiumGeoreferenceCustomization::MakeInstance)
           );
 
@@ -52,8 +53,7 @@ void FCesiumRuntimeModule::ShutdownModule() {
 if(FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 {
     auto& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-
-    PropertyModule.UnregisterCustomClassLayout("CesiumGeoreference");
+    PropertyModule.UnregisterCustomClassLayout(ACesiumGeoreference::StaticClass()->GetFName());
 }
 
   CESIUM_TRACE_SHUTDOWN();

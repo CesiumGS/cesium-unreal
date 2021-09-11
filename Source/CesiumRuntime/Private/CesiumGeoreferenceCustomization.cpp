@@ -54,68 +54,79 @@ TSharedRef< IDetailCustomization > FCesiumGeoreferenceCustomization::MakeInstanc
     return MakeShareable(new FCesiumGeoreferenceCustomization);
 }
 
+
 void FCesiumGeoreferenceCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
-  OriginLongitudeHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude));
-
+  // TODO Necessary?
+  /*
+  // skip customization if select more than one objects
+  TArray<TWeakObjectPtr<UObject>> Objects;
+  DetailBuilder.GetObjectsBeingCustomized(Objects);
+    if (Objects.Num() != 1)
+    {
+        return;
+    }
+    */
   IDetailCategoryBuilder& CesiumCategory = DetailBuilder.EditCategory("Cesium");
 
-	IDetailPropertyRow& OriginLongitudeRow = CesiumCategory.AddProperty(OriginLongitudeHandle);
 
-  OriginLongitudeSpinBox = SNew( SSpinBox<double> )
+  DecimalDegreesHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude));
+	IDetailPropertyRow& Row = CesiumCategory.AddProperty(DecimalDegreesHandle);
+
+  DecimalDegreesSpinBox = SNew( SSpinBox<double> )
               .MinSliderValue( -180 )
               .MaxSliderValue( 180 )
-              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetOriginLongitudeOnProperty )  
-              .Value(this, &FCesiumGeoreferenceCustomization::GetOriginLongitudeFromProperty);
+              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetDecimalDegreesOnProperty )  
+              .Value(this, &FCesiumGeoreferenceCustomization::GetDecimalDegreesFromProperty);
 
-  OriginLongitudeDegreesSpinBox = SNew( SSpinBox<int32> )
+  DegreesSpinBox = SNew( SSpinBox<int32> )
               .MinSliderValue( 0 )
               .MaxSliderValue( 179 )
-              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetOriginLongitudeDegrees )  
-              .Value(this, &FCesiumGeoreferenceCustomization::GetOriginLongitudeDegrees);
+              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetDegrees )  
+              .Value(this, &FCesiumGeoreferenceCustomization::GetDegrees);
 
-  OriginLongitudeMinutesSpinBox = SNew( SSpinBox<int32> )
+  MinutesSpinBox = SNew( SSpinBox<int32> )
               .MinSliderValue( 0 )
               .MaxSliderValue( 59 )
-              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetOriginLongitudeMinutes )  
-              .Value(this, &FCesiumGeoreferenceCustomization::GetOriginLongitudeMinutes);
+              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetMinutes )  
+              .Value(this, &FCesiumGeoreferenceCustomization::GetMinutes);
 
-  OriginLongitudeSecondsSpinBox = SNew( SSpinBox<double> )
+  SecondsSpinBox = SNew( SSpinBox<double> )
               .MinSliderValue( 0 )
               .MaxSliderValue( 59.999999 ) // TODO This is ugly :-(
-              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetOriginLongitudeSeconds )  
-              .Value(this, &FCesiumGeoreferenceCustomization::GetOriginLongitudeSeconds);
+              .OnValueChanged(this, &FCesiumGeoreferenceCustomization::SetSeconds )  
+              .Value(this, &FCesiumGeoreferenceCustomization::GetSeconds);
 
-  NegativeIndicator = MakeShareable(new FString(TEXT("S")));
-  PositiveIndicator = MakeShareable(new FString(TEXT("N")));
+  NegativeIndicator = MakeShareable(new FString(TEXT("W")));
+  PositiveIndicator = MakeShareable(new FString(TEXT("E")));
   SignComboBoxItems.Add(NegativeIndicator);
   SignComboBoxItems.Emplace(PositiveIndicator);
   SignComboBox = SNew(STextComboBox)
 			.OptionsSource(&SignComboBoxItems)
 			.OnSelectionChanged(this, &FCesiumGeoreferenceCustomization::SignChanged);
   SignComboBox->SetSelectedItem(
-    GetOriginLongitudeFromProperty() < 0 ? NegativeIndicator : PositiveIndicator);
+    GetDecimalDegreesFromProperty() < 0 ? NegativeIndicator : PositiveIndicator);
 
   const float hPad = 2.0;
   // clang-format off
-	OriginLongitudeRow.CustomWidget()
+	Row.CustomWidget()
 		.NameContent()
 		[
-			OriginLongitudeHandle->CreatePropertyNameWidget()
+			DecimalDegreesHandle->CreatePropertyNameWidget()
 		]
 		.ValueContent().HAlign(EHorizontalAlignment::HAlign_Fill)
 		[
         SNew( SVerticalBox )
         + SVerticalBox::Slot()
         [
-              OriginLongitudeSpinBox.ToSharedRef()
+              DecimalDegreesSpinBox.ToSharedRef()
         ]
         + SVerticalBox::Slot()
         [
             SNew( SHorizontalBox )
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
-                OriginLongitudeDegreesSpinBox.ToSharedRef()
+                DegreesSpinBox.ToSharedRef()
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
@@ -124,7 +135,7 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(IDetailLayoutBuilder& De
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
-                OriginLongitudeMinutesSpinBox.ToSharedRef()
+                MinutesSpinBox.ToSharedRef()
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
@@ -133,7 +144,7 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(IDetailLayoutBuilder& De
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
-                OriginLongitudeSecondsSpinBox.ToSharedRef()
+                SecondsSpinBox.ToSharedRef()
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
@@ -150,72 +161,72 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(IDetailLayoutBuilder& De
 }
 
 
-  double FCesiumGeoreferenceCustomization::GetOriginLongitudeFromProperty() const
+  double FCesiumGeoreferenceCustomization::GetDecimalDegreesFromProperty() const
   {
-    UE_LOG(LogTemp, Warning, TEXT("GetOriginLongitudeFromProperty"));
+    UE_LOG(LogTemp, Warning, TEXT("GetDecimalDegreesFromProperty"));
     // TODO: HANDLE FAILURE CASES
     double Value;
-    FPropertyAccess::Result AccessResult = OriginLongitudeHandle->GetValue( Value );
+    FPropertyAccess::Result AccessResult = DecimalDegreesHandle->GetValue( Value );
     if (AccessResult == FPropertyAccess::Success) {
       return Value;
     }
-    UE_LOG(LogTemp, Warning, TEXT("GetOriginLongitudeFromProperty FAILED"));
+    UE_LOG(LogTemp, Warning, TEXT("GetDecimalDegreesFromProperty FAILED"));
     return Value;
   }
 
-  void FCesiumGeoreferenceCustomization::SetOriginLongitudeOnProperty( double NewValue)
+  void FCesiumGeoreferenceCustomization::SetDecimalDegreesOnProperty( double NewValue)
   {
-    UE_LOG(LogTemp, Warning, TEXT("SetOriginLongitudeOnProperty"));
-    OriginLongitudeHandle->SetValue( NewValue );
+    UE_LOG(LogTemp, Warning, TEXT("SetDecimalDegreesOnProperty"));
+    DecimalDegreesHandle->SetValue( NewValue );
 
     SignComboBox->SetSelectedItem(
       NewValue < 0 ? NegativeIndicator : PositiveIndicator);
   }
 
 
-  int32 FCesiumGeoreferenceCustomization::GetOriginLongitudeDegrees() const {
-    UE_LOG(LogTemp, Warning, TEXT("GetOriginLongitudeDegrees"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+  int32 FCesiumGeoreferenceCustomization::GetDegrees() const {
+    UE_LOG(LogTemp, Warning, TEXT("GetDegrees"));
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     return static_cast<int32>(dms.d);
   }
-  void FCesiumGeoreferenceCustomization::SetOriginLongitudeDegrees( int32 NewValue) {
-    UE_LOG(LogTemp, Warning, TEXT("SetOriginLongitudeDegrees"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+  void FCesiumGeoreferenceCustomization::SetDegrees( int32 NewValue) {
+    UE_LOG(LogTemp, Warning, TEXT("SetDegrees"));
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     dms.d = NewValue;
     double newDecimalDegreesValue = dmsToDecimalDegrees(dms);
-    SetOriginLongitudeOnProperty(newDecimalDegreesValue);
+    SetDecimalDegreesOnProperty(newDecimalDegreesValue);
   }
 
-  int32 FCesiumGeoreferenceCustomization::GetOriginLongitudeMinutes() const {
-    UE_LOG(LogTemp, Warning, TEXT("GetOriginLongitudeMinutes"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+  int32 FCesiumGeoreferenceCustomization::GetMinutes() const {
+    UE_LOG(LogTemp, Warning, TEXT("GetMinutes"));
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     return static_cast<int32>(dms.m);
   }
-  void FCesiumGeoreferenceCustomization::SetOriginLongitudeMinutes( int32 NewValue) {
-    UE_LOG(LogTemp, Warning, TEXT("SetOriginLongitudeMinutes"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+  void FCesiumGeoreferenceCustomization::SetMinutes( int32 NewValue) {
+    UE_LOG(LogTemp, Warning, TEXT("SetMinutes"));
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     dms.m = NewValue;
     double newDecimalDegreesValue = dmsToDecimalDegrees(dms);
-    SetOriginLongitudeOnProperty(newDecimalDegreesValue);
+    SetDecimalDegreesOnProperty(newDecimalDegreesValue);
   }
 
-  double FCesiumGeoreferenceCustomization::GetOriginLongitudeSeconds() const {
-    UE_LOG(LogTemp, Warning, TEXT("GetOriginLongitudeSeconds"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+  double FCesiumGeoreferenceCustomization::GetSeconds() const {
+    UE_LOG(LogTemp, Warning, TEXT("GetSeconds"));
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     return dms.s;
   }
-  void FCesiumGeoreferenceCustomization::SetOriginLongitudeSeconds( double NewValue) {
-    UE_LOG(LogTemp, Warning, TEXT("SetOriginLongitudeSeconds"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+  void FCesiumGeoreferenceCustomization::SetSeconds( double NewValue) {
+    UE_LOG(LogTemp, Warning, TEXT("SetSeconds"));
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     dms.s = NewValue;
     double newDecimalDegreesValue = dmsToDecimalDegrees(dms);
-    SetOriginLongitudeOnProperty(newDecimalDegreesValue);
+    SetDecimalDegreesOnProperty(newDecimalDegreesValue);
   }
 
   void FCesiumGeoreferenceCustomization::SignChanged(TSharedPtr<FString> StringItem, ESelectInfo::Type SelectInfo) {
@@ -226,11 +237,11 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(IDetailLayoutBuilder& De
       negative = (StringItem == NegativeIndicator);
     }
     UE_LOG(LogTemp, Warning, TEXT("SignChanged"));
-    double value = GetOriginLongitudeFromProperty();
-    DMS dms = decimalDegreesToDms(value);
+    double decimalDegrees = GetDecimalDegreesFromProperty();
+    DMS dms = decimalDegreesToDms(decimalDegrees);
     dms.negative = negative;
     double newDecimalDegreesValue = dmsToDecimalDegrees(dms);
-    SetOriginLongitudeOnProperty(newDecimalDegreesValue);
+    SetDecimalDegreesOnProperty(newDecimalDegreesValue);
   }
 
 

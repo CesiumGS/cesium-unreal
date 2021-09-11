@@ -16,12 +16,12 @@ public:
 
 
 private:
-  TSharedPtr< class IPropertyHandle > OriginLongitudeHandle;
+  TSharedPtr< class IPropertyHandle > DecimalDegreesHandle;
 
-  TSharedPtr<SSpinBox<double>> OriginLongitudeSpinBox;
-  TSharedPtr<SSpinBox<int32>> OriginLongitudeDegreesSpinBox;
-  TSharedPtr<SSpinBox<int32>> OriginLongitudeMinutesSpinBox;
-  TSharedPtr<SSpinBox<double>> OriginLongitudeSecondsSpinBox;
+  TSharedPtr<SSpinBox<double>> DecimalDegreesSpinBox;
+  TSharedPtr<SSpinBox<int32>> DegreesSpinBox;
+  TSharedPtr<SSpinBox<int32>> MinutesSpinBox;
+  TSharedPtr<SSpinBox<double>> SecondsSpinBox;
 
   TSharedPtr<FString> NegativeIndicator;
   TSharedPtr<FString> PositiveIndicator;
@@ -29,17 +29,17 @@ private:
   TArray<TSharedPtr<FString>> SignComboBoxItems;
   TSharedPtr<STextComboBox> SignComboBox;
 
-  double GetOriginLongitudeFromProperty() const;
-  void SetOriginLongitudeOnProperty( double NewValue);
+  double GetDecimalDegreesFromProperty() const;
+  void SetDecimalDegreesOnProperty( double NewValue);
 
-  int32 GetOriginLongitudeDegrees() const;
-  void SetOriginLongitudeDegrees( int32 NewValue);
+  int32 GetDegrees() const;
+  void SetDegrees( int32 NewValue);
 
-  int32 GetOriginLongitudeMinutes() const;
-  void SetOriginLongitudeMinutes( int32 NewValue);
+  int32 GetMinutes() const;
+  void SetMinutes( int32 NewValue);
 
-  double GetOriginLongitudeSeconds() const;
-  void SetOriginLongitudeSeconds( double NewValue);
+  double GetSeconds() const;
+  void SetSeconds( double NewValue);
 
   void SignChanged(TSharedPtr<FString> StringItem, ESelectInfo::Type SelectInfo);
 };
