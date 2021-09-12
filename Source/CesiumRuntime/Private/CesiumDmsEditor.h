@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if WITH_EDITOR
+
 #include "IDetailCustomization.h"
 #include "IDetailPropertyRow.h"
 #include "Types/SlateEnums.h"
@@ -47,3 +49,5 @@ private:
   void
   SignChanged(TSharedPtr<FString> StringItem, ESelectInfo::Type SelectInfo);
 };
+
+#endif // WITH_EDITOR

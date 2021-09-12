@@ -2,6 +2,8 @@
 
 #pragma once
 
+#if WITH_EDITOR
+
 #include "CesiumDmsEditor.h"
 #include "IDetailCustomization.h"
 
@@ -15,3 +17,5 @@ private:
   TSharedPtr<CesiumDmsEditor> LongitudeEditor;
   TSharedPtr<CesiumDmsEditor> LatitudeEditor;
 };
+
+#endif // WITH_EDITOR

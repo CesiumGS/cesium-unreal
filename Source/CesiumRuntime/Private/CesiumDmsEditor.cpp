@@ -1,5 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
+#if WITH_EDITOR
+
 #include "CesiumDmsEditor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "PropertyEditing.h"
@@ -63,7 +65,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
 
   DegreesSpinBox = SNew(SSpinBox<int32>)
                        .MinSliderValue(0)
-                       .MaxSliderValue(179)
+                       .MaxSliderValue(IsLongitude ? 179 : 89)
                        .OnValueChanged(this, &CesiumDmsEditor::SetDegrees)
                        .Value(this, &CesiumDmsEditor::GetDegrees);
 
@@ -158,7 +160,7 @@ double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
 }
 
 void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetDecimalDegreesOnProperty"));
+  UE_LOG(LogTemp, Warning, TEXT("SetDecimalDegreesOnProperty %f"), NewValue);
   DecimalDegreesHandle->SetValue(NewValue);
 
   SignComboBox->SetSelectedItem(
@@ -172,7 +174,7 @@ int32 CesiumDmsEditor::GetDegrees() const {
   return static_cast<int32>(dms.d);
 }
 void CesiumDmsEditor::SetDegrees(int32 NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetDegrees"));
+  UE_LOG(LogTemp, Warning, TEXT("SetDegrees %d"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.d = NewValue;
@@ -187,7 +189,7 @@ int32 CesiumDmsEditor::GetMinutes() const {
   return static_cast<int32>(dms.m);
 }
 void CesiumDmsEditor::SetMinutes(int32 NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetMinutes"));
+  UE_LOG(LogTemp, Warning, TEXT("SetMinutes %d"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.m = NewValue;
@@ -202,7 +204,7 @@ double CesiumDmsEditor::GetSeconds() const {
   return dms.s;
 }
 void CesiumDmsEditor::SetSeconds(double NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetSeconds"));
+  UE_LOG(LogTemp, Warning, TEXT("SetSeconds %f"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.s = NewValue;
@@ -225,3 +227,5 @@ void CesiumDmsEditor::SignChanged(
   double newDecimalDegreesValue = dmsToDecimalDegrees(dms);
   SetDecimalDegreesOnProperty(newDecimalDegreesValue);
 }
+
+#endif // WITH_EDITOR

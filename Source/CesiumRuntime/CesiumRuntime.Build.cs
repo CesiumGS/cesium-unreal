@@ -120,16 +120,6 @@ public class CesiumRuntime : ModuleRules
             {
                 "RHI",
                 "CoreUObject",
-
-                // TODO Heck, how to find out which of these are required?
-                "UMG",
-                "Slate",
-                "SlateCore",
-                "InputCore",
-                "EditorWidgets",
-                "PropertyEditor",
-                // TODO Heck, how to find out which of these are required?
-
                 "Engine",
                 "MeshDescription",
                 "StaticMeshDescription",
@@ -139,6 +129,16 @@ public class CesiumRuntime : ModuleRules
                 "RenderCore"
             }
         );
+        if (Target.bBuildEditor)
+        {
+          PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "InputCore",
+                "PropertyEditor"
+            }
+          );
+        }
 
         // Use UE's MikkTSpace on non-Android
         if (Target.Platform != UnrealTargetPlatform.Android)

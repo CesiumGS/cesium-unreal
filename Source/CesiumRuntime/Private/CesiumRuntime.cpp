@@ -5,10 +5,13 @@
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumUtility/Tracing.h"
-#include "PropertyEditorModule.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
+
+#if WITH_EDITOR
+#include "PropertyEditorModule.h"
+#endif // WITH_EDITOR
 
 #if CESIUM_TRACING_ENABLED
 #include <chrono>
@@ -26,19 +29,19 @@ void FCesiumRuntimeModule::StartupModule() {
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
 
+#if WITH_EDITOR
   // Register detail customization for CesiumGeoreference
-  {
-    auto& PropertyModule =
-        FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
-            "PropertyEditor");
+  FPropertyEditorModule& PropertyEditorModule =
+      FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+          "PropertyEditor");
 
-    PropertyModule.RegisterCustomClassLayout(
-        ACesiumGeoreference::StaticClass()->GetFName(),
-        FOnGetDetailCustomizationInstance::CreateStatic(
-            &FCesiumGeoreferenceCustomization::MakeInstance));
+  PropertyEditorModule.RegisterCustomClassLayout(
+      ACesiumGeoreference::StaticClass()->GetFName(),
+      FOnGetDetailCustomizationInstance::CreateStatic(
+          &FCesiumGeoreferenceCustomization::MakeInstance));
 
-    PropertyModule.NotifyCustomizationModuleChanged();
-  }
+  PropertyEditorModule.NotifyCustomizationModuleChanged();
+#endif // WITH_EDITOR
 
   CESIUM_TRACE_INIT(
       "cesium-trace-" +
@@ -51,14 +54,16 @@ void FCesiumRuntimeModule::StartupModule() {
 
 void FCesiumRuntimeModule::ShutdownModule() {
 
+#if WITH_EDITOR
   // Unregister the detail customization for CesiumGeoreference
   if (FModuleManager::Get().IsModuleLoaded("PropertyEditor")) {
-    auto& PropertyModule =
+    FPropertyEditorModule& PropertyEditorModule =
         FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
             "PropertyEditor");
-    PropertyModule.UnregisterCustomClassLayout(
+    PropertyEditorModule.UnregisterCustomClassLayout(
         ACesiumGeoreference::StaticClass()->GetFName());
   }
+#endif // WITH_EDITOR
 
   CESIUM_TRACE_SHUTDOWN();
 }
