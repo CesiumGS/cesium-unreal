@@ -3,25 +3,65 @@
 #if WITH_EDITOR
 
 #include "CesiumDmsEditor.h"
+#include "CesiumRuntime.h"
+
 #include "PropertyCustomizationHelpers.h"
 #include "PropertyEditing.h"
+
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Input/STextComboBox.h"
 #include "Widgets/Text/STextBlock.h"
 
 #include <glm/glm.hpp>
 
+/**
+ * @brief A structure describing cartographic coordinates in
+ * the DMS (Degree-Minute-Second) representation.
+ */
 struct DMS {
-  double d;
-  double m;
+
+  /**
+   * @brief The degrees.
+   *
+   * This is usually a value in [0,90] (for latitude) or
+   * in [0,180] (for longitude), although explicit
+   * clamping is not guaranteed.
+   */
+  int32_t d;
+
+  /**
+   * @brief The minutes.
+   *
+   * This is a value in [0,60).
+   */
+  int32_t m;
+
+  /**
+   * @brief The seconds.
+   *
+   * This is a value in [0,60).
+   */
   double s;
+
+  /**
+   * @brief Whether the coordinate is negative.
+   *
+   * When the coordinate is negative, it represents a latitude south
+   * of the equator, or a longitude west of the prime meridian.
+   */
   bool negative;
 };
 
-// Roughly based on
-// https://en.wikiversity.org/wiki/Geographic_coordinate_conversion
-// Section "Conversion_from_Decimal_Degree_to_DMS"
+/**
+ * @brief Converts the given decimal degrees to a DMS representation.
+ *
+ * @param decimalDegrees The decimal degrees
+ * @return The DMS representation.
+ */
 DMS decimalDegreesToDms(double decimalDegrees) {
+  // Roughly based on
+  // https://en.wikiversity.org/wiki/Geographic_coordinate_conversion
+  // Section "Conversion_from_Decimal_Degree_to_DMS"
   bool negative = decimalDegrees < 0;
   double dd = negative ? -decimalDegrees : decimalDegrees;
   double d = glm::floor(dd);
@@ -37,11 +77,17 @@ DMS decimalDegreesToDms(double decimalDegrees) {
     d++;
     m = 0;
   }
-  return DMS{d, m, s, negative};
+  return DMS{static_cast<int32_t>(d), static_cast<int32_t>(m), s, negative};
 }
 
+/**
+ * @brief Converts the given DMS into decimal degrees.
+ *
+ * @param dms The DMS
+ * @return The decimal degrees
+ */
 double dmsToDecimalDegrees(const DMS& dms) {
-  double dd = dms.d + (dms.m / 60) + (dms.s / 3600);
+  double dd = dms.d + (dms.m / 60.0) + (dms.s / 3600.0);
   if (dms.negative) {
     return -dd;
   }
@@ -56,6 +102,9 @@ CesiumDmsEditor::CesiumDmsEditor(
 }
 
 void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
+
+  // The default editing component for the property:
+  // A SpinBox for the decimal degrees
   DecimalDegreesSpinBox =
       SNew(SSpinBox<double>)
           .MinSliderValue(IsLongitude ? -180 : -90)
@@ -63,6 +112,8 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
           .OnValueChanged(this, &CesiumDmsEditor::SetDecimalDegreesOnProperty)
           .Value(this, &CesiumDmsEditor::GetDecimalDegreesFromProperty);
 
+  // Editing components for the DMS representation:
+  // Spin boxes for degrees, minutes and seconds
   DegreesSpinBox = SNew(SSpinBox<int32>)
                        .MinSliderValue(0)
                        .MaxSliderValue(IsLongitude ? 179 : 89)
@@ -81,6 +132,8 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
                        .OnValueChanged(this, &CesiumDmsEditor::SetSeconds)
                        .Value(this, &CesiumDmsEditor::GetSeconds);
 
+  // The combo box for selecting "Eeast" or "West",
+  // or "North" or "South", respectively.
   if (IsLongitude) {
     PositiveIndicator = MakeShareable(new FString(TEXT("E")));
     NegativeIndicator = MakeShareable(new FString(TEXT("W")));
@@ -97,21 +150,21 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
       GetDecimalDegreesFromProperty() < 0 ? NegativeIndicator
                                           : PositiveIndicator);
 
-  const float hPad = 2.0;
+  const float hPad = 3.0;
+  const float vPad = 2.0;
   // clang-format off
-	Row.CustomWidget()
-		.NameContent()
+	Row.CustomWidget().NameContent()
 		[
 			DecimalDegreesHandle->CreatePropertyNameWidget()
 		]
 		.ValueContent().HAlign(EHorizontalAlignment::HAlign_Fill)
 		[
         SNew( SVerticalBox )
-        + SVerticalBox::Slot().Padding(0.0f, 2.0f)
+        + SVerticalBox::Slot().Padding(0.0f, vPad)
         [
               DecimalDegreesSpinBox.ToSharedRef()
         ]
-        + SVerticalBox::Slot().Padding(0.0f, 2.0f)
+        + SVerticalBox::Slot().Padding(0.0f, vPad)
         [
             SNew( SHorizontalBox )
             + SHorizontalBox::Slot().FillWidth(1.0)
@@ -138,7 +191,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             [
                 SNew(STextBlock).Text(FText::FromString(TEXT("\"")))
             ]
-            + SHorizontalBox::Slot().FillWidth(0.5)
+            + SHorizontalBox::Slot().AutoWidth()
             [
                 SignComboBox.ToSharedRef()
             ]
@@ -148,15 +201,15 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
 }
 
 double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
-  UE_LOG(LogTemp, Warning, TEXT("GetDecimalDegreesFromProperty"));
-  // TODO: HANDLE FAILURE CASES
-  double Value;
-  FPropertyAccess::Result AccessResult = DecimalDegreesHandle->GetValue(Value);
+  // UE_LOG(LogTemp, Warning, TEXT("GetDecimalDegreesFromProperty"));
+  double decimalDegrees;
+  FPropertyAccess::Result AccessResult =
+      DecimalDegreesHandle->GetValue(decimalDegrees);
   if (AccessResult == FPropertyAccess::Success) {
-    return Value;
+    return decimalDegrees;
   }
-  UE_LOG(LogTemp, Warning, TEXT("GetDecimalDegreesFromProperty FAILED"));
-  return Value;
+  UE_LOG(LogCesium, Warning, TEXT("GetDecimalDegreesFromProperty FAILED"));
+  return decimalDegrees;
 }
 
 void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
@@ -168,7 +221,7 @@ void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
 }
 
 int32 CesiumDmsEditor::GetDegrees() const {
-  UE_LOG(LogTemp, Warning, TEXT("GetDegrees"));
+  // UE_LOG(LogTemp, Warning, TEXT("GetDegrees"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return static_cast<int32>(dms.d);
@@ -183,7 +236,7 @@ void CesiumDmsEditor::SetDegrees(int32 NewValue) {
 }
 
 int32 CesiumDmsEditor::GetMinutes() const {
-  UE_LOG(LogTemp, Warning, TEXT("GetMinutes"));
+  // UE_LOG(LogTemp, Warning, TEXT("GetMinutes"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return static_cast<int32>(dms.m);
@@ -198,7 +251,7 @@ void CesiumDmsEditor::SetMinutes(int32 NewValue) {
 }
 
 double CesiumDmsEditor::GetSeconds() const {
-  UE_LOG(LogTemp, Warning, TEXT("GetSeconds"));
+  // UE_LOG(LogTemp, Warning, TEXT("GetSeconds"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return dms.s;

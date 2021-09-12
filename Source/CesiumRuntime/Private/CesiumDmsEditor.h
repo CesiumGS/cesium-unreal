@@ -10,13 +10,43 @@
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Input/STextComboBox.h"
 
+/**
+ * A class that allows configuring a Details View row that shows
+ * a latitude or longitude.
+ *
+ * Assuming that the property was given as a (double) property
+ * that contains the decimal degrees, the Details View row
+ * that is created with this class shows the value additionally
+ * in a DMS (Degree-Minutes-Seconds) view.
+ *
+ * See FCesiumGeoreferenceCustomization::CustomizeDetails for
+ * an example of how to use this class.
+ */
 class CesiumDmsEditor : public TSharedFromThis<CesiumDmsEditor> {
 
 public:
+  /**
+   * Creates a new instance.
+   *
+   * The given property handle must be a handle to a 'double'
+   * property!
+   *
+   * @param InputDecimalDegreesHandle The property hande for the
+   * decimal degrees property
+   * @param InputIsLongitude Whether the edited property is a
+   * longitude (as opposed to a latitude) property
+   */
   CesiumDmsEditor(
       TSharedPtr<class IPropertyHandle> InputDecimalDegreesHandle,
       bool InputIsLongitude);
 
+  /**
+   * Populates the given Details View row with the default
+   * editor (a SSpinBox for the value), as well as the
+   * spin boxes and dropdowns for the DMS editing.
+   *
+   * @param Row The Details View row
+   */
   void PopulateRow(IDetailPropertyRow& Row);
 
 private:
