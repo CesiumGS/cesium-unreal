@@ -1287,6 +1287,15 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
         this->_findLevelStreamingByName(subLevel.LevelName);
 
     if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
+      // We need to unload immediately, not over the course of several frames.
+      // If we don't unload immediately, objects in the old level will still be
+      // visible, but they will be positioned incorrectly.
+      // If this causes an objectionable pause, we can do something much more
+      // complicated like defer the georeference switch and activation of the
+      // new level until after the old one has finished asynchronously
+      // unloading. We're considering that a future feature for the moment,
+      // though.
+      pOtherLevel->bShouldBlockOnUnload = true;
       pOtherLevel->SetShouldBeLoaded(false);
       pOtherLevel->SetShouldBeVisible(false);
     }
