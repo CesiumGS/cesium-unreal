@@ -15,7 +15,9 @@ enum class EOriginPlacement : uint8 {
   /**
    * Use the tileset's true origin as the Actor's origin. For georeferenced
    * tilesets, this usually means the Actor's origin will be at the center
-   * of the Earth.
+   * of the Earth, which is not recommended. For a non-georeferenced tileset,
+   * however, such as a detailed building with a local origin, putting the
+   * Actor's origin at the same location as the tileset's origin can be useful.
    */
   TrueOrigin UMETA(DisplayName = "True origin"),
 

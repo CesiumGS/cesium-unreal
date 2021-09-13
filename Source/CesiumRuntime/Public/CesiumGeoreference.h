@@ -637,4 +637,13 @@ private:
 #endif
 
   bool _switchToLevelInGame(FCesiumSubLevel* pLevel);
+
+  /**
+   * Determines if this Georeference should manage sub-level switching.
+   *
+   * A Georeference inside a sub-level should not manage sub-level switching,
+   * so this function returns true the Georeference is in the world's
+   * PersistentLevel.
+   */
+  bool _shouldManageSubLevels() const;
 };

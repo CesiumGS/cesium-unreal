@@ -412,12 +412,6 @@ void ACesiumGeoreference::BeginPlay() {
     }
   }
 
-  // initialize sublevels as unloaded
-  for (ULevelStreaming* pLevel : pWorld->GetStreamingLevels()) {
-    pLevel->SetShouldBeLoaded(false);
-    pLevel->SetShouldBeVisible(false);
-  }
-
   UpdateGeoreference();
 }
 
@@ -728,14 +722,7 @@ void ACesiumGeoreference::_updateGeoTransforms() {
 }
 
 void ACesiumGeoreference::Tick(float DeltaTime) {
-  uint64 frameCounter = GFrameCounter;
-
   Super::Tick(DeltaTime);
-
-  // A Georeference inside a sublevel should not do anything.
-  if (!this->GetLevel()->IsPersistentLevel()) {
-    return;
-  }
 
 #if WITH_EDITOR
   // There doesn't appear to be a good way to be notified about the wide variety
@@ -750,7 +737,10 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   _handleViewportOriginEditing();
 #endif
 
-  this->_insideSublevel = _updateSublevelState();
+  if (!this->_shouldManageSubLevels()) {
+    this->_insideSublevel = _updateSublevelState();
+  }
+
   _performOriginRebasing();
 }
 
@@ -1283,6 +1273,13 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
       continue;
     }
 
+    if (!subLevel.CanBeEnabled) {
+      // A sub-level that can't be enabled is being controled by Unreal Engine,
+      // based on its own distance-based system, so we have no business trying
+      // to disable it. Ignore it.
+      continue;
+    }
+
     ULevelStreaming* pOtherLevel =
         this->_findLevelStreamingByName(subLevel.LevelName);
 
@@ -1317,4 +1314,8 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
   }
 
   return pStreamedLevel != nullptr;
+}
+
+bool ACesiumGeoreference::_shouldManageSubLevels() const {
+  return !this->GetLevel()->IsPersistentLevel();
 }
