@@ -81,7 +81,7 @@ ACesium3DTileset::ACesium3DTileset()
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
-  //PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
+  // PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
   this->SetActorEnableCollision(true);
 
