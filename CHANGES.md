@@ -6,6 +6,8 @@ This release only updates [cesium-native](https://github.com/CesiumGS/cesium-nat
 
 ### v1.6.1 - 2021-09-14
 
+- Fixed #633 which was related to introduce maxiumCachedBytes as a UPROPERTY.
+
 ##### Fixes :wrench:
 
 - Fixed incorrect behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
