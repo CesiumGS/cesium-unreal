@@ -8,6 +8,7 @@
 - Fixed crash when `GlobeAwareDefaultPawn::FlyToLocation` was called when the pawn was not possessed.
 - Fixed a bug that caused clipping to work incorrectly for tiles that are partially water.
 - Limited the length of names assigned to the ActorComponents created for 3D Tiles, to avoid a crash caused by an FName being too long even with extremely long tileset URLs.
+- Fixed a bug in `DynamicPawn` that caused a divide-by-zero message to be printed to the Output Log.
 - Fixed a mismatch on Windows between Unreal Engine's compiler options and cesium-native's compiler options that could sometimes lead to crashes and other broken behavior.
 
 ### v1.6.0 - 2021-09-01
