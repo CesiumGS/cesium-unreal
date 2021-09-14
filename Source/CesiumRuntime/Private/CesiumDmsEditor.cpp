@@ -173,7 +173,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
-                SNew(STextBlock).Text(FText::FromString(TEXT("°")))
+                SNew(STextBlock).Text(FText::FromString(TEXT("\u00B0")))
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
@@ -181,7 +181,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
-                SNew(STextBlock).Text(FText::FromString(TEXT("'")))
+                SNew(STextBlock).Text(FText::FromString(TEXT("\u2032")))
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
@@ -189,7 +189,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
-                SNew(STextBlock).Text(FText::FromString(TEXT("\"")))
+                SNew(STextBlock).Text(FText::FromString(TEXT("\u2033")))
             ]
             + SHorizontalBox::Slot().AutoWidth()
             [
