@@ -298,13 +298,16 @@ jobs:
     script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}.zip .
-    # - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip .
+    - # Use the 4.26 binaries for macOS until we have proper 4.27 ones. The plugin binaries won't be usable
+    - # in 4.27, but the cesium-native libs will be and as long as those are available the Editor will be
+    - # able to recompile the plugin binaries for 4.27 on load.
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-426-osx-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}.zip .
     - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}.zip .
     - mkdir -p build/package
     - cd build/package
     - unzip ../../CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}.zip
-    # - unzip -o ../../CesiumForUnreal-osx-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-426-osx-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}.zip
     - zip -r CesiumForUnreal-427-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
