@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Cesium3DTiles/BoundingVolume.h"
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeoreferenceable.h"
 #include "Components/SceneComponent.h"
@@ -177,7 +177,7 @@ public:
 
   // ICesiumGeoreferenceable virtual functions
   virtual bool IsBoundingVolumeReady() const override;
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  virtual std::optional<Cesium3DTilesSelection::BoundingVolume>
   GetBoundingVolume() const override;
   virtual void NotifyGeoreferenceUpdated() override;
 

@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTiles/ViewState.h"
+#include "Cesium3DTilesSelection/ViewState.h"
+#include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -13,14 +14,17 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+#include <vector>
+
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
+class ACesiumCartographicSelection;
 
-namespace Cesium3DTiles {
+namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
-} // namespace Cesium3DTiles
+} // namespace Cesium3DTilesSelection
 
 UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
@@ -127,6 +131,18 @@ public:
       Category = "Cesium|Tile Loading",
       meta = (ClampMin = 0))
   int32 MaximumSimultaneousTileLoads = 20;
+
+  /**
+   * @brief The maximum number of bytes that may be cached.
+   *
+   * Note that this value, even if 0, will never
+   * cause tiles that are needed for rendering to be unloaded. However, if the
+   * total number of loaded bytes is greater than this value, tiles will be
+   * unloaded until the total is under this number or until only required tiles
+   * remain, whichever comes first.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  int64 MaximumCachedBytes = 256 * 1024 * 1024;
 
   /**
    * The number of loading descendents a tile should allow before deciding to
@@ -240,6 +256,15 @@ public:
   float CulledScreenSpaceError = 64.0;
 
   /**
+   * Refreshes this tileset, ensuring that all materials and other settings are
+   * applied. It is not usually necessary to invoke this, but when
+   * behind-the-scenes changes are made and not reflected in the tileset, this
+   * function can help.
+   */
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
+  void RefreshTileset();
+
+  /**
    * Pauses level-of-detail and culling updates of this tileset.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Debug")
@@ -315,6 +340,58 @@ private:
   FString IonAccessToken;
 
   /**
+   * Whether to generate physics meshes for this tileset.
+   *
+   * Disabling this option will improve the performance of tile loading, but it
+   * will no longer be possible to collide with the tileset since the physics
+   * meshes will not be created.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetCreatePhysicsMeshes,
+      BlueprintSetter = SetCreatePhysicsMeshes,
+      Category = "Cesium|Physics")
+  bool CreatePhysicsMeshes = true;
+
+  /**
+   * Whether to always generate a correct tangent space basis for tiles that
+   * don't have them.
+   *
+   * Normally, a per-vertex tangent space basis is only required for glTF models
+   * with a normal map. However, a custom, user-supplied material may need a
+   * tangent space basis for other purposes. When this property is set to true,
+   * tiles lacking an explicit tangent vector will have one computed
+   * automatically using the MikkTSpace algorithm. When this property is false,
+   * load time will be improved by skipping the generation of the tangent
+   * vector, but the tangent space basis will be unreliable.
+   *
+   * Note that a tileset with "Enable Water Mask" set will include tangents
+   * for tiles containing water, regardless of the value of this property.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetAlwaysIncludeTangents,
+      BlueprintSetter = SetAlwaysIncludeTangents,
+      Category = "Cesium|Rendering")
+  bool AlwaysIncludeTangents = false;
+
+  /**
+   * Whether to generate smooth normals when normals are missing in the glTF.
+   *
+   * According to the Gltf spec: "When normals are not specified, client
+   * implementations should calculate flat normals." However, calculating flat
+   * normals requires duplicating vertices. This option allows the gltfs to be
+   * sent with explicit smooth normals when the original gltf was missing
+   * normals.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetGenerateSmoothNormals,
+      BlueprintSetter = SetGenerateSmoothNormals,
+      Category = "Cesium|Rendering")
+  bool GenerateSmoothNormals = false;
+
+  /**
    * Whether to request and render the water mask.
    *
    * Currently only applicable for quantized-mesh tilesets that support the
@@ -324,7 +401,8 @@ private:
       EditAnywhere,
       BlueprintGetter = GetEnableWaterMask,
       BlueprintSetter = SetEnableWaterMask,
-      Category = "Cesium|Rendering")
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
   bool EnableWaterMask = false;
 
   /**
@@ -359,19 +437,9 @@ private:
       Category = "Cesium|Rendering")
   UMaterialInterface* WaterMaterial = nullptr;
 
-  /**
-   * A custom Material to use to render this tileset in areas using opacity
-   * masks, in order to implement custom visual effects.
-   *
-   * The custom material should generally be created by copying the
-   * "M_CesiumDefaultMasked" material and customizing it as desired.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetOpacityMaskMaterial,
-      BlueprintSetter = SetOpacityMaskMaterial,
-      Category = "Cesium|Rendering")
-  UMaterialInterface* OpacityMaskMaterial = nullptr;
+protected:
+  UPROPERTY()
+  FString PlatformName;
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
@@ -398,6 +466,24 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
+  bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
+  void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetGenerateSmoothNormals() const { return GenerateSmoothNormals; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetGenerateSmoothNormals(bool bGenerateSmoothNormals);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetEnableWaterMask() const { return EnableWaterMask; }
 
@@ -416,14 +502,6 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetWaterMaterial(UMaterialInterface* InMaterial);
 
-  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
-  UMaterialInterface* GetOpacityMaskMaterial() const {
-    return OpacityMaskMaterial;
-  }
-
-  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
-  void SetOpacityMaskMaterial(UMaterialInterface* InMaterial);
-
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
 
@@ -435,14 +513,16 @@ public:
 
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
-  Cesium3DTiles::Tileset* GetTileset() { return this->_pTileset; }
-  const Cesium3DTiles::Tileset* GetTileset() const { return this->_pTileset; }
+  Cesium3DTilesSelection::Tileset* GetTileset() { return this->_pTileset; }
+  const Cesium3DTilesSelection::Tileset* GetTileset() const {
+    return this->_pTileset;
+  }
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnreal);
 
   // ICesiumGeoreferenceable implementation
   virtual bool IsBoundingVolumeReady() const override;
-  virtual std::optional<Cesium3DTiles::BoundingVolume>
+  virtual std::optional<Cesium3DTilesSelection::BoundingVolume>
   GetBoundingVolume() const override;
   virtual void NotifyGeoreferenceUpdated();
 
@@ -459,6 +539,8 @@ public:
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditUndo() override;
+  virtual void PostEditImport() override;
 #endif
 
 protected:
@@ -485,12 +567,6 @@ protected:
 private:
   void LoadTileset();
   void DestroyTileset();
-  void MarkTilesetDirty();
-  Cesium3DTiles::ViewState CreateViewStateFromViewParameters(
-      const FVector2D& viewportSize,
-      const FVector& location,
-      const FRotator& rotation,
-      double fieldOfViewDegrees) const;
 
   struct UnrealCameraParameters {
     FVector2D viewportSize;
@@ -499,8 +575,39 @@ private:
     double fieldOfViewDegrees;
   };
 
-  std::optional<UnrealCameraParameters> GetCamera() const;
-  std::optional<UnrealCameraParameters> GetPlayerCamera() const;
+  static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
+      const UnrealCameraParameters& camera,
+      const glm::dmat4& unrealWorldToTileset);
+
+  std::vector<UnrealCameraParameters> GetCameras() const;
+  std::vector<UnrealCameraParameters> GetPlayerCameras() const;
+  std::vector<UnrealCameraParameters> GetSceneCaptures() const;
+
+  /**
+   * Writes the values of all properties of this actor into the
+   * TilesetOptions, to take them into account during the next
+   * traversal.
+   */
+  void updateTilesetOptionsFromProperties();
+
+  /**
+   * Update all the "_last..." fields of this instance based
+   * on the given ViewUpdateResult, printing a log message
+   * if any value changed.
+   *
+   * @param result The ViewUpdateREsult
+   */
+  void updateLastViewUpdateResultState(
+      const Cesium3DTilesSelection::ViewUpdateResult& result);
+
+  /**
+   * Creates the visual representations of the given tiles to
+   * be rendered in the current frame.
+   *
+   * @param tiles The tiles
+   */
+  void
+  showTilesToRender(const std::vector<Cesium3DTilesSelection::Tile*>& tiles);
 
   /**
    * Will be called after the tileset is loaded or spawned, to register
@@ -510,7 +617,7 @@ private:
   void AddFocusViewportDelegate();
 
 #if WITH_EDITOR
-  std::optional<UnrealCameraParameters> GetEditorCamera() const;
+  std::vector<UnrealCameraParameters> GetEditorCameras() const;
 
   /**
    * Will focus all viewports on this tileset.
@@ -525,13 +632,7 @@ private:
 #endif
 
 private:
-  Cesium3DTiles::Tileset* _pTileset;
-
-  /**
-   * Marks whether tileset should be updated in LoadTileset.
-   * Default to true so that tileset is created on construction.
-   */
-  bool _tilesetIsDirty = true;
+  Cesium3DTilesSelection::Tileset* _pTileset;
 
   // For debug output
   uint32_t _lastTilesRendered;
@@ -552,4 +653,18 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  // This is used as a workaround for cesium-native#186
+  //
+  // The tiles that are no longer supposed to be rendered in the current
+  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // are kept in this list, and hidden in the NEXT frame, because some
+  // internal occlusion culling information from Unreal might prevent
+  // the tiles that are supposed to be rendered instead from appearing
+  // immediately.
+  //
+  // If we find a way to clear the wrong occlusion information in the
+  // Unreal Engine, then this field may be removed, and the
+  // tilesToNoLongerRenderThisFrame may be hidden immediately.
+  std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
 };

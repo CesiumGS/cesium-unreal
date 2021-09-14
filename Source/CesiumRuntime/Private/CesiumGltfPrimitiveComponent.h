@@ -2,14 +2,17 @@
 
 #pragma once
 
+#include "CesiumGltf/MeshPrimitive.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumMetadataPrimitive.h"
+#include "CesiumRasterOverlays.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumGltfPrimitiveComponent
-    : public UStaticMeshComponent {
+class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
   GENERATED_BODY()
 
 public:
@@ -17,10 +20,18 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
+  FCesiumMetadataPrimitive Metadata;
+
+  const CesiumGltf::Model* pModel;
+
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
+
   /**
    * The double-precision transformation matrix for this glTF node.
    */
   glm::dmat4x4 HighPrecisionNodeTransform;
+
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
 
   /**
    * Updates this component's transform from a new double-precision

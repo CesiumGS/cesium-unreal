@@ -33,6 +33,25 @@ set(CMAKE_RELEASE_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_MINSIZEREL_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 set(CMAKE_RELWITHDEBINFO_POSTFIX ${CESIUM_RELEASE_POSTFIX})
 
+# On Mac and Linux, Unreal uses -fvisibility-ms-compat.
+# On Android, it uses -fvisibility=hidden
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-ms-compat -fvisibility-inlines-hidden")
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+  # Unreal Engine adds /Zp8 in 64-bit Windows builds to align structs to 8 bytes instead of the
+  # default of 16 bytes. There's this nice note in the documentation for that option:
+  #   Don't change the setting from the default when you include the Windows SDK headers, either
+  #   by using /Zp on the command line or by using #pragma pack. Otherwise, your application may
+  #   cause memory corruption at runtime.
+  # (https://docs.microsoft.com/en-us/cpp/build/reference/zp-struct-member-alignment?view=msvc-160)
+  # Yeah that's not just the Windows SDK, but anything that passes structs across the boundary
+  # between compilation units using different versions of that flag. We compile cesium-native
+  # with this same option to avoid super-dodgy and hard to debug issues.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
+endif()
+
 add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
@@ -40,7 +59,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_res
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
-if (ANDROID) 
+if (ANDROID)
     add_library(MikkTSpace MikkTSpace/mikktspace.c)
     set_target_properties(MikkTSpace PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/MikkTSpace/mikktspace.h")
     target_include_directories(MikkTSpace PUBLIC MikkTSpace)

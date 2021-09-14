@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "Cesium3DTiles/RasterOverlay.h"
+#include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include <memory>
 #include "CesiumRasterOverlay.generated.h"
 
-namespace Cesium3DTiles {
+namespace Cesium3DTilesSelection {
 class Tileset;
 }
 
@@ -22,6 +22,18 @@ class CESIUMRUNTIME_API UCesiumRasterOverlay : public UActorComponent {
   GENERATED_BODY()
 
 public:
+  /**
+   * The key to use to match this overlay to a material layer.
+   *
+   * When using Material Layers, any material layers inside a "Cesium" layer
+   * stack with a name that matches this name will have their Texture,
+   * TranslationScale, and TextureCoordinateIndex properties set automatically
+   * so that a ML_CesiumOverlay layer function (or similar) will correctly
+   * sample from this overlay.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString MaterialLayerKey = "Overlay0";
+
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
 
@@ -50,10 +62,17 @@ protected:
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-  Cesium3DTiles::Tileset* FindTileset() const;
-  virtual std::unique_ptr<Cesium3DTiles::RasterOverlay> CreateOverlay()
+  Cesium3DTilesSelection::Tileset* FindTileset() const;
+
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay()
       PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
+  virtual void OnAdd(
+      Cesium3DTilesSelection::Tileset* pTileset,
+      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
+  virtual void OnRemove(
+      Cesium3DTilesSelection::Tileset* pTileset,
+      Cesium3DTilesSelection::RasterOverlay* pOverlay) {}
 
 private:
-  Cesium3DTiles::RasterOverlay* _pOverlay;
+  Cesium3DTilesSelection::RasterOverlay* _pOverlay;
 };

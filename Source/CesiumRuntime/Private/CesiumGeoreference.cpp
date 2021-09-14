@@ -20,6 +20,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <optional>
+#include <string>
 
 #if WITH_EDITOR
 #include "DrawDebugHelpers.h"
@@ -31,33 +32,78 @@
 #define IDENTITY_MAT4x4_ARRAY                                                  \
   1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0
 
-/*static*/ ACesiumGeoreference*
-ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
-  ACesiumGeoreference* pGeoreference = FindObject<ACesiumGeoreference>(
-      Actor->GetLevel(),
-      TEXT("CesiumGeoreferenceDefault"));
-  if (!pGeoreference) {
-    const FString actorName = Actor->GetName();
+namespace {
+
+/**
+ * @brief Tries to find the default geo reference in the given level.
+ *
+ * This will search all actors of the given level for a `ACesiumGeoreference`
+ * whose name starts with `"CesiumGeoreferenceDefault"` that is *valid*
+ * (i.e. not pending kill).
+ *
+ * @param Level The level
+ * @return The default geo reference, or `nullptr` if there is none.
+ */
+ACesiumGeoreference* findValidDefaultGeoreference(ULevel* Level) {
+  if (!IsValid(Level)) {
     UE_LOG(
         LogCesium,
-        Verbose,
-        TEXT("Creating default Georeference for actor %s"),
-        *actorName);
-    FActorSpawnParameters spawnParameters;
-    spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
-    spawnParameters.OverrideLevel = Actor->GetLevel();
-    pGeoreference =
-        Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
-  } else {
-    const FString georeferenceName = pGeoreference->GetName();
-    const FString actorName = Actor->GetName();
+        Warning,
+        TEXT("No valid level for findDefaultGeoreference"));
+    return nullptr;
+  }
+  TArray<AActor*>& Actors = Level->Actors;
+  AActor** DefaultGeoreferencePtr =
+      Actors.FindByPredicate([](AActor* const& InItem) {
+        if (!IsValid(InItem)) {
+          return false;
+        }
+        if (!InItem->IsA(ACesiumGeoreference::StaticClass())) {
+          return false;
+        }
+        if (!InItem->GetName().StartsWith("CesiumGeoreferenceDefault")) {
+          return false;
+        }
+        return true;
+      });
+  if (!DefaultGeoreferencePtr) {
+    return nullptr;
+  }
+  AActor* DefaultGeoreference = *DefaultGeoreferencePtr;
+  return Cast<ACesiumGeoreference>(DefaultGeoreference);
+}
+} // namespace
+
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
+  ACesiumGeoreference* pGeoreference =
+      findValidDefaultGeoreference(Actor->GetLevel());
+  if (pGeoreference) {
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Using existing Georeference %s for actor %s"),
-        *georeferenceName,
-        *actorName);
+        *(pGeoreference->GetName()),
+        *(Actor->GetName()));
+    return pGeoreference;
   }
+
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Creating default Georeference for actor %s"),
+      *(Actor->GetName()));
+
+  // Make sure that the instance is created in the same
+  // level as the actor, and its name starts with the
+  // prefix indicating that this is the default instance
+  FActorSpawnParameters spawnParameters;
+  spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
+  spawnParameters.OverrideLevel = Actor->GetLevel();
+  spawnParameters.NameMode =
+      FActorSpawnParameters::ESpawnActorNameMode::Requested;
+  pGeoreference =
+      Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
   return pGeoreference;
 }
 
@@ -241,7 +287,7 @@ void ACesiumGeoreference::AddGeoreferencedObject(
     }
   }
 
-#if ENGINE_MAJOR_VERSION == 5
+#if ENGINE_MAJOR_VERSION == 5 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27)
   this->_georeferencedObjects.Add(
       TWeakInterfacePtr<ICesiumGeoreferenceable>(Object));
 #else
@@ -302,10 +348,10 @@ void ACesiumGeoreference::UpdateGeoreference() {
       for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
            this->_georeferencedObjects) {
         if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
-          std::optional<Cesium3DTiles::BoundingVolume> bv =
+          std::optional<Cesium3DTilesSelection::BoundingVolume> bv =
               pObject->GetBoundingVolume();
           if (bv) {
-            center += Cesium3DTiles::getBoundingVolumeCenter(*bv);
+            center += Cesium3DTilesSelection::getBoundingVolumeCenter(*bv);
             ++numberOfPositions;
           }
         }
@@ -508,7 +554,9 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
 
-  bool isInsideSublevel = false;
+  ULevelStreaming* currentSublevel = nullptr;
+  FCesiumSubLevel* currentCesiumSublevel = nullptr;
+  double closestLevelDistance = TNumericLimits<double>::Max();
 
   const TArray<ULevelStreaming*>& streamedLevels =
       this->GetWorld()->GetStreamingLevels();
@@ -516,9 +564,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
     FString levelName =
         FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
     levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
-    // TODO: maybe we should precalculate the level ECEF from level
-    // long/lat/height
-    // TODO: consider the case where we're intersecting multiple level radii
+
     for (FCesiumSubLevel& level : this->CesiumSubLevels) {
       // if this is a known level, we need to tell it whether or not it should
       // be loaded
@@ -530,14 +576,20 @@ bool ACesiumGeoreference::_updateSublevelState() {
                     level.LevelLatitude,
                     level.LevelHeight));
 
-        if (glm::length(levelECEF - cameraECEF) < level.LoadRadius) {
-          isInsideSublevel = true;
-          if (!level.CurrentlyLoaded) {
-            this->_jumpToLevel(level);
-            streamedLevel->SetShouldBeLoaded(true);
-            streamedLevel->SetShouldBeVisible(true);
-            level.CurrentlyLoaded = true;
+        double levelDistance = glm::length(levelECEF - cameraECEF);
+        if (levelDistance < level.LoadRadius &&
+            levelDistance < closestLevelDistance) {
+
+          if (currentSublevel && currentCesiumSublevel &&
+              currentCesiumSublevel->CurrentlyLoaded) {
+            currentSublevel->SetShouldBeLoaded(false);
+            currentSublevel->SetShouldBeVisible(false);
+            currentCesiumSublevel->CurrentlyLoaded = false;
           }
+
+          currentSublevel = streamedLevel;
+          currentCesiumSublevel = &level;
+          closestLevelDistance = levelDistance;
         } else {
           if (level.CurrentlyLoaded) {
             streamedLevel->SetShouldBeLoaded(false);
@@ -549,7 +601,16 @@ bool ACesiumGeoreference::_updateSublevelState() {
       }
     }
   }
-  return isInsideSublevel;
+
+  if (currentSublevel && currentCesiumSublevel &&
+      !currentCesiumSublevel->CurrentlyLoaded) {
+    this->_jumpToLevel(*currentCesiumSublevel);
+    currentSublevel->SetShouldBeLoaded(true);
+    currentSublevel->SetShouldBeVisible(true);
+    currentCesiumSublevel->CurrentlyLoaded = true;
+  }
+
+  return currentSublevel && currentCesiumSublevel;
 }
 
 void ACesiumGeoreference::_performOriginRebasing() {

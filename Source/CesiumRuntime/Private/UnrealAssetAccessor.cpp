@@ -124,6 +124,8 @@ UnrealAssetAccessor::requestAsset(
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
 
+  CESIUM_TRACE_BEGIN_IN_TRACK("requestAsset");
+
   const FString& userAgent = this->_userAgent;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
@@ -142,10 +144,13 @@ UnrealAssetAccessor::requestAsset(
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
 
         pRequest->OnProcessRequestComplete().BindLambda(
-            [promise](
+            [promise, CESIUM_TRACE_LAMBDA_CAPTURE_TRACK()](
                 FHttpRequestPtr pRequest,
                 FHttpResponsePtr pResponse,
-                bool connectedSuccessfully) {
+                bool connectedSuccessfully) mutable {
+              CESIUM_TRACE_USE_CAPTURED_TRACK();
+              CESIUM_TRACE_END_IN_TRACK("requestAsset");
+
               if (connectedSuccessfully) {
                 promise.resolve(
                     std::make_unique<UnrealAssetRequest>(pRequest, pResponse));

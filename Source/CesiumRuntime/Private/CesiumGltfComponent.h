@@ -12,6 +12,7 @@
 class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
+struct CreateModelOptions;
 
 #if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;
@@ -21,10 +22,10 @@ namespace CesiumGltf {
 struct Model;
 }
 
-namespace Cesium3DTiles {
+namespace Cesium3DTilesSelection {
 class Tile;
 class RasterOverlayTile;
-} // namespace Cesium3DTiles
+} // namespace Cesium3DTilesSelection
 
 namespace CesiumGeometry {
 struct Rectangle;
@@ -35,14 +36,17 @@ struct FRasterOverlayTile {
   GENERATED_BODY()
 
   UPROPERTY()
+  FString OverlayName;
+
+  UPROPERTY()
   UTexture2D* Texture;
 
-  FLinearColor TextureCoordinateRectangle;
   FLinearColor TranslationAndScale;
+  int32 TextureCoordinateID;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumGltfComponent : public USceneComponent {
+class UCesiumGltfComponent : public USceneComponent {
   GENERATED_BODY()
 
 public:
@@ -53,20 +57,15 @@ public:
 
   static std::unique_ptr<HalfConstructed> CreateOffGameThread(
       const CesiumGltf::Model& Model,
-      const glm::dmat4x4& Transform
-#if PHYSICS_INTERFACE_PHYSX
-      ,
-      IPhysXCooking* PhysXCooking = nullptr
-#endif
-  );
+      const glm::dmat4x4& Transform,
+      const CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       AActor* ParentActor,
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseWaterMaterial,
-      UMaterialInterface* BaseOpacityMaterial);
+      UMaterialInterface* BaseWaterMaterial);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
@@ -77,24 +76,20 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
 
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* OpacityMaskMaterial;
-
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
   void AttachRasterTile(
-      const Cesium3DTiles::Tile& Tile,
-      const Cesium3DTiles::RasterOverlayTile& RasterTile,
+      const Cesium3DTilesSelection::Tile& Tile,
+      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
       UTexture2D* Texture,
-      const CesiumGeometry::Rectangle& TextureCoordinateRectangle,
       const glm::dvec2& Translation,
-      const glm::dvec2& Scale);
+      const glm::dvec2& Scale,
+      int32_t TextureCoordinateID);
 
   void DetachRasterTile(
-      const Cesium3DTiles::Tile& Tile,
-      const Cesium3DTiles::RasterOverlayTile& RasterTile,
-      UTexture2D* Texture,
-      const CesiumGeometry::Rectangle& TextureCoordinateRectangle);
+      const Cesium3DTilesSelection::Tile& Tile,
+      const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,
+      UTexture2D* Texture);
 
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
@@ -102,7 +97,6 @@ public:
   virtual void FinishDestroy() override;
 
 private:
-  void UpdateRasterOverlays();
-
-  TArray<FRasterOverlayTile> OverlayTiles;
+  UPROPERTY()
+  UTexture2D* Transparent1x1;
 };
