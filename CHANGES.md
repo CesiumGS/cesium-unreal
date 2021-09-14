@@ -1,5 +1,9 @@
 # Change Log
 
+### v1.6.2 - 2021-09-14
+
+This release only updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.1 to v0.7.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.6.1 - 2021-09-14
 
 ##### Fixes :wrench:
