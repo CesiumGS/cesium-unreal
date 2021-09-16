@@ -1153,8 +1153,8 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
 }
 
 void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
-  // If a sub-level is the current one, enable it and also update the sub-level's
-  // location.
+  // If a sub-level is the current one, enable it and also update the
+  // sub-level's location.
   ULevel* pCurrent = this->GetWorld()->GetCurrentLevel();
   if (!pCurrent || pCurrent->IsPersistentLevel()) {
     return;
