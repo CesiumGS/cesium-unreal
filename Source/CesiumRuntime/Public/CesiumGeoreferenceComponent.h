@@ -13,15 +13,6 @@
 #include "CesiumGeoreferenceComponent.generated.h"
 
 /**
- * The delegate for the ACesiumGeoreference::OnGeoreferenceUpdated,
- * which is triggered from UpdateGeoreference
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
-    FGlobePositionChanged,
-    const FQuat&,
-    DeltaRotation);
-
-/**
  * This component can be added to movable actors to globally georeference them
  * and maintain precise placement. When the owning actor is transformed through
  * normal Unreal Engine mechanisms, the internal geospatial coordinates will be
@@ -36,17 +27,6 @@ class CESIUMRUNTIME_API UCesiumGeoreferenceComponent : public UActorComponent {
 public:
   // Sets default values for this component's properties
   UCesiumGeoreferenceComponent();
-
-  /**
-   * A delegate that will be called whenever the Actor's position on the globe
-   * changes, either because the globe position is set directly or because its
-   * Transform changes.
-   *
-   * The delegate will be called with a Rotator that specifies change in the
-   * local "up" direction moving from the old position to the new position.
-   */
-  UPROPERTY(BlueprintAssignable, Category = "Cesium")
-  FGlobePositionChanged OnGlobePositionChanged;
 
   /**
    * The georeference actor controlling how the owning actor's coordinate system

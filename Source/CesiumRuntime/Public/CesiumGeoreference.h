@@ -76,10 +76,11 @@ public:
    * Switches to the specified level. Sets the georeference origin to the given
    * level's origin, shows the given level, and hides all other levels.
    *
-   * If Index is negative or otherwise outside the range of valid indices
+   * If Index is negative or otherwise outside the range of valid indices, all
+   * levels other than the PersistentLevel are deactivated.
    *
-   * Warning: Before calling, ensure that all Actors are in their appropriate
-   * sub-levels.
+   * This function is meant to be called from within the game, not in the
+   * Editor.
    *
    * @returns true if a new sub-level is active, or false if the Index was
    * outside the valid range and so no sub-level is active.
@@ -627,12 +628,9 @@ private:
       bool createIfDoesNotExist);
 
 #if WITH_EDITOR
-  bool _switchToLevelInEditor(FCesiumSubLevel* pLevel);
   void _onNewCurrentLevel();
   void _enableAndGeoreferenceCurrentSubLevel();
 #endif
-
-  bool _switchToLevelInGame(FCesiumSubLevel* pLevel);
 
   /**
    * Determines if this Georeference should manage sub-level switching.

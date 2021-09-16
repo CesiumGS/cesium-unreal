@@ -331,22 +331,73 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 #endif
 
 bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
-  FCesiumSubLevel* pCurrentLevel = nullptr;
+  FCesiumSubLevel* pLevel = nullptr;
 
   if (Index >= 0 && Index < this->CesiumSubLevels.Num()) {
-    pCurrentLevel = &this->CesiumSubLevels[Index];
+    pLevel = &this->CesiumSubLevels[Index];
   }
 
-#if WITH_EDITOR
-  // In the Editor, use the Editor API to make the selected level the current
-  // one. When running in the Editor, GetStreamingLevels only includes levels
-  // that are already loaded.
-  if (GEditor && this->GetWorld() && !this->GetWorld()->IsGameWorld()) {
-    return this->_switchToLevelInEditor(pCurrentLevel);
-  }
-#endif
+  UWorld* pWorld = this->GetWorld();
+  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
 
-  return this->_switchToLevelInGame(pCurrentLevel);
+  ULevelStreaming* pStreamedLevel = nullptr;
+
+  if (pLevel) {
+    // Find the streaming level with this name.
+    pStreamedLevel = this->_findLevelStreamingByName(pLevel->LevelName);
+    if (!pStreamedLevel) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("No streaming level found with name %s"),
+          *pLevel->LevelName);
+    }
+  }
+
+  // Deactivate all other streaming levels controlled by Cesium
+  for (const FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
+    if (&subLevel == pLevel) {
+      continue;
+    }
+
+    if (!subLevel.CanBeEnabled) {
+      // A sub-level that can't be enabled is being controled by Unreal Engine,
+      // based on its own distance-based system, so we have no business trying
+      // to disable it. Ignore it.
+      continue;
+    }
+
+    ULevelStreaming* pOtherLevel =
+        this->_findLevelStreamingByName(subLevel.LevelName);
+
+    if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
+      // We need to unload immediately, not over the course of several frames.
+      // If we don't unload immediately, objects in the old level will still be
+      // visible, but they will be positioned incorrectly.
+      // If this causes an objectionable pause, we can do something much more
+      // complicated like defer the georeference switch and activation of the
+      // new level until after the old one has finished asynchronously
+      // unloading. We're considering that a future feature for the moment,
+      // though.
+      pOtherLevel->bShouldBlockOnUnload = true;
+      pOtherLevel->SetShouldBeLoaded(false);
+      pOtherLevel->SetShouldBeVisible(false);
+    }
+  }
+
+  // Activate the new streaming level if it's not already active.
+  if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
+                         !pStreamedLevel->ShouldBeLoaded())) {
+    this->_setGeoreferenceOrigin(
+        pLevel->LevelLongitude,
+        pLevel->LevelLatitude,
+        pLevel->LevelHeight);
+
+    pStreamedLevel->SetShouldBeLoaded(true);
+    pStreamedLevel->SetShouldBeVisible(true);
+  }
+
+  return pStreamedLevel != nullptr;
 }
 
 FVector
@@ -1010,57 +1061,6 @@ FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
 
 #if WITH_EDITOR
 
-bool ACesiumGeoreference::_switchToLevelInEditor(FCesiumSubLevel* pLevel) {
-  UWorld* pWorld = this->GetWorld();
-
-  FWorldBrowserModule& worldBrowserModule =
-      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
-  TSharedPtr<FLevelCollectionModel> pWorldModel =
-      worldBrowserModule.SharedWorldModel(pWorld);
-
-  if (!pWorldModel) {
-    return false;
-  }
-
-  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
-  FLevelModelList levelsToHide = allLevels;
-
-  // Don't hide persistent levels.
-  levelsToHide.RemoveAll([](const TSharedPtr<FLevelModel>& pLevel) {
-    return pLevel->IsPersistent();
-  });
-
-  bool result = false;
-
-  if (pLevel) {
-    // Find the one level we want active.
-    const TSharedPtr<FLevelModel>* ppLevel = allLevels.FindByPredicate(
-        [pLevel, pWorld](const TSharedPtr<FLevelModel>& pLevelModel) {
-          return longPackageNameToCesiumName(
-                     pWorld,
-                     pLevelModel->GetLongPackageName()) == pLevel->LevelName;
-        });
-
-    if (ppLevel && *ppLevel) {
-      levelsToHide.Remove(*ppLevel);
-
-      (*ppLevel)->MakeLevelCurrent();
-
-      this->SetGeoreferenceOrigin(glm::dvec3(
-          pLevel->LevelLongitude,
-          pLevel->LevelLatitude,
-          pLevel->LevelHeight));
-
-      result = true;
-    }
-  }
-
-  // Unload all other levels.
-  pWorldModel->HideLevels(levelsToHide);
-
-  return result;
-}
-
 void ACesiumGeoreference::_onNewCurrentLevel() {
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
@@ -1153,7 +1153,7 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
 }
 
 void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
-  // If a sub-level is active, enable it and also update the sub-level's
+  // If a sub-level is the current one, enable it and also update the sub-level's
   // location.
   ULevel* pCurrent = this->GetWorld()->GetCurrentLevel();
   if (!pCurrent || pCurrent->IsPersistentLevel()) {
@@ -1175,70 +1175,7 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
 
 #endif
 
-bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
-  UWorld* pWorld = this->GetWorld();
-  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
-
-  ULevelStreaming* pStreamedLevel = nullptr;
-
-  if (pLevel) {
-    // Find the streaming level with this name.
-    pStreamedLevel = this->_findLevelStreamingByName(pLevel->LevelName);
-    if (!pStreamedLevel) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("No streaming level found with name %s"),
-          *pLevel->LevelName);
-    }
-  }
-
-  // Deactivate all other streaming levels controlled by Cesium
-  for (const FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
-    if (&subLevel == pLevel) {
-      continue;
-    }
-
-    if (!subLevel.CanBeEnabled) {
-      // A sub-level that can't be enabled is being controled by Unreal Engine,
-      // based on its own distance-based system, so we have no business trying
-      // to disable it. Ignore it.
-      continue;
-    }
-
-    ULevelStreaming* pOtherLevel =
-        this->_findLevelStreamingByName(subLevel.LevelName);
-
-    if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
-      // We need to unload immediately, not over the course of several frames.
-      // If we don't unload immediately, objects in the old level will still be
-      // visible, but they will be positioned incorrectly.
-      // If this causes an objectionable pause, we can do something much more
-      // complicated like defer the georeference switch and activation of the
-      // new level until after the old one has finished asynchronously
-      // unloading. We're considering that a future feature for the moment,
-      // though.
-      pOtherLevel->bShouldBlockOnUnload = true;
-      pOtherLevel->SetShouldBeLoaded(false);
-      pOtherLevel->SetShouldBeVisible(false);
-    }
-  }
-
-  // Activate the new streaming level if it's not already active.
-  if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
-                         !pStreamedLevel->ShouldBeLoaded())) {
-    this->_setGeoreferenceOrigin(
-        pLevel->LevelLongitude,
-        pLevel->LevelLatitude,
-        pLevel->LevelHeight);
-
-    pStreamedLevel->SetShouldBeLoaded(true);
-    pStreamedLevel->SetShouldBeVisible(true);
-  }
-
-  return pStreamedLevel != nullptr;
-}
-
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
+  // Only a Georeference in the PersistentLevel should manage sub-levels.
   return !this->GetLevel()->IsPersistentLevel();
 }
