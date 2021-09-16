@@ -264,6 +264,8 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   TArray<int32> newSubLevels;
   TArray<int32> missingSubLevels;
 
+  bool checkForNewCurrentLevel = false;
+
   // Find new sub-levels that we don't know about on the Cesium side.
   for (int32 i = 0; i < allLevels.Num(); ++i) {
     const FWorldCompositionTile& level = allLevels[i];
@@ -277,9 +279,22 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
         });
 
     if (pFound) {
-      pFound->CanBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
-      if (!pFound->CanBeEnabled) {
-        pFound->Enabled = false;
+      bool newCanBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
+      if (pFound->CanBeEnabled != newCanBeEnabled) {
+        pFound->CanBeEnabled = newCanBeEnabled;
+
+        // If this level can't be enabled, make sure it's not enabled.
+        if (!pFound->CanBeEnabled) {
+          pFound->Enabled = false;
+        }
+
+        if (newCanBeEnabled) {
+          // This level existed before but is newly enable-able, probably
+          // because it was just added to the right streaming layer. If it also
+          // happens to be the current level, we'll want to immediately hide
+          // other levels. Set a flag to do that later.
+          checkForNewCurrentLevel = true;
+        }
       }
     } else {
       newSubLevels.Add(i);
@@ -326,6 +341,10 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
           1000.0,
           canBeEnabled});
     }
+  }
+
+  if (checkForNewCurrentLevel) {
+    this->_onNewCurrentLevel();
   }
 }
 #endif
