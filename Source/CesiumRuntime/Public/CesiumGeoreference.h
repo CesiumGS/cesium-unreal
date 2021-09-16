@@ -172,6 +172,7 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool KeepWorldOriginNearCamera = true;
 
+#if WITH_EDITOR
   /**
    * Places the georeference origin at the camera's current location. Rotates
    * the globe so the current longitude/latitude/height of the camera is at the
@@ -184,6 +185,7 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
+#endif
 
   /**
    * The maximum distance in centimeters that the camera may move from the
@@ -537,10 +539,6 @@ private:
   bool _insideSublevel;
 
 #if WITH_EDITOR
-  TSharedPtr<FLevelCollectionModel> _pWorldModel = nullptr;
-  FDelegateHandle _levelsCollectionSubscription;
-  FDelegateHandle _onBrowseWorldSubscription;
-  FDelegateHandle _onEnginePreExitSubscription;
   FDelegateHandle _newCurrentLevelSubscription;
 #endif
 
@@ -629,8 +627,6 @@ private:
       bool createIfDoesNotExist);
 
 #if WITH_EDITOR
-  void _onBrowseWorld(UWorld* pWorld);
-  void _removeSubscriptions();
   bool _switchToLevelInEditor(FCesiumSubLevel* pLevel);
   void _onNewCurrentLevel();
   void _enableAndGeoreferenceCurrentSubLevel();

@@ -126,14 +126,11 @@ ACesiumGeoreference::ACesiumGeoreference()
   PrimaryActorTick.bCanEverTick = true;
 }
 
-void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #if WITH_EDITOR
-  // TODO: should we just assume origin rebasing isn't happening since this is
-  // only editor-mode?
-
+void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
-  UWorld* world = this->GetWorld();
-  if (world->IsGameWorld()) {
+  UWorld* pWorld = this->GetWorld();
+  if (!GEditor || pWorld->IsGameWorld()) {
     return;
   }
 
@@ -145,7 +142,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   FRotationTranslationMatrix fCameraTransform(
       pEditorViewportClient->GetViewRotation(),
       pEditorViewportClient->GetViewLocation());
-  const FIntVector& originLocation = world->OriginLocation;
+  const FIntVector& originLocation = pWorld->OriginLocation;
 
   // TODO: optimize this, only need to transform the front direction and
   // translation
@@ -202,8 +199,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
 
   this->_enableAndGeoreferenceCurrentSubLevel();
-#endif
 }
+#endif
 
 namespace {
 
@@ -266,8 +263,6 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
   TArray<int32> newSubLevels;
   TArray<int32> missingSubLevels;
-
-  // const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
 
   // Find new sub-levels that we don't know about on the Cesium side.
   for (int32 i = 0; i < allLevels.Num(); ++i) {
@@ -429,32 +424,6 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
       *this->GetName());
 
 #if WITH_EDITOR
-  // Subscribe to "browse a new world" events if we haven't already.
-  // When we start browsing a new world, we'll subscribe to be notified
-  // of new sub-levels in that world.
-  if (!this->_onBrowseWorldSubscription.IsValid()) {
-    FWorldBrowserModule* pWorldBrowserModule =
-        static_cast<FWorldBrowserModule*>(
-            FModuleManager::Get().GetModule("WorldBrowser"));
-    if (pWorldBrowserModule) {
-      this->_onBrowseWorldSubscription =
-          pWorldBrowserModule->OnBrowseWorld.AddUObject(
-              this,
-              &ACesiumGeoreference::_onBrowseWorld);
-    }
-  }
-
-  if (!this->_onEnginePreExitSubscription.IsValid()) {
-    // On Editor close, Unreal Engine unhelpfully shuts down the WoldBrowser
-    // module before it calls BeginDestroy on this Actor. And WorldBrowser
-    // shutdown asserts that no one else is holding a reference to the world
-    // model. So, we need to catch engine exit and detach ourselves.
-    this->_onEnginePreExitSubscription =
-        FCoreDelegates::OnEnginePreExit.AddUObject(
-            this,
-            &ACesiumGeoreference::_removeSubscriptions);
-  }
-
   if (!this->_newCurrentLevelSubscription.IsValid()) {
     this->_newCurrentLevelSubscription =
         FEditorDelegates::NewCurrentLevel.AddUObject(
@@ -468,7 +437,11 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 
 void ACesiumGeoreference::BeginDestroy() {
 #if WITH_EDITOR
-  this->_removeSubscriptions();
+  if (this->_newCurrentLevelSubscription.IsValid()) {
+    FEditorDelegates::NewCurrentLevel.Remove(
+        this->_newCurrentLevelSubscription);
+    this->_newCurrentLevelSubscription.Reset();
+  }
 #endif
 
   Super::BeginDestroy();
@@ -1036,53 +1009,6 @@ FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
 }
 
 #if WITH_EDITOR
-void ACesiumGeoreference::_onBrowseWorld(UWorld* pWorld) {
-  if (this->_levelsCollectionSubscription.IsValid()) {
-    this->_pWorldModel->CollectionChanged.Remove(
-        this->_levelsCollectionSubscription);
-    this->_levelsCollectionSubscription.Reset();
-    this->_pWorldModel.Reset();
-  }
-
-  if (pWorld) {
-    FWorldBrowserModule& worldBrowserModule =
-        FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
-    this->_pWorldModel = worldBrowserModule.SharedWorldModel(pWorld);
-
-    if (this->_pWorldModel) {
-      this->_levelsCollectionSubscription =
-          this->_pWorldModel->CollectionChanged.AddUObject(
-              this,
-              &ACesiumGeoreference::_updateCesiumSubLevels);
-    }
-  }
-}
-
-void ACesiumGeoreference::_removeSubscriptions() {
-  this->_onBrowseWorld(nullptr);
-
-  if (this->_onEnginePreExitSubscription.IsValid()) {
-    FCoreDelegates::OnEnginePreExit.Remove(this->_onEnginePreExitSubscription);
-    this->_onEnginePreExitSubscription.Reset();
-  }
-
-  if (this->_onBrowseWorldSubscription.IsValid()) {
-    FWorldBrowserModule* pWorldBrowserModule =
-        static_cast<FWorldBrowserModule*>(
-            FModuleManager::Get().GetModule("WorldBrowser"));
-    if (pWorldBrowserModule) {
-      pWorldBrowserModule->OnBrowseWorld.Remove(
-          this->_onBrowseWorldSubscription);
-      this->_onBrowseWorldSubscription.Reset();
-    }
-  }
-
-  if (this->_newCurrentLevelSubscription.IsValid()) {
-    FEditorDelegates::NewCurrentLevel.Remove(
-        this->_newCurrentLevelSubscription);
-    this->_newCurrentLevelSubscription.Reset();
-  }
-}
 
 bool ACesiumGeoreference::_switchToLevelInEditor(FCesiumSubLevel* pLevel) {
   UWorld* pWorld = this->GetWorld();
@@ -1168,7 +1094,7 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
 
   // Hide all other levels.
   // I initially thought we could call handy methods like SetShouldBeVisible
-  // here, but I was be wrong. That works ok in a game, but in the Editor
+  // here, but I was wrong. That works ok in a game, but in the Editor
   // there's a much more elaborate dance required. Rather than try to figure out
   // all the steps, let's just ask the Editor to do it for us.
   FWorldBrowserModule& worldBrowserModule =
@@ -1301,9 +1227,6 @@ bool ACesiumGeoreference::_switchToLevelInGame(FCesiumSubLevel* pLevel) {
   // Activate the new streaming level if it's not already active.
   if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
                          !pStreamedLevel->ShouldBeLoaded())) {
-    uint64 frameCounter = GFrameCounter;
-    UE_LOG(LogCesium, VeryVerbose, TEXT("Frame Counter %d"), frameCounter);
-
     this->_setGeoreferenceOrigin(
         pLevel->LevelLongitude,
         pLevel->LevelLatitude,

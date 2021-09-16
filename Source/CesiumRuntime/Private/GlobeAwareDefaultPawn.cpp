@@ -24,102 +24,53 @@
 
 AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
   PrimaryActorTick.bCanEverTick = true;
+
+  this->GeoreferenceComponent =
+      CreateDefaultSubobject<UCesiumGeoreferenceComponent>(
+          TEXT("Georeference"));
+  this->AddInstanceComponent(this->GeoreferenceComponent);
 }
 
 void AGlobeAwareDefaultPawn::MoveRight(float Val) {
-  if (Val != 0.f) {
-    if (Controller) {
-      FRotator const ControlSpaceRot = this->GetViewRotation();
-
-      // transform to world space and add it
-      AddMovementInput(
-          FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::Y),
-          Val);
-
-      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-        this->_interruptFlight();
-      }
-    }
-  }
+  this->_moveAlongViewAxis(EAxis::Y, Val);
 }
 
 void AGlobeAwareDefaultPawn::MoveForward(float Val) {
-  if (Val != 0.f) {
-    if (Controller) {
-      FRotator const ControlSpaceRot = this->GetViewRotation();
-
-      // transform to world space and add it
-      AddMovementInput(
-          FRotationMatrix(ControlSpaceRot).GetScaledAxis(EAxis::X),
-          Val);
-
-      if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-        this->_interruptFlight();
-      }
-    }
-  }
+  this->_moveAlongViewAxis(EAxis::X, Val);
 }
 
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
-  if (Val != 0.f) {
-    // TODO: Determine why the commented out code doesn't work
-    /*
-    FMatrix enuToFixed =
-        this->Georeference->InaccurateComputeEastNorthUpToUnreal(
-            this->GetPawnViewLocation());
-    FVector up = enuToFixed.GetColumn(2);
-    */
-
-    FVector loc = this->GetPawnViewLocation();
-    glm::dvec3 locEcef = this->Georeference->TransformUnrealToEcef(
-        glm::dvec3(loc.X, loc.Y, loc.Z));
-    glm::dvec4 upEcef(
-        CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(locEcef),
-        0.0);
-    glm::dvec4 up = this->Georeference->GetGeoTransforms()
-                        .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
-                    upEcef;
-
-    AddMovementInput(FVector(up.x, up.y, up.z), Val);
-
-    if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
-      this->_interruptFlight();
-    }
+  if (Val == 0.0f || !IsValid(this->GeoreferenceComponent)) {
+    return;
   }
-}
 
-void AGlobeAwareDefaultPawn::TurnAtRate(float Rate) {
-  ADefaultPawn::TurnAtRate(Rate);
-}
+  glm::dvec4 upEcef(
+      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+          this->GeoreferenceComponent->GetECEF()),
+      0.0);
+  glm::dvec4 up = this->GeoreferenceComponent->Georeference->GetGeoTransforms()
+                      .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
+                  upEcef;
 
-void AGlobeAwareDefaultPawn::LookUpAtRate(float Rate) {
-  // calculate delta for this frame from the rate information
-  AddControllerPitchInput(
-      Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds() *
-      CustomTimeDilation);
-}
-
-void AGlobeAwareDefaultPawn::AddControllerPitchInput(float Val) {
-  if (Val != 0.f && Controller && Controller->IsLocalPlayerController()) {
-    APlayerController* const PC = CastChecked<APlayerController>(Controller);
-    PC->AddPitchInput(Val);
-  }
-}
-
-void AGlobeAwareDefaultPawn::AddControllerYawInput(float Val) {
-  ADefaultPawn::AddControllerYawInput(Val);
-}
-
-void AGlobeAwareDefaultPawn::AddControllerRollInput(float Val) {
-  if (Val != 0.f && Controller && Controller->IsLocalPlayerController()) {
-    APlayerController* const PC = CastChecked<APlayerController>(Controller);
-    PC->AddRollInput(Val);
-  }
+  this->_moveAlongAxis(FVector(up.x, up.y, up.z), Val);
 }
 
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
-  FRotator localRotation = ADefaultPawn::GetViewRotation();
+  if (!Controller) {
+    return this->GetActorRotation();
+  }
 
+  // The control rotation is expressed in a left-handed East-South-Up (ESU)
+  // coordinate system:
+  // * Yaw: Clockwise from East: 0 is East, 90 degrees is
+  // South, 180 degrees is West, 270 degrees is North.
+  // * Pitch: Angle above level, Positive is looking up, negative is looking
+  // down
+  // * Roll: Rotation around the look direction. Positive is a barrel roll to
+  // the right (clockwise).
+  FRotator localRotation = Controller->GetControlRotation();
+
+  // Transform the rotation in the ESU frame to the Unreal world frame.
   FMatrix enuAdjustmentMatrix =
       this->Georeference->InaccurateComputeEastNorthUpToUnreal(
           this->GetPawnViewLocation());
@@ -129,43 +80,6 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
 
 FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
-}
-
-glm::dvec3 AGlobeAwareDefaultPawn::GetECEFCameraLocation() const {
-  FVector ueLocation = this->GetPawnViewLocation();
-  const glm::dvec3 ueLocationVec(ueLocation.X, ueLocation.Y, ueLocation.Z);
-  if (!IsValid(this->Georeference)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
-        *this->GetName());
-    return ueLocationVec;
-  }
-  glm::dvec3 ecef = this->Georeference->TransformUnrealToEcef(ueLocationVec);
-  return ecef;
-}
-
-void AGlobeAwareDefaultPawn::SetECEFCameraLocation(const glm::dvec3& ecef) {
-  glm::dvec3 ue;
-  if (!IsValid(this->Georeference)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
-        *this->GetName());
-    ue = ecef;
-  } else {
-    ue = this->Georeference->TransformEcefToUnreal(ecef);
-  }
-  ADefaultPawn::SetActorLocation(
-      FVector(
-          static_cast<float>(ue.x),
-          static_cast<float>(ue.y),
-          static_cast<float>(ue.z)),
-      false,
-      nullptr,
-      ETeleportType::TeleportPhysics);
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
@@ -179,14 +93,13 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   }
 
   // Compute source location in ECEF
-  glm::dvec3 ECEFSource = this->GetECEFCameraLocation();
+  glm::dvec3 ECEFSource = this->GeoreferenceComponent->GetECEF();
 
-  // Compute the source and destination rotations in ENU
-  // As during the flight, we can go around the globe, this is better to
-  // interpolate in ENU coordinates
-  this->_flyToSourceRotation = ADefaultPawn::GetViewRotation();
+  // The source and destination rotations are expressed in East-South-Up
+  // coordinates.
+  this->_flyToSourceRotation = Controller->GetControlRotation().Quaternion();
   this->_flyToDestinationRotation =
-      FRotator(PitchAtDestination, YawAtDestination, 0);
+      FRotator(PitchAtDestination, YawAtDestination, 0).Quaternion();
 
   // Compute axis/Angle transform and initialize key points
   glm::dquat flyQuat = glm::rotation(
@@ -232,13 +145,11 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // Get distance between source and destination points to compute a wanted
   // altitude from curve
-  double flyTodistance = glm::length(ECEFDestination - ECEFSource);
+  double flyToDistance = glm::length(ECEFDestination - ECEFSource);
 
   // Add first keypoint
   this->_keypoints.push_back(ECEFSource);
-  // DrawDebugPoint(GetWorld(),
-  // this->Georeference->InaccurateTransformEcefToUe(ECEFSource), 8,
-  // FColor::Red, true, 30);
+
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
     double altitude = glm::mix(sourceAltitude, destinationAltitude, percentage);
@@ -255,7 +166,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
         double maxAltitude = 30000;
         if (this->FlyToMaximumAltitudeCurve != NULL) {
           maxAltitude = static_cast<double>(
-              this->FlyToMaximumAltitudeCurve->GetFloatValue(flyTodistance));
+              this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance));
         }
         offsetAltitude = static_cast<double>(
             maxAltitude *
@@ -264,15 +175,10 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
       glm::dvec3 point = *scaled + upVector * (altitude + offsetAltitude);
       this->_keypoints.push_back(point);
-      // DrawDebugPoint(GetWorld(),
-      // this->Georeference->InaccurateTransformEcefToUe(point), 8, FColor::Red,
-      // true, 30);
     }
   }
+
   this->_keypoints.push_back(ECEFDestination);
-  // DrawDebugPoint(GetWorld(),
-  // this->Georeference->InaccurateTransformEcefToUe(ECEFDestination), 8,
-  // FColor::Red, true, 30);
 
   // Tell the tick we will be flying from now
   this->_bFlyingToLocation = true;
@@ -298,7 +204,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     float PitchAtDestination,
     bool CanInterruptByMoving) {
 
-  if (!IsValid(this->Georeference)) {
+  if (!IsValid(this->GetGeoreference())) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -306,7 +212,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
         *this->GetName());
   }
   const glm::dvec3& ecef =
-      this->Georeference->TransformLongitudeLatitudeHeightToEcef(
+      this->GetGeoreference()->TransformLongitudeLatitudeHeightToEcef(
           LongitudeLatitudeHeightDestination);
   this->FlyToLocationECEF(
       ecef,
@@ -329,27 +235,19 @@ void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
       CanInterruptByMoving);
 }
 
-void AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated() {
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Called HandleGeoreferenceUpdated for %s"),
-      *this->GetName());
-  this->SetECEFCameraLocation(this->_currentEcef);
-}
-
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
 
 void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
-
-  if (!IsValid(this->Georeference)) {
+  if (!IsValid(this->GeoreferenceComponent)) {
     UE_LOG(
         LogCesium,
         Warning,
-        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
+        TEXT(
+            "GlobeAwareDefaultPawn %s does not have a valid GeoreferenceComponent"),
         *this->GetName());
     return;
   }
+
   if (!this->GetWorld()->IsGameWorld() || !this->_bFlyingToLocation) {
     return;
   }
@@ -369,8 +267,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // If we reached the end, set actual destination location and orientation
   if (this->_currentFlyTime >= this->FlyToDuration) {
     const glm::dvec3& finalPoint = _keypoints.back();
-    this->SetECEFCameraLocation(finalPoint);
-    Controller->SetControlRotation(this->_flyToDestinationRotation);
+    this->GeoreferenceComponent->MoveToECEF(finalPoint, true);
+    Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0;
     return;
@@ -397,66 +295,55 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
       flyPercentage * (this->_keypoints.size() - 1) - lastIndex;
   int nextIndex = lastIndex + 1;
 
-  // Get the current position by interpolating between those two points
+  // Get the current position by interpolating linearly between those two points
   const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
   const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
   glm::dvec3 currentPosition =
       glm::mix(lastPosition, nextPosition, segmentPercentage);
   // Set Location
-  this->SetECEFCameraLocation(currentPosition);
+  this->GeoreferenceComponent->MoveToECEF(currentPosition, true);
 
-  // Interpolate rotation - Computation has to be done at each step because
-  // the ENU CRS is depending on location. Do all calculations in double
-  // precision until the very end.
-  const glm::dquat startingQuat =
-      Georeference->TransformRotatorUnrealToEastNorthUp(
-          VecMath::createQuaternion(this->_flyToSourceRotation.Quaternion()),
-          this->_keypoints[0]);
-  const glm::dquat endingQuat =
-      Georeference->TransformRotatorUnrealToEastNorthUp(
-          VecMath::createQuaternion(
-              this->_flyToDestinationRotation.Quaternion()),
-          this->_keypoints.back());
-  const glm::dquat& currentQuat =
-      glm::slerp(startingQuat, endingQuat, flyPercentage);
-  Controller->SetControlRotation(
-      VecMath::createRotator(Georeference->TransformRotatorEastNorthUpToUnreal(
-          currentQuat,
-          currentPosition)));
+  // Interpolate rotation in the ESU frame. The local ESU ControlRotation will
+  // be transformed to the appropriate world rotation as we fly.
+  FQuat currentQuat = FQuat::Slerp(
+      this->_flyToSourceRotation,
+      this->_flyToDestinationRotation,
+      flyPercentage);
+  Controller->SetControlRotation(currentQuat.Rotator());
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
   Super::Tick(DeltaSeconds);
 
   _handleFlightStep(DeltaSeconds);
-
-  // track current ecef in case we need to restore it on georeference update
-  this->_currentEcef = this->GetECEFCameraLocation();
 }
 
-void AGlobeAwareDefaultPawn::BeginPlay() {
-  Super::BeginPlay();
-  // TODO: find more elegant solution
-  // the controller gets confused if the pawn itself has a nonzero orientation
-  this->SetActorRotation(FRotator(0.0, 0.0, 0.0));
-}
-
-void AGlobeAwareDefaultPawn::PostInitProperties() {
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Called PostInitProperties on actor %s"),
-      *this->GetName());
-  Super::PostInitProperties();
-
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultGeoreference(this);
+ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
+  if (!IsValid(this->GeoreferenceComponent)) {
+    return nullptr;
   }
-  if (this->Georeference) {
-    this->_currentEcef = this->GetECEFCameraLocation();
-    this->Georeference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        this,
-        &AGlobeAwareDefaultPawn::HandleGeoreferenceUpdated);
+  return this->GeoreferenceComponent->Georeference;
+}
+
+void AGlobeAwareDefaultPawn::_moveAlongViewAxis(EAxis::Type axis, float Val) {
+  if (Val == 0.0f) {
+    return;
+  }
+
+  FRotator worldRotation = this->GetViewRotation();
+  this->_moveAlongAxis(FRotationMatrix(worldRotation).GetScaledAxis(axis), Val);
+}
+
+void AGlobeAwareDefaultPawn::_moveAlongAxis(const FVector& axis, float Val) {
+  if (Val == 0.0f) {
+    return;
+  }
+
+  FRotator worldRotation = this->GetViewRotation();
+  AddMovementInput(axis, Val);
+
+  if (this->_bFlyingToLocation && this->_bCanInterruptFlight) {
+    this->_interruptFlight();
   }
 }
 

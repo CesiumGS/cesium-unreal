@@ -157,6 +157,10 @@ FVector UCesiumGeoreferenceComponent::InaccurateGetECEF() const {
       static_cast<float>(this->ECEF_Z));
 }
 
+glm::dvec3 UCesiumGeoreferenceComponent::GetECEF() const {
+  return glm::dvec3(this->ECEF_X, this->ECEF_Y, this->ECEF_Z);
+}
+
 void UCesiumGeoreferenceComponent::OnRegister() {
   UE_LOG(
       LogCesium,
@@ -644,6 +648,8 @@ void UCesiumGeoreferenceComponent::_setECEF(
   glm::dmat3 newActorRotation = oldActorRotation;
   const glm::dvec3 newRelativeLocation = _computeRelativeLocation(targetEcef);
 
+  glm::dquat R(1.0, 0.0, 0.0, 0.0);
+
   if (!maintainRelativeOrientation || !this->_ecefIsValid) {
     // When NOT maintaining relative orientation, or we didn't previously know
     // our ECEF position, just update the ECEF position with the new values
@@ -663,8 +669,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
         _computeEllipsoidNormalUnreal(targetEcef);
 
     // The rotation between the old and the new normal
-    const glm::dquat R =
-        glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
+    R = glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
     const glm::dmat3 alignmentRotation = glm::mat3_cast(R);
 
     // Compute the new actor rotation
@@ -678,6 +683,7 @@ void UCesiumGeoreferenceComponent::_setECEF(
 
   this->_ecefIsValid = true;
   _updateActorTransform(newActorRotation, newRelativeLocation);
+  this->OnGlobePositionChanged.Broadcast(VecMath::createQuaternion(R));
   this->_updateDisplayLongitudeLatitudeHeight();
 
   GlmLogging::logVector("_setECEF done, _currentEcef now ", _currentEcef);

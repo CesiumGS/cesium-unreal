@@ -10,6 +10,7 @@
 #include "GlobeAwareDefaultPawn.generated.h"
 
 class ACesiumGeoreference;
+class UCesiumGeoreferenceComponent;
 class UCurveFloat;
 
 /**
@@ -23,13 +24,6 @@ class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {
 
 public:
   AGlobeAwareDefaultPawn();
-
-  /**
-   * The actor controlling how this camera's location in the Cesium world
-   * relates to the coordinate system in this Unreal Engine level.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium")
-  ACesiumGeoreference* Georeference;
 
   /**
    * Input callback to move forward in local space (or backward if Val is
@@ -56,36 +50,15 @@ public:
   virtual void MoveUp_World(float Val) override;
 
   /**
-   * Called via input to turn at a given rate.
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
-   * desired turn rate
+   * Gets the absolute rotation of the camera view from the Unreal world.
    */
-  virtual void TurnAtRate(float Rate) override;
-
-  /**
-   * Called via input to look up at a given rate (or down if Rate is negative).
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
-   * desired turn rate
-   */
-  virtual void LookUpAtRate(float Rate) override;
-
-  virtual void AddControllerPitchInput(float Val) override;
-  virtual void AddControllerYawInput(float Val) override;
-  virtual void AddControllerRollInput(float Val) override;
   virtual FRotator GetViewRotation() const override;
+
+  /**
+   * Gets the rotation of the aim direction, which is the same as the View
+   * Rotation.
+   */
   virtual FRotator GetBaseAimRotation() const override;
-
-  /**
-   * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates.
-   */
-  glm::dvec3 GetECEFCameraLocation() const;
-
-  /**
-   * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates.
-   */
-  void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
   /**
    * This curve dictates what percentage of the max altitude the pawn should
@@ -183,22 +156,36 @@ public:
       float PitchAtDestination,
       bool CanInterruptByMoving);
 
-  UFUNCTION()
-  void HandleGeoreferenceUpdated();
-
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
 
 protected:
   /**
-   * Called after the C++ constructor and after the properties have
-   * been initialized, including those loaded from config.
+   * Gets the Georeference Actor associated with this instance. It is obtained
+   * from the Georeference Component.
    */
-  void PostInitProperties() override;
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ACesiumGeoreference* GetGeoreference() const;
 
-  virtual void BeginPlay() override;
+  /**
+   * The actor controlling how this camera's location in the Cesium world
+   * relates to the coordinate system in this Unreal Engine level.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium",
+      BlueprintGetter = GetGeoreference)
+  ACesiumGeoreference* Georeference;
+
+  /**
+   * The GeoreferenceComponent that precisely ties this Pawn to the Globe.
+   */
+  UPROPERTY(BlueprintReadOnly)
+  UCesiumGeoreferenceComponent* GeoreferenceComponent;
 
 private:
+  void _moveAlongViewAxis(EAxis::Type axis, float Val);
+  void _moveAlongAxis(const FVector& axis, float Val);
   void _interruptFlight();
 
   /**
@@ -218,18 +205,12 @@ private:
    */
   void _handleFlightStep(float DeltaSeconds);
 
-  // the current ECEF coordinates, stored in case they need to be restored on
-  // georeference update
-  UPROPERTY()
-  double _currentEcef_Array[3];
-  glm::dvec3& _currentEcef = *(glm::dvec3*)_currentEcef_Array;
-
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;
   bool _bCanInterruptFlight = false;
   double _currentFlyTime = 0.0;
-  FRotator _flyToSourceRotation;
-  FRotator _flyToDestinationRotation;
+  FQuat _flyToSourceRotation;
+  FQuat _flyToDestinationRotation;
 
   std::vector<glm::dvec3> _keypoints;
 };

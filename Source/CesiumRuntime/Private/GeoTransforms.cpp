@@ -125,7 +125,7 @@ glm::dquat GeoTransforms::TransformRotatorEastNorthUpToUnreal(
 
   glm::dmat3 enuToFixedUE =
       this->ComputeEastNorthUpToUnreal(origin, ueLocation);
-  glm::dmat3 fixedUeToEnu = glm::inverse(enuToFixedUE);
+  glm::dmat3 fixedUeToEnu = glm::affineInverse(enuToFixedUE);
   glm::dquat fixedUeToEnuQuat = glm::quat_cast(fixedUeToEnu);
   return fixedUeToEnuQuat * ENURotator;
 }

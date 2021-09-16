@@ -2,6 +2,7 @@
 
 #include "VecMath.h"
 
+#include "CesiumUtility/Math.h"
 #include <CesiumGeometry/AxisTransforms.h>
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -155,17 +156,18 @@ FVector VecMath::createVector(const glm::dvec3& v) noexcept {
 inline FRotator VecMath::createRotator(const glm::dmat4& m) noexcept {
   // Avoid converting to Unreal single-precision types until the very end, so
   // that all intermediate conversions are performed in double-precision.
-  const glm::dquat& q = quat_cast(m);
-  return FRotator(pitch(q), yaw(q), roll(q));
+  return VecMath::createRotator(quat_cast(m));
 }
 
 inline FRotator VecMath::createRotator(const glm::dmat3& m) noexcept {
-  const glm::dquat& q = quat_cast(m);
-  return FRotator(pitch(q), yaw(q), roll(q));
+  return VecMath::createRotator(quat_cast(m));
 }
 
 inline FRotator VecMath::createRotator(const glm::dquat& q) noexcept {
-  return FRotator(pitch(q), yaw(q), roll(q));
+  return FRotator(
+      CesiumUtility::Math::radiansToDegrees(pitch(q)),
+      CesiumUtility::Math::radiansToDegrees(yaw(q)),
+      CesiumUtility::Math::radiansToDegrees(roll(q)));
 }
 
 inline FQuat VecMath::createQuaternion(const glm::dquat& q) noexcept {
