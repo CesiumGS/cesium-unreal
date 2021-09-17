@@ -511,6 +511,13 @@ public:
     return this->_pTileset;
   }
 
+  /**
+   * Gets the resolved Cesium Georeference to use with this Actor. Returns
+   * the value of the Georeference property if it is set. Otherwise, finds a
+   * Georeference in the World and returns it, creating it if necessary. The
+   * resolved Georeference is cached so subsequent calls to this function will
+   * return the same instance.
+   */
   ACesiumGeoreference* GetResolvedGeoreference();
 
   // AActor overrides (some or most of them should be protected)
@@ -629,6 +636,11 @@ private:
   void OnFocusEditorViewportOnThis();
 #endif
 
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time GetResolvedGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
   void InvalidateResolvedGeoreference();
 
 private:
@@ -638,7 +650,7 @@ private:
    * tileset is in a sublevel. If the Georeference property is specified,
    * however then this property will have the same value.
    *
-   * Use GetCurrentGeoreference rather than accessing this directly.
+   * Use GetResolvedGeoreference rather than accessing this directly.
    */
   UPROPERTY(Transient)
   ACesiumGeoreference* ResolvedGeoreference;

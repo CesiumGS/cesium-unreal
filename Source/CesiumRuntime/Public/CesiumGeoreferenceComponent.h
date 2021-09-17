@@ -171,6 +171,15 @@ public:
   virtual void
   ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
 
+  /**
+   * Gets the resolved Cesium Georeference to use with this Actor. Returns
+   * the value of the Georeference property if it is set. Otherwise, finds a
+   * Georeference in the World and returns it, creating it if necessary. The
+   * resolved Georeference is cached so subsequent calls to this function will
+   * return the same instance.
+   */
+  ACesiumGeoreference* GetResolvedGeoreference();
+
 protected:
   /**
    * Called when a component is registered.
@@ -254,21 +263,29 @@ protected:
 
 private:
   /**
+   * The resolved georeference used by this component. This is not serialized
+   * because it may point to a Georeference in the PersistentLevel while this
+   * tileset is in a sublevel. If the Georeference property is specified,
+   * however then this property will have the same value.
+   *
+   * Use GetResolvedGeoreference rather than accessing this directly.
+   */
+  UPROPERTY(Transient)
+  ACesiumGeoreference* ResolvedGeoreference;
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time GetResolvedGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  void InvalidateResolvedGeoreference();
+
+  /**
    * A function that is attached to the `OnGeoreferenceUpdated` delegate,
    * of the Georeference, and just calls `_updateActorTransform`.
    */
   UFUNCTION()
   void HandleGeoreferenceUpdated();
-
-  /**
-   * Initializes the `Georeference`.
-   *
-   * If there is no `Georeference`, then a default one is obtained.
-   * In any case, `HandleGeoreferenceUpdated` callback will be attached
-   * to the `OnGeoreferenceChanged` delegate, to be notified about
-   * changes in the georeference that may affect this component.
-   */
-  void _initGeoreference();
 
   /**
    * Updates the ECEF coordinates of this instance, based on an update
