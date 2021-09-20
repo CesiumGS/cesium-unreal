@@ -1,15 +1,24 @@
 # Change Log
 
-### v1.6.1 - ????
+### v1.6.2 - 2021-09-14
+
+This release only updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.1 to v0.7.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.6.1 - 2021-09-14
+
+- Fixed #633 which was related to introduce maxiumCachedBytes as a UPROPERTY.
 
 ##### Fixes :wrench:
 
-- Fixed strange behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
+- Fixed incorrect behavior when two sublevels overlap each other. Now the closest sublevel is chosen in that case.
 - Fixed crash when `GlobeAwareDefaultPawn::FlyToLocation` was called when the pawn was not possessed.
 - Fixed a bug that caused clipping to work incorrectly for tiles that are partially water.
-- Limited the length of names assigned to the ActorComponents created for 3D Tiles, to avoid a crash caused by an FName being too long even with extremely long tileset URLs.
+- Limited the length of names assigned to the ActorComponents created for 3D Tiles, to avoid a crash caused by an FName being too long with extremely long tileset URLs.
 - Fixed a bug that caused 3D Tiles tile selection to take into account Editor viewports even when in Play-in-Editor mode.
 - Fixed a bug in `DynamicPawn` that caused a divide-by-zero message to be printed to the Output Log.
+- Fixed a mismatch on Windows between Unreal Engine's compiler options and cesium-native's compiler options that could sometimes lead to crashes and other broken behavior.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.0 to v0.7.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.6.0 - 2021-09-01
 
