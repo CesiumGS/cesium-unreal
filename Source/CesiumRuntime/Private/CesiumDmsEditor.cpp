@@ -217,7 +217,8 @@ double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
   // This should never be the case, if the actual prperty
   // was a double property, so this warning indicates a
   // developer error:
-  UE_LOG(LogCesium, Warning, TEXT("GetDecimalDegreesFromProperty FAILED"));
+  UE_LOG(LogCesium, Error, TEXT("GetDecimalDegreesFromProperty FAILED"));
+  assert(false);
   return decimalDegrees;
 }
 
