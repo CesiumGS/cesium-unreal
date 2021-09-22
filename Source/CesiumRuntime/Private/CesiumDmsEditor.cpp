@@ -14,6 +14,8 @@
 
 #include <glm/glm.hpp>
 
+namespace {
+
 /**
  * @brief A structure describing cartographic coordinates in
  * the DMS (Degree-Minute-Second) representation.
@@ -93,6 +95,8 @@ double dmsToDecimalDegrees(const DMS& dms) {
   }
   return dd;
 }
+
+} // namespace
 
 CesiumDmsEditor::CesiumDmsEditor(
     TSharedPtr<class IPropertyHandle> InputDecimalDegreesHandle,
