@@ -223,13 +223,7 @@ double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
 }
 
 void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
-  UE_LOG(
-      LogCesium,
-      VeryVerbose,
-      TEXT("SetDecimalDegreesOnProperty %f"),
-      NewValue);
   DecimalDegreesHandle->SetValue(NewValue);
-
   SignComboBox->SetSelectedItem(
       NewValue < 0 ? NegativeIndicator : PositiveIndicator);
 }
@@ -240,7 +234,6 @@ int32 CesiumDmsEditor::GetDegrees() const {
   return static_cast<int32>(dms.d);
 }
 void CesiumDmsEditor::SetDegrees(int32 NewValue) {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("SetDegrees %d"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.d = NewValue;
@@ -254,7 +247,6 @@ int32 CesiumDmsEditor::GetMinutes() const {
   return static_cast<int32>(dms.m);
 }
 void CesiumDmsEditor::SetMinutes(int32 NewValue) {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("SetMinutes %d"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.m = NewValue;
@@ -268,7 +260,6 @@ double CesiumDmsEditor::GetSeconds() const {
   return dms.s;
 }
 void CesiumDmsEditor::SetSeconds(double NewValue) {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("SetSeconds %f"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.s = NewValue;
@@ -284,7 +275,6 @@ void CesiumDmsEditor::SignChanged(
   if (StringItem.IsValid()) {
     negative = (StringItem == NegativeIndicator);
   }
-  UE_LOG(LogCesium, VeryVerbose, TEXT("SignChanged"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.negative = negative;
