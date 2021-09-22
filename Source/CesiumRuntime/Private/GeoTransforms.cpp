@@ -9,9 +9,10 @@
 // ONLY used for logging!
 #include "CesiumRuntime.h"
 
+#include "GeoTransforms.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
   if (this->_center != center) {
@@ -25,6 +26,28 @@ void GeoTransforms::setEllipsoid(
     this->_ellipsoid = ellipsoid;
     updateTransforms();
   }
+}
+
+glm::dquat GeoTransforms::ComputeSurfaceNormalRotation(
+    const glm::dvec3& oldPosition,
+    const glm::dvec3& newPosition) const {
+  const glm::dvec3 oldEllipsoidNormal =
+      this->ComputeGeodeticSurfaceNormal(oldPosition);
+  const glm::dvec3 newEllipsoidNormal =
+      this->ComputeGeodeticSurfaceNormal(newPosition);
+  return glm::rotation(oldEllipsoidNormal, newEllipsoidNormal);
+}
+
+glm::dquat GeoTransforms::ComputeSurfaceNormalRotationUnreal(
+    const glm::dvec3& oldPosition,
+    const glm::dvec3& newPosition) const {
+  const glm::dmat3 ecefToUnreal =
+      glm::dmat3(this->GetEllipsoidCenteredToAbsoluteUnrealWorldTransform());
+  const glm::dvec3 oldEllipsoidNormalUnreal = glm::normalize(
+      ecefToUnreal * this->ComputeGeodeticSurfaceNormal(oldPosition));
+  const glm::dvec3 newEllipsoidNormalUnreal = glm::normalize(
+      ecefToUnreal * this->ComputeGeodeticSurfaceNormal(newPosition));
+  return glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
 }
 
 void GeoTransforms::updateTransforms() noexcept {

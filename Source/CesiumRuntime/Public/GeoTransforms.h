@@ -227,6 +227,36 @@ public:
     return _ellipsoid.geodeticSurfaceNormal(position);
   }
 
+    /**
+   * Computes the rotation in ellipsoid surface normal between an old position
+   * and a new position. This rotation is expressed in terms of Unreal world
+   * coordinates, and can be used to maintain an object's orientation relative
+   * to the local horizontal as it moves over the globe.
+   *
+   * @param oldPosition The old ECEF position that the object moved from.
+   * @param newPosition The new ECEF position that the object moved to.
+   * @return The rotation from the ellipsoid surface normal at the old position
+   * to the ellipsoid surface normal at the new position.
+   */
+  glm::dquat ComputeSurfaceNormalRotation(
+      const glm::dvec3& oldPosition,
+      const glm::dvec3& newPosition) const;
+
+  /**
+   * Computes the rotation in ellipsoid surface normal between an old position
+   * and a new position. This rotation is expressed in terms of Unreal world
+   * coordinates, and can be used to maintain an object's orientation relative
+   * to the local horizontal as it moves over the globe.
+   *
+   * @param oldPosition The old ECEF position that the object moved from.
+   * @param newPosition The new ECEF position that the object moved to.
+   * @return The rotation from the ellipsoid surface normal at the old position
+   * to the ellipsoid surface normal at the new position.
+   */
+  glm::dquat ComputeSurfaceNormalRotationUnreal(
+      const glm::dvec3& oldPosition,
+      const glm::dvec3& newPosition) const;
+
 private:
   /**
    * Update the derived state (i.e. the matrices) when either

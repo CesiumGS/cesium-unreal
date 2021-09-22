@@ -1093,6 +1093,9 @@ ACesiumGeoreference* ACesium3DTileset::GetResolvedGeoreference() {
     this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
         pRoot,
         &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+
+    // Update existing tile positions, if any.
+    pRoot->HandleGeoreferenceUpdated();
   }
 
   return this->ResolvedGeoreference;
