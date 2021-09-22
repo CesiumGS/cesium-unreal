@@ -128,7 +128,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
 
   SecondsSpinBox = SNew(SSpinBox<double>)
                        .MinSliderValue(0)
-                       .MaxSliderValue(59.999999) // TODO This is ugly :-(
+                       .MaxSliderValue(59.999999)
                        .OnValueChanged(this, &CesiumDmsEditor::SetSeconds)
                        .Value(this, &CesiumDmsEditor::GetSeconds);
 
@@ -173,6 +173,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
+                // The 'degrees' symbol
                 SNew(STextBlock).Text(FText::FromString(TEXT("\u00B0")))
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
@@ -181,6 +182,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
+                // The 'minutes' symbol
                 SNew(STextBlock).Text(FText::FromString(TEXT("\u2032")))
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
@@ -189,6 +191,7 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
             ]
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
+                // The 'seconds' symbol
                 SNew(STextBlock).Text(FText::FromString(TEXT("\u2033")))
             ]
             + SHorizontalBox::Slot().AutoWidth()
@@ -201,19 +204,25 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
 }
 
 double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
-  // UE_LOG(LogTemp, Warning, TEXT("GetDecimalDegreesFromProperty"));
   double decimalDegrees;
   FPropertyAccess::Result AccessResult =
       DecimalDegreesHandle->GetValue(decimalDegrees);
   if (AccessResult == FPropertyAccess::Success) {
     return decimalDegrees;
   }
+  // This should never be the case, if the actual prperty
+  // was a double property, so this warning indicates a
+  // developer error:
   UE_LOG(LogCesium, Warning, TEXT("GetDecimalDegreesFromProperty FAILED"));
   return decimalDegrees;
 }
 
 void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetDecimalDegreesOnProperty %f"), NewValue);
+  UE_LOG(
+      LogCesium,
+      VeryVerbose,
+      TEXT("SetDecimalDegreesOnProperty %f"),
+      NewValue);
   DecimalDegreesHandle->SetValue(NewValue);
 
   SignComboBox->SetSelectedItem(
@@ -221,13 +230,12 @@ void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
 }
 
 int32 CesiumDmsEditor::GetDegrees() const {
-  // UE_LOG(LogTemp, Warning, TEXT("GetDegrees"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return static_cast<int32>(dms.d);
 }
 void CesiumDmsEditor::SetDegrees(int32 NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetDegrees %d"), NewValue);
+  UE_LOG(LogCesium, VeryVerbose, TEXT("SetDegrees %d"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.d = NewValue;
@@ -236,13 +244,12 @@ void CesiumDmsEditor::SetDegrees(int32 NewValue) {
 }
 
 int32 CesiumDmsEditor::GetMinutes() const {
-  // UE_LOG(LogTemp, Warning, TEXT("GetMinutes"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return static_cast<int32>(dms.m);
 }
 void CesiumDmsEditor::SetMinutes(int32 NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetMinutes %d"), NewValue);
+  UE_LOG(LogCesium, VeryVerbose, TEXT("SetMinutes %d"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.m = NewValue;
@@ -251,13 +258,12 @@ void CesiumDmsEditor::SetMinutes(int32 NewValue) {
 }
 
 double CesiumDmsEditor::GetSeconds() const {
-  // UE_LOG(LogTemp, Warning, TEXT("GetSeconds"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return dms.s;
 }
 void CesiumDmsEditor::SetSeconds(double NewValue) {
-  UE_LOG(LogTemp, Warning, TEXT("SetSeconds %f"), NewValue);
+  UE_LOG(LogCesium, VeryVerbose, TEXT("SetSeconds %f"), NewValue);
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.s = NewValue;
@@ -273,7 +279,7 @@ void CesiumDmsEditor::SignChanged(
   if (StringItem.IsValid()) {
     negative = (StringItem == NegativeIndicator);
   }
-  UE_LOG(LogTemp, Warning, TEXT("SignChanged"));
+  UE_LOG(LogCesium, VeryVerbose, TEXT("SignChanged"));
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.negative = negative;
