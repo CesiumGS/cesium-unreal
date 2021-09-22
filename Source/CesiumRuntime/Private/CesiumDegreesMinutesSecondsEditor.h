@@ -22,7 +22,8 @@
  * See FCesiumGeoreferenceCustomization::CustomizeDetails for
  * an example of how to use this class.
  */
-class CesiumDmsEditor : public TSharedFromThis<CesiumDmsEditor> {
+class CesiumDegreesMinutesSecondsEditor
+    : public TSharedFromThis<CesiumDegreesMinutesSecondsEditor> {
 
 public:
   /**
@@ -36,7 +37,7 @@ public:
    * @param InputIsLongitude Whether the edited property is a
    * longitude (as opposed to a latitude) property
    */
-  CesiumDmsEditor(
+  CesiumDegreesMinutesSecondsEditor(
       TSharedPtr<class IPropertyHandle> InputDecimalDegreesHandle,
       bool InputIsLongitude);
 

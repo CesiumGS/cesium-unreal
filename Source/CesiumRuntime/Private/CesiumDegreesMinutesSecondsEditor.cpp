@@ -2,7 +2,7 @@
 
 #if WITH_EDITOR
 
-#include "CesiumDmsEditor.h"
+#include "CesiumDegreesMinutesSecondsEditor.h"
 #include "CesiumRuntime.h"
 
 #include "PropertyCustomizationHelpers.h"
@@ -98,14 +98,14 @@ double dmsToDecimalDegrees(const DMS& dms) {
 
 } // namespace
 
-CesiumDmsEditor::CesiumDmsEditor(
+CesiumDegreesMinutesSecondsEditor::CesiumDegreesMinutesSecondsEditor(
     TSharedPtr<class IPropertyHandle> InputDecimalDegreesHandle,
     bool InputIsLongitude) {
   this->DecimalDegreesHandle = InputDecimalDegreesHandle;
   this->IsLongitude = InputIsLongitude;
 }
 
-void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
+void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
 
   // The default editing component for the property:
   // A SpinBox for the decimal degrees
@@ -113,28 +113,36 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
       SNew(SSpinBox<double>)
           .MinSliderValue(IsLongitude ? -180 : -90)
           .MaxSliderValue(IsLongitude ? 180 : 90)
-          .OnValueChanged(this, &CesiumDmsEditor::SetDecimalDegreesOnProperty)
-          .Value(this, &CesiumDmsEditor::GetDecimalDegreesFromProperty);
+          .OnValueChanged(
+              this,
+              &CesiumDegreesMinutesSecondsEditor::SetDecimalDegreesOnProperty)
+          .Value(
+              this,
+              &CesiumDegreesMinutesSecondsEditor::
+                  GetDecimalDegreesFromProperty);
 
   // Editing components for the DMS representation:
   // Spin boxes for degrees, minutes and seconds
-  DegreesSpinBox = SNew(SSpinBox<int32>)
-                       .MinSliderValue(0)
-                       .MaxSliderValue(IsLongitude ? 179 : 89)
-                       .OnValueChanged(this, &CesiumDmsEditor::SetDegrees)
-                       .Value(this, &CesiumDmsEditor::GetDegrees);
+  DegreesSpinBox =
+      SNew(SSpinBox<int32>)
+          .MinSliderValue(0)
+          .MaxSliderValue(IsLongitude ? 179 : 89)
+          .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetDegrees)
+          .Value(this, &CesiumDegreesMinutesSecondsEditor::GetDegrees);
 
-  MinutesSpinBox = SNew(SSpinBox<int32>)
-                       .MinSliderValue(0)
-                       .MaxSliderValue(59)
-                       .OnValueChanged(this, &CesiumDmsEditor::SetMinutes)
-                       .Value(this, &CesiumDmsEditor::GetMinutes);
+  MinutesSpinBox =
+      SNew(SSpinBox<int32>)
+          .MinSliderValue(0)
+          .MaxSliderValue(59)
+          .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetMinutes)
+          .Value(this, &CesiumDegreesMinutesSecondsEditor::GetMinutes);
 
-  SecondsSpinBox = SNew(SSpinBox<double>)
-                       .MinSliderValue(0)
-                       .MaxSliderValue(59.999999)
-                       .OnValueChanged(this, &CesiumDmsEditor::SetSeconds)
-                       .Value(this, &CesiumDmsEditor::GetSeconds);
+  SecondsSpinBox =
+      SNew(SSpinBox<double>)
+          .MinSliderValue(0)
+          .MaxSliderValue(59.999999)
+          .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetSeconds)
+          .Value(this, &CesiumDegreesMinutesSecondsEditor::GetSeconds);
 
   // The combo box for selecting "Eeast" or "West",
   // or "North" or "South", respectively.
@@ -149,7 +157,9 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
   SignComboBoxItems.Emplace(PositiveIndicator);
   SignComboBox = SNew(STextComboBox)
                      .OptionsSource(&SignComboBoxItems)
-                     .OnSelectionChanged(this, &CesiumDmsEditor::SignChanged);
+                     .OnSelectionChanged(
+                         this,
+                         &CesiumDegreesMinutesSecondsEditor::SignChanged);
   SignComboBox->SetSelectedItem(
       GetDecimalDegreesFromProperty() < 0 ? NegativeIndicator
                                           : PositiveIndicator);
@@ -207,7 +217,8 @@ void CesiumDmsEditor::PopulateRow(IDetailPropertyRow& Row) {
   // clang-format on
 }
 
-double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
+double
+CesiumDegreesMinutesSecondsEditor::GetDecimalDegreesFromProperty() const {
   double decimalDegrees;
   FPropertyAccess::Result AccessResult =
       DecimalDegreesHandle->GetValue(decimalDegrees);
@@ -222,18 +233,19 @@ double CesiumDmsEditor::GetDecimalDegreesFromProperty() const {
   return decimalDegrees;
 }
 
-void CesiumDmsEditor::SetDecimalDegreesOnProperty(double NewValue) {
+void CesiumDegreesMinutesSecondsEditor::SetDecimalDegreesOnProperty(
+    double NewValue) {
   DecimalDegreesHandle->SetValue(NewValue);
   SignComboBox->SetSelectedItem(
       NewValue < 0 ? NegativeIndicator : PositiveIndicator);
 }
 
-int32 CesiumDmsEditor::GetDegrees() const {
+int32 CesiumDegreesMinutesSecondsEditor::GetDegrees() const {
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return static_cast<int32>(dms.d);
 }
-void CesiumDmsEditor::SetDegrees(int32 NewValue) {
+void CesiumDegreesMinutesSecondsEditor::SetDegrees(int32 NewValue) {
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.d = NewValue;
@@ -241,12 +253,12 @@ void CesiumDmsEditor::SetDegrees(int32 NewValue) {
   SetDecimalDegreesOnProperty(newDecimalDegreesValue);
 }
 
-int32 CesiumDmsEditor::GetMinutes() const {
+int32 CesiumDegreesMinutesSecondsEditor::GetMinutes() const {
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return static_cast<int32>(dms.m);
 }
-void CesiumDmsEditor::SetMinutes(int32 NewValue) {
+void CesiumDegreesMinutesSecondsEditor::SetMinutes(int32 NewValue) {
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.m = NewValue;
@@ -254,12 +266,12 @@ void CesiumDmsEditor::SetMinutes(int32 NewValue) {
   SetDecimalDegreesOnProperty(newDecimalDegreesValue);
 }
 
-double CesiumDmsEditor::GetSeconds() const {
+double CesiumDegreesMinutesSecondsEditor::GetSeconds() const {
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   return dms.s;
 }
-void CesiumDmsEditor::SetSeconds(double NewValue) {
+void CesiumDegreesMinutesSecondsEditor::SetSeconds(double NewValue) {
   double decimalDegrees = GetDecimalDegreesFromProperty();
   DMS dms = decimalDegreesToDms(decimalDegrees);
   dms.s = NewValue;
@@ -267,7 +279,7 @@ void CesiumDmsEditor::SetSeconds(double NewValue) {
   SetDecimalDegreesOnProperty(newDecimalDegreesValue);
 }
 
-void CesiumDmsEditor::SignChanged(
+void CesiumDegreesMinutesSecondsEditor::SignChanged(
     TSharedPtr<FString> StringItem,
     ESelectInfo::Type SelectInfo) {
 

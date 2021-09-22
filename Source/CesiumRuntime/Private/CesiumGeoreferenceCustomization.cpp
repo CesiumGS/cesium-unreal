@@ -3,7 +3,7 @@
 #if WITH_EDITOR
 
 #include "CesiumGeoreferenceCustomization.h"
-#include "CesiumDmsEditor.h"
+#include "CesiumDegreesMinutesSecondsEditor.h"
 #include "CesiumGeoreference.h"
 #include "PropertyCustomizationHelpers.h"
 #include "PropertyEditing.h"
@@ -31,8 +31,9 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude));
   IDetailPropertyRow& LongitudeRow =
       CesiumCategory.AddProperty(LongitudeDecimalDegreesHandle);
-  LongitudeEditor =
-      MakeShared<CesiumDmsEditor>(LongitudeDecimalDegreesHandle, true);
+  LongitudeEditor = MakeShared<CesiumDegreesMinutesSecondsEditor>(
+      LongitudeDecimalDegreesHandle,
+      true);
   LongitudeEditor->PopulateRow(LongitudeRow);
 
   TSharedPtr<class IPropertyHandle> LatitudeDecimalDegreesHandle =
@@ -40,8 +41,9 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude));
   IDetailPropertyRow& LatitudeRow =
       CesiumCategory.AddProperty(LatitudeDecimalDegreesHandle);
-  LatitudeEditor =
-      MakeShared<CesiumDmsEditor>(LatitudeDecimalDegreesHandle, false);
+  LatitudeEditor = MakeShared<CesiumDegreesMinutesSecondsEditor>(
+      LatitudeDecimalDegreesHandle,
+      false);
   LatitudeEditor->PopulateRow(LatitudeRow);
 
   CesiumCategory.AddProperty(

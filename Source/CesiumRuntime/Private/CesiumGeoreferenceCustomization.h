@@ -4,7 +4,7 @@
 
 #if WITH_EDITOR
 
-#include "CesiumDmsEditor.h"
+#include "CesiumDegreesMinutesSecondsEditor.h"
 #include "IDetailCustomization.h"
 
 /**
@@ -12,8 +12,8 @@
  * the Details View of a CesiumGeoreference.
  *
  * It is registered in FCesiumRuntimeModule::StartupModule, and will
- * use a CesiumDmsEditor for the OriginLatitude and OriginLongitude
- * properties.
+ * use a CesiumDegreesMinutesSecondsEditor for the OriginLatitude
+ * and OriginLongitude properties.
  */
 class FCesiumGeoreferenceCustomization : public IDetailCustomization {
 public:
@@ -22,8 +22,8 @@ public:
   static TSharedRef<IDetailCustomization> MakeInstance();
 
 private:
-  TSharedPtr<CesiumDmsEditor> LongitudeEditor;
-  TSharedPtr<CesiumDmsEditor> LatitudeEditor;
+  TSharedPtr<CesiumDegreesMinutesSecondsEditor> LongitudeEditor;
+  TSharedPtr<CesiumDegreesMinutesSecondsEditor> LatitudeEditor;
 };
 
 #endif // WITH_EDITOR
