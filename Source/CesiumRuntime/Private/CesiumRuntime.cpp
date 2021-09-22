@@ -3,15 +3,10 @@
 #include "CesiumRuntime.h"
 #include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceCustomization.h"
 #include "CesiumUtility/Tracing.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
-
-#if WITH_EDITOR
-#include "PropertyEditorModule.h"
-#endif // WITH_EDITOR
 
 #if CESIUM_TRACING_ENABLED
 #include <chrono>
@@ -28,20 +23,6 @@ void FCesiumRuntimeModule::StartupModule() {
   pLogger->sinks() = {std::make_shared<SpdlogUnrealLoggerSink>()};
 
   FModuleManager::Get().LoadModuleChecked(TEXT("HTTP"));
-
-#if WITH_EDITOR
-  // Register detail customization for CesiumGeoreference
-  FPropertyEditorModule& PropertyEditorModule =
-      FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
-          "PropertyEditor");
-
-  PropertyEditorModule.RegisterCustomClassLayout(
-      ACesiumGeoreference::StaticClass()->GetFName(),
-      FOnGetDetailCustomizationInstance::CreateStatic(
-          &FCesiumGeoreferenceCustomization::MakeInstance));
-
-  PropertyEditorModule.NotifyCustomizationModuleChanged();
-#endif // WITH_EDITOR
 
   CESIUM_TRACE_INIT(
       "cesium-trace-" +

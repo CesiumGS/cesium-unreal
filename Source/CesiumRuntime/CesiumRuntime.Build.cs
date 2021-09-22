@@ -129,16 +129,6 @@ public class CesiumRuntime : ModuleRules
                 "RenderCore"
             }
         );
-        if (Target.bBuildEditor)
-        {
-          PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
-                "InputCore",
-                "PropertyEditor"
-            }
-          );
-        }
 
         // Use UE's MikkTSpace on non-Android
         if (Target.Platform != UnrealTargetPlatform.Android)

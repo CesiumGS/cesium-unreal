@@ -1,7 +1,5 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#if WITH_EDITOR
-
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumDegreesMinutesSecondsEditor.h"
 #include "CesiumGeoreference.h"
@@ -56,5 +54,3 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
   CesiumCategory.AddProperty(
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, WorldOriginCamera));
 }
-
-#endif // WITH_EDITOR

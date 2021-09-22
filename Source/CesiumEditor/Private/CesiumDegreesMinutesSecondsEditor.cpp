@@ -1,9 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#if WITH_EDITOR
-
 #include "CesiumDegreesMinutesSecondsEditor.h"
-#include "CesiumRuntime.h"
+#include "CesiumEditor.h"
 
 #include "PropertyCustomizationHelpers.h"
 #include "PropertyEditing.h"
@@ -225,10 +223,10 @@ CesiumDegreesMinutesSecondsEditor::GetDecimalDegreesFromProperty() const {
   if (AccessResult == FPropertyAccess::Success) {
     return decimalDegrees;
   }
-  // This should never be the case, if the actual prperty
+  // This should never be the case, if the actual property
   // was a double property, so this warning indicates a
   // developer error:
-  UE_LOG(LogCesium, Error, TEXT("GetDecimalDegreesFromProperty FAILED"));
+  UE_LOG(LogCesiumEditor, Error, TEXT("GetDecimalDegreesFromProperty FAILED"));
   assert(false);
   return decimalDegrees;
 }
@@ -293,5 +291,3 @@ void CesiumDegreesMinutesSecondsEditor::SignChanged(
   double newDecimalDegreesValue = dmsToDecimalDegrees(dms);
   SetDecimalDegreesOnProperty(newDecimalDegreesValue);
 }
-
-#endif // WITH_EDITOR
