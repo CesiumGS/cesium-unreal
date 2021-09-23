@@ -29,4 +29,3 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
 }
-}

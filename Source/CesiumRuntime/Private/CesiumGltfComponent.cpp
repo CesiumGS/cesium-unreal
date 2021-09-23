@@ -275,7 +275,7 @@ static void computeFlatNormals(
 
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
-    PxTriangleMesh* pCollisionMesh,
+    PxTriangleMesh*& pCollisionMesh,
     const IPhysXCooking* pPhysXCooking,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
@@ -1957,25 +1957,28 @@ void UCesiumGltfComponent::FinishDestroy() {
 
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
-    PxTriangleMesh* pCollisionMesh,
+    PxTriangleMesh*& pCollisionMesh,
     const IPhysXCooking* pPhysXCooking,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
 
   if (pPhysXCooking) {
+    int32 vertexCount = vertexData.Num();
+    int32 triangleCount = indices.Num() / 3;
+
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
     TArray<FVector> vertices;
-    vertices.SetNum(StaticMeshBuildVertices.Num());
+    vertices.SetNum(vertexCount);
 
-    for (size_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-      vertices[i] = StaticMeshBuildVertices[i].Position;
+    for (size_t i = 0; i < vertexCount; ++i) {
+      vertices[i] = vertexData[i].Position;
     }
 
     TArray<FTriIndices> physicsIndices;
-    physicsIndices.SetNum(indices.Num() / 3);
+    physicsIndices.SetNum(triangleCount);
 
-    for (size_t i = 0; i < indices.Num() / 3; ++i) {
+    for (size_t i = 0; i < triangleCount; ++i) {
       physicsIndices[i].v0 = indices[3 * i];
       physicsIndices[i].v1 = indices[3 * i + 1];
       physicsIndices[i].v2 = indices[3 * i + 2];
