@@ -287,7 +287,8 @@ void ACesiumGeoreference::AddGeoreferencedObject(
     }
   }
 
-#if ENGINE_MAJOR_VERSION == 5 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27)
+#if ENGINE_MAJOR_VERSION == 5 ||                                               \
+    (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27)
   this->_georeferencedObjects.Add(
       TWeakInterfacePtr<ICesiumGeoreferenceable>(Object));
 #else
