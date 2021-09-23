@@ -98,7 +98,10 @@ public:
    * Settings and that the level is in a Layer with Distance Based Streaming
    * DISABLED.
    */
-  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "CesiumSublevels",
+      Meta = (TitleProperty = "LevelName"))
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
