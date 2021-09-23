@@ -45,7 +45,7 @@
 #else
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
-#include "ChaosDerivedDataUtil.h"
+#include "Chaos/AABBTree.h"
 #endif
 
 #if WITH_EDITOR
@@ -276,7 +276,8 @@ static void computeFlatNormals(
 #if !PHYSICS_INTERFACE_PHYSX
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
-    const TArray<FStaticMeshBuildVertex>& vertices,
+    bool duplicateVertices,
+    const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
 #endif
 
@@ -740,12 +741,6 @@ static void loadPrimitive(
   StaticMeshBuildVertices.SetNum(
       duplicateVertices ? indices.Num() : positionView.size());
 
-  // The static mesh we construct will _not_ be indexed, even if the incoming
-  // glTF is. This allows us to compute flat normals if the glTF doesn't include
-  // them already, and it allows us to compute a correct tangent space basis
-  // according to the MikkTSpace algorithm when tangents are not included in the
-  // glTF.
-
   {
     if (duplicateVertices) {
       CESIUM_TRACE("copy duplicated positions");
@@ -953,8 +948,13 @@ static void loadPrimitive(
         false);
   }
 
+#if ENGINE_MAJOR_VERSION == 5
+  FStaticMeshSectionArray& Sections = LODResources.Sections;
+#else
   FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
       LODResources.Sections;
+#endif
+
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
   section.bEnableCollision = true;
 
@@ -996,7 +996,9 @@ static void loadPrimitive(
   LODResources.bHasDepthOnlyIndices = false;
   LODResources.bHasReversedIndices = false;
   LODResources.bHasReversedDepthOnlyIndices = false;
+#if ENGINE_MAJOR_VERSION < 5
   LODResources.bHasAdjacencyInfo = false;
+#endif
 
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
@@ -1041,10 +1043,8 @@ static void loadPrimitive(
 #else
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
     CESIUM_TRACE("Chaos cook");
-    primitiveResult.pCollisionMesh = BuildChaosTriangleMeshes(
-        duplicateVertices,
-        StaticMeshBuildVertices,
-        indices);
+    primitiveResult.pCollisionMesh =
+        BuildChaosTriangleMeshes(duplicateVertices, StaticMeshBuildVertices, indices);
   }
 #endif
 
@@ -1697,22 +1697,25 @@ static void loadModelGameThreadPart(
 #endif
   pStaticMesh->CreateBodySetup();
 
+  UBodySetup* pBodySetup = pMesh->GetBodySetup();
+
   // pMesh->UpdateCollisionFromStaticMesh();
-  pMesh->GetBodySetup()->CollisionTraceFlag =
+  pBodySetup->CollisionTraceFlag =
       ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
-    pMesh->GetBodySetup()->TriMeshes.Add(loadResult.pCollisionMesh);
+    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh);
 #else
-    pMesh->GetBodySetup()->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
+    pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif
   }
 
   // Mark physics meshes created, no matter if we actually have a collision
   // mesh or not. We don't want the editor creating collision meshes itself in
   // the game thread, because that would be slow.
-  pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
+
+  pBodySetup->bCreatedPhysicsMeshes = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
 
@@ -1972,6 +1975,74 @@ void UCesiumGltfComponent::FinishDestroy() {
 }
 
 #if !PHYSICS_INTERFACE_PHYSX
+template <typename TIndex>
+static bool isDegenerate(
+    const Chaos::TVector<TIndex, 3>>& triangle, 
+    const TArray<FStaticMeshBuildVertex>& vertexData) {
+
+  const TIndex& i0 = triangle[0];
+  const TIndex& i1 = triangle[1];
+  const TIndex& i2 = triangle[2];
+
+  const FVector& a = vertexData[i0].Position;
+  const FVector& b = vertexData[i1].Position;
+  const FVector& c = vertexData[i2].Position;
+
+  FVector ab = b - a;
+  FVector ac = c - a;
+      
+  // TODO: what is a reasonable epsilon here?
+  return FVector::CrossProduct(ab, ac).Size() < 0.001f;
+}
+
+// TODO: rename this function?
+template <typename TIndex>
+static void fillTriangles(
+    TArray<Chaos::TVector<TIndex, 3>>& triangles, 
+    bool duplicateVertices, 
+    const TArray<FStaticMeshBuildVertex>& vertexData, 
+    const TArray<uint32>& indices,
+    int32 triangleCount) {
+
+  triangles.Reserve(triangleCount);
+
+  if (duplicateVertices) {
+    for (TIndex i = 0; i < static_cast<TIndex>(triangleCount); ++i) {
+      TIndex index0 = 3 * i;
+      triangles.Add(
+          Chaos::TVector<TIndex, 3>(index0 + 1, index0, index0 + 2));
+    }
+  } else {
+    for (TIndex i = 0; i < static_cast<TIndex>(triangleCount); ++i) {
+      TIndex index0 = 3 * i;
+      triangles.Add(
+          Chaos::TVector<TIndex, 3>(
+            static_cast<TIndex>(indices[index0 + 1]), 
+            static_cast<TIndex>(indices[index0]),
+            static_cast<TIndex>(indices[index0 + 2])));
+    }
+  }
+
+  // initialize remap list with -1s to indicate an index hasn't been remapped
+  TArray<int32> indexRemap;
+  indexRemap.SetNum(indices.Num());
+  std::memset(faceRemap.Data(), 0xff, sizeof(int32) * indices.Num());
+
+  // Gets rid of degenerative triangles and compacts triangles list.
+  int32 compactedTriangleCount = 0;
+  for (int32 i = 0; i < triangleCount; ++i) {
+    Chaos::TVector<TIndex, 3>& triangle = triangles[i];
+    
+    if (isDegenerate(triangle)) {
+      // arbitrarily choose the first vertex to collapse the others into
+      
+    } else {
+      triangles[compactedTriangleCount] = triangle;
+      ++compactedTriangleCount;      
+    }
+  }
+}
+
 // This is copied from FChaosDerivedDataCooker::BuildTriangleMeshes in
 // C:\Program Files\Epic
 // Games\UE_4.26\Engine\Source\Runtime\Engine\Private\PhysicsEngine\Experimental\ChaosDerivedData.cpp.
@@ -1981,13 +2052,54 @@ void UCesiumGltfComponent::FinishDestroy() {
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
     bool duplicateVertices,
-    const TArray<FStaticMeshBuildVertex>& vertices,
+    const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT(
-          "The Chaos physics engine is not currently supported by Cesium for Unreal because functionality required to cook meshes at runtime is not available."));
-  return nullptr;
+  
+  int32 vertexCount = duplicateVertices ? indices.Num() : vertexData.Num();
+  int32 triangleCount = vertexCount / 3;
+
+  Chaos::TParticles<Chaos::FReal, 3> vertices;
+  vertices.AddParticles(vertexCount);
+
+  // copy over vertices, flatten if needed
+  if (duplicateVertices) {
+    for (int32 i = 0; i < vertexCount; ++i) {
+      vertices.X(i) = vertexData[indices[i]].Position;
+    }
+  } else {
+    for (int32 i = 0; i < vertexCount; ++i) {
+      vertices.X(i) = vertexData[i].Position;
+    }
+  }
+
+  TArray<uint16> materials;
+  materials.SetNum(triangleCount);
+
+  TArray<int32> faceRemap;
+  faceRemap.SetNum(triangleCount);
+
+  for (int32 i = 0; i < triangleCount; ++i) {
+    faceRemap[i] = i; 
+  }
+
+  TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
+
+  if (vertexCount < TNumericLimits<uint16>::Max()) {
+    TArray<Chaos::TVector<uint16, 3>> triangles;
+    fillTriangles(triangles, duplicateVertices, vertexData, indices, triangleCount);
+    return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
+        MoveTemp(vertices),
+        MoveTemp(triangles),
+        MoveTemp(materials),
+        MoveTemp(pFaceRemap));
+  } else {
+    TArray<Chaos::TVector<int32, 3>> triangles;
+    fillTriangles(triangles, duplicateVertices, vertexData, indices, triangleCount);
+    return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
+        MoveTemp(vertices),
+        MoveTemp(triangles),
+        MoveTemp(materials),
+        MoveTemp(pFaceRemap));
+  }
 }
 #endif

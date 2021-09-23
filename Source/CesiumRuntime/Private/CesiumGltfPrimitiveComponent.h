@@ -41,4 +41,10 @@ public:
    * @param CesiumToUnrealTransform The new transformation.
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+
+  /**
+   * TODO: document
+   */
+  UFUNCTION()
+  void ChaosCookingCallback(bool bSuccess, UBodySetup* pBodySetup);
 };
