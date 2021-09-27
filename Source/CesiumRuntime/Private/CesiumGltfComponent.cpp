@@ -1695,7 +1695,6 @@ static void loadModelGameThreadPart(
   // Mark physics meshes created, no matter if we actually have a collision
   // mesh or not. We don't want the editor creating collision meshes itself in
   // the game thread, because that would be slow.
-
   pBodySetup->bCreatedPhysicsMeshes = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
@@ -1997,31 +1996,6 @@ static void BuildPhysXTriangleMeshes(
 
 #else
 template <typename TIndex>
-static bool isDegenerate(
-    const Chaos::TVector<TIndex, 3>& triangle,
-    const TArray<FStaticMeshBuildVertex>& vertexData) {
-
-  const TIndex& i0 = triangle[0];
-  const TIndex& i1 = triangle[1];
-  const TIndex& i2 = triangle[2];
-
-  if (i0 == i1 || i0 == i2 || i1 == i2) {
-    return true;
-  }
-
-  const FVector& a = vertexData[i0].Position;
-  const FVector& b = vertexData[i1].Position;
-  const FVector& c = vertexData[i2].Position;
-
-  FVector ab = b - a;
-  FVector ac = c - a;
-
-  // TODO: what is a reasonable epsilon here?
-  return FVector::CrossProduct(ab, ac).SizeSquared() < 0.01f;
-}
-
-// TODO: rename this function?
-template <typename TIndex>
 static void fillTriangles(
     TArray<Chaos::TVector<TIndex, 3>>& triangles,
     const TArray<FStaticMeshBuildVertex>& vertexData,
@@ -2032,13 +2006,10 @@ static void fillTriangles(
 
   for (TIndex i = 0; i < static_cast<TIndex>(triangleCount); ++i) {
     TIndex index0 = 3 * i;
-    Chaos::TVector<TIndex, 3> triangle(
+    triangles.Add(Chaos::TVector<TIndex, 3>(
         static_cast<TIndex>(indices[index0 + 1]),
         static_cast<TIndex>(indices[index0]),
-        static_cast<TIndex>(indices[index0 + 2]));
-    if (!isDegenerate(triangle, vertexData)) {
-      triangles.Add(MoveTemp(triangle));
-    }
+        static_cast<TIndex>(indices[index0 + 2])));
   }
 }
 
