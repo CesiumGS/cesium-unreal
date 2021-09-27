@@ -21,7 +21,6 @@
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
 #include "VecMath.h"
-#include "WorldBrowserModule.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -33,6 +32,7 @@
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
+#include "WorldBrowserModule.h"
 
 // These are in the Private directory, yet they are exported, so we're able to
 // use them. And there's no other way (AFAIK) to get details of unloaded levels.
