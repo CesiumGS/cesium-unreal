@@ -26,9 +26,8 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() {
 
   this->MakeLinear();
 
-  this->GeoreferenceComponent =
-      CreateDefaultSubobject<UCesiumGeoreferenceComponent>(
-          TEXT("GeoreferenceComponent"));
+  this->GlobeAnchor =
+      CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
 }
 
 void ACesiumCartographicPolygon::OnConstruction(const FTransform& Transform) {

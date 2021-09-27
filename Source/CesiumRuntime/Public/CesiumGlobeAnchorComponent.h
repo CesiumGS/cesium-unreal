@@ -309,7 +309,7 @@ public:
 
 protected:
   /**
-   * Called when a component is registered. This can be viewed as "activating"
+   * Called when a component is registered. This can be viewed as "enabling"
    * this Component on the Actor to which it is attached.
    *
    * In the Editor, this is called in a many different situations, such as on
@@ -319,7 +319,7 @@ protected:
 
   /**
    * Called when a component is unregistered. This can be viewed as
-   * "deactivating" this Component on the Actor to which it is attached.
+   * "disabling" this Component on the Actor to which it is attached.
    *
    * In the Editor, this is called in a many different situations, such as on
    * changes to properties.

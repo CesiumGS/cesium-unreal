@@ -1,5 +1,13 @@
 # Change Log
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+* Removed `CesiumGlobeAnchorParent`, which was deprecated in v1.3.0. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGlobeAnchorComponent`.
+* Removed the `FixTransformOnOriginRebase` property from `CesiumGeoreferenceComponent`, and the component always acts as if it is enabled. This should now work correctly even for objects that are moved by physics or other Unreal Engine mechanisms.
+* Renamed `CesiumGeoreferenceComponent` to `CesiumGlobeAnchorComponent`.
+
 ### v1.6.2 - 2021-09-14
 
 This release only updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.1 to v0.7.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.

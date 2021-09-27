@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/CartographicPolygon.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
@@ -33,7 +33,7 @@ public:
   USplineComponent* Polygon;
 
   UPROPERTY()
-  UCesiumGeoreferenceComponent* GeoreferenceComponent;
+  UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   virtual void OnConstruction(const FTransform& Transform) override;
 
