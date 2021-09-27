@@ -5,8 +5,17 @@
 ##### Breaking Changes :mega:
 
 * Removed `CesiumGlobeAnchorParent`, which was deprecated in v1.3.0. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGlobeAnchorComponent`.
-* Removed the `FixTransformOnOriginRebase` property from `CesiumGeoreferenceComponent`, and the component always acts as if it is enabled. This should now work correctly even for objects that are moved by physics or other Unreal Engine mechanisms.
+* Removed the `FixTransformOnOriginRebase` property from `CesiumGeoreferenceComponent`, and the component now always acts as if it is enabled. This should now work correctly even for objects that are moved by physics or other Unreal Engine mechanisms.
 * Renamed `CesiumGeoreferenceComponent` to `CesiumGlobeAnchorComponent`.
+
+##### Additions :tada:
+
+* Improved the workflow for managing georeferenced sub-levels.
+* `DynamicPawn` now has a `CesiumGlobeAnchorComponent` attached to it. This allows more consistent movement on the globe, and allows the pawn's Longitude/Latitude/Height or ECEF coordinates to be specified directly in the Editor.
+
+##### Fixes :wrench:
+
+* Cesium objects in a sub-level will now successfully find and use the CesiumGeoreference and CesiumCreditSystem object in the Persistent Level when these properties are left unset. For best results, we suggest removing all instances of these objects from sub-levels.
 
 ### v1.6.2 - 2021-09-14
 

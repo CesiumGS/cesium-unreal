@@ -59,8 +59,8 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset()
     : Georeference(nullptr),
-      CreditSystem(nullptr),
       ResolvedGeoreference(nullptr),
+      CreditSystem(nullptr),
 
       _pTileset(nullptr),
 
@@ -93,6 +93,81 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+
+ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
+  return this->Georeference;
+}
+
+void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
+  this->Georeference = NewGeoreference;
+  this->InvalidateResolvedGeoreference();
+  this->ResolveGeoreference();
+}
+
+ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    return this->ResolvedGeoreference;
+  }
+
+  if (IsValid(this->Georeference)) {
+    this->ResolvedGeoreference = this->Georeference;
+  } else {
+    this->ResolvedGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+
+  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+  if (pRoot) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        pRoot,
+        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+
+    // Update existing tile positions, if any.
+    pRoot->HandleGeoreferenceUpdated();
+  }
+
+  return this->ResolvedGeoreference;
+}
+
+void ACesium3DTileset::InvalidateResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+  this->ResolvedGeoreference = nullptr;
+}
+
+ACesiumCreditSystem* ACesium3DTileset::GetCreditSystem() const {
+  return this->CreditSystem;
+}
+
+void ACesium3DTileset::SetCreditSystem(ACesiumCreditSystem* NewCreditSystem) {
+  this->CreditSystem = NewCreditSystem;
+  this->InvalidateResolvedCreditSystem();
+  this->ResolveCreditSystem();
+}
+
+ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
+  if (IsValid(this->ResolvedCreditSystem)) {
+    return this->ResolvedCreditSystem;
+  }
+
+  if (IsValid(this->CreditSystem)) {
+    this->ResolvedCreditSystem = this->CreditSystem;
+  } else {
+    this->ResolvedCreditSystem =
+        ACesiumCreditSystem::GetDefaultCreditSystem(this);
+  }
+
+  // Refresh the tileset so it uses the new credit system.
+  this->RefreshTileset();
+
+  return this->ResolvedCreditSystem;
+}
+
+void ACesium3DTileset::InvalidateResolvedCreditSystem() {
+  this->ResolvedCreditSystem = nullptr;
+  this->RefreshTileset();
+}
 
 void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
 
@@ -199,17 +274,17 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  if (IsValid(this->GetResolvedGeoreference())) {
+  if (IsValid(this->ResolveGeoreference())) {
     this->_beforeMovieKeepWorldOriginNearCamera =
-        this->GetResolvedGeoreference()->KeepWorldOriginNearCamera;
+        this->ResolveGeoreference()->KeepWorldOriginNearCamera;
   }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  if (IsValid(this->GetResolvedGeoreference())) {
-    this->GetResolvedGeoreference()->KeepWorldOriginNearCamera = false;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
   }
 }
 
@@ -218,8 +293,8 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  if (IsValid(this->GetResolvedGeoreference())) {
-    this->GetResolvedGeoreference()->KeepWorldOriginNearCamera =
+  if (IsValid(this->ResolveGeoreference())) {
+    this->ResolveGeoreference()->KeepWorldOriginNearCamera =
         this->_beforeMovieKeepWorldOriginNearCamera;
   }
 }
@@ -286,7 +361,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition = std::visit(
       CalculateECEFCameraPosition{
-          this->GetResolvedGeoreference()->GetGeoTransforms()},
+          this->ResolveGeoreference()->GetGeoTransforms()},
       boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);
@@ -332,13 +407,6 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   }
 }
 #endif
-
-void ACesium3DTileset::InvalidateResolvedGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
-  }
-  this->ResolvedGeoreference = nullptr;
-}
 
 const glm::dmat4&
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
@@ -659,16 +727,13 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  if (!this->CreditSystem) {
-    this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
-  }
+  ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
       asyncSystem,
-      this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem()
-                         : nullptr,
+      pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger()};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
@@ -1076,31 +1141,6 @@ ACesium3DTileset::GetEditorCameras() const {
 }
 #endif
 
-ACesiumGeoreference* ACesium3DTileset::GetResolvedGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
-    return this->ResolvedGeoreference;
-  }
-
-  if (IsValid(this->Georeference)) {
-    this->ResolvedGeoreference = this->Georeference;
-  } else {
-    this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
-
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        pRoot,
-        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
-
-    // Update existing tile positions, if any.
-    pRoot->HandleGeoreferenceUpdated();
-  }
-
-  return this->ResolvedGeoreference;
-}
-
 bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
   return this->UpdateInEditor;
 }
@@ -1460,6 +1500,9 @@ void ACesium3DTileset::PostEditChangeProperty(
   } else if (
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
     this->InvalidateResolvedGeoreference();
+  } else if (
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreditSystem)) {
+    this->InvalidateResolvedCreditSystem();
   }
 }
 

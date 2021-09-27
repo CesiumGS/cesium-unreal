@@ -47,18 +47,116 @@ public:
   ACesium3DTileset();
   virtual ~ACesium3DTileset();
 
+private:
   /**
-   * The actor controlling how this tileset's coordinate system relates to the
-   * coordinate system in this Unreal Engine level.
+   * The designated georeference actor controlling how the actor's
+   * coordinate system relates to the coordinate system in this Unreal Engine
+   * level.
+   *
+   * If this is null, the Tileset will find and use the first Georeference
+   * Actor in the level, or create one if necessary. To get the active/effective
+   * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetGeoreference,
+      BlueprintSetter = SetGeoreference,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
   ACesiumGeoreference* Georeference;
 
   /**
-   * The actor managing this tileset's content attributions.
+   * The resolved georeference used by this Tileset. This is not serialized
+   * because it may point to a Georeference in the PersistentLevel while this
+   * tileset is in a sublevel. If the Georeference property is specified,
+   * however then this property will have the same value.
+   *
+   * This property will be null before ResolveGeoreference is called.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(Transient, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+  ACesiumGeoreference* ResolvedGeoreference = nullptr;
+
+public:
+  /** @copydoc ACesium3DTileset::Georeference */
+  UFUNCTION(BlueprintCallable)
+  ACesiumGeoreference* GetGeoreference() const;
+
+  /** @copydoc ACesium3DTileset::Georeference */
+  UFUNCTION(BlueprintCallable)
+  void SetGeoreference(ACesiumGeoreference* NewGeoreference);
+
+  /**
+   * Resolves the Cesium Georeference to use with this Actor. Returns
+   * the value of the Georeference property if it is set. Otherwise, finds a
+   * Georeference in the World and returns it, creating it if necessary. The
+   * resolved Georeference is cached so subsequent calls to this function will
+   * return the same instance.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  ACesiumGeoreference* ResolveGeoreference();
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time ResolveGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void InvalidateResolvedGeoreference();
+
+private:
+  /**
+   * The actor managing this tileset's content attributions.
+   *
+   * If this is null, the Tileset will find and use the first Credit System
+   * Actor in the level, or create one if necessary. To get the active/effective
+   * Credit System from Blueprints or C++, use ResolvedCreditSystem instead.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetCreditSystem,
+      BlueprintSetter = SetCreditSystem,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
   ACesiumCreditSystem* CreditSystem;
+
+  /**
+   * The resolved Credit System used by this Tileset. This is not serialized
+   * because it may point to a Credit System in the PersistentLevel while this
+   * tileset is in a sublevel. If the CreditSystem property is specified,
+   * however then this property will have the same value.
+   *
+   * This property will be null before ResolveCreditSystem is called.
+   */
+  UPROPERTY(Transient, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+  ACesiumCreditSystem* ResolvedCreditSystem = nullptr;
+
+public:
+  /** @copydoc ACesium3DTileset::CreditSystem */
+  UFUNCTION(BlueprintCallable)
+  ACesiumCreditSystem* GetCreditSystem() const;
+
+  /** @copydoc ACesium3DTileset::CreditSystem */
+  UFUNCTION(BlueprintCallable)
+  void SetCreditSystem(ACesiumCreditSystem* NewCreditSystem);
+
+  /**
+   * Resolves the Cesium Credit System to use with this Actor. Returns
+   * the value of the CreditSystem property if it is set. Otherwise, finds a
+   * Credit System in the World and returns it, creating it if necessary. The
+   * resolved Credit System is cached so subsequent calls to this function will
+   * return the same instance.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  ACesiumCreditSystem* ResolveCreditSystem();
+
+  /**
+   * Invalidates the cached resolved Credit System, setting it to null. The next
+   * time ResolveCreditSystem is called, the Credit System will be re-resolved.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void InvalidateResolvedCreditSystem();
 
   /**
    * The maximum number of pixels of error when rendering this tileset.
@@ -523,15 +621,6 @@ public:
     return this->_pTileset;
   }
 
-  /**
-   * Gets the resolved Cesium Georeference to use with this Actor. Returns
-   * the value of the Georeference property if it is set. Otherwise, finds a
-   * Georeference in the World and returns it, creating it if necessary. The
-   * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
-   */
-  ACesiumGeoreference* GetResolvedGeoreference();
-
   // AActor overrides (some or most of them should be protected)
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -648,25 +737,7 @@ private:
   void OnFocusEditorViewportOnThis();
 #endif
 
-  /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time GetResolvedGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  void InvalidateResolvedGeoreference();
-
 private:
-  /**
-   * The resolved georeference used by this Tileset. This is not serialized
-   * because it may point to a Georeference in the PersistentLevel while this
-   * tileset is in a sublevel. If the Georeference property is specified,
-   * however then this property will have the same value.
-   *
-   * Use GetResolvedGeoreference rather than accessing this directly.
-   */
-  UPROPERTY(Transient)
-  ACesiumGeoreference* ResolvedGeoreference;
-
   Cesium3DTilesSelection::Tileset* _pTileset;
 
   // For debug output
