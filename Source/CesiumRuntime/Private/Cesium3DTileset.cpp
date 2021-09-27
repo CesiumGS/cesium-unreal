@@ -1046,6 +1046,17 @@ ACesium3DTileset::GetEditorCameras() const {
     return {};
   }
 
+  UWorld* pWorld = this->GetWorld();
+  if (!IsValid(pWorld)) {
+    return {};
+  }
+
+  // Do not include editor cameras when running in a game world (which includes
+  // Play-in-Editor)
+  if (pWorld->IsGameWorld()) {
+    return {};
+  }
+
   const TArray<FEditorViewportClient*>& viewportClients =
       GEditor->GetAllViewportClients();
 
@@ -1205,7 +1216,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
       this->_pTileset->getOptions();
   options.maximumScreenSpaceError =
       static_cast<double>(this->MaximumScreenSpaceError);
-
+  options.maximumCachedBytes = this->MaximumCachedBytes;
   options.preloadAncestors = this->PreloadAncestors;
   options.preloadSiblings = this->PreloadSiblings;
   options.forbidHoles = this->ForbidHoles;
