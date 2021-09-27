@@ -1,5 +1,12 @@
 # Change Log
 
+### v1.7.0 - ????
+
+##### Additions :tada:
+
+- Added experimental UE5 Early Access support.
+- Added collision meshes for tilesets when using the Chaos physics engine.
+
 ### v1.6.2 - 2021-09-14
 
 This release only updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.1 to v0.7.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
