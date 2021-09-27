@@ -10,7 +10,7 @@
 #include "GlobeAwareDefaultPawn.generated.h"
 
 class ACesiumGeoreference;
-class UCesiumGeoreferenceComponent;
+class UCesiumGlobeAnchorComponent;
 class UCurveFloat;
 
 /**
@@ -158,34 +158,44 @@ public:
 
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
+  virtual void PostLoad() override;
 
 protected:
   /**
+   * THIS PROPERTY IS DEPRECATED.
+   *
+   * Get the Georeference instance from the Globe Anchor Component instead.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium",
+      BlueprintGetter = GetGeoreference,
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Get the Georeference instance from the Globe Anchor Component instead."))
+  ACesiumGeoreference* Georeference_DEPRECATED;
+
+  /**
    * Gets the Georeference Actor associated with this instance. It is obtained
-   * from the Georeference Component.
+   * from the Globe Anchor Component.
    */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ACesiumGeoreference* GetGeoreference() const;
 
   /**
-   * The actor controlling how this camera's location in the Cesium world
-   * relates to the coordinate system in this Unreal Engine level.
+   * The Globe Anchor Component that precisely ties this Pawn to the Globe.
    */
   UPROPERTY(
+      VisibleAnywhere,
       BlueprintReadOnly,
-      Category = "Cesium",
-      BlueprintGetter = GetGeoreference)
-  ACesiumGeoreference* Georeference;
-
-  /**
-   * The GeoreferenceComponent that precisely ties this Pawn to the Globe.
-   */
-  UPROPERTY(BlueprintReadOnly)
-  UCesiumGeoreferenceComponent* GeoreferenceComponent;
+      Category = "Cesium" /*,
+      Meta = (ShowOnlyInnerProperties = true) */)
+  UCesiumGlobeAnchorComponent* GlobeAnchor;
 
 private:
   void _moveAlongViewAxis(EAxis::Type axis, float Val);
-  void _moveAlongAxis(const FVector& axis, float Val);
+  void _moveAlongVector(const FVector& axis, float Val);
   void _interruptFlight();
 
   /**

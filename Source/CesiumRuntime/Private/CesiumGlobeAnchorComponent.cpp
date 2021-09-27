@@ -1,38 +1,196 @@
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumActors.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumGeoreference.h"
+#include "CesiumTransforms.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
+#include <glm/gtx/matrix_decompose.hpp>
+
+ACesiumGeoreference* UCesiumGlobeAnchorComponent::GetGeoreference() const {
+  return this->Georeference;
+}
+
+void UCesiumGlobeAnchorComponent::SetGeoreference(
+    ACesiumGeoreference* NewGeoreference) {
+  this->Georeference = NewGeoreference;
+  this->InvalidateResolvedGeoreference();
+  this->ResolveGeoreference();
+}
+
+glm::dvec3 UCesiumGlobeAnchorComponent::GetECEF() const {
+  if (!this->_actorToECEFIsValid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
+        *this->GetName());
+    return glm::dvec3(0.0);
+  }
+
+  return glm::dvec3(this->_actorToECEF[3]);
+}
+
+void UCesiumGlobeAnchorComponent::MoveToECEF(const glm::dvec3& newPosition) {
+  this->ECEF_X = newPosition.x;
+  this->ECEF_Y = newPosition.y;
+  this->ECEF_Z = newPosition.z;
+  this->_applyCartesianProperties();
+}
+
+void UCesiumGlobeAnchorComponent::InaccurateMoveToECEF(
+    const FVector& TargetEcef) {
+  this->MoveToECEF(VecMath::createVector3D(TargetEcef));
+}
+
+void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
+  if (!this->_actorToECEFIsValid || !IsValid(this->ResolvedGeoreference)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "CesiumGlobeAnchorComponent %s globe orientation cannot be changed because the component is not yet registered."),
+        *this->GetName());
+    return;
+  }
+
+  // Compute the current local up axis of the actor (the +Z axis)
+  glm::dmat3 currentRotation = glm::dmat3(this->_actorToECEF);
+  const glm::dvec3 actorUp = glm::normalize(currentRotation[2]);
+
+  // Compute the surface normal of the ellipsoid
+  const glm::dvec3 ellipsoidNormal =
+      this->ResolvedGeoreference->ComputeGeodeticSurfaceNormal(this->GetECEF());
+
+  // Find the shortest rotation to align local up with the ellipsoid normal
+  const glm::dquat R = glm::rotation(actorUp, ellipsoidNormal);
+  const glm::dmat3 alignmentRotation = glm::mat3_cast(R);
+
+  // Compute the new actor rotation and apply it
+  const glm::dmat3 newRotation = alignmentRotation * currentRotation;
+  this->_actorToECEF = glm::dmat4(
+      glm::dvec4(newRotation[0], 0.0),
+      glm::dvec4(newRotation[1], 0.0),
+      glm::dvec4(newRotation[2], 0.0),
+      this->_actorToECEF[3]);
+
+  this->_updateActorTransformFromGlobeTransform();
+}
+
+void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
+  if (!this->_actorToECEFIsValid || !IsValid(this->ResolvedGeoreference)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "CesiumGlobeAnchorComponent %s globe orientation cannot be changed because the component is not yet registered."),
+        *this->GetName());
+    return;
+  }
+
+  // Extract the translation and scale from the existing transformation.
+  // We assume there is no perspective or skew.
+  glm::dvec4 translation = this->_actorToECEF[3];
+  glm::dvec3 scale = glm::dvec3(
+      glm::length(this->_actorToECEF[0]),
+      glm::length(this->_actorToECEF[1]),
+      glm::length(this->_actorToECEF[2]));
+
+  // Compute the desired new orientation.
+  glm::dmat3 newOrientation =
+      this->ResolvedGeoreference->GetGeoTransforms().ComputeEastNorthUpToEcef(
+          translation) *
+      glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+
+  // Scale the new orientation
+  newOrientation[0] *= scale.x;
+  newOrientation[1] *= scale.y;
+  newOrientation[2] *= scale.z;
+
+  // Recompose the transform.
+  this->_actorToECEF = glm::dmat4(
+      glm::dvec4(newOrientation[0], 0.0),
+      glm::dvec4(newOrientation[1], 0.0),
+      glm::dvec4(newOrientation[2], 0.0),
+      translation);
+
+  // Update the actor from the new globe transform
+  this->_updateActorTransformFromGlobeTransform();
+}
 
 ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
-  if (IsValid(this->_pResolvedGeoreference)) {
-    return this->_pResolvedGeoreference;
+  if (IsValid(this->ResolvedGeoreference)) {
+    return this->ResolvedGeoreference;
   }
 
   if (IsValid(this->Georeference)) {
-    this->_pResolvedGeoreference = this->Georeference;
+    this->ResolvedGeoreference = this->Georeference;
   } else {
-    this->_pResolvedGeoreference =
+    this->ResolvedGeoreference =
         ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
-  if (this->_pResolvedGeoreference) {
-    this->_pResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+  if (this->ResolvedGeoreference) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
         this,
         &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
   }
 
   this->_onGeoreferenceChanged();
 
-  return this->_pResolvedGeoreference;
+  return this->ResolvedGeoreference;
 }
 
 void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
-  if (IsValid(this->_pResolvedGeoreference)) {
-    this->_pResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
   }
-  this->_pResolvedGeoreference = nullptr;
+  this->ResolvedGeoreference = nullptr;
+}
+
+glm::dvec3 UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
+  if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
+        *this->GetName());
+    return glm::dvec3(0.0);
+  }
+
+  return this->ResolvedGeoreference->TransformEcefToLongitudeLatitudeHeight(
+      this->GetECEF());
+}
+
+FVector
+UCesiumGlobeAnchorComponent::InaccurateGetLongitudeLatitudeHeight() const {
+  return VecMath::createVector(this->GetLongitudeLatitudeHeight());
+}
+
+void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
+    const glm::dvec3& TargetLongitudeLatitudeHeight) {
+  if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "CesiumGlobeAnchorComponent %s cannot move to a globe position because the component is not yet registered."),
+        *this->GetName());
+    return;
+  }
+
+  this->MoveToECEF(
+      this->ResolvedGeoreference->TransformLongitudeLatitudeHeightToEcef(
+          TargetLongitudeLatitudeHeight));
+}
+
+void UCesiumGlobeAnchorComponent::InaccurateMoveToLongitudeLatitudeHeight(
+    const FVector& TargetLongitudeLatitudeHeight) {
+  return this->MoveToLongitudeLatitudeHeight(
+      VecMath::createVector3D(TargetLongitudeLatitudeHeight));
 }
 
 void UCesiumGlobeAnchorComponent::ApplyWorldOffset(
@@ -52,8 +210,6 @@ void UCesiumGlobeAnchorComponent::ApplyWorldOffset(
   // is that the OriginLocation hasn't actually been updated yet.
   UActorComponent::ApplyWorldOffset(InOffset, bWorldShift);
 
-  // Compute the position that the world origin will have
-  // after the rebase, indeed by SUBTRACTING the offset
   const UWorld* pWorld = this->GetWorld();
   if (!IsValid(pWorld)) {
     UE_LOG(
@@ -64,12 +220,35 @@ void UCesiumGlobeAnchorComponent::ApplyWorldOffset(
     return;
   }
 
+  // Compute the position that the world origin will have
+  // after the rebase, indeed by SUBTRACTING the offset
   const glm::dvec3 oldWorldOriginLocation =
       VecMath::createVector3D(pWorld->OriginLocation);
   const glm::dvec3 offset = VecMath::createVector3D(InOffset);
   const glm::dvec3 newWorldOriginLocation = oldWorldOriginLocation - offset;
 
+  // Update the Actor transform from the globe transform with the new origin
+  // location explicitly provided.
   this->_updateActorTransformFromGlobeTransform(newWorldOriginLocation);
+}
+
+void UCesiumGlobeAnchorComponent::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+  const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::GeoreferenceRefactoring) {
+    // In previous versions, there was no _actorToECEFIsValid flag. But we can
+    // assume that the previously-stored ECEF transform was valid.
+    this->_actorToECEFIsValid = true;
+  }
+}
+
+void UCesiumGlobeAnchorComponent::OnComponentCreated() {
+  Super::OnComponentCreated();
+  this->_actorToECEFIsValid = false;
 }
 
 void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
@@ -166,7 +345,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
     return;
   }
 
-  if (!this->_pResolvedGeoreference) {
+  if (!this->ResolvedGeoreference) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -195,7 +374,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
   // Compute the surface normal rotation between the old and new positions.
   const glm::dvec3 newGlobePosition = glm::dvec3(newGlobeTransform[3]);
   const glm::dquat ellipsoidNormalRotation =
-      this->_pResolvedGeoreference->GetGeoTransforms()
+      this->ResolvedGeoreference->GetGeoTransforms()
           .ComputeSurfaceNormalRotationUnreal(
               oldGlobePosition,
               newGlobePosition);
@@ -220,12 +399,14 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 }
 
 void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
-  this->_updateActorTransformFromGlobeTransform();
+  if (this->_actorToECEFIsValid) {
+    this->_updateActorTransformFromGlobeTransform();
+  }
 }
 
 const glm::dmat4&
 UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
-  if (!this->_pResolvedGeoreference) {
+  if (!this->ResolvedGeoreference) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -269,7 +450,7 @@ UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
 
   // Convert to ECEF
   const glm::dmat4& absoluteUnrealToEcef =
-      this->_pResolvedGeoreference->GetGeoTransforms()
+      this->ResolvedGeoreference->GetGeoTransforms()
           .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
 
   this->_actorToECEF = absoluteUnrealToEcef * actorTransform;
@@ -363,7 +544,8 @@ const glm::dmat4& UCesiumGlobeAnchorComponent::_setGlobeTransform(
 
   // Compute the surface normal rotation between the old and new positions.
   const glm::dquat ellipsoidNormalRotation =
-      this->ResolveGeoreference()->GetGeoTransforms()
+      this->ResolveGeoreference()
+          ->GetGeoTransforms()
           .ComputeSurfaceNormalRotation(oldPosition, newPosition);
 
   // Adjust the new rotation by the surface normal rotation
