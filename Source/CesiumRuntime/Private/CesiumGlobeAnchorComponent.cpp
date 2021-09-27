@@ -251,6 +251,7 @@ void UCesiumGlobeAnchorComponent::OnComponentCreated() {
   this->_actorToECEFIsValid = false;
 }
 
+#if WITH_EDITOR
 void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
   if (!PropertyChangedEvent.Property) {
@@ -280,6 +281,7 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
     this->InvalidateResolvedGeoreference();
   }
 }
+#endif
 
 void UCesiumGlobeAnchorComponent::OnRegister() {
   Super::OnRegister();
