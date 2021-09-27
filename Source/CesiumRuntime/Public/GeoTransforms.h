@@ -227,7 +227,7 @@ public:
     return _ellipsoid.geodeticSurfaceNormal(position);
   }
 
-    /**
+  /**
    * Computes the rotation in ellipsoid surface normal between an old position
    * and a new position. This rotation is expressed in terms of Unreal world
    * coordinates, and can be used to maintain an object's orientation relative
