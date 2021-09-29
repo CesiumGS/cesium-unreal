@@ -159,7 +159,7 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
   virtual void PostLoad() override;
-  virtual void Serialize(FArchive& Ar) override;
+  // virtual void Serialize(FArchive& Ar) override;
 
 protected:
   /**
