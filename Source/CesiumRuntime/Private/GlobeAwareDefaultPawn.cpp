@@ -27,7 +27,6 @@ AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
 
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
-  this->AddInstanceComponent(this->GlobeAnchor);
 }
 
 void AGlobeAwareDefaultPawn::MoveRight(float Val) {
@@ -326,10 +325,28 @@ void AGlobeAwareDefaultPawn::PostLoad() {
   // possible to do this in Serialize:
   // https://udn.unrealengine.com/s/question/0D54z00007CAbHFCA1/backward-compatibile-serialization-for-uobject-pointers
   if (this->Georeference_DEPRECATED != nullptr && this->GlobeAnchor &&
-      this->GlobeAnchor->GetGeoreference() == nullptr) {
-    this->GlobeAnchor->SetGeoreference(this->Georeference_DEPRECATED);
+     this->GlobeAnchor->GetGeoreference() == nullptr) {
+   this->GlobeAnchor->SetGeoreference(this->Georeference_DEPRECATED);
   }
 }
+
+// void AGlobeAwareDefaultPawn::Serialize(FArchive& Ar) {
+//   Super::Serialize(Ar);
+
+//   Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
+//   const int32 CesiumVersion = Ar.CustomVer(FCesiumCustomVersion::GUID);
+
+//   if (Ar.IsLoading() &&
+//       CesiumVersion < FCesiumCustomVersion::GeoreferenceRefactoring) {
+//     if (this->Georeference_DEPRECATED) {
+//       //Ar.Preload(this->GlobeAnchor);
+//       Ar.Preload(this->Georeference_DEPRECATED);
+//       this->GlobeAnchor->SetGeoreference(this->Georeference_DEPRECATED);
+//       this->Georeference_DEPRECATED = nullptr;
+//     }
+//   }
+// }
 
 ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
   if (!IsValid(this->GlobeAnchor)) {

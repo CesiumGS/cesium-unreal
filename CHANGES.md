@@ -11,7 +11,7 @@
 ##### Additions :tada:
 
 * Improved the workflow for managing georeferenced sub-levels.
-* `DynamicPawn` now has a `CesiumGlobeAnchorComponent` attached to it. This allows more consistent movement on the globe, and allows the pawn's Longitude/Latitude/Height or ECEF coordinates to be specified directly in the Editor.
+* `GlobeAwareDefaultPawn` and derived classes like `DynamicPawn` now have a `CesiumGlobeAnchorComponent` attached to it. This allows more consistent movement on the globe, and allows the pawn's Longitude/Latitude/Height or ECEF coordinates to be specified directly in the Editor.
 
 ##### Fixes :wrench:
 
