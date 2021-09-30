@@ -1583,10 +1583,37 @@ static void loadPointCloud(
       pPointCloud);
 
   pMesh->SetPointCloud(pPointCloud);
-  pMesh->PointSize = 1000.0f / pMesh->Bounds.SphereRadius;
+
+  pMesh->SetVisibilityOfPointsInBox(true, pMesh->Bounds.GetBox());
+
+  float boundsRadius = pMesh->Bounds.SphereRadius;
+  if (boundsRadius < 100.0f) {
+    boundsRadius = 100.0f;
+  }
+
+  float pointSize = 5000.0f / boundsRadius;
+  if (pointSize < 0.01f) {
+    pointSize = 0.01f;
+  }
+
+  //pMesh->PointSize = pointSize;
+  //pMesh->PointSize = 0.5f;
+  pMesh->ScalingMethod = ELidarPointCloudScalingMethod::PerPoint;
+
+  //pMesh->PointSizeBias = 0.0f;
   pMesh->PointShape = ELidarPointCloudSpriteShape::Circle;
 
   // TODO: add back in material code
+  const FName ImportedSlotName(
+      *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
+  UMaterialInstanceDynamic* pMaterial = 
+      UMaterialInstanceDynamic::Create(
+        pGltf->BaseMaterial,
+        nullptr,
+        ImportedSlotName);
+        
+  pMesh->SetMaterial(0, pMaterial);
+  pMesh->ApplyRenderingParameters();
 
   pMesh->SetMobility(EComponentMobility::Movable);
 
