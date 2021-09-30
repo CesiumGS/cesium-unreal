@@ -39,6 +39,17 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darw
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-ms-compat -fvisibility-inlines-hidden")
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+  # Unreal Engine adds /Zp8 in 64-bit Windows builds to align structs to 8 bytes instead of the
+  # default of 16 bytes. There's this nice note in the documentation for that option:
+  #   Don't change the setting from the default when you include the Windows SDK headers, either
+  #   by using /Zp on the command line or by using #pragma pack. Otherwise, your application may
+  #   cause memory corruption at runtime.
+  # (https://docs.microsoft.com/en-us/cpp/build/reference/zp-struct-member-alignment?view=msvc-160)
+  # Yeah that's not just the Windows SDK, but anything that passes structs across the boundary
+  # between compilation units using different versions of that flag. We compile cesium-native
+  # with this same option to avoid super-dodgy and hard to debug issues.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
 endif()
 
 add_subdirectory(cesium-native)

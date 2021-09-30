@@ -3,4 +3,6 @@ They are published under the CC BY 4.0 License. See
 https://fontawesome.com/license/free for further information.
 
 The SVG files have been edited to change the fill color from 
-the "currentColor" to "#cccccc".
+the "currentColor" to "#cccccc". 
+For "sync-alt-solid.svg", it was set to #ffffff, to be used
+on a Cesium-styled button.

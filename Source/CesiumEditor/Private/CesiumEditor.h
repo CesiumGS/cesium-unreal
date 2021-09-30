@@ -38,7 +38,21 @@ public:
   static ACesium3DTileset* FindFirstTilesetWithAssetID(int64_t assetID);
   static ACesium3DTileset*
   CreateTileset(const std::string& name, int64_t assetID);
+
+  /**
+   * Adds an overlay with the the MaterialLayerKey `OverlayN` where N is the
+   * next unused index.
+   */
   static UCesiumIonRasterOverlay* AddOverlay(
+      ACesium3DTileset* pTilesetActor,
+      const std::string& name,
+      int64_t assetID);
+
+  /**
+   * Adds a base overlay, replacing the existing overlay with MaterialLayerKey
+   * Overlay0, if any.
+   */
+  static UCesiumIonRasterOverlay* AddBaseOverlay(
       ACesium3DTileset* pTilesetActor,
       const std::string& name,
       int64_t assetID);

@@ -322,6 +322,10 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
     return;
   }
 
+  if (!Controller) {
+    return;
+  }
+
   this->_currentFlyTime += static_cast<double>(DeltaSeconds);
 
   // double check that we don't have an empty list of keypoints
@@ -334,7 +338,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   if (this->_currentFlyTime >= this->FlyToDuration) {
     const glm::dvec3& finalPoint = _keypoints.back();
     this->SetECEFCameraLocation(finalPoint);
-    GetController()->SetControlRotation(this->_flyToDestinationRotation);
+    Controller->SetControlRotation(this->_flyToDestinationRotation);
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0;
     return;
@@ -383,10 +387,9 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
               this->_keypoints.back())
           .Quaternion(),
       flyPercentage);
-  GetController()->SetControlRotation(
-      this->Georeference->TransformRotatorEnuToUe(
-          currentQuat.Rotator(),
-          currentPosition));
+  Controller->SetControlRotation(this->Georeference->TransformRotatorEnuToUe(
+      currentQuat.Rotator(),
+      currentPosition));
 }
 
 void AGlobeAwareDefaultPawn::Tick(float DeltaSeconds) {
@@ -423,10 +426,14 @@ void AGlobeAwareDefaultPawn::BeginPlay() {
 }
 
 void AGlobeAwareDefaultPawn::_interruptFlight() {
+  if (!Controller) {
+    return;
+  }
+
   this->_bFlyingToLocation = false;
 
   // fix camera roll to 0.0
-  FRotator currentRotator = GetController()->GetControlRotation();
+  FRotator currentRotator = Controller->GetControlRotation();
   currentRotator.Roll = 0.0;
-  GetController()->SetControlRotation(currentRotator);
+  Controller->SetControlRotation(currentRotator);
 }

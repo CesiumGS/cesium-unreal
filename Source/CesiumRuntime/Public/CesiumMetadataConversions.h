@@ -4,7 +4,9 @@
 
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
+#include "CesiumUtility/JsonValue.h"
 #include <cstdlib>
+#include <glm/common.hpp>
 #include <type_traits>
 
 ECesiumMetadataBlueprintType
