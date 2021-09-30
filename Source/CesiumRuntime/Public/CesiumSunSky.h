@@ -13,6 +13,8 @@
 #include "GameFramework/Actor.h"
 #include "CesiumSunSky.generated.h"
 
+class UCesiumGlobeAnchorComponent;
+
 /**
  * A globe-aware sun sky actor. If the georeference is set to CartographicOrigin
  * (aka Longitude/Latitude/Height) mode, then this actor will automatically
@@ -35,20 +37,42 @@ public:
   USceneComponent* Scene;
 
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
-  UStaticMeshComponent* CompassMesh;
-
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   USkyLightComponent* SkyLight;
 
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
   UDirectionalLightComponent* DirectionalLight;
 
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Components)
-  USkyAtmosphereComponent* SkyAtmosphereComponent;
+  USkyAtmosphereComponent* SkyAtmosphere;
 
-public:
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
-  ACesiumGeoreference* Georeference;
+  /**
+   * The Globe Anchor Component that precisely ties this Actor to the Globe.
+   */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
+  UCesiumGlobeAnchorComponent* GlobeAnchor;
+
+protected:
+  /**
+   * THIS PROPERTY IS DEPRECATED.
+   *
+   * Get the Georeference instance from the Globe Anchor Component instead.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium",
+      BlueprintGetter = GetGeoreference,
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Get the Georeference instance from the Globe Anchor Component instead."))
+  ACesiumGeoreference* Georeference_DEPRECATED;
+
+  /**
+   * Gets the Georeference Actor associated with this instance. It is obtained
+   * from the Globe Anchor Component.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ACesiumGeoreference* GetGeoreference() const;
 
   /**
    * Updates the atmosphere automatically given current player pawn's longitude,
@@ -67,6 +91,43 @@ public:
       Category = Cesium,
       meta = (ClampMin = 0.0001))
   float UpdateAtmospherePeriod = 1.f;
+
+  /**
+   * When the player pawn is below this height, which is expressed in kilometers
+   * above the ellipsoid, this Actor will use an atmosphere ground radius that
+   * is calculated to be at or below the terrain surface at the player pawn's
+   * current location. This avoids a gap between the bottom of the atmosphere
+   * and the top of the terrain when zoomed in close to the terrain surface.
+   *
+   * Above CircumscribedGroundThreshold, this Actor will use an atmosphere
+   * ground radius that is guaranteed to be above the terrain surface anywhere
+   * on Earth. This avoids artifacts caused by terrain poking through the
+   * atmosphere when viewing the Earth from far away.
+   *
+   * At player pawn heights in between InscribedGroundThreshold and
+   * CircumscribedGroundThreshold, this Actor uses a linear interpolation
+   * between the two ground radii.
+   */
+  double InscribedGroundThreshold = 30;
+
+  /**
+   * When the player pawn is above this height, which is expressed in kilometers
+   * above the ellipsoid, this Actor will use an atmosphere ground radius that
+   * is guaranteed to be above the terrain surface anywhere on Earth. This
+   * avoids artifacts caused by terrain poking through the atmosphere when
+   * viewing the Earth from far away.
+   *
+   * Below InscribedGroundThreshold, this Actor will use an atmosphere
+   * ground radius that is calculated to be at or below the terrain surface at
+   * the player pawn's current location. This avoids a gap between the bottom of
+   * the atmosphere and the top of the terrain when zoomed in close to the
+   * terrain surface.
+   *
+   * At heights in between InscribedGroundThreshold and
+   * CircumscribedGroundThreshold, this Actor uses a linear interpolation
+   * between the two ground radii.
+   */
+  double CircumscribedGroundThreshold = 100;
 
   /**
    * False: Use Directional Light component inside CesiumSunSky.
@@ -98,20 +159,6 @@ public:
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
   float Azimuth = 0.f;
-
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = Location,
-      meta = (ClampMin = -90, ClampMax = 90))
-  float Latitude = 45.f;
-
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = Location,
-      meta = (ClampMin = -180, ClampMax = 180))
-  float Longitude = -73.f;
 
   UPROPERTY(
       EditAnywhere,
@@ -267,6 +314,9 @@ public:
   void UpdateSun();
   void UpdateSun_Implementation();
 
+  UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
+  void AdjustAtmosphereRadius();
+
   /**
    * Convert solar time to Hours:Minutes:Seconds. Copied the implementation
    * from the engine SunSkyBP class.
@@ -303,13 +353,6 @@ public:
 
 protected:
   /**
-   * Callback after georeference origin (e.g. lat/long position) has been
-   * updated. Sets this actor's position to the Earth's center.
-   */
-  UFUNCTION(BlueprintCallable, Category = Cesium)
-  void HandleGeoreferenceUpdated();
-
-  /**
    * Modifies the sky atmosphere's ground radius, which represents the Earth's
    * radius in the SkyAtmosphere rendering model. Only changes if there's a >0.1
    * difference, to reduce redraws.
@@ -325,6 +368,12 @@ protected:
    */
   UFUNCTION(BlueprintCallable, Category = Mobile)
   void UpdateSkySphere();
+
+  virtual void BeginPlay() override;
+  virtual void Serialize(FArchive& Ar) override;
+  virtual void Tick(float DeltaSeconds) override;
+  virtual void PostLoad() override;
+  virtual bool ShouldTickIfViewportsOnly() const override;
 
 #if WITH_EDITOR
   virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
@@ -346,4 +395,8 @@ private:
   // Updates the location of this actor after a georeference update,
   // as well as lat/long properties
   void _updateSunSkyLocation();
+
+  float _calculateHashValue() const;
+
+  FTimerHandle AdjustAtmosphereRadiusTimer;
 };

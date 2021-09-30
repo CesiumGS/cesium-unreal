@@ -189,6 +189,7 @@ public:
    * This function is inaccurate because large coordinate values are represented
    * as singe-precision floating point numbers.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector InaccurateGetECEF() const;
 
   /**
@@ -197,9 +198,6 @@ public:
    *
    * If AdjustOrientationForGlobeWhenMoving is enabled, this method will also
    * update the orientation based on the globe curvature.
-   *
-   * This function is inaccurate because large coordinate values are represented
-   * as singe-precision floating point numbers.
    *
    * @param newPosition The new position.
    */

@@ -132,7 +132,8 @@ public class CesiumRuntime : ModuleRules
                 "HTTP",
                 "LevelSequence",
                 "Projects",
-                "RenderCore"
+                "RenderCore",
+                "SunPosition"
             }
         );
 

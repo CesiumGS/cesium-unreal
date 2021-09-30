@@ -33,6 +33,10 @@ glm::dvec3 UCesiumGlobeAnchorComponent::GetECEF() const {
   return glm::dvec3(this->_actorToECEF[3]);
 }
 
+FVector UCesiumGlobeAnchorComponent::InaccurateGetECEF() const {
+  return VecMath::createVector(this->GetECEF());
+}
+
 void UCesiumGlobeAnchorComponent::MoveToECEF(const glm::dvec3& newPosition) {
   this->ECEF_X = newPosition.x;
   this->ECEF_Y = newPosition.y;

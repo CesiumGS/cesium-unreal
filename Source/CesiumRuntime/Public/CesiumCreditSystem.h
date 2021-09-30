@@ -19,7 +19,7 @@ class CreditSystem;
  * are displayed by the corresponding Blueprints class
  * /CesiumForUnreal/CesiumCreditSystemBP.CesiumCreditSystemBP_C.
  */
-UCLASS()
+UCLASS(Abstract)
 class CESIUMRUNTIME_API ACesiumCreditSystem : public AActor {
   GENERATED_BODY()
 
