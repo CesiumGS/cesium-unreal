@@ -237,10 +237,12 @@ void CesiumIonSession::refreshAssetAccessToken() {
       .thenInMainThread([this](CesiumIonClient::Token&& token) {
         this->_assetAccessToken = std::move(token);
         this->_isLoadingAssetAccessToken = false;
+        this->AssetAccessTokenUpdated.Broadcast();
       })
       .catchInMainThread([this](std::exception&& e) {
         this->_assetAccessToken = std::nullopt;
         this->_isLoadingAssetAccessToken = false;
+        this->AssetAccessTokenUpdated.Broadcast();
       });
 }
 

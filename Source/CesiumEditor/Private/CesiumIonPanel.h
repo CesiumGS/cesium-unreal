@@ -75,6 +75,7 @@ private:
 
   FDelegateHandle _connectionUpdatedDelegateHandle;
   FDelegateHandle _assetsUpdatedDelegateHandle;
+  FDelegateHandle _assetAccessTokenUpdatedDelegateHandle;
   TSharedPtr<SListView<TSharedPtr<CesiumIonClient::Asset>>> _pListView;
   TArray<TSharedPtr<CesiumIonClient::Asset>> _assets;
   TSharedPtr<CesiumIonClient::Asset> _pSelection;
