@@ -1530,11 +1530,13 @@ static void loadPointCloud(
   ELidarPointCloudAsyncMode asyncPointCloudResult =
       ELidarPointCloudAsyncMode::Progress;
   float progress = 0.0f;
+  FLatentActionInfo latentActionInfo{};
+  latentActionInfo.CallbackTarget = pMesh;
   ULidarPointCloudBlueprintLibrary::CreatePointCloudFromData(
       pMesh,
       *loadResult.pointCloudBuffer,
       false,
-      FLatentActionInfo(),
+      latentActionInfo,
       asyncPointCloudResult,
       progress,
       pPointCloud);

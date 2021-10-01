@@ -1205,7 +1205,7 @@ void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
   UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+      Cast<UCesiumGltfPrimitiveComponent>(Gltf->GetChildComponent(0));
   if (PrimitiveComponent != nullptr) {
     const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
     if (ChannelEnum) {
