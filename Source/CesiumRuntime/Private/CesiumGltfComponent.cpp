@@ -1509,9 +1509,9 @@ static void loadPointCloud(
     return;
   }
 
+  FName meshName = createSafeName(loadResult.name, "");
   UCesiumPointCloudComponent* pMesh = NewObject<UCesiumPointCloudComponent>(
-      pGltf,
-      FName(loadResult.name.c_str()));
+      pGltf, meshName);
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
@@ -1553,12 +1553,11 @@ static void loadPointCloud(
     pointSize = 0.01f;
   }
 
-  //pMesh->PointSize = pointSize;
-  //pMesh->PointSize = 0.5f;
-  pMesh->ScalingMethod = ELidarPointCloudScalingMethod::PerPoint;
+  pMesh->PointSize = pointSize;
+  pMesh->ScalingMethod = ELidarPointCloudScalingMethod::PerNode;
 
   //pMesh->PointSizeBias = 0.0f;
-  pMesh->PointShape = ELidarPointCloudSpriteShape::Circle;
+  //pMesh->PointShape = ELidarPointCloudSpriteShape::Circle;
 
   // TODO: add back in material code
   const FName ImportedSlotName(
