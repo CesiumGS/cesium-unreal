@@ -57,36 +57,36 @@ using namespace CesiumGltf;
 static uint32_t nextMaterialId = 0;
 
 struct LoadModelResult {
-  FCesiumMetadataPrimitive Metadata{};
-  FStaticMeshRenderData* RenderData = nullptr;
-  const CesiumGltf::Model* pModel = nullptr;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
-  const CesiumGltf::Material* pMaterial = nullptr;
-  glm::dmat4x4 transform{1.0};
+  FCesiumMetadataPrimitive Metadata;
+  FStaticMeshRenderData* RenderData;
+  const CesiumGltf::Model* pModel;
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
+  const CesiumGltf::Material* pMaterial;
+  glm::dmat4x4 transform;
 #if PHYSICS_INTERFACE_PHYSX
-  PxTriangleMesh* pCollisionMesh = nullptr;
+  PxTriangleMesh* pCollisionMesh;
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-      pCollisionMesh = nullptr;
+      pCollisionMesh;
 #endif
-  std::string name{};
+  std::string name;
 
-  CesiumTextureUtility::LoadedTextureResult* baseColorTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* normalTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* emissiveTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* occlusionTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
+  CesiumTextureUtility::LoadedTextureResult* baseColorTexture;
+  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture;
+  CesiumTextureUtility::LoadedTextureResult* normalTexture;
+  CesiumTextureUtility::LoadedTextureResult* emissiveTexture;
+  CesiumTextureUtility::LoadedTextureResult* occlusionTexture;
+  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
-  bool onlyLand = true;
-  bool onlyWater = false;
+  bool onlyLand;
+  bool onlyWater;
 
-  double waterMaskTranslationX = 0.0;
-  double waterMaskTranslationY = 0.0;
-  double waterMaskScale = 1.0;
+  double waterMaskTranslationX;
+  double waterMaskTranslationY;
+  double waterMaskScale;
 
-  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
 };
 
 template <class... T> struct IsAccessorView;
@@ -740,6 +740,12 @@ static void loadPrimitive(
   StaticMeshBuildVertices.SetNum(
       duplicateVertices ? indices.Num() : positionView.size());
 
+  // The static mesh we construct will _not_ be indexed, even if the incoming
+  // glTF is. This allows us to compute flat normals if the glTF doesn't include
+  // them already, and it allows us to compute a correct tangent space basis
+  // according to the MikkTSpace algorithm when tangents are not included in the
+  // glTF.
+
   {
     if (duplicateVertices) {
       CESIUM_TRACE("copy duplicated positions");
@@ -765,6 +771,63 @@ static void loadPrimitive(
             RenderData->Bounds.SphereRadius);
       }
     }
+  }
+
+  // TangentX: Tangent
+  // TangentY: Bi-tangent
+  // TangentZ: Normal
+
+  if (hasNormals) {
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy normals for duplicated vertices");
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentZ = normalAccessor[vertexIndex];
+      }
+    } else {
+      CESIUM_TRACE("copy normals");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentZ = normalAccessor[i];
+      }
+    }
+  } else {
+    CESIUM_TRACE("compute flat normals");
+    computeFlatNormals(indices, StaticMeshBuildVertices);
+  }
+
+  if (hasTangents) {
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy tangents for duplicated vertices");
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        const FVector4& tangent = tangentAccessor[vertexIndex];
+        vertex.TangentX = tangent;
+        vertex.TangentY =
+            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+      }
+    } else {
+      CESIUM_TRACE("copy tangents");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        const FVector4& tangent = tangentAccessor[i];
+        vertex.TangentX = tangent;
+        vertex.TangentY =
+            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+      }
+    }
+  }
+
+  if (needsTangents && !hasTangents) {
+    // Use mikktspace to calculate the tangents
+    CESIUM_TRACE("compute tangents");
+    computeTangentSpace(StaticMeshBuildVertices);
   }
 
   bool hasVertexColors = false;
@@ -870,64 +933,6 @@ static void loadPrimitive(
         primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
       }
     }
-  }
-
-  // TangentX: Tangent
-  // TangentY: Bi-tangent
-  // TangentZ: Normal
-
-  if (hasNormals) {
-    if (duplicateVertices) {
-      CESIUM_TRACE("copy normals for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        uint32 vertexIndex = indices[i];
-        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[vertexIndex];
-      }
-    } else {
-      CESIUM_TRACE("copy normals");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[i];
-      }
-    }
-  } else {
-    CESIUM_TRACE("compute flat normals");
-    computeFlatNormals(indices, StaticMeshBuildVertices);
-  }
-
-  if (hasTangents) {
-    if (duplicateVertices) {
-      CESIUM_TRACE("copy tangents for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        uint32 vertexIndex = indices[i];
-        const FVector4& tangent = tangentAccessor[vertexIndex];
-        vertex.TangentX = tangent;
-        vertex.TangentY =
-            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
-      }
-    } else {
-      CESIUM_TRACE("copy tangents");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        const FVector4& tangent = tangentAccessor[i];
-        vertex.TangentX = tangent;
-        vertex.TangentY =
-            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
-      }
-    }
-  }
-
-  if (needsTangents && !hasTangents) {
-    // Use mikktspace to calculate the tangents.
-    // Note that this assumes normals and UVs are already populated.
-    CESIUM_TRACE("compute tangents");
-    computeTangentSpace(StaticMeshBuildVertices);
   }
 
   {
