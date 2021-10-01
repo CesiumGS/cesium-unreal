@@ -1,6 +1,6 @@
 # Change Log
 
-### v1.6.3 - ?
+### v1.6.3 - 2021-10-01
 
 ##### Fixes :wrench:
 
@@ -8,13 +8,17 @@
 - Fixed a bug that could cause vertices to be duplicated and tangents calculated even when not needed.
 - Fixed a bug that caused the Cesium ion access token to sometimes be blank when adding an asset from the "Cesium ion Assets" panel while the "Cesium" panel is not open.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.2 to v0.8.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.6.2 - 2021-09-14
 
 This release only updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.7.1 to v0.7.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.6.1 - 2021-09-14
 
-- Fixed #633 which was related to introduce maxiumCachedBytes as a UPROPERTY.
+##### Additions :tada:
+
+- Added the `MaximumCachedBytes` property to `ACesium3DTileset`.
 
 ##### Fixes :wrench:
 
