@@ -119,6 +119,7 @@ void CesiumIonSession::disconnect() {
   this->ProfileUpdated.Broadcast();
   this->AssetsUpdated.Broadcast();
   this->TokensUpdated.Broadcast();
+  this->AssetAccessTokenUpdated.Broadcast();
 }
 
 void CesiumIonSession::refreshProfile() {
