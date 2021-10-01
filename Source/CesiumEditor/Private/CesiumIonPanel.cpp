@@ -31,6 +31,7 @@ static FName ColumnName_DateAdded = "DateAdded";
 CesiumIonPanel::CesiumIonPanel()
     : _connectionUpdatedDelegateHandle(),
       _assetsUpdatedDelegateHandle(),
+      _assetAccessTokenUpdatedDelegateHandle(),
       _pListView(nullptr),
       _assets(),
       _pSelection(nullptr) {
@@ -42,11 +43,17 @@ CesiumIonPanel::CesiumIonPanel()
       FCesiumEditorModule::ion().AssetsUpdated.AddRaw(
           this,
           &CesiumIonPanel::Refresh);
+  this->_assetAccessTokenUpdatedDelegateHandle =
+      FCesiumEditorModule::ion().AssetAccessTokenUpdated.AddRaw(
+          this,
+          &CesiumIonPanel::Refresh);
   this->_sortColumnName = ColumnName_DateAdded;
   this->_sortMode = EColumnSortMode::Type::Descending;
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
+  FCesiumEditorModule::ion().AssetAccessTokenUpdated.Remove(
+      this->_assetAccessTokenUpdatedDelegateHandle);
   FCesiumEditorModule::ion().AssetsUpdated.Remove(
       this->_assetsUpdatedDelegateHandle);
   FCesiumEditorModule::ion().ConnectionUpdated.Remove(
@@ -401,7 +408,12 @@ void CesiumIonPanel::ApplySorting() {
 }
 
 void CesiumIonPanel::Refresh() {
-  const Assets& assets = FCesiumEditorModule::ion().getAssets();
+  // Don't show assets until we have a valid token for accessing them.
+  static const Assets emptyAssets{};
+  const Assets& assets =
+      FCesiumEditorModule::ion().getAssetAccessToken().token.empty()
+          ? emptyAssets
+          : FCesiumEditorModule::ion().getAssets();
 
   this->_assets.SetNum(assets.items.size());
 

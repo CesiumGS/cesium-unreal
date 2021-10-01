@@ -6,6 +6,7 @@
 
 - Fixed a bug that caused incorrect tangents to be generated based on uninitialized texture coordinates.
 - Fixed a bug that could cause vertices to be duplicated and tangents calculated even when not needed.
+- Fixed a bug that caused the Cesium ion access token to sometimes be blank when adding an asset from the "Cesium ion Assets" panel while the "Cesium" panel is not open.
 
 ### v1.6.2 - 2021-09-14
 
