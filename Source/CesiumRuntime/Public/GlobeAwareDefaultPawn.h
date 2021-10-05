@@ -187,10 +187,7 @@ protected:
   /**
    * The Globe Anchor Component that precisely ties this Pawn to the Globe.
    */
-  UPROPERTY(
-      VisibleAnywhere,
-      BlueprintReadOnly,
-      Category = "Cesium")
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
 private:
