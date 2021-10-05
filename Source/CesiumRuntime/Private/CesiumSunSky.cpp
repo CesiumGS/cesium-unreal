@@ -50,7 +50,7 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight = CreateDefaultSubobject<UDirectionalLightComponent>(
       TEXT("DirectionalLight"));
   DirectionalLight->SetupAttachment(Scene);
-  DirectionalLight->SetRelativeLocation(FVector(0, 0, 100));
+  DirectionalLight->SetWorldLocation(FVector(0, 0, 0));
   DirectionalLight->Intensity = 111000.f;
   DirectionalLight->LightSourceAngle = 0.5;
   DirectionalLight->bUsedAsAtmosphereSunLight = true;
@@ -68,7 +68,7 @@ ACesiumSunSky::ACesiumSunSky() {
   // Always create these components and hide them if not needed (e.g. on mobile)
   SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
   SkyLight->SetupAttachment(Scene);
-  SkyLight->SetRelativeLocation(FVector(0, 0, 150));
+  SkyLight->SetWorldLocation(FVector(0, 0, 150));
   SkyLight->SetMobility(EComponentMobility::Movable);
   SkyLight->bRealTimeCapture = true;
   SkyLight->bLowerHemisphereIsBlack = false;
@@ -85,38 +85,17 @@ ACesiumSunSky::ACesiumSunSky() {
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
   this->GlobeAnchor->AdjustOrientationForGlobeWhenMoving = false;
+  this->GlobeAnchor->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
 }
 
-void ACesiumSunSky::_updateSunSkyLocation() {
-  if (!IsValid(this->GetGeoreference())) {
-    return;
-  }
-  // For mobile, simply set sky sphere to world origin location
-  if (EnableMobileRendering) {
-    this->SetActorTransform(FTransform::Identity);
-  } else {
-    // Globe Anchor handles this automatically.
-    // this->SetActorLocation(
-    //    this->GetGeoreference()->InaccurateTransformEcefToUnreal(FVector::ZeroVector));
-  }
-
-  switch (this->GetGeoreference()->OriginPlacement) {
-  case EOriginPlacement::CartographicOrigin: {
-    // FVector llh =
-    //    Georeference->InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight();
-    // this->Longitude = llh.X;
-    // this->Latitude = llh.Y;
-    UpdateSun();
-    break;
-  }
-  default:
-    break;
-  }
-}
-
-float ACesiumSunSky::_calculateHashValue() const {
-  // TODO: this isn't a great hash function
-  return this->Month + this->Day + this->SolarTime + this->TimeZone;
+void ACesiumSunSky::_handleTransformUpdated(
+    USceneComponent* InRootComponent,
+    EUpdateTransformFlags UpdateTransformFlags,
+    ETeleportType Teleport) {
+  // This Actor generally shouldn't move with respect to the globe, but this
+  // method will be called on georeference change. We need to update the sun
+  // position for the new UE coordinate system.
+  this->UpdateSun();
 }
 
 void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
@@ -139,13 +118,9 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
     DirectionalLight->Intensity = MobileDirectionalLightIntensity;
     if (_wantsSpawnMobileSkySphere && SkySphereClass) {
       _spawnSkySphere();
-      // UpdateSkySphere();
     }
   }
   _setSkyAtmosphereVisibility(!EnableMobileRendering);
-
-  // Refresh sun locations and sky materials (including mobile)
-  _updateSunSkyLocation();
 
   this->UpdateSun();
 }
@@ -159,12 +134,17 @@ void ACesiumSunSky::_spawnSkySphere() {
     return;
   }
 
-  // Set sky sphere actor position to ECEF 0,0,0
-  FTransform spawnTransform =
-      FTransform(this->GetGeoreference()->InaccurateTransformEcefToUnreal(
-          FVector::ZeroVector));
-  SkySphereActor =
-      GetWorld()->SpawnActor<AActor>(SkySphereClass, spawnTransform);
+  // Create a new Sky Sphere Actor and anchor it to the center of the Earth.
+  this->SkySphereActor = GetWorld()->SpawnActor<AActor>(SkySphereClass);
+
+  // Anchor it to the center of the Earth.
+  UCesiumGlobeAnchorComponent* GlobeAnchorComponent =
+      NewObject<UCesiumGlobeAnchorComponent>(SkySphereActor);
+  this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
+  GlobeAnchorComponent->AdjustOrientationForGlobeWhenMoving = false;
+  GlobeAnchorComponent->SetGeoreference(this->GlobeAnchor->GetGeoreference());
+  GlobeAnchorComponent->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
+
   _wantsSpawnMobileSkySphere = false;
 
   _setSkySphereDirectionalLight();
@@ -186,14 +166,18 @@ void ACesiumSunSky::BeginPlay() {
 
   this->GlobeAnchor->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
 
-  // if (this->UpdateAtmosphereAtRuntime) {
-  //  this->GetWorld()->GetTimerManager().SetTimer(
-  //      this->AdjustAtmosphereRadiusTimer,
-  //      this,
-  //      &ACesiumSunSky::AdjustAtmosphereRadius,
-  //      this->UpdateAtmospherePeriod,
-  //      true);
-  //}
+  this->_transformUpdatedSubscription =
+      this->RootComponent->TransformUpdated.AddUObject(
+          this,
+          &ACesiumSunSky::_handleTransformUpdated);
+}
+
+void ACesiumSunSky::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+  if (this->_transformUpdatedSubscription.IsValid()) {
+    this->RootComponent->TransformUpdated.Remove(
+        this->_transformUpdatedSubscription);
+    this->_transformUpdatedSubscription.Reset();
+  }
 }
 
 void ACesiumSunSky::Serialize(FArchive& Ar) {
@@ -227,19 +211,6 @@ void ACesiumSunSky::Tick(float DeltaSeconds) {
 
   if (this->UpdateAtmosphereAtRuntime) {
     this->AdjustAtmosphereRadius();
-  }
-
-  if (this->DirectionalLight->Mobility != EComponentMobility::Movable) {
-    // We can't move a non-moveable light.
-    return;
-  }
-
-  // Check if the month, day, time, or location changed. If so, update the Sun
-  // position.
-  float hashValue = this->_calculateHashValue();
-  if (hashValue != this->HashVal) {
-    this->HashVal = hashValue;
-    this->UpdateSun();
   }
 }
 
@@ -298,10 +269,6 @@ void ACesiumSunSky::_setSkySphereDirectionalLight() {
 }
 
 #if WITH_EDITOR
-void ACesiumSunSky::PreEditChange(FProperty* PropertyAboutToChange) {
-  Super::PreEditChange(PropertyAboutToChange);
-}
-
 void ACesiumSunSky::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
 
@@ -376,13 +343,13 @@ void ACesiumSunSky::UpdateSun_Implementation() {
       seconds,
       sunPosition);
 
-  this->Elevation = sunPosition.Elevation;
-  this->CorrectedElevation = sunPosition.CorrectedElevation;
+  this->Elevation = sunPosition.Elevation - 180.0f;
+  this->CorrectedElevation = sunPosition.CorrectedElevation - 180.0f;
   this->Azimuth = sunPosition.Azimuth;
 
   FRotator newRotation(
-      this->CorrectedElevation,
-      this->Azimuth + this->NorthOffset,
+      -this->CorrectedElevation,
+      180.0f + (this->Azimuth + this->NorthOffset),
       0.0f);
 
   // Orient sun / directional light
@@ -391,7 +358,7 @@ void ACesiumSunSky::UpdateSun_Implementation() {
     this->LevelDirectionalLight->GetRootComponent()->SetWorldRotation(
         newRotation);
   } else {
-    this->Scene->SetWorldRotation(newRotation);
+    this->DirectionalLight->SetWorldRotation(newRotation);
   }
 
   // Mobile only
@@ -460,31 +427,6 @@ void ACesiumSunSky::AdjustAtmosphereRadius() {
       this->SetSkyAtmosphereGroundRadius(this->SkyAtmosphere, radius / 1000.0);
     }
   }
-
-  // double pawnLatitude = llh.y;
-  // double pawnHeight = llh.z;
-
-  //// Start adjusting ground radius from 10deg to 50deg latitude
-  // float latitudeFactor = FMath::GetMappedRangeValueUnclamped(
-  //    FVector2D(10.0f, 50.0f),
-  //    FVector2D(1.0f, 0.0f),
-  //    glm::abs(pawnLatitude));
-
-  //// Start adjusting from 10km up to 200km height
-  // float heightFactor = FMath::GetMappedRangeValueUnclamped(
-  //    FVector2D(10000.0f, 200000.0f),
-  //    FVector2D(0.0f, 1.0f),
-  //    pawnHeight);
-
-  // float factor = glm::max(latitudeFactor, heightFactor);
-
-  //// Interpolate between Earth ellipsoid's minor and major radius (in km)
-  // float newRadius = FMath::GetMappedRangeValueClamped(
-  //    FVector2D(0.0f, 1.0f),
-  //    FVector2D(6356.0f, 6378.0f),
-  //    factor);
-
-  // this->SetSkyAtmosphereGroundRadius(this->SkyAtmosphere, newRadius);
 }
 
 void ACesiumSunSky::GetHMSFromSolarTime(

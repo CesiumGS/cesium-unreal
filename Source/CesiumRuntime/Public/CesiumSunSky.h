@@ -108,7 +108,8 @@ protected:
    * CircumscribedGroundThreshold, this Actor uses a linear interpolation
    * between the two ground radii.
    */
-  double InscribedGroundThreshold = 30;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
+  float InscribedGroundThreshold = 30;
 
   /**
    * When the player pawn is above this height, which is expressed in kilometers
@@ -127,7 +128,8 @@ protected:
    * CircumscribedGroundThreshold, this Actor uses a linear interpolation
    * between the two ground radii.
    */
-  double CircumscribedGroundThreshold = 100;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
+  float CircumscribedGroundThreshold = 100;
 
   /**
    * False: Use Directional Light component inside CesiumSunSky.
@@ -143,19 +145,20 @@ protected:
   ADirectionalLight* LevelDirectionalLight;
 
   /**
-   * Sun elevation
+   * The current sun elevation in degrees above the horizontal.
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
   float Elevation = 0.f;
 
   /**
-   * Sun elevation, corrected for atmospheric diffraction
+   * The current sun elevation, corrected for atmospheric diffraction, in
+   * degrees above the horizontal.
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
   float CorrectedElevation = 0.f;
 
   /**
-   * Sun azimuth
+   * The current sun azimuth in degrees clockwise from North toward East.
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
   float Azimuth = 0.f;
@@ -298,13 +301,6 @@ protected:
   UPROPERTY(EditAnywhere, Category = Mobile)
   float MobileDirectionalLightIntensity = 6.f;
 
-  /**
-   * Determines whether the date and sun settings have changed and warrant
-   * a refresh of the SkyAtmosphere rendering.
-   */
-  UPROPERTY(BlueprintReadWrite, Category = "Event Tick")
-  float HashVal;
-
 public:
   UFUNCTION(
       CallInEditor,
@@ -370,13 +366,13 @@ protected:
   void UpdateSkySphere();
 
   virtual void BeginPlay() override;
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void Serialize(FArchive& Ar) override;
   virtual void Tick(float DeltaSeconds) override;
   virtual void PostLoad() override;
   virtual bool ShouldTickIfViewportsOnly() const override;
 
 #if WITH_EDITOR
-  virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -392,11 +388,10 @@ private:
   // Determines whether mobile sky sphere will be spawned during OnConstruction.
   bool _wantsSpawnMobileSkySphere;
 
-  // Updates the location of this actor after a georeference update,
-  // as well as lat/long properties
-  void _updateSunSkyLocation();
+  void _handleTransformUpdated(
+      USceneComponent* InRootComponent,
+      EUpdateTransformFlags UpdateTransformFlags,
+      ETeleportType Teleport);
 
-  float _calculateHashValue() const;
-
-  FTimerHandle AdjustAtmosphereRadiusTimer;
+  FDelegateHandle _transformUpdatedSubscription;
 };
