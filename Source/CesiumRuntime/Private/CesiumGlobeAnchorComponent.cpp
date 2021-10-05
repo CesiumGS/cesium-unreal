@@ -8,6 +8,44 @@
 #include "VecMath.h"
 #include <glm/gtx/matrix_decompose.hpp>
 
+// These are the "changes" that can happen to this component, how it detects
+// them, and what it does about them:
+//
+// ## Actor Transform Changed
+//
+// * Detected by subscribing to the `TransformUpdated` event of the root
+// component of the Actor to which this component is attached. The subscription
+// is added in `OnRegister` and removed in `OnUnregister`.
+// * Updates the ECEF transform from the new Actor transform.
+// * If `AdjustOrientationForGlobeWhenMoving` is enabled, also applies a
+// rotation based on the change in surface normal.
+//
+// ## Globe (ECEF) Position Changed
+//
+// * Happens when MoveToECEF (or similar) is called explicitly, or position
+// properties are changed in the Editor.
+// * Updates the Actor transform from the new ECEF transform.
+// * If `AdjustOrientationForGlobeWhenMoving` is enabled, also applies a
+// rotation based on the change in surface normal.
+//
+// ## Georeference Changed
+//
+// * Detected by subscribing to the `GeoreferenceUpdated` event. The
+// subscription is added when a new Georeference is resolved in
+// `ResolveGeoreference` (in `OnRegister` at the latest) and removed in
+// `InvalidateResolvedGeoreference` (in `OnUnregister` and when the
+// Georeference property is changed).
+// * Updates the Actor transform from the existing ECEF transform.
+// * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
+// not changing.
+//
+// ## Origin Rebased
+//
+// * Detected by a call to `ApplyWorldOffset`.
+// * Updates the Actor transform from the existing ECEF transform.
+// * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
+// not changing.
+
 ACesiumGeoreference* UCesiumGlobeAnchorComponent::GetGeoreference() const {
   return this->Georeference;
 }
@@ -571,9 +609,15 @@ const glm::dmat4& UCesiumGlobeAnchorComponent::_setGlobeTransform(
 
 void UCesiumGlobeAnchorComponent::_applyCartesianProperties() {
   // If we don't yet know our globe transform, compute it from the Actor
-  // transform now.
+  // transform now. But restore the ECEF position properties afterward.
   if (!this->_actorToECEFIsValid) {
+    double x = this->ECEF_X;
+    double y = this->ECEF_Y;
+    double z = this->ECEF_Z;
     this->_updateGlobeTransformFromActorTransform();
+    this->ECEF_X = x;
+    this->ECEF_Y = y;
+    this->ECEF_Z = z;
   }
 
   glm::dmat4 transform = this->_actorToECEF;
@@ -595,9 +639,15 @@ void UCesiumGlobeAnchorComponent::_updateCartesianProperties() {
 
 void UCesiumGlobeAnchorComponent::_applyCartographicProperties() {
   // If we don't yet know our globe transform, compute it from the Actor
-  // transform now.
+  // transform now. But restore the LLH position properties afterward.
   if (!this->_actorToECEFIsValid) {
+    double longitude = this->Longitude;
+    double latitude = this->Latitude;
+    double height = this->Height;
     this->_updateGlobeTransformFromActorTransform();
+    this->Longitude = longitude;
+    this->Latitude = latitude;
+    this->Height = height;
   }
 
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
