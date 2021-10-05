@@ -221,9 +221,13 @@ void ACesiumSunSky::PostLoad() {
   // property to its new home in the GlobeAnchor. It doesn't appear to be
   // possible to do this in Serialize:
   // https://udn.unrealengine.com/s/question/0D54z00007CAbHFCA1/backward-compatibile-serialization-for-uobject-pointers
-  if (this->Georeference_DEPRECATED != nullptr && this->GlobeAnchor &&
-      this->GlobeAnchor->GetGeoreference() == nullptr) {
-    this->GlobeAnchor->SetGeoreference(this->Georeference_DEPRECATED);
+  const int32 CesiumVersion =
+      this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
+  if (CesiumVersion < FCesiumCustomVersion::GeoreferenceRefactoring) {
+    if (this->Georeference_DEPRECATED != nullptr && this->GlobeAnchor &&
+        this->GlobeAnchor->GetGeoreference() == nullptr) {
+      this->GlobeAnchor->SetGeoreference(this->Georeference_DEPRECATED);
+    }
   }
 }
 
