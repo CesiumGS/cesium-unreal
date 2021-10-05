@@ -85,7 +85,6 @@ ACesiumSunSky::ACesiumSunSky() {
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
   this->GlobeAnchor->AdjustOrientationForGlobeWhenMoving = false;
-  this->GlobeAnchor->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
 }
 
 void ACesiumSunSky::_handleTransformUpdated(
@@ -139,7 +138,9 @@ void ACesiumSunSky::_spawnSkySphere() {
 
   // Anchor it to the center of the Earth.
   UCesiumGlobeAnchorComponent* GlobeAnchorComponent =
-      NewObject<UCesiumGlobeAnchorComponent>(SkySphereActor);
+      NewObject<UCesiumGlobeAnchorComponent>(
+          SkySphereActor,
+          TEXT("GlobeAnchor"));
   this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
   GlobeAnchorComponent->AdjustOrientationForGlobeWhenMoving = false;
   GlobeAnchorComponent->SetGeoreference(this->GlobeAnchor->GetGeoreference());
