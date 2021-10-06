@@ -10,8 +10,7 @@
 UCesium3DTilesetRoot::UCesium3DTilesetRoot()
     : _worldOriginLocation(0.0),
       _absoluteLocation(0.0, 0.0, 0.0),
-      _tilesetToUnrealRelativeWorld(1.0),
-      _isDirty(false) {
+      _tilesetToUnrealRelativeWorld(1.0) {
   PrimaryComponentTick.bCanEverTick = false;
 }
 
@@ -99,7 +98,5 @@ void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   this->_tilesetToUnrealRelativeWorld =
       ueAbsoluteToUeLocal * ellipsoidCenteredToUnrealWorld;
 
-  // this->_isDirty = true;
   pTileset->UpdateTransformFromCesium();
-  this->_isDirty = false;
 }

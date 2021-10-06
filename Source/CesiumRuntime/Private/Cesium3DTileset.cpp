@@ -81,7 +81,6 @@ ACesium3DTileset::ACesium3DTileset()
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
-  // PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
   this->SetActorEnableCollision(true);
 
@@ -1391,11 +1390,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
   if (!pRoot) {
     return;
-  }
-
-  if (pRoot->IsTransformChanged()) {
-    this->UpdateTransformFromCesium();
-    pRoot->MarkTransformUnchanged();
   }
 
   if (this->SuspendUpdate) {

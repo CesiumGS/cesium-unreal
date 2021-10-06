@@ -16,25 +16,6 @@ public:
   UCesium3DTilesetRoot();
 
   /**
-   * @brief Determines if {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * has changed.
-   *
-   * Returns true if the value returned by {@link
-   * GetCesiumTilesetToUnrealRelativeWorldTransform} has changed since the last
-   * time {@link MarkTransformUnchanged} was called.
-   */
-  bool IsTransformChanged() const { return this->_isDirty; }
-
-  /**
-   * @brief Marks {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * unchanged.
-   *
-   * After calling this function, {@link IsTransformChanged} will return false
-   * until the next time that the transform changes.
-   */
-  void MarkTransformUnchanged() { this->_isDirty = false; }
-
-  /**
    * @brief Gets the transform from the "Cesium Tileset" reference frame to the
    * "Unreal Relative World" reference frame.
    *
@@ -77,5 +58,4 @@ private:
   glm::dvec3 _worldOriginLocation;
   glm::dvec3 _absoluteLocation;
   glm::dmat4 _tilesetToUnrealRelativeWorld;
-  bool _isDirty;
 };
