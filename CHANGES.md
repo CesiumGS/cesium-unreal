@@ -42,15 +42,16 @@
 ##### Additions :tada:
 
 - Improved the workflow for managing georeferenced sub-levels.
+- `CesiumSunSky` now automatically adjusts the atmosphere size based on the player Pawn's position to avoid tiled artifacts in the atmosphere when viewing the globe from far away.
 - `GlobeAwareDefaultPawn` and derived classes like `DynamicPawn` now have a `CesiumGlobeAnchorComponent` attached to them. This allows more consistent movement on the globe, and allows the pawn's Longitude/Latitude/Height or ECEF coordinates to be specified directly in the Editor.
 - `CesiumSunSky` now has an `EnableMobileRendering` flag that, when enabled, switches to a mobile-compatible atmosphere rendering technique.
 - `CesiumCartographicPolygon`'s `GlobeAnchor` and `Polygon` are now exposed in the Editor and to Blueprints.
+- Added `InaccurateGetLongitudeLatitudeHeight` and `InaccurateGetECEF` functions to `CesiumGlobeAnchorComponent`, allowing access to the current position of a globe-anchored Actor from Blueprints.
 
 ##### Fixes :wrench:
 
 - Cesium objects in a sub-level will now successfully find and use the `CesiumGeoreference` and `CesiumCreditSystem` object in the Persistent Level when these properties are left unset. For best results, we suggest removing all instances of these objects from sub-levels.
 - Fixed a bug that made the Time-of-Day widget forget the time when it was closed and re-opened.
-- `CesiumSunSky` now automatically adjusts the atmosphere size based on the player Pawn's position to avoid tiled artifacts in the atmosphere when viewing the globe from far away.
 - Undo/Redo now work more reliably for `CesiumGlobeAnchor` properties.
 
 ### v1.6.3 - 2021-10-01
