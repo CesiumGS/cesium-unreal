@@ -1207,17 +1207,12 @@ void applyActorCollisionSettings(
   UCesiumGltfPrimitiveComponent* PrimitiveComponent =
       static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
   if (PrimitiveComponent != nullptr) {
+    PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
     const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
     if (ChannelEnum) {
-      for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX;
-           ChannelValue++) {
-        ECollisionResponse response =
-            BodyInstance.GetCollisionResponse().GetResponse(
-                ECollisionChannel(ChannelValue));
-        PrimitiveComponent->SetCollisionResponseToChannel(
-            ECollisionChannel(ChannelValue),
-            response);
-      }
+      FCollisionResponseContainer responseContainer =
+          BodyInstance.GetResponseToChannels();
+      PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
     }
   }
 }
