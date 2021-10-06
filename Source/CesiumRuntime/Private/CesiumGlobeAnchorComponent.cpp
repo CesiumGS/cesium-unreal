@@ -118,6 +118,11 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
       glm::dvec4(newRotation[2], 0.0),
       this->_actorToECEF[3]);
 
+#if WITH_EDITOR
+  // In the Editor, mark this component modified so Undo works properly.
+  this->Modify();
+#endif
+
   this->_updateActorTransformFromGlobeTransform();
 }
 
@@ -157,6 +162,11 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
       glm::dvec4(newOrientation[1], 0.0),
       glm::dvec4(newOrientation[2], 0.0),
       translation);
+
+#if WITH_EDITOR
+  // In the Editor, mark this component modified so Undo works properly.
+  this->Modify();
+#endif
 
   // Update the actor from the new globe transform
   this->_updateActorTransformFromGlobeTransform();
@@ -296,6 +306,8 @@ void UCesiumGlobeAnchorComponent::OnComponentCreated() {
 #if WITH_EDITOR
 void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
   if (!PropertyChangedEvent.Property) {
     return;
   }
@@ -428,6 +440,11 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
       InRootComponent->GetComponentRotation().Quaternion());
   const glm::dquat adjustedRotation = ellipsoidNormalRotation * rotation;
 
+#if WITH_EDITOR
+  // In the Editor, mark the root component modified so Undo works properly.
+  InRootComponent->Modify();
+#endif
+
   // Set the new Actor transform, taking care not to do this recursively.
   this->_updatingActorTransform = true;
   InRootComponent->SetWorldRotation(
@@ -503,6 +520,11 @@ UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
   this->_updateCartesianProperties();
   this->_updateCartographicProperties();
 
+#if WITH_EDITOR
+  // In the Editor, mark this component modified so Undo works properly.
+  this->Modify();
+#endif
+
   return this->_actorToECEF;
 }
 
@@ -554,6 +576,11 @@ FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
 
   FTransform actorTransform = FTransform(VecMath::createMatrix(actorToUnreal));
 
+#if WITH_EDITOR
+  // In the Editor, mark the root component modified so Undo works properly.
+  pOwnerRoot->Modify();
+#endif
+
   // Set the Actor transform
   this->_updatingActorTransform = true;
   pOwnerRoot->SetWorldTransform(
@@ -569,6 +596,11 @@ FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
 
 const glm::dmat4& UCesiumGlobeAnchorComponent::_setGlobeTransform(
     const glm::dmat4& newTransform) {
+#if WITH_EDITOR
+  // In the Editor, mark this component modified so Undo works properly.
+  this->Modify();
+#endif
+
   // If we don't yet know our globe transform, we can't update the orientation
   // for globe curvature, so just replace the globe transform and we're done.
   // Do the same if we don't want to update the orientation for globe curvature.
