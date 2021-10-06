@@ -171,7 +171,7 @@ protected:
   /**
    * Offset in the sun's position. Should be set to -90 for the sun's position
    * to be accurate in the Unreal reference frame.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -184,7 +184,7 @@ protected:
 
   /**
    * The current solar time represented as hours from midnight.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -197,7 +197,7 @@ protected:
 
   /**
    * The day of the month.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -210,7 +210,7 @@ protected:
 
   /**
    * The month of the year, where 1 is January and 12 is December.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -223,7 +223,7 @@ protected:
 
   /**
    * The year.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -236,7 +236,7 @@ protected:
 
   /**
    * Enables adjustment of the Solar Time for Daylight Saving Time (DST).
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -249,7 +249,7 @@ protected:
 
   /**
    * Set the Date at which DST starts in the current year.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -263,7 +263,7 @@ protected:
 
   /**
    * Set the Date at which DST starts in the current year.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -277,7 +277,7 @@ protected:
 
   /**
    * Set the Date at which DST ends in the current year.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -291,7 +291,7 @@ protected:
 
   /**
    * Set the Date at which DST ends in the current year.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */
@@ -305,7 +305,7 @@ protected:
 
   /**
    * Hour of the DST Switch for both beginning and end.
-   * 
+   *
    * After changing this value from Blueprints or C++, you must call UpdateSun
    * for it to take effect.
    */

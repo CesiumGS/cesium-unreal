@@ -7,15 +7,19 @@
 * Removed `CesiumGlobeAnchorParent`, which was deprecated in v1.3.0. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGlobeAnchorComponent`.
 * Removed the `FixTransformOnOriginRebase` property from `CesiumGeoreferenceComponent`, and the component now always acts as if it is enabled. This should now work correctly even for objects that are moved by physics or other Unreal Engine mechanisms.
 * Renamed `CesiumGeoreferenceComponent` to `CesiumGlobeAnchorComponent`.
+* `CesiumSunSky` has been converted from Blueprints to C++. Backward compatibility should be preserved in most cases, but some less common scenarios may break.
 
 ##### Additions :tada:
 
 * Improved the workflow for managing georeferenced sub-levels.
 * `GlobeAwareDefaultPawn` and derived classes like `DynamicPawn` now have a `CesiumGlobeAnchorComponent` attached to it. This allows more consistent movement on the globe, and allows the pawn's Longitude/Latitude/Height or ECEF coordinates to be specified directly in the Editor.
+* `CesiumSunSky` now has an `EnableMobileRendering` flag that, when enabled, switches to a mobile-compatible atmosphere rendering technique.
 
 ##### Fixes :wrench:
 
 * Cesium objects in a sub-level will now successfully find and use the CesiumGeoreference and CesiumCreditSystem object in the Persistent Level when these properties are left unset. For best results, we suggest removing all instances of these objects from sub-levels.
+* Fixed a bug that made the Time-of-Day widget forget the time when it was closed and re-opened.
+* `CesiumSunSky` now automatically adjusts the atmosphere size based on the player Pawn's position to avoid tiled artifacts in the atmosphere when viewing the globe from far away.
 
 ### v1.6.2 - 2021-09-14
 
