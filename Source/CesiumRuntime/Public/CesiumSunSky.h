@@ -83,16 +83,6 @@ protected:
   bool UpdateAtmosphereAtRuntime = true;
 
   /**
-   * How frequently the atmosphere should be updated, in seconds.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = Cesium,
-      meta = (ClampMin = 0.0001))
-  float UpdateAtmospherePeriod = 1.f;
-
-  /**
    * When the player pawn is below this height, which is expressed in kilometers
    * above the ellipsoid, this Actor will use an atmosphere ground radius that
    * is calculated to be at or below the terrain surface at the player pawn's
@@ -145,24 +135,32 @@ protected:
   ADirectionalLight* LevelDirectionalLight;
 
   /**
-   * The current sun elevation in degrees above the horizontal.
+   * The current sun elevation in degrees above the horizontal, as viewed from
+   * the Georeference origin.
    */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sun)
   float Elevation = 0.f;
 
   /**
    * The current sun elevation, corrected for atmospheric diffraction, in
-   * degrees above the horizontal.
+   * degrees above the horizontal, as viewed from the Georeference origin.
    */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sun)
   float CorrectedElevation = 0.f;
 
   /**
-   * The current sun azimuth in degrees clockwise from North toward East.
+   * The current sun azimuth in degrees clockwise from North toward East, as
+   * viewed from the Georeference origin.
    */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sun)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sun)
   float Azimuth = 0.f;
 
+  /**
+   * Gets the time zone, represented as hours offset from GMT.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -173,6 +171,9 @@ protected:
   /**
    * Offset in the sun's position. Should be set to -90 for the sun's position
    * to be accurate in the Unreal reference frame.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -181,6 +182,12 @@ protected:
       meta = (ClampMin = -360, ClampMax = 360))
   float NorthOffset = -90.f;
 
+  /**
+   * The current solar time represented as hours from midnight.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -188,6 +195,12 @@ protected:
       meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
   float SolarTime = 13.f;
 
+  /**
+   * The day of the month.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -195,6 +208,12 @@ protected:
       meta = (ClampMin = 1, ClampMax = 31))
   int32 Day = 21;
 
+  /**
+   * The month of the year, where 1 is January and 12 is December.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -202,6 +221,12 @@ protected:
       meta = (ClampMin = 1, ClampMax = 12))
   int32 Month = 9;
 
+  /**
+   * The year.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
@@ -210,7 +235,10 @@ protected:
   int32 Year = 2019;
 
   /**
-   * Enables Daylight Saving Time (DST)
+   * Enables adjustment of the Solar Time for Daylight Saving Time (DST).
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -220,7 +248,10 @@ protected:
   bool UseDaylightSavingTime = true;
 
   /**
-   * Set the Date at which DST starts in the current year
+   * Set the Date at which DST starts in the current year.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -231,7 +262,10 @@ protected:
   int32 DSTStartMonth = 3;
 
   /**
-   * Set the Date at which DST starts in the current year
+   * Set the Date at which DST starts in the current year.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -242,7 +276,10 @@ protected:
   int32 DSTStartDay = 10;
 
   /**
-   * Set the Date at which DST ends in the current year
+   * Set the Date at which DST ends in the current year.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -253,7 +290,10 @@ protected:
   int32 DSTEndMonth = 11;
 
   /**
-   * Set the Date at which DST ends in the current year
+   * Set the Date at which DST ends in the current year.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -264,7 +304,10 @@ protected:
   int32 DSTEndDay = 3;
 
   /**
-   * Hour of the DST Switch for both beginning and end
+   * Hour of the DST Switch for both beginning and end.
+   * 
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
    */
   UPROPERTY(
       EditAnywhere,
@@ -298,7 +341,7 @@ protected:
   /**
    * Default intensity of directional light that's spawned for mobile rendering.
    */
-  UPROPERTY(EditAnywhere, Category = Mobile)
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
   float MobileDirectionalLightIntensity = 6.f;
 
 public:
