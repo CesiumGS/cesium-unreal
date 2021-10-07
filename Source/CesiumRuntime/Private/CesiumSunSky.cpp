@@ -50,12 +50,17 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight = CreateDefaultSubobject<UDirectionalLightComponent>(
       TEXT("DirectionalLight"));
   DirectionalLight->SetupAttachment(Scene);
-  DirectionalLight->SetWorldLocation(FVector(0, 0, 0));
   DirectionalLight->Intensity = 111000.f;
   DirectionalLight->LightSourceAngle = 0.5;
   DirectionalLight->bUsedAsAtmosphereSunLight = true;
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
+
+  // The location of the DirectionalLight should never matter, but by making it
+  // absolute we do less math when the Actor moves as a result of the
+  // GlobeAnchorComponent.
+  DirectionalLight->SetUsingAbsoluteLocation(true);
+  DirectionalLight->SetWorldLocation(FVector(0, 0, 0));
 
   if (!SkySphereClass) {
     ConstructorHelpers::FClassFinder<AActor> skySphereFinder(
@@ -68,7 +73,6 @@ ACesiumSunSky::ACesiumSunSky() {
   // Always create these components and hide them if not needed (e.g. on mobile)
   SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
   SkyLight->SetupAttachment(Scene);
-  SkyLight->SetWorldLocation(FVector(0, 0, 150));
   SkyLight->SetMobility(EComponentMobility::Movable);
   SkyLight->bRealTimeCapture = true;
   SkyLight->bLowerHemisphereIsBlack = false;
@@ -76,6 +80,14 @@ ACesiumSunSky::ACesiumSunSky() {
   SkyLight->bCastRaytracedShadow = true;
   SkyLight->SamplesPerPixel = 2;
 
+  // The Sky Light is fixed at the Georeference origin.
+  // TODO: should it follow the player?
+  SkyLight->SetUsingAbsoluteLocation(true);
+  SkyLight->SetWorldLocation(FVector(0, 0, 0));
+
+  // The Sky Atmosphere should be positioned relative to the
+  // Scene/RootComponent, which is kept at the center of the Earth by the
+  // GlobeAnchorComponent.
   SkyAtmosphere =
       CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
   SkyAtmosphere->SetupAttachment(Scene);
@@ -171,6 +183,14 @@ void ACesiumSunSky::BeginPlay() {
       this->RootComponent->TransformUpdated.AddUObject(
           this,
           &ACesiumSunSky::_handleTransformUpdated);
+
+  _setSkyAtmosphereVisibility(!EnableMobileRendering);
+
+  this->UpdateSun();
+
+  if (this->UpdateAtmosphereAtRuntime) {
+    this->AdjustAtmosphereRadius();
+  }
 }
 
 void ACesiumSunSky::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -391,7 +411,7 @@ FVector getViewLocation(UWorld* pWorld) {
 
   // Get the player's current globe location.
   APawn* pPawn = UGameplayStatics::GetPlayerPawn(pWorld, 0);
-  if (!pPawn) {
+  if (pPawn) {
     return pPawn->GetActorLocation();
   }
 
