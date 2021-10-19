@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Added support for physics object types on 'ACesium3DTileset' actors.
+- Added support for collision object types on 'ACesium3DTileset' actors.
 
 ### v1.6.3 - 2021-10-01
 

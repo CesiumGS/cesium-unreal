@@ -1207,7 +1207,10 @@ void applyActorCollisionSettings(
   UCesiumGltfPrimitiveComponent* PrimitiveComponent =
       static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
   if (PrimitiveComponent != nullptr) {
-    PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
+    if (PrimitiveComponent->GetCollisionObjectType() !=
+        BodyInstance.GetObjectType()) {
+      PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
+    }
     const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
     if (ChannelEnum) {
       FCollisionResponseContainer responseContainer =
