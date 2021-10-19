@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.7.0 - ????
+
+##### Additions :tada:
+
+- Added support for physics object types on 'ACesium3DTileset' actors.
+
 ### v1.6.3 - 2021-10-01
 
 ##### Fixes :wrench:
