@@ -59,6 +59,7 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset()
     : Georeference(nullptr),
+      ResolvedGeoreference(nullptr),
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
@@ -72,8 +73,6 @@ ACesium3DTileset::ACesium3DTileset()
       _lastTilesCulled(0),
       _lastMaxDepthVisited(0),
 
-      _updateGeoreferenceOnBoundingVolumeReady(false),
-
       _captureMovieMode{false},
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
@@ -82,7 +81,6 @@ ACesium3DTileset::ACesium3DTileset()
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
-  PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
   this->SetActorEnableCollision(true);
 
@@ -94,6 +92,81 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+
+ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
+  return this->Georeference;
+}
+
+void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
+  this->Georeference = NewGeoreference;
+  this->InvalidateResolvedGeoreference();
+  this->ResolveGeoreference();
+}
+
+ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    return this->ResolvedGeoreference;
+  }
+
+  if (IsValid(this->Georeference)) {
+    this->ResolvedGeoreference = this->Georeference;
+  } else {
+    this->ResolvedGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+
+  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+  if (pRoot) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        pRoot,
+        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+
+    // Update existing tile positions, if any.
+    pRoot->HandleGeoreferenceUpdated();
+  }
+
+  return this->ResolvedGeoreference;
+}
+
+void ACesium3DTileset::InvalidateResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+  this->ResolvedGeoreference = nullptr;
+}
+
+ACesiumCreditSystem* ACesium3DTileset::GetCreditSystem() const {
+  return this->CreditSystem;
+}
+
+void ACesium3DTileset::SetCreditSystem(ACesiumCreditSystem* NewCreditSystem) {
+  this->CreditSystem = NewCreditSystem;
+  this->InvalidateResolvedCreditSystem();
+  this->ResolveCreditSystem();
+}
+
+ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
+  if (IsValid(this->ResolvedCreditSystem)) {
+    return this->ResolvedCreditSystem;
+  }
+
+  if (IsValid(this->CreditSystem)) {
+    this->ResolvedCreditSystem = this->CreditSystem;
+  } else {
+    this->ResolvedCreditSystem =
+        ACesiumCreditSystem::GetDefaultCreditSystem(this);
+  }
+
+  // Refresh the tileset so it uses the new credit system.
+  this->RefreshTileset();
+
+  return this->ResolvedCreditSystem;
+}
+
+void ACesium3DTileset::InvalidateResolvedCreditSystem() {
+  this->ResolvedCreditSystem = nullptr;
+  this->RefreshTileset();
+}
 
 void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
 
@@ -116,6 +189,7 @@ void ACesium3DTileset::PostInitProperties() {
       *this->GetName());
 
   Super::PostInitProperties();
+
   AddFocusViewportDelegate();
 }
 
@@ -196,31 +270,32 @@ void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
 }
 
 void ACesium3DTileset::PlayMovieSequencer() {
-  ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultForActor(this);
-
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  this->_beforeMovieKeepWorldOriginNearCamera =
-      cesiumGeoreference->KeepWorldOriginNearCamera;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->_beforeMovieKeepWorldOriginNearCamera =
+        this->ResolveGeoreference()->KeepWorldOriginNearCamera;
+  }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  cesiumGeoreference->KeepWorldOriginNearCamera = false;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
+  }
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
-  ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultForActor(this);
   this->_captureMovieMode = false;
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  cesiumGeoreference->KeepWorldOriginNearCamera =
-      this->_beforeMovieKeepWorldOriginNearCamera;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->ResolveGeoreference()->KeepWorldOriginNearCamera =
+        this->_beforeMovieKeepWorldOriginNearCamera;
+  }
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
@@ -235,10 +310,12 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       *this->GetName());
 
   struct CalculateECEFCameraPosition {
+
+    const GeoTransforms& localGeoTransforms;
+
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
-      glm::dmat4 ENU =
-          CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+      glm::dmat4 ENU = localGeoTransforms.ComputeEastNorthUpToEcef(center);
       glm::dvec3 offset =
           sphere.getRadius() * glm::normalize(ENU[0] + ENU[1] + ENU[2]);
       glm::dvec3 position = center + offset;
@@ -248,8 +325,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     glm::dvec3
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
-      glm::dmat4 ENU =
-          CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+      glm::dmat4 ENU = localGeoTransforms.ComputeEastNorthUpToEcef(center);
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset = glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
                           glm::normalize(ENU[0] + ENU[1] + ENU[2]);
@@ -282,8 +358,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   // calculate unreal camera position
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  glm::dvec3 ecefCameraPosition =
-      std::visit(CalculateECEFCameraPosition(), boundingVolume);
+  glm::dvec3 ecefCameraPosition = std::visit(
+      CalculateECEFCameraPosition{
+          this->ResolveGeoreference()->GetGeoTransforms()},
+      boundingVolume);
   glm::dvec3 unrealCameraPosition =
       transform * glm::dvec4(ecefCameraPosition, 1.0);
 
@@ -335,42 +413,15 @@ ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
       ->GetCesiumTilesetToUnrealRelativeWorldTransform();
 }
 
-bool ACesium3DTileset::IsBoundingVolumeReady() const {
-  // TODO: detect failures that will cause the root tile to never exist.
-  // That counts as "ready" too.
-  return this->_pTileset && this->_pTileset->getRootTile();
-}
+void ACesium3DTileset::UpdateTransformFromCesium() {
 
-std::optional<Cesium3DTilesSelection::BoundingVolume>
-ACesium3DTileset::GetBoundingVolume() const {
-  if (!this->IsBoundingVolumeReady()) {
-    return std::nullopt;
-  }
-
-  return this->_pTileset->getRootTile()->getBoundingVolume();
-}
-
-void ACesium3DTileset::UpdateTransformFromCesium(
-    const glm::dmat4& CesiumToUnreal) {
+  const glm::dmat4& CesiumToUnreal =
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   TArray<UCesiumGltfComponent*> gltfComponents;
   this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
   for (UCesiumGltfComponent* pGltf : gltfComponents) {
     pGltf->UpdateTransformFromCesium(CesiumToUnreal);
-  }
-}
-
-void ACesium3DTileset::NotifyGeoreferenceUpdated() {
-  // If the bounding volume is ready, we can update the georeference transform
-  // as wanted
-  if (IsBoundingVolumeReady()) {
-    UCesium3DTilesetRoot* pRoot =
-        Cast<UCesium3DTilesetRoot>(this->RootComponent);
-    pRoot->RecalculateTransform();
-  } else {
-    // Otherwise, update the transform later in Tick when the bounding volume is
-    // ready
-    this->_updateGeoreferenceOnBoundingVolumeReady = true;
   }
 }
 
@@ -675,22 +726,13 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-  }
-
-  this->Georeference->AddGeoreferencedObject(this);
-
-  if (!this->CreditSystem) {
-    this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
-  }
+  ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
       asyncSystem,
-      this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem()
-                         : nullptr,
+      pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger()};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
@@ -1266,7 +1308,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 
     UE_LOG(
         LogCesium,
-        Verbose,
+        VeryVerbose,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
@@ -1350,24 +1392,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  if (pRoot->IsTransformChanged()) {
-    this->UpdateTransformFromCesium(
-        this->GetCesiumTilesetToUnrealRelativeWorldTransform());
-    pRoot->MarkTransformUnchanged();
-  }
-
-  // If a georeference update is waiting on the bounding volume being ready,
-  // update when ready
-  if (this->_updateGeoreferenceOnBoundingVolumeReady &&
-      this->IsBoundingVolumeReady()) {
-    this->_updateGeoreferenceOnBoundingVolumeReady = false;
-    // Need to potentially recalculate the transform for all georeferenced
-    // objects, not just for this tileset
-    if (IsValid(this->Georeference)) {
-      this->Georeference->UpdateGeoreference();
-    }
-  }
-
   if (this->SuspendUpdate) {
     return;
   }
@@ -1445,9 +1469,13 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
 #if WITH_EDITOR
 void ACesium3DTileset::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
-  const FName PropName = (PropertyChangedEvent.Property)
-                             ? PropertyChangedEvent.Property->GetFName()
-                             : NAME_None;
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  if (!PropertyChangedEvent.Property) {
+    return;
+  }
+
+  FName PropName = PropertyChangedEvent.Property->GetFName();
 
   if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
@@ -1463,9 +1491,13 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
     this->DestroyTileset();
+  } else if (
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
+    this->InvalidateResolvedGeoreference();
+  } else if (
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreditSystem)) {
+    this->InvalidateResolvedCreditSystem();
   }
-
-  Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 
 void ACesium3DTileset::PostEditUndo() {
@@ -1486,6 +1518,7 @@ void ACesium3DTileset::PostEditImport() {
 #endif
 
 void ACesium3DTileset::BeginDestroy() {
+  this->InvalidateResolvedGeoreference();
   this->DestroyTileset();
 
   AActor::BeginDestroy();

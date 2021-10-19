@@ -2,14 +2,15 @@
 
 #include "Cesium3DTilesetRoot.h"
 #include "Cesium3DTileset.h"
+#include "CesiumRuntime.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/World.h"
+#include "VecMath.h"
 
 UCesium3DTilesetRoot::UCesium3DTilesetRoot()
     : _worldOriginLocation(0.0),
       _absoluteLocation(0.0, 0.0, 0.0),
-      _tilesetToUnrealRelativeWorld(1.0),
-      _isDirty(false) {
+      _tilesetToUnrealRelativeWorld(1.0) {
   PrimaryComponentTick.bCanEverTick = false;
 }
 
@@ -19,10 +20,7 @@ void UCesium3DTilesetRoot::ApplyWorldOffset(
   USceneComponent::ApplyWorldOffset(InOffset, bWorldShift);
 
   const FIntVector& oldOrigin = this->GetWorld()->OriginLocation;
-  this->_worldOriginLocation = glm::dvec3(
-      static_cast<double>(oldOrigin.X) - static_cast<double>(InOffset.X),
-      static_cast<double>(oldOrigin.Y) - static_cast<double>(InOffset.Y),
-      static_cast<double>(oldOrigin.Z) - static_cast<double>(InOffset.Z));
+  this->_worldOriginLocation = VecMath::subtract3D(oldOrigin, InOffset);
 
   // Do _not_ call _updateAbsoluteLocation. The absolute position doesn't change
   // with an origin rebase, and we'll lose precision if we update the absolute
@@ -31,9 +29,12 @@ void UCesium3DTilesetRoot::ApplyWorldOffset(
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
-void UCesium3DTilesetRoot::MarkTransformUnchanged() { this->_isDirty = false; }
-
-void UCesium3DTilesetRoot::RecalculateTransform() {
+void UCesium3DTilesetRoot::HandleGeoreferenceUpdated() {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called HandleGeoreferenceUpdated for tileset root %s"),
+      *this->GetName());
   this->_updateTilesetToUnrealRelativeWorldTransform();
 }
 
@@ -74,51 +75,28 @@ bool UCesium3DTilesetRoot::MoveComponentImpl(
 void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
   const FVector& newLocation = this->GetRelativeLocation();
   const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  this->_absoluteLocation = glm::dvec3(
-      static_cast<double>(originLocation.X) +
-          static_cast<double>(newLocation.X),
-      static_cast<double>(originLocation.Y) +
-          static_cast<double>(newLocation.Y),
-      static_cast<double>(originLocation.Z) +
-          static_cast<double>(newLocation.Z));
+  this->_absoluteLocation = VecMath::add3D(originLocation, newLocation);
+  this->_worldOriginLocation = VecMath::createVector3D(originLocation);
 }
 
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
-  if (!IsValid(pTileset->Georeference)) {
-    this->_tilesetToUnrealRelativeWorld = glm::dmat4(1.0);
-    this->_isDirty = true;
-    return;
-  }
 
   const glm::dmat4& ellipsoidCenteredToUnrealWorld =
-      pTileset->Georeference->GetEllipsoidCenteredToUnrealWorldTransform();
+      pTileset->ResolveGeoreference()
+          ->GetGeoTransforms()
+          .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
 
   glm::dvec3 relativeLocation =
       this->_absoluteLocation - this->_worldOriginLocation;
 
   FMatrix tilesetActorToUeLocal =
       this->GetComponentToWorld().ToMatrixWithScale();
-  glm::dmat4 ueAbsoluteToUeLocal = glm::dmat4(
-      glm::dvec4(
-          tilesetActorToUeLocal.M[0][0],
-          tilesetActorToUeLocal.M[0][1],
-          tilesetActorToUeLocal.M[0][2],
-          tilesetActorToUeLocal.M[0][3]),
-      glm::dvec4(
-          tilesetActorToUeLocal.M[1][0],
-          tilesetActorToUeLocal.M[1][1],
-          tilesetActorToUeLocal.M[1][2],
-          tilesetActorToUeLocal.M[1][3]),
-      glm::dvec4(
-          tilesetActorToUeLocal.M[2][0],
-          tilesetActorToUeLocal.M[2][1],
-          tilesetActorToUeLocal.M[2][2],
-          tilesetActorToUeLocal.M[2][3]),
-      glm::dvec4(relativeLocation, 1.0));
+  glm::dmat4 ueAbsoluteToUeLocal =
+      VecMath::createMatrix4D(tilesetActorToUeLocal, relativeLocation);
 
   this->_tilesetToUnrealRelativeWorld =
       ueAbsoluteToUeLocal * ellipsoidCenteredToUnrealWorld;
 
-  this->_isDirty = true;
+  pTileset->UpdateTransformFromCesium();
 }

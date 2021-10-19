@@ -1,5 +1,59 @@
 # Change Log
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- Removed `CesiumGlobeAnchorParent`, which was deprecated in v1.3.0. The `CesiumGlobeAnchorParent` functionality can be recreated using an empty actor with a `CesiumGlobeAnchorComponent`.
+- Removed the `FixTransformOnOriginRebase` property from `CesiumGeoreferenceComponent`, and the component now always acts as if it is enabled. This should now work correctly even for objects that are moved by physics or other Unreal Engine mechanisms.
+- The `SnapToEastSouthUp` function on `CesiumGeoreference` no longer resets the Scale back to 1.0. It only modifies the rotation.
+- The following `CesiumGeoreferenceComponent` Blueprints and C++ functions no longer take a `MaintainRelativeOrientation` parameter. Instead, this behavior is controlled by the `AdjustOrientationForGlobeWhenMoving` property.
+  - `MoveToLongitudeLatitudeHeight`
+  - `InaccurateMoveToLongitudeLatitudeHeight`
+  - `MoveToECEF`
+  - `InaccurateMoveToECEF`
+- Renamed `CesiumGeoreferenceComponent` to `CesiumGlobeAnchorComponent`.
+- `CesiumSunSky` has been converted from Blueprints to C++. Backward compatibility should be preserved in most cases, but some less common scenarios may break.
+- `GlobeAwareDefaultPawn`, `DynamicPawn`, and `CesiumSunSky` no longer have a `Georeference` property. Instead, they have a `CesiumGlobeAnchor` component that has a `Georeference` property.
+- The `Georeference` property on most Cesium types can now be null if it has not been set explicitly in the Editor. To get the effective Georeference, including one that has been discovered in the level, use the `ResolvedGeoreference` property or call the `ResolveGeoreference` function.
+- Removed the option to locate the Georeference at the "Bounding Volume Origin". It was confusing and almost never useful.
+- The `CheckForNewSubLevels` and `JumpToCurrentLevel` functions in `CesiumGeoreference` have been removed. New sub-levels now automatically appear without an explicit check, and the current sub-level can be changed using the standard Unreal Engine Levels panel.
+- Removed the `CurrentLevelIndex` property from `CesiumGeoreference`. The sub-level that is currently active in the Editor can be queried with the `GetCurrentLevel` function of the `World`.
+- Removed the `SunSky` property from `CesiumGeoreference`. The `CesiumSunSky` now holds a reference to the `CesiumGeoreference`, rather than the other way around.
+- The following Blueprints and C++ functions on `CesiumGeoreference` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
+  - `TransformLongitudeLatitudeHeightToUe` to `TransformLongitudeLatitudeHeightToUnreal`
+  - `InaccurateTransformLongitudeLatitudeHeightToUe` to `InaccurateTransformLongitudeLatitudeHeightToUnreal`
+  - `TransformUeToLongitudeLatitudeHeight` to `TransformLongitudeLatitudeHeightToUnreal`
+  - `InaccurateTransformUeToLongitudeLatitudeHeight` to `InaccurateTransformUnrealToLongitudeLatitudeHeight`
+  - `TransformEcefToUe` to `TransformEcefToUnreal`
+  - `InaccurateTransformEcefToUe` to `InaccurateTransformEcefToUnreal`
+  - `TransformUeToEcef` to `TransformUnrealToEcef`
+  - `InaccurateTransformUeToEcef` to `InaccurateTransformUnrealToEcef`
+  - `TransformRotatorUeToEnu` to `TransformRotatorUnrealToEastNorthUp`
+  - `InaccurateTransformRotatorUeToEnu` to `InaccurateTransformRotatorUnrealToEastNorthUp`
+  - `TransformRotatorEnuToUe` to `TransformRotatorEastNorthUpToUnreal`
+  - `InaccurateTransformRotatorEnuToUe` to `InaccurateTransformRotatorEastNorthUpToUnreal`
+- The following C++ functions on `CesiumGeoreference` have been removed:
+  - `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` moved to `GeoTransforms`, which is accessible via the `getGeoTransforms` function on `CesiumGeoreference`.
+  - `GetUnrealWorldToEllipsoidCenteredTransform` has been replaced with `TransformUnrealToEcef` except that the latter takes standard Unreal world coordinates rather than absolute world coordinates. If you have absolute world coordinates, subtract the World's `OriginLocation` before calling the new function.
+  - `GetEllipsoidCenteredToUnrealWorldTransform` has been replaced with `TransformEcefToUnreal` except that the latter returns standard Unreal world coordinates rather than absolute world coordinates. If you want absolute world coordinates, add the World's `OriginLocation` to the return value.
+  - `AddGeoreferencedObject` should be replaced with a subscription to the new `OnGeoreferenceUpdated` event.
+
+##### Additions :tada:
+
+- Improved the workflow for managing georeferenced sub-levels.
+- `CesiumSunSky` now automatically adjusts the atmosphere size based on the player Pawn's position to avoid tiled artifacts in the atmosphere when viewing the globe from far away.
+- `GlobeAwareDefaultPawn` and derived classes like `DynamicPawn` now have a `CesiumGlobeAnchorComponent` attached to them. This allows more consistent movement on the globe, and allows the pawn's Longitude/Latitude/Height or ECEF coordinates to be specified directly in the Editor.
+- `CesiumSunSky` now has an `EnableMobileRendering` flag that, when enabled, switches to a mobile-compatible atmosphere rendering technique.
+- `CesiumCartographicPolygon`'s `GlobeAnchor` and `Polygon` are now exposed in the Editor and to Blueprints.
+- Added `InaccurateGetLongitudeLatitudeHeight` and `InaccurateGetECEF` functions to `CesiumGlobeAnchorComponent`, allowing access to the current position of a globe-anchored Actor from Blueprints.
+
+##### Fixes :wrench:
+
+- Cesium objects in a sub-level will now successfully find and use the `CesiumGeoreference` and `CesiumCreditSystem` object in the Persistent Level when these properties are left unset. For best results, we suggest removing all instances of these objects from sub-levels.
+- Fixed a bug that made the Time-of-Day widget forget the time when it was closed and re-opened.
+- Undo/Redo now work more reliably for `CesiumGlobeAnchor` properties.
+
 ### v1.6.3 - 2021-10-01
 
 ##### Fixes :wrench:

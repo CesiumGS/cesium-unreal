@@ -6,7 +6,6 @@
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <optional>
 #include "Cesium3DTilesetRoot.generated.h"
 
 UCLASS()
@@ -15,31 +14,6 @@ class UCesium3DTilesetRoot : public USceneComponent {
 
 public:
   UCesium3DTilesetRoot();
-
-  /**
-   * @brief Determines if {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * has changed.
-   *
-   * Returns true if the value returned by {@link
-   * GetCesiumTilesetToUnrealRelativeWorldTransform} has changed since the last
-   * time {@link MarkTransformUnchanged} was called.
-   */
-  bool IsTransformChanged() const { return this->_isDirty; }
-
-  /**
-   * @brief Marks {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * unchanged.
-   *
-   * After calling this function, {@link IsTransformChanged} will return false
-   * until the next time that the transform changes.
-   */
-  void MarkTransformUnchanged();
-
-  /**
-   * @brief Recalculates {@link GetCesiumTilesetToUnrealRelativeWorldTransform}
-   * and marks it changed.
-   */
-  void RecalculateTransform();
 
   /**
    * @brief Gets the transform from the "Cesium Tileset" reference frame to the
@@ -58,15 +32,14 @@ public:
    *   * `UWorld::OriginLocation`
    *   * The transformation from ellipsoid-centered to georeferenced
    * coordinates, as provided by `CesiumGeoreference`.
-   *
-   * @param newOriginLocation The updated World `OriginLocation`. If this is
-   * `std::nullopt`, the `OriginLocation` is obtained directly from the
-   * `UWorld`.
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
   virtual void
   ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
+
+  UFUNCTION()
+  void HandleGeoreferenceUpdated();
 
 protected:
   virtual void BeginPlay() override;
@@ -85,5 +58,4 @@ private:
   glm::dvec3 _worldOriginLocation;
   glm::dvec3 _absoluteLocation;
   glm::dmat4 _tilesetToUnrealRelativeWorld;
-  bool _isDirty;
 };

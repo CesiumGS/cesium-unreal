@@ -19,12 +19,13 @@ class CreditSystem;
  * are displayed by the corresponding Blueprints class
  * /CesiumForUnreal/CesiumCreditSystemBP.CesiumCreditSystemBP_C.
  */
-UCLASS()
+UCLASS(Abstract)
 class CESIUMRUNTIME_API ACesiumCreditSystem : public AActor {
   GENERATED_BODY()
 
 public:
-  static ACesiumCreditSystem* GetDefaultForActor(AActor* Actor);
+  static ACesiumCreditSystem*
+  GetDefaultCreditSystem(const UObject* WorldContextObject);
 
   ACesiumCreditSystem();
 
@@ -51,6 +52,12 @@ public:
 
 private:
   static UClass* CesiumCreditSystemBP;
+
+  /**
+   * A tag that is assigned to Credit Systems when they are created
+   * as the "default" Credit System for a certain world.
+   */
+  static FName DEFAULT_CREDITSYSTEM_TAG;
 
   // the underlying cesium-native credit system that is managed by this actor.
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;

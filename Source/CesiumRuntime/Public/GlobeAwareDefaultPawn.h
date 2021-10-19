@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Cesium3DTilesSelection/BoundingVolume.h"
-#include "CesiumGeoreferenceable.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
 #include <glm/mat3x3.hpp>
@@ -12,6 +10,7 @@
 #include "GlobeAwareDefaultPawn.generated.h"
 
 class ACesiumGeoreference;
+class UCesiumGlobeAnchorComponent;
 class UCurveFloat;
 
 /**
@@ -20,20 +19,11 @@ class UCurveFloat;
  * changes its own up direction such that the world always looks right-side up.
  */
 UCLASS()
-class CESIUMRUNTIME_API AGlobeAwareDefaultPawn
-    : public ADefaultPawn,
-      public ICesiumGeoreferenceable {
+class CESIUMRUNTIME_API AGlobeAwareDefaultPawn : public ADefaultPawn {
   GENERATED_BODY()
 
 public:
   AGlobeAwareDefaultPawn();
-
-  /**
-   * The actor controlling how this camera's location in the Cesium world
-   * relates to the coordinate system in this Unreal Engine level.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium")
-  ACesiumGeoreference* Georeference;
 
   /**
    * Input callback to move forward in local space (or backward if Val is
@@ -60,36 +50,15 @@ public:
   virtual void MoveUp_World(float Val) override;
 
   /**
-   * Called via input to turn at a given rate.
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
-   * desired turn rate
+   * Gets the absolute rotation of the camera view from the Unreal world.
    */
-  virtual void TurnAtRate(float Rate) override;
-
-  /**
-   * Called via input to look up at a given rate (or down if Rate is negative).
-   * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of
-   * desired turn rate
-   */
-  virtual void LookUpAtRate(float Rate) override;
-
-  virtual void AddControllerPitchInput(float Val) override;
-  virtual void AddControllerYawInput(float Val) override;
-  virtual void AddControllerRollInput(float Val) override;
   virtual FRotator GetViewRotation() const override;
+
+  /**
+   * Gets the rotation of the aim direction, which is the same as the View
+   * Rotation.
+   */
   virtual FRotator GetBaseAimRotation() const override;
-
-  /**
-   * Get the pawn Camera location in Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates.
-   */
-  glm::dvec3 GetECEFCameraLocation() const;
-
-  /**
-   * Set the pawn Camera location from Earth-Centered, Earth-Fixed (ECEF)
-   * coordinates.
-   */
-  void SetECEFCameraLocation(const glm::dvec3& ECEF);
 
   /**
    * This curve dictates what percentage of the max altitude the pawn should
@@ -187,25 +156,43 @@ public:
       float PitchAtDestination,
       bool CanInterruptByMoving);
 
-  // ICesiumGeoreferenceable functions
-
-  virtual bool IsBoundingVolumeReady() const override { return false; }
-
-  virtual std::optional<Cesium3DTilesSelection::BoundingVolume>
-  GetBoundingVolume() const override {
-    return std::nullopt;
-  }
-
-  virtual void NotifyGeoreferenceUpdated() override;
-
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaSeconds) override;
+  virtual void PostLoad() override;
+  // virtual void Serialize(FArchive& Ar) override;
 
 protected:
-  virtual void OnConstruction(const FTransform& Transform) override;
-  virtual void BeginPlay() override;
+  /**
+   * THIS PROPERTY IS DEPRECATED.
+   *
+   * Get the Georeference instance from the Globe Anchor Component instead.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium",
+      BlueprintGetter = GetGeoreference,
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Get the Georeference instance from the Globe Anchor Component instead."))
+  ACesiumGeoreference* Georeference_DEPRECATED;
+
+  /**
+   * Gets the Georeference Actor associated with this instance. It is obtained
+   * from the Globe Anchor Component.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ACesiumGeoreference* GetGeoreference() const;
+
+  /**
+   * The Globe Anchor Component that precisely ties this Pawn to the Globe.
+   */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
+  UCesiumGlobeAnchorComponent* GlobeAnchor;
 
 private:
+  void _moveAlongViewAxis(EAxis::Type axis, float Val);
+  void _moveAlongVector(const FVector& axis, float Val);
   void _interruptFlight();
 
   /**
@@ -225,16 +212,12 @@ private:
    */
   void _handleFlightStep(float DeltaSeconds);
 
-  // the current ECEF coordinates, stored in case they need to be restored on
-  // georeference update
-  glm::dvec3 _currentEcef;
-
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;
   bool _bCanInterruptFlight = false;
   double _currentFlyTime = 0.0;
-  FRotator _flyToSourceRotation;
-  FRotator _flyToDestinationRotation;
+  FQuat _flyToSourceRotation;
+  FQuat _flyToDestinationRotation;
 
   std::vector<glm::dvec3> _keypoints;
 };

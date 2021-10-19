@@ -2,14 +2,17 @@
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
-#include "CesiumGeoreferenceable.h"
+#include "CesiumActors.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
+#include "Engine/WorldComposition.h"
+#include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "GeoTransforms.h"
 #include "Math/Matrix.h"
 #include "Math/RotationTranslationMatrix.h"
 #include "Math/Rotator.h"
@@ -17,8 +20,10 @@
 #include "Misc/PackageName.h"
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
+#include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include <string>
 
@@ -27,102 +32,105 @@
 #include "Editor.h"
 #include "EditorViewportClient.h"
 #include "Slate/SceneViewport.h"
+#include "WorldBrowserModule.h"
+
+// These are in the Private directory, yet they are exported, so we're able to
+// use them. And there's no other way (AFAIK) to get details of unloaded levels.
+#include "../Private/LevelCollectionModel.h"
+#include "../Private/LevelModel.h"
 #endif
 
-#define IDENTITY_MAT4x4_ARRAY                                                  \
-  1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0
-
-namespace {
-
-/**
- * @brief Tries to find the default geo reference in the given level.
- *
- * This will search all actors of the given level for a `ACesiumGeoreference`
- * whose name starts with `"CesiumGeoreferenceDefault"` that is *valid*
- * (i.e. not pending kill).
- *
- * @param Level The level
- * @return The default geo reference, or `nullptr` if there is none.
- */
-ACesiumGeoreference* findValidDefaultGeoreference(ULevel* Level) {
-  if (!IsValid(Level)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("No valid level for findDefaultGeoreference"));
-    return nullptr;
-  }
-  TArray<AActor*>& Actors = Level->Actors;
-  AActor** DefaultGeoreferencePtr =
-      Actors.FindByPredicate([](AActor* const& InItem) {
-        if (!IsValid(InItem)) {
-          return false;
-        }
-        if (!InItem->IsA(ACesiumGeoreference::StaticClass())) {
-          return false;
-        }
-        if (!InItem->GetName().StartsWith("CesiumGeoreferenceDefault")) {
-          return false;
-        }
-        return true;
-      });
-  if (!DefaultGeoreferencePtr) {
-    return nullptr;
-  }
-  AActor* DefaultGeoreference = *DefaultGeoreferencePtr;
-  return Cast<ACesiumGeoreference>(DefaultGeoreference);
-}
-} // namespace
+FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
+    FName("DEFAULT_GEOREFERENCE");
 
 /*static*/ ACesiumGeoreference*
-ACesiumGeoreference::GetDefaultForActor(AActor* Actor) {
-  ACesiumGeoreference* pGeoreference =
-      findValidDefaultGeoreference(Actor->GetLevel());
-  if (pGeoreference) {
+ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
+  UWorld* world = WorldContextObject->GetWorld();
+  // This method can be called by actors even when opening the content browser.
+  if (!IsValid(world)) {
+    return nullptr;
+  }
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("World name for GetDefaultGeoreference: %s"),
+      *world->GetFullName());
+
+  // Note: The actor iterator will be created with the
+  // "EActorIteratorFlags::SkipPendingKill" flag,
+  // meaning that we don't have to handle objects
+  // that have been deleted. (This is the default,
+  // but made explicit here)
+  ACesiumGeoreference* pGeoreference = nullptr;
+  EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
+                              EActorIteratorFlags::SkipPendingKill;
+  for (TActorIterator<AActor> actorIterator(
+           world,
+           ACesiumGeoreference::StaticClass(),
+           flags);
+       actorIterator;
+       ++actorIterator) {
+    AActor* actor = *actorIterator;
+    if (actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
+      pGeoreference = Cast<ACesiumGeoreference>(actor);
+      break;
+    }
+  }
+  if (!pGeoreference) {
+    // Legacy method of finding Georeference, for backwards compatibility with
+    // existing projects
+    ACesiumGeoreference* pGeoreferenceCandidate =
+        FindObject<ACesiumGeoreference>(
+            world->PersistentLevel,
+            TEXT("CesiumGeoreferenceDefault"));
+    // Test if PendingKill
+    if (IsValid(pGeoreferenceCandidate)) {
+      pGeoreference = pGeoreferenceCandidate;
+    }
+  }
+  if (!pGeoreference) {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Creating default Georeference for actor %s"),
+        *WorldContextObject->GetName());
+    // Spawn georeference in the persistent level
+    FActorSpawnParameters spawnParameters;
+    spawnParameters.SpawnCollisionHandlingOverride =
+        ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
+    // Null check so the editor doesn't crash when it makes arbitrary calls to
+    // this function without a valid world context object.
+    if (pGeoreference) {
+      pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
+    }
+
+  } else {
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Using existing Georeference %s for actor %s"),
-        *(pGeoreference->GetName()),
-        *(Actor->GetName()));
-    return pGeoreference;
+        *pGeoreference->GetName(),
+        *WorldContextObject->GetName());
   }
-
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Creating default Georeference for actor %s"),
-      *(Actor->GetName()));
-
-  // Make sure that the instance is created in the same
-  // level as the actor, and its name starts with the
-  // prefix indicating that this is the default instance
-  FActorSpawnParameters spawnParameters;
-  spawnParameters.Name = TEXT("CesiumGeoreferenceDefault");
-  spawnParameters.OverrideLevel = Actor->GetLevel();
-  spawnParameters.NameMode =
-      FActorSpawnParameters::ESpawnActorNameMode::Requested;
-  pGeoreference =
-      Actor->GetWorld()->SpawnActor<ACesiumGeoreference>(spawnParameters);
   return pGeoreference;
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _georeferencedToEcef_Array{IDENTITY_MAT4x4_ARRAY},
-      _ecefToGeoreferenced_Array{IDENTITY_MAT4x4_ARRAY},
-      _ueAbsToEcef_Array{IDENTITY_MAT4x4_ARRAY},
-      _ecefToUeAbs_Array{IDENTITY_MAT4x4_ARRAY},
+    : _ellipsoidRadii{
+        CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
+        CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
+        CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
+      _geoTransforms(),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 }
 
-void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 #if WITH_EDITOR
-  // TODO: should we just assume origin rebasing isn't happening since this is
-  // only editor-mode?
-
+void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
-  if (this->GetWorld()->IsGameWorld()) {
+  UWorld* pWorld = this->GetWorld();
+  if (!GEditor || pWorld->IsGameWorld()) {
     return;
   }
 
@@ -134,65 +142,47 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   FRotationTranslationMatrix fCameraTransform(
       pEditorViewportClient->GetViewRotation(),
       pEditorViewportClient->GetViewLocation());
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FIntVector& originLocation = pWorld->OriginLocation;
 
   // TODO: optimize this, only need to transform the front direction and
   // translation
 
+  const FVector& viewLocation = pEditorViewportClient->GetViewLocation();
+  glm::dvec4 translation = VecMath::add4D(viewLocation, originLocation);
+
   // camera local space to Unreal absolute world
-  glm::dmat4 cameraToAbsolute(
-      glm::dvec4(
-          fCameraTransform.M[0][0],
-          fCameraTransform.M[0][1],
-          fCameraTransform.M[0][2],
-          0.0),
-      glm::dvec4(
-          fCameraTransform.M[1][0],
-          fCameraTransform.M[1][1],
-          fCameraTransform.M[1][2],
-          0.0),
-      glm::dvec4(
-          fCameraTransform.M[2][0],
-          fCameraTransform.M[2][1],
-          fCameraTransform.M[2][2],
-          0.0),
-      glm::dvec4(
-          static_cast<double>(fCameraTransform.M[3][0]) +
-              static_cast<double>(originLocation.X),
-          static_cast<double>(fCameraTransform.M[3][1]) +
-              static_cast<double>(originLocation.Y),
-          static_cast<double>(fCameraTransform.M[3][2]) +
-              static_cast<double>(originLocation.Z),
-          1.0));
+  glm::dmat4 cameraToAbsolute =
+      VecMath::createMatrix4D(fCameraTransform, translation);
 
   // camera local space to ECEF
-  glm::dmat4 cameraToECEF = this->_ueAbsToEcef * cameraToAbsolute;
+  glm::dmat4 cameraToECEF =
+      this->_geoTransforms
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
+      cameraToAbsolute;
 
-  // Long/Lat/Height camera location (also our new target georeference origin)
-  std::optional<CesiumGeospatial::Cartographic> targetGeoreferenceOrigin =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
-          cameraToECEF[3]);
-
-  if (!targetGeoreferenceOrigin) {
-    // This only happens when the location is too close to the center of the
-    // Earth.
-    return;
-  }
+  // Long/Lat/Height camera location, in degrees/meters (also our new target
+  // georeference origin) When the location is too close to the center of the
+  // earth, the result will be (0,0,0)
+  glm::dvec3 targetGeoreferenceOrigin =
+      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(cameraToECEF[3]);
 
   this->_setGeoreferenceOrigin(
-      glm::degrees(targetGeoreferenceOrigin->longitude),
-      glm::degrees(targetGeoreferenceOrigin->latitude),
-      targetGeoreferenceOrigin->height);
+      targetGeoreferenceOrigin.x,
+      targetGeoreferenceOrigin.y,
+      targetGeoreferenceOrigin.z);
 
-  glm::dmat4 absoluteToRelativeWorld(
-      glm::dvec4(1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 1.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(-originLocation.X, -originLocation.Y, -originLocation.Z, 1.0));
+  glm::dmat4 absoluteToRelativeWorld = VecMath::createTranslationMatrix4D(
+      -originLocation.X,
+      -originLocation.Y,
+      -originLocation.Z,
+      1.0);
 
   // TODO: check for degeneracy ?
   glm::dmat4 newCameraTransform =
-      absoluteToRelativeWorld * this->_ecefToUeAbs * cameraToECEF;
+      absoluteToRelativeWorld *
+      this->_geoTransforms
+          .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
+      cameraToECEF;
   glm::dvec3 cameraFront = glm::normalize(newCameraTransform[0]);
   glm::dvec3 cameraRight =
       glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
@@ -207,52 +197,232 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
+
+  this->_enableAndGeoreferenceCurrentSubLevel();
+}
 #endif
+
+namespace {
+
+template <typename TStringish>
+FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
+  FString levelName = FPackageName::GetShortName(name);
+  levelName.RemoveFromStart(pWorld->StreamingLevelsPrefix);
+  return levelName;
 }
 
-void ACesiumGeoreference::CheckForNewSubLevels() {
-  const TArray<ULevelStreaming*>& streamedLevels =
-      this->GetWorld()->GetStreamingLevels();
-  // check all levels to see if any are new
-  for (ULevelStreaming* streamedLevel : streamedLevels) {
-    FString levelName =
-        FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-    levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
-    // check the known levels to see if this one is new
-    bool found = false;
-    for (FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
-      if (levelName.Equals(subLevel.LevelName)) {
-        found = true;
-        break;
-      }
+struct WorldCompositionLevelPair {
+  FWorldCompositionTile* pTile;
+  ULevelStreaming* pLevelStreaming;
+};
+
+WorldCompositionLevelPair findWorldCompositionLevel(
+    UWorldComposition* pWorldComposition,
+    const FName& packageName) {
+
+  UWorldComposition::FTilesList& tiles = pWorldComposition->GetTilesList();
+  const TArray<ULevelStreaming*>& levels = pWorldComposition->TilesStreaming;
+
+  for (int32 i = 0; i < tiles.Num(); ++i) {
+    FWorldCompositionTile& tile = tiles[i];
+
+    if (tile.Info.Layer.DistanceStreamingEnabled) {
+      // UE itself is managing distance-based streaming for this level, ignore
+      // it.
+      continue;
     }
 
-    if (!found) {
-      // add this level to the known streaming levels
-      this->CesiumSubLevels.Add(FCesiumSubLevel{
-          levelName,
-          OriginLongitude,
-          OriginLatitude,
-          OriginHeight,
-          1000.0, // TODO: figure out better default radius
-          false});
+    if (tile.PackageName == packageName) {
+      assert(i < levels.Num());
+      return {&tile, levels[i]};
     }
   }
+
+  return {nullptr, nullptr};
 }
 
-void ACesiumGeoreference::JumpToCurrentLevel() {
-  if (this->CurrentLevelIndex < 0 ||
-      this->CurrentLevelIndex >= this->CesiumSubLevels.Num()) {
+} // namespace
+
+#if WITH_EDITOR
+void ACesiumGeoreference::_updateCesiumSubLevels() {
+  UWorld* pWorld = this->GetWorld();
+  if (!IsValid(pWorld)) {
+    // This happens for the georeference that is shown in the
+    // content browser. Might omit this message.
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT(
+            "Georeference is not spawned in world: %s, skipping _updateCesiumSubLevels"),
+        *this->GetFullName());
     return;
   }
 
-  const FCesiumSubLevel& currentLevel =
-      this->CesiumSubLevels[this->CurrentLevelIndex];
+  const UWorldComposition::FTilesList& allLevels =
+      pWorld->WorldComposition->GetTilesList();
 
-  this->SetGeoreferenceOrigin(glm::dvec3(
-      currentLevel.LevelLongitude,
-      currentLevel.LevelLatitude,
-      currentLevel.LevelHeight));
+  TArray<int32> newSubLevels;
+  TArray<int32> missingSubLevels;
+
+  bool checkForNewCurrentLevel = false;
+
+  // Find new sub-levels that we don't know about on the Cesium side.
+  for (int32 i = 0; i < allLevels.Num(); ++i) {
+    const FWorldCompositionTile& level = allLevels[i];
+
+    FString levelName = longPackageNameToCesiumName(pWorld, level.PackageName);
+
+    // Check if the level is already known
+    FCesiumSubLevel* pFound = this->CesiumSubLevels.FindByPredicate(
+        [&levelName](FCesiumSubLevel& subLevel) {
+          return levelName.Equals(subLevel.LevelName);
+        });
+
+    if (pFound) {
+      bool newCanBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
+      if (pFound->CanBeEnabled != newCanBeEnabled) {
+        pFound->CanBeEnabled = newCanBeEnabled;
+
+        // If this level can't be enabled, make sure it's not enabled.
+        if (!pFound->CanBeEnabled) {
+          pFound->Enabled = false;
+        }
+
+        if (newCanBeEnabled) {
+          // This level existed before but is newly enable-able, probably
+          // because it was just added to the right streaming layer. If it also
+          // happens to be the current level, we'll want to immediately hide
+          // other levels. Set a flag to do that later.
+          checkForNewCurrentLevel = true;
+        }
+      }
+    } else {
+      newSubLevels.Add(i);
+    }
+  }
+
+  // Find any Cesium sub-levels that don't exist anymore.
+  for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
+    FCesiumSubLevel& cesiumLevel = this->CesiumSubLevels[i];
+
+    const FWorldCompositionTile* pLevel = allLevels.FindByPredicate(
+        [&cesiumLevel, pWorld](const FWorldCompositionTile& level) {
+          return longPackageNameToCesiumName(pWorld, level.PackageName) ==
+                 cesiumLevel.LevelName;
+        });
+
+    if (!pLevel) {
+      missingSubLevels.Add(i);
+    }
+  }
+
+  if (newSubLevels.Num() == 1 && missingSubLevels.Num() == 1) {
+    // There is exactly one missing and one new, assume it's been renamed.
+    const FWorldCompositionTile& level = allLevels[newSubLevels[0]];
+    this->CesiumSubLevels[missingSubLevels[0]].LevelName =
+        longPackageNameToCesiumName(pWorld, level.PackageName);
+  } else if (newSubLevels.Num() > 0 || missingSubLevels.Num() > 0) {
+    // Remove our record of the sub-levels that no longer exist.
+    // Do this in reverse order so the indices don't get invalidated.
+    for (int32 i = missingSubLevels.Num() - 1; i >= 0; --i) {
+      this->CesiumSubLevels.RemoveAt(missingSubLevels[i]);
+    }
+
+    // Add new Cesium records for the new sub-levels
+    for (int32 i = 0; i < newSubLevels.Num(); ++i) {
+      const FWorldCompositionTile& level = allLevels[newSubLevels[i]];
+      bool canBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
+      this->CesiumSubLevels.Add(FCesiumSubLevel{
+          longPackageNameToCesiumName(pWorld, level.PackageName),
+          canBeEnabled,
+          OriginLongitude,
+          OriginLatitude,
+          OriginHeight,
+          1000.0,
+          canBeEnabled});
+    }
+  }
+
+  if (checkForNewCurrentLevel) {
+    this->_onNewCurrentLevel();
+  }
+}
+#endif
+
+bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
+  FCesiumSubLevel* pLevel = nullptr;
+
+  if (Index >= 0 && Index < this->CesiumSubLevels.Num()) {
+    pLevel = &this->CesiumSubLevels[Index];
+  }
+
+  UWorld* pWorld = this->GetWorld();
+  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
+
+  ULevelStreaming* pStreamedLevel = nullptr;
+
+  if (pLevel) {
+    // Find the streaming level with this name.
+    pStreamedLevel = this->_findLevelStreamingByName(pLevel->LevelName);
+    if (!pStreamedLevel) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("No streaming level found with name %s"),
+          *pLevel->LevelName);
+    }
+  }
+
+  // Deactivate all other streaming levels controlled by Cesium
+  for (const FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
+    if (&subLevel == pLevel) {
+      continue;
+    }
+
+    if (!subLevel.CanBeEnabled) {
+      // A sub-level that can't be enabled is being controled by Unreal Engine,
+      // based on its own distance-based system, so we have no business trying
+      // to disable it. Ignore it.
+      continue;
+    }
+
+    ULevelStreaming* pOtherLevel =
+        this->_findLevelStreamingByName(subLevel.LevelName);
+
+    if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
+      // We need to unload immediately, not over the course of several frames.
+      // If we don't unload immediately, objects in the old level will still be
+      // visible, but they will be positioned incorrectly.
+      // If this causes an objectionable pause, we can do something much more
+      // complicated like defer the georeference switch and activation of the
+      // new level until after the old one has finished asynchronously
+      // unloading. We're considering that a future feature for the moment,
+      // though.
+      pOtherLevel->bShouldBlockOnUnload = true;
+      pOtherLevel->SetShouldBeLoaded(false);
+      pOtherLevel->SetShouldBeVisible(false);
+    }
+  }
+
+  // Activate the new streaming level if it's not already active.
+  if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
+                         !pStreamedLevel->ShouldBeLoaded())) {
+    this->_setGeoreferenceOrigin(
+        pLevel->LevelLongitude,
+        pLevel->LevelLatitude,
+        pLevel->LevelHeight);
+
+    pStreamedLevel->SetShouldBeLoaded(true);
+    pStreamedLevel->SetShouldBeVisible(true);
+  }
+
+  return pStreamedLevel != nullptr;
+}
+
+FVector
+ACesiumGeoreference::InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight()
+    const {
+  return FVector(OriginLongitude, OriginLatitude, OriginHeight);
 }
 
 void ACesiumGeoreference::SetGeoreferenceOrigin(
@@ -276,125 +446,87 @@ void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.Z));
 }
 
-void ACesiumGeoreference::AddGeoreferencedObject(
-    ICesiumGeoreferenceable* Object) {
-
-  // avoid adding duplicates
-  for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
-       this->_georeferencedObjects) {
-    if (Cast<ICesiumGeoreferenceable>(pObject.GetObject()) == Object) {
-      return;
-    }
-  }
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-  this->_georeferencedObjects.Add(*Object);
-#else
-  this->_georeferencedObjects.Add(
-      TWeakInterfacePtr<ICesiumGeoreferenceable>(Object));
-#endif
-
-  // If this object is an Actor or UActorComponent, make sure it ticks _after_
-  // the CesiumGeoreference.
-  AActor* pActor = Cast<AActor>(Object);
-  UActorComponent* pActorComponent = Cast<UActorComponent>(Object);
-  if (pActor) {
-    pActor->AddTickPrerequisiteActor(this);
-  } else if (pActorComponent) {
-    pActorComponent->AddTickPrerequisiteActor(this);
-  }
-
-  this->UpdateGeoreference();
-}
-
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();
 
+  PrimaryActorTick.TickGroup = TG_PrePhysics;
+
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("CesiumGeoreference does not have a World in BeginPlay."));
+    return;
+  }
+
   if (!this->WorldOriginCamera) {
     // Find the first player's camera manager
-    APlayerController* pPlayerController =
-        this->GetWorld()->GetFirstPlayerController();
+    APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
     if (pPlayerController) {
       this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
     }
+
+    if (!this->WorldOriginCamera) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "CesiumGeoreference could not find a FirstPlayerController or a corresponding PlayerCameraManager."));
+    }
   }
 
-  // initialize sublevels as unloaded
-  for (FCesiumSubLevel& level : CesiumSubLevels) {
-    level.CurrentlyLoaded = false;
-  }
+  UpdateGeoreference();
+}
+
+void ACesiumGeoreference::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+  Super::EndPlay(EndPlayReason);
 }
 
 /** In case the CesiumGeoreference gets spawned at run time, instead of design
  *  time, ensure that frames are updated */
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Called OnConstruction on actor %s"),
+      *this->GetName());
+
+#if WITH_EDITOR
+  if (!this->_newCurrentLevelSubscription.IsValid()) {
+    this->_newCurrentLevelSubscription =
+        FEditorDelegates::NewCurrentLevel.AddUObject(
+            this,
+            &ACesiumGeoreference::_onNewCurrentLevel);
+  }
+#endif
+
   this->UpdateGeoreference();
 }
 
+void ACesiumGeoreference::BeginDestroy() {
+#if WITH_EDITOR
+  if (this->_newCurrentLevelSubscription.IsValid()) {
+    FEditorDelegates::NewCurrentLevel.Remove(
+        this->_newCurrentLevelSubscription);
+    this->_newCurrentLevelSubscription.Reset();
+  }
+#endif
+
+  Super::BeginDestroy();
+}
+
 void ACesiumGeoreference::UpdateGeoreference() {
-  // update georeferenced -> ECEF
-  if (this->OriginPlacement == EOriginPlacement::TrueOrigin) {
-    this->_georeferencedToEcef = glm::dmat4(1.0);
-  } else {
-    glm::dvec3 center(0.0, 0.0, 0.0);
+  this->_updateGeoTransforms();
 
-    if (this->OriginPlacement == EOriginPlacement::BoundingVolumeOrigin) {
-      // TODO: it'd be better to compute the union of the bounding volumes and
-      // then use the union's center,
-      //       rather than averaging the centers.
-      size_t numberOfPositions = 0;
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("Broadcasting OnGeoreferenceUpdated for Georeference %s"),
+      *this->GetFullName());
 
-      for (const TWeakInterfacePtr<ICesiumGeoreferenceable>& pObject :
-           this->_georeferencedObjects) {
-        if (pObject.IsValid() && pObject->IsBoundingVolumeReady()) {
-          std::optional<Cesium3DTilesSelection::BoundingVolume> bv =
-              pObject->GetBoundingVolume();
-          if (bv) {
-            center += Cesium3DTilesSelection::getBoundingVolumeCenter(*bv);
-            ++numberOfPositions;
-          }
-        }
-      }
-
-      if (numberOfPositions > 0) {
-        center /= numberOfPositions;
-      }
-    } else if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
-      const CesiumGeospatial::Ellipsoid& ellipsoid =
-          CesiumGeospatial::Ellipsoid::WGS84;
-      center = ellipsoid.cartographicToCartesian(
-          CesiumGeospatial::Cartographic::fromDegrees(
-              this->OriginLongitude,
-              this->OriginLatitude,
-              this->OriginHeight));
-    }
-
-    this->_georeferencedToEcef =
-        CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
-  }
-
-  // update ECEF -> georeferenced
-  this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
-
-  // update UE -> ECEF
-  this->_ueAbsToEcef = this->_georeferencedToEcef *
-                       CesiumTransforms::scaleToCesium *
-                       CesiumTransforms::unrealToOrFromCesium;
-
-  // update ECEF -> UE
-  this->_ecefToUeAbs = CesiumTransforms::unrealToOrFromCesium *
-                       CesiumTransforms::scaleToUnrealWorld *
-                       this->_ecefToGeoreferenced;
-
-  for (TWeakInterfacePtr<ICesiumGeoreferenceable> pObject :
-       this->_georeferencedObjects) {
-    if (pObject.IsValid()) {
-      pObject->NotifyGeoreferenceUpdated();
-    }
-  }
-
-  this->_setSunSky(this->OriginLongitude, this->OriginLatitude);
+  OnGeoreferenceUpdated.Broadcast();
 }
 
 #if WITH_EDITOR
@@ -414,14 +546,10 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
       propertyName ==
-          GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight) ||
-      propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, SunSky)) {
+          GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)) {
+    this->_enableAndGeoreferenceCurrentSubLevel();
     this->UpdateGeoreference();
     return;
-  } else if (
-      propertyName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CurrentLevelIndex)) {
-    this->JumpToCurrentLevel();
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
@@ -433,27 +561,29 @@ bool ACesiumGeoreference::ShouldTickIfViewportsOnly() const { return true; }
 
 #if WITH_EDITOR
 void ACesiumGeoreference::_showSubLevelLoadRadii() const {
-  bool isGame = this->GetWorld()->IsGameWorld();
-  if (isGame) {
+  UWorld* world = this->GetWorld();
+  if (world->IsGameWorld()) {
     return;
   }
   if (!this->ShowLoadRadii) {
     return;
   }
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const glm::dvec4 originLocation =
+      glm::dvec4(VecMath::createVector3D(world->OriginLocation), 1.0);
   for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
     glm::dvec3 levelECEF =
-        CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-            CesiumGeospatial::Cartographic::fromDegrees(
-                level.LevelLongitude,
-                level.LevelLatitude,
-                level.LevelHeight));
+        _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+            level.LevelLongitude,
+            level.LevelLatitude,
+            level.LevelHeight));
 
-    glm::dvec4 levelAbs = this->_ecefToUeAbs * glm::dvec4(levelECEF, 1.0);
-    FVector levelRelative =
-        FVector(levelAbs.x, levelAbs.y, levelAbs.z) - FVector(originLocation);
+    glm::dvec4 levelAbs =
+        this->_geoTransforms
+            .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
+        glm::dvec4(levelECEF, 1.0);
+    FVector levelRelative = VecMath::createVector(levelAbs - originLocation);
     DrawDebugSphere(
-        this->GetWorld(),
+        world,
         levelRelative,
         100.0 * level.LoadRadius,
         100,
@@ -479,36 +609,31 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
 
   FVector grabbedLocation = mouseRayResults.Location;
   // convert from UE to ECEF to LongitudeLatitudeHeight
-  glm::dvec4 grabbedLocationAbs(
-      static_cast<double>(grabbedLocation.X) +
-          static_cast<double>(originLocation.X),
-      static_cast<double>(grabbedLocation.Y) +
-          static_cast<double>(originLocation.Y),
-      static_cast<double>(grabbedLocation.Z) +
-          static_cast<double>(originLocation.Z),
-      1.0);
+  glm::dvec4 grabbedLocationAbs =
+      VecMath::add4D(grabbedLocation, originLocation);
 
-  glm::dvec3 grabbedLocationECEF = this->_ueAbsToEcef * grabbedLocationAbs;
-  std::optional<CesiumGeospatial::Cartographic> optCartographic =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
+  glm::dvec3 grabbedLocationECEF =
+      this->_geoTransforms
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
+      grabbedLocationAbs;
+
+  glm::dvec3 cartographic =
+      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(
           grabbedLocationECEF);
 
-  if (optCartographic) {
-    CesiumGeospatial::Cartographic cartographic = *optCartographic;
-    UE_LOG(
-        LogActor,
-        Warning,
-        TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
-        glm::degrees(cartographic.longitude),
-        glm::degrees(cartographic.latitude),
-        cartographic.height);
+  UE_LOG(
+      LogActor,
+      Warning,
+      TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
+      cartographic.x,
+      cartographic.y,
+      cartographic.z);
 
-    // TODO: find editor viewport mouse click event
-    // if (mouseDown) {
-    // this->_setGeoreferenceOrigin()
-    //	this->EditOriginInViewport = false;
-    //}
-  }
+  // TODO: find editor viewport mouse click event
+  // if (mouseDown) {
+  // this->_setGeoreferenceOrigin()
+  //	this->EditOriginInViewport = false;
+  //}
 }
 #endif // WITH_EDITOR
 
@@ -534,88 +659,57 @@ int32 clampedAdd(float f, int32 i) {
 } // namespace
 
 bool ACesiumGeoreference::_updateSublevelState() {
+  if (this->CesiumSubLevels.Num() == 0) {
+    // If we don't have any known sublevels, bail quickly to save ourselves a
+    // little work.
+    return false;
+  }
 
   if (!IsValid(WorldOriginCamera)) {
     return false;
   }
 
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  UWorld* pWorld = this->GetWorld();
+  const FIntVector& originLocation = pWorld->OriginLocation;
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
 
-  glm::dvec4 cameraAbsolute(
-      static_cast<double>(cameraLocation.X) +
-          static_cast<double>(originLocation.X),
-      static_cast<double>(cameraLocation.Y) +
-          static_cast<double>(originLocation.Y),
-      static_cast<double>(cameraLocation.Z) +
-          static_cast<double>(originLocation.Z),
-      1.0);
+  glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
 
-  glm::dvec3 cameraECEF = this->_ueAbsToEcef * cameraAbsolute;
+  glm::dvec3 cameraECEF =
+      this->_geoTransforms
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
+      cameraAbsolute;
 
-  ULevelStreaming* currentSublevel = nullptr;
-  FCesiumSubLevel* currentCesiumSublevel = nullptr;
-  double closestLevelDistance = TNumericLimits<double>::Max();
+  int32 activeLevel = -1;
+  double closestLevelDistance = std::numeric_limits<double>::max();
 
-  const TArray<ULevelStreaming*>& streamedLevels =
-      this->GetWorld()->GetStreamingLevels();
-  for (ULevelStreaming* streamedLevel : streamedLevels) {
-    FString levelName =
-        FPackageName::GetShortName(streamedLevel->GetWorldAssetPackageName());
-    levelName.RemoveFromStart(this->GetWorld()->StreamingLevelsPrefix);
+  for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
+    const FCesiumSubLevel& level = this->CesiumSubLevels[i];
+    if (!level.Enabled) {
+      continue;
+    }
 
-    for (FCesiumSubLevel& level : this->CesiumSubLevels) {
-      // if this is a known level, we need to tell it whether or not it should
-      // be loaded
-      if (levelName.Equals(level.LevelName)) {
-        glm::dvec3 levelECEF =
-            CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-                CesiumGeospatial::Cartographic::fromDegrees(
-                    level.LevelLongitude,
-                    level.LevelLatitude,
-                    level.LevelHeight));
+    glm::dvec3 levelECEF =
+        _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+            level.LevelLongitude,
+            level.LevelLatitude,
+            level.LevelHeight));
 
-        double levelDistance = glm::length(levelECEF - cameraECEF);
-        if (levelDistance < level.LoadRadius &&
-            levelDistance < closestLevelDistance) {
-
-          if (currentSublevel && currentCesiumSublevel &&
-              currentCesiumSublevel->CurrentlyLoaded) {
-            currentSublevel->SetShouldBeLoaded(false);
-            currentSublevel->SetShouldBeVisible(false);
-            currentCesiumSublevel->CurrentlyLoaded = false;
-          }
-
-          currentSublevel = streamedLevel;
-          currentCesiumSublevel = &level;
-          closestLevelDistance = levelDistance;
-        } else {
-          if (level.CurrentlyLoaded) {
-            streamedLevel->SetShouldBeLoaded(false);
-            streamedLevel->SetShouldBeVisible(false);
-            level.CurrentlyLoaded = false;
-          }
-        }
-        break;
-      }
+    double levelDistance = glm::length(levelECEF - cameraECEF);
+    if (levelDistance < level.LoadRadius &&
+        levelDistance < closestLevelDistance) {
+      activeLevel = i;
     }
   }
 
-  if (currentSublevel && currentCesiumSublevel &&
-      !currentCesiumSublevel->CurrentlyLoaded) {
-    this->_jumpToLevel(*currentCesiumSublevel);
-    currentSublevel->SetShouldBeLoaded(true);
-    currentSublevel->SetShouldBeVisible(true);
-    currentCesiumSublevel->CurrentlyLoaded = true;
-  }
-
-  return currentSublevel && currentCesiumSublevel;
+  // activeLevel may be -1, in which case all levels will be deactivated.
+  return this->SwitchToLevel(activeLevel);
 }
 
 void ACesiumGeoreference::_performOriginRebasing() {
-  bool isGame = this->GetWorld()->IsGameWorld();
-  if (!isGame) {
+  UWorld* world = this->GetWorld();
+  if (!world->IsGameWorld()) {
     return;
   }
   if (!IsValid(WorldOriginCamera)) {
@@ -628,15 +722,15 @@ void ACesiumGeoreference::_performOriginRebasing() {
     // If we are not going to continue origin rebasing inside the
     // sublevel, just set the origin back to zero if necessary,
     // since the sublevel will be centered around zero anyways.
-    if (!this->GetWorld()->OriginLocation.IsZero()) {
-      this->GetWorld()->SetNewWorldOrigin(FIntVector::ZeroValue);
+    if (!world->OriginLocation.IsZero()) {
+      world->SetNewWorldOrigin(FIntVector::ZeroValue);
     }
     return;
   }
 
   // We're either not in a sublevel, or OriginRebaseInsideSublevels is true.
   // Check whether a rebasing is necessary.
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
+  const FIntVector& originLocation = world->OriginLocation;
   const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
   bool distanceTooLarge = !cameraLocation.Equals(
@@ -649,20 +743,57 @@ void ACesiumGeoreference::_performOriginRebasing() {
     int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
     int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
     int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
-    this->GetWorld()->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
+    world->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
   }
+}
+
+void ACesiumGeoreference::_updateGeoTransforms() {
+  glm::dvec3 center(0.0, 0.0, 0.0);
+  if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
+    center = _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
+        this->OriginLongitude,
+        this->OriginLatitude,
+        this->OriginHeight));
+  }
+
+  this->_geoTransforms = GeoTransforms(
+      CesiumGeospatial::Ellipsoid(
+          this->_ellipsoidRadii[0],
+          this->_ellipsoidRadii[1],
+          this->_ellipsoidRadii[2]),
+      center);
 }
 
 void ACesiumGeoreference::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
 #if WITH_EDITOR
+  // There doesn't appear to be a good way to be notified about the wide variety
+  // of level manipulations we care about, so in the Editor we'll poll.
+  if (GEditor && IsValid(this->GetWorld()) &&
+      IsValid(this->GetWorld()->WorldComposition) &&
+      !this->GetWorld()->IsGameWorld()) {
+    this->_updateCesiumSubLevels();
+  }
+
   _showSubLevelLoadRadii();
   _handleViewportOriginEditing();
 #endif
 
-  this->_insideSublevel = _updateSublevelState();
+  if (!this->_shouldManageSubLevels()) {
+    this->_insideSublevel = _updateSublevelState();
+  }
+
   _performOriginRebasing();
+}
+
+void ACesiumGeoreference::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  // Recompute derived values on load.
+  if (Ar.IsLoading()) {
+    this->_updateGeoTransforms();
+  }
 }
 
 /**
@@ -671,200 +802,151 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
 
 glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
     const glm::dvec3& longitudeLatitudeHeight) const {
-  return CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-      CesiumGeospatial::Cartographic::fromDegrees(
-          longitudeLatitudeHeight.x,
-          longitudeLatitudeHeight.y,
-          longitudeLatitudeHeight.z));
+  return _geoTransforms.TransformLongitudeLatitudeHeightToEcef(
+      longitudeLatitudeHeight);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ecef = this->TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-      longitudeLatitudeHeight.X,
-      longitudeLatitudeHeight.Y,
-      longitudeLatitudeHeight.Z));
+  glm::dvec3 ecef = this->_geoTransforms.TransformLongitudeLatitudeHeightToEcef(
+      VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
 glm::dvec3 ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
     const glm::dvec3& ecef) const {
-  std::optional<CesiumGeospatial::Cartographic> llh =
-      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(ecef);
-  if (!llh) {
-    // TODO: since degenerate cases only happen close to Earth's center
-    // would it make more sense to assign an arbitrary but correct LLH
-    // coordinate to this case such as (0.0, 0.0, -_EARTH_RADIUS_)?
-    return glm::dvec3(0.0, 0.0, 0.0);
-  }
-  return glm::dvec3(
-      glm::degrees(llh->longitude),
-      glm::degrees(llh->latitude),
-      llh->height);
+  return _geoTransforms.TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformEcefToLongitudeLatitudeHeight(
     const FVector& ecef) const {
-  glm::dvec3 llh = this->TransformEcefToLongitudeLatitudeHeight(
+  glm::dvec3 llh = this->_geoTransforms.TransformEcefToLongitudeLatitudeHeight(
       glm::dvec3(ecef.X, ecef.Y, ecef.Z));
   return FVector(llh.x, llh.y, llh.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUe(
+glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUnreal(
     const glm::dvec3& longitudeLatitudeHeight) const {
-  glm::dvec3 ecef =
-      this->TransformLongitudeLatitudeHeightToEcef(longitudeLatitudeHeight);
-  return this->TransformEcefToUe(ecef);
+  return this->_geoTransforms.TransformLongitudeLatitudeHeightToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      longitudeLatitudeHeight);
 }
 
-FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUe(
+FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUnreal(
     const FVector& longitudeLatitudeHeight) const {
-  glm::dvec3 ue = this->TransformLongitudeLatitudeHeightToUe(glm::dvec3(
-      longitudeLatitudeHeight.X,
-      longitudeLatitudeHeight.Y,
-      longitudeLatitudeHeight.Z));
+  glm::dvec3 ue = this->_geoTransforms.TransformLongitudeLatitudeHeightToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ue.x, ue.y, ue.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformUeToLongitudeLatitudeHeight(
+glm::dvec3 ACesiumGeoreference::TransformUnrealToLongitudeLatitudeHeight(
     const glm::dvec3& ue) const {
-  glm::dvec3 ecef = this->TransformUeToEcef(ue);
-  return this->TransformEcefToLongitudeLatitudeHeight(ecef);
+  return this->_geoTransforms.TransformUnrealToLongitudeLatitudeHeight(
+      CesiumActors::getWorldOrigin4D(this),
+      ue);
 }
 
-FVector ACesiumGeoreference::InaccurateTransformUeToLongitudeLatitudeHeight(
+FVector ACesiumGeoreference::InaccurateTransformUnrealToLongitudeLatitudeHeight(
     const FVector& ue) const {
   glm::dvec3 llh =
-      this->TransformUeToLongitudeLatitudeHeight(glm::dvec3(ue.X, ue.Y, ue.Z));
+      this->_geoTransforms.TransformUnrealToLongitudeLatitudeHeight(
+          CesiumActors::getWorldOrigin4D(this),
+          VecMath::createVector3D(ue));
   return FVector(llh.x, llh.y, llh.z);
 }
 
 glm::dvec3
-ACesiumGeoreference::TransformEcefToUe(const glm::dvec3& ecef) const {
-  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
-
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  return ueAbs -
-         glm::dvec3(originLocation.X, originLocation.Y, originLocation.Z);
+ACesiumGeoreference::TransformEcefToUnreal(const glm::dvec3& ecef) const {
+  return this->_geoTransforms.TransformEcefToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      ecef);
 }
 
-FVector
-ACesiumGeoreference::InaccurateTransformEcefToUe(const FVector& ecef) const {
-  glm::dvec3 ue = this->TransformEcefToUe(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+FVector ACesiumGeoreference::InaccurateTransformEcefToUnreal(
+    const FVector& ecef) const {
+  glm::dvec3 ue = this->_geoTransforms.TransformEcefToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      VecMath::createVector3D(ecef));
   return FVector(ue.x, ue.y, ue.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformUeToEcef(const glm::dvec3& ue) const {
-
-  if (!IsValid(this->GetWorld())) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("The CesiumGeoreference is not spawned in a level"));
-    return ue;
-  }
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  glm::dvec4 ueAbs(
-      ue.x + static_cast<double>(originLocation.X),
-      ue.y + static_cast<double>(originLocation.Y),
-      ue.z + static_cast<double>(originLocation.Z),
-      1.0);
-  return this->_ueAbsToEcef * ueAbs;
+glm::dvec3
+ACesiumGeoreference::TransformUnrealToEcef(const glm::dvec3& ue) const {
+  return this->_geoTransforms.TransformUnrealToEcef(
+      CesiumActors::getWorldOrigin4D(this),
+      ue);
 }
 
 FVector
-ACesiumGeoreference::InaccurateTransformUeToEcef(const FVector& ue) const {
-  glm::dvec3 ecef = this->TransformUeToEcef(glm::dvec3(ue.X, ue.Y, ue.Z));
+ACesiumGeoreference::InaccurateTransformUnrealToEcef(const FVector& ue) const {
+  glm::dvec3 ecef = this->_geoTransforms.TransformUnrealToEcef(
+      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(ue.X, ue.Y, ue.Z));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorUeToEnu(
-    const FRotator& UERotator,
-    const glm::dvec3& ueLocation) const {
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector::ZeroVector);
-
-  return FRotator(enuAdjustmentMatrix.ToQuat() * UERotator.Quaternion());
+glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
+    const glm::dquat& UeRotator,
+    const glm::dvec3& UeLocation) const {
+  return this->_geoTransforms.TransformRotatorUnrealToEastNorthUp(
+      CesiumActors::getWorldOrigin4D(this),
+      UeRotator,
+      UeLocation);
 }
 
-FRotator ACesiumGeoreference::InaccurateTransformRotatorUeToEnu(
+FRotator ACesiumGeoreference::InaccurateTransformRotatorUnrealToEastNorthUp(
     const FRotator& UERotator,
     const FVector& ueLocation) const {
-  return this->TransformRotatorUeToEnu(
-      UERotator,
-      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+  glm::dquat q = TransformRotatorUnrealToEastNorthUp(
+      VecMath::createQuaternion(UERotator.Quaternion()),
+      VecMath::createVector3D(ueLocation));
+  return VecMath::createRotator(q);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorEnuToUe(
-    const FRotator& ENURotator,
-    const glm::dvec3& ueLocation) const {
-  glm::dmat3 enuToFixedUE = this->ComputeEastNorthUpToUnreal(ueLocation);
-  FMatrix enuAdjustmentMatrix(
-      FVector(enuToFixedUE[0].x, enuToFixedUE[0].y, enuToFixedUE[0].z),
-      FVector(enuToFixedUE[1].x, enuToFixedUE[1].y, enuToFixedUE[1].z),
-      FVector(enuToFixedUE[2].x, enuToFixedUE[2].y, enuToFixedUE[2].z),
-      FVector::ZeroVector);
-
-  FMatrix inverse = enuAdjustmentMatrix.InverseFast();
-
-  return FRotator(inverse.ToQuat() * ENURotator.Quaternion());
+glm::dquat ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
+    const glm::dquat& EnuRotator,
+    const glm::dvec3& UeLocation) const {
+  return this->_geoTransforms.TransformRotatorEastNorthUpToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      EnuRotator,
+      UeLocation);
 }
 
-FRotator ACesiumGeoreference::InaccurateTransformRotatorEnuToUe(
+FRotator ACesiumGeoreference::InaccurateTransformRotatorEastNorthUpToUnreal(
     const FRotator& ENURotator,
     const FVector& ueLocation) const {
-  return this->TransformRotatorEnuToUe(
-      ENURotator,
-      glm::dvec3(ueLocation.X, ueLocation.Y, ueLocation.Z));
+  glm::dquat q = TransformRotatorEastNorthUpToUnreal(
+      VecMath::createQuaternion(ENURotator.Quaternion()),
+      VecMath::createVector3D(ueLocation));
+  return VecMath::createRotator(q);
 }
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
-  glm::dvec3 ecef = this->TransformUeToEcef(ue);
-  glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
-
-  // Camera Axes = ENU
-  // Unreal Axes = controlled by Georeference
-  glm::dmat3 rotationCesium =
-      glm::dmat3(this->_ecefToGeoreferenced) * enuToEcef;
-
-  return glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
-         glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+  return _geoTransforms.ComputeEastNorthUpToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      ue);
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
     const FVector& ue) const {
-  glm::dmat3 enuToUnreal =
-      this->ComputeEastNorthUpToUnreal(glm::dvec3(ue.X, ue.Y, ue.Z));
-
-  return FMatrix(
-      FVector(enuToUnreal[0].x, enuToUnreal[0].y, enuToUnreal[0].z),
-      FVector(enuToUnreal[1].x, enuToUnreal[1].y, enuToUnreal[1].z),
-      FVector(enuToUnreal[2].x, enuToUnreal[2].y, enuToUnreal[2].z),
-      FVector::ZeroVector);
+  glm::dmat3 enuToUnreal = this->_geoTransforms.ComputeEastNorthUpToUnreal(
+      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(ue.X, ue.Y, ue.Z));
+  return VecMath::createMatrix(enuToUnreal);
 }
 
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
-  return glm::dmat3(
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef));
+  return _geoTransforms.ComputeEastNorthUpToEcef(ecef);
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToEcef(
     const FVector& ecef) const {
-  glm::dmat3 enuToEcef =
-      this->ComputeEastNorthUpToEcef(glm::dvec3(ecef.X, ecef.Y, ecef.Z));
-
-  return FMatrix(
-      FVector(enuToEcef[0].x, enuToEcef[0].y, enuToEcef[0].z),
-      FVector(enuToEcef[1].x, enuToEcef[1].y, enuToEcef[1].z),
-      FVector(enuToEcef[2].x, enuToEcef[2].y, enuToEcef[2].z),
-      FVector::ZeroVector);
+  glm::dmat3 enuToEcef = this->_geoTransforms.ComputeEastNorthUpToEcef(
+      glm::dvec3(ecef.X, ecef.Y, ecef.Z));
+  return VecMath::createMatrix(enuToEcef);
 }
 
 /**
@@ -887,54 +969,6 @@ void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
       level.LevelLongitude,
       level.LevelLatitude,
       level.LevelHeight);
-}
-
-// TODO: Figure out if sunsky can ever be oriented so it's not at the top of the
-// planet. Without this sunsky will only look good when we set the georeference
-// origin to be near the camera.
-void ACesiumGeoreference::_setSunSky(double longitude, double latitude) {
-  if (!this->SunSky) {
-    return;
-  }
-
-  // SunSky needs to be clamped to the ellipsoid surface at this long/lat
-  glm::dvec3 targetEcef =
-      CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
-          CesiumGeospatial::Cartographic::fromDegrees(
-              longitude,
-              latitude,
-              0.0));
-  glm::dvec4 targetAbsUe = this->_ecefToUeAbs * glm::dvec4(targetEcef, 1.0);
-
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-  this->SunSky->SetActorLocation(
-      FVector(targetAbsUe.x, targetAbsUe.y, targetAbsUe.z) -
-      FVector(originLocation));
-
-  UClass* SunSkyClass = this->SunSky->GetClass();
-  static FName LongProp = TEXT("Longitude");
-  static FName LatProp = TEXT("Latitude");
-  for (TFieldIterator<FProperty> PropertyIterator(SunSkyClass);
-       PropertyIterator;
-       ++PropertyIterator) {
-    FProperty* Property = *PropertyIterator;
-    FName const PropertyName = Property->GetFName();
-    if (PropertyName == LongProp) {
-      FFloatProperty* floatProp = CastField<FFloatProperty>(Property);
-      if (floatProp) {
-        floatProp->SetPropertyValue_InContainer((void*)this->SunSky, longitude);
-      }
-    } else if (PropertyName == LatProp) {
-      FFloatProperty* floatProp = CastField<FFloatProperty>(Property);
-      if (floatProp) {
-        floatProp->SetPropertyValue_InContainer((void*)this->SunSky, latitude);
-      }
-    }
-  }
-  UFunction* UpdateSun = this->SunSky->FindFunction(TEXT("UpdateSun"));
-  if (UpdateSun) {
-    this->SunSky->ProcessEvent(UpdateSun, NULL);
-  }
 }
 
 // TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal
@@ -966,7 +1000,10 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
   const FVector& viewLoc = cursor.GetOrigin();
   const FVector& viewDir = cursor.GetDirection();
 
-  FVector lineEnd = viewLoc + viewDir * 637100000.0;
+  // TODO (low prio, because this whole function is preliminary) :
+  // This radius should probably be taken from the ellipsoid
+  const double earthRadiusCm = 637100000.0;
+  FVector lineEnd = viewLoc + viewDir * earthRadiusCm;
 
   static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
   if (ShowTrace) {
@@ -993,3 +1030,171 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
   }
 }
 #endif
+
+ULevelStreaming*
+ACesiumGeoreference::_findLevelStreamingByName(const FString& name) {
+  UWorld* pWorld = this->GetWorld();
+  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
+  const FString& streamingLevelPrefix = pWorld->StreamingLevelsPrefix;
+
+  ULevelStreaming* const* ppStreamedLevel =
+      levels.FindByPredicate([&name, pWorld](ULevelStreaming* pStreamedLevel) {
+        return longPackageNameToCesiumName(
+                   pWorld,
+                   pStreamedLevel->GetWorldAssetPackageName()) == name;
+      });
+
+  if (ppStreamedLevel == nullptr) {
+    return nullptr;
+  } else {
+    return *ppStreamedLevel;
+  }
+}
+
+FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
+    const FName& packageName,
+    bool createIfDoesNotExist) {
+  FString cesiumName =
+      longPackageNameToCesiumName(this->GetWorld(), packageName);
+
+  FCesiumSubLevel* pCesiumLevel = this->CesiumSubLevels.FindByPredicate(
+      [cesiumName](const FCesiumSubLevel& level) {
+        return cesiumName == level.LevelName;
+      });
+
+  if (!pCesiumLevel && createIfDoesNotExist) {
+    // No Cesium sub-level exists, so create it now.
+    this->CesiumSubLevels.Add(FCesiumSubLevel{
+        cesiumName,
+        true,
+        this->OriginLongitude,
+        this->OriginLatitude,
+        this->OriginHeight,
+        1000.0,
+        true});
+    pCesiumLevel = &this->CesiumSubLevels.Last();
+  }
+
+  return pCesiumLevel;
+}
+
+#if WITH_EDITOR
+
+void ACesiumGeoreference::_onNewCurrentLevel() {
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    return;
+  }
+
+  UWorldComposition* pWorldComposition = pWorld->WorldComposition;
+  if (!pWorldComposition) {
+    return;
+  }
+
+  ULevel* pCurrent = pWorld->GetCurrentLevel();
+  UPackage* pLevelPackage = pCurrent->GetOutermost();
+
+  // Find the world composition details for the new level.
+  WorldCompositionLevelPair worldCompositionLevelPair =
+      findWorldCompositionLevel(pWorldComposition, pLevelPackage->GetFName());
+
+  FWorldCompositionTile* pTile = worldCompositionLevelPair.pTile;
+  ULevelStreaming* pLevelStreaming = worldCompositionLevelPair.pLevelStreaming;
+
+  if (!pTile || !pLevelStreaming) {
+    // The new level doesn't appear to participate in world composition, so
+    // ignore it.
+    return;
+  }
+
+  // Find the corresponding FCesiumSubLevel, creating it if necessary.
+  FCesiumSubLevel* pCesiumLevel =
+      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
+
+  // Hide all other levels.
+  // I initially thought we could call handy methods like SetShouldBeVisible
+  // here, but I was wrong. That works ok in a game, but in the Editor
+  // there's a much more elaborate dance required. Rather than try to figure out
+  // all the steps, let's just ask the Editor to do it for us.
+  FWorldBrowserModule& worldBrowserModule =
+      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
+  TSharedPtr<FLevelCollectionModel> pWorldModel =
+      worldBrowserModule.SharedWorldModel(pWorld);
+  if (!pWorldModel) {
+    return;
+  }
+
+  // Build a list of levels to hide, starting with _all_ the levels.
+  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
+  FLevelModelList levelsToHide = allLevels;
+
+  // Remove levels from the list that we don't want to hide for various reasons.
+  levelsToHide.RemoveAll(
+      [pCurrent, pWorldComposition](const TSharedPtr<FLevelModel>& pLevel) {
+        // Remove persistent levels.
+        if (pLevel->IsPersistent()) {
+          return true;
+        }
+
+        // Remove the now-current level.
+        if (pLevel->GetLevelObject() == pCurrent) {
+          return true;
+        }
+
+        WorldCompositionLevelPair compositionLevel = findWorldCompositionLevel(
+            pWorldComposition,
+            pLevel->GetLongPackageName());
+
+        // Remove levels that are not part of the world composition.
+        if (!compositionLevel.pLevelStreaming || !compositionLevel.pTile) {
+          return true;
+        }
+
+        // Remove levels that Unreal Engine is handling distance-based streaming
+        // for. Hiding such a level that UE thinks should be shown would cause
+        // the level to toggle on and off continually.
+        if (compositionLevel.pTile->Info.Layer.DistanceStreamingEnabled) {
+          return true;
+        }
+
+        return false;
+      });
+
+  pWorldModel->HideLevels(levelsToHide);
+
+  // Set the georeference origin for the new level if it's enabled.
+  if (pCesiumLevel->Enabled) {
+    this->_setGeoreferenceOrigin(
+        pCesiumLevel->LevelLongitude,
+        pCesiumLevel->LevelLatitude,
+        pCesiumLevel->LevelHeight);
+  }
+}
+
+void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
+  // If a sub-level is the current one, enable it and also update the
+  // sub-level's location.
+  ULevel* pCurrent = this->GetWorld()->GetCurrentLevel();
+  if (!pCurrent || pCurrent->IsPersistentLevel()) {
+    return;
+  }
+
+  UPackage* pLevelPackage = pCurrent->GetOutermost();
+  FCesiumSubLevel* pLevel =
+      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), false);
+
+  if (pLevel) {
+    pLevel->LevelLongitude = this->OriginLongitude;
+    pLevel->LevelLatitude = this->OriginLatitude;
+    pLevel->LevelHeight = this->OriginHeight;
+  }
+
+  pLevel->Enabled = pLevel->CanBeEnabled;
+}
+
+#endif
+
+bool ACesiumGeoreference::_shouldManageSubLevels() const {
+  // Only a Georeference in the PersistentLevel should manage sub-levels.
+  return !this->GetLevel()->IsPersistentLevel();
+}
