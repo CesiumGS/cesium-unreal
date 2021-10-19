@@ -554,6 +554,9 @@ public:
 
     if (pMainThreadResult) {
       UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+      pTexture->ReleaseResource();
+      delete pTexture->PlatformData;
+      pTexture->PlatformData = nullptr;
       pTexture->RemoveFromRoot();
     }
   }
