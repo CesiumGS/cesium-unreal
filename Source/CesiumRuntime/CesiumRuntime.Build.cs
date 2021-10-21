@@ -28,27 +28,32 @@ public class CesiumRuntime : ModuleRules
         string libPrefix;
         string libPostfix;
         string platform;
-        if (Target.Platform == UnrealTargetPlatform.Win64) {
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
             platform = "Windows-x64";
             libPostfix = ".lib";
             libPrefix = "";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Mac) {
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
+        {
             platform = "Darwin-x64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Android) {
+        else if (Target.Platform == UnrealTargetPlatform.Android)
+        {
             platform = "Android-xaarch64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Linux) {
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
             platform = "Linux-x64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else {
+        else
+        {
             platform = "Unknown";
             libPostfix = ".Unknown";
             libPrefix = "Unknown";
@@ -83,7 +88,8 @@ public class CesiumRuntime : ModuleRules
         };
 
         // Use our own copy of MikkTSpace on Android.
-        if (Target.Platform == UnrealTargetPlatform.Android) {
+        if (Target.Platform == UnrealTargetPlatform.Android)
+        {
             libs = libs.Concat(new string[] { "MikkTSpace" }).ToArray();
             PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
         }
@@ -126,7 +132,8 @@ public class CesiumRuntime : ModuleRules
                 "HTTP",
                 "LevelSequence",
                 "Projects",
-                "RenderCore"
+                "RenderCore",
+                "SunPosition"
             }
         );
 
@@ -163,6 +170,7 @@ public class CesiumRuntime : ModuleRules
                     "UnrealEd",
                     "Slate",
                     "SlateCore",
+                    "WorldBrowser"
                 }
             );
         }

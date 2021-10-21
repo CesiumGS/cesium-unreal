@@ -36,13 +36,13 @@ struct FRasterOverlayTile {
   GENERATED_BODY()
 
   UPROPERTY()
-  FString OverlayName;
+  FString OverlayName{};
 
   UPROPERTY()
-  UTexture2D* Texture;
+  UTexture2D* Texture = nullptr;
 
-  FLinearColor TranslationAndScale;
-  int32 TextureCoordinateID;
+  FLinearColor TranslationAndScale{};
+  int32 TextureCoordinateID = -1;
 };
 
 UCLASS()

@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CesiumGeoreference.h"
-#include "CesiumGeoreferenceComponent.h"
 #include "CesiumGeospatial/CartographicPolygon.h"
 #include "CesiumGeospatial/GlobeRectangle.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "Components/SplineComponent.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
@@ -26,14 +26,17 @@ class CESIUMRUNTIME_API ACesiumCartographicPolygon : public AActor {
 public:
   ACesiumCartographicPolygon();
 
-  UPROPERTY()
-  ACesiumGeoreference* Georeference;
-
-  UPROPERTY()
+  /**
+   * The polygon.
+   */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
   USplineComponent* Polygon;
 
-  UPROPERTY()
-  UCesiumGeoreferenceComponent* GeoreferenceComponent;
+  /**
+   * The Globe Anchor Component that precisely ties this Polygon to the Globe.
+   */
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
+  UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   virtual void OnConstruction(const FTransform& Transform) override;
 

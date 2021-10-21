@@ -92,10 +92,10 @@ private:
   static FCesiumEditorModule* _pModule;
 
   /**
-   * Gets the class of the "Cesium Sun Sky" blueprint, loading it if necessary.
+   * Gets the class of the "Cesium Sun Sky", loading it if necessary.
    * Used for spawning the CesiumSunSky.
    */
-  static UClass* GetCesiumSunSkyBlueprintClass();
+  static UClass* GetCesiumSunSkyClass();
 
   /**
    * Gets the class of the "Dynamic Pawn" blueprint, loading it if necessary.

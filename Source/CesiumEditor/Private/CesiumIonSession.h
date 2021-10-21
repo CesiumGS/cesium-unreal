@@ -56,6 +56,7 @@ public:
   FIonUpdated ProfileUpdated;
   FIonUpdated AssetsUpdated;
   FIonUpdated TokensUpdated;
+  FIonUpdated AssetAccessTokenUpdated;
 
   const std::optional<CesiumIonClient::Connection>& getConnection() const;
   const CesiumIonClient::Profile& getProfile();

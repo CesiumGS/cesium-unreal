@@ -57,36 +57,36 @@ using namespace CesiumGltf;
 static uint32_t nextMaterialId = 0;
 
 struct LoadModelResult {
-  FCesiumMetadataPrimitive Metadata;
-  FStaticMeshRenderData* RenderData;
-  const CesiumGltf::Model* pModel;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive;
-  const CesiumGltf::Material* pMaterial;
-  glm::dmat4x4 transform;
+  FCesiumMetadataPrimitive Metadata{};
+  FStaticMeshRenderData* RenderData = nullptr;
+  const CesiumGltf::Model* pModel = nullptr;
+  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
+  const CesiumGltf::Material* pMaterial = nullptr;
+  glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
-  PxTriangleMesh* pCollisionMesh;
+  PxTriangleMesh* pCollisionMesh = nullptr;
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-      pCollisionMesh;
+      pCollisionMesh = nullptr;
 #endif
-  std::string name;
+  std::string name{};
 
-  CesiumTextureUtility::LoadedTextureResult* baseColorTexture;
-  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture;
-  CesiumTextureUtility::LoadedTextureResult* normalTexture;
-  CesiumTextureUtility::LoadedTextureResult* emissiveTexture;
-  CesiumTextureUtility::LoadedTextureResult* occlusionTexture;
-  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture;
+  CesiumTextureUtility::LoadedTextureResult* baseColorTexture = nullptr;
+  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture = nullptr;
+  CesiumTextureUtility::LoadedTextureResult* normalTexture = nullptr;
+  CesiumTextureUtility::LoadedTextureResult* emissiveTexture = nullptr;
+  CesiumTextureUtility::LoadedTextureResult* occlusionTexture = nullptr;
+  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
-  bool onlyLand;
-  bool onlyWater;
+  bool onlyLand = true;
+  bool onlyWater = false;
 
-  double waterMaskTranslationX;
-  double waterMaskTranslationY;
-  double waterMaskScale;
+  double waterMaskTranslationX = 0.0;
+  double waterMaskTranslationY = 0.0;
+  double waterMaskScale = 1.0;
 
-  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
+  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
 };
 
 template <class... T> struct IsAccessorView;
@@ -465,6 +465,65 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
       *primitiveMetadata);
 }
 
+namespace {
+
+/**
+ * @brief Constrain the length of the given string.
+ *
+ * If the string is shorter than the maximum length, it is returned.
+ * If it is not longer than 3 characters, the first maxLength
+ * characters will be returned.
+ * Otherwise, the result will be of the form `prefix + "..." + suffix`,
+ * with the prefix and suffix chosen so that the length of the result
+ * is maxLength
+ *
+ * @param s The input string
+ * @param maxLength The maximum length.
+ * @return The constrained string
+ */
+std::string constrainLength(const std::string& s, const size_t maxLength) {
+  if (s.length() <= maxLength) {
+    return s;
+  }
+  if (maxLength <= 3) {
+    return s.substr(0, maxLength);
+  }
+  const std::string ellipsis("...");
+  const size_t prefixLength = ((maxLength - ellipsis.length()) + 1) / 2;
+  const size_t suffixLength = (maxLength - ellipsis.length()) / 2;
+  const std::string prefix = s.substr(0, prefixLength);
+  const std::string suffix = s.substr(s.length() - suffixLength, suffixLength);
+  return prefix + ellipsis + suffix;
+}
+
+/**
+ * @brief Create an FName from the given strings.
+ *
+ * This will combine the prefix and the suffix and create an FName.
+ * If the string would be longer than the given length, then
+ * the prefix will be shortened (in an unspecified way), to
+ * constrain the result to a length of maxLength.
+ *
+ * The default maximum length is 256, because Unreal may in turn
+ * add a prefix like the `/Internal/Path/Name` to this name.
+ *
+ * @param prefix The prefix input string
+ * @param suffix The suffix input string
+ * @param maxLength The maximum length
+ * @return The FName
+ */
+FName createSafeName(
+    const std::string& prefix,
+    const std::string& suffix,
+    const size_t maxLength = 256) {
+  std::string constrainedPrefix =
+      constrainLength(prefix, maxLength - suffix.length());
+  std::string combined = constrainedPrefix + suffix;
+  return FName(combined.c_str());
+}
+
+} // namespace
+
 template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
@@ -497,6 +556,7 @@ static void loadPrimitive(
   auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
   if (urlIt != model.extras.end()) {
     name = urlIt->second.getStringOrDefault("glTF");
+    name = constrainLength(name, 256);
   }
 
   auto meshIt = std::find_if(
@@ -680,12 +740,6 @@ static void loadPrimitive(
   StaticMeshBuildVertices.SetNum(
       duplicateVertices ? indices.Num() : positionView.size());
 
-  // The static mesh we construct will _not_ be indexed, even if the incoming
-  // glTF is. This allows us to compute flat normals if the glTF doesn't include
-  // them already, and it allows us to compute a correct tangent space basis
-  // according to the MikkTSpace algorithm when tangents are not included in the
-  // glTF.
-
   {
     if (duplicateVertices) {
       CESIUM_TRACE("copy duplicated positions");
@@ -711,63 +765,6 @@ static void loadPrimitive(
             RenderData->Bounds.SphereRadius);
       }
     }
-  }
-
-  // TangentX: Tangent
-  // TangentY: Bi-tangent
-  // TangentZ: Normal
-
-  if (hasNormals) {
-    if (duplicateVertices) {
-      CESIUM_TRACE("copy normals for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        uint32 vertexIndex = indices[i];
-        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[vertexIndex];
-      }
-    } else {
-      CESIUM_TRACE("copy normals");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[i];
-      }
-    }
-  } else {
-    CESIUM_TRACE("compute flat normals");
-    computeFlatNormals(indices, StaticMeshBuildVertices);
-  }
-
-  if (hasTangents) {
-    if (duplicateVertices) {
-      CESIUM_TRACE("copy tangents for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        uint32 vertexIndex = indices[i];
-        const FVector4& tangent = tangentAccessor[vertexIndex];
-        vertex.TangentX = tangent;
-        vertex.TangentY =
-            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
-      }
-    } else {
-      CESIUM_TRACE("copy tangents");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        const FVector4& tangent = tangentAccessor[i];
-        vertex.TangentX = tangent;
-        vertex.TangentY =
-            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
-      }
-    }
-  }
-
-  if (needsTangents && !hasTangents) {
-    // Use mikktspace to calculate the tangents
-    CESIUM_TRACE("compute tangents");
-    computeTangentSpace(StaticMeshBuildVertices);
   }
 
   bool hasVertexColors = false;
@@ -873,6 +870,64 @@ static void loadPrimitive(
         primitiveResult.overlayTextureCoordinateIDToUVIndex[i] = 0;
       }
     }
+  }
+
+  // TangentX: Tangent
+  // TangentY: Bi-tangent
+  // TangentZ: Normal
+
+  if (hasNormals) {
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy normals for duplicated vertices");
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentZ = normalAccessor[vertexIndex];
+      }
+    } else {
+      CESIUM_TRACE("copy normals");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        vertex.TangentX = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentY = FVector(0.0f, 0.0f, 0.0f);
+        vertex.TangentZ = normalAccessor[i];
+      }
+    }
+  } else {
+    CESIUM_TRACE("compute flat normals");
+    computeFlatNormals(indices, StaticMeshBuildVertices);
+  }
+
+  if (hasTangents) {
+    if (duplicateVertices) {
+      CESIUM_TRACE("copy tangents for duplicated vertices");
+      for (int64_t i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        const FVector4& tangent = tangentAccessor[vertexIndex];
+        vertex.TangentX = tangent;
+        vertex.TangentY =
+            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+      }
+    } else {
+      CESIUM_TRACE("copy tangents");
+      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        const FVector4& tangent = tangentAccessor[i];
+        vertex.TangentX = tangent;
+        vertex.TangentY =
+            FVector::CrossProduct(vertex.TangentZ, vertex.TangentX) * tangent.W;
+      }
+    }
+  }
+
+  if (needsTangents && !hasTangents) {
+    // Use mikktspace to calculate the tangents.
+    // Note that this assumes normals and UVs are already populated.
+    CESIUM_TRACE("compute tangents");
+    computeTangentSpace(StaticMeshBuildVertices);
   }
 
   {
@@ -1488,10 +1543,10 @@ static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadModelResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
+
+  FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
-      NewObject<UCesiumGltfPrimitiveComponent>(
-          pGltf,
-          FName(loadResult.name.c_str()));
+      NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
@@ -1505,8 +1560,7 @@ static void loadModelGameThreadPart(
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
 
-  UStaticMesh* pStaticMesh =
-      NewObject<UStaticMesh>(pMesh, FName(loadResult.name.c_str()));
+  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(
@@ -1795,8 +1849,6 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& translation,
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
-  const Cesium3DTilesSelection::RasterOverlay& overlay =
-      rasterTile.getOverlay();
 
   FLinearColor translationAndScale(
       translation.x,
@@ -1804,11 +1856,9 @@ void UCesiumGltfComponent::AttachRasterTile(
       scale.x,
       scale.y);
 
-  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
-
   forEachPrimitiveComponent(
       this,
-      [&name, &rasterTile, pTexture, &translationAndScale, textureCoordinateID](
+      [&rasterTile, pTexture, &translationAndScale, textureCoordinateID](
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
@@ -1816,6 +1866,9 @@ void UCesiumGltfComponent::AttachRasterTile(
         // set the parameters on each material layer that maps to this overlay
         // tile.
         if (pCesiumData) {
+          FString name(
+              UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
+
           for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
             if (pCesiumData->LayerNames[i] != name) {
               continue;
@@ -1843,13 +1896,17 @@ void UCesiumGltfComponent::AttachRasterTile(
           }
         } else {
           pMaterial->SetTextureParameterValue(
-              FName(name + "_Texture"),
+              createSafeName(rasterTile.getOverlay().getName(), "_Texture"),
               pTexture);
           pMaterial->SetVectorParameterValue(
-              FName(name + "_TranslationScale"),
+              createSafeName(
+                  rasterTile.getOverlay().getName(),
+                  "_TranslationScale"),
               translationAndScale);
           pMaterial->SetScalarParameterValue(
-              FName(name + "_TextureCoordinateIndex"),
+              createSafeName(
+                  rasterTile.getOverlay().getName(),
+                  "_TextureCoordinateIndex"),
               pPrimitive
                   ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
         }
@@ -1860,14 +1917,10 @@ void UCesiumGltfComponent::DetachRasterTile(
     const Cesium3DTilesSelection::Tile& tile,
     const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
     UTexture2D* pTexture) {
-  const Cesium3DTilesSelection::RasterOverlay& overlay =
-      rasterTile.getOverlay();
-
-  FString name(UTF8_TO_TCHAR(overlay.getName().c_str()));
 
   forEachPrimitiveComponent(
       this,
-      [this, &name, &rasterTile, pTexture](
+      [this, &rasterTile, pTexture](
           UCesiumGltfPrimitiveComponent* pPrimitive,
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
@@ -1875,6 +1928,8 @@ void UCesiumGltfComponent::DetachRasterTile(
         // clear the parameters on each material layer that maps to this overlay
         // tile.
         if (pCesiumData) {
+          FString name(
+              UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
           for (int32 i = 0; i < pCesiumData->LayerNames.Num(); ++i) {
             if (pCesiumData->LayerNames[i] != name) {
               continue;
@@ -1889,7 +1944,7 @@ void UCesiumGltfComponent::DetachRasterTile(
           }
         } else {
           pMaterial->SetTextureParameterValue(
-              FName(name + "_Texture"),
+              createSafeName(rasterTile.getOverlay().getName(), "_Texture"),
               this->Transparent1x1);
         }
       });
