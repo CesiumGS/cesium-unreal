@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include <glm/gtx/quaternion.hpp>
 #include <glm/vec3.hpp>
+#include <optional>
 #include "CesiumGlobeAnchorComponent.generated.h"
 
 class ACesiumGeoreference;
