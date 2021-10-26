@@ -54,6 +54,7 @@
 - Cesium objects in a sub-level will now successfully find and use the `CesiumGeoreference` and `CesiumCreditSystem` object in the Persistent Level when these properties are left unset. For best results, we suggest removing all instances of these objects from sub-levels.
 - Fixed a bug that made the Time-of-Day widget forget the time when it was closed and re-opened.
 - Undo/Redo now work more reliably for `CesiumGlobeAnchor` properties.
+- We now explicitly free the `PlatformData` and renderer resources associated with `UTexture2D` instances created for raster overlays when the textures are no longer needed. By relying less on the Unreal Engine garbage collector, this helps keep memory usage lower. It also keeps memory from going up so quickly in the Editor, which by default does not run the garbage collector at all.
 
 ### v1.6.3 - 2021-10-01
 
