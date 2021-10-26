@@ -7,6 +7,7 @@
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumPanel.h"
+#include "CesiumSunSky.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
@@ -500,7 +501,7 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 } // namespace
 
 AActor* FCesiumEditorModule::GetCurrentLevelCesiumSunSky() {
-  return GetFirstCurrentLevelActorWithClass(GetCesiumSunSkyBlueprintClass());
+  return GetFirstCurrentLevelActorWithClass(GetCesiumSunSkyClass());
 }
 
 AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
@@ -508,29 +509,15 @@ AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
 }
 
 AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
-  return SpawnActorWithClass(GetCesiumSunSkyBlueprintClass());
+  return SpawnActorWithClass(GetCesiumSunSkyClass());
 }
 
 AActor* FCesiumEditorModule::SpawnDynamicPawn() {
   return SpawnActorWithClass(GetDynamicPawnBlueprintClass());
 }
 
-UClass* FCesiumEditorModule::GetCesiumSunSkyBlueprintClass() {
-  static UClass* pResult = nullptr;
-
-  if (!pResult) {
-    pResult = LoadClass<AActor>(
-        nullptr,
-        TEXT("/CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
-    if (!pResult) {
-      UE_LOG(
-          LogCesiumEditor,
-          Warning,
-          TEXT("Could not load /CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
-    }
-  }
-
-  return pResult;
+UClass* FCesiumEditorModule::GetCesiumSunSkyClass() {
+  return ACesiumSunSky::StaticClass();
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {

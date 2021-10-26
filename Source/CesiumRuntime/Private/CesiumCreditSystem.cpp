@@ -5,6 +5,7 @@
 #include "CesiumCreditSystemBPLoader.h"
 #include "CesiumRuntime.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include <string>
 #include <vector>
 
@@ -52,8 +53,11 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
 }
 } // namespace
 
+FName ACesiumCreditSystem::DEFAULT_CREDITSYSTEM_TAG =
+    FName("DEFAULT_CREDITSYSTEM");
+
 /*static*/ ACesiumCreditSystem*
-ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
+ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
   // Blueprint loading can only happen in a constructor, so we instantiate a
   // loader object that retrieves the blueprint class in its constructor. We can
   // destroy the loader immediately once it's done since it will have already
@@ -65,45 +69,75 @@ ACesiumCreditSystem::GetDefaultForActor(AActor* Actor) {
     bpLoader->ConditionalBeginDestroy();
   }
 
-  ACesiumCreditSystem* pACreditSystem =
-      findValidDefaultCreditSystem(Actor->GetLevel());
-  if (pACreditSystem) {
+  UWorld* world = WorldContextObject->GetWorld();
+  // This method can be called by actors even when opening the content browser.
+  if (!IsValid(world)) {
+    return nullptr;
+  }
+  UE_LOG(
+      LogCesium,
+      Verbose,
+      TEXT("World name for GetDefaultCreditSystem: %s"),
+      *world->GetFullName());
+
+  // Note: The actor iterator will be created with the
+  // "EActorIteratorFlags::SkipPendingKill" flag,
+  // meaning that we don't have to handle objects
+  // that have been deleted. (This is the default,
+  // but made explicit here)
+  ACesiumCreditSystem* pCreditSystem = nullptr;
+  EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
+                              EActorIteratorFlags::SkipPendingKill;
+  for (TActorIterator<AActor> actorIterator(
+           world,
+           ACesiumCreditSystem::StaticClass(),
+           flags);
+       actorIterator;
+       ++actorIterator) {
+    AActor* actor = *actorIterator;
+    if (actor->ActorHasTag(DEFAULT_CREDITSYSTEM_TAG)) {
+      pCreditSystem = Cast<ACesiumCreditSystem>(actor);
+      break;
+    }
+  }
+  if (!pCreditSystem) {
+    // Legacy method of finding Georeference, for backwards compatibility with
+    // existing projects
+    ACesiumCreditSystem* pCreditSystemCandidate =
+        findValidDefaultCreditSystem(world->PersistentLevel);
+
+    // Test if PendingKill
+    if (IsValid(pCreditSystemCandidate)) {
+      pCreditSystem = pCreditSystemCandidate;
+    }
+  }
+  if (!pCreditSystem) {
+    UE_LOG(
+        LogCesium,
+        Verbose,
+        TEXT("Creating default Credit System for actor %s"),
+        *WorldContextObject->GetName());
+    // Spawn georeference in the persistent level
+    FActorSpawnParameters spawnParameters;
+    spawnParameters.SpawnCollisionHandlingOverride =
+        ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
+        CesiumCreditSystemBP,
+        spawnParameters);
+    // Null check so the editor doesn't crash when it makes arbitrary calls to
+    // this function without a valid world context object.
+    if (pCreditSystem) {
+      pCreditSystem->Tags.Add(DEFAULT_CREDITSYSTEM_TAG);
+    }
+  } else {
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Using existing CreditSystem %s for actor %s"),
-        *(pACreditSystem->GetName()),
-        *(Actor->GetName()));
-    return pACreditSystem;
+        *pCreditSystem->GetName(),
+        *WorldContextObject->GetName());
   }
-
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Creating default CreditSystem for actor %s"),
-      *(Actor->GetName()));
-
-  if (!CesiumCreditSystemBP) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Blueprint not found, unable to retrieve default ACesiumCreditSystem"));
-    return nullptr;
-  }
-
-  // Make sure that the instance is created in the same
-  // level as the actor, and its name starts with the
-  // prefix indicating that this is the default instance
-  FActorSpawnParameters spawnParameters;
-  spawnParameters.Name = TEXT("CesiumCreditSystemDefault");
-  spawnParameters.OverrideLevel = Actor->GetLevel();
-  spawnParameters.NameMode =
-      FActorSpawnParameters::ESpawnActorNameMode::Requested;
-  pACreditSystem = Actor->GetWorld()->SpawnActor<ACesiumCreditSystem>(
-      CesiumCreditSystemBP,
-      spawnParameters);
-  return pACreditSystem;
+  return pCreditSystem;
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem()
