@@ -10,6 +10,7 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   PrimaryComponentTick.bCanEverTick = false;
   pModel = nullptr;
   pMeshPrimitive = nullptr;
+  this->SetCanEverAffectNavigation(true);
 }
 
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
