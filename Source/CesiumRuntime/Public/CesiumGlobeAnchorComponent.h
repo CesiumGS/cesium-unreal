@@ -50,16 +50,20 @@ private:
    * This property will be null before ResolveGeoreference is called, which
    * happens automatically when the component is registered.
    */
-  UPROPERTY(Transient, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      Transient,
+      BlueprintReadOnly,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
 
 public:
   /** @copydoc UCesiumGlobeAnchorComponent::Georeference */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   ACesiumGeoreference* GetGeoreference() const;
 
   /** @copydoc UCesiumGlobeAnchorComponent::Georeference */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetGeoreference(ACesiumGeoreference* NewGeoreference);
 
   /**

@@ -74,16 +74,20 @@ private:
    *
    * This property will be null before ResolveGeoreference is called.
    */
-  UPROPERTY(Transient, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      Transient,
+      BlueprintReadOnly,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
 
 public:
   /** @copydoc ACesium3DTileset::Georeference */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   ACesiumGeoreference* GetGeoreference() const;
 
   /** @copydoc ACesium3DTileset::Georeference */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetGeoreference(ACesiumGeoreference* NewGeoreference);
 
   /**
@@ -129,16 +133,20 @@ private:
    *
    * This property will be null before ResolveCreditSystem is called.
    */
-  UPROPERTY(Transient, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      Transient,
+      BlueprintReadOnly,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
   ACesiumCreditSystem* ResolvedCreditSystem = nullptr;
 
 public:
   /** @copydoc ACesium3DTileset::CreditSystem */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   ACesiumCreditSystem* GetCreditSystem() const;
 
   /** @copydoc ACesium3DTileset::CreditSystem */
-  UFUNCTION(BlueprintCallable)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetCreditSystem(ACesiumCreditSystem* NewCreditSystem);
 
   /**
