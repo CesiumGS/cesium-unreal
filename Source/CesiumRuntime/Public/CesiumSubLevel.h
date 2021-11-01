@@ -77,6 +77,6 @@ struct FCesiumSubLevel {
       meta = (ClampMin = 0.0, EditCondition = "Enabled"))
   double LoadRadius = 0.0;
 
-  UPROPERTY(VisibleDefaultsOnly)
+  UPROPERTY(VisibleDefaultsOnly, Category = "Cesium")
   bool CanBeEnabled = false;
 };
