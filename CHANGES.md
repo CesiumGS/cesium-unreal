@@ -56,6 +56,8 @@
 - Undo/Redo now work more reliably for `CesiumGlobeAnchor` properties.
 - We now explicitly free the `PlatformData` and renderer resources associated with `UTexture2D` instances created for raster overlays when the textures are no longer needed. By relying less on the Unreal Engine garbage collector, this helps keep memory usage lower. It also keeps memory from going up so quickly in the Editor, which by default does not run the garbage collector at all.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.8.0 to v0.9.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.6.3 - 2021-10-01
 
 ##### Fixes :wrench:
