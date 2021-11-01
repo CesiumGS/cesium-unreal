@@ -8,8 +8,8 @@
 #include "CesiumMetadataPrimitive.generated.h"
 
 namespace CesiumGltf {
-struct ModelEXT_feature_metadata;
-struct MeshPrimitiveEXT_feature_metadata;
+struct ExtensionModelExtFeatureMetadata;
+struct ExtensionMeshPrimitiveExtFeatureMetadata;
 } // namespace CesiumGltf
 
 /**
@@ -44,8 +44,9 @@ public:
   FCesiumMetadataPrimitive(
       const CesiumGltf::Model& model,
       const CesiumGltf::MeshPrimitive& primitive,
-      const CesiumGltf::ModelEXT_feature_metadata& metadata,
-      const CesiumGltf::MeshPrimitiveEXT_feature_metadata& primitiveMetadata);
+      const CesiumGltf::ExtensionModelExtFeatureMetadata& metadata,
+      const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
+          primitiveMetadata);
 
 private:
   TArray<FCesiumMetadataFeatureTable> _featureTables;

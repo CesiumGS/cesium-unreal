@@ -8,9 +8,9 @@
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
+#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/GltfReader.h"
-#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
-#include "CesiumGltf/ModelEXT_feature_metadata.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
@@ -446,14 +446,15 @@ static void applyWaterMask(
 static FCesiumMetadataPrimitive loadMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive) {
-  const CesiumGltf::ModelEXT_feature_metadata* metadata =
-      model.getExtension<CesiumGltf::ModelEXT_feature_metadata>();
+  const CesiumGltf::ExtensionModelExtFeatureMetadata* metadata =
+      model.getExtension<CesiumGltf::ExtensionModelExtFeatureMetadata>();
   if (!metadata) {
     return FCesiumMetadataPrimitive();
   }
 
-  const CesiumGltf::MeshPrimitiveEXT_feature_metadata* primitiveMetadata =
-      primitive.getExtension<CesiumGltf::MeshPrimitiveEXT_feature_metadata>();
+  const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata*
+      primitiveMetadata = primitive.getExtension<
+          CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata>();
   if (!primitiveMetadata) {
     return FCesiumMetadataPrimitive();
   }
