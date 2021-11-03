@@ -51,11 +51,102 @@ public:
    */
   void RemoveFromTileset();
 
+  /**
+   * Refreshes this tileset by removing and re-adding it.
+   */
+  void Refresh();
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  float GetMaximumScreenSpaceError() const;
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetMaximumScreenSpaceError(float Value);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  int32 GetMaximumTextureSize() const;
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetMaximumTextureSize(int32 Value);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  int32 GetMaximumSimultaneousTileLoads() const;
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetMaximumSimultaneousTileLoads(int32 Value);
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  int64 GetSubTileCacheBytes() const;
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetSubTileCacheBytes(int64 Value);
+
   virtual void Activate(bool bReset) override;
   virtual void Deactivate() override;
   virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
 protected:
+  /**
+   * The maximum number of pixels of error when rendering this overlay.
+   * This is used to select an appropriate level-of-detail.
+   *
+   * When this property has its default value, 2.0, it means that raster overlay
+   * images will be sized so that, when zoomed in closest, a single pixel in
+   * the raster overlay maps to approximately 2x2 pixels on the screen.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetMaximumScreenSpaceError,
+      BlueprintSetter = SetMaximumScreenSpaceError,
+      Category = "Cesium")
+  float MaximumScreenSpaceError = 2.0;
+
+  /**
+   * The maximum texel size of raster overlay textures, in either
+   * direction.
+   *
+   * Images created by this overlay will be no more than this number of texels
+   * in either direction. This may result in reduced raster overlay detail in
+   * some cases.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetMaximumTextureSize,
+      BlueprintSetter = SetMaximumTextureSize,
+      Category = "Cesium")
+  int32 MaximumTextureSize = 2048;
+
+  /**
+   * The maximum number of overlay tiles that may simultaneously be in
+   * the process of loading.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetMaximumSimultaneousTileLoads,
+      BlueprintSetter = SetMaximumSimultaneousTileLoads,
+      Category = "Cesium")
+  int32 MaximumSimultaneousTileLoads = 20;
+
+  /**
+   * The maximum number of bytes to use to cache sub-tiles in memory.
+   *
+   * This is used by provider types, that have an underlying tiling
+   * scheme that may not align with the tiling scheme of the geometry tiles on
+   * which the raster overlay tiles are draped. Because a single sub-tile may
+   * overlap multiple geometry tiles, it is useful to cache loaded sub-tiles
+   * in memory in case they're needed again soon. This property controls the
+   * maximum size of that cache.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetSubTileCacheBytes,
+      BlueprintSetter = SetSubTileCacheBytes,
+      Category = "Cesium")
+  int64 SubTileCacheBytes = 16 * 1024 * 1024;
+
 #if WITH_EDITOR
   // Called when properties are changed in the editor
   virtual void
@@ -64,8 +155,10 @@ protected:
 
   Cesium3DTilesSelection::Tileset* FindTileset() const;
 
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay()
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
+      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
       PURE_VIRTUAL(UCesiumRasterOverlay::CreateOverlay, return nullptr;);
+
   virtual void OnAdd(
       Cesium3DTilesSelection::Tileset* pTileset,
       Cesium3DTilesSelection::RasterOverlay* pOverlay) {}

@@ -22,8 +22,7 @@ void UCesiumRasterOverlay::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeProperty(PropertyChangedEvent);
 
-  this->RemoveFromTileset();
-  this->AddToTileset();
+  this->Refresh();
 }
 #endif
 
@@ -37,8 +36,14 @@ void UCesiumRasterOverlay::AddToTileset() {
     return;
   }
 
+  Cesium3DTilesSelection::RasterOverlayOptions options{};
+  options.maximumScreenSpaceError = this->MaximumScreenSpaceError;
+  options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
+  options.maximumTextureSize = this->MaximumTextureSize;
+  options.subTileCacheBytes = this->SubTileCacheBytes;
+
   std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
-      this->CreateOverlay();
+      this->CreateOverlay(options);
   this->_pOverlay = pOverlay.get();
 
   pTileset->getOverlays().add(std::move(pOverlay));
@@ -59,6 +64,53 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
   this->OnRemove(pTileset, this->_pOverlay);
   pTileset->getOverlays().remove(this->_pOverlay);
   this->_pOverlay = nullptr;
+}
+
+void UCesiumRasterOverlay::Refresh() {
+  this->RemoveFromTileset();
+  this->AddToTileset();
+}
+
+float UCesiumRasterOverlay::GetMaximumScreenSpaceError() const {
+  return this->MaximumScreenSpaceError;
+}
+
+void UCesiumRasterOverlay::SetMaximumScreenSpaceError(float Value) {
+  this->MaximumScreenSpaceError = Value;
+  this->Refresh();
+}
+
+int32 UCesiumRasterOverlay::GetMaximumTextureSize() const {
+  return this->MaximumTextureSize;
+}
+
+void UCesiumRasterOverlay::SetMaximumTextureSize(int32 Value) {
+  this->MaximumTextureSize = Value;
+  this->Refresh();
+}
+
+int32 UCesiumRasterOverlay::GetMaximumSimultaneousTileLoads() const {
+  return this->MaximumSimultaneousTileLoads;
+}
+
+void UCesiumRasterOverlay::SetMaximumSimultaneousTileLoads(int32 Value) {
+  this->MaximumSimultaneousTileLoads = Value;
+
+  if (this->_pOverlay) {
+    this->_pOverlay->getOptions().maximumSimultaneousTileLoads = Value;
+  }
+}
+
+int64 UCesiumRasterOverlay::GetSubTileCacheBytes() const {
+  return this->SubTileCacheBytes;
+}
+
+void UCesiumRasterOverlay::SetSubTileCacheBytes(int64 Value) {
+  this->SubTileCacheBytes = Value;
+
+  if (this->_pOverlay) {
+    this->_pOverlay->getOptions().subTileCacheBytes = Value;
+  }
 }
 
 void UCesiumRasterOverlay::Activate(bool bReset) {

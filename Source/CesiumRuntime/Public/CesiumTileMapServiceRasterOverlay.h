@@ -51,6 +51,7 @@ public:
   int32 MaximumLevel = 10;
 
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-  CreateOverlay() override;
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
+      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
+      override;
 };
