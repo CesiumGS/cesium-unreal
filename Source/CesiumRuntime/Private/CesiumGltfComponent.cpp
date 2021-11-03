@@ -1561,8 +1561,10 @@ static void loadModelGameThreadPart(
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
   pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
-  pMesh->SetCustomDepthStencilWriteMask(pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
-  pMesh->SetCustomDepthStencilValue(pGltf->CustomDepthParameters.CustomDepthStencilValue);
+  pMesh->SetCustomDepthStencilWriteMask(
+      pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
+  pMesh->SetCustomDepthStencilValue(
+      pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
   UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);

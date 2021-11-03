@@ -271,7 +271,7 @@ void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
 
 void ACesium3DTileset::SetCustomDepthParameters(
     FCustomDepthParameters InCustomDepthParameters) {
-  if(this->CustomDepthParameters != InCustomDepthParameters) {
+  if (this->CustomDepthParameters != InCustomDepthParameters) {
     this->CustomDepthParameters = InCustomDepthParameters;
     this->DestroyTileset();
   }

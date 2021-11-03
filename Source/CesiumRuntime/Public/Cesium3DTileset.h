@@ -543,11 +543,11 @@ private:
   UMaterialInterface* WaterMaterial = nullptr;
 
   UPROPERTY(
-    EditAnywhere,
-    BlueprintGetter = GetCustomDepthParameters,
-    BlueprintSetter = SetCustomDepthParameters,
-    Category = "Rendering",
-    meta = (ShowOnlyInnerProperties))
+      EditAnywhere,
+      BlueprintGetter = GetCustomDepthParameters,
+      BlueprintSetter = SetCustomDepthParameters,
+      Category = "Rendering",
+      meta = (ShowOnlyInnerProperties))
   FCustomDepthParameters CustomDepthParameters;
 
 protected:
@@ -616,7 +616,9 @@ public:
   void SetWaterMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintGetter, Category = "Rendering")
-  FCustomDepthParameters GetCustomDepthParameters() const {return CustomDepthParameters;}
+  FCustomDepthParameters GetCustomDepthParameters() const {
+    return CustomDepthParameters;
+  }
 
   UFUNCTION(BlueprintSetter, Category = "Rendering")
   void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);

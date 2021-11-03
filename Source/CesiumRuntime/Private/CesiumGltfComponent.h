@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
-#include "Components/PrimitiveComponent.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -79,7 +79,7 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
 
-  UPROPERTY(EditAnywhere, Category= "Rendering")
+  UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
