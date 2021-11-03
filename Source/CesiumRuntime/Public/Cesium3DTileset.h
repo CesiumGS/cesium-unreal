@@ -8,6 +8,7 @@
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
 #include "CoreMinimal.h"
+#include "CustomDepthParameters.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include <PhysicsEngine/BodyInstance.h>
@@ -541,6 +542,14 @@ private:
       Category = "Cesium|Rendering")
   UMaterialInterface* WaterMaterial = nullptr;
 
+  UPROPERTY(
+    EditAnywhere,
+    BlueprintGetter = GetCustomDepthParameters,
+    BlueprintSetter = SetCustomDepthParameters,
+    Category = "Rendering",
+    meta = (ShowOnlyInnerProperties))
+  FCustomDepthParameters CustomDepthParameters;
+
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -605,6 +614,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetWaterMaterial(UMaterialInterface* InMaterial);
+
+  UFUNCTION(BlueprintGetter, Category = "Rendering")
+  FCustomDepthParameters GetCustomDepthParameters() const {return CustomDepthParameters;}
+
+  UFUNCTION(BlueprintSetter, Category = "Rendering")
+  void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
