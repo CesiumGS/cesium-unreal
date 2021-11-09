@@ -1,5 +1,11 @@
 # Change Log
 
+### ???
+
+##### Additions :tada:
+
+- `Cesium3DTileset` now has options for enabling custom depth and stencil buffer.
+
 ### v1.7.0 - 2021-11-01
 
 ##### Breaking Changes :mega:

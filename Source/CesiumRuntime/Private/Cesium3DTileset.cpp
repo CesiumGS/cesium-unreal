@@ -269,6 +269,14 @@ void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   }
 }
 
+void ACesium3DTileset::SetCustomDepthParameters(
+    FCustomDepthParameters InCustomDepthParameters) {
+  if (this->CustomDepthParameters != InCustomDepthParameters) {
+    this->CustomDepthParameters = InCustomDepthParameters;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
@@ -545,7 +553,8 @@ public:
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
-          this->_pActor->GetWaterMaterial());
+          this->_pActor->GetWaterMaterial(),
+          this->_pActor->GetCustomDepthParameters());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -1483,6 +1492,7 @@ void ACesium3DTileset::PostEditChangeProperty(
   }
 
   FName PropName = PropertyChangedEvent.Property->GetFName();
+  FString PropNameAsString = PropertyChangedEvent.Property->GetName();
 
   if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
@@ -1496,7 +1506,12 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
+      // with the struct name, so just do a manual string comparison.
+      PropNameAsString == TEXT("RenderCustomDepth") ||
+      PropNameAsString == TEXT("CustomDepthStencilValue") ||
+      PropNameAsString == TEXT("CustomDepthStencilWriteMask")) {
     this->DestroyTileset();
   } else if (
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
