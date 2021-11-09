@@ -119,7 +119,7 @@ glm::dvec3 GeoTransforms::TransformUnrealToLongitudeLatitudeHeight(
 glm::dvec3 GeoTransforms::TransformEcefToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ecef) const noexcept {
-  glm::dvec3 ueAbs = this->_ecefToUeAbs * glm::dvec4(ecef, 1.0);
+  glm::dvec3 ueAbs = glm::dvec3(this->_ecefToUeAbs * glm::dvec4(ecef, 1.0));
   return ueAbs - origin;
 }
 
@@ -128,7 +128,7 @@ glm::dvec3 GeoTransforms::TransformUnrealToEcef(
     const glm::dvec3& ue) const noexcept {
 
   glm::dvec3 ueAbs = ue + origin;
-  return this->_ueAbsToEcef * glm::dvec4(ueAbs, 1.0);
+  return glm::dvec3(this->_ueAbsToEcef * glm::dvec4(ueAbs, 1.0));
 }
 
 glm::dquat GeoTransforms::TransformRotatorUnrealToEastNorthUp(

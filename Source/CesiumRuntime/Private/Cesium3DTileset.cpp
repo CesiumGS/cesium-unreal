@@ -315,9 +315,12 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
-      glm::dmat4 ENU = localGeoTransforms.ComputeEastNorthUpToEcef(center);
+      glm::dmat4 ENU =
+          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
       glm::dvec3 offset =
-          sphere.getRadius() * glm::normalize(ENU[0] + ENU[1] + ENU[2]);
+          sphere.getRadius() *
+          glm::normalize(
+              glm::dvec3(ENU[0]) + glm::dvec3(ENU[1]) + glm::dvec3(ENU[2]));
       glm::dvec3 position = center + offset;
       return position;
     }
@@ -325,10 +328,13 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     glm::dvec3
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
-      glm::dmat4 ENU = localGeoTransforms.ComputeEastNorthUpToEcef(center);
+      glm::dmat4 ENU =
+          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
-      glm::dvec3 offset = glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
-                          glm::normalize(ENU[0] + ENU[1] + ENU[2]);
+      glm::dvec3 offset =
+          glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
+          glm::normalize(
+              glm::dvec3(ENU[0]) + glm::dvec3(ENU[1]) + glm::dvec3(ENU[2]));
       glm::dvec3 position = center + offset;
       return position;
     }
@@ -363,12 +369,12 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
           this->ResolveGeoreference()->GetGeoTransforms()},
       boundingVolume);
   glm::dvec3 unrealCameraPosition =
-      transform * glm::dvec4(ecefCameraPosition, 1.0);
+      glm::dvec3(transform * glm::dvec4(ecefCameraPosition, 1.0));
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter =
       Cesium3DTilesSelection::getBoundingVolumeCenter(boundingVolume);
-  glm::dvec3 unrealCenter = transform * glm::dvec4(ecefCenter, 1.0);
+  glm::dvec3 unrealCenter = glm::dvec3(transform * glm::dvec4(ecefCenter, 1.0));
   glm::dvec3 unrealCameraFront =
       glm::normalize(unrealCenter - unrealCameraPosition);
   glm::dvec3 unrealCameraRight =
@@ -1078,14 +1084,14 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
   FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
-  glm::dvec3 tilesetCameraLocation =
+  glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
-      glm::dvec4(camera.location.X, camera.location.Y, camera.location.Z, 1.0);
-  glm::dvec3 tilesetCameraFront = glm::normalize(
+      glm::dvec4(camera.location.X, camera.location.Y, camera.location.Z, 1.0));
+  glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
       unrealWorldToTileset *
-      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0));
-  glm::dvec3 tilesetCameraUp =
-      glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0));
+      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
+  glm::dvec3 tilesetCameraUp = glm::normalize(
+      glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
   return Cesium3DTilesSelection::ViewState::create(
       tilesetCameraLocation,

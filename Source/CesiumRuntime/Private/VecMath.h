@@ -240,7 +240,7 @@ public:
    * @param i The `FIntVector`
    * @return The `glm` vector
    */
-  static glm::dvec4 add4D(const glm::vec4& d, const FIntVector& i) noexcept;
+  static glm::dvec4 add4D(const glm::dvec4& d, const FIntVector& i) noexcept;
 
   /**
    * @brief Add the given `FVector` and `FIntVector`, to create a `glm` vector.
@@ -271,7 +271,7 @@ public:
    * @param i The `FIntVector`
    * @return The `glm` vector
    */
-  static glm::dvec3 add3D(const glm::vec3& d, const FIntVector& i) noexcept;
+  static glm::dvec3 add3D(const glm::dvec3& d, const FIntVector& i) noexcept;
 
   /**
    * @brief Subtract the given `FIntVector` from the given `FVector`, to create

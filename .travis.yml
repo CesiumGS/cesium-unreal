@@ -154,7 +154,7 @@ jobs:
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - name: MacOS 4.26
     os: osx
-    osx_image: xcode11.3
+    osx_image: xcode12
     addons:
       homebrew:
         packages:

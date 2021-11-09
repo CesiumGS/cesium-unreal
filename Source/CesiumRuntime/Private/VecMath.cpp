@@ -185,8 +185,8 @@ VecMath::add4D(const FIntVector& i, const FVector& f) noexcept {
 }
 
 inline glm::dvec4
-VecMath::add4D(const glm::vec4& d, const FIntVector& i) noexcept {
-  return glm::dvec4(VecMath::add3D(d, i), 1.0);
+VecMath::add4D(const glm::dvec4& d, const FIntVector& i) noexcept {
+  return glm::dvec4(VecMath::add3D(glm::dvec3(d), i), d.w);
 }
 
 inline glm::dvec3
@@ -206,7 +206,7 @@ VecMath::add3D(const FVector& f, const FIntVector& i) noexcept {
 }
 
 inline glm::dvec3
-VecMath::add3D(const glm::vec3& f, const FIntVector& i) noexcept {
+VecMath::add3D(const glm::dvec3& f, const FIntVector& i) noexcept {
   return glm::dvec3(f.x + i.X, f.y + i.Y, f.z + i.Z);
 }
 
