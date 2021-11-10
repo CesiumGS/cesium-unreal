@@ -148,7 +148,7 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
   // Compute the desired new orientation.
   glm::dmat3 newOrientation =
       this->ResolvedGeoreference->GetGeoTransforms().ComputeEastNorthUpToEcef(
-          translation) *
+          glm::dvec3(translation)) *
       glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
 
   // Scale the new orientation

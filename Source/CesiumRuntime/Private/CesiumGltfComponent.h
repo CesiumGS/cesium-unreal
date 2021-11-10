@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
+#include "CustomDepthParameters.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -65,7 +67,8 @@ public:
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseWaterMaterial);
+      UMaterialInterface* BaseWaterMaterial,
+      FCustomDepthParameters CustomDepthParameters);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
@@ -75,6 +78,9 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
+
+  UPROPERTY(EditAnywhere, Category = "Rendering")
+  FCustomDepthParameters CustomDepthParameters;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

@@ -149,6 +149,9 @@ public class CesiumRuntime : ModuleRules
             {
                 "SPDLOG_COMPILED_LIB",
                 "LIBASYNC_STATIC",
+                "GLM_FORCE_XYZW_ONLY",
+                "GLM_FORCE_EXPLICIT_CTOR",
+                "GLM_FORCE_SIZE_T_LENGTH",
                 // "CESIUM_TRACING_ENABLED"
             }
         );

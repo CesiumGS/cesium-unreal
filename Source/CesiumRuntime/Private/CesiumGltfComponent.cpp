@@ -1560,6 +1560,11 @@ static void loadModelGameThreadPart(
   pMesh->Metadata = std::move(loadResult.Metadata);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
+  pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
+  pMesh->SetCustomDepthStencilWriteMask(
+      pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
+  pMesh->SetCustomDepthStencilValue(
+      pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
   UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
@@ -1741,7 +1746,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     std::unique_ptr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
-    UMaterialInterface* pBaseWaterMaterial) {
+    UMaterialInterface* pBaseWaterMaterial,
+    FCustomDepthParameters CustomDepthParameters) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
   std::vector<LoadModelResult>& result = pReal->loadModelResult;
@@ -1760,6 +1766,8 @@ UCesiumGltfComponent::CreateOffGameThread(
   if (pBaseWaterMaterial) {
     Gltf->BaseMaterialWithWater = pBaseWaterMaterial;
   }
+
+  Gltf->CustomDepthParameters = CustomDepthParameters;
 
   for (LoadModelResult& model : result) {
     loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);

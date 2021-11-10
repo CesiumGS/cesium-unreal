@@ -164,7 +164,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // georeference origin) When the location is too close to the center of the
   // earth, the result will be (0,0,0)
   glm::dvec3 targetGeoreferenceOrigin =
-      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(cameraToECEF[3]);
+      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(
+          glm::dvec3(cameraToECEF[3]));
 
   this->_setGeoreferenceOrigin(
       targetGeoreferenceOrigin.x,
@@ -183,7 +184,7 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
       this->_geoTransforms
           .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
       cameraToECEF;
-  glm::dvec3 cameraFront = glm::normalize(newCameraTransform[0]);
+  glm::dvec3 cameraFront = glm::normalize(glm::dvec3(newCameraTransform[0]));
   glm::dvec3 cameraRight =
       glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
   glm::dvec3 cameraUp = glm::normalize(glm::cross(cameraFront, cameraRight));
@@ -612,10 +613,10 @@ void ACesiumGeoreference::_handleViewportOriginEditing() {
   glm::dvec4 grabbedLocationAbs =
       VecMath::add4D(grabbedLocation, originLocation);
 
-  glm::dvec3 grabbedLocationECEF =
+  glm::dvec3 grabbedLocationECEF = glm::dvec3(
       this->_geoTransforms
           .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
-      grabbedLocationAbs;
+      grabbedLocationAbs);
 
   glm::dvec3 cartographic =
       _geoTransforms.TransformEcefToLongitudeLatitudeHeight(
@@ -676,10 +677,10 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
 
-  glm::dvec3 cameraECEF =
+  glm::dvec3 cameraECEF = glm::dvec3(
       this->_geoTransforms
           .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
-      cameraAbsolute;
+      cameraAbsolute);
 
   int32 activeLevel = -1;
   double closestLevelDistance = std::numeric_limits<double>::max();
@@ -828,14 +829,14 @@ FVector ACesiumGeoreference::InaccurateTransformEcefToLongitudeLatitudeHeight(
 glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUnreal(
     const glm::dvec3& longitudeLatitudeHeight) const {
   return this->_geoTransforms.TransformLongitudeLatitudeHeightToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       longitudeLatitudeHeight);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUnreal(
     const FVector& longitudeLatitudeHeight) const {
   glm::dvec3 ue = this->_geoTransforms.TransformLongitudeLatitudeHeightToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ue.x, ue.y, ue.z);
 }
@@ -843,7 +844,7 @@ FVector ACesiumGeoreference::InaccurateTransformLongitudeLatitudeHeightToUnreal(
 glm::dvec3 ACesiumGeoreference::TransformUnrealToLongitudeLatitudeHeight(
     const glm::dvec3& ue) const {
   return this->_geoTransforms.TransformUnrealToLongitudeLatitudeHeight(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       ue);
 }
 
@@ -851,7 +852,7 @@ FVector ACesiumGeoreference::InaccurateTransformUnrealToLongitudeLatitudeHeight(
     const FVector& ue) const {
   glm::dvec3 llh =
       this->_geoTransforms.TransformUnrealToLongitudeLatitudeHeight(
-          CesiumActors::getWorldOrigin4D(this),
+          glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
           VecMath::createVector3D(ue));
   return FVector(llh.x, llh.y, llh.z);
 }
@@ -859,14 +860,14 @@ FVector ACesiumGeoreference::InaccurateTransformUnrealToLongitudeLatitudeHeight(
 glm::dvec3
 ACesiumGeoreference::TransformEcefToUnreal(const glm::dvec3& ecef) const {
   return this->_geoTransforms.TransformEcefToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       ecef);
 }
 
 FVector ACesiumGeoreference::InaccurateTransformEcefToUnreal(
     const FVector& ecef) const {
   glm::dvec3 ue = this->_geoTransforms.TransformEcefToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       VecMath::createVector3D(ecef));
   return FVector(ue.x, ue.y, ue.z);
 }
@@ -874,14 +875,14 @@ FVector ACesiumGeoreference::InaccurateTransformEcefToUnreal(
 glm::dvec3
 ACesiumGeoreference::TransformUnrealToEcef(const glm::dvec3& ue) const {
   return this->_geoTransforms.TransformUnrealToEcef(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       ue);
 }
 
 FVector
 ACesiumGeoreference::InaccurateTransformUnrealToEcef(const FVector& ue) const {
   glm::dvec3 ecef = this->_geoTransforms.TransformUnrealToEcef(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       glm::dvec3(ue.X, ue.Y, ue.Z));
   return FVector(ecef.x, ecef.y, ecef.z);
 }
@@ -890,7 +891,7 @@ glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
     const glm::dquat& UeRotator,
     const glm::dvec3& UeLocation) const {
   return this->_geoTransforms.TransformRotatorUnrealToEastNorthUp(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       UeRotator,
       UeLocation);
 }
@@ -908,7 +909,7 @@ glm::dquat ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
     const glm::dquat& EnuRotator,
     const glm::dvec3& UeLocation) const {
   return this->_geoTransforms.TransformRotatorEastNorthUpToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       EnuRotator,
       UeLocation);
 }
@@ -925,14 +926,14 @@ FRotator ACesiumGeoreference::InaccurateTransformRotatorEastNorthUpToUnreal(
 glm::dmat3
 ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
   return _geoTransforms.ComputeEastNorthUpToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       ue);
 }
 
 FMatrix ACesiumGeoreference::InaccurateComputeEastNorthUpToUnreal(
     const FVector& ue) const {
   glm::dmat3 enuToUnreal = this->_geoTransforms.ComputeEastNorthUpToUnreal(
-      CesiumActors::getWorldOrigin4D(this),
+      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       glm::dvec3(ue.X, ue.Y, ue.Z));
   return VecMath::createMatrix(enuToUnreal);
 }
