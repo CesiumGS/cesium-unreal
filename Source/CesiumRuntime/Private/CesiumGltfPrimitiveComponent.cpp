@@ -1,6 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveComponent.h"
+#include "Engine/StaticMesh.h"
+#include "PhysicsEngine/BodySetup.h"
 
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
@@ -28,4 +30,36 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       FVector(transform[1].x, transform[1].y, transform[1].z),
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
+}
+
+void UCesiumGltfPrimitiveComponent::BeginDestroy() {
+  UStaticMesh* pMesh = this->GetStaticMesh();
+  if (pMesh) {
+    UMaterialInterface* pMaterial = pMesh->GetMaterial(0);
+    if (pMaterial) {
+      UTexture* pBaseColorTexture = nullptr;
+      if (pMaterial->GetTextureParameterValue(
+              FMaterialParameterInfo(
+                  "baseColorTexture",
+                  EMaterialParameterAssociation::LayerParameter,
+                  0),
+              pBaseColorTexture,
+              true)) {
+        pBaseColorTexture->ConditionalBeginDestroy();
+      }
+
+      pMaterial->ConditionalBeginDestroy();
+    }
+
+    if (pMesh->BodySetup) {
+      pMesh->BodySetup->ConditionalBeginDestroy();
+    }
+
+    if (pMesh->HasPendingInitOrStreaming()) {
+      pMesh->ConditionalBeginDestroy();
+    }
+    pMesh->ConditionalBeginDestroy();
+  }
+
+  Super::BeginDestroy();
 }

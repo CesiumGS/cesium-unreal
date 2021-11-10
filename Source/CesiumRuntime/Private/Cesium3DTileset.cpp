@@ -620,7 +620,7 @@ public:
 
     if (pMainThreadResult) {
       UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
-      pTexture->ReleaseResource();
+      pTexture->ConditionalBeginDestroy();
       delete pTexture->PlatformData;
       pTexture->PlatformData = nullptr;
       pTexture->RemoveFromRoot();
@@ -693,6 +693,7 @@ private:
 
     pComponent->DestroyPhysicsState();
     pComponent->DestroyComponent();
+    pComponent->ConditionalBeginDestroy();
 
     UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
   }
