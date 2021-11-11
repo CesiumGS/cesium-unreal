@@ -69,6 +69,11 @@
 }
 
 /*static*/ void CesiumLifetime::finalizeDestroy(UObject* pObject) {
+  // The freeing/clearing/destroying done here is normally done in these
+  // objects' FinishDestroy method, but unfortunately we can't call that
+  // directly without confusing the garbage collector if and when it _does_
+  // run. So instead we manually release some critical resources here.
+
   UTexture2D* pTexture2D = Cast<UTexture2D>(pObject);
   if (pTexture2D) {
     delete pTexture2D->PlatformData;
