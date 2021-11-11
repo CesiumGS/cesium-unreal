@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumLifetime.h"
 #include "Engine/StaticMesh.h"
 #include "PhysicsEngine/BodySetup.h"
 
@@ -45,20 +46,19 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
                   0),
               pBaseColorTexture,
               true)) {
-        pBaseColorTexture->ConditionalBeginDestroy();
+        CesiumLifetime::destroy(pBaseColorTexture);
       }
 
-      pMaterial->ConditionalBeginDestroy();
+      // TODO: destroy other textures
+
+      CesiumLifetime::destroy(pMaterial);
     }
 
     if (pMesh->BodySetup) {
-      pMesh->BodySetup->ConditionalBeginDestroy();
+      CesiumLifetime::destroy(pMesh->BodySetup);
     }
 
-    if (pMesh->HasPendingInitOrStreaming()) {
-      pMesh->ConditionalBeginDestroy();
-    }
-    pMesh->ConditionalBeginDestroy();
+    CesiumLifetime::destroy(pMesh);
   }
 
   Super::BeginDestroy();
