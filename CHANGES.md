@@ -6,6 +6,10 @@
 
 - `Cesium3DTileset` now has options for enabling custom depth and stencil buffer.
 
+##### Fixes :wrench:
+
+- Cesium for Unreal now does a much better job of releasing memory when the Unreal Engine garbage collector is not active, such as in the Editor.
+
 ### v1.7.0 - 2021-11-01
 
 ##### Breaking Changes :mega:
