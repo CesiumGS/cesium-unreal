@@ -2,7 +2,9 @@
 
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumLifetime.h"
+#include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 
 // Sets default values for this component's properties
@@ -33,27 +35,89 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       FVector(transform[3].x, transform[3].y, transform[3].z))));
 }
 
+namespace {
+
+void destroyMaterialTexture(
+    UMaterialInstanceDynamic* pMaterial,
+    const char* name,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
+  UTexture* pTexture = nullptr;
+  if (pMaterial->GetTextureParameterValue(
+          FMaterialParameterInfo(name, assocation, index),
+          pTexture,
+          true)) {
+    CesiumLifetime::destroy(pTexture);
+  }
+}
+
+void destroyGltfParameterValues(
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
+  destroyMaterialTexture(pMaterial, "baseColorTexture", assocation, index);
+  destroyMaterialTexture(
+      pMaterial,
+      "metallicRoughnessTexture",
+      assocation,
+      index);
+  destroyMaterialTexture(pMaterial, "normalTexture", assocation, index);
+  destroyMaterialTexture(pMaterial, "occlusionTexture", assocation, index);
+}
+
+void destroyWaterParameterValues(
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation assocation,
+    int32 index) {
+  destroyMaterialTexture(pMaterial, "WaterMask", assocation, index);
+}
+
+} // namespace
+
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  UStaticMesh* pMesh = this->GetStaticMesh();
-  if (pMesh) {
-    UMaterialInterface* pMaterial = pMesh->GetMaterial(0);
-    if (pMaterial) {
-      UTexture* pBaseColorTexture = nullptr;
-      if (pMaterial->GetTextureParameterValue(
-              FMaterialParameterInfo(
-                  "baseColorTexture",
-                  EMaterialParameterAssociation::LayerParameter,
-                  0),
-              pBaseColorTexture,
-              true)) {
-        CesiumLifetime::destroy(pBaseColorTexture);
+  // This should mirror the logic in loadModelGameThreadPart in
+  // CesiumGltfComponent.cpp
+  UMaterialInstanceDynamic* pMaterial =
+      Cast<UMaterialInstanceDynamic>(this->GetMaterial(0));
+  if (pMaterial) {
+
+    destroyGltfParameterValues(
+        pMaterial,
+        EMaterialParameterAssociation::GlobalParameter,
+        INDEX_NONE);
+    destroyWaterParameterValues(
+        pMaterial,
+        EMaterialParameterAssociation::GlobalParameter,
+        INDEX_NONE);
+
+    UMaterialInterface* pBaseMaterial = pMaterial->Parent;
+    UMaterialInstance* pBaseAsMaterialInstance =
+        Cast<UMaterialInstance>(pBaseMaterial);
+    UCesiumMaterialUserData* pCesiumData =
+        pBaseAsMaterialInstance
+            ? pBaseAsMaterialInstance
+                  ->GetAssetUserData<UCesiumMaterialUserData>()
+            : nullptr;
+    if (pCesiumData) {
+      destroyGltfParameterValues(
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          0);
+
+      int32 waterIndex = pCesiumData->LayerNames.Find("Water");
+      if (waterIndex >= 0) {
+        destroyWaterParameterValues(
+            pMaterial,
+            EMaterialParameterAssociation::LayerParameter,
+            waterIndex);
       }
-
-      // TODO: destroy other textures
-
-      CesiumLifetime::destroy(pMaterial);
     }
 
+    CesiumLifetime::destroy(pMaterial);
+  }
+
+  UStaticMesh* pMesh = this->GetStaticMesh();
+  if (pMesh) {
     if (pMesh->BodySetup) {
       CesiumLifetime::destroy(pMesh->BodySetup);
     }
