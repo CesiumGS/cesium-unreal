@@ -359,8 +359,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
                          .getBoundingBox());
     }
 
-    glm::dvec3
-    operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
+    glm::dvec3 operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
       return (*this)(s2.computeBoundingRegion());
     }
   };
