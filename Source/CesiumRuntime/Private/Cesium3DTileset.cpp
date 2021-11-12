@@ -1523,6 +1523,15 @@ void ACesium3DTileset::PostEditChangeProperty(
   } else if (
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreditSystem)) {
     this->InvalidateResolvedCreditSystem();
+  } else if (
+      PropName ==
+      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, MaximumScreenSpaceError)) {
+    TArray<UCesiumRasterOverlay*> rasterOverlays;
+    this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+    for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+      pOverlay->Refresh();
+    }
   }
 }
 

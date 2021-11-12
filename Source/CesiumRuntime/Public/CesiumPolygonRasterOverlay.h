@@ -42,8 +42,10 @@ public:
   bool ExcludeTilesInside = true;
 
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-  CreateOverlay() override;
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
+      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
+      override;
+
   virtual void OnAdd(
       Cesium3DTilesSelection::Tileset* pTileset,
       Cesium3DTilesSelection::RasterOverlay* pOverlay) override;

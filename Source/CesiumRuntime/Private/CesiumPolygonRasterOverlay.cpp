@@ -16,7 +16,8 @@ UCesiumPolygonRasterOverlay::UCesiumPolygonRasterOverlay()
 }
 
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-UCesiumPolygonRasterOverlay::CreateOverlay() {
+UCesiumPolygonRasterOverlay::CreateOverlay(
+    const Cesium3DTilesSelection::RasterOverlayOptions& options) {
   std::vector<CartographicPolygon> polygons;
   polygons.reserve(this->Polygons.Num());
 
@@ -33,7 +34,8 @@ UCesiumPolygonRasterOverlay::CreateOverlay() {
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
       CesiumGeospatial::Ellipsoid::WGS84,
-      CesiumGeospatial::GeographicProjection());
+      CesiumGeospatial::GeographicProjection(),
+      options);
 }
 
 void UCesiumPolygonRasterOverlay::OnAdd(

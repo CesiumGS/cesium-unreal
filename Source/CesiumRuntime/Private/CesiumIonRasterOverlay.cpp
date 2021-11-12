@@ -5,9 +5,11 @@
 #include "Cesium3DTilesSelection/Tileset.h"
 
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-UCesiumIonRasterOverlay::CreateOverlay() {
+UCesiumIonRasterOverlay::CreateOverlay(
+    const Cesium3DTilesSelection::RasterOverlayOptions& options) {
   return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->IonAssetID,
-      TCHAR_TO_UTF8(*this->IonAccessToken));
+      TCHAR_TO_UTF8(*this->IonAccessToken),
+      options);
 }
