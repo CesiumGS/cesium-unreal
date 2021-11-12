@@ -81,6 +81,7 @@ public class CesiumRuntime : ModuleRules
             "draco",
             //"MikkTSpace",
             "modp_b64",
+            "s2geometry",
             "spdlog",
             "sqlite3",
             "tinyxml2",

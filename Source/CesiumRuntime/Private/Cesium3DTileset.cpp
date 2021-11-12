@@ -358,6 +358,11 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       return (*this)(boundingRegionWithLooseFittingHeights.getBoundingRegion()
                          .getBoundingBox());
     }
+
+    glm::dvec3
+    operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
+      return (*this)(s2.computeBoundingRegion());
+    }
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
