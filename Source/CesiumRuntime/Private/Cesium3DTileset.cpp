@@ -18,6 +18,7 @@
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
@@ -358,6 +359,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       return (*this)(boundingRegionWithLooseFittingHeights.getBoundingRegion()
                          .getBoundingBox());
     }
+
+    glm::dvec3 operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
+      return (*this)(s2.computeBoundingRegion());
+    }
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
@@ -620,10 +625,8 @@ public:
 
     if (pMainThreadResult) {
       UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
-      pTexture->ReleaseResource();
-      delete pTexture->PlatformData;
-      pTexture->PlatformData = nullptr;
       pTexture->RemoveFromRoot();
+      CesiumLifetime::destroy(pTexture);
     }
   }
 
@@ -693,6 +696,7 @@ private:
 
     pComponent->DestroyPhysicsState();
     pComponent->DestroyComponent();
+    pComponent->ConditionalBeginDestroy();
 
     UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
   }

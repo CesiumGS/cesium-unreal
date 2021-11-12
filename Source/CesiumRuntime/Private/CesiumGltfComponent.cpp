@@ -1970,11 +1970,6 @@ void UCesiumGltfComponent::SetCollisionEnabled(
   }
 }
 
-void UCesiumGltfComponent::FinishDestroy() {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("UCesiumGltfComponent::FinishDestroy"));
-  Super::FinishDestroy();
-}
-
 #if !PHYSICS_INTERFACE_PHYSX
 // This is copied from FChaosDerivedDataCooker::BuildTriangleMeshes in
 // C:\Program Files\Epic
