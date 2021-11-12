@@ -104,5 +104,6 @@
         "*.idl": "cpp",
         "string_view": "cpp",
         "xmemory0": "cpp"
-    }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
