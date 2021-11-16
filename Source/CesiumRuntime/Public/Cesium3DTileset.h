@@ -383,6 +383,12 @@ public:
   bool UpdateInEditor = true;
 
   /**
+   * If true, stats about tile selection are printed to the Output Log.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool LogSelectionStats = false;
+
+  /**
    * Define the collision profile for all the 3D tiles created inside this
    * actor.
    */
