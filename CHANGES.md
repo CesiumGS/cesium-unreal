@@ -5,6 +5,8 @@
 ##### Additions :tada:
 
 - `Cesium3DTileset` now has options for enabling custom depth and stencil buffer.
+- Added `CesiumDebugColorizeTilesRasterOverlay` to visualize how a tileset is divided into tiles.
+- Added `Log Selection Stats` debug option to the `Cesium3DTileset` Actor.
 
 ##### Fixes :wrench:
 
