@@ -14,11 +14,11 @@ UCLASS(
     DisplayName = "Cesium Debug Colorize Tiles Raster Overlay",
     ClassGroup = (Cesium),
     meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumDebugColorizeTilesRasterOverlay : public UCesiumRasterOverlay {
+class CESIUMRUNTIME_API UCesiumDebugColorizeTilesRasterOverlay
+    : public UCesiumRasterOverlay {
   GENERATED_BODY()
 
 public:
-
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
       const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
