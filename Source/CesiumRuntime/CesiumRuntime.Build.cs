@@ -79,6 +79,7 @@ public class CesiumRuntime : ModuleRules
             "CesiumJsonReader",
             "CesiumUtility",
             "draco",
+            "ktx_read",
             //"MikkTSpace",
             "modp_b64",
             "s2geometry",

@@ -42,18 +42,30 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const TextureFilter& filter) {
 
   EPixelFormat pixelFormat;
-  switch (image.channels) {
-  case 1:
-    pixelFormat = PF_R8;
-    break;
-  case 2:
-    pixelFormat = PF_R8G8;
-    break;
-  case 3:
-  case 4:
-  default:
-    pixelFormat = PF_R8G8B8A8;
-  };
+  if (image.compressedPixelFormat !=
+      CesiumGltf::CompressedPixelFormatCesium::NONE) {
+    switch (image.compressedPixelFormat) {
+    case CesiumGltf::CompressedPixelFormatCesium::DXT1 :
+      pixelFormat = PF_DXT1;
+      break;
+    default:
+      // Unsupported compressed texture format.
+      return nullptr;
+    }
+  } else {
+    switch (image.channels) {
+    case 1:
+      pixelFormat = PF_R8;
+      break;
+    case 2:
+      pixelFormat = PF_R8G8;
+      break;
+    case 3:
+    case 4:
+    default:
+      pixelFormat = PF_R8G8B8A8;
+    };
+  }
 
   LoadedTextureResult* pResult = new LoadedTextureResult{};
   pResult->pTextureData =
@@ -67,7 +79,10 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
 
   void* pTextureData = static_cast<unsigned char*>(
       pResult->pTextureData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-  FMemory::Memcpy(pTextureData, image.pixelData.data(), image.pixelData.size());
+  FMemory::Memcpy(
+      pTextureData,
+      image.pixelData.data(),
+      image.pixelData.size());
 
   if (pResult->filter == TextureFilter::TF_Trilinear) {
     // Generate mip levels.
