@@ -12,6 +12,7 @@
 class FSpawnTabArgs;
 class ACesium3DTileset;
 class UCesiumIonRasterOverlay;
+class CesiumSelectionStats;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesiumEditor, Log, All);
 
@@ -87,6 +88,7 @@ private:
   SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
 
   std::shared_ptr<CesiumIonSession> _pIonSession;
+  std::unique_ptr<CesiumSelectionStats> _pSelectionStats;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;

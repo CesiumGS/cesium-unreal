@@ -7,6 +7,7 @@
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumPanel.h"
+#include "CesiumSelectionStats.h"
 #include "CesiumSunSky.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
@@ -106,6 +107,8 @@ void FCesiumEditorModule::StartupModule() {
   this->_pIonSession =
       std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
   this->_pIonSession->resume();
+
+  this->_pSelectionStats = std::make_unique<CesiumSelectionStats>();
 
   // Only register style once
   if (!StyleSet.IsValid()) {
@@ -293,6 +296,7 @@ void FCesiumEditorModule::StartupModule() {
 void FCesiumEditorModule::ShutdownModule() {
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
+  this->_pSelectionStats.reset();
   IModuleInterface::ShutdownModule();
 
   _pModule = nullptr;
