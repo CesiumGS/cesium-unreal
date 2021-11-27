@@ -5,8 +5,11 @@
 #include "PixelFormat.h"
 
 #include <CesiumGltf/ExtensionTextureBasisU.h>
+#include <CesiumGltf/ImageCesium.h>
 
 #include <stb_image_resize.h>
+
+using namespace CesiumGltf;
 
 static FTexturePlatformData*
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
@@ -43,17 +46,56 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const TextureAddress& addressY,
     const TextureFilter& filter) {
 
+  // TODO: clarify commented out format cases
   EPixelFormat pixelFormat;
-  if (image.compressedPixelFormat !=
-      CesiumGltf::CompressedPixelFormatCesium::NONE) {
-    switch (image.compressedPixelFormat) {
-    case CesiumGltf::CompressedPixelFormatCesium::DXT1:
-      pixelFormat = PF_DXT1;
+  if (image.compressedPixelFormat) {
+    switch (*image.compressedPixelFormat) {
+    case CompressedPixelFormatCesium::ETC1_RGB:
+      pixelFormat = EPixelFormat::PF_ETC1;
+      break;
+    case CompressedPixelFormatCesium::ETC2_RGBA:
+      pixelFormat = EPixelFormat::PF_ETC2_RGBA;
+      break;
+    case CompressedPixelFormatCesium::BC1_RGB:
+      pixelFormat = EPixelFormat::PF_DXT1;
+      break;
+    case CompressedPixelFormatCesium::BC3_RGBA:
+      pixelFormat = EPixelFormat::PF_DXT5;
+      break;
+    case CompressedPixelFormatCesium::BC4_R:
+      pixelFormat = EPixelFormat::PF_BC4;
+      break;
+    case CompressedPixelFormatCesium::BC5_RG:
+      pixelFormat = EPixelFormat::PF_BC5;
+      break;
+    case CompressedPixelFormatCesium::BC7_RGBA:
+      pixelFormat = EPixelFormat::PF_BC7;
+      break;
+  //  case CompressedPixelFormatCesium::PVRTC1_4_RGB:
+      //pixelFormat = EPixelFormat::PV;
+  //    break;
+  //  case CompressedPixelFormatCesium::PVRTC1_4_RGBA:
+      // pixelFormat = EPixelFormat::PV;
+  //    break;
+    case CompressedPixelFormatCesium::ASTC_4x4_RGBA:
+      pixelFormat = EPixelFormat::PF_ASTC_4x4;
+      break;
+  //  case CompressedPixelFormatCesium::PVRTC2_4_RGB:
+      //pixelFormat = EPixelFormat::PF_PVRTC2; ??
+  //    break;
+    case CompressedPixelFormatCesium::PVRTC2_4_RGBA:
+      pixelFormat = EPixelFormat::PF_PVRTC2;
+      break;
+    case CompressedPixelFormatCesium::ETC2_EAC_R11:
+      pixelFormat = EPixelFormat::PF_ETC2_R11_EAC;
+      break;
+    case CompressedPixelFormatCesium::ETC2_EAC_RG11:
+      pixelFormat = EPixelFormat::PF_ETC2_RG11_EAC;
       break;
     default:
       // Unsupported compressed texture format.
       return nullptr;
-    }
+    };
   } else {
     switch (image.channels) {
     case 1:
@@ -185,7 +227,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   // filtering should be used."
   TextureAddress addressX = TextureAddress::TA_Wrap;
   TextureAddress addressY = TextureAddress::TA_Wrap;
-  ;
+
   TextureFilter filter = TextureFilter::TF_Default;
 
   if (pSampler) {
