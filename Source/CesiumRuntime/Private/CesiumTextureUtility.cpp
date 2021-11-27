@@ -4,6 +4,8 @@
 #include "CesiumRuntime.h"
 #include "PixelFormat.h"
 
+#include <CesiumGltf/ExtensionTextureBasisU.h>
+
 #include <stb_image_resize.h>
 
 static FTexturePlatformData*
@@ -45,7 +47,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   if (image.compressedPixelFormat !=
       CesiumGltf::CompressedPixelFormatCesium::NONE) {
     switch (image.compressedPixelFormat) {
-    case CesiumGltf::CompressedPixelFormatCesium::DXT1 :
+    case CesiumGltf::CompressedPixelFormatCesium::DXT1:
       pixelFormat = PF_DXT1;
       break;
     default:
@@ -79,10 +81,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
 
   void* pTextureData = static_cast<unsigned char*>(
       pResult->pTextureData->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-  FMemory::Memcpy(
-      pTextureData,
-      image.pixelData.data(),
-      image.pixelData.size());
+  FMemory::Memcpy(pTextureData, image.pixelData.data(), image.pixelData.size());
 
   if (pResult->filter == TextureFilter::TF_Trilinear) {
     // Generate mip levels.
@@ -149,7 +148,21 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
 
-  if (texture.source < 0 || texture.source >= model.images.size()) {
+  const CesiumGltf::ExtensionTextureBasisU* pKtxExtension =
+      texture.getExtension<CesiumGltf::ExtensionTextureBasisU>();
+
+  if (pKtxExtension) {
+    if (pKtxExtension->source < 0 ||
+        pKtxExtension->source >= model.images.size()) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "KTX texture source index must be non-negative and less than %d, but is %d"),
+          model.images.size(),
+          texture.source);
+    }
+  } else if (texture.source < 0 || texture.source >= model.images.size()) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -160,9 +173,13 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     return nullptr;
   }
 
-  const CesiumGltf::ImageCesium& image = model.images[texture.source].cesium;
+  const CesiumGltf::ImageCesium& image =
+      model.images[pKtxExtension ? pKtxExtension->source : texture.source]
+          .cesium;
   const CesiumGltf::Sampler* pSampler =
-      CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
+      pKtxExtension
+          ? nullptr
+          : CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
 
   // glTF spec: "When undefined, a sampler with repeat wrapping and auto
   // filtering should be used."
