@@ -1146,7 +1146,7 @@ ACesium3DTileset::GetEditorCameras() const {
 
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-    double fov = pEditorViewportClient->FOVAngle;
+    double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);
