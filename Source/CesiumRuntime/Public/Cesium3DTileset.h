@@ -437,7 +437,7 @@ private:
       meta =
           (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
            ClampMin = 0))
-  int32 IonAssetID;
+  int64 IonAssetID;
 
   /**
    * The access token to use to access the Cesium ion resource.
@@ -574,10 +574,10 @@ public:
   void SetUrl(FString InUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  int32 GetIonAssetID() const { return IonAssetID; }
+  int64 GetIonAssetID() const { return IonAssetID; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAssetID(int32 InAssetID);
+  void SetIonAssetID(int64 InAssetID);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetIonAccessToken() const { return IonAccessToken; }

@@ -31,7 +31,7 @@ public:
    * so that a ML_CesiumOverlay layer function (or similar) will correctly
    * sample from this overlay.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString MaterialLayerKey = "Overlay0";
 
   // Sets default values for this component's properties

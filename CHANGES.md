@@ -7,11 +7,13 @@
 - `Cesium3DTileset` now has options for enabling custom depth and stencil buffer.
 - Added `CesiumDebugColorizeTilesRasterOverlay` to visualize how a tileset is divided into tiles.
 - Added `Log Selection Stats` debug option to the `Cesium3DTileset` Actor.
+- Exposed raster overlay properties to Blueprints, so that overlays can be created and manipulated with Blueprints.
 
 ##### Fixes :wrench:
 
 - Cesium for Unreal now does a much better job of releasing memory when the Unreal Engine garbage collector is not active, such as in the Editor.
 - Fixed a bug that could cause an incorrect field-of-view angle to be used for tile selection in the Editor.
+- Fixed a bug that caused `GlobeAwareDefaultPawn` (and its derived classes, notably `DynamicPawn`) to completely ignore short flights.
 
 ### v1.7.0 - 2021-11-01
 
