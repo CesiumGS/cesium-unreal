@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - `Cesium3DTileset` now has options for enabling custom depth and stencil buffer.
+- Exposed raster overlay properties to Blueprints, so that overlays can be created and manipulated with Blueprints.
 
 ##### Fixes :wrench:
 
