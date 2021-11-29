@@ -1306,6 +1306,10 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
     const Cesium3DTilesSelection::ViewUpdateResult& result) {
+  if (!this->LogSelectionStats) {
+    return;
+  }
+
   if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
       result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
       result.tilesLoadingMediumPriority !=
@@ -1328,7 +1332,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 
     UE_LOG(
         LogCesium,
-        VeryVerbose,
+        Display,
         TEXT(
             "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
