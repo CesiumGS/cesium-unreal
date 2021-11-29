@@ -10,6 +10,7 @@
 
 - Cesium for Unreal now does a much better job of releasing memory when the Unreal Engine garbage collector is not active, such as in the Editor.
 - Fixed a bug that could cause an incorrect field-of-view angle to be used for tile selection in the Editor.
+- Fixed a bug that caused `GlobeAwareDefaultPawn` (and its derived classes, notably `DynamicPawn`) to completely ignore short flights.
 
 ### v1.7.0 - 2021-11-01
 

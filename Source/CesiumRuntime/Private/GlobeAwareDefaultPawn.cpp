@@ -112,7 +112,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   this->_keypoints.clear();
   this->_currentFlyTime = 0.0;
 
-  if (steps == 0) {
+  if (flyTotalAngle == 0.0 &&
+      this->_flyToSourceRotation == this->_flyToDestinationRotation) {
     return;
   }
 
