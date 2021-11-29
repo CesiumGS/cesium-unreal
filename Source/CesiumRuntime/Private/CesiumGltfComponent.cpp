@@ -30,6 +30,7 @@
 #include "MeshTypes.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "PixelFormat.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "StaticMeshOperations.h"
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
