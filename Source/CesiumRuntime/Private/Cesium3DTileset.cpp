@@ -18,6 +18,7 @@
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltf/ImageCesium.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
@@ -769,6 +770,9 @@ void ACesium3DTileset::LoadTileset() {
 #else
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 #endif
+
+  options.contentOptions.ktx2TranscodeTargetFormat =
+      CesiumGltf::CompressedPixelFormatCesium::BC7_RGBA;
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
