@@ -23,13 +23,13 @@ public:
    * If this property is non-zero, the Bing Maps Key and Map Style properties
    * are ignored.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  uint32 IonAssetID;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  int64 IonAssetID;
 
   /**
    * The access token to use to access the Cesium ion resource.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString IonAccessToken;
 
 protected:

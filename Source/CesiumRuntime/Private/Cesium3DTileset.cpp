@@ -210,7 +210,7 @@ void ACesium3DTileset::SetUrl(FString InUrl) {
   }
 }
 
-void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
+void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
   if (InAssetID >= 0 && InAssetID != this->IonAssetID) {
     this->IonAssetID = InAssetID;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {

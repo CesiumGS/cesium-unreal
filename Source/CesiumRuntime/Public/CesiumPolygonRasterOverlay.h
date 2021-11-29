@@ -28,7 +28,7 @@ public:
   /**
    * The polygons to rasterize for this overlay.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   TArray<ACesiumCartographicPolygon*> Polygons;
 
   /**
@@ -38,7 +38,7 @@ public:
    * is used for other effects, this option should be disabled to avoid missing
    * tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool ExcludeTilesInside = true;
 
 protected:
