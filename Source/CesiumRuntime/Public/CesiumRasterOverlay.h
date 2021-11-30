@@ -42,6 +42,7 @@ public:
    * overlay is already added or if this component's Owner is not a Cesium 3D
    * Tileset, this method does nothing.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void AddToTileset();
 
   /**
@@ -49,11 +50,13 @@ public:
    * overlay is not yet added or if this component's Owner is not a Cesium 3D
    * Tileset, this method does nothing.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void RemoveFromTileset();
 
   /**
    * Refreshes this tileset by removing and re-adding it.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Refresh();
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
