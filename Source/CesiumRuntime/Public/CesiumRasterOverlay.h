@@ -38,7 +38,7 @@ public:
   UCesiumRasterOverlay();
 
   /**
-   * Adds this raster overlay to its owning Cesium 3D Tiles Actor. If the
+   * Adds this raster overlay to its owning Cesium 3D Tileset Actor. If the
    * overlay is already added or if this component's Owner is not a Cesium 3D
    * Tileset, this method does nothing.
    */
@@ -46,7 +46,7 @@ public:
   void AddToTileset();
 
   /**
-   * Removes this raster overlay from its owning Cesium 3D Tiles Actor. If the
+   * Removes this raster overlay from its owning Cesium 3D Tileset Actor. If the
    * overlay is not yet added or if this component's Owner is not a Cesium 3D
    * Tileset, this method does nothing.
    */
@@ -54,7 +54,9 @@ public:
   void RemoveFromTileset();
 
   /**
-   * Refreshes this tileset by removing and re-adding it.
+   * Refreshes this overlay by removing from its owning Cesium 3D Tiles Actor
+   * and re-adding it. If this component's Owner is not a Cesium 3D Tileset
+   * Actor, this method does nothing.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Refresh();
