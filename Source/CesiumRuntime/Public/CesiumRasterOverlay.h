@@ -54,7 +54,7 @@ public:
   void RemoveFromTileset();
 
   /**
-   * Refreshes this overlay by removing from its owning Cesium 3D Tiles Actor
+   * Refreshes this overlay by removing from its owning Cesium 3D Tileset Actor
    * and re-adding it. If this component's Owner is not a Cesium 3D Tileset
    * Actor, this method does nothing.
    */
