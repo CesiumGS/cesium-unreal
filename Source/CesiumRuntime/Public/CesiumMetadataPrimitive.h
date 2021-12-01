@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "CesiumFeatureIDTexture.h"
 #include "CesiumMetadataFeatureTable.h"
+#include "CesiumVertexMetadata.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataPrimitive.generated.h"
@@ -49,7 +51,8 @@ public:
           primitiveMetadata);
 
 private:
-  TArray<FCesiumMetadataFeatureTable> _featureTables;
+  TArray<FCesiumVertexMetadata> _vertexFeatures;
+  TArray<FCesiumFeatureIDTexture> _featureIDTextures;
   VertexIDAccessorType _vertexIDAccessor;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
@@ -62,15 +65,27 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
 
 public:
   /**
-   * Get all the feature tables that are associated with the primitive.
+   * @brief Get all the vertex features that are associated with the primitive.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static const TArray<FCesiumMetadataFeatureTable>&
-  GetFeatureTables(UPARAM(ref)
-                       const FCesiumMetadataPrimitive& MetadataPrimitive);
+  static const TArray<FCesiumVertexMetadata>&
+  GetVertexFeatures(UPARAM(ref)
+                        const FCesiumMetadataPrimitive& MetadataPrimitive);
+
+  /**
+   * @brief Get all the feature id textures that are associated with the
+   * primitive.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static const TArray<FCesiumFeatureIDTexture>&
+  GetFeatureIDTextures(UPARAM(ref)
+                           const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
    * Gets the ID of the first vertex that makes up a given face of this

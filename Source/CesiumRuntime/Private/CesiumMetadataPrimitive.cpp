@@ -63,16 +63,28 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         continue;
       }
 
-      _featureTables.Add((
-          FCesiumMetadataFeatureTable(model, *accessor, featureTable->second)));
+      this->_vertexFeatures.Add(
+          FCesiumVertexMetadata(model, *accessor, featureTable->second));
     }
+  }
+
+  for (const CesiumGltf::FeatureIDTexture& featureIDTexture :
+       primitiveMetadata.featureIdTextures) {
+    this->_featureIDTextures.Add(
+        FCesiumFeatureIDTexture(model, featureIDTexture));
   }
 }
 
-const TArray<FCesiumMetadataFeatureTable>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
-    const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureTables;
+const TArray<FCesiumVertexMetadata>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._vertexFeatures;
+}
+
+const TArray<FCesiumFeatureIDTexture>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureIDTextures;
 }
 
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(

@@ -8,6 +8,8 @@
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
 
+struct FCesiumVertexMetadata;
+
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
     : public UBlueprintFunctionLibrary {
@@ -61,6 +63,6 @@ public:
       Category = "Cesium|Metadata|Utility")
   static int64 GetFeatureIDForFace(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
-      UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+      UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata,
       int64 faceID);
 };
