@@ -1,6 +1,6 @@
 # Change Log
 
-### ???
+### v1.8.0 - 2021-12-01
 
 ##### Additions :tada:
 
@@ -14,6 +14,8 @@
 - Cesium for Unreal now does a much better job of releasing memory when the Unreal Engine garbage collector is not active, such as in the Editor.
 - Fixed a bug that could cause an incorrect field-of-view angle to be used for tile selection in the Editor.
 - Fixed a bug that caused `GlobeAwareDefaultPawn` (and its derived classes, notably `DynamicPawn`) to completely ignore short flights.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.9.0 to v0.10.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.7.0 - 2021-11-01
 
