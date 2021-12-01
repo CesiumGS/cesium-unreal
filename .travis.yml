@@ -154,12 +154,7 @@ jobs:
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - name: MacOS 4.26
     os: osx
-    osx_image: xcode12
-    addons:
-      homebrew:
-        packages:
-        - p7zip
-        update: true
+    osx_image: xcode11.3
     install:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
@@ -181,7 +176,7 @@ jobs:
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
-    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.26-macOS "target_url=${PACKAGE_LINK}" --ignore-stdin
@@ -258,7 +253,8 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.27-Linux "target_url=${PACKAGE_LINK}" --ignore-stdin
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
-  - stage: Combine Packages 4.26
+  - stage: Combine Packages
+    name: Combine for UE 4.26
     os: linux
     dist: focal
     git:
@@ -285,7 +281,7 @@ jobs:
     - aws s3 cp CesiumForUnreal-426-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-426-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.26-AllPlatforms "target_url=${PACKAGE_LINK}" --ignore-stdin
-  - stage: Combine Packages 4.27
+  - name: Combine for UE 4.27
     os: linux
     dist: focal
     git:
