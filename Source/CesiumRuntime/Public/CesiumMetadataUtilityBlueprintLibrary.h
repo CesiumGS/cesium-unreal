@@ -9,6 +9,7 @@
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
 
 struct FCesiumVertexMetadata;
+struct FCesiumFeatureIDTexture;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
@@ -65,4 +66,17 @@ public:
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
       UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata,
       int64 faceID);
+
+  /**
+   * Gets the feature ID associated with a given texel.
+   * /
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility")
+  static int64 GetFeatureIDForTexel(
+      UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+      UPARAM(ref) const FCesiumFeatureIDTexture& FeatureIdTexture,
+      float u,
+      float v);*/
 };

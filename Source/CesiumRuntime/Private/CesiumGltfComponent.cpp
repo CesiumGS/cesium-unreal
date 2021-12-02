@@ -43,6 +43,9 @@
 
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
+#include "IPhysXCookingModule.h"
+#include "Interfaces/Interface_CollisionDataProvider.h"
+#include "PhysXCookHelper.h"
 #else
 #include "Chaos/CollisionConvexMesh.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
@@ -66,6 +69,7 @@ struct LoadModelResult {
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
   PxTriangleMesh* pCollisionMesh = nullptr;
+  FBodySetupUVInfo uvInfo;
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
       pCollisionMesh = nullptr;
@@ -936,18 +940,18 @@ static void loadPrimitive(
     CESIUM_TRACE("init buffers");
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
-        false);
+        true);
 
     FColorVertexBuffer& ColorVertexBuffer =
         LODResources.VertexBuffers.ColorVertexBuffer;
     if (hasVertexColors) {
-      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
+      ColorVertexBuffer.Init(StaticMeshBuildVertices, true);
     }
 
     LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
         StaticMeshBuildVertices,
         textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size(),
-        false);
+        true);
   }
 
   FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
@@ -1006,18 +1010,40 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
 #if PHYSICS_INTERFACE_PHYSX
-  if (options.pPhysXCooking) {
+  if (options.pPhysXCookingModule) {
     CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
-    TArray<FVector> vertices;
+
+    // TODO: get rid of const_cast
+    FPhysXCookHelper cookHelper(options.pPhysXCookingModule);
+
+    cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
+    cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
+    cookHelper.CookInfo.TriangleMeshDesc.bFlipNormals = true;
+    cookHelper.CookInfo.bCookTriMesh = true;
+    cookHelper.CookInfo.bSupportUVFromHitResults = true;
+    cookHelper.CookInfo.bSupportFaceRemap = true;
+
+    TArray<FVector>& vertices = cookHelper.CookInfo.TriangleMeshDesc.Vertices;
     vertices.SetNum(StaticMeshBuildVertices.Num());
+
+    TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
+    uvs.SetNum(8);
+
+    for (size_t i = 0; i < 8; ++i) {
+      uvs[i].SetNum(vertices.Num());
+    }
 
     for (size_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
       vertices[i] = StaticMeshBuildVertices[i].Position;
+      for (size_t j = 0; j < 8; ++j) {
+        uvs[j][i] = StaticMeshBuildVertices[i].UVs[j];
+      }
     }
 
-    TArray<FTriIndices> physicsIndices;
+    TArray<FTriIndices>& physicsIndices =
+        cookHelper.CookInfo.TriangleMeshDesc.Indices;
     physicsIndices.SetNum(indices.Num() / 3);
 
     for (size_t i = 0; i < indices.Num() / 3; ++i) {
@@ -1026,6 +1052,13 @@ static void loadPrimitive(
       physicsIndices[i].v2 = indices[3 * i + 2];
     }
 
+    cookHelper.CreatePhysicsMeshes_Concurrent();
+    if (cookHelper.OutTriangleMeshes.Num() > 0) {
+      primitiveResult.pCollisionMesh = cookHelper.OutTriangleMeshes[0];
+    }
+    primitiveResult.uvInfo = cookHelper.OutUVInfo;
+
+    /**
     options.pPhysXCooking->CreateTriMesh(
         "PhysXGeneric",
         EPhysXMeshCookFlags::Default,
@@ -1033,7 +1066,7 @@ static void loadPrimitive(
         physicsIndices,
         TArray<uint16>(),
         true,
-        primitiveResult.pCollisionMesh);
+        primitiveResult.pCollisionMesh);*/
   }
 #else
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
@@ -1706,6 +1739,7 @@ static void loadModelGameThreadPart(
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
     pMesh->GetBodySetup()->TriMeshes.Add(loadResult.pCollisionMesh);
+    pMesh->GetBodySetup()->UVInfo = loadResult.uvInfo;
 #else
     pMesh->GetBodySetup()->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif
@@ -1715,6 +1749,7 @@ static void loadModelGameThreadPart(
   // mesh or not. We don't want the editor creating collision meshes itself in
   // the game thread, because that would be slow.
   pMesh->GetBodySetup()->bCreatedPhysicsMeshes = true;
+  pMesh->GetBodySetup()->bSupportUVsAndFaceRemap = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
 

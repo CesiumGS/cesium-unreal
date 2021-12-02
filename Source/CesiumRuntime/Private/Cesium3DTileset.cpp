@@ -520,10 +520,9 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(
-            pActor->GetCreatePhysicsMeshes()
-                ? GetPhysXCookingModule()->GetPhysXCooking()
-                : nullptr)
+        _pPhysXCookingModule(
+            pActor->GetCreatePhysicsMeshes() ? GetPhysXCookingModule()
+                                             : nullptr)
 #endif
   {
   }
@@ -536,7 +535,7 @@ public:
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
-    options.pPhysXCooking = this->_pPhysXCooking;
+    options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
 
     std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
@@ -703,7 +702,7 @@ private:
 
   ACesium3DTileset* _pActor;
 #if PHYSICS_INTERFACE_PHYSX
-  IPhysXCooking* _pPhysXCooking;
+  IPhysXCookingModule* _pPhysXCookingModule;
 #endif
 };
 

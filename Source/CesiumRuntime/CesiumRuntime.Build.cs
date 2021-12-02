@@ -166,6 +166,8 @@ public class CesiumRuntime : ModuleRules
         {
             PrivateDependencyModuleNames.Add("Chaos");
         }
+        
+		    SetupModulePhysicsSupport(Target);
 
         if (Target.bBuildEditor == true)
         {

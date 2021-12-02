@@ -87,3 +87,15 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
           Primitive,
           faceID));
 }
+
+/*
+int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForTexel(
+    UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+    UPARAM(ref) const FCesiumFeatureIDTexture& FeatureIdTexture,
+    float u,
+    float v) {
+  return
+UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureIDForTextureCoordinates(
+
+  )
+}*/

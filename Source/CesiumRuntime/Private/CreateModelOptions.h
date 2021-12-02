@@ -5,6 +5,6 @@
 struct CreateModelOptions {
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
-  IPhysXCooking* pPhysXCooking = nullptr;
+  IPhysXCookingModule* pPhysXCookingModule = nullptr;
 #endif
 };
