@@ -1015,7 +1015,6 @@ static void loadPrimitive(
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
 
-    // TODO: get rid of const_cast
     FPhysXCookHelper cookHelper(options.pPhysXCookingModule);
 
     cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
