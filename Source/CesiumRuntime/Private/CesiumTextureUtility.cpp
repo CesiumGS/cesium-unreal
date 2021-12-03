@@ -71,18 +71,18 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     case CompressedPixelFormatCesium::BC7_RGBA:
       pixelFormat = EPixelFormat::PF_BC7;
       break;
-  //  case CompressedPixelFormatCesium::PVRTC1_4_RGB:
-      //pixelFormat = EPixelFormat::PV;
-  //    break;
-  //  case CompressedPixelFormatCesium::PVRTC1_4_RGBA:
+      //  case CompressedPixelFormatCesium::PVRTC1_4_RGB:
       // pixelFormat = EPixelFormat::PV;
-  //    break;
+      //    break;
+      //  case CompressedPixelFormatCesium::PVRTC1_4_RGBA:
+      // pixelFormat = EPixelFormat::PV;
+      //    break;
     case CompressedPixelFormatCesium::ASTC_4x4_RGBA:
       pixelFormat = EPixelFormat::PF_ASTC_4x4;
       break;
-  //  case CompressedPixelFormatCesium::PVRTC2_4_RGB:
-      //pixelFormat = EPixelFormat::PF_PVRTC2; ??
-  //    break;
+      //  case CompressedPixelFormatCesium::PVRTC2_4_RGB:
+      // pixelFormat = EPixelFormat::PF_PVRTC2; ??
+      //    break;
     case CompressedPixelFormatCesium::PVRTC2_4_RGBA:
       pixelFormat = EPixelFormat::PF_PVRTC2;
       break;
