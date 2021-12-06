@@ -940,18 +940,18 @@ static void loadPrimitive(
     CESIUM_TRACE("init buffers");
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
-        true);
+        false);
 
     FColorVertexBuffer& ColorVertexBuffer =
         LODResources.VertexBuffers.ColorVertexBuffer;
     if (hasVertexColors) {
-      ColorVertexBuffer.Init(StaticMeshBuildVertices, true);
+      ColorVertexBuffer.Init(StaticMeshBuildVertices, false);
     }
 
     LODResources.VertexBuffers.StaticMeshVertexBuffer.Init(
         StaticMeshBuildVertices,
         textureCoordinateMap.size() == 0 ? 1 : textureCoordinateMap.size(),
-        true);
+        false);
   }
 
   FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
