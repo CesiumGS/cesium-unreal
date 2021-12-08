@@ -48,6 +48,8 @@ public:
     LoadedTextureResult* pTexture;
   };
 
+  // TODO: some changes are needed here to avoid duplicated encoded feature
+  // tables across multiple feature id textures/attributes
   struct EncodedMetadataFeatureTable {
     /**
      * @brief The encoded properties in this feature table.
@@ -56,6 +58,11 @@ public:
   };
 
   struct EncodedFeatureIdTexture {
+    /**
+     * @brief The name to use for this feature id texture in the shader.
+     */
+    FString name;
+
     /**
      * @brief The encoded feature table corresponding to this feature id
      * texture.
@@ -71,9 +78,15 @@ public:
      * @brief The channel that this feature id texture uses within the image.
      */
     int32 channel;
+
+    /**
+     * @brief The texture coordinate index for the feature id texture.
+     */
+    int64 textureCoordinateIndex;
   };
 
   struct EncodedVertexMetadata {
+    FString name;
     EncodedMetadataFeatureTable encodedFeatureTable;
   };
 
@@ -96,9 +109,15 @@ public:
   static bool
   loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
-  static EncodedMetadataFeatureTable
-  encodeMetadataFeatureTable(const FCesiumMetadataFeatureTable& featureTable);
+  static EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
+      const FCesiumMetadataFeatureTable& featureTable);
 
-  static EncodedMetadataPrimitive
-  encodeMetadataPrimitive(const FCesiumMetadataPrimitive& primitive);
+  static EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
+      const FCesiumMetadataPrimitive& primitive);
+
+  static bool encodeMetadataFeatureTableGameThreadPart(
+      EncodedMetadataFeatureTable& encodedFeatureTable);
+
+  static bool encodeMetadataPrimitiveGameThreadPart(
+      EncodedMetadataPrimitive& encodedPrimitive);
 };

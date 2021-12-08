@@ -88,7 +88,7 @@ struct LoadModelResult {
   CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
-  CesiumTextureUtility::EncodedMetadataPrimitive* encodedMetadata = nullptr;
+  CesiumTextureUtility::EncodedMetadataPrimitive encodedMetadata;
 
   bool onlyLand = true;
   bool onlyWater = false;
@@ -475,6 +475,31 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
       primitive,
       *metadata,
       *primitiveMetadata);
+}
+
+static void updateTextureCoordinatesForFeatureIdTextures(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive,
+    bool duplicateVertices,
+    TArray<FStaticMeshBuildVertex>& vertices,
+    const TArray<uint32>& indices,
+    const FCesiumMetadataPrimitive& metadata,
+    std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
+
+  for (const FCesiumFeatureIDTexture& featureIdTexture :
+       UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+           metadata)) {
+
+    updateTextureCoordinates(
+        model,
+        primitive,
+        duplicateVertices,
+        vertices,
+        indices,
+        "TEXCOORD_" + std::to_string(featureIdTexture.getFeatureIdTextureView()
+                                         .getTextureCoordinateIndex()),
+        textureCoordinateMap);
+  }
 }
 
 namespace {
@@ -884,6 +909,20 @@ static void loadPrimitive(
     }
   }
 
+  // load primitive metadata
+  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.encodedMetadata =
+      CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
+          primitiveResult.Metadata);
+  updateTextureCoordinatesForFeatureIdTextures(
+      model,
+      primitive,
+      duplicateVertices,
+      StaticMeshBuildVertices,
+      indices,
+      primitiveResult.Metadata,
+      textureCoordinateMap);
+
   // TangentX: Tangent
   // TangentY: Bi-tangent
   // TangentZ: Normal
@@ -1082,13 +1121,6 @@ static void loadPrimitive(
         indices);
   }
 #endif
-
-  // load primitive metadata
-  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
-  primitiveResult.encodedMetadata =
-      new CesiumTextureUtility::EncodedMetadataPrimitive(
-          CesiumTextureUtility::encodeMetadataPrimitive(
-              primitiveResult.Metadata));
 
   result.push_back(std::move(primitiveResult));
 }
@@ -1583,12 +1615,74 @@ void SetWaterParameterValues(
           loadResult.waterMaskScale));
 }
 
+static void SetMetadataFeatureTableParameterValues(
+    const FString& outterName,
+    CesiumTextureUtility::EncodedMetadataFeatureTable& encodedFeatureTable,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index) {
+  for (CesiumTextureUtility::EncodedMetadataProperty& encodedProperty :
+       encodedFeatureTable.encodedProperties) {
+
+    pMaterial->SetTextureParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(outterName + "_Property_" + encodedProperty.name),
+            association,
+            index),
+        encodedProperty.pTexture->pTexture);
+  }
+}
+
 static void SetMetadataParameterValues(
     LoadModelResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
-    // TODO: figure out what these are used for
     EMaterialParameterAssociation association,
-    int32 index) {}
+    // TODO: hook up metadata layer index correctly
+    // TODO: probably have different layer for each feature id
+    // texture/attribute?
+    int32 index) {
+  if (!CesiumTextureUtility::encodeMetadataPrimitiveGameThreadPart(
+          loadResult.encodedMetadata)) {
+    return;
+  }
+
+  for (CesiumTextureUtility::EncodedFeatureIdTexture& encodedFeatureIdTexture :
+       loadResult.encodedMetadata.encodedFeatureIdTextures) {
+
+    pMaterial->SetTextureParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdTexture.name + "_Texture"),
+            association,
+            index),
+        encodedFeatureIdTexture.pTexture->pTexture);
+
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdTexture.name + "_TextureCoordinateIndex"),
+            association,
+            index),
+        static_cast<int32>(encodedFeatureIdTexture.textureCoordinateIndex));
+
+    FLinearColor channelMask;
+    switch (encodedFeatureIdTexture.channel) {
+    case 1:
+      channelMask = FLinearColor::Green;
+      break;
+    case 2:
+      channelMask = FLinearColor::Blue;
+      break;
+    default:
+      channelMask = FLinearColor::Red;
+    }
+
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdTexture.name + "_ChannelMask"),
+            association,
+            index),
+        channelMask);
+  }
+}
 
 static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
@@ -1730,6 +1824,15 @@ static void loadModelGameThreadPart(
           EMaterialParameterAssociation::LayerParameter,
           waterIndex);
     }
+  }
+
+  int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
+  if (metadataIndex >= 0) {
+    SetMetadataParameterValues(
+        loadResult,
+        pMaterial,
+        EMaterialParameterAssociation::LayerParameter,
+        metadataIndex);
   }
 
   pMaterial->TwoSided = true;

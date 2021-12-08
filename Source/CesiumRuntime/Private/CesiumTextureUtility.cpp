@@ -289,7 +289,8 @@ EncodedPixelFormat getPixelFormat(
   switch (type) {
   case ECesiumMetadataBlueprintType::Boolean:
   case ECesiumMetadataBlueprintType::Byte:
-    return {EPixelFormat::PF_R8, 1};
+    // needs to be reinterpreted as signed byte in shader
+    return {EPixelFormat::PF_R8_UINT, 1};
   case ECesiumMetadataBlueprintType::Integer:
     return {EPixelFormat::PF_R32_SINT, 4};
   case ECesiumMetadataBlueprintType::Float:
@@ -300,21 +301,21 @@ EncodedPixelFormat getPixelFormat(
     case ECesiumMetadataBlueprintType::Byte:
       switch (componentCount) {
       case 2:
-        return {EPixelFormat::PF_R8G8, 2};
       case 3:
       case 4:
-        return {EPixelFormat::PF_R8G8B8A8, 4};
+        // needs to be reinterpreted as signed ints in shader
+        return {EPixelFormat::PF_R8G8B8A8_UINT, 4};
       default:
         return {EPixelFormat::PF_Unknown, 0};
       }
     case ECesiumMetadataBlueprintType::Integer:
       switch (componentCount) {
       case 2:
-        // ?? needs to be reinterpreted as signed ints in shader
+        // needs to be reinterpreted as signed ints in shader
         return {EPixelFormat::PF_R32G32_UINT, 8};
       case 3:
       case 4:
-        // ?? needs to be reinterpreted as signed ints in shader
+        // needs to be reinterpreted as signed ints in shader
         return {EPixelFormat::PF_R32G32B32A32_UINT, 16};
       default:
         return {EPixelFormat::PF_Unknown, 0};
@@ -340,7 +341,7 @@ EncodedPixelFormat getPixelFormat(
 
 /*static*/
 CesiumTextureUtility::EncodedMetadataFeatureTable
-CesiumTextureUtility::encodeMetadataFeatureTable(
+CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
     const FCesiumMetadataFeatureTable& featureTable) {
 
   EncodedMetadataFeatureTable encodedFeatureTable;
@@ -513,7 +514,7 @@ CesiumTextureUtility::encodeMetadataFeatureTable(
 
 /*static*/
 CesiumTextureUtility::EncodedMetadataPrimitive
-CesiumTextureUtility::encodeMetadataPrimitive(
+CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
     const FCesiumMetadataPrimitive& primitive) {
   EncodedMetadataPrimitive result;
 
@@ -535,6 +536,10 @@ CesiumTextureUtility::encodeMetadataPrimitive(
   result.encodedFeatureIdTextures.resize(featureIdTextures.Num());
   result.encodedVertexMetadata.resize(vertexFeatures.Num());
 
+  // TODO: this assumes each feature table will only be used once in a
+  // feature id texture (or later feature id attribute).
+  // Actually feature tables should be encoded per-glTF and primitives
+  // should be able to request it if it is not already loaded.
   for (size_t i = 0; i < featureIdTextures.Num(); ++i) {
     const FCesiumFeatureIDTexture& featureIdTexture = featureIdTextures[i];
     EncodedFeatureIdTexture& encodedFeatureIdTexture =
@@ -552,7 +557,11 @@ CesiumTextureUtility::encodeMetadataPrimitive(
       continue;
     }
 
+    encodedFeatureIdTexture.name =
+        "FeatureIdTexture" + FString::FromInt(static_cast<int32>(i));
     encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
+    encodedFeatureIdTexture.textureCoordinateIndex =
+        featureIdTextureView.getTextureCoordinateIndex();
 
     auto mappedUnrealImage = featureIdTextureMap.find(pFeatureIdImage);
     if (mappedUnrealImage != featureIdTextureMap.end()) {
@@ -564,7 +573,8 @@ CesiumTextureUtility::encodeMetadataPrimitive(
               pFeatureIdImage->width,
               pFeatureIdImage->height,
               // TODO: currently this is always the case, but doesn't have to be
-              EPixelFormat::PF_R8G8B8A8);
+              // needs to be reinterpreted as signed ints in shader
+              EPixelFormat::PF_R8G8B8A8 /*_UINT*/);
 
       encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
       encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
@@ -585,8 +595,55 @@ CesiumTextureUtility::encodeMetadataPrimitive(
     }
 
     encodedFeatureIdTexture.encodedFeatureTable =
-        encodeMetadataFeatureTable(featureTable);
+        encodeMetadataFeatureTableAnyThreadPart(featureTable);
   }
 
   return result;
+}
+
+/*static*/
+bool CesiumTextureUtility::encodeMetadataFeatureTableGameThreadPart(
+    EncodedMetadataFeatureTable& encodedFeatureTable) {
+  bool success = true;
+
+  for (EncodedMetadataProperty& encodedProperty :
+       encodedFeatureTable.encodedProperties) {
+    success |= CesiumTextureUtility::loadTextureGameThreadPart(
+        encodedProperty.pTexture);
+  }
+
+  return success;
+}
+
+/*static*/
+bool CesiumTextureUtility::encodeMetadataPrimitiveGameThreadPart(
+    EncodedMetadataPrimitive& encodedPrimitive) {
+  bool success = true;
+
+  std::vector<const LoadedTextureResult*> uniqueFeatureIdImages;
+  uniqueFeatureIdImages.reserve(
+      encodedPrimitive.encodedFeatureIdTextures.size());
+
+  for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
+       encodedPrimitive.encodedFeatureIdTextures) {
+    bool found = false;
+    for (const LoadedTextureResult* pUniqueFeatureIdImage :
+         uniqueFeatureIdImages) {
+      if (pUniqueFeatureIdImage == encodedFeatureIdTexture.pTexture) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      success |= CesiumTextureUtility::loadTextureGameThreadPart(
+          encodedFeatureIdTexture.pTexture);
+      uniqueFeatureIdImages.push_back(encodedFeatureIdTexture.pTexture);
+    }
+
+    success |= CesiumTextureUtility::encodeMetadataFeatureTableGameThreadPart(
+        encodedFeatureIdTexture.encodedFeatureTable);
+  }
+
+  return success;
 }
