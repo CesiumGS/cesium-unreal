@@ -23,6 +23,11 @@ public:
       const CesiumGltf::Model& model,
       const CesiumGltf::FeatureIDTexture& featureIDTexture);
 
+  constexpr const CesiumGltf::FeatureIDTextureView&
+  getFeatureIdTextureView() const {
+    return this->_featureIDTextureView;
+  }
+
 private:
   CesiumGltf::FeatureIDTextureView _featureIDTextureView;
   FCesiumMetadataFeatureTable _featureTable;

@@ -35,6 +35,11 @@ int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
       Property._property);
 }
 
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property._componentCount;
+}
+
 bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumMetadataProperty& Property,
     int64 featureID,

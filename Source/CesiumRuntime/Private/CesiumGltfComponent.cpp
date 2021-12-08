@@ -4,6 +4,7 @@
 #include "Async/Async.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
+#include "CesiumFeatureIDTexture.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -11,15 +12,18 @@
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/GltfReader.h"
+#include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumMetadataFeatureTable.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
+#include "CesiumVertexMetadata.h"
 #include "CreateModelOptions.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -83,6 +87,8 @@ struct LoadModelResult {
   CesiumTextureUtility::LoadedTextureResult* occlusionTexture = nullptr;
   CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
+
+  CesiumTextureUtility::EncodedMetadataPrimitive* encodedMetadata = nullptr;
 
   bool onlyLand = true;
   bool onlyWater = false;
@@ -1079,6 +1085,10 @@ static void loadPrimitive(
 
   // load primitive metadata
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.encodedMetadata =
+      new CesiumTextureUtility::EncodedMetadataPrimitive(
+          CesiumTextureUtility::encodeMetadataPrimitive(
+              primitiveResult.Metadata));
 
   result.push_back(std::move(primitiveResult));
 }
@@ -1572,6 +1582,13 @@ void SetWaterParameterValues(
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
 }
+
+static void SetMetadataParameterValues(
+    LoadModelResult& loadResult,
+    UMaterialInstanceDynamic* pMaterial,
+    // TODO: figure out what these are used for
+    EMaterialParameterAssociation association,
+    int32 index) {}
 
 static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,

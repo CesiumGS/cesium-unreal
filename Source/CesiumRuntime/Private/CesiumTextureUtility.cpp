@@ -1,10 +1,22 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
+#include "CesiumFeatureIDTexture.h"
+#include "CesiumMetadataArray.h"
+#include "CesiumMetadataFeatureTable.h"
+#include "CesiumMetadataPrimitive.h"
+#include "CesiumMetadataProperty.h"
 #include "CesiumRuntime.h"
+#include "CesiumVertexMetadata.h"
 #include "PixelFormat.h"
 
+#include "CesiumGltf/FeatureIDTextureView.h"
+
+#include "Containers/Map.h"
+
+#include <cassert>
 #include <stb_image_resize.h>
+#include <unordered_map>
 
 static FTexturePlatformData*
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
@@ -153,7 +165,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   // filtering should be used."
   TextureAddress addressX = TextureAddress::TA_Wrap;
   TextureAddress addressY = TextureAddress::TA_Wrap;
-  ;
+
   TextureFilter filter = TextureFilter::TF_Default;
 
   if (pSampler) {
@@ -236,4 +248,347 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   }
 
   return true;
+}
+
+static constexpr size_t
+getNonArrayPropertySize(ECesiumMetadataBlueprintType type) {
+  switch (type) {
+  case ECesiumMetadataBlueprintType::None:
+  case ECesiumMetadataBlueprintType::String:
+  case ECesiumMetadataBlueprintType::Array:
+    return 0;
+  case ECesiumMetadataBlueprintType::Boolean:
+    return 1; // ??
+  case ECesiumMetadataBlueprintType::Byte:
+    return 1;
+  case ECesiumMetadataBlueprintType::Integer:
+    return 4;
+  case ECesiumMetadataBlueprintType::Integer64:
+    return 8;
+  case ECesiumMetadataBlueprintType::Float:
+    return 4;
+  }
+}
+
+namespace {
+
+struct EncodedPixelFormat {
+  EPixelFormat format;
+  size_t pixelSize;
+};
+
+// TODO: revisit this once a type unpacking node is implemented in materials.
+// We may be able to pack tighter than this in some cases at the cost of
+// having confusing channel orders. If there is an interface in place to handle
+// switching channels back, reinterpreting to correct type, etc., that won't be
+// a problem.
+// TODO: check platform specific support, ideally only encode metadata into
+// universally accepted raw pixel formats
+EncodedPixelFormat getPixelFormat(
+    ECesiumMetadataBlueprintType type,
+    ECesiumMetadataBlueprintType componentType,
+    int64 componentCount) {
+  switch (type) {
+  case ECesiumMetadataBlueprintType::Boolean:
+  case ECesiumMetadataBlueprintType::Byte:
+    return {EPixelFormat::PF_R8, 1};
+  case ECesiumMetadataBlueprintType::Integer:
+    return {EPixelFormat::PF_R32_SINT, 4};
+  case ECesiumMetadataBlueprintType::Float:
+    return {EPixelFormat::PF_R32_FLOAT, 4};
+  case ECesiumMetadataBlueprintType::Array:
+    switch (componentType) {
+    case ECesiumMetadataBlueprintType::Boolean:
+    case ECesiumMetadataBlueprintType::Byte:
+      switch (componentCount) {
+      case 2:
+        return {EPixelFormat::PF_R8G8, 2};
+      case 3:
+      case 4:
+        return {EPixelFormat::PF_R8G8B8A8, 4};
+      default:
+        return {EPixelFormat::PF_Unknown, 0};
+      }
+    case ECesiumMetadataBlueprintType::Integer:
+      switch (componentCount) {
+      case 2:
+        // ?? needs to be reinterpreted as signed ints in shader
+        return {EPixelFormat::PF_R32G32_UINT, 8};
+      case 3:
+      case 4:
+        // ?? needs to be reinterpreted as signed ints in shader
+        return {EPixelFormat::PF_R32G32B32A32_UINT, 16};
+      default:
+        return {EPixelFormat::PF_Unknown, 0};
+      }
+    case ECesiumMetadataBlueprintType::Float:
+      switch (componentCount) {
+      case 2:
+        return {EPixelFormat::PF_G32R32F, 8};
+      case 3:
+      case 4:
+        return {EPixelFormat::PF_A32B32G32R32F, 16};
+      default:
+        return {EPixelFormat::PF_Unknown, 0};
+      }
+    default:
+      return {EPixelFormat::PF_Unknown, 0};
+    }
+  default:
+    return {EPixelFormat::PF_Unknown, 0};
+  }
+}
+} // namespace
+
+/*static*/
+CesiumTextureUtility::EncodedMetadataFeatureTable
+CesiumTextureUtility::encodeMetadataFeatureTable(
+    const FCesiumMetadataFeatureTable& featureTable) {
+
+  EncodedMetadataFeatureTable encodedFeatureTable;
+
+  int64 featureCount =
+      UCesiumMetadataFeatureTableBlueprintLibrary::GetNumberOfFeatures(
+          featureTable);
+
+  const TMap<FString, FCesiumMetadataProperty>& properties =
+      UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(featureTable);
+
+  encodedFeatureTable.encodedProperties.reserve(properties.Num());
+  for (const auto& pair : properties) {
+    const FCesiumMetadataProperty& property = pair.Value;
+
+    ECesiumMetadataBlueprintType type =
+        UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintType(property);
+    ECesiumMetadataBlueprintType componentType =
+        ECesiumMetadataBlueprintType::None;
+
+    int64 propertySize = 0;
+    int64 componentCount = 0;
+    if (type == ECesiumMetadataBlueprintType::None ||
+        type == ECesiumMetadataBlueprintType::Integer64 ||
+        type == ECesiumMetadataBlueprintType::String) {
+      continue;
+    } else if (type == ECesiumMetadataBlueprintType::Array) {
+      componentType =
+          UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintComponentType(
+              property);
+
+      if (componentType == ECesiumMetadataBlueprintType::None ||
+          componentType == ECesiumMetadataBlueprintType::Integer64 ||
+          componentType == ECesiumMetadataBlueprintType::String ||
+          componentType == ECesiumMetadataBlueprintType::Array) {
+        continue;
+      }
+
+      componentCount =
+          UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(property);
+      propertySize = getNonArrayPropertySize(componentType) * componentCount;
+
+    } else {
+      propertySize = getNonArrayPropertySize(type);
+    }
+
+    EncodedPixelFormat encodedFormat =
+        getPixelFormat(type, componentType, componentCount);
+
+    if (encodedFormat.format == EPixelFormat::PF_Unknown) {
+      continue;
+    }
+
+    EncodedMetadataProperty& encodedProperty =
+        encodedFeatureTable.encodedProperties.emplace_back();
+    encodedProperty.name = pair.Key;
+    encodedProperty.type = type;
+    encodedProperty.componentType = componentType;
+
+    int64 propertyArraySize = featureCount * propertySize;
+    encodedProperty.pTexture = new LoadedTextureResult();
+    encodedProperty.pTexture->pTextureData =
+        createTexturePlatformData(propertyArraySize, 1, encodedFormat.format);
+
+    encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
+    encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
+    // TODO: is this correct?
+    encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
+
+    if (!encodedProperty.pTexture->pTextureData) {
+      // TODO: print error?
+      break;
+    }
+
+    void* pTextureData = static_cast<unsigned char*>(
+        encodedProperty.pTexture->pTextureData->Mips[0].BulkData.Lock(
+            LOCK_READ_WRITE));
+
+    // TODO: move to helper function?
+    // TODO: can we copy directly from the original metadata buffer in some
+    // cases?
+    switch (type) {
+    case ECesiumMetadataBlueprintType::Boolean:
+    case ECesiumMetadataBlueprintType::Byte: {
+      uint8* pWritePos =
+          reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+      for (int64 i = 0; i < featureCount; ++i) {
+        *pWritePos =
+            UCesiumMetadataPropertyBlueprintLibrary::GetByte(property, i);
+        ++pWritePos;
+      }
+    } break;
+    case ECesiumMetadataBlueprintType::Integer: {
+      int32* pWritePos =
+          reinterpret_cast<int32*>(encodedProperty.pTexture->pTextureData);
+      for (int64 i = 0; i < featureCount; ++i) {
+        *pWritePos =
+            UCesiumMetadataPropertyBlueprintLibrary::GetInteger(property, i);
+        ++pWritePos;
+      }
+    } break;
+    case ECesiumMetadataBlueprintType::Float: {
+      float* pWritePos =
+          reinterpret_cast<float*>(encodedProperty.pTexture->pTextureData);
+      for (int64 i = 0; i < featureCount; ++i) {
+        *pWritePos =
+            UCesiumMetadataPropertyBlueprintLibrary::GetFloat(property, i);
+        ++pWritePos;
+      }
+    } break;
+    case ECesiumMetadataBlueprintType::Array:
+      switch (componentType) {
+      case ECesiumMetadataBlueprintType::Boolean:
+      case ECesiumMetadataBlueprintType::Byte: {
+        uint8* pWritePos =
+            reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+        for (int64 i = 0; i < featureCount; ++i) {
+          FCesiumMetadataArray arrayProperty =
+              UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
+          for (int64 j = 0; j < componentCount; ++j) {
+            *(pWritePos + j) =
+                UCesiumMetadataArrayBlueprintLibrary::GetByte(arrayProperty, j);
+          }
+          pWritePos += encodedFormat.pixelSize;
+        }
+      } break;
+      case ECesiumMetadataBlueprintType::Integer: {
+        uint8* pWritePos =
+            reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+        for (int64 i = 0; i < featureCount; ++i) {
+          FCesiumMetadataArray arrayProperty =
+              UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
+          int32* pWritePosI = reinterpret_cast<int32*>(pWritePos);
+          for (int64 j = 0; j < componentCount; ++j) {
+            *pWritePosI = UCesiumMetadataArrayBlueprintLibrary::GetInteger(
+                arrayProperty,
+                j);
+            ++pWritePosI;
+          }
+          pWritePos += encodedFormat.pixelSize;
+        }
+      } break;
+      case ECesiumMetadataBlueprintType::Float: {
+        uint8* pWritePos =
+            reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+        for (int64 i = 0; i < featureCount; ++i) {
+          FCesiumMetadataArray arrayProperty =
+              UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
+          // Floats are encoded backwards (e.g., ABGR, GR)
+          float* pWritePosF =
+              reinterpret_cast<float*>(pWritePos + encodedFormat.pixelSize) - 1;
+          for (int64 j = 0; j < componentCount; ++j) {
+            *pWritePosF = UCesiumMetadataArrayBlueprintLibrary::GetFloat(
+                arrayProperty,
+                j);
+            --pWritePosF;
+          }
+          pWritePos += encodedFormat.pixelSize;
+        }
+      } break;
+      }
+      break;
+    }
+
+    encodedProperty.pTexture->pTextureData->Mips[0].BulkData.Unlock();
+  }
+
+  return encodedFeatureTable;
+}
+
+/*static*/
+CesiumTextureUtility::EncodedMetadataPrimitive
+CesiumTextureUtility::encodeMetadataPrimitive(
+    const FCesiumMetadataPrimitive& primitive) {
+  EncodedMetadataPrimitive result;
+
+  const TArray<FCesiumFeatureIDTexture>& featureIdTextures =
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(primitive);
+  const TArray<FCesiumVertexMetadata>& vertexFeatures =
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(primitive);
+
+  // Multiple feature id textures can correspond to a single Cesium image. Keep
+  // track of which Cesium image corresponds to which Unreal image, so we don't
+  // duplicate.
+  // TODO: be very careful about how the game thread part and deletion happens
+  // for images used by multiple feature id textures. Maybe a shared_ptr or
+  // something is needed.
+  std::unordered_map<const CesiumGltf::ImageCesium*, LoadedTextureResult*>
+      featureIdTextureMap;
+  featureIdTextureMap.reserve(featureIdTextures.Num());
+
+  result.encodedFeatureIdTextures.resize(featureIdTextures.Num());
+  result.encodedVertexMetadata.resize(vertexFeatures.Num());
+
+  for (size_t i = 0; i < featureIdTextures.Num(); ++i) {
+    const FCesiumFeatureIDTexture& featureIdTexture = featureIdTextures[i];
+    EncodedFeatureIdTexture& encodedFeatureIdTexture =
+        result.encodedFeatureIdTextures[i];
+
+    const FCesiumMetadataFeatureTable& featureTable =
+        UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTable(
+            featureIdTexture);
+    const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
+        featureIdTexture.getFeatureIdTextureView();
+    const CesiumGltf::ImageCesium* pFeatureIdImage =
+        featureIdTextureView.getImage();
+
+    if (!pFeatureIdImage) {
+      continue;
+    }
+
+    encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
+
+    auto mappedUnrealImage = featureIdTextureMap.find(pFeatureIdImage);
+    if (mappedUnrealImage != featureIdTextureMap.end()) {
+      encodedFeatureIdTexture.pTexture = mappedUnrealImage->second;
+    } else {
+      encodedFeatureIdTexture.pTexture = new LoadedTextureResult{};
+      encodedFeatureIdTexture.pTexture->pTextureData =
+          createTexturePlatformData(
+              pFeatureIdImage->width,
+              pFeatureIdImage->height,
+              // TODO: currently this is always the case, but doesn't have to be
+              EPixelFormat::PF_R8G8B8A8);
+
+      encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
+      encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
+      encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
+
+      if (!encodedFeatureIdTexture.pTexture->pTextureData) {
+        continue;
+      }
+
+      void* pTextureData = static_cast<unsigned char*>(
+          encodedFeatureIdTexture.pTexture->pTextureData->Mips[0].BulkData.Lock(
+              LOCK_READ_WRITE));
+      FMemory::Memcpy(
+          pTextureData,
+          pFeatureIdImage->pixelData.data(),
+          pFeatureIdImage->pixelData.size());
+      encodedFeatureIdTexture.pTexture->pTextureData->Mips[0].BulkData.Unlock();
+    }
+
+    encodedFeatureIdTexture.encodedFeatureTable =
+        encodeMetadataFeatureTable(featureTable);
+  }
+
+  return result;
 }

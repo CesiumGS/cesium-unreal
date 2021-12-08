@@ -57,7 +57,8 @@ public:
   FCesiumMetadataProperty()
       : _property(),
         _type(ECesiumMetadataTrueType::None),
-        _componentType(ECesiumMetadataTrueType::None) {}
+        _componentType(ECesiumMetadataTrueType::None),
+        _componentCount(0) {}
 
   /**
    * Construct a wrapper for the property view.
@@ -70,6 +71,7 @@ public:
     _type = ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<T>::value);
     _componentType =
         ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<T>::component);
+    _componentCount = value.getComponentCount();
   }
 
 private:
@@ -82,6 +84,7 @@ private:
   PropertyType _property;
   ECesiumMetadataTrueType _type;
   ECesiumMetadataTrueType _componentType;
+  int64 _componentCount;
 
   friend class UCesiumMetadataPropertyBlueprintLibrary;
 };
@@ -148,6 +151,17 @@ public:
       Category = "Cesium|Metadata|Property")
   static int64 GetNumberOfFeatures(UPARAM(ref)
                                        const FCesiumMetadataProperty& Property);
+
+  /**
+   * Queries the component count of this property. Only applicable when the
+   * property is an array type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static int64 GetComponentCount(UPARAM(ref)
+                                     const FCesiumMetadataProperty& Property);
 
   /**
    * Retrieves the value of the property for the feature with the given ID and
