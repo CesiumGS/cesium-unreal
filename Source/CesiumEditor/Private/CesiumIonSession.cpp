@@ -60,7 +60,7 @@ void CesiumIonSession::connect() {
 
         UCesiumEditorSettings* pSettings =
             GetMutableDefault<UCesiumEditorSettings>();
-        pSettings->CesiumIonAccessToken =
+        pSettings->UserAccessToken =
             UTF8_TO_TCHAR(this->_connection.value().getAccessToken().c_str());
         pSettings->SaveConfig();
 
@@ -75,7 +75,7 @@ void CesiumIonSession::connect() {
 
 void CesiumIonSession::resume() {
   const UCesiumEditorSettings* pSettings = GetDefault<UCesiumEditorSettings>();
-  if (pSettings->CesiumIonAccessToken.IsEmpty()) {
+  if (pSettings->UserAccessToken.IsEmpty()) {
     // No existing session to resume.
     return;
   }
@@ -85,8 +85,7 @@ void CesiumIonSession::resume() {
   this->_connection = Connection(
       this->_asyncSystem,
       this->_pAssetAccessor,
-      TCHAR_TO_UTF8(
-          *GetDefault<UCesiumEditorSettings>()->CesiumIonAccessToken));
+      TCHAR_TO_UTF8(*GetDefault<UCesiumEditorSettings>()->UserAccessToken));
 
   // Verify that the connection actually works.
   this->_connection.value()
@@ -112,7 +111,7 @@ void CesiumIonSession::disconnect() {
   this->_assetAccessToken.reset();
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
-  pSettings->CesiumIonAccessToken.Empty();
+  pSettings->UserAccessToken.Empty();
   pSettings->SaveConfig();
 
   this->ConnectionUpdated.Broadcast();

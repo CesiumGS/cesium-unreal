@@ -12,6 +12,7 @@
 class FSpawnTabArgs;
 class ACesium3DTileset;
 class UCesiumIonRasterOverlay;
+struct FCesium3DTilesetLoadFailureDetails;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesiumEditor, Log, All);
 
@@ -86,7 +87,10 @@ private:
   TSharedRef<SDockTab>
   SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
 
+  void OnTilesetLoadFailure(const FCesium3DTilesetLoadFailureDetails& details);
+
   std::shared_ptr<CesiumIonSession> _pIonSession;
+  FDelegateHandle _tilesetLoadFailureSubscription;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;

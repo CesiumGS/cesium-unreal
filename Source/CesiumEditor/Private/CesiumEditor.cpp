@@ -288,9 +288,17 @@ void FCesiumEditorModule::StartupModule() {
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
         pToolbarExtender);
   }
+
+  this->_tilesetLoadFailureSubscription = OnCesium3DTilesetLoadFailure.AddRaw(
+      this,
+      &FCesiumEditorModule::OnTilesetLoadFailure);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
+  if (this->_tilesetLoadFailureSubscription.IsValid()) {
+    OnCesium3DTilesetLoadFailure.Remove(this->_tilesetLoadFailureSubscription);
+    this->_tilesetLoadFailureSubscription.Reset();
+  }
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
@@ -312,6 +320,16 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
       SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(CesiumIonPanel)];
 
   return SpawnedTab;
+}
+
+void FCesiumEditorModule::OnTilesetLoadFailure(
+    const FCesium3DTilesetLoadFailureDetails& details) {
+  if (details.Type == ECesium3DTilesetLoadType::CesiumIon &&
+      details.HttpStatusCode == 401) {
+    // We got a 401 connecting to Cesium ion, which means the token is invalid
+    // (or perhaps the asset ID is).
+    UE_LOG(LogCesiumEditor, Error, TEXT("Cesium ion auth error"));
+  }
 }
 
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }

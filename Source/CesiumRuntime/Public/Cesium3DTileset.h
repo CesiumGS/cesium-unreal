@@ -4,6 +4,7 @@
 
 #include "Cesium3DTilesSelection/ViewState.h"
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
+#include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -15,7 +16,6 @@
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
-
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -25,6 +25,17 @@ namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
 } // namespace Cesium3DTilesSelection
+
+/**
+ * The delegate for the ACesium3DTileset::OnLoadError, which is triggered when
+ * the tileset encounters a load error.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesium3DTilesetLoadFailure,
+    const FCesium3DTilesetLoadFailureDetails&);
+
+CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
+    OnCesium3DTilesetLoadFailure;
 
 UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
