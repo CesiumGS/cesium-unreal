@@ -253,12 +253,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
 static constexpr size_t
 getNonArrayPropertySize(ECesiumMetadataBlueprintType type) {
   switch (type) {
-  case ECesiumMetadataBlueprintType::None:
-  case ECesiumMetadataBlueprintType::String:
-  case ECesiumMetadataBlueprintType::Array:
-    return 0;
   case ECesiumMetadataBlueprintType::Boolean:
-    return 1; // ??
+    // TODO: should booleans be 1 byte??
   case ECesiumMetadataBlueprintType::Byte:
     return 1;
   case ECesiumMetadataBlueprintType::Integer:
@@ -267,6 +263,8 @@ getNonArrayPropertySize(ECesiumMetadataBlueprintType type) {
     return 8;
   case ECesiumMetadataBlueprintType::Float:
     return 4;
+  default:
+    return 0;
   }
 }
 
