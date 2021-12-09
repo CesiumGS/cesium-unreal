@@ -426,8 +426,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
     switch (type) {
     case ECesiumMetadataBlueprintType::Boolean:
     case ECesiumMetadataBlueprintType::Byte: {
-      uint8* pWritePos =
-          reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+      uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
       for (int64 i = 0; i < featureCount; ++i) {
         *pWritePos =
             UCesiumMetadataPropertyBlueprintLibrary::GetByte(property, i);
@@ -435,8 +434,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
       }
     } break;
     case ECesiumMetadataBlueprintType::Integer: {
-      int32* pWritePos =
-          reinterpret_cast<int32*>(encodedProperty.pTexture->pTextureData);
+      int32* pWritePos = reinterpret_cast<int32*>(pTextureData);
       for (int64 i = 0; i < featureCount; ++i) {
         *pWritePos =
             UCesiumMetadataPropertyBlueprintLibrary::GetInteger(property, i);
@@ -444,8 +442,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
       }
     } break;
     case ECesiumMetadataBlueprintType::Float: {
-      float* pWritePos =
-          reinterpret_cast<float*>(encodedProperty.pTexture->pTextureData);
+      float* pWritePos = reinterpret_cast<float*>(pTextureData);
       for (int64 i = 0; i < featureCount; ++i) {
         *pWritePos =
             UCesiumMetadataPropertyBlueprintLibrary::GetFloat(property, i);
@@ -456,8 +453,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
       switch (componentType) {
       case ECesiumMetadataBlueprintType::Boolean:
       case ECesiumMetadataBlueprintType::Byte: {
-        uint8* pWritePos =
-            reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumMetadataArray arrayProperty =
               UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
@@ -469,8 +465,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       case ECesiumMetadataBlueprintType::Integer: {
-        uint8* pWritePos =
-            reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumMetadataArray arrayProperty =
               UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
@@ -485,8 +480,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       case ECesiumMetadataBlueprintType::Float: {
-        uint8* pWritePos =
-            reinterpret_cast<uint8*>(encodedProperty.pTexture->pTextureData);
+        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumMetadataArray arrayProperty =
               UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
@@ -574,7 +568,7 @@ CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
               pFeatureIdImage->height,
               // TODO: currently this is always the case, but doesn't have to be
               // needs to be reinterpreted as signed ints in shader
-              EPixelFormat::PF_R8G8B8A8 /*_UINT*/);
+              EPixelFormat::PF_R8G8B8A8_UINT);
 
       encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
       encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;

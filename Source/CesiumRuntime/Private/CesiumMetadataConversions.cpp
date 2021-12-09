@@ -13,6 +13,8 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
   case ECesiumMetadataTrueType::Int16:
   case ECesiumMetadataTrueType::Uint16:
   case ECesiumMetadataTrueType::Int32:
+  // TODO: remove this one
+  case ECesiumMetadataTrueType::Uint32:
     return ECesiumMetadataBlueprintType::Integer;
   case ECesiumMetadataTrueType::Int64:
     return ECesiumMetadataBlueprintType::Integer64;

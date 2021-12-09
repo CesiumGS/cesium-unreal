@@ -1681,6 +1681,13 @@ static void SetMetadataParameterValues(
             association,
             index),
         channelMask);
+
+    SetMetadataFeatureTableParameterValues(
+        encodedFeatureIdTexture.name,
+        encodedFeatureIdTexture.encodedFeatureTable,
+        pMaterial,
+        association,
+        index);
   }
 }
 
@@ -1701,7 +1708,6 @@ static void loadModelGameThreadPart(
   pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
   pMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMesh->Metadata = std::move(loadResult.Metadata);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
   pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
@@ -1834,6 +1840,9 @@ static void loadModelGameThreadPart(
         EMaterialParameterAssociation::LayerParameter,
         metadataIndex);
   }
+
+  pMesh->Metadata = std::move(loadResult.Metadata);
+  pMesh->encodedMetadata = std::move(loadResult.encodedMetadata);
 
   pMaterial->TwoSided = true;
 
