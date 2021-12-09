@@ -6,6 +6,7 @@
 #include "CesiumCommands.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumSunSky.h"
 #include "ClassIconFinder.h"
@@ -155,6 +156,13 @@ void FCesiumEditorModule::StartupModule() {
         StyleSet,
         "Cesium.Common.OpenSupport",
         "FontAwesome/hands-helping-solid");
+
+    StyleSet->Set(
+        "Cesium.Common.GreenTick",
+        new IMAGE_BRUSH(TEXT("FontAwesome/check-solid"), Icon16x16));
+    StyleSet->Set(
+        "Cesium.Common.RedX",
+        new IMAGE_BRUSH(TEXT("FontAwesome/times-solid"), Icon16x16));
 
     registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
 
@@ -324,11 +332,14 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
 
 void FCesiumEditorModule::OnTilesetLoadFailure(
     const FCesium3DTilesetLoadFailureDetails& details) {
-  if (details.Type == ECesium3DTilesetLoadType::CesiumIon &&
-      details.HttpStatusCode == 401) {
-    // We got a 401 connecting to Cesium ion, which means the token is invalid
-    // (or perhaps the asset ID is).
-    UE_LOG(LogCesiumEditor, Error, TEXT("Cesium ion auth error"));
+  // Check for a 401 connecting to Cesium ion, which means the token is invalid
+  // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
+  // when the token is valid but not authorized for the asset.
+  if (details.Tileset && details.Type == ECesium3DTilesetLoadType::CesiumIon &&
+      (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
+    TSharedRef<CesiumIonTokenTroubleshooting> Troubleshooting =
+        SNew(CesiumIonTokenTroubleshooting).Tileset(details.Tileset);
+    GEditor->EditorAddModalWindow(Troubleshooting);
   }
 }
 

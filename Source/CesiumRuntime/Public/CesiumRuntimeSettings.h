@@ -10,7 +10,7 @@
  * Stores runtime settings for the Cesium plugin.
  */
 UCLASS(Config = Engine, DefaultConfig, meta = (DisplayName = "Cesium"))
-class UCesiumRuntimeSettings : public UDeveloperSettings {
+class CESIUMRUNTIME_API UCesiumRuntimeSettings : public UDeveloperSettings {
   GENERATED_UCLASS_BODY()
 
 public:
@@ -23,5 +23,5 @@ public:
       EditAnywhere,
       Category = "Cesium ion",
       meta = (DisplayName = "Default Cesium ion Access Token"))
-  FString DefaultCesiumIonAccessToken;
+  FString DefaultIonAccessToken;
 };

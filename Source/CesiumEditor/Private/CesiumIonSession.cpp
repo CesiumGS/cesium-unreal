@@ -74,6 +74,10 @@ void CesiumIonSession::connect() {
 }
 
 void CesiumIonSession::resume() {
+  if (this->isConnecting() || this->isConnected() || this->isResuming()) {
+    return;
+  }
+
   const UCesiumEditorSettings* pSettings = GetDefault<UCesiumEditorSettings>();
   if (pSettings->UserAccessToken.IsEmpty()) {
     // No existing session to resume.

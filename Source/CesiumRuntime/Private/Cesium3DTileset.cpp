@@ -836,7 +836,7 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
     FString token =
         this->IonAccessToken.IsEmpty()
-            ? GetDefault<UCesiumRuntimeSettings>()->DefaultCesiumIonAccessToken
+            ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
             : this->IonAccessToken;
     this->_pTileset = new Cesium3DTilesSelection::Tileset(
         externals,
