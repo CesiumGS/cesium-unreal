@@ -6,6 +6,7 @@
 #include "CesiumIonClient/Connection.h"
 #include "CesiumRuntimeSettings.h"
 #include "EditorStyleSet.h"
+#include "ScopedTransaction.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -46,6 +47,11 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
   TSharedRef<SVerticalBox> pMainVerticalBox = SNew(SVerticalBox);
 
   ACesium3DTileset* pTileset = InArgs._Tileset;
+  if (!pTileset) {
+    return;
+  }
+
+  this->_pTileset = pTileset;
 
   if (InArgs._TriggeredByError) {
     FString preamble = FString::Format(
@@ -82,24 +88,11 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   pMainVerticalBox->AddSlot().AutoHeight()[pDiagnosticColumns];
 
-  pMainVerticalBox->AddSlot().AutoHeight().Padding(
-      0.0f,
-      20.0f,
-      0.0f,
-      5.0f)[SNew(SButton)
-                .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
-                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
-                //.OnClicked(this, &IonLoginPanel::SignIn)
-                .Text(FText::FromString(
-                    TEXT("Use the project default token for this Actor")))
-                .Visibility_Lambda([this]() {
-                  return this->_projectDefaultTokenState.isValid.value_or(
-                             false) &&
-                                 this->_projectDefaultTokenState
-                                     .allowsAccessToAsset.value_or(false)
-                             ? EVisibility::Visible
-                             : EVisibility::Collapsed;
-                })];
+  this->addRemedyButton(
+      pMainVerticalBox,
+      TEXT("Use the project default token for this Actor"),
+      &CesiumIonTokenTroubleshooting::canUseProjectDefaultToken,
+      &CesiumIonTokenTroubleshooting::useProjectDefaultToken);
 
   pMainVerticalBox->AddSlot().AutoHeight().Padding(
       0.0f,
@@ -298,4 +291,47 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
       state.associatedWithUserAccount)];
 
   return pRows;
+}
+
+void CesiumIonTokenTroubleshooting::addRemedyButton(
+    const TSharedRef<SVerticalBox>& pParent,
+    const FString& name,
+    bool (CesiumIonTokenTroubleshooting::*isAvailableCallback)() const,
+    FReply (CesiumIonTokenTroubleshooting::*clickCallback)()) {
+  pParent->AddSlot().AutoHeight().Padding(
+      0.0f,
+      20.0f,
+      0.0f,
+      5.0f)[SNew(SButton)
+                .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+                .OnClicked(this, clickCallback)
+                .Text(FText::FromString(name))
+                .Visibility_Lambda([this, isAvailableCallback]() {
+                  return std::invoke(isAvailableCallback, *this)
+                             ? EVisibility::Visible
+                             : EVisibility::Collapsed;
+                })];
+}
+
+bool CesiumIonTokenTroubleshooting::canUseProjectDefaultToken() const {
+  bool isValid = this->_projectDefaultTokenState.isValid.value_or(false);
+  bool allowsAccess =
+      this->_projectDefaultTokenState.allowsAccessToAsset.value_or(false);
+  return isValid && allowsAccess;
+}
+
+FReply CesiumIonTokenTroubleshooting::useProjectDefaultToken() {
+  this->RequestDestroyWindow();
+
+  if (!this->_pTileset) {
+    return FReply::Handled();
+  }
+
+  FScopedTransaction transaction(
+      FText::FromString("Use Project Default Token"));
+  this->_pTileset->Modify();
+  this->_pTileset->SetIonAccessToken(TEXT(""));
+
+  return FReply::Handled();
 }

@@ -35,9 +35,19 @@ private:
     std::optional<bool> associatedWithUserAccount;
   };
 
+  ACesium3DTileset* _pTileset = nullptr;
   TokenState _assetTokenState{};
   TokenState _projectDefaultTokenState{};
 
   TSharedRef<SWidget>
   createTokenPanel(ACesium3DTileset* pTileset, TokenState& state);
+
+  void addRemedyButton(
+      const TSharedRef<SVerticalBox>& pParent,
+      const FString& name,
+      bool (CesiumIonTokenTroubleshooting::*isAvailableCallback)() const,
+      FReply (CesiumIonTokenTroubleshooting::*clickCallback)());
+
+  bool canUseProjectDefaultToken() const;
+  FReply useProjectDefaultToken();
 };
