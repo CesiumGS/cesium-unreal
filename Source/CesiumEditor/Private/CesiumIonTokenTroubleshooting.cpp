@@ -15,19 +15,49 @@
 
 using namespace CesiumIonClient;
 
+/*static*/ TMap<ACesium3DTileset*, TSharedRef<CesiumIonTokenTroubleshooting>>
+    CesiumIonTokenTroubleshooting::_existingPanels{};
+
+/*static*/ void CesiumIonTokenTroubleshooting::Open(
+    ACesium3DTileset* pTileset,
+    bool triggeredByError) {
+  const TSharedRef<CesiumIonTokenTroubleshooting>* ppExisting =
+      CesiumIonTokenTroubleshooting::_existingPanels.Find(pTileset);
+  if (ppExisting) {
+    FSlateApplication::Get().RequestDestroyWindow(*ppExisting);
+    CesiumIonTokenTroubleshooting::_existingPanels.Remove(pTileset);
+  }
+
+  TSharedRef<CesiumIonTokenTroubleshooting> Troubleshooting =
+      SNew(CesiumIonTokenTroubleshooting)
+          .Tileset(pTileset)
+          .TriggeredByError(triggeredByError);
+
+  Troubleshooting->GetOnWindowClosedEvent().AddLambda(
+      [pTileset](const TSharedRef<SWindow>& pWindow) {
+        CesiumIonTokenTroubleshooting::_existingPanels.Remove(pTileset);
+      });
+  FSlateApplication::Get().AddWindow(Troubleshooting);
+
+  CesiumIonTokenTroubleshooting::_existingPanels.Add(pTileset, Troubleshooting);
+}
+
 void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
   TSharedRef<SVerticalBox> pMainVerticalBox = SNew(SVerticalBox);
 
   ACesium3DTileset* pTileset = InArgs._Tileset;
-  FString preamble = FString::Format(
-      TEXT(
-          "Actor \"{0}\" ({1}) tried to access Cesium ion for asset ID {2}, but it didn't work, probably due to a problem with the access token. This panel will help you fix it!"),
-      {*pTileset->GetActorLabel(),
-       *pTileset->GetName(),
-       pTileset->GetIonAssetID()});
 
-  pMainVerticalBox->AddSlot().AutoHeight()
-      [SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(preamble))];
+  if (InArgs._TriggeredByError) {
+    FString preamble = FString::Format(
+        TEXT(
+            "Actor \"{0}\" ({1}) tried to access Cesium ion for asset ID {2}, but it didn't work, probably due to a problem with the access token. This panel will help you fix it!"),
+        {*pTileset->GetActorLabel(),
+         *pTileset->GetName(),
+         pTileset->GetIonAssetID()});
+
+    pMainVerticalBox->AddSlot().AutoHeight()
+        [SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(preamble))];
+  }
 
   TSharedRef<SHorizontalBox> pDiagnosticColumns = SNew(SHorizontalBox);
 
@@ -126,7 +156,9 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   SWindow::Construct(
       SWindow::FArguments()
-          .Title(FText::FromString(TEXT("Invalid Cesium ion Access Token")))
+          .Title(FText::FromString(FString::Format(
+              TEXT("{0}: Cesium ion Token Troubleshooting"),
+              {*pTileset->GetActorLabel()})))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
           .ClientSize(FVector2D(800, 600))
@@ -190,31 +222,46 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
       ionSession.getAssetAccessor(),
       TCHAR_TO_UTF8(*state.token));
 
+  // Don't let this panel be destroyed while the async operations below are in
+  // progress.
+  TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
+      StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
+
   pConnection->me()
       .thenInMainThread(
-          [pConnection, assetID, &state](Response<Profile>&& profile) {
+          [pPanel, pConnection, assetID, &state](Response<Profile>&& profile) {
             state.isValid = profile.value.has_value();
-            return pConnection->asset(assetID);
+            if (pPanel->IsVisible()) {
+              return pConnection->asset(assetID);
+            } else {
+              return pConnection->getAsyncSystem().createResolvedFuture(
+                  Response<Asset>{});
+            }
           })
-      .thenInMainThread([pConnection, &state](Response<Asset>&& asset) {
+      .thenInMainThread([pPanel, pConnection, &state](Response<Asset>&& asset) {
         state.allowsAccessToAsset = asset.value.has_value();
 
-        // Query the tokens using the user's connection (_not_ the token
-        // connection created above).
-        CesiumIonSession& ionSession = FCesiumEditorModule::ion();
-        ionSession.resume();
+        if (pPanel->IsVisible()) {
+          // Query the tokens using the user's connection (_not_ the token
+          // connection created above).
+          CesiumIonSession& ionSession = FCesiumEditorModule::ion();
+          ionSession.resume();
 
-        const std::optional<Connection>& userConnection =
-            ionSession.getConnection();
-        if (!userConnection) {
-          Response<std::vector<Token>> result{};
-          return ionSession.getAsyncSystem().createResolvedFuture(
-              std::move(result));
+          const std::optional<Connection>& userConnection =
+              ionSession.getConnection();
+          if (!userConnection) {
+            Response<std::vector<Token>> result{};
+            return ionSession.getAsyncSystem().createResolvedFuture(
+                std::move(result));
+          }
+          return userConnection->tokens();
+        } else {
+          return pConnection->getAsyncSystem().createResolvedFuture(
+              Response<std::vector<Token>>{});
         }
-        return userConnection->tokens();
       })
       .thenInMainThread(
-          [pConnection, &state](Response<std::vector<Token>>&& tokens) {
+          [pPanel, pConnection, &state](Response<std::vector<Token>>&& tokens) {
             state.associatedWithUserAccount = false;
             if (tokens.value.has_value()) {
               auto it = std::find_if(

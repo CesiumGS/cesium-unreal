@@ -88,9 +88,11 @@ private:
   SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
 
   void OnTilesetLoadFailure(const FCesium3DTilesetLoadFailureDetails& details);
+  void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
 
   std::shared_ptr<CesiumIonSession> _pIonSession;
   FDelegateHandle _tilesetLoadFailureSubscription;
+  FDelegateHandle _tilesetIonTroubleshootingSubscription;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;

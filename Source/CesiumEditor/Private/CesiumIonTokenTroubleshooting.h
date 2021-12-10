@@ -13,12 +13,20 @@ class CesiumIonTokenTroubleshooting : public SWindow {
    * The tileset being troubleshooted.
    */
   SLATE_ARGUMENT(ACesium3DTileset*, Tileset)
+
+  /** Whether this troubleshooting panel was opened in response to an error,
+   * versus opened manually by the user. */
+  SLATE_ARGUMENT(bool, TriggeredByError)
   SLATE_END_ARGS()
 
 public:
+  static void Open(ACesium3DTileset* pTileset, bool triggeredByError);
   void Construct(const FArguments& InArgs);
 
 private:
+  static TMap<ACesium3DTileset*, TSharedRef<CesiumIonTokenTroubleshooting>>
+      _existingPanels;
+
   struct TokenState {
     FString name;
     FString token;

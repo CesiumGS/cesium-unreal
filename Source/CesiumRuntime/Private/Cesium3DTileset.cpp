@@ -178,6 +178,10 @@ void ACesium3DTileset::InvalidateResolvedCreditSystem() {
 
 void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
 
+void ACesium3DTileset::TroubleshootToken() {
+  OnCesium3DTilesetIonTroubleshooting.Broadcast(this);
+}
+
 void ACesium3DTileset::AddFocusViewportDelegate() {
 #if WITH_EDITOR
   FEditorDelegates::OnFocusViewportOnActors.AddLambda(

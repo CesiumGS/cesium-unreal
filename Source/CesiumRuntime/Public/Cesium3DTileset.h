@@ -461,6 +461,9 @@ private:
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
 
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void TroubleshootToken();
+
   /**
    * Whether to generate physics meshes for this tileset.
    *

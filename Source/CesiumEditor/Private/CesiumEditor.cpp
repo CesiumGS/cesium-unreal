@@ -8,6 +8,7 @@
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
+#include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
@@ -300,12 +301,22 @@ void FCesiumEditorModule::StartupModule() {
   this->_tilesetLoadFailureSubscription = OnCesium3DTilesetLoadFailure.AddRaw(
       this,
       &FCesiumEditorModule::OnTilesetLoadFailure);
+
+  this->_tilesetIonTroubleshootingSubscription =
+      OnCesium3DTilesetIonTroubleshooting.AddRaw(
+          this,
+          &FCesiumEditorModule::OnTilesetIonTroubleshooting);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
   if (this->_tilesetLoadFailureSubscription.IsValid()) {
     OnCesium3DTilesetLoadFailure.Remove(this->_tilesetLoadFailureSubscription);
     this->_tilesetLoadFailureSubscription.Reset();
+  }
+  if (this->_tilesetIonTroubleshootingSubscription.IsValid()) {
+    OnCesium3DTilesetIonTroubleshooting.Remove(
+        this->_tilesetIonTroubleshootingSubscription);
+    this->_tilesetIonTroubleshootingSubscription.Reset();
   }
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
@@ -332,15 +343,26 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
 
 void FCesiumEditorModule::OnTilesetLoadFailure(
     const FCesium3DTilesetLoadFailureDetails& details) {
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->GetLevelEditorTabManager()->TryInvokeTab(
+        FTabId("OutputLog"));
+  }
+
   // Check for a 401 connecting to Cesium ion, which means the token is invalid
   // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
   // when the token is valid but not authorized for the asset.
   if (details.Tileset && details.Type == ECesium3DTilesetLoadType::CesiumIon &&
       (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
-    TSharedRef<CesiumIonTokenTroubleshooting> Troubleshooting =
-        SNew(CesiumIonTokenTroubleshooting).Tileset(details.Tileset);
-    GEditor->EditorAddModalWindow(Troubleshooting);
+    CesiumIonTokenTroubleshooting::Open(details.Tileset, true);
   }
+}
+
+void FCesiumEditorModule::OnTilesetIonTroubleshooting(
+    ACesium3DTileset* pTileset) {
+  CesiumIonTokenTroubleshooting::Open(pTileset, false);
 }
 
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }
