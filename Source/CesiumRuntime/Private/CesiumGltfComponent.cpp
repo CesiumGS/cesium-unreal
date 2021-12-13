@@ -1637,7 +1637,6 @@ static void SetMetadataParameterValues(
     LoadModelResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
-    // TODO: hook up metadata layer index correctly
     // TODO: probably have different layer for each feature id
     // texture/attribute?
     int32 index) {

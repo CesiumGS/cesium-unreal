@@ -3,6 +3,7 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumFeatureIDTexture.h"
 #include "CesiumMetadataArray.h"
+#include "CesiumMetadataConversions.h"
 #include "CesiumMetadataFeatureTable.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumMetadataProperty.h"
@@ -250,24 +251,6 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return true;
 }
 
-static constexpr size_t
-getNonArrayPropertySize(ECesiumMetadataBlueprintType type) {
-  switch (type) {
-  case ECesiumMetadataBlueprintType::Boolean:
-    // TODO: should booleans be 1 byte??
-  case ECesiumMetadataBlueprintType::Byte:
-    return 1;
-  case ECesiumMetadataBlueprintType::Integer:
-    return 4;
-  case ECesiumMetadataBlueprintType::Integer64:
-    return 8;
-  case ECesiumMetadataBlueprintType::Float:
-    return 4;
-  default:
-    return 0;
-  }
-}
-
 namespace {
 
 struct EncodedPixelFormat {
@@ -275,63 +258,32 @@ struct EncodedPixelFormat {
   size_t pixelSize;
 };
 
-// TODO: revisit this once a type unpacking node is implemented in materials.
-// We may be able to pack tighter than this in some cases at the cost of
-// having confusing channel orders. If there is an interface in place to handle
-// switching channels back, reinterpreting to correct type, etc., that won't be
-// a problem.
-// TODO: check platform specific support, ideally only encode metadata into
-// universally accepted raw pixel formats
-EncodedPixelFormat getPixelFormat(
-    ECesiumMetadataBlueprintType type,
-    ECesiumMetadataBlueprintType componentType,
-    int64 componentCount) {
+// TODO: consider picking better pixel formats when they are available for the
+// current platform.
+EncodedPixelFormat
+getPixelFormat(ECesiumMetadataPackedGpuType type, int64 componentCount) {
+
   switch (type) {
-  case ECesiumMetadataBlueprintType::Boolean:
-  case ECesiumMetadataBlueprintType::Byte:
-    // needs to be reinterpreted as signed byte in shader
-    return {EPixelFormat::PF_R8_UINT, 1};
-  case ECesiumMetadataBlueprintType::Integer:
-    return {EPixelFormat::PF_R32_SINT, 4};
-  case ECesiumMetadataBlueprintType::Float:
-    return {EPixelFormat::PF_R32_FLOAT, 4};
-  case ECesiumMetadataBlueprintType::Array:
-    switch (componentType) {
-    case ECesiumMetadataBlueprintType::Boolean:
-    case ECesiumMetadataBlueprintType::Byte:
-      switch (componentCount) {
-      case 2:
-      case 3:
-      case 4:
-        // needs to be reinterpreted as signed ints in shader
-        return {EPixelFormat::PF_R8G8B8A8_UINT, 4};
-      default:
-        return {EPixelFormat::PF_Unknown, 0};
-      }
-    case ECesiumMetadataBlueprintType::Integer:
-      switch (componentCount) {
-      case 2:
-        // needs to be reinterpreted as signed ints in shader
-        return {EPixelFormat::PF_R32G32_UINT, 8};
-      case 3:
-      case 4:
-        // needs to be reinterpreted as signed ints in shader
-        return {EPixelFormat::PF_R32G32B32A32_UINT, 16};
-      default:
-        return {EPixelFormat::PF_Unknown, 0};
-      }
-    case ECesiumMetadataBlueprintType::Float:
-      switch (componentCount) {
-      case 2:
-        return {EPixelFormat::PF_G32R32F, 8};
-      case 3:
-      case 4:
-        return {EPixelFormat::PF_A32B32G32R32F, 16};
-      default:
-        return {EPixelFormat::PF_Unknown, 0};
-      }
+  case ECesiumMetadataPackedGpuType::Uint8:
+    switch (componentCount) {
+    case 1:
+      return {EPixelFormat::PF_R8_UINT, 1};
+    case 2:
+    case 3:
+    case 4:
+      return {EPixelFormat::PF_R8G8B8A8_UINT, 4};
     default:
       return {EPixelFormat::PF_Unknown, 0};
+    }
+  case ECesiumMetadataPackedGpuType::Float:
+    switch (componentCount) {
+    case 1:
+      return {EPixelFormat::PF_R32_FLOAT, 4};
+    case 2:
+    case 3:
+    case 4:
+      // Note this is ABGR
+      return {EPixelFormat::PF_A32B32G32R32F, 16};
     }
   default:
     return {EPixelFormat::PF_Unknown, 0};
@@ -357,39 +309,35 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
   for (const auto& pair : properties) {
     const FCesiumMetadataProperty& property = pair.Value;
 
-    ECesiumMetadataBlueprintType type =
-        UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintType(property);
-    ECesiumMetadataBlueprintType componentType =
-        ECesiumMetadataBlueprintType::None;
+    // TODO: should be some user inputed ECesiumMetadataSupportedGpuType that
+    // we check against the trueType
+    ECesiumMetadataTrueType trueType =
+        UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(property);
+    bool isArray = trueType == ECesiumMetadataTrueType::Array;
 
-    int64 propertySize = 0;
-    int64 componentCount = 0;
-    if (type == ECesiumMetadataBlueprintType::None ||
-        type == ECesiumMetadataBlueprintType::Integer64 ||
-        type == ECesiumMetadataBlueprintType::String) {
-      continue;
-    } else if (type == ECesiumMetadataBlueprintType::Array) {
-      componentType =
-          UCesiumMetadataPropertyBlueprintLibrary::GetBlueprintComponentType(
-              property);
-
-      if (componentType == ECesiumMetadataBlueprintType::None ||
-          componentType == ECesiumMetadataBlueprintType::Integer64 ||
-          componentType == ECesiumMetadataBlueprintType::String ||
-          componentType == ECesiumMetadataBlueprintType::Array) {
-        continue;
-      }
-
+    int64 componentCount;
+    if (isArray) {
+      trueType = UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
+          property);
       componentCount =
           UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(property);
-      propertySize = getNonArrayPropertySize(componentType) * componentCount;
-
     } else {
-      propertySize = getNonArrayPropertySize(type);
+      componentCount = 1;
     }
 
-    EncodedPixelFormat encodedFormat =
-        getPixelFormat(type, componentType, componentCount);
+    // TODO: should be some user inputed target gpu type, instead of picking
+    // the default gpu type for the source type. Warnings should be displayed
+    // when the conversion is lossy. We can even attempt to convert strings to
+    // numeric gpu types, but the target format should be explicitly set by the
+    // user.
+    ECesiumMetadataPackedGpuType gpuType =
+        CesiumMetadataTrueTypeToDefaultPackedGpuType(trueType);
+
+    if (gpuType == ECesiumMetadataPackedGpuType::None) {
+      continue;
+    }
+
+    EncodedPixelFormat encodedFormat = getPixelFormat(gpuType, componentCount);
 
     if (encodedFormat.format == EPixelFormat::PF_Unknown) {
       continue;
@@ -398,10 +346,8 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.emplace_back();
     encodedProperty.name = pair.Key;
-    encodedProperty.type = type;
-    encodedProperty.componentType = componentType;
 
-    int64 propertyArraySize = featureCount * propertySize;
+    int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
     encodedProperty.pTexture = new LoadedTextureResult();
     encodedProperty.pTexture->pTextureData =
         createTexturePlatformData(propertyArraySize, 1, encodedFormat.format);
@@ -420,39 +366,9 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
         encodedProperty.pTexture->pTextureData->Mips[0].BulkData.Lock(
             LOCK_READ_WRITE));
 
-    // TODO: move to helper function?
-    // TODO: can we copy directly from the original metadata buffer in some
-    // cases?
-    switch (type) {
-    case ECesiumMetadataBlueprintType::Boolean:
-    case ECesiumMetadataBlueprintType::Byte: {
-      uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-      for (int64 i = 0; i < featureCount; ++i) {
-        *pWritePos =
-            UCesiumMetadataPropertyBlueprintLibrary::GetByte(property, i);
-        ++pWritePos;
-      }
-    } break;
-    case ECesiumMetadataBlueprintType::Integer: {
-      int32* pWritePos = reinterpret_cast<int32*>(pTextureData);
-      for (int64 i = 0; i < featureCount; ++i) {
-        *pWritePos =
-            UCesiumMetadataPropertyBlueprintLibrary::GetInteger(property, i);
-        ++pWritePos;
-      }
-    } break;
-    case ECesiumMetadataBlueprintType::Float: {
-      float* pWritePos = reinterpret_cast<float*>(pTextureData);
-      for (int64 i = 0; i < featureCount; ++i) {
-        *pWritePos =
-            UCesiumMetadataPropertyBlueprintLibrary::GetFloat(property, i);
-        ++pWritePos;
-      }
-    } break;
-    case ECesiumMetadataBlueprintType::Array:
-      switch (componentType) {
-      case ECesiumMetadataBlueprintType::Boolean:
-      case ECesiumMetadataBlueprintType::Byte: {
+    if (isArray) {
+      switch (gpuType) {
+      case ECesiumMetadataPackedGpuType::Uint8: {
         uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumMetadataArray arrayProperty =
@@ -464,27 +380,12 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
           pWritePos += encodedFormat.pixelSize;
         }
       } break;
-      case ECesiumMetadataBlueprintType::Integer: {
+      case ECesiumMetadataPackedGpuType::Float: {
         uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
         for (int64 i = 0; i < featureCount; ++i) {
           FCesiumMetadataArray arrayProperty =
               UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
-          int32* pWritePosI = reinterpret_cast<int32*>(pWritePos);
-          for (int64 j = 0; j < componentCount; ++j) {
-            *pWritePosI = UCesiumMetadataArrayBlueprintLibrary::GetInteger(
-                arrayProperty,
-                j);
-            ++pWritePosI;
-          }
-          pWritePos += encodedFormat.pixelSize;
-        }
-      } break;
-      case ECesiumMetadataBlueprintType::Float: {
-        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-        for (int64 i = 0; i < featureCount; ++i) {
-          FCesiumMetadataArray arrayProperty =
-              UCesiumMetadataPropertyBlueprintLibrary::GetArray(property, i);
-          // Floats are encoded backwards (e.g., ABGR, GR)
+          // Floats are encoded backwards (e.g., ABGR)
           float* pWritePosF =
               reinterpret_cast<float*>(pWritePos + encodedFormat.pixelSize) - 1;
           for (int64 j = 0; j < componentCount; ++j) {
@@ -497,7 +398,25 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       }
-      break;
+    } else {
+      switch (gpuType) {
+      case ECesiumMetadataPackedGpuType::Uint8: {
+        uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
+        for (int64 i = 0; i < featureCount; ++i) {
+          *pWritePos =
+              UCesiumMetadataPropertyBlueprintLibrary::GetByte(property, i);
+          ++pWritePos;
+        }
+      } break;
+      case ECesiumMetadataPackedGpuType::Float: {
+        float* pWritePos = reinterpret_cast<float*>(pTextureData);
+        for (int64 i = 0; i < featureCount; ++i) {
+          *pWritePos =
+              UCesiumMetadataPropertyBlueprintLibrary::GetFloat(property, i);
+          ++pWritePos;
+        }
+      } break;
+      }
     }
 
     encodedProperty.pTexture->pTextureData->Mips[0].BulkData.Unlock();

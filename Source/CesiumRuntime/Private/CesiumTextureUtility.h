@@ -31,18 +31,6 @@ public:
     FString name;
 
     /**
-     * @brief The type of this property.
-     */
-    ECesiumMetadataBlueprintType type;
-
-    /**
-     * @brief The type of the components of this property.
-     *
-     * Only applicable if type is Array.
-     */
-    ECesiumMetadataBlueprintType componentType;
-
-    /**
      * @brief The encoded property array.
      */
     LoadedTextureResult* pTexture;
