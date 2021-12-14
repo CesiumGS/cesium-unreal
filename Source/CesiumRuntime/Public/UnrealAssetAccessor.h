@@ -12,14 +12,15 @@ public:
   UnrealAssetAccessor();
 
   virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
-  requestAsset(
-      const CesiumAsync::AsyncSystem& asyncSystem,
+  get(const CesiumAsync::AsyncSystem& asyncSystem,
       const std::string& url,
       const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers)
       override;
 
-  virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> post(
+  virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
+  startRequest(
       const CesiumAsync::AsyncSystem& asyncSystem,
+      const std::string& verb,
       const std::string& url,
       const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
       const gsl::span<const std::byte>& contentPayload) override;

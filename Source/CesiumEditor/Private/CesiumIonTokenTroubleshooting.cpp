@@ -6,6 +6,7 @@
 #include "CesiumIonClient/Connection.h"
 #include "CesiumRuntimeSettings.h"
 #include "EditorStyleSet.h"
+#include "LevelEditor.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
@@ -86,7 +87,27 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
       .FillWidth(0.5f)
           [this->createTokenPanel(pTileset, this->_projectDefaultTokenState)];
 
+  // Don't let this panel be destroyed while the async operations below are in
+  // progress.
+  TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
+      StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
+
+  if (FCesiumEditorModule::ion().isConnected()) {
+    FCesiumEditorModule::ion()
+        .getConnection()
+        ->asset(pTileset->GetIonAssetID())
+        .thenInMainThread([pPanel](Response<Asset>&& asset) {
+          pPanel->_assetExistsInUserAccount = asset.value.has_value();
+        });
+  }
+
   pMainVerticalBox->AddSlot().AutoHeight()[pDiagnosticColumns];
+
+  this->addRemedyButton(
+      pMainVerticalBox,
+      TEXT("Connect to Cesium ion"),
+      &CesiumIonTokenTroubleshooting::canConnectToCesiumIon,
+      &CesiumIonTokenTroubleshooting::connectToCesiumIon);
 
   this->addRemedyButton(
       pMainVerticalBox,
@@ -94,42 +115,17 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
       &CesiumIonTokenTroubleshooting::canUseProjectDefaultToken,
       &CesiumIonTokenTroubleshooting::useProjectDefaultToken);
 
-  pMainVerticalBox->AddSlot().AutoHeight().Padding(
-      0.0f,
-      10.0f,
-      0.0f,
-      5.0f)[SNew(SButton)
-                .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
-                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
-                //.OnClicked(this, &IonLoginPanel::SignIn)
-                .Text(FText::FromString(
-                    TEXT("Authorize the tileset's token to access this asset")))
-                .Visibility_Lambda([this]() {
-                  return this->_assetTokenState.isValid.value_or(false) &&
-                                 !this->_assetTokenState.allowsAccessToAsset
-                                      .value_or(true) &&
-                                 this->_assetTokenState
-                                     .associatedWithUserAccount.value_or(false)
-                             ? EVisibility::Visible
-                             : EVisibility::Collapsed;
-                })];
+  this->addRemedyButton(
+      pMainVerticalBox,
+      TEXT("Authorize the tileset's token to access this asset"),
+      &CesiumIonTokenTroubleshooting::canAuthorizeAssetToken,
+      &CesiumIonTokenTroubleshooting::authorizeAssetToken);
 
-  pMainVerticalBox->AddSlot().AutoHeight().Padding(0.0f, 10.0f, 0.0f, 5.0f)
-      [SNew(SButton)
-           .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
-           .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
-           //.OnClicked(this, &IonLoginPanel::SignIn)
-           .Text(FText::FromString(TEXT(
-               "Authorize the project default token to access this asset")))
-           .Visibility_Lambda([this]() {
-             return this->_projectDefaultTokenState.isValid.value_or(false) &&
-                            !this->_projectDefaultTokenState.allowsAccessToAsset
-                                 .value_or(true) &&
-                            this->_projectDefaultTokenState
-                                .associatedWithUserAccount.value_or(false)
-                        ? EVisibility::Visible
-                        : EVisibility::Collapsed;
-           })];
+  this->addRemedyButton(
+      pMainVerticalBox,
+      TEXT("Authorize the project default token to access this asset"),
+      &CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken,
+      &CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken);
 
   pMainVerticalBox->AddSlot().AutoHeight().Padding(0.0f, 10.0f, 0.0f, 5.0f)
       [SNew(SButton)
@@ -297,7 +293,7 @@ void CesiumIonTokenTroubleshooting::addRemedyButton(
     const TSharedRef<SVerticalBox>& pParent,
     const FString& name,
     bool (CesiumIonTokenTroubleshooting::*isAvailableCallback)() const,
-    FReply (CesiumIonTokenTroubleshooting::*clickCallback)()) {
+    void (CesiumIonTokenTroubleshooting::*clickCallback)()) {
   pParent->AddSlot().AutoHeight().Padding(
       0.0f,
       20.0f,
@@ -305,7 +301,11 @@ void CesiumIonTokenTroubleshooting::addRemedyButton(
       5.0f)[SNew(SButton)
                 .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
                 .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
-                .OnClicked(this, clickCallback)
+                .OnClicked_Lambda([this, clickCallback]() {
+                  std::invoke(clickCallback, *this);
+                  this->RequestDestroyWindow();
+                  return FReply::Handled();
+                })
                 .Text(FText::FromString(name))
                 .Visibility_Lambda([this, isAvailableCallback]() {
                   return std::invoke(isAvailableCallback, *this)
@@ -314,24 +314,146 @@ void CesiumIonTokenTroubleshooting::addRemedyButton(
                 })];
 }
 
-bool CesiumIonTokenTroubleshooting::canUseProjectDefaultToken() const {
-  bool isValid = this->_projectDefaultTokenState.isValid.value_or(false);
-  bool allowsAccess =
-      this->_projectDefaultTokenState.allowsAccessToAsset.value_or(false);
-  return isValid && allowsAccess;
+bool CesiumIonTokenTroubleshooting::canConnectToCesiumIon() const {
+  return !FCesiumEditorModule::ion().isConnected();
 }
 
-FReply CesiumIonTokenTroubleshooting::useProjectDefaultToken() {
-  this->RequestDestroyWindow();
+void CesiumIonTokenTroubleshooting::connectToCesiumIon() {
+  // Pop up the Cesium panel to show the status.
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  TSharedPtr<FTabManager> pTabManager =
+      pLevelEditorModule ? pLevelEditorModule->GetLevelEditorTabManager()
+                         : FGlobalTabmanager::Get();
+  pTabManager->TryInvokeTab(FTabId(TEXT("Cesium")));
 
+  // Pop up a browser window to sign in to ion.
+  FCesiumEditorModule::ion().connect();
+}
+
+bool CesiumIonTokenTroubleshooting::canUseProjectDefaultToken() const {
+  const TokenState& state = this->_projectDefaultTokenState;
+  return state.isValid == true && state.allowsAccessToAsset == true;
+}
+
+void CesiumIonTokenTroubleshooting::useProjectDefaultToken() {
   if (!this->_pTileset) {
-    return FReply::Handled();
+    return;
   }
 
   FScopedTransaction transaction(
       FText::FromString("Use Project Default Token"));
   this->_pTileset->Modify();
-  this->_pTileset->SetIonAccessToken(TEXT(""));
+  this->_pTileset->SetIonAccessToken(FString());
+}
 
-  return FReply::Handled();
+bool CesiumIonTokenTroubleshooting::canAuthorizeAssetToken() const {
+  const TokenState& state = this->_assetTokenState;
+  return this->_assetExistsInUserAccount == true && state.isValid == true &&
+         state.allowsAccessToAsset == false &&
+         state.associatedWithUserAccount == true;
+}
+
+void CesiumIonTokenTroubleshooting::authorizeAssetToken() {
+  if (!this->_pTileset) {
+    return;
+  }
+  this->authorizeToken(this->_pTileset->GetIonAccessToken());
+}
+
+bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
+  const TokenState& state = this->_projectDefaultTokenState;
+  return this->_assetExistsInUserAccount == true && state.isValid == true &&
+         state.allowsAccessToAsset == false &&
+         state.associatedWithUserAccount == true;
+}
+
+void CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken() {
+  this->authorizeToken(
+      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
+}
+
+void CesiumIonTokenTroubleshooting::authorizeToken(const FString& token) {
+  if (!this->_pTileset) {
+    return;
+  }
+
+  CesiumIonSession& session = FCesiumEditorModule::ion();
+  const std::optional<Connection>& maybeConnection = session.getConnection();
+  if (!session.isConnected() || !maybeConnection) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "Cannot grant a token access to an asset because you are not signed in to Cesium ion."));
+    return;
+  }
+
+  TWeakObjectPtr<ACesium3DTileset> pTileset = this->_pTileset;
+
+  session.findToken(token).thenInMainThread([pTileset,
+                                             connection = *maybeConnection](
+                                                std::optional<Token>&&
+                                                    maybeToken) {
+    if (!pTileset.IsValid()) {
+      // Tileset Actor has been destroyed
+      return connection.getAsyncSystem().createResolvedFuture();
+    }
+
+    if (!maybeToken) {
+      UE_LOG(
+          LogCesiumEditor,
+          Error,
+          TEXT(
+              "Cannot grant a token access to an asset because the token was not found in the signed-in Cesium ion account."));
+      return connection.getAsyncSystem().createResolvedFuture();
+    }
+
+    if (!maybeToken->assetIds) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT(
+              "Cannot grant a token access to an asset because the token appears to already have access to all assets."));
+      return connection.getAsyncSystem().createResolvedFuture();
+    }
+
+    auto it = std::find(
+        maybeToken->assetIds->begin(),
+        maybeToken->assetIds->end(),
+        pTileset->GetIonAssetID());
+    if (it != maybeToken->assetIds->end()) {
+      UE_LOG(
+          LogCesiumEditor,
+          Warning,
+          TEXT(
+              "Cannot grant a token access to an asset because the token appears to already have access to the asset."));
+      return connection.getAsyncSystem().createResolvedFuture();
+    }
+
+    maybeToken->assetIds->emplace_back(pTileset->GetIonAssetID());
+
+    return connection
+        .modifyToken(
+            maybeToken->id,
+            maybeToken->name,
+            maybeToken->assetIds,
+            maybeToken->scopes,
+            maybeToken->allowedUrls)
+        .thenInMainThread([pTileset](Response<NoValue>&& result) {
+          if (result.value) {
+            // Refresh the tileset now that the token is valid (hopefully).
+            if (pTileset.IsValid()) {
+              pTileset->RefreshTileset();
+            }
+          } else {
+            UE_LOG(
+                LogCesiumEditor,
+                Error,
+                TEXT(
+                    "An error occurred while attempting to modify a token to grant it access to an asset. Please visit https://cesium.com/ion/tokens to modify the token manually."));
+          }
+        });
+  });
 }

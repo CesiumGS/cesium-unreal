@@ -38,6 +38,7 @@ private:
   ACesium3DTileset* _pTileset = nullptr;
   TokenState _assetTokenState{};
   TokenState _projectDefaultTokenState{};
+  std::optional<bool> _assetExistsInUserAccount;
 
   TSharedRef<SWidget>
   createTokenPanel(ACesium3DTileset* pTileset, TokenState& state);
@@ -46,8 +47,19 @@ private:
       const TSharedRef<SVerticalBox>& pParent,
       const FString& name,
       bool (CesiumIonTokenTroubleshooting::*isAvailableCallback)() const,
-      FReply (CesiumIonTokenTroubleshooting::*clickCallback)());
+      void (CesiumIonTokenTroubleshooting::*clickCallback)());
+
+  bool canConnectToCesiumIon() const;
+  void connectToCesiumIon();
 
   bool canUseProjectDefaultToken() const;
-  FReply useProjectDefaultToken();
+  void useProjectDefaultToken();
+
+  bool canAuthorizeAssetToken() const;
+  void authorizeAssetToken();
+
+  bool canAuthorizeProjectDefaultToken() const;
+  void authorizeProjectDefaultToken();
+
+  void authorizeToken(const FString& token);
 };

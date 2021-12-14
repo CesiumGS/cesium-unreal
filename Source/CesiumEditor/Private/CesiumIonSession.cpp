@@ -5,6 +5,7 @@
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
 
+using namespace CesiumAsync;
 using namespace CesiumIonClient;
 
 CesiumIonSession::CesiumIonSession(
@@ -183,7 +184,7 @@ void CesiumIonSession::refreshTokens() {
   this->_connection->tokens()
       .thenInMainThread([this](Response<TokenList>&& tokens) {
         this->_isLoadingTokens = false;
-       this->_tokens = tokens.value
+        this->_tokens = tokens.value
                             ? std::make_optional(std::move(tokens.value->items))
                             : std::nullopt;
         this->TokensUpdated.Broadcast();
@@ -324,4 +325,46 @@ bool CesiumIonSession::refreshAssetAccessTokenIfNeeded() {
     this->refreshAssetAccessToken();
   }
   return this->isAssetAccessTokenLoaded();
+}
+
+Future<std::optional<Token>>
+CesiumIonSession::findToken(const FString& token) const {
+  if (!this->_connection) {
+    return this->getAsyncSystem().createResolvedFuture<std::optional<Token>>(
+        std::nullopt);
+  }
+
+  std::string tokenString = TCHAR_TO_UTF8(*token);
+
+  // We need a recursive lambda to handle pagination. It's awkward.
+  auto pProcessPage = std::make_shared<
+      std::function<Future<std::optional<Token>>(Response<TokenList> &&)>>();
+
+  *pProcessPage =
+      [pProcessPage,
+       asyncSystem = this->getAsyncSystem(),
+       tokenString,
+       connection = *this->_connection](
+          Response<TokenList>&& page) -> Future<std::optional<Token>> {
+    if (!page.value) {
+      return asyncSystem.createResolvedFuture<std::optional<Token>>(
+          std::nullopt);
+    }
+
+    for (const Token& token : page.value->items) {
+      if (token.token == tokenString) {
+        return asyncSystem.createResolvedFuture<std::optional<Token>>(token);
+      }
+    }
+
+    // Not on this page, try the next
+    if (page.nextPageUrl) {
+      return connection.nextPage(page).thenInMainThread(*pProcessPage);
+    }
+
+    // Token not found
+    return asyncSystem.createResolvedFuture<std::optional<Token>>(std::nullopt);
+  };
+
+  return this->_connection->tokens().thenInMainThread(*pProcessPage);
 }

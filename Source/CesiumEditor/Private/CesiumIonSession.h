@@ -71,6 +71,21 @@ public:
   bool refreshTokensIfNeeded();
   bool refreshAssetAccessTokenIfNeeded();
 
+  /**
+   * Finds the details of the specified token in the user's account.
+   *
+   * If this session is not connected, returns std::nullopt.
+   *
+   * Even if the list of tokens is already loaded, this method does a new query
+   * in order get the most up-to-date information about the token.
+   *
+   * @param token The token.
+   * @return The details of the token, or std::nullopt if the token does not
+   * exist in the signed-in user account.
+   */
+  CesiumAsync::Future<std::optional<CesiumIonClient::Token>>
+  findToken(const FString& token) const;
+
 private:
   CesiumAsync::AsyncSystem _asyncSystem;
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
