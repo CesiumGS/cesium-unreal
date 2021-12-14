@@ -58,7 +58,8 @@ public:
       : _property(),
         _type(ECesiumMetadataTrueType::None),
         _componentType(ECesiumMetadataTrueType::None),
-        _componentCount(0) {}
+        _componentCount(0),
+        _normalized(false) {}
 
   /**
    * Construct a wrapper for the property view.
@@ -67,7 +68,9 @@ public:
    */
   template <typename T>
   FCesiumMetadataProperty(const CesiumGltf::MetadataPropertyView<T>& value)
-      : _property(value), _type(ECesiumMetadataTrueType::None) {
+      : _property(value),
+        _type(ECesiumMetadataTrueType::None),
+        _normalized(value.isNormalized()) {
     _type = ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<T>::value);
     _componentType =
         ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<T>::component);
@@ -85,6 +88,7 @@ private:
   ECesiumMetadataTrueType _type;
   ECesiumMetadataTrueType _componentType;
   int64 _componentCount;
+  bool _normalized;
 
   friend class UCesiumMetadataPropertyBlueprintLibrary;
 };
@@ -386,4 +390,16 @@ public:
   static FCesiumMetadataGenericValue GetGenericValue(
       UPARAM(ref) const FCesiumMetadataProperty& Property,
       int64 FeatureID);
+
+  /**
+   * Whether this property is supposed to be normalized. Only applicable when
+   * the type (or componentType if this is an array) is an integer.
+   *
+   * @return Whether this property is normalized.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static bool IsNormalized(UPARAM(ref) const FCesiumMetadataProperty& Property);
 };

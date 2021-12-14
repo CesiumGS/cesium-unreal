@@ -147,3 +147,8 @@ UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
       },
       Property._property);
 }
+
+bool UCesiumMetadataPropertyBlueprintLibrary::IsNormalized(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property._normalized;
+}

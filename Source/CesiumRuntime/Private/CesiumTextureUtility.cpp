@@ -16,6 +16,7 @@
 #include "Containers/Map.h"
 
 #include <cassert>
+#include <limits>
 #include <stb_image_resize.h>
 #include <unordered_map>
 
@@ -260,18 +261,23 @@ struct EncodedPixelFormat {
 
 // TODO: consider picking better pixel formats when they are available for the
 // current platform.
-EncodedPixelFormat
-getPixelFormat(ECesiumMetadataPackedGpuType type, int64 componentCount) {
+EncodedPixelFormat getPixelFormat(
+    ECesiumMetadataPackedGpuType type,
+    int64 componentCount,
+    bool isNormalized) {
 
   switch (type) {
   case ECesiumMetadataPackedGpuType::Uint8:
     switch (componentCount) {
     case 1:
-      return {EPixelFormat::PF_R8_UINT, 1};
+      return {isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT, 1};
     case 2:
     case 3:
     case 4:
-      return {EPixelFormat::PF_R8G8B8A8_UINT, 4};
+      return {
+          isNormalized ? EPixelFormat::PF_R8G8B8A8
+                       : EPixelFormat::PF_R8G8B8A8_UINT,
+          4};
     default:
       return {EPixelFormat::PF_Unknown, 0};
     }
@@ -314,6 +320,8 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
     ECesiumMetadataTrueType trueType =
         UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(property);
     bool isArray = trueType == ECesiumMetadataTrueType::Array;
+    bool isNormalized =
+        UCesiumMetadataPropertyBlueprintLibrary::IsNormalized(property);
 
     int64 componentCount;
     if (isArray) {
@@ -337,7 +345,13 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
-    EncodedPixelFormat encodedFormat = getPixelFormat(gpuType, componentCount);
+    // Only support normalization of uint8 for now
+    if (isNormalized && trueType != ECesiumMetadataTrueType::Uint8) {
+      continue;
+    }
+
+    EncodedPixelFormat encodedFormat =
+        getPixelFormat(gpuType, componentCount, isNormalized);
 
     if (encodedFormat.format == EPixelFormat::PF_Unknown) {
       continue;
@@ -354,7 +368,6 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
 
     encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
     encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
-    // TODO: is this correct?
     encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
 
     if (!encodedProperty.pTexture->pTextureData) {
@@ -409,11 +422,11 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
         }
       } break;
       case ECesiumMetadataPackedGpuType::Float: {
-        float* pWritePos = reinterpret_cast<float*>(pTextureData);
+        float* pWritePosF = reinterpret_cast<float*>(pTextureData);
         for (int64 i = 0; i < featureCount; ++i) {
-          *pWritePos =
+          *pWritePosF =
               UCesiumMetadataPropertyBlueprintLibrary::GetFloat(property, i);
-          ++pWritePos;
+          ++pWritePosF;
         }
       } break;
       }
