@@ -243,27 +243,27 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
           const std::optional<Connection>& userConnection =
               ionSession.getConnection();
           if (!userConnection) {
-            Response<std::vector<Token>> result{};
+            Response<TokenList> result{};
             return ionSession.getAsyncSystem().createResolvedFuture(
                 std::move(result));
           }
           return userConnection->tokens();
         } else {
           return pConnection->getAsyncSystem().createResolvedFuture(
-              Response<std::vector<Token>>{});
+              Response<TokenList>{});
         }
       })
       .thenInMainThread(
-          [pPanel, pConnection, &state](Response<std::vector<Token>>&& tokens) {
+          [pPanel, pConnection, &state](Response<TokenList>&& tokens) {
             state.associatedWithUserAccount = false;
             if (tokens.value.has_value()) {
               auto it = std::find_if(
-                  tokens.value->begin(),
-                  tokens.value->end(),
+                  tokens.value->items.begin(),
+                  tokens.value->items.end(),
                   [&pConnection](const Token& token) {
                     return token.token == pConnection->getAccessToken();
                   });
-              state.associatedWithUserAccount = it != tokens.value->end();
+              state.associatedWithUserAccount = it != tokens.value->items.end();
             }
           });
 

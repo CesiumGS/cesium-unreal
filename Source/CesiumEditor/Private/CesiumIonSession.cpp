@@ -173,7 +173,7 @@ void CesiumIonSession::refreshAssets() {
 }
 
 void CesiumIonSession::refreshTokens() {
-  if (!this->_connection || this->_isLoadingAssets) {
+  if (!this->_connection || this->_isLoadingTokens) {
     return;
   }
 
@@ -181,9 +181,11 @@ void CesiumIonSession::refreshTokens() {
   this->_loadTokensQueued = false;
 
   this->_connection->tokens()
-      .thenInMainThread([this](Response<std::vector<Token>>&& tokens) {
+      .thenInMainThread([this](Response<TokenList>&& tokens) {
         this->_isLoadingTokens = false;
-        this->_tokens = std::move(tokens.value);
+       this->_tokens = tokens.value
+                            ? std::make_optional(std::move(tokens.value->items))
+                            : std::nullopt;
         this->TokensUpdated.Broadcast();
         this->refreshTokensIfNeeded();
         this->refreshAssetAccessTokenIfNeeded();
