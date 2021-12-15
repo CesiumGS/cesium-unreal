@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CesiumGltf/FeatureTexturePropertyView.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
 #include "GenericPlatform/GenericPlatform.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureTextureProperty.generated.h"
 
 USTRUCT(BlueprintType)
@@ -49,8 +49,8 @@ public:
   FCesiumFeatureTextureProperty() {}
 
   FCesiumFeatureTextureProperty(
-      const CesiumGltf::FeatureTexturePropertyView& property) 
-    : _pProperty(&property) {}
+      const CesiumGltf::FeatureTexturePropertyView& property)
+      : _pProperty(&property) {}
 
 private:
   const CesiumGltf::FeatureTexturePropertyView* _pProperty;
@@ -67,15 +67,16 @@ class CESIUMRUNTIME_API UCesiumFeatureTexturePropertyBlueprintLibrary
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTextureProperty")
-  static int64 GetTextureCoordinateIndex(
-      UPARAM(ref) const FCesiumFeatureTextureProperty& property);
+  static int64
+  GetTextureCoordinateIndex(UPARAM(ref)
+                                const FCesiumFeatureTextureProperty& property);
 
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTextureProperty")
-  static int64 GetComponentCount(
-      UPARAM(ref) const FCesiumFeatureTextureProperty& property);
+  static int64
+  GetComponentCount(UPARAM(ref) const FCesiumFeatureTextureProperty& property);
 
   UFUNCTION(
       BlueprintCallable,

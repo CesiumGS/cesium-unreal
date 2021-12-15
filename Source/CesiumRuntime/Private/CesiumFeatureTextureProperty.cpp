@@ -14,59 +14,58 @@ int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
   return property._pProperty->getComponentCount();
 }
 
-FCesiumIntegerColor 
-UCesiumFeatureTexturePropertyBlueprintLibrary::GetIntegerColorFromTextureCoordinates(
-    UPARAM(ref) const FCesiumFeatureTextureProperty& property,
-    float u,
-    float v) {
+FCesiumIntegerColor UCesiumFeatureTexturePropertyBlueprintLibrary::
+    GetIntegerColorFromTextureCoordinates(
+        UPARAM(ref) const FCesiumFeatureTextureProperty& property,
+        float u,
+        float v) {
   switch (property._pProperty->getPropertyType()) {
   case CesiumGltf::FeatureTexturePropertyComponentType::Uint8: {
-      CesiumGltf::FeatureTexturePropertyValue<uint8_t> propertyValue =
-          property._pProperty->getProperty<uint8_t>(u, v);
-      return {
-          CesiumMetadataConversions<int32, uint8_t>::convert(
-            propertyValue.components[0], 
+    CesiumGltf::FeatureTexturePropertyValue<uint8_t> propertyValue =
+        property._pProperty->getProperty<uint8_t>(u, v);
+    return {
+        CesiumMetadataConversions<int32, uint8_t>::convert(
+            propertyValue.components[0],
             0),
-          CesiumMetadataConversions<int32, uint8_t>::convert(
-            propertyValue.components[1], 
+        CesiumMetadataConversions<int32, uint8_t>::convert(
+            propertyValue.components[1],
             0),
-          CesiumMetadataConversions<int32, uint8_t>::convert(
-            propertyValue.components[2], 
+        CesiumMetadataConversions<int32, uint8_t>::convert(
+            propertyValue.components[2],
             0),
-          CesiumMetadataConversions<int32, uint8_t>::convert(
-            propertyValue.components[3], 
+        CesiumMetadataConversions<int32, uint8_t>::convert(
+            propertyValue.components[3],
             0)};
-    }
-    break;
+  } break;
   default:
-    return { 0, 0, 0, 0 };
+    return {0, 0, 0, 0};
   }
 }
 
-FCesiumFloatColor 
-UCesiumFeatureTexturePropertyBlueprintLibrary::GetFloatColorFromTextureCoordinates(
-    UPARAM(ref) const FCesiumFeatureTextureProperty& property,
-    float u,
-    float v) {
+FCesiumFloatColor UCesiumFeatureTexturePropertyBlueprintLibrary::
+    GetFloatColorFromTextureCoordinates(
+        UPARAM(ref) const FCesiumFeatureTextureProperty& property,
+        float u,
+        float v) {
   switch (property._pProperty->getPropertyType()) {
   case CesiumGltf::FeatureTexturePropertyComponentType::Uint8:
     CesiumGltf::FeatureTexturePropertyValue<uint8_t> propertyValue =
         property._pProperty->getProperty<uint8_t>(u, v);
     return {
         CesiumMetadataConversions<float, uint8_t>::convert(
-          propertyValue.components[0],
-          0.0f),
+            propertyValue.components[0],
+            0.0f),
         CesiumMetadataConversions<float, uint8_t>::convert(
-          propertyValue.components[1], 
-          0.0f),
+            propertyValue.components[1],
+            0.0f),
         CesiumMetadataConversions<float, uint8_t>::convert(
-          propertyValue.components[2], 
-          0.0f),
+            propertyValue.components[2],
+            0.0f),
         CesiumMetadataConversions<float, uint8_t>::convert(
-          propertyValue.components[3], 
-          0.0f)};
+            propertyValue.components[3],
+            0.0f)};
     break;
   default:
-    return { 0.0f, 0.0f, 0.0f, 0.0f };
+    return {0.0f, 0.0f, 0.0f, 0.0f};
   }
 }

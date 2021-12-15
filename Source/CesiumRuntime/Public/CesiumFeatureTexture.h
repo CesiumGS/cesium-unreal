@@ -1,20 +1,20 @@
 #pragma once
 
-#include "CesiumGltf/FeatureTextureView.h"
 #include "CesiumFeatureTextureProperty.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
+#include "CesiumGltf/FeatureTextureView.h"
 #include "Containers/Map.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureTexture.generated.h"
 
 namespace CesiumGltf {
 struct Model;
 struct FeatureTexture;
-};
+}; // namespace CesiumGltf
 
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureTexture {
   GENERATED_USTRUCT_BODY()
-  
+
 public:
   FCesiumFeatureTexture() {}
 
@@ -38,6 +38,6 @@ class CESIUMRUNTIME_API UCesiumFeatureTextureBlueprintLibrary
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTexture")
-  static const TMap<FString, FCesiumFeatureTextureProperty>& GetProperties(
-      UPARAM(ref) const FCesiumFeatureTexture& featureTexture);
+  static const TMap<FString, FCesiumFeatureTextureProperty>&
+  GetProperties(UPARAM(ref) const FCesiumFeatureTexture& featureTexture);
 };
