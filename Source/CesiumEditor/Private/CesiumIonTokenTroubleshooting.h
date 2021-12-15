@@ -61,5 +61,8 @@ private:
   bool canAuthorizeProjectDefaultToken() const;
   void authorizeProjectDefaultToken();
 
+  bool canCreateNewProjectDefaultToken() const;
+  void createNewProjectDefaultToken();
+
   void authorizeToken(const FString& token);
 };

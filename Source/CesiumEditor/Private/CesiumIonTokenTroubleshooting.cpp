@@ -127,21 +127,27 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
       &CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken,
       &CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken);
 
-  pMainVerticalBox->AddSlot().AutoHeight().Padding(0.0f, 10.0f, 0.0f, 5.0f)
-      [SNew(SButton)
-           .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
-           .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
-           //.OnClicked(this, &IonLoginPanel::SignIn)
-           .Text(FText::FromString(TEXT("Create a new project default token")))
+  this->addRemedyButton(
+      pMainVerticalBox,
+      TEXT("Create a new project default token"),
+      &CesiumIonTokenTroubleshooting::canCreateNewProjectDefaultToken,
+      &CesiumIonTokenTroubleshooting::createNewProjectDefaultToken);
+
+  pMainVerticalBox->AddSlot().AutoHeight().Padding(0.0f, 20.0f, 0.0f, 0.0f)
+      [SNew(STextBlock)
            .Visibility_Lambda([this]() {
-             return !this->_projectDefaultTokenState.isValid.value_or(true) ||
-                            (!this->_projectDefaultTokenState
-                                  .allowsAccessToAsset.value_or(true) &&
-                             !this->_projectDefaultTokenState
-                                  .associatedWithUserAccount.value_or(true))
+             return (this->_assetTokenState.token.IsEmpty() ||
+                     this->_assetTokenState.allowsAccessToAsset == false) &&
+                            (this->_projectDefaultTokenState.token.IsEmpty() ||
+                             this->_projectDefaultTokenState
+                                     .allowsAccessToAsset == false) &&
+                            this->_assetExistsInUserAccount == false
                         ? EVisibility::Visible
                         : EVisibility::Collapsed;
-           })];
+           })
+           .AutoWrapText(true)
+           .Text(FText::FromString(
+               "No automatic remedies are possible because the current token does not authorize access to the specified asset ID, and the asset ID also does not exist in the signed-in Cesium ion account. Please check that the tileset's asset ID is correct."))];
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -372,6 +378,57 @@ bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
 void CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken() {
   this->authorizeToken(
       GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
+}
+
+bool CesiumIonTokenTroubleshooting::canCreateNewProjectDefaultToken() const {
+  if (this->_assetExistsInUserAccount == false) {
+    return false;
+  }
+
+  const TokenState& state = this->_projectDefaultTokenState;
+  return state.isValid == false || (state.allowsAccessToAsset == false &&
+                                    state.associatedWithUserAccount == false);
+}
+
+void CesiumIonTokenTroubleshooting::createNewProjectDefaultToken() {
+  if (!this->_pTileset) {
+    return;
+  }
+
+  CesiumIonSession& session = FCesiumEditorModule::ion();
+  const std::optional<Connection>& maybeConnection = session.getConnection();
+  if (!session.isConnected() || !maybeConnection) {
+    UE_LOG(
+        LogCesiumEditor,
+        Error,
+        TEXT(
+            "Cannot create a new project default token because you are not signed in to Cesium ion."));
+    return;
+  }
+
+  // Don't let this panel be destroyed while the async operations below are in
+  // progress.
+  TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
+      StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
+
+  std::string tokenName = TCHAR_TO_UTF8(FApp::GetProjectName());
+  tokenName += " (Created by Cesium for Unreal)";
+  maybeConnection
+      ->createToken(
+          tokenName,
+          {"assets:read"},
+          std::vector<int64_t>{this->_pTileset->GetIonAssetID()})
+      .thenInMainThread([pPanel](Response<Token>&& newToken) {
+        if (!newToken.value) {
+          UE_LOG(LogCesiumEditor, Error, TEXT("Failed to create token"));
+          return;
+        }
+
+        GetMutableDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken =
+            UTF8_TO_TCHAR(newToken.value->token.c_str());
+
+        pPanel->useProjectDefaultToken();
+      });
 }
 
 void CesiumIonTokenTroubleshooting::authorizeToken(const FString& token) {
