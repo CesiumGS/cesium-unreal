@@ -44,6 +44,47 @@ using namespace CesiumIonClient;
   CesiumIonTokenTroubleshooting::_existingPanels.Add(pTileset, Troubleshooting);
 }
 
+namespace {
+
+TSharedRef<SWidget>
+addTokenCheck(const FString& label, std::optional<bool>& state) {
+  return SNew(SHorizontalBox) +
+         SHorizontalBox::Slot().AutoWidth().Padding(
+             3.0f,
+             0.0f,
+             3.0f,
+             0.0f)[SNew(SThrobber)
+                       .Visibility_Lambda([&state]() {
+                         CesiumIonSession& ion = FCesiumEditorModule::ion();
+                         ion.getAssetAccessor()->tick();
+                         ion.getAsyncSystem().dispatchMainThreadTasks();
+                         return state.has_value() ? EVisibility::Collapsed
+                                                  : EVisibility::Visible;
+                       })
+                       .NumPieces(1)
+                       .Animate(SThrobber::All)] +
+         SHorizontalBox::Slot().AutoWidth().Padding(
+             5.0f,
+             0.0f,
+             5.0f,
+             0.0f)[SNew(SImage)
+                       .Visibility_Lambda([&state]() {
+                         return state.has_value() ? EVisibility::Visible
+                                                  : EVisibility::Collapsed;
+                       })
+                       .Image_Lambda([&state]() {
+                         return state.has_value() && *state
+                                    ? FCesiumEditorModule::GetStyle()->GetBrush(
+                                          TEXT("Cesium.Common.GreenTick"))
+                                    : FCesiumEditorModule::GetStyle()->GetBrush(
+                                          TEXT("Cesium.Common.RedX"));
+                       })] +
+         SHorizontalBox::Slot()
+             .AutoWidth()[SNew(STextBlock).Text(FText::FromString(label))];
+}
+
+} // namespace
+
 void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
   TSharedRef<SVerticalBox> pMainVerticalBox = SNew(SVerticalBox);
 
@@ -103,6 +144,15 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   pMainVerticalBox->AddSlot().AutoHeight()[pDiagnosticColumns];
 
+  pMainVerticalBox->AddSlot().AutoHeight().Padding(
+      0.0f,
+      20.0f,
+      0.0f,
+      0.0f)[SNew(SBox).HAlign(
+      EHorizontalAlignment::HAlign_Center)[addTokenCheck(
+      TEXT("Asset ID exists in current user account"),
+      this->_assetExistsInUserAccount)]];
+
   this->addRemedyButton(
       pMainVerticalBox,
       TEXT("Connect to Cesium ion"),
@@ -147,7 +197,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
            })
            .AutoWrapText(true)
            .Text(FText::FromString(
-               "No automatic remedies are possible because the current token does not authorize access to the specified asset ID, and the asset ID also does not exist in the signed-in Cesium ion account. Please check that the tileset's asset ID is correct."))];
+               "No automatic remedies are possible because the current token does not authorize access to the specified asset ID, and the asset ID also does not exist in the signed-in Cesium ion account. Please check that the tileset's \"Ion Asset ID\" property is correct."))];
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -163,47 +213,6 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
                    .Padding(
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pMainVerticalBox]]);
 }
-
-namespace {
-
-TSharedRef<SWidget>
-addTokenCheck(const FString& label, std::optional<bool>& state) {
-  return SNew(SHorizontalBox) +
-         SHorizontalBox::Slot().AutoWidth().Padding(
-             3.0f,
-             0.0f,
-             3.0f,
-             0.0f)[SNew(SThrobber)
-                       .Visibility_Lambda([&state]() {
-                         CesiumIonSession& ion = FCesiumEditorModule::ion();
-                         ion.getAssetAccessor()->tick();
-                         ion.getAsyncSystem().dispatchMainThreadTasks();
-                         return state.has_value() ? EVisibility::Collapsed
-                                                  : EVisibility::Visible;
-                       })
-                       .NumPieces(1)
-                       .Animate(SThrobber::All)] +
-         SHorizontalBox::Slot().AutoWidth().Padding(
-             5.0f,
-             0.0f,
-             5.0f,
-             0.0f)[SNew(SImage)
-                       .Visibility_Lambda([&state]() {
-                         return state.has_value() ? EVisibility::Visible
-                                                  : EVisibility::Collapsed;
-                       })
-                       .Image_Lambda([&state]() {
-                         return state.has_value() && *state
-                                    ? FCesiumEditorModule::GetStyle()->GetBrush(
-                                          TEXT("Cesium.Common.GreenTick"))
-                                    : FCesiumEditorModule::GetStyle()->GetBrush(
-                                          TEXT("Cesium.Common.RedX"));
-                       })] +
-         SHorizontalBox::Slot()
-             .AutoWidth()[SNew(STextBlock).Text(FText::FromString(label))];
-}
-
-} // namespace
 
 TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
     ACesium3DTileset* pTileset,
