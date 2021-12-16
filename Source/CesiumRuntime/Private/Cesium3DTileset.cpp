@@ -897,17 +897,6 @@ ACesium3DTileset::GetPlayerCameras() const {
     worldToMeters = pWorldSettings->WorldToMeters;
   }
 
-  UGameViewportClient* pViewport = pWorld->GetGameViewport();
-  if (!pViewport) {
-    return {};
-  }
-
-  FVector2D size;
-  pViewport->GetViewportSize(size);
-  if (size.X < 1.0 || size.Y < 1.0) {
-    return {};
-  }
-
   TSharedPtr<IStereoRendering, ESPMode::ThreadSafe> pStereoRendering = nullptr;
   if (GEngine) {
     pStereoRendering = GEngine->StereoRenderingDevice;
@@ -917,32 +906,6 @@ ACesium3DTileset::GetPlayerCameras() const {
   if (pStereoRendering && pStereoRendering->IsStereoEnabled()) {
     useStereoRendering = true;
   }
-
-  uint32 stereoLeftSizeX = static_cast<uint32>(size.X);
-  uint32 stereoLeftSizeY = static_cast<uint32>(size.Y);
-  uint32 stereoRightSizeX = static_cast<uint32>(size.X);
-  uint32 stereoRightSizeY = static_cast<uint32>(size.Y);
-  if (useStereoRendering) {
-    int32 _x;
-    int32 _y;
-
-    pStereoRendering->AdjustViewRect(
-        EStereoscopicPass::eSSP_LEFT_EYE,
-        _x,
-        _y,
-        stereoLeftSizeX,
-        stereoLeftSizeY);
-
-    pStereoRendering->AdjustViewRect(
-        EStereoscopicPass::eSSP_RIGHT_EYE,
-        _x,
-        _y,
-        stereoRightSizeX,
-        stereoRightSizeY);
-  }
-
-  FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
-  FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
 
   std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
   cameras.reserve(pWorld->GetNumPlayerControllers());
@@ -970,7 +933,39 @@ ACesium3DTileset::GetPlayerCameras() const {
     FRotator rotation;
     pPlayerController->GetPlayerViewPoint(location, rotation);
 
+    int32 sizeX, sizeY;
+    pPlayerController->GetViewportSize(sizeX, sizeY);
+    if (sizeX < 1 || sizeY < 1) {
+      continue;
+    }
+
     if (useStereoRendering) {
+      uint32 stereoLeftSizeX = static_cast<uint32>(sizeX);
+      uint32 stereoLeftSizeY = static_cast<uint32>(sizeY);
+      uint32 stereoRightSizeX = static_cast<uint32>(sizeX);
+      uint32 stereoRightSizeY = static_cast<uint32>(sizeY);
+      if (useStereoRendering) {
+        int32 _x;
+        int32 _y;
+
+        pStereoRendering->AdjustViewRect(
+            EStereoscopicPass::eSSP_LEFT_EYE,
+            _x,
+            _y,
+            stereoLeftSizeX,
+            stereoLeftSizeY);
+
+        pStereoRendering->AdjustViewRect(
+            EStereoscopicPass::eSSP_RIGHT_EYE,
+            _x,
+            _y,
+            stereoRightSizeX,
+            stereoRightSizeY);
+      }
+
+      FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
+      FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
+
       if (stereoLeftSize.X >= 1.0 && stereoLeftSize.Y >= 1.0) {
         FVector leftEyeLocation = location;
         FRotator leftEyeRotation = rotation;
@@ -1020,7 +1015,11 @@ ACesium3DTileset::GetPlayerCameras() const {
             hfov});
       }
     } else {
-      cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
+      cameras.push_back(UnrealCameraParameters{
+          FVector2D(sizeX, sizeY),
+          location,
+          rotation,
+          fov});
     }
   }
 
@@ -1090,7 +1089,31 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.fieldOfViewDegrees);
-  double aspectRatio = camera.viewportSize.X / camera.viewportSize.Y;
+
+  double aspectRatio;
+  glm::dvec2 size(camera.viewportSize.X, camera.viewportSize.Y);
+
+  if (camera.aspectRatio) {
+    // Use aspect ratio and recompute effective viewport size after black bars
+    // are added.
+    aspectRatio = *camera.aspectRatio;
+    double computedX = aspectRatio * camera.viewportSize.Y;
+    double computedY = camera.viewportSize.Y / aspectRatio;
+
+    double barWidth = camera.viewportSize.X - computedX;
+    double barHeight = camera.viewportSize.Y - computedY;
+
+    if (barWidth > 0.0 && barWidth > barHeight) {
+      // Black bars on the sides
+      size.x = computedX;
+    } else if (barHeight > 0.0 && barHeight > barWidth) {
+      // Black bars on the top and bottom
+      size.y = computedY;
+    }
+  } else {
+    aspectRatio = camera.viewportSize.X / camera.viewportSize.Y;
+  }
+
   double verticalFieldOfView =
       atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
 
@@ -1110,7 +1133,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
-      glm::dvec2(camera.viewportSize.X, camera.viewportSize.Y),
+      size,
       horizontalFieldOfView,
       verticalFieldOfView);
 }
@@ -1151,11 +1174,16 @@ ACesium3DTileset::GetEditorCameras() const {
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);
 
+    std::optional<double> aspectRatio =
+        pEditorViewportClient->IsAspectRatioConstrained()
+            ? std::make_optional(pEditorViewportClient->AspectRatio)
+            : std::nullopt;
+
     if (size.X < 1 || size.Y < 1) {
       continue;
     }
 
-    cameras.push_back({size, location, rotation, fov});
+    cameras.push_back({size, location, rotation, fov, aspectRatio});
   }
 
   return cameras;
