@@ -67,7 +67,7 @@ addTokenCheck(const FString& label, std::optional<bool>& state) {
              5.0f,
              0.0f,
              5.0f,
-             0.0f)[SNew(SImage)
+             3.0f)[SNew(SImage)
                        .Visibility_Lambda([&state]() {
                          return state.has_value() ? EVisibility::Visible
                                                   : EVisibility::Collapsed;
@@ -114,8 +114,10 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
     this->_assetTokenState.token = pTileset->GetIonAccessToken();
     pDiagnosticColumns->AddSlot()
         .Padding(5.0f, 20.0f, 5.0f, 5.0f)
+        .VAlign(EVerticalAlignment::VAlign_Top)
         .AutoWidth()
-        .FillWidth(0.5f)[createTokenPanel(pTileset, this->_assetTokenState)];
+        .FillWidth(
+            0.5f)[this->createTokenPanel(pTileset, this->_assetTokenState)];
   }
 
   this->_projectDefaultTokenState.name = TEXT("Project Default Access Token");
@@ -124,34 +126,42 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   pDiagnosticColumns->AddSlot()
       .Padding(5.0f, 20.0f, 5.0f, 5.0f)
+      .VAlign(EVerticalAlignment::VAlign_Top)
       .AutoWidth()
       .FillWidth(0.5f)
           [this->createTokenPanel(pTileset, this->_projectDefaultTokenState)];
 
-  // Don't let this panel be destroyed while the async operations below are in
-  // progress.
-  TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
-      StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
-
   if (FCesiumEditorModule::ion().isConnected()) {
+    // Don't let this panel be destroyed while the async operations below are in
+    // progress.
+    TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
+        StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
+
     FCesiumEditorModule::ion()
         .getConnection()
         ->asset(pTileset->GetIonAssetID())
         .thenInMainThread([pPanel](Response<Asset>&& asset) {
           pPanel->_assetExistsInUserAccount = asset.value.has_value();
         });
+
+    // Start a new row if we have more than two columns.
+    if (pDiagnosticColumns->NumSlots() >= 2) {
+      pMainVerticalBox->AddSlot().AutoHeight()[pDiagnosticColumns];
+      pDiagnosticColumns = SNew(SHorizontalBox);
+    }
+
+    pDiagnosticColumns->AddSlot()
+        .Padding(5.0f, 20.0f, 5.0f, 5.0f)
+        .VAlign(EVerticalAlignment::VAlign_Top)
+        .AutoWidth()
+        .FillWidth(0.5f)[this->createDiagnosticPanel(
+            TEXT("Asset"),
+            {addTokenCheck(
+                TEXT("Asset ID exists in your user account"),
+                this->_assetExistsInUserAccount)})];
   }
 
   pMainVerticalBox->AddSlot().AutoHeight()[pDiagnosticColumns];
-
-  pMainVerticalBox->AddSlot().AutoHeight().Padding(
-      0.0f,
-      20.0f,
-      0.0f,
-      0.0f)[SNew(SBox).HAlign(
-      EHorizontalAlignment::HAlign_Center)[addTokenCheck(
-      TEXT("Asset ID exists in current user account"),
-      this->_assetExistsInUserAccount)]];
 
   this->addRemedyButton(
       pMainVerticalBox,
@@ -196,8 +206,22 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
                         : EVisibility::Collapsed;
            })
            .AutoWrapText(true)
-           .Text(FText::FromString(
-               "No automatic remedies are possible because the current token does not authorize access to the specified asset ID, and the asset ID also does not exist in the signed-in Cesium ion account. Please check that the tileset's \"Ion Asset ID\" property is correct."))];
+           .Text(FText::FromString(FString::Format(
+               TEXT(
+                   "No automatic remedies are possible for Asset ID {0}, because:\n"
+                   " - The current token does not authorize access to the specified asset ID, and\n"
+                   " - The asset ID does not exist in your Cesium ion account.\n"
+                   "\n"
+                   "Please click the button below to open Cesium ion and check:\n"
+                   " - The Tileset's \"Ion Asset ID\" property is correct.\n"
+                   " - If the asset is from the \"Asset Depot\", verify that it has been added to \"My Assets\"."),
+               {pTileset->GetIonAssetID()})))];
+
+  this->addRemedyButton(
+      pMainVerticalBox,
+      TEXT("Open Cesium ion on the Web"),
+      &CesiumIonTokenTroubleshooting::canOpenCesiumIon,
+      &CesiumIonTokenTroubleshooting::openCesiumIon);
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -212,6 +236,27 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
                    .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
                    .Padding(
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pMainVerticalBox]]);
+}
+
+TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createDiagnosticPanel(
+    const FString& name,
+    const TArray<TSharedRef<SWidget>>& diagnostics) {
+  TSharedRef<SVerticalBox> pRows =
+      SNew(SVerticalBox) +
+      SVerticalBox::Slot().Padding(
+          0.0f,
+          5.0f,
+          0.0f,
+          5.0f)[SNew(SHeader).Content()
+                    [SNew(STextBlock)
+                         .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
+                         .Text(FText::FromString(name))]];
+
+  for (const TSharedRef<SWidget>& diagnostic : diagnostics) {
+    pRows->AddSlot().Padding(0.0f, 5.0f, 0.0f, 5.0f)[diagnostic];
+  }
+
+  return pRows;
 }
 
 TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
@@ -278,30 +323,14 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
             }
           });
 
-  TSharedRef<SVerticalBox> pRows =
-      SNew(SVerticalBox) +
-      SVerticalBox::Slot().Padding(
-          0.0f,
-          5.0f,
-          0.0f,
-          5.0f)[SNew(SHeader).Content()
-                    [SNew(STextBlock)
-                         .TextStyle(FCesiumEditorModule::GetStyle(), "Heading")
-                         .Text(FText::FromString(state.name))]];
-
-  pRows->AddSlot().Padding(
-      0.0f,
-      5.0f,
-      0.0f,
-      5.0f)[addTokenCheck(TEXT("Is a valid Cesium ion token"), state.isValid)];
-  pRows->AddSlot().Padding(0.0f, 5.0f, 0.0f, 5.0f)[addTokenCheck(
-      TEXT("Allows access to this asset"),
-      state.allowsAccessToAsset)];
-  pRows->AddSlot().Padding(0.0f, 5.0f, 0.0f, 5.0f)[addTokenCheck(
-      TEXT("Is associated with your user account"),
-      state.associatedWithUserAccount)];
-
-  return pRows;
+  return this->createDiagnosticPanel(
+      state.name,
+      {addTokenCheck(
+           TEXT("Allows access to this asset"),
+           state.allowsAccessToAsset),
+       addTokenCheck(
+           TEXT("Is associated with your user account"),
+           state.associatedWithUserAccount)});
 }
 
 void CesiumIonTokenTroubleshooting::addRemedyButton(
@@ -395,8 +424,9 @@ bool CesiumIonTokenTroubleshooting::canCreateNewProjectDefaultToken() const {
   }
 
   const TokenState& state = this->_projectDefaultTokenState;
-  return state.isValid == false || (state.allowsAccessToAsset == false &&
-                                    state.associatedWithUserAccount == false);
+  return FCesiumEditorModule::ion().isConnected() &&
+         (state.isValid == false || (state.allowsAccessToAsset == false &&
+                                     state.associatedWithUserAccount == false));
 }
 
 void CesiumIonTokenTroubleshooting::createNewProjectDefaultToken() {
@@ -438,6 +468,17 @@ void CesiumIonTokenTroubleshooting::createNewProjectDefaultToken() {
 
         pPanel->useProjectDefaultToken();
       });
+}
+
+bool CesiumIonTokenTroubleshooting::canOpenCesiumIon() const {
+  return FCesiumEditorModule::ion().isConnected();
+}
+
+void CesiumIonTokenTroubleshooting::openCesiumIon() {
+  FPlatformProcess::LaunchURL(
+      TEXT("https://cesium.com/ion/tokens"),
+      NULL,
+      NULL);
 }
 
 void CesiumIonTokenTroubleshooting::authorizeToken(const FString& token) {

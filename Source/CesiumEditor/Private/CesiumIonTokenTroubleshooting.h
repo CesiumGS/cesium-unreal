@@ -40,6 +40,10 @@ private:
   TokenState _projectDefaultTokenState{};
   std::optional<bool> _assetExistsInUserAccount;
 
+  TSharedRef<SWidget> createDiagnosticPanel(
+      const FString& name,
+      const TArray<TSharedRef<SWidget>>& diagnostics);
+
   TSharedRef<SWidget>
   createTokenPanel(ACesium3DTileset* pTileset, TokenState& state);
 
@@ -63,6 +67,9 @@ private:
 
   bool canCreateNewProjectDefaultToken() const;
   void createNewProjectDefaultToken();
+
+  bool canOpenCesiumIon() const;
+  void openCesiumIon();
 
   void authorizeToken(const FString& token);
 };
