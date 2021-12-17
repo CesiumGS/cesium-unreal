@@ -41,6 +41,8 @@
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
+#include "MoviePipelineOutputSetting.h"
+#include "MoviePipelineQueueEngineSubsystem.h"
 #include "PhysicsPublicCore.h"
 #include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
@@ -866,6 +868,36 @@ void ACesium3DTileset::DestroyTileset() {
 std::vector<ACesium3DTileset::UnrealCameraParameters>
 ACesium3DTileset::GetCameras() const {
   std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
+
+  // If we're movie rendering, the player camera's viewport is wrong. Update it
+  // from the movie settings. See:
+  // https://udn.unrealengine.com/s/question/0D54z00007LQvtdCAD/how-to-get-the-viewport-size-when-using-the-movie-render-queue
+  UMoviePipelineQueueEngineSubsystem* pMovies =
+      // GEditor->GetEditorSubsystem<UMoviePipelineQueueEngineSubsystem>();
+      GEngine->GetEngineSubsystem<UMoviePipelineQueueEngineSubsystem>();
+  if (pMovies) {
+    if (pMovies->IsRendering()) {
+      pMovies = pMovies;
+    }
+    UMoviePipelineQueue* pQueue = pMovies->GetQueue();
+    if (pQueue) {
+      TArray<UMoviePipelineExecutorJob*> jobs = pQueue->GetJobs();
+      if (jobs.Num() > 0) {
+        UMoviePipelineOutputSetting* pSettings =
+            jobs[0]
+                ->GetConfiguration()
+                ->FindSetting<UMoviePipelineOutputSetting>();
+        if (pSettings) {
+          for (UnrealCameraParameters& camera : cameras) {
+            camera.viewportSize = FVector2D(
+                pSettings->OutputResolution.X,
+                pSettings->OutputResolution.Y);
+          }
+          return cameras;
+        }
+      }
+    }
+  }
 
   std::vector<UnrealCameraParameters> sceneCaptures = this->GetSceneCaptures();
   cameras.insert(
