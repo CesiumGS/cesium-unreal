@@ -5,6 +5,8 @@
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumFeatureIDTexture.h"
+#include "CesiumFeatureTexture.h"
+#include "CesiumFeatureTextureProperty.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -477,7 +479,7 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
       *primitiveMetadata);
 }
 
-static void updateTextureCoordinatesForFeatureIdTextures(
+static void updateTextureCoordinatesForMetadata(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
     bool duplicateVertices,
@@ -499,6 +501,23 @@ static void updateTextureCoordinatesForFeatureIdTextures(
         "TEXCOORD_" + std::to_string(featureIdTexture.getFeatureIdTextureView()
                                          .getTextureCoordinateIndex()),
         textureCoordinateMap);
+  }
+
+  for (const FCesiumFeatureTexture& featureTexture :
+       UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextures(metadata)) {
+    for (const auto& property :
+         featureTexture.getFeatureTextureView().getProperties()) {
+
+      updateTextureCoordinates(
+          model,
+          primitive,
+          duplicateVertices,
+          vertices,
+          indices,
+          "TEXCOORD_" +
+              std::to_string(property.second.getTextureCoordinateIndex()),
+          textureCoordinateMap);
+    }
   }
 }
 
@@ -914,7 +933,7 @@ static void loadPrimitive(
   primitiveResult.encodedMetadata =
       CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
           primitiveResult.Metadata);
-  updateTextureCoordinatesForFeatureIdTextures(
+  updateTextureCoordinatesForMetadata(
       model,
       primitive,
       duplicateVertices,
@@ -1866,7 +1885,7 @@ static void loadModelGameThreadPart(
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
     pMesh->GetBodySetup()->TriMeshes.Add(loadResult.pCollisionMesh);
-    pMesh->GetBodySetup()->UVInfo = loadResult.uvInfo;
+    pMesh->GetBodySetup()->UVInfo = std::move(loadResult.uvInfo);
 #else
     pMesh->GetBodySetup()->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif

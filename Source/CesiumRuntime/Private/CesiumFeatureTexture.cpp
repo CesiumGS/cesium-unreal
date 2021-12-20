@@ -15,17 +15,30 @@ FCesiumFeatureTexture::FCesiumFeatureTexture(
         std::string,
         CesiumGltf::FeatureTexturePropertyView>& properties =
         this->_featureTextureView.getProperties();
-    this->_properties.Reserve(properties.size());
-    for (const auto& propertyView : properties) {
-      this->_properties.Add(
-          FString(UTF8_TO_TCHAR(propertyView.first.c_str())),
-          FCesiumFeatureTextureProperty(propertyView.second));
+    this->_propertyKeys.Reserve(properties.size());
+    for (auto propertyView : properties) {
+      this->_propertyKeys.Emplace(UTF8_TO_TCHAR(propertyView.first.c_str()));
     }
   }
 }
 
-const TMap<FString, FCesiumFeatureTextureProperty>&
-UCesiumFeatureTextureBlueprintLibrary::GetProperties(
-    UPARAM(ref) const FCesiumFeatureTexture& featureTexture) {
-  return featureTexture._properties;
+const TArray<FString>& UCesiumFeatureTextureBlueprintLibrary::GetPropertyKeys(
+    UPARAM(ref) const FCesiumFeatureTexture& FeatureTexture) {
+  return FeatureTexture._propertyKeys;
+}
+
+FCesiumFeatureTextureProperty
+UCesiumFeatureTextureBlueprintLibrary::FindProperty(
+    UPARAM(ref) const FCesiumFeatureTexture& FeatureTexture,
+    const FString& PropertyName) {
+
+  const std::unordered_map<std::string, CesiumGltf::FeatureTexturePropertyView>&
+      properties = FeatureTexture._featureTextureView.getProperties();
+
+  auto propertyIt = properties.find(TCHAR_TO_UTF8(*PropertyName));
+  if (propertyIt == properties.end()) {
+    return FCesiumFeatureTextureProperty();
+  }
+
+  return FCesiumFeatureTextureProperty(propertyIt->second);
 }

@@ -63,6 +63,7 @@ class CESIUMRUNTIME_API UCesiumFeatureTexturePropertyBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
+public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,

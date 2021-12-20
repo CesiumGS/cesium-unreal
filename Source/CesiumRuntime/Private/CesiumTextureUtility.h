@@ -78,9 +78,20 @@ public:
     EncodedMetadataFeatureTable encodedFeatureTable;
   };
 
+  struct EncodedFeatureTextureProperty {
+    FString name;
+    LoadedTextureResult* pTexture;
+  };
+
+  struct EncodedFeatureTexture {
+    FString name;
+    std::vector<EncodedFeatureTextureProperty> properties;
+  };
+
   struct EncodedMetadataPrimitive {
     std::vector<EncodedFeatureIdTexture> encodedFeatureIdTextures;
     std::vector<EncodedVertexMetadata> encodedVertexMetadata;
+    std::vector<EncodedFeatureTexture> encodedFeatureTextures;
   };
 
   // TODO: documentation

@@ -73,6 +73,16 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     this->_featureIDTextures.Add(
         FCesiumFeatureIDTexture(model, featureIDTexture));
   }
+
+  for (const std::string& featureTextureId :
+       primitiveMetadata.featureTextures) {
+    const auto& featureTextureIt =
+        metadata.featureTextures.find(featureTextureId);
+    this->_featureTextures.Reserve(metadata.featureTextures.size());
+    if (featureTextureIt != metadata.featureTextures.end()) {
+      this->_featureTextures.Emplace(model, featureTextureIt->second);
+    }
+  }
 }
 
 const TArray<FCesiumVertexMetadata>&
@@ -85,6 +95,12 @@ const TArray<FCesiumFeatureIDTexture>&
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
   return MetadataPrimitive._featureIDTextures;
+}
+
+const TArray<FCesiumFeatureTexture>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextures(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureTextures;
 }
 
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(

@@ -2,7 +2,7 @@
 
 #include "CesiumFeatureTextureProperty.h"
 #include "CesiumGltf/FeatureTextureView.h"
-#include "Containers/Map.h"
+#include "Containers/Array.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureTexture.generated.h"
 
@@ -22,9 +22,13 @@ public:
       const CesiumGltf::Model& model,
       const CesiumGltf::FeatureTexture& featureTexture);
 
+  const CesiumGltf::FeatureTextureView& getFeatureTextureView() const {
+    return this->_featureTextureView;
+  }
+
 private:
   CesiumGltf::FeatureTextureView _featureTextureView;
-  TMap<FString, FCesiumFeatureTextureProperty> _properties;
+  TArray<FString> _propertyKeys;
 
   friend class UCesiumFeatureTextureBlueprintLibrary;
 };
@@ -34,10 +38,19 @@ class CESIUMRUNTIME_API UCesiumFeatureTextureBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
+public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTexture")
-  static const TMap<FString, FCesiumFeatureTextureProperty>&
-  GetProperties(UPARAM(ref) const FCesiumFeatureTexture& featureTexture);
+  static const TArray<FString>&
+  GetPropertyKeys(UPARAM(ref) const FCesiumFeatureTexture& FeatureTexture);
+
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTexture")
+  static FCesiumFeatureTextureProperty FindProperty(
+      UPARAM(ref) const FCesiumFeatureTexture& FeatureTexture,
+      const FString& PropertyName);
 };
