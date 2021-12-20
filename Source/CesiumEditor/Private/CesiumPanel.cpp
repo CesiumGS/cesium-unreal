@@ -10,6 +10,7 @@
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
 #include "LevelEditor.h"
+#include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -52,6 +53,9 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
       FExecuteAction::CreateSP(this, &CesiumPanel::uploadToIon),
       FCanExecuteAction::CreateStatic(isSignedIn));
   commandList->MapAction(
+      FCesiumCommands::Get().OpenTokenSelector,
+      FExecuteAction::CreateSP(this, &CesiumPanel::openTokenSelector));
+  commandList->MapAction(
       FCesiumCommands::Get().SignOut,
       FExecuteAction::CreateSP(this, &CesiumPanel::signOut),
       FCanExecuteAction::CreateStatic(isSignedIn));
@@ -66,6 +70,7 @@ TSharedRef<SWidget> CesiumPanel::Toolbar() {
 
   builder.AddToolBarButton(FCesiumCommands::Get().AddFromIon);
   builder.AddToolBarButton(FCesiumCommands::Get().UploadToIon);
+  builder.AddToolBarButton(FCesiumCommands::Get().OpenTokenSelector);
   builder.AddToolBarButton(FCesiumCommands::Get().OpenDocumentation);
   builder.AddToolBarButton(FCesiumCommands::Get().OpenSupport);
   builder.AddToolBarButton(FCesiumCommands::Get().SignOut);
@@ -228,4 +233,8 @@ void CesiumPanel::openSupport() {
       TEXT("https://community.cesium.com/"),
       NULL,
       NULL);
+}
+
+void CesiumPanel::openTokenSelector() {
+  SelectCesiumIonToken::SelectNewToken();
 }

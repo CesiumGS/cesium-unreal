@@ -157,6 +157,10 @@ void FCesiumEditorModule::StartupModule() {
         StyleSet,
         "Cesium.Common.OpenSupport",
         "FontAwesome/hands-helping-solid");
+    registerIcon(
+        StyleSet,
+        "Cesium.Common.OpenTokenSelector",
+        "FontAwesome/key-solid");
 
     StyleSet->Set(
         "Cesium.Common.GreenTick",
