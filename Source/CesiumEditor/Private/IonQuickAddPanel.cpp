@@ -7,6 +7,7 @@
 #include "CesiumIonRasterOverlay.h"
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
+#include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyle.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -176,7 +177,31 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
         TEXT("Cannot add an ion asset without an active connection"));
     return;
   }
-  connection->asset(item->tilesetID)
+
+  // SelectCesiumIonToken::SelectTokenIfNecessary()
+  //    .thenInMainThread(
+  //        [connection, tilesetID = item->tilesetID](
+  //            const std::optional<Token>& maybeToken) { return maybeToken; })
+  //    .thenInMainThread([connection, tilesetID = item->tilesetID](
+  //                          std::optional<Token>&& maybeToken) {
+  //      if (maybeToken) {
+  //        return connection->asset(tilesetID);
+  //      } else {
+  //        return connection->getAsyncSystem().createResolvedFuture(
+  //            Response<Asset>());
+  //      }
+  //    });
+
+  SelectCesiumIonToken::SelectTokenIfNecessary()
+      .thenInMainThread([connection, tilesetID = item->tilesetID](
+                            const std::optional<Token>& maybeToken) {
+        if (maybeToken) {
+          return connection->asset(tilesetID);
+        } else {
+          return connection->getAsyncSystem().createResolvedFuture(
+              Response<Asset>());
+        }
+      })
       .thenInMainThread([item, connection](Response<Asset>&& response) {
         if (!response.value.has_value()) {
           return connection->getAsyncSystem().createResolvedFuture<int64_t>(

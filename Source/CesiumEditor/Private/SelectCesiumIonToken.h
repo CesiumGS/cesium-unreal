@@ -16,7 +16,28 @@ class SelectCesiumIonToken : public SWindow {
   SLATE_END_ARGS()
 
 public:
-  static CesiumAsync::SharedFuture<std::optional<Token>> SelectNewToken();
+  /**
+   * Opens a panel to allow the user to select a new token.
+   *
+   * @return A future that resolves when the panel is closed. It resolves to the
+   * selected token if there was one, or to std::nullopt if the panel was closed
+   * without selecting a token.
+   */
+  static CesiumAsync::SharedFuture<std::optional<CesiumIonClient::Token>>
+  SelectNewToken();
+
+  /**
+   * Opens a panel to allow the user to select a new token if a project default
+   * token is not already set. If the project defalut token _is_ set, the future
+   * immediately resolves to the previously-set token.
+   *
+   * @return A future that resolves when the panel is closed or when it does not
+   * need to be opened in the first place. It resolves to the selected token if
+   * there was one, or to std::nullopt if the panel was closed without selecting
+   * a token.
+   */
+  static CesiumAsync::SharedFuture<std::optional<CesiumIonClient::Token>>
+  SelectTokenIfNecessary();
 
   SelectCesiumIonToken();
   virtual ~SelectCesiumIonToken();

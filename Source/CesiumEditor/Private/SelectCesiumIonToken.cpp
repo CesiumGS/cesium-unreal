@@ -35,9 +35,9 @@ SelectCesiumIonToken::SelectNewToken() {
 
     Panel->GetOnWindowClosedEvent().AddLambda(
         [Panel](const TSharedRef<SWindow>& pWindow) {
-          // Promise is still outstanding, so resolve it now (no token was
-          // selected).
           if (Panel->_promise) {
+            // Promise is still outstanding, so resolve it now (no token was
+            // selected).
             Panel->_promise->resolve(std::nullopt);
           }
           SelectCesiumIonToken::_pExistingPanel.Reset();
@@ -46,6 +46,23 @@ SelectCesiumIonToken::SelectNewToken() {
   }
 
   return *SelectCesiumIonToken::_pExistingPanel->_future;
+}
+
+CesiumAsync::SharedFuture<std::optional<Token>>
+SelectCesiumIonToken::SelectTokenIfNecessary() {
+  FString token = GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken;
+  if (!token.IsEmpty()) {
+    Token result;
+    result.token = TCHAR_TO_UTF8(*token);
+    result.id = TCHAR_TO_UTF8(
+        *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId);
+    return FCesiumEditorModule::ion()
+        .getAsyncSystem()
+        .createResolvedFuture(std::make_optional(std::move(result)))
+        .share();
+  } else {
+    return SelectCesiumIonToken::SelectNewToken();
+  }
 }
 
 SelectCesiumIonToken::SelectCesiumIonToken() {
