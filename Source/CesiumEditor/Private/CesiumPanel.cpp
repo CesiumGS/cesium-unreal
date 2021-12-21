@@ -38,7 +38,7 @@ void CesiumPanel::Tick(
 
 static bool isSignedIn() {
   return FCesiumEditorModule::ion().isConnected() &&
-         FCesiumEditorModule::ion().refreshAssetAccessTokenIfNeeded();
+         FCesiumEditorModule::ion().refreshProjectDefaultTokenIfNeeded();
 }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {

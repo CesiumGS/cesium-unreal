@@ -44,7 +44,7 @@ CesiumIonPanel::CesiumIonPanel()
           this,
           &CesiumIonPanel::Refresh);
   this->_assetAccessTokenUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().AssetAccessTokenUpdated.AddRaw(
+      FCesiumEditorModule::ion().ProjectDefaultTokenUpdated.AddRaw(
           this,
           &CesiumIonPanel::Refresh);
   this->_sortColumnName = ColumnName_DateAdded;
@@ -52,7 +52,7 @@ CesiumIonPanel::CesiumIonPanel()
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
-  FCesiumEditorModule::ion().AssetAccessTokenUpdated.Remove(
+  FCesiumEditorModule::ion().ProjectDefaultTokenUpdated.Remove(
       this->_assetAccessTokenUpdatedDelegateHandle);
   FCesiumEditorModule::ion().AssetsUpdated.Remove(
       this->_assetsUpdatedDelegateHandle);
@@ -411,7 +411,7 @@ void CesiumIonPanel::Refresh() {
   // Don't show assets until we have a valid token for accessing them.
   static const Assets emptyAssets{};
   const Assets& assets =
-      FCesiumEditorModule::ion().getAssetAccessToken().token.empty()
+      FCesiumEditorModule::ion().getProjectDefaultToken().token.empty()
           ? emptyAssets
           : FCesiumEditorModule::ion().getAssets();
 
@@ -469,7 +469,7 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
   pTileset->SetActorLabel(UTF8_TO_TCHAR(item->name.c_str()));
   pTileset->SetIonAssetID(item->id);
   pTileset->SetIonAccessToken(UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
+      FCesiumEditorModule::ion().getProjectDefaultToken().token.c_str()));
 
   pTileset->RerunConstructionScripts();
 }

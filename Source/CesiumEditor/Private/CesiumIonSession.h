@@ -36,11 +36,11 @@ public:
   bool isTokenListLoaded() const { return this->_tokens.has_value(); }
   bool isLoadingTokenList() const { return this->_isLoadingTokens; }
 
-  bool isAssetAccessTokenLoaded() const {
-    return this->_assetAccessToken.has_value();
+  bool isProjectDefaultTokenLoaded() const {
+    return this->_projectDefaultToken.has_value();
   }
-  bool isLoadingAssetAccessToken() const {
-    return this->_isLoadingAssetAccessToken;
+  bool isLoadingProjectDefaultToken() const {
+    return this->_isLoadingProjectDefaultToken;
   }
 
   void connect();
@@ -50,26 +50,26 @@ public:
   void refreshProfile();
   void refreshAssets();
   void refreshTokens();
-  void refreshAssetAccessToken();
+  void refreshProjectDefaultToken();
 
   FIonUpdated ConnectionUpdated;
   FIonUpdated ProfileUpdated;
   FIonUpdated AssetsUpdated;
   FIonUpdated TokensUpdated;
-  FIonUpdated AssetAccessTokenUpdated;
+  FIonUpdated ProjectDefaultTokenUpdated;
 
   const std::optional<CesiumIonClient::Connection>& getConnection() const;
   const CesiumIonClient::Profile& getProfile();
   const CesiumIonClient::Assets& getAssets();
   const std::vector<CesiumIonClient::Token>& getTokens();
-  const CesiumIonClient::Token& getAssetAccessToken();
+  const CesiumIonClient::Token& getProjectDefaultToken();
 
   const std::string& getAuthorizeUrl() const { return this->_authorizeUrl; }
 
   bool refreshProfileIfNeeded();
   bool refreshAssetsIfNeeded();
   bool refreshTokensIfNeeded();
-  bool refreshAssetAccessTokenIfNeeded();
+  bool refreshProjectDefaultTokenIfNeeded();
 
   /**
    * Finds the details of the specified token in the user's account.
@@ -94,14 +94,14 @@ private:
   std::optional<CesiumIonClient::Profile> _profile;
   std::optional<CesiumIonClient::Assets> _assets;
   std::optional<std::vector<CesiumIonClient::Token>> _tokens;
-  std::optional<CesiumIonClient::Token> _assetAccessToken;
+  std::optional<CesiumIonClient::Token> _projectDefaultToken;
 
   bool _isConnecting;
   bool _isResuming;
   bool _isLoadingProfile;
   bool _isLoadingAssets;
   bool _isLoadingTokens;
-  bool _isLoadingAssetAccessToken;
+  bool _isLoadingProjectDefaultToken;
 
   bool _loadProfileQueued;
   bool _loadAssetsQueued;

@@ -17,13 +17,13 @@ CesiumIonSession::CesiumIonSession(
       _profile(std::nullopt),
       _assets(std::nullopt),
       _tokens(std::nullopt),
-      _assetAccessToken(std::nullopt),
+      _projectDefaultToken(std::nullopt),
       _isConnecting(false),
       _isResuming(false),
       _isLoadingProfile(false),
       _isLoadingAssets(false),
       _isLoadingTokens(false),
-      _isLoadingAssetAccessToken(false),
+      _isLoadingProjectDefaultToken(false),
       _loadProfileQueued(false),
       _loadAssetsQueued(false),
       _loadTokensQueued(false),
@@ -113,7 +113,7 @@ void CesiumIonSession::disconnect() {
   this->_profile.reset();
   this->_assets.reset();
   this->_tokens.reset();
-  this->_assetAccessToken.reset();
+  this->_projectDefaultToken.reset();
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   pSettings->UserAccessToken.Empty();
@@ -123,7 +123,7 @@ void CesiumIonSession::disconnect() {
   this->ProfileUpdated.Broadcast();
   this->AssetsUpdated.Broadcast();
   this->TokensUpdated.Broadcast();
-  this->AssetAccessTokenUpdated.Broadcast();
+  this->ProjectDefaultTokenUpdated.Broadcast();
 }
 
 void CesiumIonSession::refreshProfile() {
@@ -189,7 +189,7 @@ void CesiumIonSession::refreshTokens() {
                             : std::nullopt;
         this->TokensUpdated.Broadcast();
         this->refreshTokensIfNeeded();
-        this->refreshAssetAccessTokenIfNeeded();
+        this->refreshProjectDefaultTokenIfNeeded();
       })
       .catchInMainThread([this](std::exception&& e) {
         this->_isLoadingTokens = false;
@@ -199,8 +199,8 @@ void CesiumIonSession::refreshTokens() {
       });
 }
 
-void CesiumIonSession::refreshAssetAccessToken() {
-  if (this->_isLoadingAssetAccessToken) {
+void CesiumIonSession::refreshProjectDefaultToken() {
+  if (this->_isLoadingProjectDefaultToken) {
     return;
   }
 
@@ -210,7 +210,7 @@ void CesiumIonSession::refreshAssetAccessToken() {
     return;
   }
 
-  this->_isLoadingAssetAccessToken = true;
+  this->_isLoadingProjectDefaultToken = true;
   this->_loadAssetAccessTokenQueued = false;
 
   std::string tokenName = TCHAR_TO_UTF8(FApp::GetProjectName());
@@ -242,14 +242,14 @@ void CesiumIonSession::refreshAssetAccessToken() {
 
   std::move(futureToken)
       .thenInMainThread([this](CesiumIonClient::Token&& token) {
-        this->_assetAccessToken = std::move(token);
-        this->_isLoadingAssetAccessToken = false;
-        this->AssetAccessTokenUpdated.Broadcast();
+        this->_projectDefaultToken = std::move(token);
+        this->_isLoadingProjectDefaultToken = false;
+        this->ProjectDefaultTokenUpdated.Broadcast();
       })
       .catchInMainThread([this](std::exception&& e) {
-        this->_assetAccessToken = std::nullopt;
-        this->_isLoadingAssetAccessToken = false;
-        this->AssetAccessTokenUpdated.Broadcast();
+        this->_projectDefaultToken = std::nullopt;
+        this->_isLoadingProjectDefaultToken = false;
+        this->ProjectDefaultTokenUpdated.Broadcast();
       });
 }
 
@@ -288,12 +288,12 @@ const std::vector<CesiumIonClient::Token>& CesiumIonSession::getTokens() {
   }
 }
 
-const CesiumIonClient::Token& CesiumIonSession::getAssetAccessToken() {
+const CesiumIonClient::Token& CesiumIonSession::getProjectDefaultToken() {
   static const CesiumIonClient::Token empty{};
-  if (this->_assetAccessToken) {
-    return *this->_assetAccessToken;
+  if (this->_projectDefaultToken) {
+    return *this->_projectDefaultToken;
   } else {
-    this->refreshAssetAccessToken();
+    this->refreshProjectDefaultToken();
     return empty;
   }
 }
@@ -319,12 +319,12 @@ bool CesiumIonSession::refreshTokensIfNeeded() {
   return this->isTokenListLoaded();
 }
 
-bool CesiumIonSession::refreshAssetAccessTokenIfNeeded() {
+bool CesiumIonSession::refreshProjectDefaultTokenIfNeeded() {
   if (this->_loadAssetAccessTokenQueued ||
-      !this->_assetAccessToken.has_value()) {
-    this->refreshAssetAccessToken();
+      !this->_projectDefaultToken.has_value()) {
+    this->refreshProjectDefaultToken();
   }
-  return this->isAssetAccessTokenLoaded();
+  return this->isProjectDefaultTokenLoaded();
 }
 
 Future<std::optional<Token>>

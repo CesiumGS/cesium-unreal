@@ -423,7 +423,7 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
   if (assetID != -1) {
     pTilesetActor->SetIonAssetID(assetID);
     pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
-        FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
+        FCesiumEditorModule::ion().getProjectDefaultToken().token.c_str()));
   }
   return pTilesetActor;
 }
@@ -479,7 +479,7 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
   pOverlay->MaterialLayerKey = overlayKey;
   pOverlay->IonAssetID = assetID;
   pOverlay->IonAccessToken = UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
+      FCesiumEditorModule::ion().getProjectDefaultToken().token.c_str());
   pOverlay->SetActive(true);
   pOverlay->OnComponentCreated();
 
