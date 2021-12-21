@@ -36,9 +36,7 @@ void CesiumPanel::Tick(
   SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
-static bool isSignedIn() {
-  return FCesiumEditorModule::ion().isConnected();
-}
+static bool isSignedIn() { return FCesiumEditorModule::ion().isConnected(); }
 
 TSharedRef<SWidget> CesiumPanel::Toolbar() {
   TSharedRef<FUICommandList> commandList = MakeShared<FUICommandList>();
