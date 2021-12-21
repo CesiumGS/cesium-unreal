@@ -50,19 +50,21 @@ SelectCesiumIonToken::SelectNewToken() {
 
 CesiumAsync::SharedFuture<std::optional<Token>>
 SelectCesiumIonToken::SelectTokenIfNecessary() {
-  FString token = GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken;
-  if (!token.IsEmpty()) {
-    Token result;
-    result.token = TCHAR_TO_UTF8(*token);
-    result.id = TCHAR_TO_UTF8(
-        *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId);
-    return FCesiumEditorModule::ion()
-        .getAsyncSystem()
-        .createResolvedFuture(std::make_optional(std::move(result)))
-        .share();
-  } else {
-    return SelectCesiumIonToken::SelectNewToken();
-  }
+  return FCesiumEditorModule::ion()
+      .getProjectDefaultTokenDetails()
+      .thenInMainThread([](const Token& token) {
+        if (token.token.empty()) {
+          return SelectCesiumIonToken::SelectNewToken().thenImmediately(
+              [](const std::optional<Token>& maybeToken) {
+                return maybeToken;
+              });
+        } else {
+          return FCesiumEditorModule::ion()
+              .getAsyncSystem()
+              .createResolvedFuture(std::make_optional(token));
+        }
+      })
+      .share();
 }
 
 SelectCesiumIonToken::SelectCesiumIonToken() {
@@ -268,6 +270,8 @@ FReply SelectCesiumIonToken::UseOrCreate() {
   getToken().thenInMainThread(
       [pPanel, promise = std::move(promise)](Response<Token>&& response) {
         if (response.value) {
+          FCesiumEditorModule::ion().invalidateProjectDefaultTokenDetails();
+
           UCesiumRuntimeSettings* pSettings =
               GetMutableDefault<UCesiumRuntimeSettings>();
 

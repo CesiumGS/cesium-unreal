@@ -178,20 +178,6 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
     return;
   }
 
-  // SelectCesiumIonToken::SelectTokenIfNecessary()
-  //    .thenInMainThread(
-  //        [connection, tilesetID = item->tilesetID](
-  //            const std::optional<Token>& maybeToken) { return maybeToken; })
-  //    .thenInMainThread([connection, tilesetID = item->tilesetID](
-  //                          std::optional<Token>&& maybeToken) {
-  //      if (maybeToken) {
-  //        return connection->asset(tilesetID);
-  //      } else {
-  //        return connection->getAsyncSystem().createResolvedFuture(
-  //            Response<Asset>());
-  //      }
-  //    });
-
   SelectCesiumIonToken::SelectTokenIfNecessary()
       .thenInMainThread([connection, tilesetID = item->tilesetID](
                             const std::optional<Token>& maybeToken) {

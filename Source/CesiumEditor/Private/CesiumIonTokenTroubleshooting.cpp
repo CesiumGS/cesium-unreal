@@ -8,6 +8,7 @@
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
 #include "ScopedTransaction.h"
+#include "SelectCesiumIonToken.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -450,21 +451,14 @@ void CesiumIonTokenTroubleshooting::createNewProjectDefaultToken() {
   TSharedRef<CesiumIonTokenTroubleshooting> pPanel =
       StaticCastSharedRef<CesiumIonTokenTroubleshooting>(this->AsShared());
 
-  std::string tokenName = TCHAR_TO_UTF8(FApp::GetProjectName());
-  tokenName += " (Created by Cesium for Unreal)";
-  maybeConnection
-      ->createToken(
-          tokenName,
-          {"assets:read"},
-          std::vector<int64_t>{this->_pTileset->GetIonAssetID()})
-      .thenInMainThread([pPanel](Response<Token>&& newToken) {
-        if (!newToken.value) {
-          UE_LOG(LogCesiumEditor, Error, TEXT("Failed to create token"));
+  SelectCesiumIonToken::SelectNewToken().thenInMainThread(
+      [pPanel](const std::optional<Token>& newToken) {
+        if (!newToken) {
           return;
         }
 
         GetMutableDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken =
-            UTF8_TO_TCHAR(newToken.value->token.c_str());
+            UTF8_TO_TCHAR(newToken->token.c_str());
 
         pPanel->useProjectDefaultToken();
       });

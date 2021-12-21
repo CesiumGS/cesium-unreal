@@ -4,6 +4,7 @@
 
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetAccessor.h"
+#include "CesiumAsync/SharedFuture.h"
 #include "CesiumIonClient/Connection.h"
 #include <memory>
 
@@ -36,13 +37,6 @@ public:
   bool isTokenListLoaded() const { return this->_tokens.has_value(); }
   bool isLoadingTokenList() const { return this->_isLoadingTokens; }
 
-  bool isProjectDefaultTokenLoaded() const {
-    return this->_projectDefaultToken.has_value();
-  }
-  bool isLoadingProjectDefaultToken() const {
-    return this->_isLoadingProjectDefaultToken;
-  }
-
   void connect();
   void resume();
   void disconnect();
@@ -50,26 +44,22 @@ public:
   void refreshProfile();
   void refreshAssets();
   void refreshTokens();
-  void refreshProjectDefaultToken();
 
   FIonUpdated ConnectionUpdated;
   FIonUpdated ProfileUpdated;
   FIonUpdated AssetsUpdated;
   FIonUpdated TokensUpdated;
-  FIonUpdated ProjectDefaultTokenUpdated;
 
   const std::optional<CesiumIonClient::Connection>& getConnection() const;
   const CesiumIonClient::Profile& getProfile();
   const CesiumIonClient::Assets& getAssets();
   const std::vector<CesiumIonClient::Token>& getTokens();
-  const CesiumIonClient::Token& getProjectDefaultToken();
 
   const std::string& getAuthorizeUrl() const { return this->_authorizeUrl; }
 
   bool refreshProfileIfNeeded();
   bool refreshAssetsIfNeeded();
   bool refreshTokensIfNeeded();
-  bool refreshProjectDefaultTokenIfNeeded();
 
   /**
    * Finds the details of the specified token in the user's account.
@@ -86,6 +76,11 @@ public:
   CesiumAsync::Future<std::optional<CesiumIonClient::Token>>
   findToken(const FString& token) const;
 
+  CesiumAsync::SharedFuture<CesiumIonClient::Token>
+  getProjectDefaultTokenDetails();
+
+  void invalidateProjectDefaultTokenDetails();
+
 private:
   CesiumAsync::AsyncSystem _asyncSystem;
   std::shared_ptr<CesiumAsync::IAssetAccessor> _pAssetAccessor;
@@ -94,19 +89,19 @@ private:
   std::optional<CesiumIonClient::Profile> _profile;
   std::optional<CesiumIonClient::Assets> _assets;
   std::optional<std::vector<CesiumIonClient::Token>> _tokens;
-  std::optional<CesiumIonClient::Token> _projectDefaultToken;
+
+  std::optional<CesiumAsync::SharedFuture<CesiumIonClient::Token>>
+      _projectDefaultTokenDetailsFuture;
 
   bool _isConnecting;
   bool _isResuming;
   bool _isLoadingProfile;
   bool _isLoadingAssets;
   bool _isLoadingTokens;
-  bool _isLoadingProjectDefaultToken;
 
   bool _loadProfileQueued;
   bool _loadAssetsQueued;
   bool _loadTokensQueued;
-  bool _loadAssetAccessTokenQueued;
 
   std::string _authorizeUrl;
 };

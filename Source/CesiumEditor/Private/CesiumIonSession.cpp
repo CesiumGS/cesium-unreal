@@ -2,6 +2,7 @@
 
 #include "CesiumIonSession.h"
 #include "CesiumEditorSettings.h"
+#include "CesiumRuntimeSettings.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
 
@@ -17,13 +18,11 @@ CesiumIonSession::CesiumIonSession(
       _profile(std::nullopt),
       _assets(std::nullopt),
       _tokens(std::nullopt),
-      _projectDefaultToken(std::nullopt),
       _isConnecting(false),
       _isResuming(false),
       _isLoadingProfile(false),
       _isLoadingAssets(false),
       _isLoadingTokens(false),
-      _isLoadingProjectDefaultToken(false),
       _loadProfileQueued(false),
       _loadAssetsQueued(false),
       _loadTokensQueued(false),
@@ -113,7 +112,6 @@ void CesiumIonSession::disconnect() {
   this->_profile.reset();
   this->_assets.reset();
   this->_tokens.reset();
-  this->_projectDefaultToken.reset();
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   pSettings->UserAccessToken.Empty();
@@ -123,7 +121,6 @@ void CesiumIonSession::disconnect() {
   this->ProfileUpdated.Broadcast();
   this->AssetsUpdated.Broadcast();
   this->TokensUpdated.Broadcast();
-  this->ProjectDefaultTokenUpdated.Broadcast();
 }
 
 void CesiumIonSession::refreshProfile() {
@@ -189,67 +186,12 @@ void CesiumIonSession::refreshTokens() {
                             : std::nullopt;
         this->TokensUpdated.Broadcast();
         this->refreshTokensIfNeeded();
-        this->refreshProjectDefaultTokenIfNeeded();
       })
       .catchInMainThread([this](std::exception&& e) {
         this->_isLoadingTokens = false;
         this->_tokens = std::nullopt;
         this->TokensUpdated.Broadcast();
         this->refreshTokensIfNeeded();
-      });
-}
-
-void CesiumIonSession::refreshProjectDefaultToken() {
-  if (this->_isLoadingProjectDefaultToken) {
-    return;
-  }
-
-  if (!this->_connection || !this->isTokenListLoaded()) {
-    this->_loadAssetAccessTokenQueued = true;
-    this->refreshTokens();
-    return;
-  }
-
-  this->_isLoadingProjectDefaultToken = true;
-  this->_loadAssetAccessTokenQueued = false;
-
-  std::string tokenName = TCHAR_TO_UTF8(FApp::GetProjectName());
-  tokenName += " (Created by Cesium for Unreal)";
-
-  // TODO: rather than find a token by name, it would be better to store the
-  // token ID in the UE project somewhere.
-  const std::vector<Token>& tokenList = this->getTokens();
-  const Token* pFound = nullptr;
-
-  for (auto& token : tokenList) {
-    if (token.name == tokenName) {
-      pFound = &token;
-    }
-  }
-
-  CesiumAsync::Future<Token> futureToken =
-      pFound ? this->_asyncSystem.createResolvedFuture<Token>(Token(*pFound))
-             : this->_connection
-                   ->createToken(tokenName, {"assets:read"}, std::nullopt)
-                   .thenInMainThread(
-                       [this](CesiumIonClient::Response<Token>&& token) {
-                         if (token.value) {
-                           return token.value.value();
-                         } else {
-                           throw std::runtime_error("Failed to create token.");
-                         }
-                       });
-
-  std::move(futureToken)
-      .thenInMainThread([this](CesiumIonClient::Token&& token) {
-        this->_projectDefaultToken = std::move(token);
-        this->_isLoadingProjectDefaultToken = false;
-        this->ProjectDefaultTokenUpdated.Broadcast();
-      })
-      .catchInMainThread([this](std::exception&& e) {
-        this->_projectDefaultToken = std::nullopt;
-        this->_isLoadingProjectDefaultToken = false;
-        this->ProjectDefaultTokenUpdated.Broadcast();
       });
 }
 
@@ -288,16 +230,6 @@ const std::vector<CesiumIonClient::Token>& CesiumIonSession::getTokens() {
   }
 }
 
-const CesiumIonClient::Token& CesiumIonSession::getProjectDefaultToken() {
-  static const CesiumIonClient::Token empty{};
-  if (this->_projectDefaultToken) {
-    return *this->_projectDefaultToken;
-  } else {
-    this->refreshProjectDefaultToken();
-    return empty;
-  }
-}
-
 bool CesiumIonSession::refreshProfileIfNeeded() {
   if (this->_loadProfileQueued || !this->_profile.has_value()) {
     this->refreshProfile();
@@ -317,14 +249,6 @@ bool CesiumIonSession::refreshTokensIfNeeded() {
     this->refreshTokens();
   }
   return this->isTokenListLoaded();
-}
-
-bool CesiumIonSession::refreshProjectDefaultTokenIfNeeded() {
-  if (this->_loadAssetAccessTokenQueued ||
-      !this->_projectDefaultToken.has_value()) {
-    this->refreshProjectDefaultToken();
-  }
-  return this->isProjectDefaultTokenLoaded();
 }
 
 Future<std::optional<Token>>
@@ -367,4 +291,76 @@ CesiumIonSession::findToken(const FString& token) const {
   };
 
   return this->_connection->tokens().thenInMainThread(*pProcessPage);
+}
+
+namespace {
+
+Token tokenFromSettings() {
+  Token result;
+  result.token = TCHAR_TO_UTF8(
+      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
+  result.id = TCHAR_TO_UTF8(
+      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId);
+  return result;
+}
+
+Future<Token> getTokenFuture(const CesiumIonSession& session) {
+  if (!GetDefault<UCesiumRuntimeSettings>()
+           ->DefaultIonAccessTokenId.IsEmpty()) {
+    return session.getConnection()
+        ->token(TCHAR_TO_UTF8(
+            *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId))
+        .thenImmediately([](Response<Token>&& tokenResponse) {
+          if (tokenResponse.value) {
+            return *tokenResponse.value;
+          } else {
+            return tokenFromSettings();
+          }
+        });
+  } else if (!GetDefault<UCesiumRuntimeSettings>()
+                  ->DefaultIonAccessToken.IsEmpty()) {
+    return session
+        .findToken(GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken)
+        .thenImmediately([](std::optional<Token>&& maybeToken) {
+          if (maybeToken) {
+            return *maybeToken;
+          } else {
+            return tokenFromSettings();
+          }
+        });
+  } else {
+    return session.getAsyncSystem().createResolvedFuture(tokenFromSettings());
+  }
+}
+
+} // namespace
+
+SharedFuture<Token> CesiumIonSession::getProjectDefaultTokenDetails() {
+  if (this->_projectDefaultTokenDetailsFuture) {
+    // If the future is resolved but its token doesn't match the designated
+    // default token, do the request again because the user probably specified a
+    // new token.
+    if (this->_projectDefaultTokenDetailsFuture->isReady() &&
+        this->_projectDefaultTokenDetailsFuture->wait().token !=
+            TCHAR_TO_UTF8(
+                *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken)) {
+      this->_projectDefaultTokenDetailsFuture.reset();
+    } else {
+      return *this->_projectDefaultTokenDetailsFuture;
+    }
+  }
+
+  if (!this->isConnected()) {
+    return this->getAsyncSystem()
+        .createResolvedFuture(tokenFromSettings())
+        .share();
+  }
+
+  this->_projectDefaultTokenDetailsFuture =
+      std::move(getTokenFuture(*this).share());
+  return *this->_projectDefaultTokenDetailsFuture;
+}
+
+void CesiumIonSession::invalidateProjectDefaultTokenDetails() {
+  this->_projectDefaultTokenDetailsFuture.reset();
 }
