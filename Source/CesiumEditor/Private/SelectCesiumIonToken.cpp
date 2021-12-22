@@ -116,15 +116,22 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       TokenSource::Create,
       TEXT("Create a new token"),
       SNew(SHorizontalBox) +
-          SHorizontalBox::Slot().AutoWidth()
-              [SNew(STextBlock).Text(FText::FromString(TEXT("Name:")))] +
-          SHorizontalBox::Slot().AutoWidth()
-              [SNew(SEditableTextBox)
-                   .Text(this, &SelectCesiumIonToken::GetNewTokenName)
-                   .MinDesiredWidth(200.0f)
-                   .OnTextChanged(
-                       this,
-                       &SelectCesiumIonToken::SetNewTokenName)]);
+          SHorizontalBox::Slot()
+              .VAlign(EVerticalAlignment::VAlign_Center)
+              .AutoWidth()
+              .Padding(5.0f)[SNew(STextBlock)
+                                 .Text(FText::FromString(TEXT("Name:")))] +
+          SHorizontalBox::Slot()
+              .VAlign(EVerticalAlignment::VAlign_Center)
+              .AutoWidth()
+              .MaxWidth(500.0f)
+              .Padding(
+                  5.0f)[SNew(SEditableTextBox)
+                            .Text(this, &SelectCesiumIonToken::GetNewTokenName)
+                            .MinDesiredWidth(200.0f)
+                            .OnTextChanged(
+                                this,
+                                &SelectCesiumIonToken::SetNewTokenName)]);
 
   SAssignNew(this->_pTokensCombo, SComboBox<TSharedPtr<Token>>)
       .OptionsSource(&this->_tokens)
@@ -146,9 +153,15 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       TokenSource::UseExisting,
       TEXT("Use an existing token"),
       SNew(SHorizontalBox) +
-          SHorizontalBox::Slot().AutoWidth()
-              [SNew(STextBlock).Text(FText::FromString(TEXT("Token:")))] +
           SHorizontalBox::Slot()
+              .VAlign(EVerticalAlignment::VAlign_Center)
+              .AutoWidth()
+              .MaxWidth(500.0f)
+              .Padding(5.0f)[SNew(STextBlock)
+                                 .Text(FText::FromString(TEXT("Token:")))] +
+          SHorizontalBox::Slot()
+              .VAlign(EVerticalAlignment::VAlign_Center)
+              .Padding(5.0f)
               .AutoWidth()[this->_pTokensCombo.ToSharedRef()]);
 
   this->createRadioButton(
@@ -157,37 +170,53 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       TokenSource::Specify,
       TEXT("Specify a token"),
       SNew(SHorizontalBox) +
-          SHorizontalBox::Slot().AutoWidth()
-              [SNew(STextBlock).Text(FText::FromString(TEXT("Token:")))] +
-          SHorizontalBox::Slot().AutoWidth()
-              [SNew(SEditableTextBox)
-                   .Text(this, &SelectCesiumIonToken::GetSpecifiedToken)
-                   .OnTextChanged(
-                       this,
-                       &SelectCesiumIonToken::SetSpecifiedToken)
-                   .MinDesiredWidth(500.0f)]);
+          SHorizontalBox::Slot()
+              .VAlign(EVerticalAlignment::VAlign_Center)
+              .AutoWidth()
+              .Padding(5.0f)[SNew(STextBlock)
+                                 .Text(FText::FromString(TEXT("Token:")))] +
+          SHorizontalBox::Slot()
+              .VAlign(EVerticalAlignment::VAlign_Center)
+              .Padding(5.0f)
+              .AutoWidth()
+              .MaxWidth(500.0f)
+                  [SNew(SEditableTextBox)
+                       .Text(this, &SelectCesiumIonToken::GetSpecifiedToken)
+                       .OnTextChanged(
+                           this,
+                           &SelectCesiumIonToken::SetSpecifiedToken)
+                       .MinDesiredWidth(500.0f)]);
 
-  pMainVerticalBox->AddSlot()
-      .AutoHeight()[SNew(SButton)
-                        .Visibility_Lambda([this]() {
-                          return this->_tokenSource == TokenSource ::Create
-                                     ? EVisibility::Collapsed
-                                     : EVisibility::Visible;
-                        })
-                        .OnClicked(this, &SelectCesiumIonToken::UseOrCreate)
-                        .Text(FText::FromString(
-                            TEXT("Use as Project Default Token")))];
+  pMainVerticalBox->AddSlot().AutoHeight().Padding(
+      5.0f,
+      20.0f,
+      5.0f,
+      5.0f)[SNew(SButton)
+                .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+                .Visibility_Lambda([this]() {
+                  return this->_tokenSource == TokenSource ::Create
+                             ? EVisibility::Collapsed
+                             : EVisibility::Visible;
+                })
+                .OnClicked(this, &SelectCesiumIonToken::UseOrCreate)
+                .Text(FText::FromString(TEXT("Use as Project Default Token")))];
 
-  pMainVerticalBox->AddSlot()
-      .AutoHeight()[SNew(SButton)
-                        .Visibility_Lambda([this]() {
-                          return this->_tokenSource == TokenSource ::Create
-                                     ? EVisibility::Visible
-                                     : EVisibility::Collapsed;
-                        })
-                        .OnClicked(this, &SelectCesiumIonToken::UseOrCreate)
-                        .Text(FText::FromString(
-                            TEXT("Create New Project Default Token")))];
+  pMainVerticalBox->AddSlot().AutoHeight().Padding(
+      5.0f,
+      20.0f,
+      5.0f,
+      5.0f)[SNew(SButton)
+                .ButtonStyle(FCesiumEditorModule::GetStyle(), "CesiumButton")
+                .TextStyle(FCesiumEditorModule::GetStyle(), "CesiumButtonText")
+                .Visibility_Lambda([this]() {
+                  return this->_tokenSource == TokenSource ::Create
+                             ? EVisibility::Visible
+                             : EVisibility::Collapsed;
+                })
+                .OnClicked(this, &SelectCesiumIonToken::UseOrCreate)
+                .Text(FText::FromString(
+                    TEXT("Create New Project Default Token")))];
 
   SWindow::Construct(
       SWindow::FArguments()
@@ -210,8 +239,9 @@ void SelectCesiumIonToken::createRadioButton(
     TokenSource thisValue,
     const FString& label,
     const TSharedRef<SWidget>& pWidget) {
-  pVertical->AddSlot().AutoHeight()
+  pVertical->AddSlot().AutoHeight().Padding(5.0f, 10.0f, 5.0f, 10.0f)
       [SNew(SCheckBox)
+           .Padding(5.0f)
            .Style(FCoreStyle::Get(), "RadioButton")
            .IsChecked_Lambda([&tokenSource, thisValue]() {
              return tokenSource == thisValue ? ECheckBoxState::Checked
@@ -222,10 +252,15 @@ void SelectCesiumIonToken::createRadioButton(
              if (newState == ECheckBoxState::Checked) {
                tokenSource = thisValue;
              }
-           })[SNew(SVerticalBox) +
-              SVerticalBox::Slot()[SNew(STextBlock)
-                                       .Text(FText::FromString(label))] +
-              SVerticalBox::Slot()[pWidget]]];
+           })[SNew(SBorder)
+                  [SNew(SVerticalBox) +
+                   SVerticalBox::Slot().Padding(5.0f).AutoHeight()
+                       [SNew(STextBlock)
+                            .TextStyle(
+                                FCesiumEditorModule::GetStyle(),
+                                "BodyBold")
+                            .Text(FText::FromString(label))] +
+                   SVerticalBox::Slot().Padding(5.0f).AutoHeight()[pWidget]]]];
 }
 
 FReply SelectCesiumIonToken::UseOrCreate() {
