@@ -65,8 +65,8 @@ private:
   bool canAuthorizeProjectDefaultToken() const;
   void authorizeProjectDefaultToken();
 
-  bool canCreateNewProjectDefaultToken() const;
-  void createNewProjectDefaultToken();
+  bool canSelectNewProjectDefaultToken() const;
+  void selectNewProjectDefaultToken();
 
   bool canOpenCesiumIon() const;
   void openCesiumIon();

@@ -190,9 +190,9 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   this->addRemedyButton(
       pMainVerticalBox,
-      TEXT("Create a new project default token"),
-      &CesiumIonTokenTroubleshooting::canCreateNewProjectDefaultToken,
-      &CesiumIonTokenTroubleshooting::createNewProjectDefaultToken);
+      TEXT("Select or create a new project default token"),
+      &CesiumIonTokenTroubleshooting::canSelectNewProjectDefaultToken,
+      &CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken);
 
   pMainVerticalBox->AddSlot().AutoHeight().Padding(0.0f, 20.0f, 0.0f, 0.0f)
       [SNew(STextBlock)
@@ -380,7 +380,8 @@ void CesiumIonTokenTroubleshooting::connectToCesiumIon() {
 
 bool CesiumIonTokenTroubleshooting::canUseProjectDefaultToken() const {
   const TokenState& state = this->_projectDefaultTokenState;
-  return state.isValid == true && state.allowsAccessToAsset == true;
+  return this->_pTileset && !this->_pTileset->GetIonAccessToken().IsEmpty() &&
+         state.isValid == true && state.allowsAccessToAsset == true;
 }
 
 void CesiumIonTokenTroubleshooting::useProjectDefaultToken() {
@@ -425,7 +426,7 @@ void CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken() {
       GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
 }
 
-bool CesiumIonTokenTroubleshooting::canCreateNewProjectDefaultToken() const {
+bool CesiumIonTokenTroubleshooting::canSelectNewProjectDefaultToken() const {
   if (this->_assetExistsInUserAccount == false) {
     return false;
   }
@@ -436,7 +437,7 @@ bool CesiumIonTokenTroubleshooting::canCreateNewProjectDefaultToken() const {
                                      state.associatedWithUserAccount == false));
 }
 
-void CesiumIonTokenTroubleshooting::createNewProjectDefaultToken() {
+void CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken() {
   if (!this->_pTileset) {
     return;
   }
