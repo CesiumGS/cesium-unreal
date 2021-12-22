@@ -263,7 +263,8 @@ FReply SelectCesiumIonToken::UseOrCreate() {
       return asyncSystem.createResolvedFuture(
           Response<Token>(std::move(t), 200, "", ""));
     } else {
-      return asyncSystem.createResolvedFuture(Response<Token>());
+      return asyncSystem.createResolvedFuture(
+          Response<Token>(0, "UNKNOWNSOURCE", "The token source is unknown."));
     }
   };
 
@@ -282,6 +283,12 @@ FReply SelectCesiumIonToken::UseOrCreate() {
           pSettings->DefaultIonAccessToken =
               UTF8_TO_TCHAR(response.value->token.c_str());
           pSettings->Modify();
+        } else {
+          UE_LOG(
+              LogCesiumEditor,
+              Error,
+              TEXT("An error occurred while selecting a token: %s"),
+              response.errorMessage.c_str());
         }
 
         promise.resolve(std::move(response.value));

@@ -76,6 +76,16 @@ public:
   CesiumAsync::Future<std::optional<CesiumIonClient::Token>>
   findToken(const FString& token) const;
 
+  /**
+   * Gets the project default token.
+   *
+   * If the project default token exists in the signed-in user's account, full
+   * token details will be included. Otherwise, only the token value itself
+   * (i.e. the `token` property`) will be included, and it may or may not be
+   * valid. In the latter case, the `id` property will be an empty string.
+   *
+   * @return A future that resolves to the project default token.
+   */
   CesiumAsync::SharedFuture<CesiumIonClient::Token>
   getProjectDefaultTokenDetails();
 

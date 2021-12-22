@@ -299,8 +299,6 @@ Token tokenFromSettings() {
   Token result;
   result.token = TCHAR_TO_UTF8(
       *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
-  result.id = TCHAR_TO_UTF8(
-      *GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessTokenId);
   return result;
 }
 

@@ -180,13 +180,12 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
 
   SelectCesiumIonToken::SelectTokenIfNecessary()
       .thenInMainThread([connection, tilesetID = item->tilesetID](
-                            const std::optional<Token>& maybeToken) {
-        if (maybeToken) {
-          return connection->asset(tilesetID);
-        } else {
-          return connection->getAsyncSystem().createResolvedFuture(
-              Response<Asset>());
-        }
+                            const std::optional<Token>& /*maybeToken*/) {
+        // If token selection was canceled, or if an error occurred while
+        // selecting the token, ignore it and create the tileset anyway. It's
+        // already been logged if necessary, and we can let the user sort out
+        // the problem using the resulting Troubleshooting panel.
+        return connection->asset(tilesetID);
       })
       .thenInMainThread([item, connection](Response<Asset>&& response) {
         if (!response.value.has_value()) {

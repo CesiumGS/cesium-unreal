@@ -326,7 +326,8 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
 
   return this->createDiagnosticPanel(
       state.name,
-      {addTokenCheck(
+      {addTokenCheck(TEXT("Is a valid Cesium ion token"), state.isValid),
+       addTokenCheck(
            TEXT("Allows access to this asset"),
            state.allowsAccessToAsset),
        addTokenCheck(
@@ -387,10 +388,15 @@ void CesiumIonTokenTroubleshooting::useProjectDefaultToken() {
     return;
   }
 
-  FScopedTransaction transaction(
-      FText::FromString("Use Project Default Token"));
-  this->_pTileset->Modify();
-  this->_pTileset->SetIonAccessToken(FString());
+  if (!this->_pTileset->GetIonAccessToken().IsEmpty()) {
+    FScopedTransaction transaction(
+        FText::FromString("Use Project Default Token"));
+    this->_pTileset->Modify();
+    this->_pTileset->SetIonAccessToken(FString());
+  } else {
+    // Already using project default token, just refresh.
+    this->_pTileset->RefreshTileset();
+  }
 }
 
 bool CesiumIonTokenTroubleshooting::canAuthorizeAssetToken() const {
