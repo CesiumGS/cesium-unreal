@@ -13,6 +13,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
+#include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -444,20 +445,18 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 }
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-  AActor* pNewActor = GEditor->AddActor(
-      pCurrentLevel,
-      ACesium3DTileset::StaticClass(),
-      FTransform(),
-      false,
-      RF_Public | RF_Transactional);
-  ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
-  pTileset->SetActorLabel(UTF8_TO_TCHAR(item->name.c_str()));
-  pTileset->SetIonAssetID(item->id);
-
-  pTileset->RerunConstructionScripts();
+  SelectCesiumIonToken::SelectTokenIfNecessary().thenInMainThread(
+      [item](const std::optional<Token>& /*maybeToken*/) {
+        // If token selection was canceled, or if an error occurred while
+        // selecting the token, ignore it and create the tileset anyway. It's
+        // already been logged if necessary, and we can let the user sort out
+        // the problem using the resulting Troubleshooting panel.
+        ACesium3DTileset* pTileset =
+            FCesiumEditorModule::CreateTileset(item->name, item->id);
+        if (pTileset) {
+          pTileset->RerunConstructionScripts();
+        }
+      });
 }
 
 void CesiumIonPanel::AddOverlayToTerrain(

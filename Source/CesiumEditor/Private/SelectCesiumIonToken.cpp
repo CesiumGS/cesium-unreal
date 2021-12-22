@@ -223,7 +223,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
           .Title(FText::FromString(TEXT("Select a Cesium ion Token")))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
-          .ClientSize(FVector2D(800, 600))
+          .ClientSize(FVector2D(635, 400))
               [SNew(SBorder)
                    .Visibility(EVisibility::Visible)
                    .BorderImage(FEditorStyle::GetBrush("Menu.Background"))

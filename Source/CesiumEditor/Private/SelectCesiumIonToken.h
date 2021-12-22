@@ -51,7 +51,7 @@ private:
   };
 
   struct UseExistingToken {
-    Token token;
+    CesiumIonClient::Token token;
   };
 
   struct SpecifyToken {
