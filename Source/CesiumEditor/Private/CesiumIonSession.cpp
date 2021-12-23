@@ -354,8 +354,7 @@ SharedFuture<Token> CesiumIonSession::getProjectDefaultTokenDetails() {
         .share();
   }
 
-  this->_projectDefaultTokenDetailsFuture =
-      std::move(getTokenFuture(*this).share());
+  this->_projectDefaultTokenDetailsFuture = getTokenFuture(*this).share();
   return *this->_projectDefaultTokenDetailsFuture;
 }
 
