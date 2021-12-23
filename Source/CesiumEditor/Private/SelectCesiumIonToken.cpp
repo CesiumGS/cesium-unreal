@@ -338,6 +338,8 @@ void SelectCesiumIonToken::RefreshTokens() {
   const std::vector<Token>& tokens = FCesiumEditorModule::ion().getTokens();
   this->_tokens.SetNum(tokens.size());
 
+  std::string createName = TCHAR_TO_UTF8(*this->_createNewToken.name);
+
   for (size_t i = 0; i < tokens.size(); ++i) {
     if (this->_tokens[i]) {
       *this->_tokens[i] = std::move(tokens[i]);
@@ -346,6 +348,13 @@ void SelectCesiumIonToken::RefreshTokens() {
     }
 
     if (this->_tokens[i]->id == this->_useExistingToken.token.id) {
+      this->_pTokensCombo->SetSelectedItem(this->_tokens[i]);
+      this->_tokenSource = TokenSource::UseExisting;
+    }
+
+    // If there's already a token with the default name we would use to create a
+    // new one, default to selecting that rather than creating a new one.
+    if (this->_tokens[i]->name == createName) {
       this->_pTokensCombo->SetSelectedItem(this->_tokens[i]);
       this->_tokenSource = TokenSource::UseExisting;
     }
