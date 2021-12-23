@@ -411,7 +411,7 @@ void CesiumIonTokenTroubleshooting::authorizeAssetToken() {
   if (!this->_pTileset) {
     return;
   }
-  this->authorizeToken(this->_pTileset->GetIonAccessToken());
+  this->authorizeToken(this->_pTileset->GetIonAccessToken(), false);
 }
 
 bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
@@ -423,7 +423,8 @@ bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
 
 void CesiumIonTokenTroubleshooting::authorizeProjectDefaultToken() {
   this->authorizeToken(
-      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken);
+      GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken,
+      true);
 }
 
 bool CesiumIonTokenTroubleshooting::canSelectNewProjectDefaultToken() const {
@@ -482,7 +483,9 @@ void CesiumIonTokenTroubleshooting::openCesiumIon() {
       NULL);
 }
 
-void CesiumIonTokenTroubleshooting::authorizeToken(const FString& token) {
+void CesiumIonTokenTroubleshooting::authorizeToken(
+    const FString& token,
+    bool removeTilesetToken) {
   if (!this->_pTileset) {
     return;
   }
@@ -501,6 +504,7 @@ void CesiumIonTokenTroubleshooting::authorizeToken(const FString& token) {
   TWeakObjectPtr<ACesium3DTileset> pTileset = this->_pTileset;
 
   session.findToken(token).thenInMainThread([pTileset,
+                                             removeTilesetToken,
                                              connection = *maybeConnection](
                                                 std::optional<Token>&&
                                                     maybeToken) {
@@ -549,11 +553,17 @@ void CesiumIonTokenTroubleshooting::authorizeToken(const FString& token) {
             maybeToken->assetIds,
             maybeToken->scopes,
             maybeToken->allowedUrls)
-        .thenInMainThread([pTileset](Response<NoValue>&& result) {
+        .thenInMainThread([pTileset,
+                           removeTilesetToken](Response<NoValue>&& result) {
           if (result.value) {
             // Refresh the tileset now that the token is valid (hopefully).
             if (pTileset.IsValid()) {
-              pTileset->RefreshTileset();
+              if (removeTilesetToken &&
+                  !pTileset->GetIonAccessToken().IsEmpty()) {
+                pTileset->SetIonAccessToken(FString());
+              } else {
+                pTileset->RefreshTileset();
+              }
             }
           } else {
             UE_LOG(

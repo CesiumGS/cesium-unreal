@@ -71,5 +71,5 @@ private:
   bool canOpenCesiumIon() const;
   void openCesiumIon();
 
-  void authorizeToken(const FString& token);
+  void authorizeToken(const FString& token, bool removeTilesetToken);
 };
