@@ -292,8 +292,22 @@ FReply SelectCesiumIonToken::UseOrCreate() {
       return asyncSystem.createResolvedFuture(
           Response<Token>(Token(this->_useExistingToken.token), 200, "", ""));
     } else if (this->_tokenSource == TokenSource::Specify) {
+      // Check if this is a known token, and use it if so.
+      std::string token = TCHAR_TO_UTF8(*this->_specifyToken.token);
+      const std::vector<Token>& tokens = FCesiumEditorModule::ion().getTokens();
+      auto it = std::find_if(
+          tokens.begin(),
+          tokens.end(),
+          [&token](const Token& candidate) {
+            return candidate.token == token;
+          });
+
       Token t{};
-      t.token = TCHAR_TO_UTF8(*this->_specifyToken.token);
+      if (it == tokens.end()) {
+        t.token = std::move(token);
+      } else {
+        t = *it;
+      }
 
       return asyncSystem.createResolvedFuture(
           Response<Token>(std::move(t), 200, "", ""));
@@ -339,6 +353,7 @@ void SelectCesiumIonToken::RefreshTokens() {
   this->_tokens.SetNum(tokens.size());
 
   std::string createName = TCHAR_TO_UTF8(*this->_createNewToken.name);
+  std::string specifiedToken = TCHAR_TO_UTF8(*this->_specifyToken.token);
 
   for (size_t i = 0; i < tokens.size(); ++i) {
     if (this->_tokens[i]) {
@@ -354,7 +369,15 @@ void SelectCesiumIonToken::RefreshTokens() {
 
     // If there's already a token with the default name we would use to create a
     // new one, default to selecting that rather than creating a new one.
-    if (this->_tokens[i]->name == createName) {
+    if (this->_tokenSource == TokenSource::Create &&
+        this->_tokens[i]->name == createName) {
+      this->_pTokensCombo->SetSelectedItem(this->_tokens[i]);
+      this->_tokenSource = TokenSource::UseExisting;
+    }
+
+    // If this happens to be the specified token, select it.
+    if (this->_tokenSource == TokenSource::Specify &&
+        this->_tokens[i]->token == specifiedToken) {
       this->_pTokensCombo->SetSelectedItem(this->_tokens[i]);
       this->_tokenSource = TokenSource::UseExisting;
     }
