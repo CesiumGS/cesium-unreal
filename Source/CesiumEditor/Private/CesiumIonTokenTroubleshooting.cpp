@@ -29,15 +29,60 @@ using namespace CesiumIonClient;
     return panel.pObject == ionObject;
   };
 
+  // If a panel is already open for this object, close it.
   auto it = std::find_if(
       CesiumIonTokenTroubleshooting::_existingPanels.begin(),
       CesiumIonTokenTroubleshooting::_existingPanels.end(),
       panelMatch);
   if (it != CesiumIonTokenTroubleshooting::_existingPanels.end()) {
-    FSlateApplication::Get().RequestDestroyWindow(it->pPanel);
+    TSharedRef<CesiumIonTokenTroubleshooting> pPanel = it->pPanel;
     CesiumIonTokenTroubleshooting::_existingPanels.erase(it);
+    FSlateApplication::Get().RequestDestroyWindow(pPanel);
   }
 
+  // If this is a tileset, close any already-open panels associated with its
+  // overlays. Overlays won't appear until the tileset is working anyway.
+  ACesium3DTileset** ppTileset = std::get_if<ACesium3DTileset*>(&ionObject);
+  if (ppTileset && *ppTileset) {
+    TArray<UCesiumRasterOverlay*> rasterOverlays;
+    (*ppTileset)->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+    for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+      auto rasterIt = std::find_if(
+          CesiumIonTokenTroubleshooting::_existingPanels.begin(),
+          CesiumIonTokenTroubleshooting::_existingPanels.end(),
+          [pOverlay](const ExistingPanel& candidate) {
+            return candidate.pObject == CesiumIonObject(pOverlay);
+          });
+      if (rasterIt != CesiumIonTokenTroubleshooting::_existingPanels.end()) {
+        TSharedRef<CesiumIonTokenTroubleshooting> pPanel = rasterIt->pPanel;
+        CesiumIonTokenTroubleshooting::_existingPanels.erase(rasterIt);
+        FSlateApplication::Get().RequestDestroyWindow(pPanel);
+      }
+    }
+  }
+
+  // If this is a raster overlay and this panel is already open for its attached
+  // tileset, don't open the panel for the overlay for the same reason as above.
+  UCesiumRasterOverlay** ppRasterOverlay =
+      std::get_if<UCesiumRasterOverlay*>(&ionObject);
+  if (ppRasterOverlay && *ppRasterOverlay) {
+    ACesium3DTileset* pOwner =
+        Cast<ACesium3DTileset>((*ppRasterOverlay)->GetOwner());
+    if (pOwner) {
+      auto tilesetIt = std::find_if(
+          CesiumIonTokenTroubleshooting::_existingPanels.begin(),
+          CesiumIonTokenTroubleshooting::_existingPanels.end(),
+          [pOwner](const ExistingPanel& candidate) {
+            return candidate.pObject == CesiumIonObject(pOwner);
+          });
+      if (tilesetIt != CesiumIonTokenTroubleshooting::_existingPanels.end()) {
+        return;
+      }
+    }
+  }
+
+  // Open the panel
   TSharedRef<CesiumIonTokenTroubleshooting> Troubleshooting =
       SNew(CesiumIonTokenTroubleshooting)
           .IonObject(ionObject)
