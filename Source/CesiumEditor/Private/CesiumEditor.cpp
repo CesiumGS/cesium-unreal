@@ -305,6 +305,10 @@ void FCesiumEditorModule::StartupModule() {
   this->_tilesetLoadFailureSubscription = OnCesium3DTilesetLoadFailure.AddRaw(
       this,
       &FCesiumEditorModule::OnTilesetLoadFailure);
+  this->_rasterOverlayLoadFailureSubscription =
+      OnCesiumRasterOverlayLoadFailure.AddRaw(
+          this,
+          &FCesiumEditorModule::OnRasterOverlayLoadFailure);
 
   this->_tilesetIonTroubleshootingSubscription =
       OnCesium3DTilesetIonTroubleshooting.AddRaw(
@@ -361,6 +365,26 @@ void FCesiumEditorModule::OnTilesetLoadFailure(
   if (details.Tileset && details.Type == ECesium3DTilesetLoadType::CesiumIon &&
       (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
     CesiumIonTokenTroubleshooting::Open(details.Tileset, true);
+  }
+}
+
+void FCesiumEditorModule::OnRasterOverlayLoadFailure(
+    const FCesiumRasterOverlayLoadFailureDetails& details) {
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->GetLevelEditorTabManager()->TryInvokeTab(
+        FTabId("OutputLog"));
+  }
+
+  // Check for a 401 connecting to Cesium ion, which means the token is invalid
+  // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
+  // when the token is valid but not authorized for the asset.
+  if (details.Overlay &&
+      details.Type == ECesiumRasterOverlayLoadType::CesiumIon &&
+      (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
+    CesiumIonTokenTroubleshooting::Open(details.Overlay, true);
   }
 }
 

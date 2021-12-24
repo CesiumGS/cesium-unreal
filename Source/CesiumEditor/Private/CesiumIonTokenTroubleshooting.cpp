@@ -4,6 +4,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
+#include "CesiumIonRasterOverlay.h"
 #include "CesiumRuntimeSettings.h"
 #include "EditorStyleSet.h"
 #include "LevelEditor.h"
@@ -18,31 +19,44 @@
 
 using namespace CesiumIonClient;
 
-/*static*/ TMap<ACesium3DTileset*, TSharedRef<CesiumIonTokenTroubleshooting>>
+/*static*/ std::vector<CesiumIonTokenTroubleshooting::ExistingPanel>
     CesiumIonTokenTroubleshooting::_existingPanels{};
 
 /*static*/ void CesiumIonTokenTroubleshooting::Open(
-    ACesium3DTileset* pTileset,
+    CesiumIonObject ionObject,
     bool triggeredByError) {
-  const TSharedRef<CesiumIonTokenTroubleshooting>* ppExisting =
-      CesiumIonTokenTroubleshooting::_existingPanels.Find(pTileset);
-  if (ppExisting) {
-    FSlateApplication::Get().RequestDestroyWindow(*ppExisting);
-    CesiumIonTokenTroubleshooting::_existingPanels.Remove(pTileset);
+  auto panelMatch = [ionObject](const ExistingPanel& panel) {
+    return panel.pObject == ionObject;
+  };
+
+  auto it = std::find_if(
+      CesiumIonTokenTroubleshooting::_existingPanels.begin(),
+      CesiumIonTokenTroubleshooting::_existingPanels.end(),
+      panelMatch);
+  if (it != CesiumIonTokenTroubleshooting::_existingPanels.end()) {
+    FSlateApplication::Get().RequestDestroyWindow(it->pPanel);
+    CesiumIonTokenTroubleshooting::_existingPanels.erase(it);
   }
 
   TSharedRef<CesiumIonTokenTroubleshooting> Troubleshooting =
       SNew(CesiumIonTokenTroubleshooting)
-          .Tileset(pTileset)
+          .IonObject(ionObject)
           .TriggeredByError(triggeredByError);
 
   Troubleshooting->GetOnWindowClosedEvent().AddLambda(
-      [pTileset](const TSharedRef<SWindow>& pWindow) {
-        CesiumIonTokenTroubleshooting::_existingPanels.Remove(pTileset);
+      [panelMatch](const TSharedRef<SWindow>& pWindow) {
+        auto it = std::find_if(
+            CesiumIonTokenTroubleshooting::_existingPanels.begin(),
+            CesiumIonTokenTroubleshooting::_existingPanels.end(),
+            panelMatch);
+        if (it != CesiumIonTokenTroubleshooting::_existingPanels.end()) {
+          CesiumIonTokenTroubleshooting::_existingPanels.erase(it);
+        }
       });
   FSlateApplication::Get().AddWindow(Troubleshooting);
 
-  CesiumIonTokenTroubleshooting::_existingPanels.Add(pTileset, Troubleshooting);
+  CesiumIonTokenTroubleshooting::_existingPanels.emplace_back(
+      ExistingPanel{ionObject, Troubleshooting});
 }
 
 namespace {
@@ -84,25 +98,138 @@ addTokenCheck(const FString& label, std::optional<bool>& state) {
              .AutoWidth()[SNew(STextBlock).Text(FText::FromString(label))];
 }
 
+bool isNull(const CesiumIonObject& o) {
+  return std::visit([](auto p) { return p == nullptr; }, o);
+}
+
+FString getLabel(const CesiumIonObject& o) {
+  struct Operation {
+    FString operator()(ACesium3DTileset* pTileset) {
+      return pTileset->GetActorLabel();
+    }
+
+    FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
+      return pRasterOverlay->GetName();
+    }
+  };
+
+  return std::visit(Operation(), o);
+}
+
+FString getName(const CesiumIonObject& o) {
+  return std::visit([](auto p) { return p->GetName(); }, o);
+}
+
+int64 getIonAssetID(const CesiumIonObject& o) {
+  struct Operation {
+    int64 operator()(ACesium3DTileset* pTileset) {
+      return pTileset->GetIonAssetID();
+    }
+
+    int64 operator()(UCesiumRasterOverlay* pRasterOverlay) {
+      UCesiumIonRasterOverlay* pIon =
+          Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
+      if (!pIon) {
+        return 0;
+      } else {
+        return pIon->IonAssetID;
+      }
+    }
+  };
+
+  return std::visit(Operation(), o);
+}
+
+FString getIonAccessToken(const CesiumIonObject& o) {
+  struct Operation {
+    FString operator()(ACesium3DTileset* pTileset) {
+      return pTileset->GetIonAccessToken();
+    }
+
+    FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
+      UCesiumIonRasterOverlay* pIon =
+          Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
+      if (!pIon) {
+        return FString();
+      } else {
+        return pIon->IonAccessToken;
+      }
+    }
+  };
+
+  return std::visit(Operation(), o);
+}
+
+void setIonAccessToken(const CesiumIonObject& o, const FString& newToken) {
+  struct Operation {
+    const FString& newToken;
+
+    void operator()(ACesium3DTileset* pTileset) {
+      if (pTileset->GetIonAccessToken() != newToken) {
+        pTileset->Modify();
+        pTileset->SetIonAccessToken(newToken);
+      } else {
+        pTileset->RefreshTileset();
+      }
+    }
+
+    void operator()(UCesiumRasterOverlay* pRasterOverlay) {
+      UCesiumIonRasterOverlay* pIon =
+          Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
+      if (!pIon) {
+        return;
+      }
+
+      if (pIon->IonAccessToken != newToken) {
+        pIon->Modify();
+        pIon->IonAccessToken = newToken;
+      }
+      pIon->Refresh();
+    }
+  };
+
+  return std::visit(Operation{newToken}, o);
+}
+
+FString getObjectType(const CesiumIonObject& o) {
+  struct Operation {
+    FString operator()(ACesium3DTileset* pTileset) { return TEXT("Tileset"); }
+
+    FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
+      return TEXT("Raster Overlay");
+    }
+  };
+
+  return std::visit(Operation(), o);
+}
+
+UObject* asUObject(const CesiumIonObject& o) {
+  return std::visit([](auto p) -> UObject* { return p; }, o);
+}
+
 } // namespace
 
 void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
   TSharedRef<SVerticalBox> pMainVerticalBox = SNew(SVerticalBox);
 
-  ACesium3DTileset* pTileset = InArgs._Tileset;
-  if (!pTileset) {
+  CesiumIonObject pIonObject = InArgs._IonObject;
+  if (isNull(pIonObject)) {
     return;
   }
 
-  this->_pTileset = pTileset;
+  this->_pIonObject = pIonObject;
 
   if (InArgs._TriggeredByError) {
+    FString label = getLabel(pIonObject);
+    FString name = getName(pIonObject);
+    FString descriptor =
+        label == name ? FString::Format(TEXT("\"{0}\""), {name})
+                      : FString::Format(TEXT("\"{0}\" ({1})"), {label, name});
+
     FString preamble = FString::Format(
         TEXT(
-            "Actor \"{0}\" ({1}) tried to access Cesium ion for asset ID {2}, but it didn't work, probably due to a problem with the access token. This panel will help you fix it!"),
-        {*pTileset->GetActorLabel(),
-         *pTileset->GetName(),
-         pTileset->GetIonAssetID()});
+            "{0} {1} tried to access Cesium ion for asset ID {2}, but it didn't work, probably due to a problem with the access token. This panel will help you fix it!"),
+        {getObjectType(pIonObject), *descriptor, getIonAssetID(pIonObject)});
 
     pMainVerticalBox->AddSlot().AutoHeight()
         [SNew(STextBlock).AutoWrapText(true).Text(FText::FromString(preamble))];
@@ -110,15 +237,17 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   TSharedRef<SHorizontalBox> pDiagnosticColumns = SNew(SHorizontalBox);
 
-  if (!pTileset->GetIonAccessToken().IsEmpty()) {
-    this->_assetTokenState.name = TEXT("This Tileset's Access Token");
-    this->_assetTokenState.token = pTileset->GetIonAccessToken();
+  if (!getIonAccessToken(pIonObject).IsEmpty()) {
+    this->_assetTokenState.name = FString::Format(
+        TEXT("This {0}'s Access Token"),
+        {getObjectType(pIonObject)});
+    this->_assetTokenState.token = getIonAccessToken(pIonObject);
     pDiagnosticColumns->AddSlot()
         .Padding(5.0f, 20.0f, 5.0f, 5.0f)
         .VAlign(EVerticalAlignment::VAlign_Top)
         .AutoWidth()
         .FillWidth(
-            0.5f)[this->createTokenPanel(pTileset, this->_assetTokenState)];
+            0.5f)[this->createTokenPanel(pIonObject, this->_assetTokenState)];
   }
 
   this->_projectDefaultTokenState.name = TEXT("Project Default Access Token");
@@ -130,7 +259,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
       .VAlign(EVerticalAlignment::VAlign_Top)
       .AutoWidth()
       .FillWidth(0.5f)
-          [this->createTokenPanel(pTileset, this->_projectDefaultTokenState)];
+          [this->createTokenPanel(pIonObject, this->_projectDefaultTokenState)];
 
   if (FCesiumEditorModule::ion().isConnected()) {
     // Don't let this panel be destroyed while the async operations below are in
@@ -140,7 +269,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
     FCesiumEditorModule::ion()
         .getConnection()
-        ->asset(pTileset->GetIonAssetID())
+        ->asset(getIonAssetID(pIonObject))
         .thenInMainThread([pPanel](Response<Asset>&& asset) {
           pPanel->_assetExistsInUserAccount = asset.value.has_value();
         });
@@ -172,13 +301,17 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   this->addRemedyButton(
       pMainVerticalBox,
-      TEXT("Use the project default token for this Actor"),
+      FString::Format(
+          TEXT("Use the project default token for this {0}"),
+          {getObjectType(pIonObject)}),
       &CesiumIonTokenTroubleshooting::canUseProjectDefaultToken,
       &CesiumIonTokenTroubleshooting::useProjectDefaultToken);
 
   this->addRemedyButton(
       pMainVerticalBox,
-      TEXT("Authorize the tileset's token to access this asset"),
+      FString::Format(
+          TEXT("Authorize the {0}'s token to access this asset"),
+          {getObjectType(pIonObject)}),
       &CesiumIonTokenTroubleshooting::canAuthorizeAssetToken,
       &CesiumIonTokenTroubleshooting::authorizeAssetToken);
 
@@ -214,9 +347,9 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
                    " - The asset ID does not exist in your Cesium ion account.\n"
                    "\n"
                    "Please click the button below to open Cesium ion and check:\n"
-                   " - The Tileset's \"Ion Asset ID\" property is correct.\n"
+                   " - The {1}'s \"Ion Asset ID\" property is correct.\n"
                    " - If the asset is from the \"Asset Depot\", verify that it has been added to \"My Assets\"."),
-               {pTileset->GetIonAssetID()})))];
+               {getIonAssetID(pIonObject), getObjectType(pIonObject)})))];
 
   this->addRemedyButton(
       pMainVerticalBox,
@@ -228,7 +361,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
       SWindow::FArguments()
           .Title(FText::FromString(FString::Format(
               TEXT("{0}: Cesium ion Token Troubleshooting"),
-              {*pTileset->GetActorLabel()})))
+              {*getLabel(pIonObject)})))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
           .ClientSize(FVector2D(800, 600))
@@ -261,11 +394,11 @@ TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createDiagnosticPanel(
 }
 
 TSharedRef<SWidget> CesiumIonTokenTroubleshooting::createTokenPanel(
-    ACesium3DTileset* pTileset,
+    const CesiumIonObject& pIonObject,
     TokenState& state) {
   CesiumIonSession& ionSession = FCesiumEditorModule::ion();
 
-  int64 assetID = pTileset->GetIonAssetID();
+  int64 assetID = getIonAssetID(pIonObject);
 
   auto pConnection = std::make_shared<Connection>(
       ionSession.getAsyncSystem(),
@@ -380,24 +513,19 @@ void CesiumIonTokenTroubleshooting::connectToCesiumIon() {
 
 bool CesiumIonTokenTroubleshooting::canUseProjectDefaultToken() const {
   const TokenState& state = this->_projectDefaultTokenState;
-  return this->_pTileset && !this->_pTileset->GetIonAccessToken().IsEmpty() &&
+  return !isNull(this->_pIonObject) &&
+         !getIonAccessToken(this->_pIonObject).IsEmpty() &&
          state.isValid == true && state.allowsAccessToAsset == true;
 }
 
 void CesiumIonTokenTroubleshooting::useProjectDefaultToken() {
-  if (!this->_pTileset) {
+  if (isNull(this->_pIonObject)) {
     return;
   }
 
-  if (!this->_pTileset->GetIonAccessToken().IsEmpty()) {
-    FScopedTransaction transaction(
-        FText::FromString("Use Project Default Token"));
-    this->_pTileset->Modify();
-    this->_pTileset->SetIonAccessToken(FString());
-  } else {
-    // Already using project default token, just refresh.
-    this->_pTileset->RefreshTileset();
-  }
+  FScopedTransaction transaction(
+      FText::FromString("Use Project Default Token"));
+  setIonAccessToken(this->_pIonObject, FString());
 }
 
 bool CesiumIonTokenTroubleshooting::canAuthorizeAssetToken() const {
@@ -408,10 +536,10 @@ bool CesiumIonTokenTroubleshooting::canAuthorizeAssetToken() const {
 }
 
 void CesiumIonTokenTroubleshooting::authorizeAssetToken() {
-  if (!this->_pTileset) {
+  if (isNull(this->_pIonObject)) {
     return;
   }
-  this->authorizeToken(this->_pTileset->GetIonAccessToken(), false);
+  this->authorizeToken(getIonAccessToken(this->_pIonObject), false);
 }
 
 bool CesiumIonTokenTroubleshooting::canAuthorizeProjectDefaultToken() const {
@@ -439,7 +567,7 @@ bool CesiumIonTokenTroubleshooting::canSelectNewProjectDefaultToken() const {
 }
 
 void CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken() {
-  if (!this->_pTileset) {
+  if (isNull(this->_pIonObject)) {
     return;
   }
 
@@ -485,8 +613,8 @@ void CesiumIonTokenTroubleshooting::openCesiumIon() {
 
 void CesiumIonTokenTroubleshooting::authorizeToken(
     const FString& token,
-    bool removeTilesetToken) {
-  if (!this->_pTileset) {
+    bool removeObjectToken) {
+  if (isNull(this->_pIonObject)) {
     return;
   }
 
@@ -501,15 +629,18 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
     return;
   }
 
-  TWeakObjectPtr<ACesium3DTileset> pTileset = this->_pTileset;
+  TWeakObjectPtr<UObject> pStillAlive = asUObject(this->_pIonObject);
 
-  session.findToken(token).thenInMainThread([pTileset,
-                                             removeTilesetToken,
+  session.findToken(token).thenInMainThread([pStillAlive,
+                                             removeObjectToken,
+                                             pIonObject = this->_pIonObject,
+                                             ionAssetID = getIonAssetID(
+                                                 this->_pIonObject),
                                              connection = *maybeConnection](
                                                 std::optional<Token>&&
                                                     maybeToken) {
-    if (!pTileset.IsValid()) {
-      // Tileset Actor has been destroyed
+    if (!pStillAlive.IsValid()) {
+      // UObject has been destroyed
       return connection.getAsyncSystem().createResolvedFuture();
     }
 
@@ -534,7 +665,7 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
     auto it = std::find(
         maybeToken->assetIds->begin(),
         maybeToken->assetIds->end(),
-        pTileset->GetIonAssetID());
+        ionAssetID);
     if (it != maybeToken->assetIds->end()) {
       UE_LOG(
           LogCesiumEditor,
@@ -544,7 +675,7 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
       return connection.getAsyncSystem().createResolvedFuture();
     }
 
-    maybeToken->assetIds->emplace_back(pTileset->GetIonAssetID());
+    maybeToken->assetIds->emplace_back(ionAssetID);
 
     return connection
         .modifyToken(
@@ -553,16 +684,16 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
             maybeToken->assetIds,
             maybeToken->scopes,
             maybeToken->allowedUrls)
-        .thenInMainThread([pTileset,
-                           removeTilesetToken](Response<NoValue>&& result) {
+        .thenInMainThread([pIonObject, pStillAlive, removeObjectToken](
+                              Response<NoValue>&& result) {
           if (result.value) {
-            // Refresh the tileset now that the token is valid (hopefully).
-            if (pTileset.IsValid()) {
-              if (removeTilesetToken &&
-                  !pTileset->GetIonAccessToken().IsEmpty()) {
-                pTileset->SetIonAccessToken(FString());
+            // Refresh the object now that the token is valid (hopefully).
+            if (pStillAlive.IsValid()) {
+              if (removeObjectToken) {
+                setIonAccessToken(pIonObject, FString());
               } else {
-                pTileset->RefreshTileset();
+                // Set the token to the same value to force a refresh.
+                setIonAccessToken(pIonObject, getIonAccessToken(pIonObject));
               }
             }
           } else {

@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Cesium3DTilesetLoadFailureDetails.generated.h"
+#include "CesiumRasterOverlayLoadFailureDetails.generated.h"
 
-class ACesium3DTileset;
+class UCesiumRasterOverlay;
 
 UENUM(BlueprintType)
-enum class ECesium3DTilesetLoadType : uint8 {
+enum class ECesiumRasterOverlayLoadType : uint8 {
   /**
    * An unknown load error.
    */
@@ -20,26 +20,26 @@ enum class ECesium3DTilesetLoadType : uint8 {
   CesiumIon,
 
   /**
-   * A tileset.json.
+   * @brief An initial load needed to create the overlay's tile provider.
    */
-  TilesetJson
+  TileProvider
 };
 
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesium3DTilesetLoadFailureDetails {
+struct CESIUMRUNTIME_API FCesiumRasterOverlayLoadFailureDetails {
   GENERATED_BODY()
 
   /**
-   * The tileset that encountered the load failure.
+   * The overlay that encountered the load failure.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  ACesium3DTileset* Tileset;
+  UCesiumRasterOverlay* Overlay;
 
   /**
    * The type of request that failed to load.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  ECesium3DTilesetLoadType Type;
+  ECesiumRasterOverlayLoadType Type;
 
   /**
    * The HTTP status code of the response that led to the failure.

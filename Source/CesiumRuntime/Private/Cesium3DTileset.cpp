@@ -781,19 +781,13 @@ void ACesium3DTileset::LoadTileset() {
             uint8_t(ECesium3DTilesetLoadType::TilesetJson) ==
             uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
         static_assert(
-            uint8_t(ECesium3DTilesetLoadType::TileContent) ==
-            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TileContent));
-        static_assert(
-            uint8_t(ECesium3DTilesetLoadType::TileSubtree) ==
-            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TileSubtree));
-        static_assert(
             uint8_t(ECesium3DTilesetLoadType::Unknown) ==
             uint8_t(Cesium3DTilesSelection::TilesetLoadType::Unknown));
 
         uint8_t typeValue = uint8_t(details.type);
         assert(
             uint8_t(details.type) <=
-            uint8_t(Cesium3DTilesSelection::TilesetLoadType::Unknown));
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
         assert(this->_pTileset == details.pTileset);
 
         FCesium3DTilesetLoadFailureDetails ueDetails;

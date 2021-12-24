@@ -27,7 +27,7 @@ class TilesetView;
 } // namespace Cesium3DTilesSelection
 
 /**
- * The delegate for the ACesium3DTileset::OnLoadError, which is triggered when
+ * The delegate for OnCesium3DTilesetLoadFailure, which is triggered when
  * the tileset encounters a load error.
  */
 DECLARE_MULTICAST_DELEGATE_OneParam(
