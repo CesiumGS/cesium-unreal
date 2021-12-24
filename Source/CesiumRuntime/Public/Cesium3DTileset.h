@@ -461,6 +461,10 @@ private:
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
 
+  /**
+   * Check if the Cesium ion token used to access this tileset is working
+   * correctly, and fix it if necessary.
+   */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void TroubleshootToken();
 

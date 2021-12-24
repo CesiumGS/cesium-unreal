@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+class ACesium3DTileset;
+class UCesiumRasterOverlay;
+
 DECLARE_LOG_CATEGORY_EXTERN(LogCesium, Log, All);
 
 class FCesiumRuntimeModule : public IModuleInterface {
@@ -15,8 +18,8 @@ public:
 };
 
 /**
- * The delegate for the ACesium3DTileset::OnLoadError, which is triggered when
- * the tileset encounters a load error.
+ * The delegate for the OnCesium3DTilesetIonTroubleshooting, which is triggered
+ * when the tileset encounters a load error.
  */
 DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetIonTroubleshooting,
@@ -24,3 +27,14 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 
 CESIUMRUNTIME_API extern FCesium3DTilesetIonTroubleshooting
     OnCesium3DTilesetIonTroubleshooting;
+
+/**
+ * The delegate for the OnCesiumRasterOverlayIonTroubleshooting, which is
+ * triggered when the tileset encounters a load error.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesiumRasterOverlayIonTroubleshooting,
+    UCesiumRasterOverlay*);
+
+CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
+    OnCesiumRasterOverlayIonTroubleshooting;

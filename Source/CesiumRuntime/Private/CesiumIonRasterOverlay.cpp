@@ -5,6 +5,10 @@
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "CesiumRuntimeSettings.h"
 
+void UCesiumIonRasterOverlay::TroubleshootToken() {
+  OnCesiumRasterOverlayIonTroubleshooting.Broadcast(this);
+}
+
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumIonRasterOverlay::CreateOverlay(
     const Cesium3DTilesSelection::RasterOverlayOptions& options) {
