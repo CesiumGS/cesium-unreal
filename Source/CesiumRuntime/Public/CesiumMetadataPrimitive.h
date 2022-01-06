@@ -72,7 +72,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|Primitive")
   static const TArray<FCesiumVertexMetadata>&
   GetVertexFeatures(UPARAM(ref)
                         const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -84,7 +84,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|Primitive")
   static const TArray<FCesiumFeatureIDTexture>&
   GetFeatureIDTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -96,7 +96,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|Primitive")
   static const TArray<FCesiumFeatureTexture>&
   GetFeatureTextures(UPARAM(ref)
                          const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -110,7 +110,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|Primitive")
   static int64 GetFirstVertexIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
       int64 FaceID);

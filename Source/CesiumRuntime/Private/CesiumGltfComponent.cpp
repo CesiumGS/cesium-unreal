@@ -1545,7 +1545,7 @@ static void SetGltfParameterValues(
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
-            textureCoordinateSet.first.c_str(),
+            UTF8_TO_TCHAR(textureCoordinateSet.first.c_str()),
             assocation,
             index),
         textureCoordinateSet.second);
@@ -1910,6 +1910,7 @@ class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
   virtual ~HalfConstructedReal() {}
   std::vector<LoadModelResult> loadModelResult;
+  FCesiumMetadataModel Metadata;
 };
 } // namespace
 
@@ -1920,6 +1921,22 @@ UCesiumGltfComponent::CreateOffGameThread(
     const CreateModelOptions& Options) {
   auto pResult = std::make_unique<HalfConstructedReal>();
   pResult->loadModelResult = loadModelAnyThreadPart(Model, Transform, Options);
+
+  const CesiumGltf::ExtensionModelExtFeatureMetadata* pMetadataExtension =
+      Model.getExtension<CesiumGltf::ExtensionModelExtFeatureMetadata>();
+  if (pMetadataExtension) {
+    TArray<FCesiumMetadataPrimitive> metadataPrimitives;
+    metadataPrimitives.Reserve(pResult->loadModelResult.size());
+    for (auto& loadPrimitiveResult : pResult->loadModelResult) {
+      metadataPrimitives.Emplace(std::move(loadPrimitiveResult.Metadata));
+    }
+
+    pResult->Metadata = FCesiumMetadataModel(
+        Model,
+        *pMetadataExtension,
+        std::move(metadataPrimitives));
+  }
+
   return pResult;
 }
 

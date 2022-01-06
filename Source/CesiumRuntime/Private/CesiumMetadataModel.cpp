@@ -1,0 +1,50 @@
+
+#include "CesiumMetadataModel.h"
+#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
+#include "CesiumGltf/Model.h"
+
+using namespace CesiumGltf;
+
+FCesiumMetadataModel::FCesiumMetadataModel(
+    const Model& model,
+    const ExtensionModelExtFeatureMetadata& metadata,
+    TArray<FCesiumMetadataPrimitive>&& metadataPrimitives)
+    : _metadataPrimitives(std::move(metadataPrimitives)) {
+
+  this->_featureTables.Reserve(metadata.featureTables.size());
+  for (const auto& featureTableIt : metadata.featureTables) {
+    this->_featureTables.Emplace(
+        UTF8_TO_TCHAR(featureTableIt.first.c_str()),
+        FCesiumMetadataFeatureTable(model, featureTableIt.second));
+  }
+
+  this->_featureTextures.Reserve(metadata.featureTextures.size());
+  for (const auto& featureTextureIt : metadata.featureTextures) {
+    this->_featureTextures.Emplace(
+        UTF8_TO_TCHAR(featureTextureIt.first.c_str()),
+        FCesiumFeatureTexture(model, featureTextureIt.second));
+  }
+}
+
+/*static*/
+const TArray<FCesiumMetadataPrimitive>&
+UCesiumMetadataModelBlueprintLibrary::GetPrimitives(
+    UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
+  return MetadataModel._metadataPrimitives;
+}
+
+/*static*/
+const TMap<FString, FCesiumMetadataFeatureTable>&
+UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(
+    UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
+  return MetadataModel._featureTables;
+}
+
+/*static*/
+const TMap<FString, FCesiumFeatureTexture>&
+UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(
+    UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
+  return MetadataModel._featureTextures;
+}
+}
+;

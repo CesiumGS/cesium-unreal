@@ -58,13 +58,10 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         continue;
       }
 
-      auto featureTable = metadata.featureTables.find(attribute.featureTable);
-      if (featureTable == metadata.featureTables.end()) {
-        continue;
-      }
-
-      this->_vertexFeatures.Add(
-          FCesiumVertexMetadata(model, *accessor, featureTable->second));
+      this->_vertexFeatures.Add(FCesiumVertexMetadata(
+          model,
+          *accessor,
+          UTF8_TO_TCHAR(attribute.featureTable.c_str())));
     }
   }
 
@@ -74,13 +71,16 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         FCesiumFeatureIDTexture(model, featureIDTexture));
   }
 
+  this->_featureTextures.Reserve(primitiveMetadata.featureTextures.size());
   for (const std::string& featureTextureId :
        primitiveMetadata.featureTextures) {
     const auto& featureTextureIt =
         metadata.featureTextures.find(featureTextureId);
-    this->_featureTextures.Reserve(metadata.featureTextures.size());
     if (featureTextureIt != metadata.featureTextures.end()) {
-      this->_featureTextures.Emplace(model, featureTextureIt->second);
+      this->_featureTextures.Emplace(
+          model,
+          UTF8_TO_TCHAR(featureTextureId.c_str()),
+          featureTextureIt->second);
     }
   }
 }
@@ -104,7 +104,7 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextures(
 }
 
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
-    const FCesiumMetadataPrimitive& MetadataPrimitive,
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
     int64 faceID) {
   return std::visit(
       [faceID](const auto& accessor) {

@@ -11,12 +11,12 @@ FCesiumFeatureIDTexture::FCesiumFeatureIDTexture(
     const Model& model,
     const FeatureIDTexture& featureIDTexture)
     : _featureIDTextureView(model, featureIDTexture),
-      _featureTable(model, *this->_featureIDTextureView.getFeatureTable()) {}
+      _featureTableName(UTF8_TO_TCHAR(
+          this->_featureIDTextureView.getFeatureTableName().c_str())) {}
 
-const FCesiumMetadataFeatureTable&
-UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTable(
+const FString& UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
     const FCesiumFeatureIDTexture& featureIDTexture) {
-  return featureIDTexture._featureTable;
+  return featureIDTexture._featureTableName;
 }
 
 int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(

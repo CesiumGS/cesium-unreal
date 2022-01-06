@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumMetadataModel.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -81,6 +82,8 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters;
+
+  FCesiumMetadataModel Metadata;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

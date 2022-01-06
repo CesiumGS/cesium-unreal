@@ -3,13 +3,19 @@
 #pragma once
 
 #include "CesiumGltf/Model.h"
+#include "CesiumMetadataModel.h"
 #include "CesiumMetadataValueType.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include <optional>
-#include <vector>
 
+#include "Containers/Array.h"
+#include "Containers/Map.h"
 #include "Containers/UnrealString.h"
+
+namespace CesiumGltf {
+struct ImageCesium;
+} // namespace CesiumGltf
 
 struct FCesiumMetadataPrimitive;
 struct FCesiumMetadataFeatureTable;
@@ -42,7 +48,7 @@ public:
     /**
      * @brief The encoded properties in this feature table.
      */
-    std::vector<EncodedMetadataProperty> encodedProperties;
+    TArray<EncodedMetadataProperty> encodedProperties;
   };
 
   struct EncodedFeatureIdTexture {
@@ -55,7 +61,7 @@ public:
      * @brief The encoded feature table corresponding to this feature id
      * texture.
      */
-    EncodedMetadataFeatureTable encodedFeatureTable;
+    FString featureTableName;
 
     /**
      * @brief The actual feature id texture.
@@ -75,7 +81,7 @@ public:
 
   struct EncodedVertexMetadata {
     FString name;
-    EncodedMetadataFeatureTable encodedFeatureTable;
+    FString featureTableName;
   };
 
   struct EncodedFeatureTextureProperty {
@@ -84,14 +90,19 @@ public:
   };
 
   struct EncodedFeatureTexture {
-    FString name;
-    std::vector<EncodedFeatureTextureProperty> properties;
+    TArray<EncodedFeatureTextureProperty> properties;
   };
 
   struct EncodedMetadataPrimitive {
-    std::vector<EncodedFeatureIdTexture> encodedFeatureIdTextures;
-    std::vector<EncodedVertexMetadata> encodedVertexMetadata;
-    std::vector<EncodedFeatureTexture> encodedFeatureTextures;
+    TArray<EncodedFeatureIdTexture> encodedFeatureIdTextures;
+    TArray<EncodedVertexMetadata> encodedVertexMetadata;
+    TArray<FString> featureTextureNames;
+  };
+
+  struct EncodedMetadata {
+    TArray<EncodedMetadataPrimitive> encodedPrimitives;
+    TMap<FString, EncodedMetadataFeatureTable> encodedFeatureTables;
+    TMap<FString, EncodedFeatureTexture> encodedFeatureTextures;
   };
 
   // TODO: documentation
@@ -109,14 +120,30 @@ public:
   loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
   static EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
+      const FString& featureTableName,
       const FCesiumMetadataFeatureTable& featureTable);
+
+  static EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
+      TMap<const CesiumGltf::ImageCesium*, LoadedTextureResult*>&
+          featureTexturePropertyMap,
+      const FString& featureTextureName,
+      const FCesiumFeatureTexture& featureTexture);
 
   static EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
       const FCesiumMetadataPrimitive& primitive);
 
+  static EncodedMetadata
+  encodeMetadataAnyThreadPart(const FCesiumMetadataModel& metadata);
+
   static bool encodeMetadataFeatureTableGameThreadPart(
       EncodedMetadataFeatureTable& encodedFeatureTable);
 
+  static bool encodeFeatureTextureGameThreadPart(
+      TArray<LoadedTextureResult*>& uniqueTextures,
+      EncodedFeatureTexture& encodedFeatureTexture);
+
   static bool encodeMetadataPrimitiveGameThreadPart(
       EncodedMetadataPrimitive& encodedPrimitive);
+
+  static bool encodeMetadataGameThreadPart(EncodedMetadata& encodedMetadata);
 };

@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/FeatureIDTextureView.h"
 #include "CesiumMetadataFeatureTable.h"
+#include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIDTexture.generated.h"
 
@@ -30,7 +31,7 @@ public:
 
 private:
   CesiumGltf::FeatureIDTextureView _featureIDTextureView;
-  FCesiumMetadataFeatureTable _featureTable;
+  FString _featureTableName;
 
   friend class UCesiumFeatureIDTextureBlueprintLibrary;
 };
@@ -45,8 +46,9 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureIDTexture")
-  static const FCesiumMetadataFeatureTable&
-  GetFeatureTable(UPARAM(ref) const FCesiumFeatureIDTexture& featureIDTexture);
+  static const FString&
+  GetFeatureTableName(UPARAM(ref)
+                          const FCesiumFeatureIDTexture& featureIDTexture);
 
   UFUNCTION(
       BlueprintCallable,

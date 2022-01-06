@@ -32,11 +32,11 @@ public:
   FCesiumVertexMetadata(
       const CesiumGltf::Model& Model,
       const CesiumGltf::Accessor& FeatureIDAccessor,
-      const CesiumGltf::FeatureTable& FeatureTable);
+      const FString& FeatureTableName);
 
 private:
   FeatureIDAccessorType _featureIDAccessor;
-  FCesiumMetadataFeatureTable _featureTable;
+  FString _featureTableName;
 
   friend class UCesiumVertexMetadataBlueprintLibrary;
 };
@@ -50,8 +50,8 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|VertexMetadata")
-  static const FCesiumMetadataFeatureTable&
-  GetFeatureTable(UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata);
+  static const FString&
+  GetFeatureTableName(UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata);
 
   /**
    * Gets the feature ID associated with a given vertex.

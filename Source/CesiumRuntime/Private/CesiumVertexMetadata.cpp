@@ -30,7 +30,8 @@ struct FeatureIDFromAccessor {
 FCesiumVertexMetadata::FCesiumVertexMetadata(
     const Model& model,
     const Accessor& featureIDAccessor,
-    const FeatureTable& featureTable) {
+    const FString& featureTableName)
+    : _featureTableName(featureTableName) {
 
   switch (featureIDAccessor.componentType) {
   case CesiumGltf::Accessor::ComponentType::BYTE:
@@ -66,14 +67,11 @@ FCesiumVertexMetadata::FCesiumVertexMetadata(
   default:
     break;
   }
-
-  this->_featureTable = FCesiumMetadataFeatureTable(model, featureTable);
 }
 
-const FCesiumMetadataFeatureTable&
-UCesiumVertexMetadataBlueprintLibrary::GetFeatureTable(
+const FString& UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
     UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata) {
-  return VertexMetadata._featureTable;
+  return VertexMetadata._featureTableName;
 }
 
 int64 UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
