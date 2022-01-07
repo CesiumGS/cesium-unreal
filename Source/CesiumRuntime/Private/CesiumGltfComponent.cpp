@@ -2226,6 +2226,11 @@ void UCesiumGltfComponent::SetCollisionEnabled(
   }
 }
 
+void UCesiumGltfComponent::BeginDestroy() {
+  CesiumTextureUtility::destroyEncodedMetadata(this->EncodedMetadata);
+  Super::BeginDestroy();
+}
+
 #if !PHYSICS_INTERFACE_PHYSX
 // This is copied from FChaosDerivedDataCooker::BuildTriangleMeshes in
 // C:\Program Files\Epic

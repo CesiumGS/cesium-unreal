@@ -106,6 +106,8 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
+  virtual void BeginDestroy() override;
+
 private:
   UPROPERTY()
   UTexture2D* Transparent1x1;
