@@ -71,32 +71,6 @@ void destroyWaterParameterValues(
     int32 index) {
   destroyMaterialTexture(pMaterial, "WaterMask", assocation, index);
 }
-
-// TODO: move to CesiumTextureUtility?
-void destroyEncodedFeatureTable(
-    CesiumTextureUtility::EncodedMetadataFeatureTable& encodedFeatureTable) {
-  for (CesiumTextureUtility::EncodedMetadataProperty& encodedProperty :
-       encodedFeatureTable.encodedProperties) {
-    CesiumLifetime::destroy(encodedProperty.pTexture->pTexture);
-  }
-}
-
-void destroyEncodedMetadataPrimitive(
-    CesiumTextureUtility::EncodedMetadataPrimitive& encodedPrimitive) {
-  for (CesiumTextureUtility::EncodedFeatureIdTexture& encodedFeatureIdTexture :
-       encodedPrimitive.encodedFeatureIdTextures) {
-
-    if (encodedFeatureIdTexture.pTexture->pTexture) {
-      CesiumLifetime::destroy(encodedFeatureIdTexture.pTexture->pTexture);
-      encodedFeatureIdTexture.pTexture->pTexture = nullptr;
-    }
-
-    CesiumTextureUtility::EncodedMetadataFeatureTable& encodedFeatureTable =
-        encodedFeatureIdTexture.encodedFeatureTable;
-
-    destroyEncodedFeatureTable(encodedFeatureTable);
-  }
-}
 } // namespace
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
@@ -138,7 +112,8 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
       }
     }
 
-    destroyEncodedMetadataPrimitive(this->encodedMetadata);
+    CesiumTextureUtility::destroyEncodedMetadataPrimitive(
+        this->EncodedMetadata);
 
     CesiumLifetime::destroy(pMaterial);
   }

@@ -7,9 +7,7 @@ using namespace CesiumGltf;
 
 FCesiumMetadataModel::FCesiumMetadataModel(
     const Model& model,
-    const ExtensionModelExtFeatureMetadata& metadata,
-    TArray<FCesiumMetadataPrimitive>&& metadataPrimitives)
-    : _metadataPrimitives(std::move(metadataPrimitives)) {
+    const ExtensionModelExtFeatureMetadata& metadata) {
 
   this->_featureTables.Reserve(metadata.featureTables.size());
   for (const auto& featureTableIt : metadata.featureTables) {
@@ -27,13 +25,6 @@ FCesiumMetadataModel::FCesiumMetadataModel(
 }
 
 /*static*/
-const TArray<FCesiumMetadataPrimitive>&
-UCesiumMetadataModelBlueprintLibrary::GetPrimitives(
-    UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
-  return MetadataModel._metadataPrimitives;
-}
-
-/*static*/
 const TMap<FString, FCesiumMetadataFeatureTable>&
 UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(
     UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
@@ -46,5 +37,3 @@ UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(
     UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
   return MetadataModel._featureTextures;
 }
-}
-;

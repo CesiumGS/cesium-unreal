@@ -3,9 +3,11 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumFeatureIDTexture.h"
 #include "CesiumFeatureTexture.h"
+#include "CesiumLifetime.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataConversions.h"
 #include "CesiumMetadataFeatureTable.h"
+#include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumMetadataProperty.h"
 #include "CesiumRuntime.h"
@@ -474,6 +476,8 @@ CesiumTextureUtility::encodeFeatureTextureAnyThreadPart(
 
     encodedFeatureTextureProperty.name =
         featureTextureName + "_" + propertyIt.first.c_str();
+    encodedFeatureTextureProperty.textureCoordinateIndex =
+        featureTexturePropertyView.getTextureCoordinateIndex();
 
     LoadedTextureResult** pMappedUnrealImageIt =
         featureTexturePropertyMap.Find(pImage);
@@ -729,4 +733,42 @@ bool CesiumTextureUtility::encodeMetadataGameThreadPart(
   }
 
   return success;
+}
+
+/*static*/
+void CesiumTextureUtility::destroyEncodedMetadataPrimitive(
+    EncodedMetadataPrimitive& encodedPrimitive) {
+  for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
+       encodedPrimitive.encodedFeatureIdTextures) {
+
+    if (encodedFeatureIdTexture.pTexture->pTexture) {
+      CesiumLifetime::destroy(encodedFeatureIdTexture.pTexture->pTexture);
+      encodedFeatureIdTexture.pTexture->pTexture = nullptr;
+    }
+  }
+}
+
+/*static*/
+void CesiumTextureUtility::destroyEncodedMetadata(
+    EncodedMetadata& encodedMetadata) {
+
+  // Destroy encoded feature tables.
+  for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
+    for (EncodedMetadataProperty& encodedProperty :
+         encodedFeatureTableIt.Value.encodedProperties) {
+      CesiumLifetime::destroy(encodedProperty.pTexture->pTexture);
+    }
+  }
+
+  // Destroy encoded feature textures.
+  for (auto& encodedFeatureTextureIt : encodedMetadata.encodedFeatureTextures) {
+    for (EncodedFeatureTextureProperty& encodedFeatureTextureProperty :
+         encodedFeatureTextureIt.Value.properties) {
+      if (encodedFeatureTextureProperty.pTexture->pTexture) {
+        CesiumLifetime::destroy(
+            encodedFeatureTextureProperty.pTexture->pTexture);
+        encodedFeatureTextureProperty.pTexture->pTexture = nullptr;
+      }
+    }
+  }
 }

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CesiumGltf/Model.h"
-#include "CesiumMetadataModel.h"
 #include "CesiumMetadataValueType.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
@@ -17,8 +16,10 @@ namespace CesiumGltf {
 struct ImageCesium;
 } // namespace CesiumGltf
 
+struct FCesiumMetadataModel;
 struct FCesiumMetadataPrimitive;
 struct FCesiumMetadataFeatureTable;
+struct FCesiumFeatureTexture;
 
 class CesiumTextureUtility {
 public:
@@ -87,6 +88,7 @@ public:
   struct EncodedFeatureTextureProperty {
     FString name;
     LoadedTextureResult* pTexture;
+    int64 textureCoordinateIndex;
   };
 
   struct EncodedFeatureTexture {
@@ -100,7 +102,6 @@ public:
   };
 
   struct EncodedMetadata {
-    TArray<EncodedMetadataPrimitive> encodedPrimitives;
     TMap<FString, EncodedMetadataFeatureTable> encodedFeatureTables;
     TMap<FString, EncodedFeatureTexture> encodedFeatureTextures;
   };
@@ -146,4 +147,9 @@ public:
       EncodedMetadataPrimitive& encodedPrimitive);
 
   static bool encodeMetadataGameThreadPart(EncodedMetadata& encodedMetadata);
+
+  static void
+  destroyEncodedMetadataPrimitive(EncodedMetadataPrimitive& encodedPrimitive);
+
+  static void destroyEncodedMetadata(EncodedMetadata& encodedMetadata);
 };

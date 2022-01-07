@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumMetadataModel.h"
+#include "CesiumTextureUtility.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -84,6 +85,8 @@ public:
   FCustomDepthParameters CustomDepthParameters;
 
   FCesiumMetadataModel Metadata;
+
+  CesiumTextureUtility::EncodedMetadata EncodedMetadata;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

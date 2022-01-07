@@ -23,7 +23,7 @@ public:
 
   FCesiumMetadataPrimitive Metadata;
 
-  CesiumTextureUtility::EncodedMetadataPrimitive encodedMetadata;
+  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata;
 
   const CesiumGltf::Model* pModel;
 

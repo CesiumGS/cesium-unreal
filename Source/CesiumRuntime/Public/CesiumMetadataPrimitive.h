@@ -3,15 +3,12 @@
 #pragma once
 
 #include "CesiumFeatureIDTexture.h"
-#include "CesiumFeatureTexture.h"
-#include "CesiumMetadataFeatureTable.h"
 #include "CesiumVertexMetadata.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataPrimitive.generated.h"
 
 namespace CesiumGltf {
-struct ExtensionModelExtFeatureMetadata;
 struct ExtensionMeshPrimitiveExtFeatureMetadata;
 } // namespace CesiumGltf
 
@@ -40,21 +37,18 @@ public:
    * @param model The model that stores EXT_feature_metadata extension
    * @param primitive The mesh primitive that stores EXT_feature_metadata
    * extension
-   * @param metadata The EXT_feature_metadata of the whole gltf
-   * @param primitiveMetadata The EXT_feature_metadata of the gltf mesh
+   * @param metadata The EXT_feature_metadata of the gltf mesh primitive.
    * primitive
    */
   FCesiumMetadataPrimitive(
       const CesiumGltf::Model& model,
       const CesiumGltf::MeshPrimitive& primitive,
-      const CesiumGltf::ExtensionModelExtFeatureMetadata& metadata,
-      const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
-          primitiveMetadata);
+      const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata);
 
 private:
   TArray<FCesiumVertexMetadata> _vertexFeatures;
   TArray<FCesiumFeatureIDTexture> _featureIDTextures;
-  TArray<FCesiumFeatureTexture> _featureTextures;
+  TArray<FString> _featureTextureNames;
   VertexIDAccessorType _vertexIDAccessor;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
@@ -97,9 +91,9 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumFeatureTexture>&
-  GetFeatureTextures(UPARAM(ref)
-                         const FCesiumMetadataPrimitive& MetadataPrimitive);
+  static const TArray<FString>&
+  GetFeatureTextureNames(UPARAM(ref)
+                             const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
    * Gets the ID of the first vertex that makes up a given face of this
