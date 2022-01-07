@@ -475,9 +475,17 @@ CesiumTextureUtility::encodeFeatureTextureAnyThreadPart(
     }
 
     encodedFeatureTextureProperty.name =
-        featureTextureName + "_" + propertyIt.first.c_str();
+        "FeatureTexture:" + featureTextureName + "_" +
+        UTF8_TO_TCHAR(propertyIt.first.c_str());
     encodedFeatureTextureProperty.textureCoordinateIndex =
         featureTexturePropertyView.getTextureCoordinateIndex();
+
+    const CesiumGltf::FeatureTexturePropertyChannelOffsets& channelOffsets =
+        featureTexturePropertyView.getChannelOffsets();
+    encodedFeatureTextureProperty.channelOffsets[0] = channelOffsets.r;
+    encodedFeatureTextureProperty.channelOffsets[1] = channelOffsets.g;
+    encodedFeatureTextureProperty.channelOffsets[2] = channelOffsets.b;
+    encodedFeatureTextureProperty.channelOffsets[3] = channelOffsets.a;
 
     LoadedTextureResult** pMappedUnrealImageIt =
         featureTexturePropertyMap.Find(pImage);
@@ -533,12 +541,10 @@ CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
   const TArray<FCesiumVertexMetadata>& vertexFeatures =
       UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(primitive);
 
-  // Multiple feature id textures can correspond to a single Cesium image. Keep
-  // track of which Cesium image corresponds to which Unreal image, so we don't
-  // duplicate.
-  // TODO: be very careful about how the game thread part and deletion happens
-  // for images used by multiple feature id textures. Maybe a shared_ptr or
-  // something is needed.
+  result.featureTextureNames =
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
+          primitive);
+
   std::unordered_map<const CesiumGltf::ImageCesium*, LoadedTextureResult*>
       featureIdTextureMap;
   featureIdTextureMap.reserve(featureIdTextures.Num());
@@ -546,10 +552,6 @@ CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
   result.encodedFeatureIdTextures.SetNum(featureIdTextures.Num());
   result.encodedVertexMetadata.SetNum(vertexFeatures.Num());
 
-  // TODO: this assumes each feature table will only be used once in a
-  // feature id texture (or later feature id attribute).
-  // Actually feature tables should be encoded per-glTF and primitives
-  // should be able to request it if it is not already loaded.
   for (size_t i = 0; i < featureIdTextures.Num(); ++i) {
     const FCesiumFeatureIDTexture& featureIdTexture = featureIdTextures[i];
     EncodedFeatureIdTexture& encodedFeatureIdTexture =

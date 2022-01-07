@@ -1711,7 +1711,7 @@ static void SetMetadataFeatureTableParameterValues(
 }
 
 static void SetMetadataParameterValues(
-    const UCesiumGltfComponent& gltfComponent,
+    UCesiumGltfComponent& gltfComponent,
     LoadModelResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
@@ -1721,6 +1721,44 @@ static void SetMetadataParameterValues(
   if (!CesiumTextureUtility::encodeMetadataPrimitiveGameThreadPart(
           loadResult.EncodedMetadata)) {
     return;
+  }
+
+  for (const FString& featureTextureName :
+       loadResult.EncodedMetadata.featureTextureNames) {
+    CesiumTextureUtility::EncodedFeatureTexture* pEncodedFeatureTexture =
+        gltfComponent.EncodedMetadata.encodedFeatureTextures.Find(
+            featureTextureName);
+
+    if (pEncodedFeatureTexture) {
+      for (CesiumTextureUtility::EncodedFeatureTextureProperty&
+               encodedProperty : pEncodedFeatureTexture->properties) {
+
+        pMaterial->SetTextureParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(encodedProperty.name + "_Texture"),
+                association,
+                index),
+            encodedProperty.pTexture->pTexture);
+
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(encodedProperty.name + "_TextureCoordinateIndex"),
+                association,
+                index),
+            encodedProperty.textureCoordinateIndex);
+
+        pMaterial->SetVectorParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(encodedProperty.name + "_Swizzle"),
+                association,
+                index),
+            FLinearColor(
+                encodedProperty.channelOffsets[0],
+                encodedProperty.channelOffsets[1],
+                encodedProperty.channelOffsets[2],
+                encodedProperty.channelOffsets[3]));
+      }
+    }
   }
 
   for (CesiumTextureUtility::EncodedFeatureIdTexture& encodedFeatureIdTexture :
@@ -2025,6 +2063,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   Gltf->CustomDepthParameters = CustomDepthParameters;
 
+  CesiumTextureUtility::encodeMetadataGameThreadPart(Gltf->EncodedMetadata);
   for (LoadModelResult& model : result) {
     loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
   }
@@ -2227,7 +2266,8 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 }
 
 void UCesiumGltfComponent::BeginDestroy() {
-  CesiumTextureUtility::destroyEncodedMetadata(this->EncodedMetadata);
+  // TODO: why does this crash?
+  // CesiumTextureUtility::destroyEncodedMetadata(this->EncodedMetadata);
   Super::BeginDestroy();
 }
 

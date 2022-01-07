@@ -89,6 +89,7 @@ public:
     FString name;
     LoadedTextureResult* pTexture;
     int64 textureCoordinateIndex;
+    int32 channelOffsets[4];
   };
 
   struct EncodedFeatureTexture {
