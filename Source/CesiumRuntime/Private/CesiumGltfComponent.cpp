@@ -2267,7 +2267,7 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 
 void UCesiumGltfComponent::BeginDestroy() {
   // TODO: why does this crash?
-  // CesiumTextureUtility::destroyEncodedMetadata(this->EncodedMetadata);
+  CesiumTextureUtility::destroyEncodedMetadata(this->EncodedMetadata);
   Super::BeginDestroy();
 }
 

@@ -759,6 +759,7 @@ void CesiumTextureUtility::destroyEncodedMetadata(
     for (EncodedMetadataProperty& encodedProperty :
          encodedFeatureTableIt.Value.encodedProperties) {
       CesiumLifetime::destroy(encodedProperty.pTexture->pTexture);
+      encodedProperty.pTexture->pTexture = nullptr;
     }
   }
 
