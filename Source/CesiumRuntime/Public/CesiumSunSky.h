@@ -79,7 +79,7 @@ protected:
    * latitude, and height. Fixes artifacts seen with the atmosphere rendering
    * when flying high above the surface, or low to the ground in high latitudes.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Atmosphere")
   bool UpdateAtmosphereAtRuntime = true;
 
   /**
@@ -98,7 +98,11 @@ protected:
    * CircumscribedGroundThreshold, this Actor uses a linear interpolation
    * between the two ground radii.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
+      Category = "Cesium|Atmosphere")
   float InscribedGroundThreshold = 30;
 
   /**
@@ -118,41 +122,45 @@ protected:
    * CircumscribedGroundThreshold, this Actor uses a linear interpolation
    * between the two ground radii.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cesium)
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
+      Category = "Cesium|Atmosphere")
   float CircumscribedGroundThreshold = 100;
 
   /**
    * False: Use Directional Light component inside CesiumSunSky.
    * True: Use the assigned Directional Light in the level.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sun)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Sun")
   bool UseLevelDirectionalLight = false;
 
   /**
    * Reference to a manually assigned Directional Light in the level.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sun)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Sun")
   ADirectionalLight* LevelDirectionalLight;
 
   /**
    * The current sun elevation in degrees above the horizontal, as viewed from
    * the Georeference origin.
    */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sun)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sun")
   float Elevation = 0.f;
 
   /**
    * The current sun elevation, corrected for atmospheric diffraction, in
    * degrees above the horizontal, as viewed from the Georeference origin.
    */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sun)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sun")
   float CorrectedElevation = 0.f;
 
   /**
    * The current sun azimuth in degrees clockwise from North toward East, as
    * viewed from the Georeference origin.
    */
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Sun)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sun")
   float Azimuth = 0.f;
 
   /**
@@ -164,7 +172,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = Location,
+      Category = "Cesium|Location",
       meta = (ClampMin = -12, ClampMax = 14))
   float TimeZone = -5.f;
 
@@ -178,7 +186,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = Location,
+      Category = "Cesium|Location",
       meta = (ClampMin = -360, ClampMax = 360))
   float NorthOffset = -90.f;
 
@@ -191,7 +199,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Date and Time",
+      Category = "Cesium|Date and Time",
       meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
   float SolarTime = 13.f;
 
@@ -204,7 +212,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Date and Time",
+      Category = "Cesium|Date and Time",
       meta = (ClampMin = 1, ClampMax = 31))
   int32 Day = 21;
 
@@ -217,7 +225,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Date and Time",
+      Category = "Cesium|Date and Time",
       meta = (ClampMin = 1, ClampMax = 12))
   int32 Month = 9;
 
@@ -230,7 +238,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Date and Time",
+      Category = "Cesium|Date and Time",
       meta = (UIMin = 1800, UIMax = 2200, ClampMin = 0, ClampMax = 4000))
   int32 Year = 2019;
 
@@ -243,8 +251,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      AdvancedDisplay,
-      Category = "Date and Time")
+      Category = "Cesium|Date and Time|Daylight Savings")
   bool UseDaylightSavingTime = true;
 
   /**
@@ -256,9 +263,9 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      AdvancedDisplay,
-      Category = "Date and Time",
-      meta = (ClampMin = 1, ClampMax = 12))
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 12),
+      meta = (EditCondition = "UseDaylightSavingTime"))
   int32 DSTStartMonth = 3;
 
   /**
@@ -270,9 +277,9 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      AdvancedDisplay,
-      Category = "Date and Time",
-      meta = (ClampMin = 1, ClampMax = 31))
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 31),
+      meta = (EditCondition = "UseDaylightSavingTime"))
   int32 DSTStartDay = 10;
 
   /**
@@ -284,9 +291,9 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      AdvancedDisplay,
-      Category = "Date and Time",
-      meta = (ClampMin = 1, ClampMax = 12))
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 12),
+      meta = (EditCondition = "UseDaylightSavingTime"))
   int32 DSTEndMonth = 11;
 
   /**
@@ -298,9 +305,9 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      AdvancedDisplay,
-      Category = "Date and Time",
-      meta = (ClampMin = 1, ClampMax = 31))
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 31),
+      meta = (EditCondition = "UseDaylightSavingTime"))
   int32 DSTEndDay = 3;
 
   /**
@@ -312,9 +319,9 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      AdvancedDisplay,
-      Category = "Date and Time",
-      meta = (ClampMin = 0, ClampMax = 23))
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 0, ClampMax = 23),
+      meta = (EditCondition = "UseDaylightSavingTime"))
   int32 DSTSwitchHour = 2.f;
 
   /**
@@ -322,26 +329,26 @@ protected:
    * This will NOT be automatically set when running on mobile, so make sure
    * to check this setting before building on mobile platforms.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium|Mobile")
   bool EnableMobileRendering;
 
   /**
    * Mobile platforms currently do not support the SkyAtmosphereComponent.
    * In lieu of that, use the engine BP_Sky_Sphere class, or a derived class.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mobile)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Mobile")
   TSubclassOf<AActor> SkySphereClass;
 
   /**
    * Reference to BP_Sky_Sphere or similar actor (mobile only)
    */
-  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mobile)
+  UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Cesium|Mobile")
   AActor* SkySphereActor;
 
   /**
    * Default intensity of directional light that's spawned for mobile rendering.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Mobile)
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium|Mobile")
   float MobileDirectionalLightIntensity = 6.f;
 
 public:
@@ -399,13 +406,13 @@ protected:
    * @param Sky A pointer to the SkyAtmosphereComponent
    * @param Radius The radius in kilometers.
    */
-  UFUNCTION(BlueprintCallable, Category = Cesium)
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, float Radius);
 
   /**
    * Update MobileSkySphere by calling its RefreshMaterial function
    */
-  UFUNCTION(BlueprintCallable, Category = Mobile)
+  UFUNCTION(BlueprintCallable, Category = "Mobile")
   void UpdateSkySphere();
 
   virtual void BeginPlay() override;
