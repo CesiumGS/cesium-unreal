@@ -83,6 +83,7 @@ public:
   struct EncodedVertexMetadata {
     FString name;
     FString featureTableName;
+    int32 textureCoordinateIndex;
   };
 
   struct EncodedFeatureTextureProperty {

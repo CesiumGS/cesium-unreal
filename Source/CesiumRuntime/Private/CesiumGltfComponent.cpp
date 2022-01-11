@@ -485,8 +485,8 @@ static void updateTextureCoordinatesForMetadata(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const CesiumTextureUtility::EncodedMetadata& encodedMetadata,
-    const CesiumTextureUtility::EncodedMetadataPrimitive&
-        encodedPrimitiveMetadata,
+    CesiumTextureUtility::EncodedMetadataPrimitive& encodedPrimitiveMetadata,
+    const TArray<FCesiumVertexMetadata>& vertexFeatures,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
 
   for (const CesiumTextureUtility::EncodedFeatureIdTexture&
@@ -521,6 +521,56 @@ static void updateTextureCoordinatesForMetadata(
             "TEXCOORD_" +
                 std::to_string(encodedProperty.textureCoordinateIndex),
             textureCoordinateMap);
+      }
+    }
+  }
+
+  const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
+      primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
+
+  if (pMetadata) {
+    for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
+      const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
+      CesiumTextureUtility::EncodedVertexMetadata& encodedVertexFeature =
+          encodedPrimitiveMetadata.encodedVertexMetadata[i];
+      size_t textureCoordinateIndex = textureCoordinateMap.size();
+      int32_t attribute = vertexFeature.getAttributeIndex();
+      textureCoordinateMap[attribute] = textureCoordinateIndex;
+      encodedVertexFeature.textureCoordinateIndex = textureCoordinateIndex;
+      int64 vertexCount =
+          UCesiumVertexMetadataBlueprintLibrary::GetVertexCount(vertexFeature);
+
+      // We encode unsigned integer feature ids as floats in the u-channel of
+      // a texture coordinate slot.
+      if (duplicateVertices) {
+        for (int64_t j = 0; j < indices.Num(); ++j) {
+          FStaticMeshBuildVertex& vertex = vertices[j];
+          uint32 vertexIndex = indices[j];
+          if (vertexIndex >= 0 && vertexIndex < vertexCount) {
+            uint32_t featureId = static_cast<uint32_t>(
+                UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
+                    vertexFeature,
+                    vertexIndex));
+            vertex.UVs[textureCoordinateIndex] =
+                FVector2D(*reinterpret_cast<const float*>(&featureId), 0.0f);
+          } else {
+            vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+          }
+        }
+      } else {
+        for (int64_t j = 0; j < vertices.Num(); ++j) {
+          FStaticMeshBuildVertex& vertex = vertices[j];
+          if (j < vertexCount) {
+            uint32_t featureId = static_cast<uint32_t>(
+                UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
+                    vertexFeature,
+                    j));
+            vertex.UVs[textureCoordinateIndex] =
+                FVector2D(*reinterpret_cast<float*>(&featureId), 0.0f);
+          } else {
+            vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+          }
+        }
       }
     }
   }
@@ -934,7 +984,6 @@ static void loadPrimitive(
     }
   }
 
-  // load primitive metadata
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
   primitiveResult.EncodedMetadata =
       CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
@@ -947,6 +996,8 @@ static void loadPrimitive(
       indices,
       halfConstructedModel.EncodedMetadata,
       primitiveResult.EncodedMetadata,
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
+          primitiveResult.Metadata),
       textureCoordinateMap);
 
   // TangentX: Tangent
@@ -1804,6 +1855,30 @@ static void SetMetadataParameterValues(
     if (pEncodedFeatureTable) {
       SetMetadataFeatureTableParameterValues(
           encodedFeatureIdTexture.name,
+          *pEncodedFeatureTable,
+          pMaterial,
+          association,
+          index);
+    }
+  }
+
+  for (const CesiumTextureUtility::EncodedVertexMetadata& encodedVertexFeature :
+       loadResult.EncodedMetadata.encodedVertexMetadata) {
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedVertexFeature.name + "_TextureCoordinateIndex"),
+            association,
+            index),
+        encodedVertexFeature.textureCoordinateIndex);
+
+    const CesiumTextureUtility::EncodedMetadataFeatureTable*
+        pEncodedFeatureTable =
+            gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
+                encodedVertexFeature.featureTableName);
+
+    if (pEncodedFeatureTable) {
+      SetMetadataFeatureTableParameterValues(
+          encodedVertexFeature.name,
           *pEncodedFeatureTable,
           pMaterial,
           association,

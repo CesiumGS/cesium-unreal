@@ -570,7 +570,7 @@ CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
     }
 
     encodedFeatureIdTexture.name =
-        "FeatureIdTexture" + FString::FromInt(static_cast<int32>(i));
+        "FeatureIdTexture:" + FString::FromInt(static_cast<int32>(i));
     encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
     encodedFeatureIdTexture.textureCoordinateIndex =
         featureIdTextureView.getTextureCoordinateIndex();
@@ -606,6 +606,18 @@ CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
     }
 
     encodedFeatureIdTexture.featureTableName = featureTableName;
+  }
+
+  for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
+    const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
+    EncodedVertexMetadata& encodedVertexFeature =
+        result.encodedVertexMetadata[i];
+
+    encodedVertexFeature.name =
+        "FeatureIdAttribute:" + FString::FromInt(static_cast<int32>(i));
+    encodedVertexFeature.featureTableName =
+        UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
+            vertexFeature);
   }
 
   return result;

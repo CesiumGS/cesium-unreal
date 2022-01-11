@@ -32,11 +32,15 @@ public:
   FCesiumVertexMetadata(
       const CesiumGltf::Model& Model,
       const CesiumGltf::Accessor& FeatureIDAccessor,
+      const int32 attributeIndex,
       const FString& FeatureTableName);
+
+  int32 getAttributeIndex() const { return this->_attributeIndex; }
 
 private:
   FeatureIDAccessorType _featureIDAccessor;
   FString _featureTableName;
+  int32 _attributeIndex;
 
   friend class UCesiumVertexMetadataBlueprintLibrary;
 };
@@ -52,6 +56,13 @@ public:
       Category = "Cesium|Metadata|VertexMetadata")
   static const FString&
   GetFeatureTableName(UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata);
+
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|VertexMetadata")
+  static int64 GetVertexCount(UPARAM(ref)
+                                  const FCesiumVertexMetadata& VertexMetadata);
 
   /**
    * Gets the feature ID associated with a given vertex.

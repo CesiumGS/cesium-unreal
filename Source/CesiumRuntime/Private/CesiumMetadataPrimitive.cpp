@@ -58,6 +58,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
       this->_vertexFeatures.Add(FCesiumVertexMetadata(
           model,
           *accessor,
+          featureID->second,
           UTF8_TO_TCHAR(attribute.featureTable.c_str())));
     }
   }
