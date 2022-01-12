@@ -189,7 +189,7 @@ void ACesiumSunSky::BeginPlay() {
   this->UpdateSun();
 
   if (this->UpdateAtmosphereAtRuntime) {
-    this->AdjustAtmosphereRadius();
+    this->UpdateAtmosphereRadius();
   }
 }
 
@@ -231,7 +231,7 @@ void ACesiumSunSky::Tick(float DeltaSeconds) {
   Super::Tick(DeltaSeconds);
 
   if (this->UpdateAtmosphereAtRuntime) {
-    this->AdjustAtmosphereRadius();
+    this->UpdateAtmosphereRadius();
   }
 }
 
@@ -420,7 +420,7 @@ FVector getViewLocation(UWorld* pWorld) {
 
 } // namespace
 
-void ACesiumSunSky::AdjustAtmosphereRadius() {
+void ACesiumSunSky::UpdateAtmosphereRadius() {
   FVector location = getViewLocation(this->GetWorld());
   glm::dvec3 llh =
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(

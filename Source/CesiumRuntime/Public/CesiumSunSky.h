@@ -75,6 +75,166 @@ protected:
   ACesiumGeoreference* GetGeoreference() const;
 
   /**
+   * Gets the time zone, represented as hours offset from GMT.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time",
+      meta = (ClampMin = -12, ClampMax = 14))
+  float TimeZone = -5.f;
+
+  /**
+   * The current solar time represented as hours from midnight.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time",
+      meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
+  float SolarTime = 13.f;
+
+  /**
+   * The day of the month.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time",
+      meta = (ClampMin = 1, ClampMax = 31))
+  int32 Day = 21;
+
+  /**
+   * The month of the year, where 1 is January and 12 is December.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time",
+      meta = (ClampMin = 1, ClampMax = 12))
+  int32 Month = 9;
+
+  /**
+   * The year.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time",
+      meta = (UIMin = 1800, UIMax = 2200, ClampMin = 0, ClampMax = 4000))
+  int32 Year = 2019;
+
+  /**
+   * Offset in the sun's position. Should be set to -90 for the sun's position
+   * to be accurate in the Unreal reference frame.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time",
+      meta = (ClampMin = -360, ClampMax = 360))
+  float NorthOffset = -90.f;
+
+  /**
+   * Enables adjustment of the Solar Time for Daylight Saving Time (DST).
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time|Daylight Savings")
+  bool UseDaylightSavingTime = true;
+
+  /**
+   * Set the Date at which DST starts in the current year.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 12),
+      meta = (EditCondition = "UseDaylightSavingTime"))
+  int32 DSTStartMonth = 3;
+
+  /**
+   * Set the Date at which DST starts in the current year.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 31),
+      meta = (EditCondition = "UseDaylightSavingTime"))
+  int32 DSTStartDay = 10;
+
+  /**
+   * Set the Date at which DST ends in the current year.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 12),
+      meta = (EditCondition = "UseDaylightSavingTime"))
+  int32 DSTEndMonth = 11;
+
+  /**
+   * Set the Date at which DST ends in the current year.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 1, ClampMax = 31),
+      meta = (EditCondition = "UseDaylightSavingTime"))
+  int32 DSTEndDay = 3;
+
+  /**
+   * Hour of the DST Switch for both beginning and end.
+   *
+   * After changing this value from Blueprints or C++, you must call UpdateSun
+   * for it to take effect.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Date and Time|Daylight Savings",
+      meta = (ClampMin = 0, ClampMax = 23),
+      meta = (EditCondition = "UseDaylightSavingTime"))
+  int32 DSTSwitchHour = 2.f;
+
+  /**
    * Updates the atmosphere automatically given current player pawn's longitude,
    * latitude, and height. Fixes artifacts seen with the atmosphere rendering
    * when flying high above the surface, or low to the ground in high latitudes.
@@ -164,167 +324,6 @@ protected:
   float Azimuth = 0.f;
 
   /**
-   * Gets the time zone, represented as hours offset from GMT.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Location",
-      meta = (ClampMin = -12, ClampMax = 14))
-  float TimeZone = -5.f;
-
-  /**
-   * Offset in the sun's position. Should be set to -90 for the sun's position
-   * to be accurate in the Unreal reference frame.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Location",
-      meta = (ClampMin = -360, ClampMax = 360))
-  float NorthOffset = -90.f;
-
-  /**
-   * The current solar time represented as hours from midnight.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time",
-      meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
-  float SolarTime = 13.f;
-
-  /**
-   * The day of the month.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time",
-      meta = (ClampMin = 1, ClampMax = 31))
-  int32 Day = 21;
-
-  /**
-   * The month of the year, where 1 is January and 12 is December.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time",
-      meta = (ClampMin = 1, ClampMax = 12))
-  int32 Month = 9;
-
-  /**
-   * The year.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time",
-      meta = (UIMin = 1800, UIMax = 2200, ClampMin = 0, ClampMax = 4000))
-  int32 Year = 2019;
-
-  /**
-   * Enables adjustment of the Solar Time for Daylight Saving Time (DST).
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time|Daylight Savings")
-  bool UseDaylightSavingTime = true;
-
-  /**
-   * Set the Date at which DST starts in the current year.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time|Daylight Savings",
-      meta = (ClampMin = 1, ClampMax = 12),
-      meta = (EditCondition = "UseDaylightSavingTime"))
-  int32 DSTStartMonth = 3;
-
-  /**
-   * Set the Date at which DST starts in the current year.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time|Daylight Savings",
-      meta = (ClampMin = 1, ClampMax = 31),
-      meta = (EditCondition = "UseDaylightSavingTime"))
-  int32 DSTStartDay = 10;
-
-  /**
-   * Set the Date at which DST ends in the current year.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time|Daylight Savings",
-      meta = (ClampMin = 1, ClampMax = 12),
-      meta = (EditCondition = "UseDaylightSavingTime"))
-  int32 DSTEndMonth = 11;
-
-  /**
-   * Set the Date at which DST ends in the current year.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time|Daylight Savings",
-      meta = (ClampMin = 1, ClampMax = 31),
-      meta = (EditCondition = "UseDaylightSavingTime"))
-  int32 DSTEndDay = 3;
-
-  /**
-   * Hour of the DST Switch for both beginning and end.
-   *
-   * After changing this value from Blueprints or C++, you must call UpdateSun
-   * for it to take effect.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Date and Time|Daylight Savings",
-      meta = (ClampMin = 0, ClampMax = 23),
-      meta = (EditCondition = "UseDaylightSavingTime"))
-  int32 DSTSwitchHour = 2.f;
-
-  /**
    * A switch to toggle between desktop and mobile rendering code paths.
    * This will NOT be automatically set when running on mobile, so make sure
    * to check this setting before building on mobile platforms.
@@ -356,12 +355,12 @@ public:
       CallInEditor,
       BlueprintCallable,
       BlueprintNativeEvent,
-      Category = Sun)
+      Category = "Cesium")
   void UpdateSun();
   void UpdateSun_Implementation();
 
   UFUNCTION(CallInEditor, BlueprintCallable, Category = "Cesium")
-  void AdjustAtmosphereRadius();
+  void UpdateAtmosphereRadius();
 
   /**
    * Convert solar time to Hours:Minutes:Seconds. Copied the implementation
