@@ -10,7 +10,7 @@
 
 class FArguments;
 
-enum class QuickAddItemType { TILESET, SUNSKY, DYNAMIC_PAWN };
+enum class QuickAddItemType { TILESET, SUNSKY, DYNAMIC_PAWN, CARTO_POLYGON };
 
 struct QuickAddItem {
   QuickAddItemType type;
@@ -45,6 +45,7 @@ private:
   void AddIonTilesetToLevel(TSharedRef<QuickAddItem> item);
   void AddCesiumSunSkyToLevel();
   void AddDynamicPawnToLevel();
+  void AddCartoPolygonToLevel();
 
   TArray<TSharedRef<QuickAddItem>> _quickAddItems;
   std::unordered_set<std::string> _itemsBeingAdded;
