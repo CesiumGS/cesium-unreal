@@ -329,7 +329,7 @@ protected:
    * to check this setting before building on mobile platforms.
    */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium|Mobile")
-  bool EnableMobileRendering;
+  bool UseMobileRendering;
 
   /**
    * Mobile platforms currently do not support the SkyAtmosphereComponent.
