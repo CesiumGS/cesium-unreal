@@ -1,15 +1,14 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumIonRasterOverlay.h"
-#include "Cesium3DTilesSelection/IonRasterOverlay.h"
+#include "CesiumDebugColorizeTilesRasterOverlay.h"
+#include "Cesium3DTilesSelection/DebugColorizeTilesRasterOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-UCesiumIonRasterOverlay::CreateOverlay(
+UCesiumDebugColorizeTilesRasterOverlay::CreateOverlay(
     const Cesium3DTilesSelection::RasterOverlayOptions& options) {
-  return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
+  return std::make_unique<
+      Cesium3DTilesSelection::DebugColorizeTilesRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
-      this->IonAssetID,
-      TCHAR_TO_UTF8(*this->IonAccessToken),
       options);
 }

@@ -14,6 +14,9 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // Cesium ion otherwise.
     TilesetExplicitSource = 1,
 
+    // The Georeferencing system was refactored.
+    GeoreferenceRefactoring = 2,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };

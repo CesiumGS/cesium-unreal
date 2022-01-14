@@ -28,7 +28,7 @@ public:
   /**
    * The polygons to rasterize for this overlay.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   TArray<ACesiumCartographicPolygon*> Polygons;
 
   /**
@@ -38,12 +38,14 @@ public:
    * is used for other effects, this option should be disabled to avoid missing
    * tiles.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool ExcludeTilesInside = true;
 
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-  CreateOverlay() override;
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
+      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
+      override;
+
   virtual void OnAdd(
       Cesium3DTilesSelection::Tileset* pTileset,
       Cesium3DTilesSelection::RasterOverlay* pOverlay) override;

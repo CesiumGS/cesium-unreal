@@ -233,14 +233,6 @@ void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
   }
 
   if (pActor) {
-    // Make this the Georeference's designated CesiumSunSky.
-    ACesiumGeoreference* pGeoreference =
-        ACesiumGeoreference::GetDefaultForActor(pActor);
-    if (pGeoreference) {
-      pGeoreference->SunSky = pActor;
-      pGeoreference->UpdateGeoreference();
-    }
-
     GEditor->SelectNone(true, false);
     GEditor->SelectActor(pActor, true, true, true, true);
   }

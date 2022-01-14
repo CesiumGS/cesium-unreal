@@ -26,26 +26,15 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() {
 
   this->MakeLinear();
 
-  this->GeoreferenceComponent =
-      CreateDefaultSubobject<UCesiumGeoreferenceComponent>(
-          TEXT("GeoreferenceComponent"));
+  this->GlobeAnchor =
+      CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
 }
 
 void ACesiumCartographicPolygon::OnConstruction(const FTransform& Transform) {
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-  }
-
   this->MakeLinear();
 }
 
-void ACesiumCartographicPolygon::BeginPlay() {
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
-  }
-
-  this->MakeLinear();
-}
+void ACesiumCartographicPolygon::BeginPlay() { this->MakeLinear(); }
 
 CesiumGeospatial::CartographicPolygon
 ACesiumCartographicPolygon::CreateCartographicPolygon() const {
@@ -62,8 +51,11 @@ ACesiumCartographicPolygon::CreateCartographicPolygon() const {
         i,
         ESplineCoordinateSpace::World);
     glm::dvec3 cartographic =
-        this->Georeference->TransformUeToLongitudeLatitudeHeight(
-            glm::dvec3(unrealPosition.X, unrealPosition.Y, unrealPosition.Z));
+        this->GlobeAnchor->ResolveGeoreference()
+            ->TransformUnrealToLongitudeLatitudeHeight(glm::dvec3(
+                unrealPosition.X,
+                unrealPosition.Y,
+                unrealPosition.Z));
     polygon[i] =
         glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
   }

@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
+#include "CustomDepthParameters.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -36,13 +38,13 @@ struct FRasterOverlayTile {
   GENERATED_BODY()
 
   UPROPERTY()
-  FString OverlayName;
+  FString OverlayName{};
 
   UPROPERTY()
-  UTexture2D* Texture;
+  UTexture2D* Texture = nullptr;
 
-  FLinearColor TranslationAndScale;
-  int32 TextureCoordinateID;
+  FLinearColor TranslationAndScale{};
+  int32 TextureCoordinateID = -1;
 };
 
 UCLASS()
@@ -65,7 +67,8 @@ public:
       std::unique_ptr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseWaterMaterial);
+      UMaterialInterface* BaseWaterMaterial,
+      FCustomDepthParameters CustomDepthParameters);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
@@ -75,6 +78,9 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
+
+  UPROPERTY(EditAnywhere, Category = "Rendering")
+  FCustomDepthParameters CustomDepthParameters;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
@@ -93,8 +99,6 @@ public:
 
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
-
-  virtual void FinishDestroy() override;
 
 private:
   UPROPERTY()

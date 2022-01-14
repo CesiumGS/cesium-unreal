@@ -41,4 +41,6 @@ public:
    * @param CesiumToUnrealTransform The new transformation.
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+
+  virtual void BeginDestroy() override;
 };

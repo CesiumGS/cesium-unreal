@@ -1,15 +1,16 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataPrimitive.h"
-#include "CesiumGltf/MeshPrimitiveEXT_feature_metadata.h"
+#include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
+#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumGltf/ModelEXT_feature_metadata.h"
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
-    const CesiumGltf::ModelEXT_feature_metadata& metadata,
-    const CesiumGltf::MeshPrimitiveEXT_feature_metadata& primitiveMetadata) {
+    const CesiumGltf::ExtensionModelExtFeatureMetadata& metadata,
+    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
+        primitiveMetadata) {
 
   const CesiumGltf::Accessor& indicesAccessor =
       model.getSafe(model.accessors, primitive.indices);
