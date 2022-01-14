@@ -82,7 +82,11 @@
 
   UStaticMesh* pMesh = Cast<UStaticMesh>(pObject);
   if (pMesh) {
+#if ENGINE_MAJOR_VERSION == 5
+    pMesh->SetRenderData(nullptr);
+#elif ENGINE_MAJOR_VERSION == 4
     pMesh->RenderData.Reset();
+#endif
   }
 
   UBodySetup* pBodySetup = Cast<UBodySetup>(pObject);

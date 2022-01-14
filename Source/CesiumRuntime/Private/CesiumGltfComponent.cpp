@@ -1959,11 +1959,6 @@ void UCesiumGltfComponent::SetCollisionEnabled(
   }
 }
 
-void UCesiumGltfComponent::FinishDestroy() {
-  UE_LOG(LogCesium, VeryVerbose, TEXT("UCesiumGltfComponent::FinishDestroy"));
-  Super::FinishDestroy();
-}
-
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,

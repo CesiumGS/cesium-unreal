@@ -118,8 +118,8 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
 
   UStaticMesh* pMesh = this->GetStaticMesh();
   if (pMesh) {
-    if (pMesh->BodySetup) {
-      CesiumLifetime::destroy(pMesh->BodySetup);
+    if (pMesh->GetBodySetup()) {
+      CesiumLifetime::destroy(pMesh->GetBodySetup());
     }
 
     CesiumLifetime::destroy(pMesh);
