@@ -48,9 +48,15 @@ public:
       const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
           primitiveMetadata);
 
+  const CesiumGltf::Model& GetModel() const;
+  const CesiumGltf::MeshPrimitive& GetPrimitive() const;
+
 private:
   TArray<FCesiumMetadataFeatureTable> _featureTables;
   VertexIDAccessorType _vertexIDAccessor;
+
+  CesiumGltf::Model _model;
+  CesiumGltf::MeshPrimitive _meshPrimitive;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
