@@ -43,6 +43,7 @@
 #include "Misc/EnumRange.h"
 #include "MoviePipelineOutputSetting.h"
 #include "MoviePipelineQueueEngineSubsystem.h"
+#include "MoviePipelineQueueSubsystem.h"
 #include "PhysicsPublicCore.h"
 #include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
@@ -872,9 +873,15 @@ ACesium3DTileset::GetCameras() const {
   // If we're movie rendering, the player camera's viewport is wrong. Update it
   // from the movie settings. See:
   // https://udn.unrealengine.com/s/question/0D54z00007LQvtdCAD/how-to-get-the-viewport-size-when-using-the-movie-render-queue
-  UMoviePipelineQueueEngineSubsystem* pMovies =
-      // GEditor->GetEditorSubsystem<UMoviePipelineQueueEngineSubsystem>();
-      GEngine->GetEngineSubsystem<UMoviePipelineQueueEngineSubsystem>();
+#if WITH_EDITOR
+  UMoviePipelineQueueSubsystem* pMovies =
+      GEditor->GetEditorSubsystem<UMoviePipelineQueueSubsystem>();
+#else
+  UMoviePipelineEngineQueueSubsystem* pMovies =
+      GEngine->GetEngineSubsystem<UMoviePipelineEngineQueueSubsystem>();
+
+#endif
+
   if (pMovies) {
     if (pMovies->IsRendering()) {
       pMovies = pMovies;
