@@ -29,7 +29,7 @@ public:
   /**
    * Construct an empty primitive metadata.
    */
-  FCesiumMetadataPrimitive() {}
+  FCesiumMetadataPrimitive() : _model(nullptr), _meshPrimitive(nullptr) {}
 
   /**
    * Constructs a primitive metadata instance.
@@ -48,8 +48,8 @@ public:
       const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
           primitiveMetadata);
 
-  const CesiumGltf::Model& GetModel() const;
-  const CesiumGltf::MeshPrimitive& GetPrimitive() const;
+  const CesiumGltf::Model* GetModel() const;
+  const CesiumGltf::MeshPrimitive* GetPrimitive() const;
 
 private:
   TArray<FCesiumMetadataFeatureTable> _featureTables;

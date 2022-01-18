@@ -69,13 +69,13 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
 }
 
-const CesiumGltf::Model& FCesiumMetadataPrimitive::GetModel() const {
-  return *_model;
+const CesiumGltf::Model* FCesiumMetadataPrimitive::GetModel() const {
+  return _model;
 }
 
-const CesiumGltf::MeshPrimitive& FCesiumMetadataPrimitive::
+const CesiumGltf::MeshPrimitive* FCesiumMetadataPrimitive::
 GetPrimitive() const {
-  return *_meshPrimitive;
+  return _meshPrimitive;
 }
 
 const TArray<FCesiumMetadataFeatureTable>&
