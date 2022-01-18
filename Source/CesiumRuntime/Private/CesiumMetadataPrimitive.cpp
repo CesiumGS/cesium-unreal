@@ -10,10 +10,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const CesiumGltf::MeshPrimitive& primitive,
     const CesiumGltf::ExtensionModelExtFeatureMetadata& metadata,
     const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
-        primitiveMetadata) {
-
-  _model = model;
-  _meshPrimitive = primitive;
+        primitiveMetadata) : _model(&model), _meshPrimitive(&primitive) {
 
   const CesiumGltf::Accessor& indicesAccessor =
       model.getSafe(model.accessors, primitive.indices);
@@ -73,12 +70,12 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
 }
 
 const CesiumGltf::Model& FCesiumMetadataPrimitive::GetModel() const {
-  return _model;
+  return *_model;
 }
 
 const CesiumGltf::MeshPrimitive& FCesiumMetadataPrimitive::
 GetPrimitive() const {
-  return _meshPrimitive;
+  return *_meshPrimitive;
 }
 
 const TArray<FCesiumMetadataFeatureTable>&

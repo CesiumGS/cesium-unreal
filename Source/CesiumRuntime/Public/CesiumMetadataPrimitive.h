@@ -55,8 +55,8 @@ private:
   TArray<FCesiumMetadataFeatureTable> _featureTables;
   VertexIDAccessorType _vertexIDAccessor;
 
-  CesiumGltf::Model _model;
-  CesiumGltf::MeshPrimitive _meshPrimitive;
+  const CesiumGltf::Model* _model;
+  const CesiumGltf::MeshPrimitive* _meshPrimitive;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
