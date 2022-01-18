@@ -251,46 +251,23 @@ bool CesiumIonSession::refreshTokensIfNeeded() {
   return this->isTokenListLoaded();
 }
 
-Future<std::optional<Token>>
+Future<Response<Token>>
 CesiumIonSession::findToken(const FString& token) const {
   if (!this->_connection) {
-    return this->getAsyncSystem().createResolvedFuture<std::optional<Token>>(
-        std::nullopt);
+    return this->getAsyncSystem().createResolvedFuture(
+        Response<Token>(0, "NOTCONNECTED", "Not connected to Cesium ion."));
   }
 
   std::string tokenString = TCHAR_TO_UTF8(*token);
+  std::optional<std::string> maybeTokenID =
+      Connection::getIdFromToken(tokenString);
 
-  // We need a recursive lambda to handle pagination. It's awkward.
-  auto pProcessPage = std::make_shared<
-      std::function<Future<std::optional<Token>>(Response<TokenList> &&)>>();
+  if (!maybeTokenID) {
+    return this->getAsyncSystem().createResolvedFuture(
+        Response<Token>(0, "INVALIDTOKEN", "The token is not valid."));
+  }
 
-  *pProcessPage =
-      [pProcessPage,
-       asyncSystem = this->getAsyncSystem(),
-       tokenString,
-       connection = *this->_connection](
-          Response<TokenList>&& page) -> Future<std::optional<Token>> {
-    if (!page.value) {
-      return asyncSystem.createResolvedFuture<std::optional<Token>>(
-          std::nullopt);
-    }
-
-    for (const Token& token : page.value->items) {
-      if (token.token == tokenString) {
-        return asyncSystem.createResolvedFuture<std::optional<Token>>(token);
-      }
-    }
-
-    // Not on this page, try the next
-    if (page.nextPageUrl) {
-      return connection.nextPage(page).thenInMainThread(*pProcessPage);
-    }
-
-    // Token not found
-    return asyncSystem.createResolvedFuture<std::optional<Token>>(std::nullopt);
-  };
-
-  return this->_connection->tokens().thenInMainThread(*pProcessPage);
+  return this->_connection->token(*maybeTokenID);
 }
 
 namespace {
@@ -319,9 +296,9 @@ Future<Token> getTokenFuture(const CesiumIonSession& session) {
                   ->DefaultIonAccessToken.IsEmpty()) {
     return session
         .findToken(GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken)
-        .thenImmediately([](std::optional<Token>&& maybeToken) {
-          if (maybeToken) {
-            return *maybeToken;
+        .thenImmediately([](Response<Token>&& response) {
+          if (response.value) {
+            return *response.value;
           } else {
             return tokenFromSettings();
           }

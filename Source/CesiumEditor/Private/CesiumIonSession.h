@@ -70,10 +70,10 @@ public:
    * in order get the most up-to-date information about the token.
    *
    * @param token The token.
-   * @return The details of the token, or std::nullopt if the token does not
-   * exist in the signed-in user account.
+   * @return The details of the token, or an error response if the token does
+   * not exist in the signed-in user account.
    */
-  CesiumAsync::Future<std::optional<CesiumIonClient::Token>>
+  CesiumAsync::Future<CesiumIonClient::Response<CesiumIonClient::Token>>
   findToken(const FString& token) const;
 
   /**

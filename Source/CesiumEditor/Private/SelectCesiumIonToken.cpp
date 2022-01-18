@@ -293,24 +293,17 @@ FReply SelectCesiumIonToken::UseOrCreate() {
           Response<Token>(Token(this->_useExistingToken.token), 200, "", ""));
     } else if (this->_tokenSource == TokenSource::Specify) {
       // Check if this is a known token, and use it if so.
-      std::string token = TCHAR_TO_UTF8(*this->_specifyToken.token);
-      const std::vector<Token>& tokens = FCesiumEditorModule::ion().getTokens();
-      auto it = std::find_if(
-          tokens.begin(),
-          tokens.end(),
-          [&token](const Token& candidate) {
-            return candidate.token == token;
+      return FCesiumEditorModule::ion()
+          .findToken(this->_specifyToken.token)
+          .thenInMainThread([this](Response<Token>&& response) {
+            if (response.value) {
+              return std::move(response);
+            } else {
+              Token t;
+              t.token = TCHAR_TO_UTF8(*this->_specifyToken.token);
+              return Response(std::move(t), 200, "", "");
+            }
           });
-
-      Token t{};
-      if (it == tokens.end()) {
-        t.token = std::move(token);
-      } else {
-        t = *it;
-      }
-
-      return asyncSystem.createResolvedFuture(
-          Response<Token>(std::move(t), 200, "", ""));
     } else {
       return asyncSystem.createResolvedFuture(
           Response<Token>(0, "UNKNOWNSOURCE", "The token source is unknown."));

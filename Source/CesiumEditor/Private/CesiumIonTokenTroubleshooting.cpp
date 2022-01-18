@@ -682,14 +682,13 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
                                              ionAssetID = getIonAssetID(
                                                  this->_pIonObject),
                                              connection = *maybeConnection](
-                                                std::optional<Token>&&
-                                                    maybeToken) {
+                                                Response<Token>&& response) {
     if (!pStillAlive.IsValid()) {
       // UObject has been destroyed
       return connection.getAsyncSystem().createResolvedFuture();
     }
 
-    if (!maybeToken) {
+    if (!response.value) {
       UE_LOG(
           LogCesiumEditor,
           Error,
@@ -698,7 +697,7 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
       return connection.getAsyncSystem().createResolvedFuture();
     }
 
-    if (!maybeToken->assetIds) {
+    if (!response.value->assetIds) {
       UE_LOG(
           LogCesiumEditor,
           Warning,
@@ -708,10 +707,10 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
     }
 
     auto it = std::find(
-        maybeToken->assetIds->begin(),
-        maybeToken->assetIds->end(),
+        response.value->assetIds->begin(),
+        response.value->assetIds->end(),
         ionAssetID);
-    if (it != maybeToken->assetIds->end()) {
+    if (it != response.value->assetIds->end()) {
       UE_LOG(
           LogCesiumEditor,
           Warning,
@@ -720,15 +719,15 @@ void CesiumIonTokenTroubleshooting::authorizeToken(
       return connection.getAsyncSystem().createResolvedFuture();
     }
 
-    maybeToken->assetIds->emplace_back(ionAssetID);
+    response.value->assetIds->emplace_back(ionAssetID);
 
     return connection
         .modifyToken(
-            maybeToken->id,
-            maybeToken->name,
-            maybeToken->assetIds,
-            maybeToken->scopes,
-            maybeToken->allowedUrls)
+            response.value->id,
+            response.value->name,
+            response.value->assetIds,
+            response.value->scopes,
+            response.value->allowedUrls)
         .thenInMainThread([pIonObject, pStillAlive, removeObjectToken](
                               Response<NoValue>&& result) {
           if (result.value) {
