@@ -25,6 +25,8 @@ public:
   static FCesiumMetadataPrimitive
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
+  static const CesiumGltf::Model* GetPrimitiveModel(const UPrimitiveComponent* component);
+
   /**
    * Gets the metadata of a face of a glTF primitive component. If the component
    * is not a Cesium glTF primitive component, the returned metadata is empty.

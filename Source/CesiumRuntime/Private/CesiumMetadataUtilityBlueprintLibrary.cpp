@@ -13,6 +13,17 @@ UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
   return pGltfComponent->Metadata;
 }
 
+const CesiumGltf::Model* UCesiumMetadataUtilityBlueprintLibrary::
+GetPrimitiveModel(const UPrimitiveComponent* component) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!IsValid(pGltfComponent)) {
+    return nullptr;
+  }
+
+  return pGltfComponent->pModel;
+}
+
 TMap<FString, FCesiumMetadataGenericValue>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     const UPrimitiveComponent* component,
