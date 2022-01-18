@@ -717,6 +717,11 @@ private:
     FVector location;
     FRotator rotation;
     double fieldOfViewDegrees;
+
+    // If not std::nullopt, the aspect ratio may be different from the one
+    // implied by the viewportSize and black bars are added as needed in order
+    // to achieve this aspect ratio within a larger viewport.
+    std::optional<double> aspectRatio = std::nullopt;
   };
 
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(

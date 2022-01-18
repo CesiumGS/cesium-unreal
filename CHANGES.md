@@ -1,5 +1,13 @@
 # Change Log
 
+### v1.9.0 - 2022-01-03
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause incorrect LOD and culling when viewing a camera in-editor and the camera's aspect ratio does not match the viewport window's aspect ratio.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.10.0 to v0.11.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.8.1 - 2021-12-02
 
 In this release, the cesium-native binaries are built using Xcode 11.3 on macOS instead of Xcode 12. Other platforms are unchanged from v1.8.0.
