@@ -445,8 +445,8 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 }
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
-  SelectCesiumIonToken::SelectTokenIfNecessary().thenInMainThread(
-      [item](const std::optional<Token>& /*maybeToken*/) {
+  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+      .thenInMainThread([item](const std::optional<Token>& /*maybeToken*/) {
         // If token selection was canceled, or if an error occurred while
         // selecting the token, ignore it and create the tileset anyway. It's
         // already been logged if necessary, and we can let the user sort out
@@ -462,31 +462,34 @@ void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
 void CesiumIonPanel::AddOverlayToTerrain(
     TSharedPtr<CesiumIonClient::Asset> item,
     bool useAsBaseLayer) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+      .thenInMainThread([useAsBaseLayer, item](const std::optional<Token>&) {
+        UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+        ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-  ACesium3DTileset* pTilesetActor =
-      FCesiumEditorModule::FindFirstTilesetSupportingOverlays();
-  if (!pTilesetActor) {
-    pTilesetActor =
-        FCesiumEditorModule::CreateTileset("Cesium World Terrain", 1);
-  }
+        ACesium3DTileset* pTilesetActor =
+            FCesiumEditorModule::FindFirstTilesetSupportingOverlays();
+        if (!pTilesetActor) {
+          pTilesetActor =
+              FCesiumEditorModule::CreateTileset("Cesium World Terrain", 1);
+        }
 
-  UCesiumRasterOverlay* pOverlay = useAsBaseLayer
-                                       ? FCesiumEditorModule::AddBaseOverlay(
-                                             pTilesetActor,
-                                             item->name,
-                                             item->id)
-                                       : FCesiumEditorModule::AddOverlay(
-                                             pTilesetActor,
-                                             item->name,
-                                             item->id);
+        UCesiumRasterOverlay* pOverlay =
+            useAsBaseLayer ? FCesiumEditorModule::AddBaseOverlay(
+                                 pTilesetActor,
+                                 item->name,
+                                 item->id)
+                           : FCesiumEditorModule::AddOverlay(
+                                 pTilesetActor,
+                                 item->name,
+                                 item->id);
 
-  pTilesetActor->RerunConstructionScripts();
+        pTilesetActor->RerunConstructionScripts();
 
-  GEditor->SelectNone(true, false);
-  GEditor->SelectActor(pTilesetActor, true, true, true, true);
-  GEditor->SelectComponent(pOverlay, true, true, true);
+        GEditor->SelectNone(true, false);
+        GEditor->SelectActor(pTilesetActor, true, true, true, true);
+        GEditor->SelectComponent(pOverlay, true, true, true);
+      });
 }
 
 namespace {

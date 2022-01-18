@@ -28,7 +28,7 @@ public:
 
   /**
    * Opens a panel to allow the user to select a new token if a project default
-   * token is not already set. If the project defalut token _is_ set, the future
+   * token is not already set. If the project default token _is_ set, the future
    * immediately resolves to the previously-set token.
    *
    * @return A future that resolves when the panel is closed or when it does not
@@ -36,8 +36,23 @@ public:
    * there was one, or to std::nullopt if the panel was closed without selecting
    * a token.
    */
-  static CesiumAsync::SharedFuture<std::optional<CesiumIonClient::Token>>
+  static CesiumAsync::Future<std::optional<CesiumIonClient::Token>>
   SelectTokenIfNecessary();
+
+  /**
+   * Authorizes the project default token to access a list of asset IDs. If the
+   * project default token is not set, a panel is opened to allow the token to
+   * be selected. Then, if possible, the token is modified to allow access to
+   * the list of asset IDs.
+   *
+   * @param assetIDs The asset IDs to be accessed.
+   * @return A future that resolves when the panel is closed or when it does not
+   * need to be opened in the first place. It resolves to the selected token if
+   * there was one, or to std::nullopt if the panel was closed without selecting
+   * a token.
+   */
+  static CesiumAsync::Future<std::optional<CesiumIonClient::Token>>
+  SelectAndAuthorizeToken(const std::vector<int64_t>& assetIDs);
 
   SelectCesiumIonToken();
   virtual ~SelectCesiumIonToken();

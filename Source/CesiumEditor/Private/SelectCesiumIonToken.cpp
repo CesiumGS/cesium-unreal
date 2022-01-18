@@ -3,6 +3,7 @@
 #include "SelectCesiumIonToken.h"
 #include "CesiumEditor.h"
 #include "CesiumRuntimeSettings.h"
+#include "CesiumUtility/joinToString.h"
 #include "EditorStyleSet.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/App.h"
@@ -16,6 +17,7 @@
 
 using namespace CesiumAsync;
 using namespace CesiumIonClient;
+using namespace CesiumUtility;
 
 /*static*/ TSharedPtr<SelectCesiumIonToken>
     SelectCesiumIonToken::_pExistingPanel{};
@@ -48,8 +50,7 @@ SelectCesiumIonToken::SelectNewToken() {
   return *SelectCesiumIonToken::_pExistingPanel->_future;
 }
 
-CesiumAsync::SharedFuture<std::optional<Token>>
-SelectCesiumIonToken::SelectTokenIfNecessary() {
+Future<std::optional<Token>> SelectCesiumIonToken::SelectTokenIfNecessary() {
   return FCesiumEditorModule::ion()
       .getProjectDefaultTokenDetails()
       .thenInMainThread([](const Token& token) {
@@ -63,8 +64,96 @@ SelectCesiumIonToken::SelectTokenIfNecessary() {
               .getAsyncSystem()
               .createResolvedFuture(std::make_optional(token));
         }
-      })
-      .share();
+      });
+}
+
+namespace {
+
+std::vector<int64_t> findUnauthorizedAssets(
+    const std::vector<int64_t>& authorizedAssets,
+    const std::vector<int64_t>& requiredAssets) {
+  std::vector<int64_t> missingAssets;
+
+  for (int64_t assetID : requiredAssets) {
+    auto it =
+        std::find(authorizedAssets.begin(), authorizedAssets.end(), assetID);
+    if (it == authorizedAssets.end()) {
+      missingAssets.emplace_back(assetID);
+    }
+  }
+
+  return missingAssets;
+}
+
+} // namespace
+
+Future<std::optional<Token>> SelectCesiumIonToken::SelectAndAuthorizeToken(
+    const std::vector<int64_t>& assetIDs) {
+  return SelectTokenIfNecessary().thenInMainThread([assetIDs](
+                                                       const std::optional<
+                                                           Token>& maybeToken) {
+    const std::optional<Connection>& maybeConnection =
+        FCesiumEditorModule::ion().getConnection();
+    if (maybeConnection && maybeToken && !maybeToken->id.empty() &&
+        maybeToken->assetIds) {
+      std::vector<int64_t> missingAssets =
+          findUnauthorizedAssets(*maybeToken->assetIds, assetIDs);
+      if (!missingAssets.empty()) {
+        // Refresh the token details. We don't want to update the token based
+        // on stale information.
+        return maybeConnection->token(maybeToken->id)
+            .thenInMainThread([maybeToken,
+                               assetIDs](Response<Token>&& response) {
+              if (response.value) {
+                std::vector<int64_t> missingAssets =
+                    findUnauthorizedAssets(*maybeToken->assetIds, assetIDs);
+                if (!missingAssets.empty()) {
+                  std::vector<std::string> idStrings(missingAssets.size());
+                  std::transform(
+                      missingAssets.begin(),
+                      missingAssets.end(),
+                      idStrings.begin(),
+                      [](int64_t id) { return std::to_string(id); });
+                  UE_LOG(
+                      LogCesiumEditor,
+                      Warning,
+                      TEXT(
+                          "Authorizing the project's default Cesium ion token to access the following asset IDs: %s"),
+                      UTF8_TO_TCHAR(joinToString(idStrings, ", ").c_str()));
+
+                  Token newToken = *maybeToken;
+                  size_t destinationIndex = newToken.assetIds->size();
+                  newToken.assetIds->resize(
+                      newToken.assetIds->size() + missingAssets.size());
+                  std::copy(
+                      missingAssets.begin(),
+                      missingAssets.end(),
+                      newToken.assetIds->begin() + destinationIndex);
+
+                  return FCesiumEditorModule::ion()
+                      .getConnection()
+                      ->modifyToken(
+                          newToken.id,
+                          newToken.name,
+                          newToken.assetIds,
+                          newToken.scopes,
+                          newToken.allowedUrls)
+                      .thenImmediately([maybeToken](Response<NoValue>&&) {
+                        return maybeToken;
+                      });
+                }
+              }
+
+              return FCesiumEditorModule::ion()
+                  .getAsyncSystem()
+                  .createResolvedFuture(std::optional<Token>(maybeToken));
+            });
+      }
+    }
+
+    return FCesiumEditorModule::ion().getAsyncSystem().createResolvedFuture(
+        std::optional<Token>(maybeToken));
+  });
 }
 
 SelectCesiumIonToken::SelectCesiumIonToken() {
@@ -283,10 +372,12 @@ FReply SelectCesiumIonToken::UseOrCreate() {
         return asyncSystem.createResolvedFuture(Response<Token>());
       }
 
+      // Create a new token, initially only with access to asset ID 1 (Cesium
+      // World Terrain).
       return FCesiumEditorModule::ion().getConnection()->createToken(
           TCHAR_TO_UTF8(*this->_createNewToken.name),
           {"assets:read"},
-          std::nullopt,
+          std::vector<int64_t>{1},
           std::nullopt);
     } else if (this->_tokenSource == TokenSource::UseExisting) {
       return asyncSystem.createResolvedFuture(

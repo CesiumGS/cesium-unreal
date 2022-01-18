@@ -178,7 +178,12 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
     return;
   }
 
-  SelectCesiumIonToken::SelectTokenIfNecessary()
+  std::vector<int64_t> assetIDs{item->tilesetID};
+  if (item->overlayID > 0) {
+    assetIDs.push_back(item->overlayID);
+  }
+
+  SelectCesiumIonToken::SelectAndAuthorizeToken(assetIDs)
       .thenInMainThread([connection, tilesetID = item->tilesetID](
                             const std::optional<Token>& /*maybeToken*/) {
         // If token selection was canceled, or if an error occurred while
