@@ -1,10 +1,14 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "SelectCesiumIonToken.h"
+#include "Cesium3DTileset.h"
 #include "CesiumEditor.h"
+#include "CesiumIonRasterOverlay.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/joinToString.h"
+#include "Editor.h"
 #include "EditorStyleSet.h"
+#include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/App.h"
 #include "ScopedTransaction.h"
@@ -171,6 +175,12 @@ SelectCesiumIonToken::~SelectCesiumIonToken() {
 void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
   TSharedRef<SVerticalBox> pLoaderOrContent = SNew(SVerticalBox);
 
+  pLoaderOrContent->AddSlot().AutoHeight()
+      [SNew(STextBlock)
+           .AutoWrapText(true)
+           .Text(FText::FromString(TEXT(
+               "Cesium for Unreal embeds a Cesium ion token in your project in order to allow it to access the assets you add to your levels. Select the Cesium ion token to use.")))];
+
   pLoaderOrContent->AddSlot()
       .AutoHeight()[SNew(SThrobber).Visibility_Lambda([]() {
         return FCesiumEditorModule::ion().isLoadingTokenList()
@@ -312,7 +322,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
           .Title(FText::FromString(TEXT("Select a Cesium ion Token")))
           .AutoCenter(EAutoCenter::PreferredWorkArea)
           .SizingRule(ESizingRule::UserSized)
-          .ClientSize(FVector2D(635, 400))
+          .ClientSize(FVector2D(635, 450))
               [SNew(SBorder)
                    .Visibility(EVisibility::Visible)
                    .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
@@ -416,12 +426,33 @@ FReply SelectCesiumIonToken::UseOrCreate() {
           pSettings->DefaultIonAccessToken =
               UTF8_TO_TCHAR(response.value->token.c_str());
           pSettings->Modify();
+
+          // Refresh all tilesets and overlays that are using the project
+          // default token.
+          UWorld* pWorld = GEditor->GetEditorWorldContext().World();
+          for (auto it = TActorIterator<ACesium3DTileset>(pWorld); it; ++it) {
+            if (it->GetTilesetSource() == ETilesetSource::FromCesiumIon &&
+                it->GetIonAccessToken().IsEmpty()) {
+              it->RefreshTileset();
+            } else {
+              // Tileset itself does not need to be refreshed, but maybe some
+              // overlays do.
+              TArray<UCesiumIonRasterOverlay*> rasterOverlays;
+              it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
+
+              for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
+                if (pOverlay->IonAccessToken.IsEmpty()) {
+                  pOverlay->Refresh();
+                }
+              }
+            }
+          }
         } else {
           UE_LOG(
               LogCesiumEditor,
               Error,
               TEXT("An error occurred while selecting a token: %s"),
-              response.errorMessage.c_str());
+              UTF8_TO_TCHAR(response.errorMessage.c_str()));
         }
 
         promise.resolve(std::move(response.value));
