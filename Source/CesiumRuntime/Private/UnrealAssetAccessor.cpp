@@ -169,7 +169,7 @@ UnrealAssetAccessor::get(
 }
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
-UnrealAssetAccessor::startRequest(
+UnrealAssetAccessor::request(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const std::string& verb,
     const std::string& url,

@@ -150,11 +150,11 @@ bool isNull(const CesiumIonObject& o) {
 FString getLabel(const CesiumIonObject& o) {
   struct Operation {
     FString operator()(ACesium3DTileset* pTileset) {
-      return pTileset->GetActorLabel();
+      return pTileset ? pTileset->GetActorLabel() : TEXT("Unknown");
     }
 
     FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
-      return pRasterOverlay->GetName();
+      return pRasterOverlay ? pRasterOverlay->GetName() : TEXT("Unknown");
     }
   };
 
@@ -168,7 +168,11 @@ FString getName(const CesiumIonObject& o) {
 int64 getIonAssetID(const CesiumIonObject& o) {
   struct Operation {
     int64 operator()(ACesium3DTileset* pTileset) {
-      return pTileset->GetIonAssetID();
+      if (pTileset->GetTilesetSource() != ETilesetSource::FromCesiumIon) {
+        return 0;
+      } else {
+        return pTileset->GetIonAssetID();
+      }
     }
 
     int64 operator()(UCesiumRasterOverlay* pRasterOverlay) {
@@ -188,7 +192,11 @@ int64 getIonAssetID(const CesiumIonObject& o) {
 FString getIonAccessToken(const CesiumIonObject& o) {
   struct Operation {
     FString operator()(ACesium3DTileset* pTileset) {
-      return pTileset->GetIonAccessToken();
+      if (pTileset->GetTilesetSource() != ETilesetSource::FromCesiumIon) {
+        return FString();
+      } else {
+        return pTileset->GetIonAccessToken();
+      }
     }
 
     FString operator()(UCesiumRasterOverlay* pRasterOverlay) {
@@ -252,6 +260,22 @@ UObject* asUObject(const CesiumIonObject& o) {
   return std::visit([](auto p) -> UObject* { return p; }, o);
 }
 
+bool isUsingCesiumIon(const CesiumIonObject& o) {
+  struct Operation {
+    bool operator()(ACesium3DTileset* pTileset) {
+      return pTileset->GetTilesetSource() == ETilesetSource::FromCesiumIon;
+    }
+
+    bool operator()(UCesiumRasterOverlay* pRasterOverlay) {
+      UCesiumIonRasterOverlay* pIon =
+          Cast<UCesiumIonRasterOverlay>(pRasterOverlay);
+      return pIon != nullptr;
+    }
+  };
+
+  return std::visit(Operation(), o);
+}
+
 } // namespace
 
 void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
@@ -259,6 +283,26 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
 
   CesiumIonObject pIonObject = InArgs._IonObject;
   if (isNull(pIonObject)) {
+    return;
+  }
+
+  if (!isUsingCesiumIon(pIonObject)) {
+    SWindow::Construct(
+        SWindow::FArguments()
+            .Title(FText::FromString(FString::Format(
+                TEXT("{0}: Cesium ion Token Troubleshooting"),
+                {*getLabel(pIonObject)})))
+            .AutoCenter(EAutoCenter::PreferredWorkArea)
+            .SizingRule(ESizingRule::UserSized)
+            .ClientSize(FVector2D(800, 600))
+                [SNew(SBorder)
+                     .Visibility(EVisibility::Visible)
+                     .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
+                     .Padding(FMargin(10.0f, 20.0f, 10.0f, 20.0f))
+                         [SNew(STextBlock)
+                              .AutoWrapText(true)
+                              .Text(FText::FromString(TEXT(
+                                  "This object is not configured to connect to Cesium ion.")))]]);
     return;
   }
 
@@ -637,9 +681,6 @@ void CesiumIonTokenTroubleshooting::selectNewProjectDefaultToken() {
         if (!newToken) {
           return;
         }
-
-        GetMutableDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken =
-            UTF8_TO_TCHAR(newToken->token.c_str());
 
         pPanel->useProjectDefaultToken();
       });
