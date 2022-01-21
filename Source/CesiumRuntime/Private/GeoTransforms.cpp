@@ -6,9 +6,6 @@
 #include "CesiumTransforms.h"
 #include "VecMath.h"
 
-// Debugging: Remove
-#include "Math/UnrealMath.h"
-
 // ONLY used for logging!
 #include "CesiumRuntime.h"
 
