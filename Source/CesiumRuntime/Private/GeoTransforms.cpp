@@ -6,6 +6,9 @@
 #include "CesiumTransforms.h"
 #include "VecMath.h"
 
+// Debugging: Remove
+#include "Math/UnrealMath.h"
+
 // ONLY used for logging!
 #include "CesiumRuntime.h"
 
@@ -135,22 +138,19 @@ glm::dquat GeoTransforms::TransformRotatorUnrealToEastNorthUp(
     const glm::dvec3& origin,
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
-  glm::dmat3 enuToFixedUE =
-      this->ComputeEastNorthUpToUnreal(origin, ueLocation);
-  glm::dquat enuAdjustmentQuat = glm::quat_cast(enuToFixedUE);
-  return enuAdjustmentQuat * UERotator;
+  glm::dmat3 enuToUe = this->ComputeEastNorthUpToUnreal(origin, ueLocation);
+  glm::dmat3 ueToEnu = glm::affineInverse(enuToUe);
+  glm::dquat ueToEnuQuat = glm::quat_cast(ueToEnu);
+  return ueToEnuQuat * UERotator;
 }
 
 glm::dquat GeoTransforms::TransformRotatorEastNorthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dquat& ENURotator,
     const glm::dvec3& ueLocation) const noexcept {
-
-  glm::dmat3 enuToFixedUE =
-      this->ComputeEastNorthUpToUnreal(origin, ueLocation);
-  glm::dmat3 fixedUeToEnu = glm::affineInverse(enuToFixedUE);
-  glm::dquat fixedUeToEnuQuat = glm::quat_cast(fixedUeToEnu);
-  return fixedUeToEnuQuat * ENURotator;
+  glm::dmat3 enuToUe = this->ComputeEastNorthUpToUnreal(origin, ueLocation);
+  glm::dquat enuToUeQuat = glm::quat_cast(enuToUe);
+  return enuToUeQuat * ENURotator;
 }
 
 glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(
@@ -159,8 +159,6 @@ glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(
   glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
   glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
 
-  // Camera Axes = ENU
-  // Unreal Axes = controlled by Georeference
   glm::dmat3 rotationCesium =
       glm::dmat3(this->_ecefToGeoreferenced) * enuToEcef;
 
