@@ -31,4 +31,5 @@ private:
   void signOut();
   void openDocumentation();
   void openSupport();
+  void openTokenSelector();
 };

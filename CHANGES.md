@@ -1,9 +1,11 @@
 # Change Log
 
-### v1.10.0 - ????
+### ? - ?
 
 ##### Additions :tada:
 
+- Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
+- Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
 - Added experimental UE5 Early Access support.
 - Added collision meshes for tilesets when using the Chaos physics engine.
 
