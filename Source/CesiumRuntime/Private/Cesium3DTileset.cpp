@@ -1088,6 +1088,62 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   return cameras;
 }
 
+/*static*/ Cesium3DTilesSelection::ViewState
+ACesium3DTileset::CreateViewStateFromViewParameters(
+    const FCesiumCamera& camera,
+    const glm::dmat4& unrealWorldToTileset) {
+
+  double horizontalFieldOfView =
+      FMath::DegreesToRadians(camera.FieldOfViewDegrees);
+
+  double actualAspectRatio;
+  glm::dvec2 size(camera.ViewportSize.X, camera.ViewportSize.Y);
+
+  if (camera.OverrideAspectRatio != 0.0f) {
+    // Use aspect ratio and recompute effective viewport size after black bars
+    // are added.
+    actualAspectRatio = camera.OverrideAspectRatio;
+    double computedX = actualAspectRatio * camera.ViewportSize.Y;
+    double computedY = camera.ViewportSize.Y / actualAspectRatio;
+
+    double barWidth = camera.ViewportSize.X - computedX;
+    double barHeight = camera.ViewportSize.Y - computedY;
+
+    if (barWidth > 0.0 && barWidth > barHeight) {
+      // Black bars on the sides
+      size.x = computedX;
+    } else if (barHeight > 0.0 && barHeight > barWidth) {
+      // Black bars on the top and bottom
+      size.y = computedY;
+    }
+  } else {
+    actualAspectRatio = camera.ViewportSize.X / camera.ViewportSize.Y;
+  }
+
+  double verticalFieldOfView =
+      atan(tan(horizontalFieldOfView * 0.5) / actualAspectRatio) * 2.0;
+
+  FVector direction = camera.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+  FVector up = camera.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+
+  glm::dvec3 tilesetCameraLocation = glm::dvec3(
+      unrealWorldToTileset *
+      glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
+  glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
+      unrealWorldToTileset *
+      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
+  glm::dvec3 tilesetCameraUp = glm::normalize(
+      glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
+
+  return Cesium3DTilesSelection::ViewState::create(
+      tilesetCameraLocation,
+      tilesetCameraFront,
+      tilesetCameraUp,
+      size,
+      horizontalFieldOfView,
+      verticalFieldOfView);
+}
+
 #if WITH_EDITOR
 std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
   if (!GEditor) {
@@ -1127,11 +1183,16 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
-    float aspectRatio = pEditorViewportClient->IsAspectRatioConstrained()
-                            ? pEditorViewportClient->AspectRatio
-                            : (size.X / size.Y);
-
-    cameras.emplace_back(size, location, rotation, fov, aspectRatio);
+    if (pEditorViewportClient->IsAspectRatioConstrained()) {
+      cameras.emplace_back(
+          size,
+          location,
+          rotation,
+          fov,
+          pEditorViewportClient->AspectRatio);
+    } else {
+      cameras.emplace_back(size, location, rotation, fov);
+    }
   }
 
   return cameras;
@@ -1419,7 +1480,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(camera.createViewState(unrealWorldToTileset));
+    frustums.push_back(
+        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
