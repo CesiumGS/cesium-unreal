@@ -228,7 +228,11 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
         NAME_None,
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
+#if ENGINE_MAJOR_VERSION >= 5
     pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
+#else
+    pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
+#endif
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;

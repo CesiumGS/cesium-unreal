@@ -54,8 +54,16 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->LightSourceAngle = 0.5;
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
+
+#if ENGINE_MAJOR_VERSION >= 5
+  // We need to set both of these, because in the case of a pre-UE5 asset, UE5
+  // will replace the normal atmosphere sun light flag with the value of the
+  // deprecated one on load.
   DirectionalLight->bUsedAsAtmosphereSunLight_DEPRECATED = true;
   DirectionalLight->SetAtmosphereSunLight(true);
+#else
+  DirectionalLight->bUsedAsAtmosphereSunLight = true;
+#endif
 
   // The location of the DirectionalLight should never matter, but by making it
   // absolute we do less math when the Actor moves as a result of the
@@ -78,8 +86,13 @@ ACesiumSunSky::ACesiumSunSky() {
   SkyLight->bRealTimeCapture = true;
   SkyLight->bLowerHemisphereIsBlack = false;
   SkyLight->bTransmission = true;
-  SkyLight->CastRaytracedShadow = ECastRayTracedShadow::Enabled;
   SkyLight->SamplesPerPixel = 2;
+
+#if ENGINE_MAJOR_VERSION >= 5
+  SkyLight->CastRaytracedShadow = ECastRayTracedShadow::Enabled;
+#else
+  SkyLight->bCastRaytracedShadow = true;
+#endif
 
   // The Sky Light is fixed at the Georeference origin.
   // TODO: should it follow the player?
