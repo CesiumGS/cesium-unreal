@@ -52,9 +52,10 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->SetupAttachment(Scene);
   DirectionalLight->Intensity = 111000.f;
   DirectionalLight->LightSourceAngle = 0.5;
-  DirectionalLight->bAtmosphereSunLight = true;
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
+  DirectionalLight->bUsedAsAtmosphereSunLight_DEPRECATED = true;
+  DirectionalLight->SetAtmosphereSunLight(true);
 
   // The location of the DirectionalLight should never matter, but by making it
   // absolute we do less math when the Actor moves as a result of the
