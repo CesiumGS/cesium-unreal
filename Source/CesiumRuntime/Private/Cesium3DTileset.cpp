@@ -949,14 +949,14 @@ ACesium3DTileset::GetPlayerCameras() const {
         int32 _y;
 
         pStereoRendering->AdjustViewRect(
-            EStereoscopicPass::eSSP_LEFT_EYE,
+            EStereoscopicEye::eSSE_LEFT_EYE,
             _x,
             _y,
             stereoLeftSizeX,
             stereoLeftSizeY);
 
         pStereoRendering->AdjustViewRect(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            EStereoscopicEye::eSSE_RIGHT_EYE,
             _x,
             _y,
             stereoRightSizeX,
@@ -970,13 +970,13 @@ ACesium3DTileset::GetPlayerCameras() const {
         FVector leftEyeLocation = location;
         FRotator leftEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_LEFT_EYE,
+            EStereoscopicEye::eSSE_LEFT_EYE,
             leftEyeRotation,
             worldToMeters,
             leftEyeLocation);
 
         FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_LEFT_EYE);
+            EStereoscopicEye::eSSE_LEFT_EYE);
 
         // TODO: consider assymetric frustums using 4 fovs
         float one_over_tan_half_hfov = projection.M[0][0];
@@ -995,13 +995,13 @@ ACesium3DTileset::GetPlayerCameras() const {
         FVector rightEyeLocation = location;
         FRotator rightEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            EStereoscopicEye::eSSE_RIGHT_EYE,
             rightEyeRotation,
             worldToMeters,
             rightEyeLocation);
 
         FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_RIGHT_EYE);
+            EStereoscopicEye::eSSE_RIGHT_EYE);
 
         float one_over_tan_half_hfov = projection.M[0][0];
 

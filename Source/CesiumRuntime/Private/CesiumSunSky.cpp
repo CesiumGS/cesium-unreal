@@ -52,7 +52,7 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->SetupAttachment(Scene);
   DirectionalLight->Intensity = 111000.f;
   DirectionalLight->LightSourceAngle = 0.5;
-  DirectionalLight->bUsedAsAtmosphereSunLight = true;
+  DirectionalLight->bAtmosphereSunLight = true;
   DirectionalLight->DynamicShadowCascades = 5;
   DirectionalLight->CascadeDistributionExponent = 1.4;
 
@@ -77,7 +77,7 @@ ACesiumSunSky::ACesiumSunSky() {
   SkyLight->bRealTimeCapture = true;
   SkyLight->bLowerHemisphereIsBlack = false;
   SkyLight->bTransmission = true;
-  SkyLight->bCastRaytracedShadow = true;
+  SkyLight->CastRaytracedShadow = ECastRayTracedShadow::Enabled;
   SkyLight->SamplesPerPixel = 2;
 
   // The Sky Light is fixed at the Georeference origin.

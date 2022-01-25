@@ -228,7 +228,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
         NAME_None,
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-    pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;

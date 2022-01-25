@@ -191,11 +191,11 @@ public class CesiumRuntime : ModuleRules
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
 
-        if (Target.Platform == UnrealTargetPlatform.Android &&
-            Target.Version.MajorVersion == 4 &&
-            Target.Version.MinorVersion == 26 &&
-            Target.Version.PatchVersion < 2)
-        {
+        //if (Target.Platform == UnrealTargetPlatform.Android &&
+        //    Target.Version.MajorVersion == 4 &&
+        //    Target.Version.MinorVersion == 26 &&
+        //    Target.Version.PatchVersion < 2)
+        //{
             // In UE versions prior to 4.26.2, the Unreal Build Tool on Android
             // (AndroidToolChain.cs) ignores the CppStandard property and just
             // always uses C++14. Our plugin can't be compiled with C++14.
@@ -207,7 +207,7 @@ public class CesiumRuntime : ModuleRules
             Type type = Target.GetType();
             FieldInfo innerField = type.GetField("Inner", BindingFlags.Instance | BindingFlags.NonPublic);
             TargetRules inner = (TargetRules)innerField.GetValue(Target);
-            inner.AdditionalCompilerArguments += " -std=c++17";
-        }
+            inner.AdditionalCompilerArguments += " /std:c++17";
+        //}
     }
 }

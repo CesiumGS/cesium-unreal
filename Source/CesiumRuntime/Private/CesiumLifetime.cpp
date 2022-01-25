@@ -21,9 +21,7 @@
     return true;
   }
 
-  if (!pObject->IsPendingKill()) {
-    pObject->MarkPendingKill();
-  }
+  pObject->MarkAsGarbage();
 
   if (pObject->HasAnyFlags(RF_FinishDestroyed)) {
     // Already done being destroyed.
@@ -76,8 +74,9 @@
 
   UTexture2D* pTexture2D = Cast<UTexture2D>(pObject);
   if (pTexture2D) {
-    delete pTexture2D->PlatformData;
-    pTexture2D->PlatformData = nullptr;
+    FTexturePlatformData* pPlatformData = pTexture2D->GetPlatformData();
+    pTexture2D->SetPlatformData(nullptr);
+    delete pPlatformData;
   }
 
   UStaticMesh* pMesh = Cast<UStaticMesh>(pObject);
