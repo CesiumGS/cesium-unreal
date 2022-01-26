@@ -19,6 +19,16 @@ else()
     endif()
 endif()
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+    # Fix for PThread library not in path
+    set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+
+    find_package(Threads REQUIRED)
+endif()
+
 # Rename sqlite3* symbols to cesium_sqlite3* so they don't conflict with UE's sqlite3,
 # which has a bunch of limitations and is not considered public.
 set(PRIVATE_CESIUM_SQLITE ON)
