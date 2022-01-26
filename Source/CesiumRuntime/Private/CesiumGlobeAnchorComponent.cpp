@@ -5,6 +5,7 @@
 #include "CesiumTransforms.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
+#include "Engine/World.h"
 #include "VecMath.h"
 #include <glm/gtx/matrix_decompose.hpp>
 

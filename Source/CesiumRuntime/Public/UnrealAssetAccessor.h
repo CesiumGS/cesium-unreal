@@ -5,8 +5,9 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetAccessor.h"
 #include <cstddef>
+#include "Containers/UnrealString.h"
 
-class CESIUMRUNTIME_API UnrealAssetAccessor
+class __declspec(dllexport) UnrealAssetAccessor
     : public CesiumAsync::IAssetAccessor {
 public:
   UnrealAssetAccessor();

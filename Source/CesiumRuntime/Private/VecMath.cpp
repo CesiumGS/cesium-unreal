@@ -8,6 +8,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
+#include "Math/RotationMatrix.h"
+#include "Math/Quat.h"
 
 inline glm::dmat4 VecMath::createMatrix4D(const FMatrix& m) noexcept {
   return glm::dmat4(

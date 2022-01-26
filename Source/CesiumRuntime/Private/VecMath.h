@@ -3,6 +3,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "Math/Matrix.h"
 
 /**
  * @brief Vector math utility functions.
