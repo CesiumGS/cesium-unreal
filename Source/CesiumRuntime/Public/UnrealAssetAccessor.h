@@ -6,8 +6,9 @@
 #include "CesiumAsync/IAssetAccessor.h"
 #include <cstddef>
 #include "Containers/UnrealString.h"
+#include "HAL/Platform.h"
 
-class CESIUMRRUNTIME_API UnrealAssetAccessor
+class CESIUMRUNTIME_API UnrealAssetAccessor
     : public CesiumAsync::IAssetAccessor {
 public:
   UnrealAssetAccessor();
