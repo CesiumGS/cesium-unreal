@@ -23,7 +23,7 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 
 * [Windows](developer-setup-windows.md)
 * [Linux](developer-setup-linux.md)
-* [Mac OS X](developer-setup-osx.md)
+* [macOS](developer-setup-osx.md)
 
 ## Deployment instructions
 

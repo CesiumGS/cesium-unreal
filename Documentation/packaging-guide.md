@@ -24,11 +24,11 @@ To package the plugin, follow the steps below:
         ```cmd
         "C:\Program Files\Epic Games\UE_4.26\Engine\Build\BatchFiles\RunUAT.bat" BuildPlugin -Plugin="C:\workspace\cesium-unreal\CesiumForUnreal.uplugin" -Package="C:\workspace\Packages\CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64+Android
         ```
-    * Mac OS X Example:
+    * macOS Example:
         ```bash
         "$UNREAL_ENGINE_DIR/Engine/Build/BatchFiles/RunUAT.sh" BuildPlugin -Plugin="/home/user/workspace/cesium-unreal/CesiumForUnreal.uplugin" -Package="/home/user/workspace/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
         ```
-    * Mac OS X + iOS Example (ensure you have completed the [iOS-specific cross-compilation steps](https://github.com/CesiumGS/cesium-unreal/blob/main/Documentation/developer-setup-osx.md#cmake-command-line-for-ios) first):
+    * macOS + iOS Example (ensure you have completed the [iOS-specific cross-compilation steps](https://github.com/CesiumGS/cesium-unreal/blob/main/Documentation/developer-setup-osx.md#cmake-command-line-for-ios) first):
         ```bash
         "$UNREAL_ENGINE_DIR/Engine/Build/BatchFiles/RunUAT.command" BuildPlugin -Plugin="/Users/user/workspace/cesium-unreal/CesiumForUnreal.uplugin" -Package="/Users/user/workspace/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac+iOS
         ```

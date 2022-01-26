@@ -1,4 +1,4 @@
-Detailed instructions for setting up a Cesium for Unreal development environment on OS X. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
+Detailed instructions for setting up a Cesium for Unreal development environment on macOS. Please see the [Developer Setup](developer-setup.md) page for an overview of the process.
 
 # Prerequisities
 
@@ -31,7 +31,7 @@ This can be set up with the following sequence of commands, on the console, star
 
 # Building cesium-native
 
-The cesium-native libraries and their dependencies use CMake and must be built separately from Cesium for Unreal. There are a number of ways to do this, but typically on OS X this can be done with CMake from the command-line.
+The cesium-native libraries and their dependencies use CMake and must be built separately from Cesium for Unreal. There are a number of ways to do this, but typically on macOS.
 
 ## CMake command-line
 
@@ -50,9 +50,9 @@ To build a Release version, do the following:
 
 ## CMake command-line for iOS
 
-**Note**: It is recommended that the build steps for CMake command-line for Os X (above) be completed first. Unreal Engine Editor will not launch without the host side binaries compiled as well.
+**Note**: It is recommended that the build steps for CMake command-line for macOS (above) be completed first. Unreal Engine Editor will not launch without the host side binaries compiled as well.
 
-Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one use for OS X as this will require compiling for a different architecture.
+Configure the CMake project in the `~/dev/cesium-unreal-samples/Plugins/cesium-unreal/extern` directory by following the instructions below. Use a different build directory than the one use for macOS as this will require compiling for a different architecture.
 
 **Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
 
