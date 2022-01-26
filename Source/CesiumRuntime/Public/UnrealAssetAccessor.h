@@ -7,7 +7,7 @@
 #include <cstddef>
 #include "Containers/UnrealString.h"
 
-class __declspec(dllexport) UnrealAssetAccessor
+class CESIUMRRUNTIME_API UnrealAssetAccessor
     : public CesiumAsync::IAssetAccessor {
 public:
   UnrealAssetAccessor();
