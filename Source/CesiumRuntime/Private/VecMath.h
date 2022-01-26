@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
 #include "Math/Matrix.h"
+#include <glm/glm.hpp>
 
 /**
  * @brief Vector math utility functions.

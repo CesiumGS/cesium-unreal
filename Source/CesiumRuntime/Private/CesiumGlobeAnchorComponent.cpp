@@ -2,13 +2,13 @@
 #include "CesiumActors.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeoreference.h"
+#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneComponent.h"
-#include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "GameFramework/Actor.h"
 #include "VecMath.h"
 #include <glm/gtx/matrix_decompose.hpp>
-#include "CesiumRuntime.h"
 
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:

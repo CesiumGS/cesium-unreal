@@ -3,13 +3,13 @@
 #include "VecMath.h"
 
 #include "CesiumUtility/Math.h"
+#include "Math/Quat.h"
+#include "Math/RotationMatrix.h"
 #include <CesiumGeometry/AxisTransforms.h>
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
-#include "Math/RotationMatrix.h"
-#include "Math/Quat.h"
 
 glm::dmat4 VecMath::createMatrix4D(const FMatrix& m) noexcept {
   return glm::dmat4(
@@ -102,8 +102,7 @@ glm::dmat4 VecMath::createTranslationMatrix4D(
       tw);
 }
 
-glm::dmat4
-VecMath::createRotationMatrix4D(const FRotator& rot) noexcept {
+glm::dmat4 VecMath::createRotationMatrix4D(const FRotator& rot) noexcept {
   const FMatrix& m = FRotationMatrix::Make(rot);
   return createMatrix4D(m);
 }
@@ -176,62 +175,52 @@ FQuat VecMath::createQuaternion(const glm::dquat& q) noexcept {
   return FQuat(q.x, q.y, q.z, q.w);
 }
 
-glm::dvec4
-VecMath::add4D(const FVector& f, const FIntVector& i) noexcept {
+glm::dvec4 VecMath::add4D(const FVector& f, const FIntVector& i) noexcept {
   return glm::dvec4(VecMath::add3D(f, i), 1.0);
 }
 
-glm::dvec4
-VecMath::add4D(const FIntVector& i, const FVector& f) noexcept {
+glm::dvec4 VecMath::add4D(const FIntVector& i, const FVector& f) noexcept {
   return glm::dvec4(VecMath::add3D(i, f), 1.0);
 }
 
-glm::dvec4
-VecMath::add4D(const glm::dvec4& d, const FIntVector& i) noexcept {
+glm::dvec4 VecMath::add4D(const glm::dvec4& d, const FIntVector& i) noexcept {
   return glm::dvec4(VecMath::add3D(glm::dvec3(d), i), d.w);
 }
 
-glm::dvec3
-VecMath::add3D(const FIntVector& i, const FVector& f) noexcept {
+glm::dvec3 VecMath::add3D(const FIntVector& i, const FVector& f) noexcept {
   return glm::dvec3(
       static_cast<double>(i.X) + f.X,
       static_cast<double>(i.Y) + f.Y,
       static_cast<double>(i.Z) + f.Z);
 }
 
-glm::dvec3
-VecMath::add3D(const FVector& f, const FIntVector& i) noexcept {
+glm::dvec3 VecMath::add3D(const FVector& f, const FIntVector& i) noexcept {
   return glm::dvec3(
       static_cast<double>(f.X) + i.X,
       static_cast<double>(f.Y) + i.Y,
       static_cast<double>(f.Z) + i.Z);
 }
 
-glm::dvec3
-VecMath::add3D(const glm::dvec3& f, const FIntVector& i) noexcept {
+glm::dvec3 VecMath::add3D(const glm::dvec3& f, const FIntVector& i) noexcept {
   return glm::dvec3(f.x + i.X, f.y + i.Y, f.z + i.Z);
 }
 
-glm::dvec4
-VecMath::subtract4D(const FVector& f, const FIntVector& i) noexcept {
+glm::dvec4 VecMath::subtract4D(const FVector& f, const FIntVector& i) noexcept {
   return glm::dvec4(VecMath::subtract3D(f, i), 1.0);
 }
 
-glm::dvec4
-VecMath::subtract4D(const FIntVector& i, const FVector& f) noexcept {
+glm::dvec4 VecMath::subtract4D(const FIntVector& i, const FVector& f) noexcept {
   return glm::dvec4(VecMath::subtract3D(i, f), 1.0);
 }
 
-glm::dvec3
-VecMath::subtract3D(const FVector& f, const FIntVector& i) noexcept {
+glm::dvec3 VecMath::subtract3D(const FVector& f, const FIntVector& i) noexcept {
   return glm::dvec3(
       static_cast<double>(f.X) - i.X,
       static_cast<double>(f.Y) - i.Y,
       static_cast<double>(f.Z) - i.Z);
 }
 
-glm::dvec3
-VecMath::subtract3D(const FIntVector& i, const FVector& f) noexcept {
+glm::dvec3 VecMath::subtract3D(const FIntVector& i, const FVector& f) noexcept {
   return glm::dvec3(
       static_cast<double>(i.X) - f.X,
       static_cast<double>(i.Y) - f.Y,
