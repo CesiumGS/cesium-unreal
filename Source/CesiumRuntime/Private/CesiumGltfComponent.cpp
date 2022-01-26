@@ -1601,7 +1601,7 @@ static void loadModelGameThreadPart(
   pStaticMesh->bIsBuiltAtRuntime = true;
   pStaticMesh->RenderData =
       TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
-#elseif ENGINE_MAJOR_VERSION == 4
+#elif ENGINE_MAJOR_VERSION == 4
   // UE 4.27 or later
   pStaticMesh->SetIsBuiltAtRuntime(true);
   pStaticMesh->SetRenderData(
