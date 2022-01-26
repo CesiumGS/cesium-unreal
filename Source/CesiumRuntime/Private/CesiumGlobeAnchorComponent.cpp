@@ -8,6 +8,7 @@
 #include "Engine/World.h"
 #include "VecMath.h"
 #include <glm/gtx/matrix_decompose.hpp>
+#include "CesiumRuntime.h"
 
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:
