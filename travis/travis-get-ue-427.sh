@@ -11,7 +11,7 @@ elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
     aws s3 cp s3://cesium-unreal-engine/macos-2022-01-27/UE_4272_macOS.zip .
 
-    unzip UE_4272_macOS.zip -d $HOME
+    unzip -q UE_4272_macOS.zip -d $HOME
     rm UE_4272_macOS.zip
 # elif [[ $TRAVIS_OS_NAME == "linux" ]]
 # then
