@@ -239,8 +239,8 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - chmod +x "./travis/travis-get-ue.sh"
-    - "./travis/travis-get-ue.sh"
+    - chmod +x "./travis/travis-get-ue-427.sh"
+    - "./travis/travis-get-ue-427.sh"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
@@ -254,7 +254,7 @@ jobs:
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
-    - cd $HOME/UE_4.27/Users/Shared/Epic\ Games/UE_4.27/Engine/Build/BatchFiles
+    - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
