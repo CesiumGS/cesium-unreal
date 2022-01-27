@@ -709,16 +709,28 @@ private:
 };
 
 static std::string getCacheDatabaseName() {
-  FString CesiumFolder =
+#if PLATFORM_ANDROID || PLATFORM_IOS
+  FString BaseDirectory =
       FPaths::Combine(*FPaths::ProjectSavedDir(), TEXT("Cesium"));
-  if (!IFileManager::Get().DirectoryExists(*CesiumFolder)) {
-    IFileManager::Get().MakeDirectory(*CesiumFolder, true);
+  if (!IFileManager::Get().DirectoryExists(*BaseDirectory)) {
+    IFileManager::Get().MakeDirectory(*BaseDirectory, true);
   }
+#else
+  FString BaseDirectory = FPaths::EngineUserDir();
+#endif
+
   FString CesiumDBFile =
-      FPaths::Combine(*CesiumFolder, TEXT("cesium-request-cache.sqlite"));
+      FPaths::Combine(*BaseDirectory, TEXT("cesium-request-cache.sqlite"));
   FString PlatformAbsolutePath =
       IFileManager::Get().ConvertToAbsolutePathForExternalAppForWrite(
           *CesiumDBFile);
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Caching Cesium requests in %s"),
+      *PlatformAbsolutePath);
+
   return TCHAR_TO_UTF8(*PlatformAbsolutePath);
 }
 
