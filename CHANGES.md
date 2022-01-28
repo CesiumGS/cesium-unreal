@@ -4,7 +4,7 @@
 
 ##### Breaking Changes :mega:
 - The following Blueprints and C++ functions on `CesiumSunSky` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
-  - `EnableMobileRendering` to `UseMobileRendering`. If you are using the mobile rendering option, you will need to re-enable `UseMobileRendering` in every level after updating.
+  - `EnableMobileRendering` to `UseMobileRendering`
   - `AdjustAtmosphereRadius` to `UpdateAtmosphereRadius`
 
 ##### Fixes :wrench
