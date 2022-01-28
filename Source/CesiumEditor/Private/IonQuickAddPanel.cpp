@@ -239,7 +239,7 @@ void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
   }
 }
 
-void IonQuickAddPanel::AddCartoPolygonToLevel() {
+void IonQuickAddPanel::AddCartographicPolygonToLevel() {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
@@ -353,8 +353,8 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
   } else if (item->type == QuickAddItemType::DYNAMIC_PAWN) {
     AddDynamicPawnToLevel();
     this->_itemsBeingAdded.erase(item->name);
-  } else if (item->type == QuickAddItemType::CARTO_POLYGON) {
-    AddCartoPolygonToLevel();
+  } else if (item->type == QuickAddItemType::CARTOGRAPHIC_POLYGON) {
+    AddCartographicPolygonToLevel();
     this->_itemsBeingAdded.erase(item->name);
   }
 }

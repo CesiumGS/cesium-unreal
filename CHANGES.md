@@ -2,6 +2,10 @@
 
 ### v1.10.0 - ????
 
+##### Additions :tada:
+
+- Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
+
 ##### Fixes :wrench
 
 - Fixed a crash when editing the georeference detail panel while a sublevel is active.
