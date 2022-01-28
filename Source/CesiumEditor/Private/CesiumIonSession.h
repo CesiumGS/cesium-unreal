@@ -6,6 +6,7 @@
 #include "CesiumAsync/IAssetAccessor.h"
 #include "CesiumAsync/SharedFuture.h"
 #include "CesiumIonClient/Connection.h"
+#include "Delegates/Delegate.h"
 #include <memory>
 
 DECLARE_MULTICAST_DELEGATE(FIonUpdated);
