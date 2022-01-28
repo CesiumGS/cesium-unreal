@@ -115,9 +115,6 @@ addTokenCheck(const FString& label, std::optional<bool>& state) {
              3.0f,
              0.0f)[SNew(SThrobber)
                        .Visibility_Lambda([&state]() {
-                         CesiumIonSession& ion = FCesiumEditorModule::ion();
-                         ion.getAssetAccessor()->tick();
-                         ion.getAsyncSystem().dispatchMainThreadTasks();
                          return state.has_value() ? EVisibility::Collapsed
                                                   : EVisibility::Visible;
                        })
