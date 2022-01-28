@@ -1188,9 +1188,9 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
     pLevel->LevelLongitude = this->OriginLongitude;
     pLevel->LevelLatitude = this->OriginLatitude;
     pLevel->LevelHeight = this->OriginHeight;
-  }
 
-  pLevel->Enabled = pLevel->CanBeEnabled;
+    pLevel->Enabled = pLevel->CanBeEnabled;
+  }
 }
 
 #endif
