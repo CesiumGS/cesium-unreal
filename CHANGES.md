@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.10.0 - ????
+
+##### Fixes :wrench
+
+- Fixed a crash when editing the georeference detail panel while a sublevel is active.
+
 ### v1.9.0 - 2022-01-03
 
 ##### Fixes :wrench:
