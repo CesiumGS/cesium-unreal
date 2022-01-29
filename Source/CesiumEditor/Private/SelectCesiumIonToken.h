@@ -78,6 +78,7 @@ private:
       TokenSource& tokenSource,
       TokenSource thisValue,
       const FString& label,
+      bool requiresIonConnection,
       const TSharedRef<SWidget>& pWidget);
   FReply UseOrCreate();
   void RefreshTokens();

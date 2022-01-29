@@ -182,6 +182,19 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
                "Cesium for Unreal embeds a Cesium ion token in your project in order to allow it to access the assets you add to your levels. Select the Cesium ion token to use.")))];
 
   pLoaderOrContent->AddSlot()
+      .Padding(0.0f, 10.0f, 0.0, 10.0f)
+      .AutoHeight()
+          [SNew(STextBlock)
+               .Visibility_Lambda([]() {
+                 return FCesiumEditorModule::ion().isConnected()
+                            ? EVisibility::Collapsed
+                            : EVisibility::Visible;
+               })
+               .AutoWrapText(true)
+               .Text(FText::FromString(TEXT(
+                   "Please connect to Cesium ion to select a token from your account or to create a new token.")))];
+
+  pLoaderOrContent->AddSlot()
       .AutoHeight()[SNew(SThrobber).Visibility_Lambda([]() {
         return FCesiumEditorModule::ion().isLoadingTokenList()
                    ? EVisibility::Visible
@@ -214,6 +227,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       this->_tokenSource,
       TokenSource::Create,
       TEXT("Create a new token"),
+      true,
       SNew(SHorizontalBox) +
           SHorizontalBox::Slot()
               .VAlign(EVerticalAlignment::VAlign_Center)
@@ -251,6 +265,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       this->_tokenSource,
       TokenSource::UseExisting,
       TEXT("Use an existing token"),
+      true,
       SNew(SHorizontalBox) +
           SHorizontalBox::Slot()
               .VAlign(EVerticalAlignment::VAlign_Center)
@@ -268,6 +283,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
       this->_tokenSource,
       TokenSource::Specify,
       TEXT("Specify a token"),
+      false,
       SNew(SHorizontalBox) +
           SHorizontalBox::Slot()
               .VAlign(EVerticalAlignment::VAlign_Center)
@@ -337,9 +353,21 @@ void SelectCesiumIonToken::createRadioButton(
     TokenSource& tokenSource,
     TokenSource thisValue,
     const FString& label,
+    bool requiresIonConnection,
     const TSharedRef<SWidget>& pWidget) {
+  auto visibility = [requiresIonConnection]() {
+    if (!requiresIonConnection) {
+      return EVisibility::Visible;
+    } else if (FCesiumEditorModule::ion().isConnected()) {
+      return EVisibility::Visible;
+    } else {
+      return EVisibility::Collapsed;
+    }
+  };
+
   pVertical->AddSlot().AutoHeight().Padding(5.0f, 10.0f, 5.0f, 10.0f)
       [SNew(SCheckBox)
+           .Visibility_Lambda(visibility)
            .Padding(5.0f)
            .Style(FCoreStyle::Get(), "RadioButton")
            .IsChecked_Lambda([&tokenSource, thisValue]() {
