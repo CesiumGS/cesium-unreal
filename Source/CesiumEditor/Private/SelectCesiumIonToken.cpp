@@ -426,6 +426,7 @@ FReply SelectCesiumIonToken::UseOrCreate() {
           pSettings->DefaultIonAccessToken =
               UTF8_TO_TCHAR(response.value->token.c_str());
           pSettings->Modify();
+          pSettings->UpdateDefaultConfigFile();
 
           // Refresh all tilesets and overlays that are using the project
           // default token.
