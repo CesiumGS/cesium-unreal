@@ -52,7 +52,7 @@ public:
    * and black bars are added as needed in order to achieve this aspect ratio
    * within a larger viewport.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   float OverrideAspectRatio = 0.0f;
 
   /**
