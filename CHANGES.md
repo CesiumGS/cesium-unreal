@@ -20,6 +20,10 @@
 
 ### v1.9.0 - 2022-01-03
 
+##### Additions :tada:
+
+- The new `FCesiumCamera` and `ACesiumCameraManager` can be used to register and update custom camera views into Cesium tilesets.
+
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause incorrect LOD and culling when viewing a camera in-editor and the camera's aspect ratio does not match the viewport window's aspect ratio.
