@@ -3,9 +3,14 @@
 ### v1.10.0 - ????
 
 ##### Breaking Changes :mega:
+
 - The following Blueprints and C++ functions on `CesiumSunSky` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
   - `EnableMobileRendering` to `UseMobileRendering`
   - `AdjustAtmosphereRadius` to `UpdateAtmosphereRadius`
+
+##### Additions :tada:
+
+- Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
 
 ##### Fixes :wrench
 
