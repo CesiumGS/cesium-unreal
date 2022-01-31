@@ -159,6 +159,14 @@ TSharedRef<SWidget> CesiumPanel::BasicQuickAddPanel() {
       -1,
       "",
       -1});
+  quickAddPanel->AddItem(QuickAddItem{
+      QuickAddItemType::CARTOGRAPHIC_POLYGON,
+      "Cesium Cartographic Polygon",
+      "An actor that can be used to draw out regions for use with clipping or other material effects.",
+      "",
+      -1,
+      "",
+      -1});
   return quickAddPanel.ToSharedRef();
 }
 

@@ -20,6 +20,7 @@
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
+struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -712,25 +713,13 @@ private:
   void LoadTileset();
   void DestroyTileset();
 
-  struct UnrealCameraParameters {
-    FVector2D viewportSize;
-    FVector location;
-    FRotator rotation;
-    double fieldOfViewDegrees;
-
-    // If not std::nullopt, the aspect ratio may be different from the one
-    // implied by the viewportSize and black bars are added as needed in order
-    // to achieve this aspect ratio within a larger viewport.
-    std::optional<double> aspectRatio = std::nullopt;
-  };
-
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
-      const UnrealCameraParameters& camera,
+      const FCesiumCamera& camera,
       const glm::dmat4& unrealWorldToTileset);
 
-  std::vector<UnrealCameraParameters> GetCameras() const;
-  std::vector<UnrealCameraParameters> GetPlayerCameras() const;
-  std::vector<UnrealCameraParameters> GetSceneCaptures() const;
+  std::vector<FCesiumCamera> GetCameras() const;
+  std::vector<FCesiumCamera> GetPlayerCameras() const;
+  std::vector<FCesiumCamera> GetSceneCaptures() const;
 
 public:
   /**
@@ -777,7 +766,7 @@ private:
   void AddFocusViewportDelegate();
 
 #if WITH_EDITOR
-  std::vector<UnrealCameraParameters> GetEditorCameras() const;
+  std::vector<FCesiumCamera> GetEditorCameras() const;
 
   /**
    * Will focus all viewports on this tileset.

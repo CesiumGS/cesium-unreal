@@ -2,6 +2,7 @@
 
 #include "IonQuickAddPanel.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCartographicPolygon.h"
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
@@ -253,6 +254,18 @@ void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
   }
 }
 
+void IonQuickAddPanel::AddCartographicPolygonToLevel() {
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+  GEditor->AddActor(
+      pCurrentLevel,
+      ACesiumCartographicPolygon::StaticClass(),
+      FTransform(),
+      false,
+      RF_Public | RF_Transactional);
+}
+
 namespace {
 /**
  * Set a byte property value in the given object.
@@ -354,6 +367,9 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     this->_itemsBeingAdded.erase(item->name);
   } else if (item->type == QuickAddItemType::DYNAMIC_PAWN) {
     AddDynamicPawnToLevel();
+    this->_itemsBeingAdded.erase(item->name);
+  } else if (item->type == QuickAddItemType::CARTOGRAPHIC_POLYGON) {
+    AddCartographicPolygonToLevel();
     this->_itemsBeingAdded.erase(item->name);
   }
 }

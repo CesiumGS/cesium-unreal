@@ -16,6 +16,8 @@
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumCamera.h"
+#include "CesiumCameraManager.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -90,6 +92,7 @@ ACesium3DTileset::ACesium3DTileset()
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
+  PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
   this->SetActorEnableCollision(true);
 
@@ -920,29 +923,38 @@ void ACesium3DTileset::DestroyTileset() {
   }
 }
 
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetCameras() const {
-  std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
+std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
+  std::vector<FCesiumCamera> cameras = this->GetPlayerCameras();
 
-  std::vector<UnrealCameraParameters> sceneCaptures = this->GetSceneCaptures();
+  std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
   cameras.insert(
       cameras.end(),
       std::make_move_iterator(sceneCaptures.begin()),
       std::make_move_iterator(sceneCaptures.end()));
 
 #if WITH_EDITOR
-  std::vector<UnrealCameraParameters> editorCameras = this->GetEditorCameras();
+  std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();
   cameras.insert(
       cameras.end(),
       std::make_move_iterator(editorCameras.begin()),
       std::make_move_iterator(editorCameras.end()));
 #endif
 
+  ACesiumCameraManager* pCameraManager =
+      ACesiumCameraManager::GetDefaultCameraManager(this->GetWorld());
+  if (pCameraManager) {
+    const TMap<int32, FCesiumCamera>& extraCameras =
+        pCameraManager->GetCameras();
+    cameras.reserve(cameras.size() + extraCameras.Num());
+    for (auto cameraIt : extraCameras) {
+      cameras.push_back(cameraIt.Value);
+    }
+  }
+
   return cameras;
 }
 
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetPlayerCameras() const {
+std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
     return {};
@@ -964,7 +976,7 @@ ACesium3DTileset::GetPlayerCameras() const {
     useStereoRendering = true;
   }
 
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  std::vector<FCesiumCamera> cameras;
   cameras.reserve(pWorld->GetNumPlayerControllers());
 
   for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
@@ -984,7 +996,7 @@ ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    double fov = pPlayerCameraManager->GetFOVAngle();
+    float fov = pPlayerCameraManager->GetFOVAngle();
 
     FVector location;
     FRotator rotation;
@@ -1041,11 +1053,11 @@ ACesium3DTileset::GetPlayerCameras() const {
         float hfov =
             glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
-        cameras.push_back(UnrealCameraParameters{
+        cameras.emplace_back(
             stereoLeftSize,
             leftEyeLocation,
             leftEyeRotation,
-            hfov});
+            hfov);
       }
 
       if (stereoRightSize.X >= 1.0 && stereoRightSize.Y >= 1.0) {
@@ -1065,26 +1077,21 @@ ACesium3DTileset::GetPlayerCameras() const {
         float hfov =
             glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
-        cameras.push_back(UnrealCameraParameters{
+        cameras.emplace_back(
             stereoRightSize,
             rightEyeLocation,
             rightEyeRotation,
-            hfov});
+            hfov);
       }
     } else {
-      cameras.push_back(UnrealCameraParameters{
-          FVector2D(sizeX, sizeY),
-          location,
-          rotation,
-          fov});
+      cameras.emplace_back(FVector2D(sizeX, sizeY), location, rotation, fov);
     }
   }
 
   return cameras;
 }
 
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetSceneCaptures() const {
+std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   // TODO: really USceneCaptureComponent2D can be attached to any actor, is it
   // worth searching every actor? Might it be better to provide an interface
   // where users can volunteer cameras to be used with the tile selection as
@@ -1094,7 +1101,7 @@ ACesium3DTileset::GetSceneCaptures() const {
       ASceneCapture2D::StaticClass();
   UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
 
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  std::vector<FCesiumCamera> cameras;
   cameras.reserve(sceneCaptures.Num());
 
   for (AActor* pActor : sceneCaptures) {
@@ -1129,11 +1136,11 @@ ACesium3DTileset::GetSceneCaptures() const {
     FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
     float captureFov = pSceneCaptureComponent->FOVAngle;
 
-    cameras.push_back(UnrealCameraParameters{
+    cameras.emplace_back(
         renderTargetSize,
         captureLocation,
         captureRotation,
-        captureFov});
+        captureFov);
   }
 
   return cameras;
@@ -1141,24 +1148,24 @@ ACesium3DTileset::GetSceneCaptures() const {
 
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
-    const UnrealCameraParameters& camera,
+    const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset) {
 
   double horizontalFieldOfView =
-      FMath::DegreesToRadians(camera.fieldOfViewDegrees);
+      FMath::DegreesToRadians(camera.FieldOfViewDegrees);
 
-  double aspectRatio;
-  glm::dvec2 size(camera.viewportSize.X, camera.viewportSize.Y);
+  double actualAspectRatio;
+  glm::dvec2 size(camera.ViewportSize.X, camera.ViewportSize.Y);
 
-  if (camera.aspectRatio) {
+  if (camera.OverrideAspectRatio != 0.0f) {
     // Use aspect ratio and recompute effective viewport size after black bars
     // are added.
-    aspectRatio = *camera.aspectRatio;
-    double computedX = aspectRatio * camera.viewportSize.Y;
-    double computedY = camera.viewportSize.Y / aspectRatio;
+    actualAspectRatio = camera.OverrideAspectRatio;
+    double computedX = actualAspectRatio * camera.ViewportSize.Y;
+    double computedY = camera.ViewportSize.Y / actualAspectRatio;
 
-    double barWidth = camera.viewportSize.X - computedX;
-    double barHeight = camera.viewportSize.Y - computedY;
+    double barWidth = camera.ViewportSize.X - computedX;
+    double barHeight = camera.ViewportSize.Y - computedY;
 
     if (barWidth > 0.0 && barWidth > barHeight) {
       // Black bars on the sides
@@ -1168,18 +1175,18 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       size.y = computedY;
     }
   } else {
-    aspectRatio = camera.viewportSize.X / camera.viewportSize.Y;
+    actualAspectRatio = camera.ViewportSize.X / camera.ViewportSize.Y;
   }
 
   double verticalFieldOfView =
-      atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
+      atan(tan(horizontalFieldOfView * 0.5) / actualAspectRatio) * 2.0;
 
-  FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-  FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+  FVector direction = camera.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+  FVector up = camera.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
   glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
-      glm::dvec4(camera.location.X, camera.location.Y, camera.location.Z, 1.0));
+      glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
   glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
       unrealWorldToTileset *
       glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
@@ -1196,8 +1203,7 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
 }
 
 #if WITH_EDITOR
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetEditorCameras() const {
+std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
   if (!GEditor) {
     return {};
   }
@@ -1216,7 +1222,7 @@ ACesium3DTileset::GetEditorCameras() const {
   const TArray<FEditorViewportClient*>& viewportClients =
       GEditor->GetAllViewportClients();
 
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  std::vector<FCesiumCamera> cameras;
   cameras.reserve(viewportClients.Num());
 
   for (FEditorViewportClient* pEditorViewportClient : viewportClients) {
@@ -1226,21 +1232,25 @@ ACesium3DTileset::GetEditorCameras() const {
 
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-    double fov = pEditorViewportClient->ViewFOV;
+    float fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);
-
-    std::optional<double> aspectRatio =
-        pEditorViewportClient->IsAspectRatioConstrained()
-            ? std::make_optional(pEditorViewportClient->AspectRatio)
-            : std::nullopt;
 
     if (size.X < 1 || size.Y < 1) {
       continue;
     }
 
-    cameras.push_back({size, location, rotation, fov, aspectRatio});
+    if (pEditorViewportClient->IsAspectRatioConstrained()) {
+      cameras.emplace_back(
+          size,
+          location,
+          rotation,
+          fov,
+          pEditorViewportClient->AspectRatio);
+    } else {
+      cameras.emplace_back(size, location, rotation, fov);
+    }
   }
 
   return cameras;
@@ -1518,7 +1528,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   updateTilesetOptionsFromProperties();
 
-  std::vector<UnrealCameraParameters> cameras = this->GetCameras();
+  std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {
     return;
   }
@@ -1527,7 +1537,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
-  for (const UnrealCameraParameters& camera : cameras) {
+  for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(
         CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
   }

@@ -7,11 +7,27 @@
 - Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
 - Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
 
+##### Breaking Changes :mega:
+
+- The following Blueprints and C++ functions on `CesiumSunSky` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
+  - `EnableMobileRendering` to `UseMobileRendering`
+  - `AdjustAtmosphereRadius` to `UpdateAtmosphereRadius`
+
+##### Additions :tada:
+
+- Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
+
 ##### Fixes :wrench
 
 - Fixed a crash when editing the georeference detail panel while a sublevel is active.
+- Improved the organization of `CesiumSunSky` parameters in the Details Panel.
+- Improved the organization of `CesiumGlobeAnchorComponent` parameters in the Details Panel.
 
 ### v1.9.0 - 2022-01-03
+
+##### Additions :tada:
+
+- The new `FCesiumCamera` and `ACesiumCameraManager` can be used to register and update custom camera views into Cesium tilesets.
 
 ##### Fixes :wrench:
 
