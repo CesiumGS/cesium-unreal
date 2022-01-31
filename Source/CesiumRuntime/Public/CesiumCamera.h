@@ -22,25 +22,25 @@ public:
   /**
    * @brief The pixel dimensions of the viewport.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   FVector2D ViewportSize;
 
   /**
    * @brief The Unreal location of the camera.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   FVector Location;
 
   /**
    * @brief The Unreal rotation of the camera.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   FRotator Rotation;
 
   /**
    * @brief The horizontal field of view of the camera in degrees.
    */
-  UPROPERTY(BlueprintReadWrite)
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   float FieldOfViewDegrees;
 
   /**
