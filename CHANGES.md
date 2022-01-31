@@ -2,11 +2,6 @@
 
 ### ? - ?
 
-##### Additions :tada:
-
-- Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
-- Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
-
 ##### Breaking Changes :mega:
 
 - The following Blueprints and C++ functions on `CesiumSunSky` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
@@ -16,6 +11,8 @@
 ##### Additions :tada:
 
 - Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
+- Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
+- Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
 
 ##### Fixes :wrench
 
