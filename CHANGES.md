@@ -1,6 +1,6 @@
 # Change Log
 
-### v1.10.0 - ????
+### ? - ?
 
 ##### Breaking Changes :mega:
 
@@ -11,6 +11,8 @@
 ##### Additions :tada:
 
 - Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
+- Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
+- Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
 
 ##### Fixes :wrench
 

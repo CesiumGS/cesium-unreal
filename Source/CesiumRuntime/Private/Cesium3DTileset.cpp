@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+#include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
@@ -8,9 +9,12 @@
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
 #include "Cesium3DTilesSelection/Tileset.h"
+#include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
+#include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
+#include "CesiumAsync/IAssetResponse.h"
 #include "CesiumAsync/SqliteCache.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
@@ -23,6 +27,7 @@
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -53,6 +58,8 @@
 #include <glm/trigonometric.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
+
+FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -174,6 +181,10 @@ void ACesium3DTileset::InvalidateResolvedCreditSystem() {
 }
 
 void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
+
+void ACesium3DTileset::TroubleshootToken() {
+  OnCesium3DTilesetIonTroubleshooting.Broadcast(this);
+}
 
 void ACesium3DTileset::AddFocusViewportDelegate() {
 #if WITH_EDITOR
@@ -769,6 +780,43 @@ void ACesium3DTileset::LoadTileset() {
 
   Cesium3DTilesSelection::TilesetOptions options;
 
+  options.loadErrorCallback =
+      [this](const Cesium3DTilesSelection::TilesetLoadFailureDetails& details) {
+        static_assert(
+            uint8_t(ECesium3DTilesetLoadType::CesiumIon) ==
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::CesiumIon));
+        static_assert(
+            uint8_t(ECesium3DTilesetLoadType::TilesetJson) ==
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
+        static_assert(
+            uint8_t(ECesium3DTilesetLoadType::Unknown) ==
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::Unknown));
+
+        uint8_t typeValue = uint8_t(details.type);
+        assert(
+            uint8_t(details.type) <=
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
+        assert(this->_pTileset == details.pTileset);
+
+        FCesium3DTilesetLoadFailureDetails ueDetails;
+        ueDetails.Tileset = this;
+        ueDetails.Type = ECesium3DTilesetLoadType(typeValue);
+        ueDetails.HttpStatusCode =
+            details.pRequest && details.pRequest->response()
+                ? details.pRequest->response()->statusCode()
+                : 0;
+        ueDetails.Message = UTF8_TO_TCHAR(details.message.c_str());
+
+        // Broadcast the event from the game thread.
+        // Even if we're already in the game thread, let the stack unwind.
+        // Otherwise actions that destroy the Tileset will cause a deadlock.
+        AsyncTask(
+            ENamedThreads::GameThread,
+            [ueDetails = std::move(ueDetails)]() {
+              OnCesium3DTilesetLoadFailure.Broadcast(ueDetails);
+            });
+      };
+
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
 
@@ -792,10 +840,14 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
+    FString token =
+        this->IonAccessToken.IsEmpty()
+            ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
+            : this->IonAccessToken;
     this->_pTileset = new Cesium3DTilesSelection::Tileset(
         externals,
         static_cast<uint32_t>(this->IonAssetID),
-        TCHAR_TO_UTF8(*this->IonAccessToken),
+        TCHAR_TO_UTF8(*token),
         options);
     break;
   }

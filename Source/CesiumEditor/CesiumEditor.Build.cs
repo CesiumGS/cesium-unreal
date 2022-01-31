@@ -117,7 +117,8 @@ public class CesiumEditor : ModuleRules
                 "Projects",
                 "InputCore",
                 "PropertyEditor",
-                "DeveloperSettings"
+                "DeveloperSettings",
+                "EditorStyle"
                 // ... add private dependencies that you statically link with here ...
             }
         );

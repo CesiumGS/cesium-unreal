@@ -119,7 +119,7 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
 }
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
-UnrealAssetAccessor::requestAsset(
+UnrealAssetAccessor::get(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
@@ -169,8 +169,9 @@ UnrealAssetAccessor::requestAsset(
 }
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
-UnrealAssetAccessor::post(
+UnrealAssetAccessor::request(
     const CesiumAsync::AsyncSystem& asyncSystem,
+    const std::string& verb,
     const std::string& url,
     const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
     const gsl::span<const std::byte>& contentPayload) {
@@ -178,11 +179,12 @@ UnrealAssetAccessor::post(
   const FString& userAgent = this->_userAgent;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
-      [&url, &headers, &userAgent, &contentPayload](const auto& promise) {
+      [&verb, &url, &headers, &userAgent, &contentPayload](
+          const auto& promise) {
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
-        pRequest->SetVerb(TEXT("POST"));
+        pRequest->SetVerb(UTF8_TO_TCHAR(verb.c_str()));
         pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
         for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {

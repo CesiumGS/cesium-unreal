@@ -6,3 +6,4 @@ The SVG files have been edited to change the fill color from
 the "currentColor" to "#cccccc". 
 For "sync-alt-solid.svg", it was set to #ffffff, to be used
 on a Cesium-styled button.
+For "times-solid.svg" and "check-solid.svg" it was set to #ff0000 and #00ff00 respectively.
