@@ -10,7 +10,12 @@
 
 class FArguments;
 
-enum class QuickAddItemType { TILESET, SUNSKY, DYNAMIC_PAWN, CARTOGRAPHIC_POLYGON };
+enum class QuickAddItemType {
+  TILESET,
+  SUNSKY,
+  DYNAMIC_PAWN,
+  CARTOGRAPHIC_POLYGON
+};
 
 struct QuickAddItem {
   QuickAddItemType type;
