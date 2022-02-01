@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v1.10.0 - 2022-02-01
 
 ##### Breaking Changes :mega:
 
@@ -19,6 +19,8 @@
 - Fixed a crash when editing the georeference detail panel while a sublevel is active.
 - Improved the organization of `CesiumSunSky` parameters in the Details Panel.
 - Improved the organization of `CesiumGlobeAnchorComponent` parameters in the Details Panel.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.11.0 to v0.12.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.9.0 - 2022-01-03
 
