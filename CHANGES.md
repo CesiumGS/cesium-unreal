@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.10.1 - 2022-02-01
+
+##### Fixes :wrench:
+
+- Fixed a crash at startup on Android devices introduced in v1.10.0.
+
 ### v1.10.0 - 2022-02-01
 
 ##### Breaking Changes :mega:
