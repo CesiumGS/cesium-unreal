@@ -723,7 +723,9 @@ private:
 };
 
 static std::string getCacheDatabaseName() {
-#if PLATFORM_ANDROID || PLATFORM_IOS
+#if PLATFORM_ANDROID
+  FString BaseDirectory = FPaths::ProjectPersistentDownloadDir();
+#elif PLATFORM_IOS
   FString BaseDirectory =
       FPaths::Combine(*FPaths::ProjectSavedDir(), TEXT("Cesium"));
   if (!IFileManager::Get().DirectoryExists(*BaseDirectory)) {
