@@ -8,6 +8,7 @@
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/ExtensionCesiumRTC.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/TextureInfo.h"
@@ -1305,27 +1306,24 @@ namespace {
 void applyRtcCenter(
     const CesiumGltf::Model& model,
     glm::dmat4x4& rootTransform) {
-  auto rtcCenterIt = model.extras.find("RTC_CENTER");
-  if (rtcCenterIt == model.extras.end()) {
+
+  const ExtensionCesiumRTC* cesiumRTC =
+      model.getExtension<ExtensionCesiumRTC>();
+  if (cesiumRTC == nullptr) {
     return;
   }
-  const CesiumUtility::JsonValue& rtcCenter = rtcCenterIt->second;
-  const std::vector<CesiumUtility::JsonValue>* pArray =
-      std::get_if<CesiumUtility::JsonValue::Array>(&rtcCenter.value);
-  if (!pArray) {
-    return;
-  }
-  if (pArray->size() != 3) {
+  const std::vector<double>& rtcCenter = cesiumRTC->center;
+  if (rtcCenter.size() != 3) {
     UE_LOG(
         LogCesium,
         Warning,
         TEXT("The RTC_CENTER must have a size of 3, but has {}"),
-        pArray->size());
+        rtcCenter.size());
     return;
   }
-  const double x = (*pArray)[0].getSafeNumberOrDefault(0.0);
-  const double y = (*pArray)[1].getSafeNumberOrDefault(0.0);
-  const double z = (*pArray)[2].getSafeNumberOrDefault(0.0);
+  const double x = rtcCenter[0];
+  const double y = rtcCenter[1];
+  const double z = rtcCenter[2];
   const glm::dmat4x4 rtcTransform(
       glm::dvec4(1.0, 0.0, 0.0, 0.0),
       glm::dvec4(0.0, 1.0, 0.0, 0.0),
