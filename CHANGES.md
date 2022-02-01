@@ -14,7 +14,7 @@
 - Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
 - Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
 
-##### Fixes :wrench
+##### Fixes :wrench:
 
 - Fixed a crash when editing the georeference detail panel while a sublevel is active.
 - Improved the organization of `CesiumSunSky` parameters in the Details Panel.
