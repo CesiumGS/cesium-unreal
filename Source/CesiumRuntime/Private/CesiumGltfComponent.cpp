@@ -1292,11 +1292,11 @@ namespace {
  * @brief Apply the transform for the `RTC_CENTER`
  *
  * If the B3DM that contained the given model had an `RTC_CENTER` in its
- * Feature Table, then it was stored in the `extras` property of the glTF
- * model, as a 3-element array under the name `RTC_CENTER`.
+ * Feature Table, then it was stored in the Cesium RTC extension of the glTF
+ * model.
  *
  * This function will multiply the given matrix with the (translation) matrix
- * that was created from this `RTC_CENTER` property in the `extras` of the
+ * that was created from the `RTC_CENTER` in the Cesium RTC extension of the
  * given model. If the given model does not have this property, then nothing
  * will be done.
  *
