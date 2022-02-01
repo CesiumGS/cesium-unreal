@@ -7,14 +7,14 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 * Verify that the cesium-native submodule in the `extern` directory references the expected commit of cesium-native. Update it if necessary. Verify that CI has completed successfully for that commit of cesium-native.
 * Wait for CI to complete for the main branch. Verify that it does so successfully.
 * Remove any existing copy of the Cesium for Unreal plugin from the engine plugins directory on your system. On Windows this is usually `C:\Program Files\Epic Games\UE_4.26\Engine\Plugins\Marketplace`.
-* Download the `plugin-package-combined` for the `main` branch of cesium-unreal. Extract it to your Unreal Engine installation's engine plugins directory. 
+* Download the `UE4.27-AllPlatforms` or `UE4.26-AllPlatforms` for the `main` branch of cesium-unreal. Extract it to your Unreal Engine installation's engine plugins directory. 
 * Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory. Launch the Unreal Editor and open `CesiumForUnrealSamples.uproject` from the new cesium-unreal-samples directory.
 * Open each level in Content -> CesiumSamples -> Maps and verify it works correctly:
   * Does it open without crashing?
   * Does it look correct?
   * Press Play. Does it work as expected? The billboard in each level should give you a good idea of what to expect.
 * Using one of the sample scenes, open the foliage window and create a new foliage type using any engine static mesh. Verify that foliage painting on Cesium World Terrain works correctly.
-* Test on other platforms if you can. If you can't (e.g., you don't have a Mac), post a message on Slack asking others to give it at least a quick smoke test.
+* Test on other platforms and other versions of Unreal Engine if you can. If you can't (e.g., you don't have a Mac), post a message on Slack asking others to give it at least a quick smoke test.
 
 If all of the above goes well, you're ready to release Cesium for Unreal.
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTilesSelection/RasterOverlay.h"
+#include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include <memory>
@@ -11,6 +12,17 @@
 namespace Cesium3DTilesSelection {
 class Tileset;
 }
+
+/**
+ * The delegate for OnCesiumRasterOverlayLoadFailure, which is triggered when
+ * the raster overlay encounters a load error.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesiumRasterOverlayLoadFailure,
+    const FCesiumRasterOverlayLoadFailureDetails&);
+
+CESIUMRUNTIME_API extern FCesiumRasterOverlayLoadFailure
+    OnCesiumRasterOverlayLoadFailure;
 
 /**
  * A quadtree pyramid of 2D raster images meant to be draped over a Cesium 3D
@@ -31,29 +43,34 @@ public:
    * so that a ML_CesiumOverlay layer function (or similar) will correctly
    * sample from this overlay.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString MaterialLayerKey = "Overlay0";
 
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
 
   /**
-   * Adds this raster overlay to its owning Cesium 3D Tiles Actor. If the
+   * Adds this raster overlay to its owning Cesium 3D Tileset Actor. If the
    * overlay is already added or if this component's Owner is not a Cesium 3D
    * Tileset, this method does nothing.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void AddToTileset();
 
   /**
-   * Removes this raster overlay from its owning Cesium 3D Tiles Actor. If the
+   * Removes this raster overlay from its owning Cesium 3D Tileset Actor. If the
    * overlay is not yet added or if this component's Owner is not a Cesium 3D
    * Tileset, this method does nothing.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void RemoveFromTileset();
 
   /**
-   * Refreshes this tileset by removing and re-adding it.
+   * Refreshes this overlay by removing from its owning Cesium 3D Tileset Actor
+   * and re-adding it. If this component's Owner is not a Cesium 3D Tileset
+   * Actor, this method does nothing.
    */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void Refresh();
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")

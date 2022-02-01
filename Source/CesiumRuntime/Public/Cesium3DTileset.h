@@ -4,6 +4,7 @@
 
 #include "Cesium3DTilesSelection/ViewState.h"
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
+#include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -15,16 +16,27 @@
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
-
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
+struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
 } // namespace Cesium3DTilesSelection
+
+/**
+ * The delegate for OnCesium3DTilesetLoadFailure, which is triggered when
+ * the tileset encounters a load error.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesium3DTilesetLoadFailure,
+    const FCesium3DTilesetLoadFailureDetails&);
+
+CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
+    OnCesium3DTilesetLoadFailure;
 
 UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
@@ -383,6 +395,12 @@ public:
   bool UpdateInEditor = true;
 
   /**
+   * If true, stats about tile selection are printed to the Output Log.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Debug")
+  bool LogSelectionStats = false;
+
+  /**
    * Define the collision profile for all the 3D tiles created inside this
    * actor.
    */
@@ -431,7 +449,7 @@ private:
       meta =
           (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon",
            ClampMin = 0))
-  int32 IonAssetID;
+  int64 IonAssetID;
 
   /**
    * The access token to use to access the Cesium ion resource.
@@ -443,6 +461,13 @@ private:
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
+
+  /**
+   * Check if the Cesium ion token used to access this tileset is working
+   * correctly, and fix it if necessary.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void TroubleshootToken();
 
   /**
    * Whether to generate physics meshes for this tileset.
@@ -568,10 +593,10 @@ public:
   void SetUrl(FString InUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  int32 GetIonAssetID() const { return IonAssetID; }
+  int64 GetIonAssetID() const { return IonAssetID; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAssetID(int32 InAssetID);
+  void SetIonAssetID(int64 InAssetID);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetIonAccessToken() const { return IonAccessToken; }
@@ -688,20 +713,13 @@ private:
   void LoadTileset();
   void DestroyTileset();
 
-  struct UnrealCameraParameters {
-    FVector2D viewportSize;
-    FVector location;
-    FRotator rotation;
-    double fieldOfViewDegrees;
-  };
-
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
-      const UnrealCameraParameters& camera,
+      const FCesiumCamera& camera,
       const glm::dmat4& unrealWorldToTileset);
 
-  std::vector<UnrealCameraParameters> GetCameras() const;
-  std::vector<UnrealCameraParameters> GetPlayerCameras() const;
-  std::vector<UnrealCameraParameters> GetSceneCaptures() const;
+  std::vector<FCesiumCamera> GetCameras() const;
+  std::vector<FCesiumCamera> GetPlayerCameras() const;
+  std::vector<FCesiumCamera> GetSceneCaptures() const;
 
 public:
   /**
@@ -748,7 +766,7 @@ private:
   void AddFocusViewportDelegate();
 
 #if WITH_EDITOR
-  std::vector<UnrealCameraParameters> GetEditorCameras() const;
+  std::vector<FCesiumCamera> GetEditorCameras() const;
 
   /**
    * Will focus all viewports on this tileset.

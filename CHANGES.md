@@ -1,15 +1,62 @@
 # Change Log
 
-### ???
+### v1.10.1 - 2022-02-01
+
+##### Fixes :wrench:
+
+- Fixed a crash at startup on Android devices introduced in v1.10.0.
+
+### v1.10.0 - 2022-02-01
+
+##### Breaking Changes :mega:
+
+- The following Blueprints and C++ functions on `CesiumSunSky` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
+  - `EnableMobileRendering` to `UseMobileRendering`
+  - `AdjustAtmosphereRadius` to `UpdateAtmosphereRadius`
+
+##### Additions :tada:
+
+- Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
+- Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
+- Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
+- The new `FCesiumCamera` and `ACesiumCameraManager` can be used to register and update custom camera views into Cesium tilesets.
+
+##### Fixes :wrench:
+
+- Fixed a crash when editing the georeference detail panel while a sublevel is active.
+- Improved the organization of `CesiumSunSky` parameters in the Details Panel.
+- Improved the organization of `CesiumGlobeAnchorComponent` parameters in the Details Panel.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.11.0 to v0.12.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.9.0 - 2022-01-03
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause incorrect LOD and culling when viewing a camera in-editor and the camera's aspect ratio does not match the viewport window's aspect ratio.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.10.0 to v0.11.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.8.1 - 2021-12-02
+
+In this release, the cesium-native binaries are built using Xcode 11.3 on macOS instead of Xcode 12. Other platforms are unchanged from v1.8.0.
+
+### v1.8.0 - 2021-12-01
 
 ##### Additions :tada:
 
 - `Cesium3DTileset` now has options for enabling custom depth and stencil buffer.
+- Added `CesiumDebugColorizeTilesRasterOverlay` to visualize how a tileset is divided into tiles.
+- Added `Log Selection Stats` debug option to the `Cesium3DTileset` Actor.
+- Exposed raster overlay properties to Blueprints, so that overlays can be created and manipulated with Blueprints.
 
 ##### Fixes :wrench:
 
 - Cesium for Unreal now does a much better job of releasing memory when the Unreal Engine garbage collector is not active, such as in the Editor.
 - Fixed a bug that could cause an incorrect field-of-view angle to be used for tile selection in the Editor.
+- Fixed a bug that caused `GlobeAwareDefaultPawn` (and its derived classes, notably `DynamicPawn`) to completely ignore short flights.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.9.0 to v0.10.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.7.0 - 2021-11-01
 

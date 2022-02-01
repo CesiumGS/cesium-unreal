@@ -31,13 +31,13 @@ public:
   /**
    * The Bing Maps API key to use.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString BingMapsKey;
 
   /**
    * The map style to use.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   EBingMapsStyle MapStyle = EBingMapsStyle::Aerial;
 
 protected:

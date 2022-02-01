@@ -13,6 +13,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IonLoginPanel.h"
 #include "IonQuickAddPanel.h"
+#include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -31,7 +32,6 @@ static FName ColumnName_DateAdded = "DateAdded";
 CesiumIonPanel::CesiumIonPanel()
     : _connectionUpdatedDelegateHandle(),
       _assetsUpdatedDelegateHandle(),
-      _assetAccessTokenUpdatedDelegateHandle(),
       _pListView(nullptr),
       _assets(),
       _pSelection(nullptr) {
@@ -43,17 +43,11 @@ CesiumIonPanel::CesiumIonPanel()
       FCesiumEditorModule::ion().AssetsUpdated.AddRaw(
           this,
           &CesiumIonPanel::Refresh);
-  this->_assetAccessTokenUpdatedDelegateHandle =
-      FCesiumEditorModule::ion().AssetAccessTokenUpdated.AddRaw(
-          this,
-          &CesiumIonPanel::Refresh);
   this->_sortColumnName = ColumnName_DateAdded;
   this->_sortMode = EColumnSortMode::Type::Descending;
 }
 
 CesiumIonPanel::~CesiumIonPanel() {
-  FCesiumEditorModule::ion().AssetAccessTokenUpdated.Remove(
-      this->_assetAccessTokenUpdatedDelegateHandle);
   FCesiumEditorModule::ion().AssetsUpdated.Remove(
       this->_assetsUpdatedDelegateHandle);
   FCesiumEditorModule::ion().ConnectionUpdated.Remove(
@@ -408,12 +402,7 @@ void CesiumIonPanel::ApplySorting() {
 }
 
 void CesiumIonPanel::Refresh() {
-  // Don't show assets until we have a valid token for accessing them.
-  static const Assets emptyAssets{};
-  const Assets& assets =
-      FCesiumEditorModule::ion().getAssetAccessToken().token.empty()
-          ? emptyAssets
-          : FCesiumEditorModule::ion().getAssets();
+  const Assets& assets = FCesiumEditorModule::ion().getAssets();
 
   this->_assets.SetNum(assets.items.size());
 
@@ -456,52 +445,51 @@ void CesiumIonPanel::AddAsset(TSharedPtr<CesiumIonClient::Asset> item) {
 }
 
 void CesiumIonPanel::AddAssetToLevel(TSharedPtr<CesiumIonClient::Asset> item) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
-
-  AActor* pNewActor = GEditor->AddActor(
-      pCurrentLevel,
-      ACesium3DTileset::StaticClass(),
-      FTransform(),
-      false,
-      RF_Public | RF_Transactional);
-  ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(pNewActor);
-  pTileset->SetActorLabel(UTF8_TO_TCHAR(item->name.c_str()));
-  pTileset->SetIonAssetID(item->id);
-  pTileset->SetIonAccessToken(UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
-
-  pTileset->RerunConstructionScripts();
+  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+      .thenInMainThread([item](const std::optional<Token>& /*maybeToken*/) {
+        // If token selection was canceled, or if an error occurred while
+        // selecting the token, ignore it and create the tileset anyway. It's
+        // already been logged if necessary, and we can let the user sort out
+        // the problem using the resulting Troubleshooting panel.
+        ACesium3DTileset* pTileset =
+            FCesiumEditorModule::CreateTileset(item->name, item->id);
+        if (pTileset) {
+          pTileset->RerunConstructionScripts();
+        }
+      });
 }
 
 void CesiumIonPanel::AddOverlayToTerrain(
     TSharedPtr<CesiumIonClient::Asset> item,
     bool useAsBaseLayer) {
-  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+  SelectCesiumIonToken::SelectAndAuthorizeToken({item->id})
+      .thenInMainThread([useAsBaseLayer, item](const std::optional<Token>&) {
+        UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+        ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
 
-  ACesium3DTileset* pTilesetActor =
-      FCesiumEditorModule::FindFirstTilesetSupportingOverlays();
-  if (!pTilesetActor) {
-    pTilesetActor =
-        FCesiumEditorModule::CreateTileset("Cesium World Terrain", 1);
-  }
+        ACesium3DTileset* pTilesetActor =
+            FCesiumEditorModule::FindFirstTilesetSupportingOverlays();
+        if (!pTilesetActor) {
+          pTilesetActor =
+              FCesiumEditorModule::CreateTileset("Cesium World Terrain", 1);
+        }
 
-  UCesiumRasterOverlay* pOverlay = useAsBaseLayer
-                                       ? FCesiumEditorModule::AddBaseOverlay(
-                                             pTilesetActor,
-                                             item->name,
-                                             item->id)
-                                       : FCesiumEditorModule::AddOverlay(
-                                             pTilesetActor,
-                                             item->name,
-                                             item->id);
+        UCesiumRasterOverlay* pOverlay =
+            useAsBaseLayer ? FCesiumEditorModule::AddBaseOverlay(
+                                 pTilesetActor,
+                                 item->name,
+                                 item->id)
+                           : FCesiumEditorModule::AddOverlay(
+                                 pTilesetActor,
+                                 item->name,
+                                 item->id);
 
-  pTilesetActor->RerunConstructionScripts();
+        pTilesetActor->RerunConstructionScripts();
 
-  GEditor->SelectNone(true, false);
-  GEditor->SelectActor(pTilesetActor, true, true, true, true);
-  GEditor->SelectComponent(pOverlay, true, true, true);
+        GEditor->SelectNone(true, false);
+        GEditor->SelectActor(pTilesetActor, true, true, true, true);
+        GEditor->SelectComponent(pOverlay, true, true, true);
+      });
 }
 
 namespace {

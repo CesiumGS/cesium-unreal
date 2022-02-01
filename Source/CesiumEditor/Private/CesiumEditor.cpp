@@ -6,7 +6,9 @@
 #include "CesiumCommands.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
+#include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
@@ -155,6 +157,17 @@ void FCesiumEditorModule::StartupModule() {
         StyleSet,
         "Cesium.Common.OpenSupport",
         "FontAwesome/hands-helping-solid");
+    registerIcon(
+        StyleSet,
+        "Cesium.Common.OpenTokenSelector",
+        "FontAwesome/key-solid");
+
+    StyleSet->Set(
+        "Cesium.Common.GreenTick",
+        new IMAGE_BRUSH(TEXT("FontAwesome/check-solid"), Icon16x16));
+    StyleSet->Set(
+        "Cesium.Common.RedX",
+        new IMAGE_BRUSH(TEXT("FontAwesome/times-solid"), Icon16x16));
 
     registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
 
@@ -288,9 +301,45 @@ void FCesiumEditorModule::StartupModule() {
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
         pToolbarExtender);
   }
+
+  this->_tilesetLoadFailureSubscription = OnCesium3DTilesetLoadFailure.AddRaw(
+      this,
+      &FCesiumEditorModule::OnTilesetLoadFailure);
+  this->_rasterOverlayLoadFailureSubscription =
+      OnCesiumRasterOverlayLoadFailure.AddRaw(
+          this,
+          &FCesiumEditorModule::OnRasterOverlayLoadFailure);
+
+  this->_tilesetIonTroubleshootingSubscription =
+      OnCesium3DTilesetIonTroubleshooting.AddRaw(
+          this,
+          &FCesiumEditorModule::OnTilesetIonTroubleshooting);
+  this->_rasterOverlayIonTroubleshootingSubscription =
+      OnCesiumRasterOverlayIonTroubleshooting.AddRaw(
+          this,
+          &FCesiumEditorModule::OnRasterOverlayIonTroubleshooting);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
+  if (this->_tilesetLoadFailureSubscription.IsValid()) {
+    OnCesium3DTilesetLoadFailure.Remove(this->_tilesetLoadFailureSubscription);
+    this->_tilesetLoadFailureSubscription.Reset();
+  }
+  if (this->_rasterOverlayLoadFailureSubscription.IsValid()) {
+    OnCesiumRasterOverlayLoadFailure.Remove(
+        this->_rasterOverlayLoadFailureSubscription);
+    this->_rasterOverlayLoadFailureSubscription.Reset();
+  }
+  if (this->_tilesetIonTroubleshootingSubscription.IsValid()) {
+    OnCesium3DTilesetIonTroubleshooting.Remove(
+        this->_tilesetIonTroubleshootingSubscription);
+    this->_tilesetIonTroubleshootingSubscription.Reset();
+  }
+  if (this->_rasterOverlayIonTroubleshootingSubscription.IsValid()) {
+    OnCesiumRasterOverlayIonTroubleshooting.Remove(
+        this->_rasterOverlayIonTroubleshootingSubscription);
+    this->_rasterOverlayIonTroubleshootingSubscription.Reset();
+  }
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
@@ -312,6 +361,55 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
       SNew(SDockTab).TabRole(ETabRole::NomadTab)[SNew(CesiumIonPanel)];
 
   return SpawnedTab;
+}
+
+void FCesiumEditorModule::OnTilesetLoadFailure(
+    const FCesium3DTilesetLoadFailureDetails& details) {
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->GetLevelEditorTabManager()->TryInvokeTab(
+        FTabId("OutputLog"));
+  }
+
+  // Check for a 401 connecting to Cesium ion, which means the token is invalid
+  // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
+  // when the token is valid but not authorized for the asset.
+  if (details.Tileset && details.Type == ECesium3DTilesetLoadType::CesiumIon &&
+      (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
+    CesiumIonTokenTroubleshooting::Open(details.Tileset, true);
+  }
+}
+
+void FCesiumEditorModule::OnRasterOverlayLoadFailure(
+    const FCesiumRasterOverlayLoadFailureDetails& details) {
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->GetLevelEditorTabManager()->TryInvokeTab(
+        FTabId("OutputLog"));
+  }
+
+  // Check for a 401 connecting to Cesium ion, which means the token is invalid
+  // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
+  // when the token is valid but not authorized for the asset.
+  if (details.Overlay &&
+      details.Type == ECesiumRasterOverlayLoadType::CesiumIon &&
+      (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
+    CesiumIonTokenTroubleshooting::Open(details.Overlay, true);
+  }
+}
+
+void FCesiumEditorModule::OnTilesetIonTroubleshooting(
+    ACesium3DTileset* pTileset) {
+  CesiumIonTokenTroubleshooting::Open(pTileset, false);
+}
+
+void FCesiumEditorModule::OnRasterOverlayIonTroubleshooting(
+    UCesiumRasterOverlay* pOverlay) {
+  CesiumIonTokenTroubleshooting::Open(pOverlay, false);
 }
 
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }
@@ -367,8 +465,6 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
   if (assetID != -1) {
     pTilesetActor->SetIonAssetID(assetID);
-    pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
-        FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
   }
   return pTilesetActor;
 }
@@ -423,8 +519,6 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
       RF_Public | RF_Transactional);
   pOverlay->MaterialLayerKey = overlayKey;
   pOverlay->IonAssetID = assetID;
-  pOverlay->IonAccessToken = UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
   pOverlay->SetActive(true);
   pOverlay->OnComponentCreated();
 

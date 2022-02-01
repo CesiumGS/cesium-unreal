@@ -37,7 +37,7 @@ private:
       BlueprintReadWrite,
       BlueprintGetter = GetGeoreference,
       BlueprintSetter = SetGeoreference,
-      Category = "Cesium",
+      Category = "Cesium|Georeference",
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* Georeference = nullptr;
 
@@ -90,7 +90,7 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium",
+      Category = "Cesium|Georeference",
       Meta = (AllowPrivateAccess, ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
@@ -99,7 +99,7 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium",
+      Category = "Cesium|Georeference",
       meta = (AllowPrivateAccess, ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
@@ -109,7 +109,10 @@ private:
    * which can be tens of meters higher or lower depending on where in the world
    * the object is located.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Georeference",
+      Meta = (AllowPrivateAccess))
   double Height = 0.0;
 
 public:
@@ -161,19 +164,28 @@ private:
   /**
    * The Earth-Centered Earth-Fixed X-coordinate of this component in meters.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Georeference",
+      Meta = (AllowPrivateAccess))
   double ECEF_X = 0.0;
 
   /**
    * The Earth-Centered Earth-Fixed Y-coordinate of this component in meters.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Georeference",
+      Meta = (AllowPrivateAccess))
   double ECEF_Y = 0.0;
 
   /**
    * The Earth-Centered Earth-Fixed Z-coordinate of this component in meters.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Georeference",
+      Meta = (AllowPrivateAccess))
   double ECEF_Z = 0.0;
 
 public:
@@ -245,7 +257,7 @@ public:
    * working with physics actors that maintain an internal velocity which we do
    * not want to change when updating location.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Georeference")
   bool TeleportWhenUpdatingTransform = true;
 
   /**
@@ -267,7 +279,7 @@ public:
    * updates an Actor's position and orientation, because in that case the Actor
    * would be over-rotated.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Georeference")
   bool AdjustOrientationForGlobeWhenMoving = true;
 
   //

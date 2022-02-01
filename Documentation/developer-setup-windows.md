@@ -6,7 +6,6 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install Visual Studio 2017 v15.6+ or Visual Studio 2019 v16.5+.
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
 
-
 ## For Cross Compiling Android on Windows
 
 - Follow the [Unreal Engine setup guide for Android](https://docs.unrealengine.com/SharingAndReleasing/Mobile/Android/Setup/AndroidStudio/).
@@ -119,11 +118,9 @@ Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern
 
 You can also build and install the debug version by using `Debug` or `RelWithDebInfo` instead of `Release`.
 
-
-
 # Creating the project files for the Unreal Engine game/project and the Cesium for Unreal plugin
 
-The project files for the project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine. 
+The project files for the project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
 
 ## Converting the project into a C++ project
 
@@ -174,4 +171,3 @@ Once that is done, it is possible to set breakpoints in Cesium for Unreal plugin
 - Find the file you want to debug in another copy of Visual Studio which is open on the cesium-native solution. Then, right-click on the file's tab and choose "Copy Full Path". Go back to the Cesium for Unreal solution, go to `File` -> `Open` -> `File`, and paste in the copied file path.
 
 If you find the debugger refuses to step into cesium-native code, check that you're using the "DebugGame Editor" configuration of Cesium for Unreal and the Debug configuration of cesium-native, and that you've built and installed cesium-native.
-

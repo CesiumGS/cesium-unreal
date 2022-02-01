@@ -1,6 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
+#include "Containers/Array.h"
+#include "UObject/WeakObjectPtrTemplates.h"
 
 class UObject;
 class UTexture;
