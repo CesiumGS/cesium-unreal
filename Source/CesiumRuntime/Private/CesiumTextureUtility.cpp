@@ -4,7 +4,7 @@
 #include "CesiumRuntime.h"
 #include "PixelFormat.h"
 
-#include <CesiumGltf/ExtensionTextureBasisU.h>
+#include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ImageCesium.h>
 
 #include <stb_image_resize.h>
@@ -190,8 +190,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
 
-  const CesiumGltf::ExtensionTextureBasisU* pKtxExtension =
-      texture.getExtension<CesiumGltf::ExtensionTextureBasisU>();
+  const CesiumGltf::ExtensionKhrTextureBasisu* pKtxExtension =
+      texture.getExtension<CesiumGltf::ExtensionKhrTextureBasisu>();
 
   if (pKtxExtension) {
     if (pKtxExtension->source < 0 ||
@@ -203,6 +203,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
               "KTX texture source index must be non-negative and less than %d, but is %d"),
           model.images.size(),
           texture.source);
+      return nullptr;
     }
   } else if (texture.source < 0 || texture.source >= model.images.size()) {
     UE_LOG(
