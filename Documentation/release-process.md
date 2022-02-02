@@ -96,7 +96,7 @@ Assuming you tested the release candidate as described above, you should have [c
 After the update has been merged to `main`, do the following:
 1. Pull and check out the latest version of `main` from GitHub, and then tag the new release by doing the following:
   * `git tag -a v1.10.0 -m "v1.10.0 release"`
-  * `git push v1.10.0`
+  * `git push origin v1.10.0`
 2. Wait for the continuation integration build to complete for the tag.
 3. Switch to the tag in the GitHub UI by visiting the repo, https://github.com/CesiumGS/cesium-unreal-samples, clicking the combo box where it says "main", switching to the Tags tab, and selecting the new tag that you created above.
 4. Click the green tick ✔️ at the top of the list of files and click the "Details" link next to "project-package". This will download the built package to your computer. Also copy this URL (by right-clicking the Details link and choosing `Copy link address`) because you will need it later.
