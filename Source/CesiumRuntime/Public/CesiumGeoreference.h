@@ -239,8 +239,20 @@ public:
   void SetGeoreferenceOriginLongitudeLatitudeHeight(
       const glm::dvec3& TargetLongitudeLatitudeHeight);
 
+  /**
+   * This function is here for backwards compatibility. The function
+   * SetGeoreferenceOriginLongitudeLatitudeHeight should be used instead.
+   */
   void SetGeoreferenceOrigin(const glm::dvec3& TargetLongitudeLatitudeHeight);
 
+  /**
+   * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
+   * Unreal's world origin. I.e. it moves the globe so that these coordinates
+   * exactly fall on the origin.
+   *
+   * When the WorldOriginCamera of this instance is currently contained
+   * the bounds of a sublevel, then this call has no effect.
+   */
   void SetGeoreferenceOriginEcef(const glm::dvec3& TargetEcef);
   /**
    * This aligns the specified longitude in degrees (X), latitude in
