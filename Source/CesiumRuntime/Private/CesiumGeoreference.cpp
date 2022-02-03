@@ -441,6 +441,11 @@ void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
 
 void ACesiumGeoreference::SetGeoreferenceOrigin(
     const glm::dvec3& TargetLongitudeLatitudeHeight) {
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT(
+          "SetGeoreferenceOrigin was renamed to SetGeoreferenceOriginLongitudeLatitudeHeight."));
   SetGeoreferenceOriginLongitudeLatitudeHeight(TargetLongitudeLatitudeHeight);
 }
 
