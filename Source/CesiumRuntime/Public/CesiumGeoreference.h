@@ -239,6 +239,9 @@ public:
   void SetGeoreferenceOriginLongitudeLatitudeHeight(
       const glm::dvec3& TargetLongitudeLatitudeHeight);
 
+  void SetGeoreferenceOrigin(const glm::dvec3& TargetLongitudeLatitudeHeight);
+
+  void SetGeoreferenceOriginEcef(const glm::dvec3& TargetEcef);
   /**
    * This aligns the specified longitude in degrees (X), latitude in
    * degrees (Y), and height above the ellipsoid in meters (Z) to Unreal's world

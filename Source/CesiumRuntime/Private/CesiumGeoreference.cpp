@@ -439,6 +439,17 @@ void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
       targetLongitudeLatitudeHeight.z);
 }
 
+void ACesiumGeoreference::SetGeoreferenceOrigin(
+    const glm::dvec3& TargetLongitudeLatitudeHeight) {
+  SetGeoreferenceOriginLongitudeLatitudeHeight(TargetLongitudeLatitudeHeight);
+}
+
+void ACesiumGeoreference::SetGeoreferenceOriginEcef(
+    const glm::dvec3& TargetEcef) {
+  SetGeoreferenceOriginLongitudeLatitudeHeight(
+      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(TargetEcef));
+}
+
 void ACesiumGeoreference::
     InaccurateSetGeoreferenceOriginLongitudeLatitudeHeight(
         const FVector& targetLongitudeLatitudeHeight) {
