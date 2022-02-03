@@ -236,7 +236,8 @@ public:
    * When the WorldOriginCamera of this instance is currently contained
    * the bounds of a sublevel, then this call has no effect.
    */
-  void SetGeoreferenceOrigin(const glm::dvec3& TargetLongitudeLatitudeHeight);
+  void SetGeoreferenceOriginLongitudeLatitudeHeight(
+      const glm::dvec3& TargetLongitudeLatitudeHeight);
 
   /**
    * This aligns the specified longitude in degrees (X), latitude in
@@ -248,8 +249,8 @@ public:
    * the bounds of a sublevel, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void
-  InaccurateSetGeoreferenceOrigin(const FVector& TargetLongitudeLatitudeHeight);
+  void InaccurateSetGeoreferenceOriginLongitudeLatitudeHeight(
+      const FVector& TargetLongitudeLatitudeHeight);
 
   /*
    * USEFUL CONVERSION FUNCTIONS
