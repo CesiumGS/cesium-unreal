@@ -832,20 +832,14 @@ void ACesium3DTileset::LoadTileset() {
 #endif
 
   CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
-  supportedFormats.ETC1_RGB = 
-      GPixelFormats[EPixelFormat::PF_ETC1].Supported;    
+  supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
   supportedFormats.ETC2_RGBA =
       GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
-  supportedFormats.BC1_RGB =
-      GPixelFormats[EPixelFormat::PF_DXT1].Supported;
-  supportedFormats.BC3_RGBA =
-      GPixelFormats[EPixelFormat::PF_DXT5].Supported;
-  supportedFormats.BC4_R =
-      GPixelFormats[EPixelFormat::PF_BC4].Supported;
-  supportedFormats.BC5_RG =
-      GPixelFormats[EPixelFormat::PF_BC5].Supported;
-  supportedFormats.BC7_RGBA =
-      GPixelFormats[EPixelFormat::PF_BC7].Supported;
+  supportedFormats.BC1_RGB = GPixelFormats[EPixelFormat::PF_DXT1].Supported;
+  supportedFormats.BC3_RGBA = GPixelFormats[EPixelFormat::PF_DXT5].Supported;
+  supportedFormats.BC4_R = GPixelFormats[EPixelFormat::PF_BC4].Supported;
+  supportedFormats.BC5_RG = GPixelFormats[EPixelFormat::PF_BC5].Supported;
+  supportedFormats.BC7_RGBA = GPixelFormats[EPixelFormat::PF_BC7].Supported;
   supportedFormats.ASTC_4x4_RGBA =
       GPixelFormats[EPixelFormat::PF_ASTC_4x4].Supported;
   supportedFormats.PVRTC2_4_RGBA =
