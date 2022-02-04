@@ -23,6 +23,7 @@
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltf/ImageCesium.h"
+#include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumLifetime.h"
@@ -51,6 +52,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
+#include "PixelFormat.h"
 #include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -829,8 +831,31 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 #endif
 
-  options.contentOptions.ktx2TranscodeTargetFormat =
-      CesiumGltf::CompressedPixelFormatCesium::BC7_RGBA;
+  CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
+  supportedFormats.ETC1_RGB = 
+      GPixelFormats[EPixelFormat::PF_ETC1].Supported;    
+  supportedFormats.ETC2_RGBA =
+      GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
+  supportedFormats.BC1_RGB =
+      GPixelFormats[EPixelFormat::PF_DXT1].Supported;
+  supportedFormats.BC3_RGBA =
+      GPixelFormats[EPixelFormat::PF_DXT5].Supported;
+  supportedFormats.BC4_R =
+      GPixelFormats[EPixelFormat::PF_BC4].Supported;
+  supportedFormats.BC5_RG =
+      GPixelFormats[EPixelFormat::PF_BC5].Supported;
+  supportedFormats.BC7_RGBA =
+      GPixelFormats[EPixelFormat::PF_BC7].Supported;
+  supportedFormats.ASTC_4x4_RGBA =
+      GPixelFormats[EPixelFormat::PF_ASTC_4x4].Supported;
+  supportedFormats.PVRTC2_4_RGBA =
+      GPixelFormats[EPixelFormat::PF_PVRTC2].Supported;
+  supportedFormats.ETC2_EAC_R11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_R11_EAC].Supported;
+  supportedFormats.ETC2_EAC_RG11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
+
+  options.contentOptions.ktx2TranscodeTargets = supportedFormats;
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:

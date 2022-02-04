@@ -6,6 +6,7 @@
 
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ImageCesium.h>
+#include <CesiumGltf/Ktx2TranscodeTargets.h>
 
 #include <stb_image_resize.h>
 
@@ -50,25 +51,25 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   EPixelFormat pixelFormat;
   if (image.compressedPixelFormat) {
     switch (*image.compressedPixelFormat) {
-    case CompressedPixelFormatCesium::ETC1_RGB:
+    case GpuCompressedPixelFormat::ETC1_RGB:
       pixelFormat = EPixelFormat::PF_ETC1;
       break;
-    case CompressedPixelFormatCesium::ETC2_RGBA:
+    case GpuCompressedPixelFormat::ETC2_RGBA:
       pixelFormat = EPixelFormat::PF_ETC2_RGBA;
       break;
-    case CompressedPixelFormatCesium::BC1_RGB:
+    case GpuCompressedPixelFormat::BC1_RGB:
       pixelFormat = EPixelFormat::PF_DXT1;
       break;
-    case CompressedPixelFormatCesium::BC3_RGBA:
+    case GpuCompressedPixelFormat::BC3_RGBA:
       pixelFormat = EPixelFormat::PF_DXT5;
       break;
-    case CompressedPixelFormatCesium::BC4_R:
+    case GpuCompressedPixelFormat::BC4_R:
       pixelFormat = EPixelFormat::PF_BC4;
       break;
-    case CompressedPixelFormatCesium::BC5_RG:
+    case GpuCompressedPixelFormat::BC5_RG:
       pixelFormat = EPixelFormat::PF_BC5;
       break;
-    case CompressedPixelFormatCesium::BC7_RGBA:
+    case GpuCompressedPixelFormat::BC7_RGBA:
       pixelFormat = EPixelFormat::PF_BC7;
       break;
       //  case CompressedPixelFormatCesium::PVRTC1_4_RGB:
@@ -77,19 +78,19 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
       //  case CompressedPixelFormatCesium::PVRTC1_4_RGBA:
       // pixelFormat = EPixelFormat::PV;
       //    break;
-    case CompressedPixelFormatCesium::ASTC_4x4_RGBA:
+    case GpuCompressedPixelFormat::ASTC_4x4_RGBA:
       pixelFormat = EPixelFormat::PF_ASTC_4x4;
       break;
       //  case CompressedPixelFormatCesium::PVRTC2_4_RGB:
       // pixelFormat = EPixelFormat::PF_PVRTC2; ??
       //    break;
-    case CompressedPixelFormatCesium::PVRTC2_4_RGBA:
+    case GpuCompressedPixelFormat::PVRTC2_4_RGBA:
       pixelFormat = EPixelFormat::PF_PVRTC2;
       break;
-    case CompressedPixelFormatCesium::ETC2_EAC_R11:
+    case GpuCompressedPixelFormat::ETC2_EAC_R11:
       pixelFormat = EPixelFormat::PF_ETC2_R11_EAC;
       break;
-    case CompressedPixelFormatCesium::ETC2_EAC_RG11:
+    case GpuCompressedPixelFormat::ETC2_EAC_RG11:
       pixelFormat = EPixelFormat::PF_ETC2_RG11_EAC;
       break;
     default:
