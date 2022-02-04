@@ -33,8 +33,8 @@ jobs:
     - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
-    - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - wait
+    - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
@@ -50,7 +50,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - travis_wait 30 "./travis/travis-get-ue-427.sh"
+    - ./travis/travis-get-ue-427.sh &
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}
@@ -63,6 +63,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
+    - wait
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
