@@ -47,7 +47,6 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const TextureAddress& addressY,
     const TextureFilter& filter) {
 
-  // TODO: clarify commented out format cases
   EPixelFormat pixelFormat;
   if (image.compressedPixelFormat) {
     switch (*image.compressedPixelFormat) {
@@ -72,18 +71,9 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     case GpuCompressedPixelFormat::BC7_RGBA:
       pixelFormat = EPixelFormat::PF_BC7;
       break;
-      //  case CompressedPixelFormatCesium::PVRTC1_4_RGB:
-      // pixelFormat = EPixelFormat::PV;
-      //    break;
-      //  case CompressedPixelFormatCesium::PVRTC1_4_RGBA:
-      // pixelFormat = EPixelFormat::PV;
-      //    break;
     case GpuCompressedPixelFormat::ASTC_4x4_RGBA:
       pixelFormat = EPixelFormat::PF_ASTC_4x4;
       break;
-      //  case CompressedPixelFormatCesium::PVRTC2_4_RGB:
-      // pixelFormat = EPixelFormat::PF_PVRTC2; ??
-      //    break;
     case GpuCompressedPixelFormat::PVRTC2_4_RGBA:
       pixelFormat = EPixelFormat::PF_PVRTC2;
       break;
