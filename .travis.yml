@@ -290,7 +290,6 @@ jobs:
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
-    - wait
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
     - cd "$CLONEDIR/../packages"
