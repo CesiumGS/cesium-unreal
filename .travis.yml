@@ -21,7 +21,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - ./travis/travis-get-ue.sh &
+    - "./travis/travis-get-ue.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
@@ -50,7 +50,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - ./travis/travis-get-ue-427.sh &
+    - "./travis/travis-get-ue-427.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}
@@ -159,7 +159,7 @@ jobs:
     - pip3 install awscli
     - pip3 install httpie
     - chmod +x "./travis/travis-get-ue.sh"
-    - "./travis/travis-get-ue.sh"
+    - "./travis/travis-get-ue.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-macos-${CESIUM_UNREAL_VERSION}
@@ -171,6 +171,7 @@ jobs:
     - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
+    - wait
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
@@ -186,7 +187,7 @@ jobs:
     - pip3 install awscli
     - pip3 install httpie
     - chmod +x "./travis/travis-get-ue.sh"
-    - "./travis/travis-get-ue.sh"
+    - "./travis/travis-get-ue.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-ios-${CESIUM_UNREAL_VERSION}
@@ -200,6 +201,7 @@ jobs:
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
+    - wait
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
     - cd "$CLONEDIR/../packages"
@@ -215,7 +217,7 @@ jobs:
     - pip3 install awscli
     - pip3 install httpie
     - chmod +x "./travis/travis-get-ue-427.sh"
-    - "./travis/travis-get-ue-427.sh"
+    - "./travis/travis-get-ue-427.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-macos-${CESIUM_UNREAL_VERSION}
@@ -227,6 +229,7 @@ jobs:
     - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
+    - wait
     - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
@@ -242,7 +245,7 @@ jobs:
     - pip3 install awscli
     - pip3 install httpie
     - chmod +x "./travis/travis-get-ue-427.sh"
-    - "./travis/travis-get-ue-427.sh"
+    - "./travis/travis-get-ue-427.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
@@ -256,6 +259,7 @@ jobs:
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
+    - wait
     - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
     - cd "$CLONEDIR/../packages"
@@ -272,7 +276,7 @@ jobs:
     - sudo apt-get update
     - sudo apt-get install unzip zip awscli httpie
     - chmod +x "./travis/travis-get-ue.sh"
-    - "./travis/travis-get-ue.sh"
+    - "./travis/travis-get-ue.sh &"
     script:
     - export UNREAL_ENGINE_DIR=$HOME/UE_4.26
     - export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu
@@ -286,6 +290,7 @@ jobs:
     - cd ..
     - rm -rf extern
     - export CLONEDIR=$PWD
+    - wait
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
     - cd "$CLONEDIR/../packages"
