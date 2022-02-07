@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.10.2 - ????
+
+##### Additions :tada:
+
+- Added support for `CESIUM_RTC` glTF extension.
+
 ### v1.10.1 - 2022-02-01
 
 ##### Fixes :wrench:
