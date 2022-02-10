@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added support for `CESIUM_RTC` glTF extension.
+
 ##### Fixes :wrench:
 
 - The Cesium ion Token Troubleshooting panel will no longer appear in game worlds, including Play-In-Editor.
