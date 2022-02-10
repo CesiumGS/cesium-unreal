@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- The Cesium ion Token Troubleshooting panel will no longer appear in game worlds, including Play-In-Editor.
+
 ### v1.10.1 - 2022-02-01
 
 ##### Fixes :wrench:
