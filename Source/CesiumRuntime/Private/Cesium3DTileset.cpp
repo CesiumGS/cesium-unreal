@@ -1453,7 +1453,7 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
-    if (isInExclusionZone(ExclusionZones, pTile)) {
+    if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
       continue;
     }
 
