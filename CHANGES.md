@@ -2,6 +2,10 @@
 
 ### v1.10.2 - ????
 
+##### Breaking Changes :mega:
+
+- Exclusion Zones have been deprecated and will be removed in a future release. Please use Cartographic Polygon actor instead.
+
 ##### Additions :tada:
 
 - Added support for `CESIUM_RTC` glTF extension.
