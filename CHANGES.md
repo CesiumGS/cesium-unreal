@@ -1,5 +1,15 @@
 # Change Log
 
+### v1.10.2 - ????
+
+##### Additions :tada:
+
+- Added support for `CESIUM_RTC` glTF extension.
+
+##### Fixes :wrench:
+
+- Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
+
 ### v1.10.1 - 2022-02-01
 
 ##### Fixes :wrench:
