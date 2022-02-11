@@ -39,8 +39,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   CESIUM_TRACE("CesiumTextureUtility::loadTextureAnyThreadPart");
 
   EPixelFormat pixelFormat;
-  if (image.compressedPixelFormat) {
-    switch (*image.compressedPixelFormat) {
+  if (image.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
+    switch (image.compressedPixelFormat) {
     case GpuCompressedPixelFormat::ETC1_RGB:
       pixelFormat = EPixelFormat::PF_ETC1;
       break;
@@ -159,7 +159,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
 
     if (pResult->filter == TextureFilter::TF_Trilinear) {
       CESIUM_TRACE("Generate new mips.");
-      
+
       // Generate mip levels.
       // TODO: do this on the GPU?
       while (width > 1 || height > 1) {
