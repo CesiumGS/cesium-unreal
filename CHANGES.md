@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Added support for `CESIUM_RTC` glTF extension.
+- Added ability to set Georeference origin from ECEF coordinates in Blueprints and C++.
 
 ##### Fixes :wrench:
 
