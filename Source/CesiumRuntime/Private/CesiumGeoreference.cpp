@@ -464,6 +464,12 @@ void ACesiumGeoreference::
       targetLongitudeLatitudeHeight.Z));
 }
 
+void ACesiumGeoreference::InaccurateSetGeoreferenceOriginEcef(
+    const FVector& TargetEcef) {
+  this->SetGeoreferenceOriginEcef(
+      glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
+}
+
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();

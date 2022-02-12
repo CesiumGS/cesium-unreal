@@ -254,6 +254,7 @@ public:
    * the bounds of a sublevel, then this call has no effect.
    */
   void SetGeoreferenceOriginEcef(const glm::dvec3& TargetEcef);
+
   /**
    * This aligns the specified longitude in degrees (X), latitude in
    * degrees (Y), and height above the ellipsoid in meters (Z) to Unreal's world
@@ -266,6 +267,17 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InaccurateSetGeoreferenceOriginLongitudeLatitudeHeight(
       const FVector& TargetLongitudeLatitudeHeight);
+
+  /**
+   * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
+   * Unreal's world origin. I.e. it moves the globe so that these coordinates
+   * exactly fall on the origin.
+   *
+   * When the WorldOriginCamera of this instance is currently contained
+   * the bounds of a sublevel, then this call has no effect.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void InaccurateSetGeoreferenceOriginEcef(const FVector& TargetEcef);
 
   /*
    * USEFUL CONVERSION FUNCTIONS
