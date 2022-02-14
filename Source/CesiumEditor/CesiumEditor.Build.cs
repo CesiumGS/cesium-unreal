@@ -22,7 +22,7 @@ public class CesiumEditor : ModuleRules
 
         PrivateIncludePaths.AddRange(
             new string[] {
-                Path.Combine(ModuleDirectory, "../ThirdParty/include")
+                //Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
         );
 
@@ -90,14 +90,15 @@ public class CesiumEditor : ModuleRules
             }
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
+        //PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
 
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
                 "UnrealEd",
-                "CesiumRuntime"
+                "CesiumRuntime",
+                "CesiumNative"
             }
         );
 

@@ -1,0 +1,8 @@
+# Conan generated files
+conan.lock
+conanbuildinfo.*
+conaninfo.*
+graph_info.*
+
+# Don't ignore files in any precomputed dependency data that might otherwise be ignored
+!precomputed/**/*

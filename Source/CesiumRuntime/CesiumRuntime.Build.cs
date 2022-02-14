@@ -15,7 +15,7 @@ public class CesiumRuntime : ModuleRules
 
         PublicIncludePaths.AddRange(
             new string[] {
-                Path.Combine(ModuleDirectory, "../ThirdParty/include")
+                //Path.Combine(ModuleDirectory, "../ThirdParty/include")
             }
         );
 
@@ -116,13 +116,14 @@ public class CesiumRuntime : ModuleRules
             }
         }
 
-        PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
+        //PublicAdditionalLibraries.AddRange(libs.Select(lib => Path.Combine(libPath, libPrefix + lib + postfix + libPostfix)));
 
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
                 // ... add other public dependencies that you statically link with here ...
+                "CesiumNative"
             }
         );
 
