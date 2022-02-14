@@ -849,7 +849,8 @@ void ACesium3DTileset::LoadTileset() {
   supportedFormats.ETC2_EAC_RG11 =
       GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
 
-  options.contentOptions.ktx2TranscodeTargets = supportedFormats;
+  options.contentOptions.ktx2TranscodeTargets =
+      CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
