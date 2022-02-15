@@ -21,7 +21,7 @@ class CesiumNativeConan(ConanFile):
         # LIST YOUR DEPENDENCIES HERE, USING THE `self._requireUnreal()` METHOD.
         # MAKE SURE YOU USE A PLACEHOLDER `{}` FOR THE PACKAGE CHANNEL, e.g.:
         # self._requireUnreal("my-package/1.0.0@adamrehn/{}")
-        self._requireUnreal("Cesium3DTilesSelection/0.12.0@user/dev")
-        self._requireUnreal("CesiumAsync/0.12.0@user/dev")
-        self._requireUnreal("CesiumIonClient/0.12.0@user/dev")
-        self._requireUnreal("CesiumUtility/0.12.0@user/dev")
+        self._requireUnreal("cesium3dtilesselection/0.12.0@user/dev")
+        self._requireUnreal("cesiumasync/0.12.0@user/dev")
+        self._requireUnreal("cesiumionclient/0.12.0@user/dev")
+        self._requireUnreal("cesiumutility/0.12.0@user/dev")
