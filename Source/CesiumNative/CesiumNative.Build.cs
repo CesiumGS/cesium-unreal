@@ -63,6 +63,10 @@ public class CesiumNative : ModuleRules
 			PublicIncludePaths.AddRange(dep.GetStringArrayField("include_paths"));
 
 			string[] libPaths = dep.GetStringArrayField("lib_paths");
+
+			// In the common case that there's exactly one entry in lib_paths, construct
+			// fully-qualified paths to additional libraries rather than adding the paths
+			// to PublicSystemLibraryPaths and requiring UBT to search them for the libs.
 			string libPath = "";
 			if (libPaths.Length == 1)
 			{
@@ -216,11 +220,14 @@ public class CesiumNative : ModuleRules
 		string engineVersion = this.GetEngineVersion();
 		if (this.ProcessPrecomputedData(Target, engineVersion, stagingDir) == false)
 		{
+			bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
+			string config = preferDebug ? "Debug" : "Release";
+
 			//No precomputed data detected, install third-party dependencies using Conan
 			Process p = Process.Start(new ProcessStartInfo
 			{
 				FileName = "conan",
-				Arguments = "install . --build=outdated -g=json -pr:b=default -pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target),
+				Arguments = "install . --build=outdated -g=json -pr:b=default -pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target) + " -s build_type=" + config,
 				WorkingDirectory = ModuleDirectory,
 				UseShellExecute = false
 			});
