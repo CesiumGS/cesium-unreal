@@ -50,7 +50,8 @@ public class CesiumNative : ModuleRules
 	private void ProcessDependencies(string depsJson, ReadOnlyTargetRules target, string stagingDir)
 	{
 		//We need to ensure libraries end with ".lib" under Windows
-		string libSuffix = ((this.IsWindows(target)) ? ".lib" : "");
+		string libPrefix = this.IsWindows(target) ? "" : "lib";
+		string libSuffix = this.IsWindows(target) ? ".lib" : ".a";
 
 		//Attempt to parse the JSON file
 		JsonObject deps = JsonObject.Read(new FileReference(depsJson));
@@ -60,7 +61,17 @@ public class CesiumNative : ModuleRules
 		{
 			//Add the header and library paths for the dependency package
 			PublicIncludePaths.AddRange(dep.GetStringArrayField("include_paths"));
-			PublicSystemLibraryPaths.AddRange(dep.GetStringArrayField("lib_paths"));
+
+			string[] libPaths = dep.GetStringArrayField("lib_paths");
+			string libPath = "";
+			if (libPaths.Length == 1)
+			{
+				libPath = libPaths[0];
+			}
+			else
+			{
+				PublicSystemLibraryPaths.AddRange(libPaths);
+			}
 
 			//Add the preprocessor definitions from the dependency package
 			PublicDefinitions.AddRange(dep.GetStringArrayField("defines"));
@@ -69,8 +80,19 @@ public class CesiumNative : ModuleRules
 			string[] libs = dep.GetStringArrayField("libs");
 			foreach (string lib in libs)
 			{
-				string libFull = lib + ((libSuffix.Length == 0 || lib.EndsWith(libSuffix)) ? "" : libSuffix);
-				PublicAdditionalLibraries.Add(libFull);
+				string libFull =
+					(lib.StartsWith(libPrefix) ? "" : libPrefix) +
+					lib +
+					(lib.EndsWith(libSuffix) ? "" : libSuffix);
+				if (libPath.Length > 0)
+				{
+					Console.WriteLine(Path.Combine(libPath, libFull));
+					PublicAdditionalLibraries.Add(Path.Combine(libPath, libFull));
+				}
+				else
+				{
+					PublicSystemLibraries.Add(libFull);
+				}
 			}
 
 			//Ensure any shared libraries are staged alongside the binaries for the plugin
