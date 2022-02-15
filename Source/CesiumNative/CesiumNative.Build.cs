@@ -20,51 +20,51 @@ public class CesiumNative : ModuleRules
 		string id = (target.Architecture != null && target.Architecture.Length > 0) ?
 			String.Format("{0}-{1}", target.Platform.ToString(), target.Architecture) :
 			target.Platform.ToString();
-		
+
 		//Append a debug suffix for Windows debug targets that actually use the debug CRT
 		bool isDebug = (target.Configuration == UnrealTargetConfiguration.Debug || target.Configuration == UnrealTargetConfiguration.DebugGame);
 		if (isDebug && target.bDebugBuildsActuallyUseDebugCRT) {
 			id += "-Debug";
 		}
-		
+
 		return id;
 	}
-	
+
 	//Determines if a target's platform is a Windows target platform
 	private bool IsWindows(ReadOnlyTargetRules target) {
 		return target.IsInPlatformGroup(UnrealPlatformGroup.Windows);
 	}
-	
+
 	//Returns the version string for the Unreal Engine being used to build this module
 	private string GetEngineVersion()
 	{
 		//Attempt to parse the version JSON file
 		string versionFile = Path.Combine(EngineDirectory, "Build", "Build.version");
 		JsonObject version = JsonObject.Read(new FileReference(versionFile));
-		
+
 		//Return a version string including the major and minor version numbers, without the patch level
 		return String.Format("{0}.{1}", version.GetIntegerField("MajorVersion"), version.GetIntegerField("MinorVersion"));
 	}
-	
+
 	//Processes the JSON data produced by Conan that describes our dependencies
 	private void ProcessDependencies(string depsJson, ReadOnlyTargetRules target, string stagingDir)
 	{
 		//We need to ensure libraries end with ".lib" under Windows
 		string libSuffix = ((this.IsWindows(target)) ? ".lib" : "");
-		
+
 		//Attempt to parse the JSON file
 		JsonObject deps = JsonObject.Read(new FileReference(depsJson));
-		
+
 		//Process the list of dependencies
 		foreach (JsonObject dep in deps.GetObjectArrayField("dependencies"))
 		{
 			//Add the header and library paths for the dependency package
 			PublicIncludePaths.AddRange(dep.GetStringArrayField("include_paths"));
 			PublicSystemLibraryPaths.AddRange(dep.GetStringArrayField("lib_paths"));
-			
+
 			//Add the preprocessor definitions from the dependency package
 			PublicDefinitions.AddRange(dep.GetStringArrayField("defines"));
-			
+
 			//Link against the libraries from the package
 			string[] libs = dep.GetStringArrayField("libs");
 			foreach (string lib in libs)
@@ -72,7 +72,7 @@ public class CesiumNative : ModuleRules
 				string libFull = lib + ((libSuffix.Length == 0 || lib.EndsWith(libSuffix)) ? "" : libSuffix);
 				PublicAdditionalLibraries.Add(libFull);
 			}
-			
+
 			//Ensure any shared libraries are staged alongside the binaries for the plugin
 			List<string> searchDirs = new List<string>();
 			searchDirs.AddRange(dep.GetStringArrayField("bin_paths"));
@@ -87,7 +87,7 @@ public class CesiumNative : ModuleRules
 					RuntimeDependencies.Add(Path.Combine("$(BinaryOutputDir)", Path.GetFileName(binary)), binary, StagedFileType.NonUFS);
 				}
 			}
-			
+
 			//Copy any data files needed by the package into our staging directory
 			string[] dataDirs = dep.GetStringArrayField("res_paths");
 			foreach (string dir in dataDirs)
@@ -99,7 +99,7 @@ public class CesiumNative : ModuleRules
 			}
 		}
 	}
-	
+
 	//Determines if we have precomputed dependency data for the specified target and Engine version, and processes it if we do
 	private bool ProcessPrecomputedData(ReadOnlyTargetRules target, string engineVersion, string stagingDir)
 	{
@@ -110,22 +110,22 @@ public class CesiumNative : ModuleRules
 		string libDir = Path.Combine(targetDir, "lib");
 		string binDir = Path.Combine(targetDir, "bin");
 		string dataDir = Path.Combine(targetDir, "data");
-		
+
 		//If any of the required files or directories do not exist then we do not have precomputed data
 		if (!File.Exists(flagsFile) || !Directory.Exists(includeDir) || !Directory.Exists(libDir) || !Directory.Exists(binDir) || !Directory.Exists(dataDir)) {
 			return false;
 		}
-		
+
 		//Add the precomputed include directory to our search paths
 		PublicIncludePaths.Add(includeDir);
-		
+
 		//Link against all static library files (and import libraries for DLLs under Windows) in the lib directory
 		string libExtension = ((this.IsWindows(target)) ? ".lib" : ".a");
 		string[] libs = Directory.GetFiles(libDir, "*" + libExtension);
 		foreach(string lib in libs) {
 			PublicAdditionalLibraries.Add(lib);
 		}
-		
+
 		//Under non-Windows platforms, link against all shared library files in the lib directory
 		if (this.IsWindows(target) == false)
 		{
@@ -136,7 +136,7 @@ public class CesiumNative : ModuleRules
 				PublicAdditionalLibraries.Add(lib);
 			}
 		}
-		
+
 		//Ensure any shared libraries are staged alongside the binaries for the plugin
 		string[] searchDirs = new string[]{ binDir, libDir };
 		foreach (string dir in searchDirs)
@@ -149,16 +149,16 @@ public class CesiumNative : ModuleRules
 				RuntimeDependencies.Add(Path.Combine("$(BinaryOutputDir)", Path.GetFileName(binary)), binary, StagedFileType.NonUFS);
 			}
 		}
-		
+
 		//Attempt to parse the JSON file containing any additional flags, modules and system libraries
 		JsonObject flags = JsonObject.Read(new FileReference(flagsFile));
-		
+
 		//Link against any Unreal Engine modules for bundled third-party libraries
 		PrivateDependencyModuleNames.AddRange(flags.GetStringArrayField("unreal_modules"));
-		
+
 		//Add any preprocessor definitions specified by the JSON file
 		PublicDefinitions.AddRange(flags.GetStringArrayField("defines"));
-		
+
 		//Link against any system libraries specified by the JSON file, ensuring we add the file extension if it is missing under Windows
 		string[] systemLibs = flags.GetStringArrayField("system_libs");
 		foreach (string lib in systemLibs)
@@ -167,29 +167,29 @@ public class CesiumNative : ModuleRules
 			if (this.IsWindows(target) && !libFull.EndsWith(libExtension)) {
 				libFull += libExtension;
 			}
-			
+
 			PublicSystemLibraries.Add(libFull);
 		}
-		
+
 		//Copy any data files needed by the package into our staging directory
 		string[] files = Directory.GetFiles(dataDir, "*", SearchOption.AllDirectories);
 		foreach(string file in files) {
 			RuntimeDependencies.Add(Path.Combine(stagingDir, Path.GetFileName(file)), file, StagedFileType.NonUFS);
 		}
-		
+
 		return true;
 	}
-	
+
 	public CesiumNative(ReadOnlyTargetRules Target) : base(Target)
 	{
 		Type = ModuleType.External;
-		
+
 		//Ensure our staging directory exists prior to copying any dependency data files into it
 		string stagingDir = Path.Combine("$(ProjectDir)", "Binaries", "Data", "CesiumNative");
 		if (!Directory.Exists(stagingDir)) {
 			Directory.CreateDirectory(stagingDir);
 		}
-		
+
 		//Determine if we have precomputed dependency data for the target that is being built
 		string engineVersion = this.GetEngineVersion();
 		if (this.ProcessPrecomputedData(Target, engineVersion, stagingDir) == false)
@@ -198,7 +198,7 @@ public class CesiumNative : ModuleRules
 			Process p = Process.Start(new ProcessStartInfo
 			{
 				FileName = "conan",
-				Arguments = "install . --build=outdated -g=json --profile=ue" + engineVersion + "-" + this.TargetIdentifier(Target),
+				Arguments = "install . --build=outdated -g=json -pr:b=default -pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target),
 				WorkingDirectory = ModuleDirectory,
 				UseShellExecute = false
 			});

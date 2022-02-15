@@ -6,22 +6,31 @@ import os
 class CesiumNativeConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "json"
-    
-    def _requireUnreal(self, dependency):
+
+    cesiumNativeVersion = "0.12.0@user/dev"
+
+    def _overrideUnreal(self, dependency):
         '''
         Adds a package as a dependency, filling in the Unreal Engine version string.
-        
+
         Call this with a package reference that uses a placeholder for the channel, e.g.:
         self._requireUnreal("my-package/1.0.0@adamrehn/{}")
         '''
-        self.requires(dependency.format(os.environ["UNREAL_ENGINE_VERSION"]))
-    
+        self.requires(dependency.format(os.environ["UNREAL_ENGINE_VERSION"]), override=True)
+
+    def _requireNative(self, dependency):
+        self.requires("%s/%s" % (dependency, self.cesiumNativeVersion))
+
     def requirements(self):
-        # TODO:
-        # LIST YOUR DEPENDENCIES HERE, USING THE `self._requireUnreal()` METHOD.
-        # MAKE SURE YOU USE A PLACEHOLDER `{}` FOR THE PACKAGE CHANNEL, e.g.:
-        # self._requireUnreal("my-package/1.0.0@adamrehn/{}")
-        self._requireUnreal("cesium3dtilesselection/0.12.0@user/dev")
-        self._requireUnreal("cesiumasync/0.12.0@user/dev")
-        self._requireUnreal("cesiumionclient/0.12.0@user/dev")
-        self._requireUnreal("cesiumutility/0.12.0@user/dev")
+        self._requireNative("cesium3dtilesselection")
+        self._requireNative("cesiumasync")
+        self._requireNative("cesiumgeometry")
+        self._requireNative("cesiumgeospatial")
+        self._requireNative("cesiumgltf")
+        self._requireNative("cesiumgltfreader")
+        self._requireNative("cesiumionclient")
+        self._requireNative("cesiumjsonreader")
+        self._requireNative("cesiumutility")
+
+        # Use Unreal's version of third-party libraries where available
+        self._overrideUnreal("openssl/ue4@adamrehn/{}")
