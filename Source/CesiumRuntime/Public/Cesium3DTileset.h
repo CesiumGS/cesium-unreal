@@ -343,8 +343,12 @@ public:
    *
    * This is an experimental feature and may change in future versions.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Experimental")
-  TArray<FCesiumExclusionZone> ExclusionZones;
+  UPROPERTY(
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead."))
+  TArray<FCesiumExclusionZone> ExclusionZones_DEPRECATED;
 
   /**
    * The screen-space error to be enforced for tiles that are outside the view
