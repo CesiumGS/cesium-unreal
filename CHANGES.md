@@ -10,6 +10,7 @@
 ##### Fixes :wrench:
 
 - Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
+- Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
 
 ### v1.10.1 - 2022-02-01
 
