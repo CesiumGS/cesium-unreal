@@ -5,10 +5,12 @@
 ##### Additions :tada:
 
 - Added support for `CESIUM_RTC` glTF extension.
+- Added ability to set Georeference origin from ECEF coordinates in Blueprints and C++.
 
 ##### Fixes :wrench:
 
 - Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
+- Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
 - Fixed a bug where metadata from the feature table was not decoded from UTF-8.
 
 ### v1.10.1 - 2022-02-01
