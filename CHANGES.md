@@ -12,6 +12,7 @@
 - Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
 - Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
 - Fixed a bug where metadata from the feature table was not decoded from UTF-8.
+- Improved the shadows, making shadows fade in and out less noticable.
 
 ### v1.10.1 - 2022-02-01
 
