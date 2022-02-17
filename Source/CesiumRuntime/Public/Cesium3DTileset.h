@@ -463,6 +463,19 @@ private:
   FString IonAccessToken;
 
   /**
+   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
+   * endpoint can be specified.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIonAssetEndpointUrl,
+      BlueprintSetter = SetIonAssetEndpointUrl,
+      Category = "Cesium",
+      AdvancedDisplay,
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
+  FString IonAssetEndpointUrl;
+
+  /**
    * Check if the Cesium ion token used to access this tileset is working
    * correctly, and fix it if necessary.
    */
@@ -603,6 +616,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAccessToken(FString InAccessToken);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetIonAssetEndpointUrl() const { return IonAssetEndpointUrl; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetIonAssetEndpointUrl(FString InIonAssetEndpointUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
   bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
