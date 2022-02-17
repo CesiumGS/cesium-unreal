@@ -1,5 +1,13 @@
 # Change Log
 
+### v1.11.0 - ????
+
+##### Additions :tada:
+
+- Exposed ion endpoint URL as a parameter.
+
+##### Fixes :wrench:
+
 ### v1.10.2 - ????
 
 ##### Additions :tada:
