@@ -1,6 +1,6 @@
 # Change Log
 
-### v1.10.2 - ????
+### ? - ?
 
 ##### Breaking Changes :mega:
 
@@ -17,6 +17,10 @@
 - Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
 - Fixed a bug where metadata from the feature table was not decoded from UTF-8.
 - Improved the shadows, making shadows fade in and out less noticable.
+
+##### Fixes :wrench:
+
+- The Cesium ion Token Troubleshooting panel will no longer appear in game worlds, including Play-In-Editor.
 
 ### v1.10.1 - 2022-02-01
 

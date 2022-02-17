@@ -12,6 +12,11 @@ void UCesiumIonRasterOverlay::TroubleshootToken() {
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumIonRasterOverlay::CreateOverlay(
     const Cesium3DTilesSelection::RasterOverlayOptions& options) {
+  if (this->IonAssetID <= 0) {
+    // Don't create an overlay for an invalid asset ID.
+    return nullptr;
+  }
+
   FString token =
       this->IonAccessToken.IsEmpty()
           ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
