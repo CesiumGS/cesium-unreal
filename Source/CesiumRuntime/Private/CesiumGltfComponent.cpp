@@ -985,7 +985,7 @@ static void loadPrimitive(
     CESIUM_TRACE("SetIndices");
     LODResources.IndexBuffer.SetIndices(
         indices,
-        indices.Num() > std::numeric_limits<uint16>::max()
+        StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()
             ? EIndexBufferStride::Type::Force32Bit
             : EIndexBufferStride::Type::Force16Bit);
   }
