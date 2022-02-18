@@ -243,7 +243,8 @@ void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   }
 }
 
-void ACesium3DTileset::SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl) {
+void ACesium3DTileset::SetIonAssetEndpointUrl(
+    const FString& InIonAssetEndpointUrl) {
   if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
     this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
