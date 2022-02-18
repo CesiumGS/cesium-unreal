@@ -216,7 +216,7 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   }
 }
 
-void ACesium3DTileset::SetUrl(FString InUrl) {
+void ACesium3DTileset::SetUrl(const FString& InUrl) {
   if (InUrl != this->Url) {
     this->Url = InUrl;
     if (this->TilesetSource == ETilesetSource::FromUrl) {
@@ -234,7 +234,7 @@ void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
   }
 }
 
-void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
+void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   if (this->IonAccessToken != InAccessToken) {
     this->IonAccessToken = InAccessToken;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
@@ -243,7 +243,7 @@ void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
   }
 }
 
-void ACesium3DTileset::SetIonAssetEndpointUrl(FString InIonAssetEndpointUrl) {
+void ACesium3DTileset::SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl) {
   if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
     this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {

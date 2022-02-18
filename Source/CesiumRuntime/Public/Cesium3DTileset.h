@@ -603,7 +603,7 @@ public:
   FString GetUrl() const { return Url; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetUrl(FString InUrl);
+  void SetUrl(const FString& InUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   int64 GetIonAssetID() const { return IonAssetID; }
@@ -615,13 +615,13 @@ public:
   FString GetIonAccessToken() const { return IonAccessToken; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAccessToken(FString InAccessToken);
+  void SetIonAccessToken(const FString& InAccessToken);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   FString GetIonAssetEndpointUrl() const { return IonAssetEndpointUrl; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAssetEndpointUrl(FString InIonAssetEndpointUrl);
+  void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
   bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
