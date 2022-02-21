@@ -96,6 +96,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      Interp,
       Category = "Cesium|Date and Time",
       meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
   float SolarTime = 13.f;
@@ -109,6 +110,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      Interp,
       Category = "Cesium|Date and Time",
       meta = (ClampMin = 1, ClampMax = 31))
   int32 Day = 21;
@@ -122,6 +124,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      Interp,
       Category = "Cesium|Date and Time",
       meta = (ClampMin = 1, ClampMax = 12))
   int32 Month = 9;
@@ -135,6 +138,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      Interp,
       Category = "Cesium|Date and Time",
       meta = (UIMin = 1800, UIMax = 2200, ClampMin = 0, ClampMax = 4000))
   int32 Year = 2019;
