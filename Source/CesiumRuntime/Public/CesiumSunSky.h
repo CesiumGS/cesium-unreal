@@ -83,6 +83,7 @@ protected:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
+      Interp,
       Category = "Cesium|Date and Time",
       meta = (ClampMin = -12, ClampMax = 14))
   float TimeZone = -5.f;

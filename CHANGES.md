@@ -17,6 +17,7 @@
 - Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
 - Fixed a bug where metadata from the feature table was not decoded from UTF-8.
 - Improved the shadows, making shadows fade in and out less noticable.
+- Exposed CesiumSunSky date and time parameters to Sequencer. Be sure to use an Event Track to call `UpdateSun` every frame when animating changes in date or time.
 
 ##### Fixes :wrench:
 
