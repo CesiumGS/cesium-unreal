@@ -227,7 +227,7 @@ public class CesiumNative : ModuleRules
 			Process p = Process.Start(new ProcessStartInfo
 			{
 				FileName = "conan",
-				Arguments = "install . --build=outdated -g=json -pr:b=default -pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target) + " -s build_type=" + config,
+				Arguments = "install . --build=outdated --build=cascade -g=json -pr:b=default -pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target) + " -s build_type=" + config,
 				WorkingDirectory = ModuleDirectory,
 				UseShellExecute = false
 			});
