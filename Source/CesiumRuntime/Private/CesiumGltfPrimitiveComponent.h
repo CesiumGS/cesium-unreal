@@ -11,6 +11,8 @@
 #include <glm/mat4x4.hpp>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
+class UCesiumGltfMeshVariantsComponent;
+
 UCLASS()
 class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
   GENERATED_BODY()
@@ -25,6 +27,8 @@ public:
   const CesiumGltf::Model* pModel;
 
   const CesiumGltf::MeshPrimitive* pMeshPrimitive;
+
+  UCesiumGltfMeshVariantsComponent* pMeshVariants;
 
   /**
    * The double-precision transformation matrix for this glTF node.

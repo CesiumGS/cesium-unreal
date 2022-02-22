@@ -11,6 +11,10 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
+#include "CesiumGltf/ExtensionModelMaxarMeshVariants.h"
+#include "CesiumGltf/ExtensionModelMaxarMeshVariantsValue.h"
+#include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
+#include "CesiumGltf/ExtensionNodeMaxarMeshVariantsMappingsValue.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
@@ -40,6 +44,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
+#include <map>
 
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
@@ -61,8 +66,10 @@ struct LoadModelResult {
   FCesiumMetadataPrimitive Metadata{};
   FStaticMeshRenderData* RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
+  const CesiumGltf::Node* pNode = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
   const CesiumGltf::Material* pMaterial = nullptr;
+  std::vector<int32> variants{};
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
   PxTriangleMesh* pCollisionMesh = nullptr;
@@ -530,10 +537,11 @@ template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
+    const CesiumGltf::Node& node,
     const CesiumGltf::Mesh& mesh,
     const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options,
+    const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
@@ -640,7 +648,9 @@ static void loadPrimitive(
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
   }
 
-  bool needsTangents = hasNormalMap || options.alwaysIncludeTangents;
+  bool needsTangents = 
+      hasNormalMap || 
+      options.meshOptions.nodeOptions.modelOptions.alwaysIncludeTangents;
 
   bool hasTangents = false;
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
@@ -996,17 +1006,20 @@ static void loadPrimitive(
   LODResources.bHasAdjacencyInfo = false;
 
   primitiveResult.pModel = &model;
+  primitiveResult.pNode = &node;
   primitiveResult.pMeshPrimitive = &primitive;
   primitiveResult.RenderData = RenderData;
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
+
+  primitiveResult.variants = options.meshOptions.variants;
 
   section.MaterialIndex = 0;
 
   primitiveResult.pCollisionMesh = nullptr;
 
 #if PHYSICS_INTERFACE_PHYSX
-  if (options.pPhysXCooking) {
+  if (options.meshOptions.NodeOptions.modelOptions.pPhysXCooking) {
     CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
@@ -1054,10 +1067,11 @@ static void loadPrimitive(
 static void loadIndexedPrimitive(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
+    const CesiumGltf::Node& node,
     const CesiumGltf::Mesh& mesh,
     const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options,
+    const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView) {
   const CesiumGltf::Accessor& indexAccessorGltf =
@@ -1068,6 +1082,7 @@ static void loadIndexedPrimitive(
     loadPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1082,6 +1097,7 @@ static void loadIndexedPrimitive(
     loadPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1096,6 +1112,7 @@ static void loadIndexedPrimitive(
     loadPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1110,6 +1127,7 @@ static void loadIndexedPrimitive(
     loadPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1124,6 +1142,7 @@ static void loadIndexedPrimitive(
     loadPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1137,10 +1156,11 @@ static void loadIndexedPrimitive(
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
+    const CesiumGltf::Node& node,
     const CesiumGltf::Mesh& mesh,
     const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreatePrimitiveOptions& options) {
   CESIUM_TRACE("loadPrimitive");
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
@@ -1168,6 +1188,7 @@ static void loadPrimitive(
     loadPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1179,6 +1200,7 @@ static void loadPrimitive(
     loadIndexedPrimitive(
         result,
         model,
+        node,
         mesh,
         primitive,
         transform,
@@ -1191,14 +1213,15 @@ static void loadPrimitive(
 static void loadMesh(
     std::vector<LoadModelResult>& result,
     const CesiumGltf::Model& model,
+    const CesiumGltf::Node& node,
     const CesiumGltf::Mesh& mesh,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreateMeshOptions& options) {
 
   CESIUM_TRACE("loadMesh");
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    loadPrimitive(result, model, mesh, primitive, transform, options);
+    loadPrimitive(result, model, node, mesh, primitive, transform, options);
   }
 }
 
@@ -1207,7 +1230,7 @@ static void loadNode(
     const CesiumGltf::Model& model,
     const CesiumGltf::Node& node,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreateNodeOptions& options) {
   static constexpr std::array<double, 16> identityMatrix = {
       1.0,
       0.0,
@@ -1277,7 +1300,30 @@ static void loadNode(
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     const CesiumGltf::Mesh& mesh = model.meshes[meshId];
-    loadMesh(result, model, mesh, nodeTransform, options);
+    
+    const ExtensionModelMaxarMeshVariants* pModelVariants = 
+        model.getExtension<ExtensionModelMaxarMeshVariants>();
+    const ExtensionNodeMaxarMeshVariants* pNodeVariants =
+        node.getExtension<ExtensionNodeMaxarMeshVariants>();
+
+    if (pModelVariants && pNodeVariants) {
+      for (const ExtensionNodeMaxarMeshVariantsMappingsValue& mapping :
+           pNodeVariants->mappings) {
+        if (mapping.mesh >= 0 && mapping.mesh < model.meshes.size())  {
+          CreateMeshOptions meshOptions = options;
+          meshOptions.variants = mapping.variants;
+          loadMesh(
+              result, 
+              model, 
+              node,
+              model.meshes[mapping.mesh], 
+              nodeTransform, 
+              meshOptions);
+        }
+      }
+    } else {
+      loadMesh(result, model, node, mesh, nodeTransform, options);
+    }
   }
 
   for (int childNodeId : node.children) {
@@ -1498,12 +1544,13 @@ void SetWaterParameterValues(
 
 static void loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
+    USceneComponent* pOutter,
     LoadModelResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
 
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
-      NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+      NewObject<UCesiumGltfPrimitiveComponent>(pOutter, meshName);
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
@@ -1725,9 +1772,53 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   Gltf->CustomDepthParameters = CustomDepthParameters;
 
+  // TODO: can we refactor to have a hierarchical LoadResult?
+  // i.e. loadModelResult.nodeResults[i].meshResult.primitiveResults[j]
+  // This way loadModelResult.nodeResults[i] can contain node-level results
+  // like node variants.
+  std::map<ExtensionNodeMaxarMeshVariants*, UCesiumGltfMeshVariantsComponent*> 
+      uniqueNodeVariantsMap;
+  uniqueNodeVariantsMap.reserve(result.size());
+
   for (LoadModelResult& model : result) {
-    loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
+    const ExtensionModelMaxarMeshVariants* pModelVariants = 
+        model.pModel->getExtension<ExtensionModelMaxarMeshVariants>();
+    const ExtensionNodeMaxarMeshVariants* pNodeVariants = 
+        model.pModel->getExtension<ExtensionNodeMaxarMeshVariants>();
+
+    if (pModelVariants && pNodeVariants) {
+      auto uniqueNodeVariantsIt = uniqueNodeVariantsMap.find(pNodeVariants);
+      UCesiumGltfMeshVariantsComponent* pVariantsComponent;
+      if (uniqueNodeVariantsIt == uniqueNodeVariants.end()) {
+        // TODO: construct name during worker thread part? Will be unnecessary 
+        // if we do the above suggested refactor.
+        std::string name = "glTF";
+
+        auto urlIt = model.pModel->extras.find("Cesium3DTiles_TileUrl");
+        if (urlIt != model.pModel->end()) {
+          name = urlIt->second.getStringOrDefault("glTF");
+          name = constrainLength(name, 256);
+        }
+
+        name += "nodeVariant" + std::to_string(uniqueNodeVariantsMap.size());
+
+        pVariantsComponent = 
+            NewObject<UCesiumGltfMeshVariantsComponent>(Gltf, name);
+        uniqueNodeVariantsMap.emplace(pNodeVariants, pVariantsComponent);
+      } else {
+        pVariantsComponent = uniqueNodeVariantsIt->second;
+      }
+
+      loadModelGameThreadPart(
+          Gltf, 
+          pVariantsComponent, 
+          model, 
+          cesiumToUnrealTransform);
+    } else {
+      loadModelGameThreadPart(Gltf, Gltf, model, cesiumToUnrealTransform);
+    }
   }
+
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
