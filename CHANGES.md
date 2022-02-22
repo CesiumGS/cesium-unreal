@@ -1,5 +1,10 @@
 # Change Log
 
+### v1.11.0 - 2022-03-01
+##### Additions :tada:
+
+- Integrated gpu pixel compression formats received from Cesium Native into Unreal's texture system.
+
 ### v1.10.1 - 2022-02-01
 
 ##### Fixes :wrench:
