@@ -4,6 +4,7 @@
 #include "Engine/Texture2D.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "UObject/Object.h"
+#include <algorithm>
 
 /*static*/ TArray<TWeakObjectPtr<UObject>> CesiumLifetime::_pending;
 /*static*/ TArray<TWeakObjectPtr<UObject>> CesiumLifetime::_nextPending;

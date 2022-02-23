@@ -72,7 +72,7 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
                                        auto propertyValue) mutable {
     if (propertyValue.status() ==
         CesiumGltf::MetadataPropertyViewStatus::Valid) {
-      FString key(propertyName.size(), propertyName.data());
+      FString key(UTF8_TO_TCHAR(propertyName.data()));
       properties.Add(key, FCesiumMetadataProperty(propertyValue));
     }
   });

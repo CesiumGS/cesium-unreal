@@ -2,12 +2,57 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- Exclusion Zones have been deprecated and will be removed in a future release. Please use Cartographic Polygon actor instead.
+
 ##### Additions :tada:
 
+- Added experimental support for Unreal Engine 5 (preview 1).
+- Added collision meshes for tilesets when using the Chaos physics engine.
+- Added support for `CESIUM_RTC` glTF extension.
+- Added ability to set Georeference origin from ECEF coordinates in Blueprints and C++.
+- Exposed ion endpoint URL as a parameter.
+
+##### Fixes :wrench:
+
+- Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
+- Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
+- Fixed a bug where metadata from the feature table was not decoded from UTF-8.
+- Improved the shadows, making shadows fade in and out less noticable.
+
+##### Fixes :wrench:
+
+- The Cesium ion Token Troubleshooting panel will no longer appear in game worlds, including Play-In-Editor.
+
+### v1.10.1 - 2022-02-01
+
+##### Fixes :wrench:
+
+- Fixed a crash at startup on Android devices introduced in v1.10.0.
+
+### v1.10.0 - 2022-02-01
+
+##### Breaking Changes :mega:
+
+- The following Blueprints and C++ functions on `CesiumSunSky` have been renamed. CoreRedirects have been provided to handle the renames automatically for Blueprints.
+  - `EnableMobileRendering` to `UseMobileRendering`
+  - `AdjustAtmosphereRadius` to `UpdateAtmosphereRadius`
+
+##### Additions :tada:
+
+- Added Cesium Cartographic Polygon to the Cesium Quick Add panel.
 - Improved the Cesium ion token management. Instead of automatically creating a Cesium ion token for each project, Cesium for Unreal now prompts you to select or create a token the first time one is needed.
 - Added a Cesium ion Token Troubleshooting panel that appears when there is a problem connecting to Cesium ion tilesets and raster overlays.
-- Added experimental UE5 Early Access support.
-- Added collision meshes for tilesets when using the Chaos physics engine.
+- The new `FCesiumCamera` and `ACesiumCameraManager` can be used to register and update custom camera views into Cesium tilesets.
+
+##### Fixes :wrench:
+
+- Fixed a crash when editing the georeference detail panel while a sublevel is active.
+- Improved the organization of `CesiumSunSky` parameters in the Details Panel.
+- Improved the organization of `CesiumGlobeAnchorComponent` parameters in the Details Panel.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.11.0 to v0.12.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.9.0 - 2022-01-03
 

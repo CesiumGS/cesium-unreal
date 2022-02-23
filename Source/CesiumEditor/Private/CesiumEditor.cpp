@@ -365,6 +365,12 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
 
 void FCesiumEditorModule::OnTilesetLoadFailure(
     const FCesium3DTilesetLoadFailureDetails& details) {
+  // Don't pop a troubleshooting panel over a game world (including
+  // Play-In-Editor).
+  if (details.Tileset && details.Tileset->GetWorld()->IsGameWorld()) {
+    return;
+  }
+
   FLevelEditorModule* pLevelEditorModule =
       FModuleManager::GetModulePtr<FLevelEditorModule>(
           FName(TEXT("LevelEditor")));
@@ -384,6 +390,12 @@ void FCesiumEditorModule::OnTilesetLoadFailure(
 
 void FCesiumEditorModule::OnRasterOverlayLoadFailure(
     const FCesiumRasterOverlayLoadFailureDetails& details) {
+  // Don't pop a troubleshooting panel over a game world (including
+  // Play-In-Editor).
+  if (details.Overlay && details.Overlay->GetWorld()->IsGameWorld()) {
+    return;
+  }
+
   FLevelEditorModule* pLevelEditorModule =
       FModuleManager::GetModulePtr<FLevelEditorModule>(
           FName(TEXT("LevelEditor")));

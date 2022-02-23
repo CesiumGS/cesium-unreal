@@ -4,6 +4,8 @@
 
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetAccessor.h"
+#include "Containers/UnrealString.h"
+#include "HAL/Platform.h"
 #include <cstddef>
 
 class CESIUMRUNTIME_API UnrealAssetAccessor

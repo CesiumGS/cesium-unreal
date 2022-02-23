@@ -53,7 +53,8 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->Intensity = 111000.f;
   DirectionalLight->LightSourceAngle = 0.5;
   DirectionalLight->DynamicShadowCascades = 5;
-  DirectionalLight->CascadeDistributionExponent = 1.4;
+  DirectionalLight->CascadeDistributionExponent = 2.0;
+  DirectionalLight->DynamicShadowDistanceMovableLight = 500000.f;
 
 #if ENGINE_MAJOR_VERSION >= 5
   // We need to set both of these, because in the case of a pre-UE5 asset, UE5
@@ -139,19 +140,19 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
       Verbose,
       TEXT("Spawn new sky sphere: %s"),
       _wantsSpawnMobileSkySphere ? TEXT("true") : TEXT("false"));
-  if (EnableMobileRendering) {
+  if (UseMobileRendering) {
     DirectionalLight->Intensity = MobileDirectionalLightIntensity;
     if (_wantsSpawnMobileSkySphere && SkySphereClass) {
       _spawnSkySphere();
     }
   }
-  _setSkyAtmosphereVisibility(!EnableMobileRendering);
+  _setSkyAtmosphereVisibility(!UseMobileRendering);
 
   this->UpdateSun();
 }
 
 void ACesiumSunSky::_spawnSkySphere() {
-  if (!EnableMobileRendering || !IsValid(GetWorld())) {
+  if (!UseMobileRendering || !IsValid(GetWorld())) {
     return;
   }
 
@@ -178,7 +179,7 @@ void ACesiumSunSky::_spawnSkySphere() {
 }
 
 void ACesiumSunSky::UpdateSkySphere() {
-  if (!EnableMobileRendering || !SkySphereActor) {
+  if (!UseMobileRendering || !SkySphereActor) {
     return;
   }
   UFunction* UpdateSkySphere =
@@ -198,12 +199,12 @@ void ACesiumSunSky::BeginPlay() {
           this,
           &ACesiumSunSky::_handleTransformUpdated);
 
-  _setSkyAtmosphereVisibility(!EnableMobileRendering);
+  _setSkyAtmosphereVisibility(!UseMobileRendering);
 
   this->UpdateSun();
 
   if (this->UpdateAtmosphereAtRuntime) {
-    this->AdjustAtmosphereRadius();
+    this->UpdateAtmosphereRadius();
   }
 }
 
@@ -245,7 +246,7 @@ void ACesiumSunSky::Tick(float DeltaSeconds) {
   Super::Tick(DeltaSeconds);
 
   if (this->UpdateAtmosphereAtRuntime) {
-    this->AdjustAtmosphereRadius();
+    this->UpdateAtmosphereRadius();
   }
 }
 
@@ -278,7 +279,7 @@ void ACesiumSunSky::_setSkyAtmosphereVisibility(bool bVisible) {
 }
 
 void ACesiumSunSky::_setSkySphereDirectionalLight() {
-  if (!EnableMobileRendering || !SkySphereClass || !IsValid(SkySphereActor)) {
+  if (!UseMobileRendering || !SkySphereClass || !IsValid(SkySphereActor)) {
     return;
   }
 
@@ -321,10 +322,10 @@ void ACesiumSunSky::PostEditChangeProperty(
     }
   }
   if (propertyName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, EnableMobileRendering)) {
-    _wantsSpawnMobileSkySphere = EnableMobileRendering;
-    _setSkyAtmosphereVisibility(!EnableMobileRendering);
-    if (!EnableMobileRendering && SkySphereActor) {
+      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseMobileRendering)) {
+    _wantsSpawnMobileSkySphere = UseMobileRendering;
+    _setSkyAtmosphereVisibility(!UseMobileRendering);
+    if (!UseMobileRendering && SkySphereActor) {
       SkySphereActor->Destroy();
     }
   }
@@ -434,7 +435,7 @@ FVector getViewLocation(UWorld* pWorld) {
 
 } // namespace
 
-void ACesiumSunSky::AdjustAtmosphereRadius() {
+void ACesiumSunSky::UpdateAtmosphereRadius() {
   FVector location = getViewLocation(this->GetWorld());
   glm::dvec3 llh =
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(
