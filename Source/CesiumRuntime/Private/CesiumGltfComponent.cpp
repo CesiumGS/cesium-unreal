@@ -505,8 +505,9 @@ static void loadPrimitive(
 
   CESIUM_TRACE("loadPrimitive<T>");
 
-  const Model& model = *options.meshOptions.nodeOptions.modelOptions.pModel;
-  const Mesh& mesh = *options.meshOptions.pMesh;
+  const Model& model =
+      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  const Mesh& mesh = *options.pMeshOptions->pMesh;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
@@ -609,7 +610,7 @@ static void loadPrimitive(
 
   bool needsTangents =
       hasNormalMap ||
-      options.meshOptions.nodeOptions.modelOptions.alwaysIncludeTangents;
+      options.pMeshOptions->pNodeOptions->pModelOptions->alwaysIncludeTangents;
 
   bool hasTangents = false;
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
@@ -975,7 +976,7 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
 #if PHYSICS_INTERFACE_PHYSX
-  if (options.meshOptions.nodeOptions.modelOptions.pPhysXCooking) {
+  if (options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCooking) {
     CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
@@ -995,14 +996,15 @@ static void loadPrimitive(
       physicsIndices[i].v2 = indices[3 * i + 2];
     }
 
-    options.meshOptions.nodeOptions.modelOptions.pPhysXCooking->CreateTriMesh(
-        "PhysXGeneric",
-        EPhysXMeshCookFlags::Default,
-        vertices,
-        physicsIndices,
-        TArray<uint16>(),
-        true,
-        primitiveResult.pCollisionMesh);
+    options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCooking
+        ->CreateTriMesh(
+            "PhysXGeneric",
+            EPhysXMeshCookFlags::Default,
+            vertices,
+            physicsIndices,
+            TArray<uint16>(),
+            true,
+            primitiveResult.pCollisionMesh);
   }
 #else
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
@@ -1025,7 +1027,8 @@ static void loadIndexedPrimitive(
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView) {
 
-  const Model& model = *options.meshOptions.nodeOptions.modelOptions.pModel;
+  const Model& model =
+      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
   const CesiumGltf::Accessor& indexAccessorGltf =
@@ -1093,7 +1096,8 @@ static void loadPrimitive(
     const CreatePrimitiveOptions& options) {
   CESIUM_TRACE("loadPrimitive");
 
-  const Model& model = *options.meshOptions.nodeOptions.modelOptions.pModel;
+  const Model& model =
+      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
@@ -1142,7 +1146,7 @@ static void loadMesh(
 
   CESIUM_TRACE("loadMesh");
 
-  const Model& model = *options.nodeOptions.modelOptions.pModel;
+  const Model& model = *options.pNodeOptions->pModelOptions->pModel;
   const Mesh& mesh = *options.pMesh;
 
   result = LoadMeshResult();
@@ -1181,7 +1185,7 @@ static void loadNode(
 
   CESIUM_TRACE("loadNode");
 
-  const Model& model = *options.modelOptions.pModel;
+  const Model& model = *options.pModelOptions->pModel;
   const Node& node = *options.pNode;
 
   LoadNodeResult& result = loadNodeResults.emplace_back();
@@ -1338,8 +1342,8 @@ static LoadModelResult loadModelAnyThreadPart(
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const CesiumGltf::Mesh& mesh : model.meshes) {
-      CreateMeshOptions meshOptions;
-      meshOptions.nodeOptions = options;
+      CreateNodeOptions dummyNodeOptions = options;
+      CreateMeshOptions meshOptions = dummyNodeOptions;
       meshOptions.pMesh = &mesh;
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
       loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
