@@ -529,16 +529,17 @@ FName createSafeName(
 template <class TIndexAccessor>
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
-    const CesiumGltf::Model& model,
-    const CesiumGltf::Mesh& mesh,
-    const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options,
+    const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView,
     const TIndexAccessor& indicesView) {
 
   CESIUM_TRACE("loadPrimitive<T>");
+
+  const Model& model = *options.meshOptions.nodeOptions.modelOptions.pModel;
+  const Mesh& mesh = *options.meshOptions.pMesh;
+  const MeshPrimitive& primitive = *options.pPrimitive;
 
   if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
       primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
@@ -640,7 +641,9 @@ static void loadPrimitive(
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
   }
 
-  bool needsTangents = hasNormalMap || options.alwaysIncludeTangents;
+  bool needsTangents =
+      hasNormalMap ||
+      options.meshOptions.nodeOptions.modelOptions.alwaysIncludeTangents;
 
   bool hasTangents = false;
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
@@ -1006,7 +1009,7 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
 #if PHYSICS_INTERFACE_PHYSX
-  if (options.pPhysXCooking) {
+  if (options.meshOptions.nodeOptions.modelOptions.pPhysXCooking) {
     CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
@@ -1026,7 +1029,7 @@ static void loadPrimitive(
       physicsIndices[i].v2 = indices[3 * i + 2];
     }
 
-    options.pPhysXCooking->CreateTriMesh(
+    options.meshOptions.nodeOptions.modelOptions.pPhysXCooking->CreateTriMesh(
         "PhysXGeneric",
         EPhysXMeshCookFlags::Default,
         vertices,
@@ -1053,13 +1056,14 @@ static void loadPrimitive(
 
 static void loadIndexedPrimitive(
     std::vector<LoadModelResult>& result,
-    const CesiumGltf::Model& model,
-    const CesiumGltf::Mesh& mesh,
-    const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options,
+    const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
     const CesiumGltf::AccessorView<FVector>& positionView) {
+
+  const Model& model = *options.meshOptions.nodeOptions.modelOptions.pModel;
+  const MeshPrimitive& primitive = *options.pPrimitive;
+
   const CesiumGltf::Accessor& indexAccessorGltf =
       model.accessors[primitive.indices];
   if (indexAccessorGltf.componentType ==
@@ -1067,9 +1071,6 @@ static void loadIndexedPrimitive(
     CesiumGltf::AccessorView<int8_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         positionAccessor,
@@ -1081,9 +1082,6 @@ static void loadIndexedPrimitive(
     CesiumGltf::AccessorView<uint8_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         positionAccessor,
@@ -1095,9 +1093,6 @@ static void loadIndexedPrimitive(
     CesiumGltf::AccessorView<int16_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         positionAccessor,
@@ -1109,9 +1104,6 @@ static void loadIndexedPrimitive(
     CesiumGltf::AccessorView<uint16_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         positionAccessor,
@@ -1123,9 +1115,6 @@ static void loadIndexedPrimitive(
     CesiumGltf::AccessorView<uint32_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         positionAccessor,
@@ -1136,12 +1125,11 @@ static void loadIndexedPrimitive(
 
 static void loadPrimitive(
     std::vector<LoadModelResult>& result,
-    const CesiumGltf::Model& model,
-    const CesiumGltf::Mesh& mesh,
-    const CesiumGltf::MeshPrimitive& primitive,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreatePrimitiveOptions& options) {
   CESIUM_TRACE("loadPrimitive");
+
+  const Model& model = options.meshOptions.nodeOptions.modelOptions.pModel;
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
   if (positionAccessorIt == primitive.attributes.end()) {
@@ -1167,9 +1155,6 @@ static void loadPrimitive(
     }
     loadPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         *pPositionAccessor,
@@ -1178,9 +1163,6 @@ static void loadPrimitive(
   } else {
     loadIndexedPrimitive(
         result,
-        model,
-        mesh,
-        primitive,
         transform,
         options,
         *pPositionAccessor,
@@ -1190,24 +1172,25 @@ static void loadPrimitive(
 
 static void loadMesh(
     std::vector<LoadModelResult>& result,
-    const CesiumGltf::Model& model,
-    const CesiumGltf::Mesh& mesh,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreateMeshOptions& options) {
 
   CESIUM_TRACE("loadMesh");
 
+  const Model& model = *options.nodeOptions.modelOptions.pModel;
+  const Mesh& mesh = *options.pMesh;
+
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    loadPrimitive(result, model, mesh, primitive, transform, options);
+    CreatePrimitiveOptions primitiveOptions = options;
+    primitiveOptions.pPrimitive = &primitive;
+    loadPrimitive(result, transform, options);
   }
 }
 
 static void loadNode(
     std::vector<LoadModelResult>& result,
-    const CesiumGltf::Model& model,
-    const CesiumGltf::Node& node,
     const glm::dmat4x4& transform,
-    const CreateModelOptions& options) {
+    const CreateNodeOptions& options) {
   static constexpr std::array<double, 16> identityMatrix = {
       1.0,
       0.0,
@@ -1227,6 +1210,9 @@ static void loadNode(
       1.0};
 
   CESIUM_TRACE("loadNode");
+
+  const Model& model = *options.modelOptions.pModel;
+  const Node& node = *options.pNode;
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -1276,13 +1262,16 @@ static void loadNode(
 
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
-    const CesiumGltf::Mesh& mesh = model.meshes[meshId];
-    loadMesh(result, model, mesh, nodeTransform, options);
+    CreateMeshOptions meshOptions = options;
+    meshOptions.pMesh = &model.meshes[meshId];
+    loadMesh(result, nodeTransform, meshOptions);
   }
 
   for (int childNodeId : node.children) {
     if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
-      loadNode(result, model, model.nodes[childNodeId], nodeTransform, options);
+      CreateNodeOptions childNodeOptions = options;
+      childNodeOptions.pNode = &model.nodes[childNodeId];
+      loadNode(result, nodeTransform, childNodeOptions);
     }
   }
 }
@@ -1336,11 +1325,11 @@ void applyGltfUpAxisTransform(
 } // namespace
 
 static std::vector<LoadModelResult> loadModelAnyThreadPart(
-    const CesiumGltf::Model& model,
     const glm::dmat4x4& transform,
     const CreateModelOptions& options) {
   CESIUM_TRACE("loadModelAnyThreadPart");
 
+  const Model& model = *options.pModel;
   std::vector<LoadModelResult> result;
 
   glm::dmat4x4 rootTransform = transform;
@@ -1357,21 +1346,30 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
     // Show the default scene
     const CesiumGltf::Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
-      loadNode(result, model, model.nodes[nodeId], rootTransform, options);
+      CreateNodeOptions nodeOptions = options;
+      nodeOptions.pNode = &model.nodes[nodeId];
+      loadNode(result, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const CesiumGltf::Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
-      loadNode(result, model, model.nodes[nodeId], rootTransform, options);
+      CreateNodeOptions nodeOptions = options;
+      nodeOptions.pNode = &model.nodes[nodeId];
+      loadNode(result, rootTransform, nodeOptions);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
-    loadNode(result, model, model.nodes[0], rootTransform, options);
+    CreateNodeOptions nodeOptions = options;
+    nodeOptions.pNode = &model.nodes[0];
+    loadNode(result, model, model.nodes[0], rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const CesiumGltf::Mesh& mesh : model.meshes) {
-      loadMesh(result, model, mesh, rootTransform, options);
+      CreateMeshOptions meshOptions;
+      meshOptions.nodeOptions = options;
+      meshOptions.pMesh = &mesh;
+      loadMesh(result, rootTransform, meshOptions);
     }
   }
 
@@ -1689,11 +1687,10 @@ public:
 
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
-    const CesiumGltf::Model& Model,
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
   auto pResult = std::make_unique<HalfConstructedReal>();
-  pResult->loadModelResult = loadModelAnyThreadPart(Model, Transform, Options);
+  pResult->loadModelResult = loadModelAnyThreadPart(Transform, Options);
   return pResult;
 }
 
