@@ -15,6 +15,13 @@ class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
 struct CreateModelOptions;
+struct CreateNodeOptions;
+struct CreateMeshOptions;
+struct CreatePrimitiveOptions;
+struct LoadModelResult;
+struct LoadNodeResult;
+struct LoadMeshResult;
+struct LoadPrimitiveResult;
 
 #if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;

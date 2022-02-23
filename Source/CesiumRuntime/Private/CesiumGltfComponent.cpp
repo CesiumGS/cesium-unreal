@@ -25,6 +25,7 @@
 #include "Engine/StaticMesh.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
+#include "LoadModelResult.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
@@ -56,39 +57,6 @@
 using namespace CesiumGltf;
 
 static uint32_t nextMaterialId = 0;
-
-struct LoadModelResult {
-  FCesiumMetadataPrimitive Metadata{};
-  FStaticMeshRenderData* RenderData = nullptr;
-  const CesiumGltf::Model* pModel = nullptr;
-  const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
-  const CesiumGltf::Material* pMaterial = nullptr;
-  glm::dmat4x4 transform{1.0};
-#if PHYSICS_INTERFACE_PHYSX
-  PxTriangleMesh* pCollisionMesh = nullptr;
-#else
-  TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-      pCollisionMesh = nullptr;
-#endif
-  std::string name{};
-
-  CesiumTextureUtility::LoadedTextureResult* baseColorTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* normalTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* emissiveTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* occlusionTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
-  std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
-
-  bool onlyLand = true;
-  bool onlyWater = false;
-
-  double waterMaskTranslationX = 0.0;
-  double waterMaskTranslationY = 0.0;
-  double waterMaskScale = 1.0;
-
-  OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
-};
 
 template <class... T> struct IsAccessorView;
 
@@ -393,7 +361,7 @@ static CesiumTextureUtility::LoadedTextureResult* loadTexture(
 static void applyWaterMask(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
-    LoadModelResult& primitiveResult) {
+    LoadPrimitiveResult& primitiveResult) {
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
   auto onlyLandIt = primitive.extras.find("OnlyLand");
@@ -528,7 +496,7 @@ FName createSafeName(
 
 template <class TIndexAccessor>
 static void loadPrimitive(
-    std::vector<LoadModelResult>& result,
+    LoadPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
@@ -551,8 +519,6 @@ static void loadPrimitive(
         primitive.mode);
     return;
   }
-
-  LoadModelResult primitiveResult;
 
   std::string name = "glTF";
 
@@ -1050,12 +1016,10 @@ static void loadPrimitive(
 
   // load primitive metadata
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
-
-  result.push_back(std::move(primitiveResult));
 }
 
 static void loadIndexedPrimitive(
-    std::vector<LoadModelResult>& result,
+    LoadPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
     const CesiumGltf::Accessor& positionAccessor,
@@ -1070,7 +1034,7 @@ static void loadIndexedPrimitive(
       CesiumGltf::Accessor::ComponentType::BYTE) {
     CesiumGltf::AccessorView<int8_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
-        result,
+        primitiveResult,
         transform,
         options,
         positionAccessor,
@@ -1081,7 +1045,7 @@ static void loadIndexedPrimitive(
       CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE) {
     CesiumGltf::AccessorView<uint8_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
-        result,
+        primitiveResult,
         transform,
         options,
         positionAccessor,
@@ -1092,7 +1056,7 @@ static void loadIndexedPrimitive(
       CesiumGltf::Accessor::ComponentType::SHORT) {
     CesiumGltf::AccessorView<int16_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
-        result,
+        primitiveResult,
         transform,
         options,
         positionAccessor,
@@ -1103,7 +1067,7 @@ static void loadIndexedPrimitive(
       CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
     CesiumGltf::AccessorView<uint16_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
-        result,
+        primitiveResult,
         transform,
         options,
         positionAccessor,
@@ -1114,7 +1078,7 @@ static void loadIndexedPrimitive(
       CesiumGltf::Accessor::ComponentType::UNSIGNED_INT) {
     CesiumGltf::AccessorView<uint32_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
-        result,
+        primitiveResult,
         transform,
         options,
         positionAccessor,
@@ -1124,12 +1088,13 @@ static void loadIndexedPrimitive(
 }
 
 static void loadPrimitive(
-    std::vector<LoadModelResult>& result,
+    LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options) {
   CESIUM_TRACE("loadPrimitive");
 
-  const Model& model = options.meshOptions.nodeOptions.modelOptions.pModel;
+  const Model& model = *options.meshOptions.nodeOptions.modelOptions.pModel;
+  const MeshPrimitive& primitive = *options.pPrimitive;
 
   auto positionAccessorIt = primitive.attributes.find("POSITION");
   if (positionAccessorIt == primitive.attributes.end()) {
@@ -1171,7 +1136,7 @@ static void loadPrimitive(
 }
 
 static void loadMesh(
-    std::vector<LoadModelResult>& result,
+    std::optional<LoadMeshResult>& result,
     const glm::dmat4x4& transform,
     const CreateMeshOptions& options) {
 
@@ -1180,15 +1145,20 @@ static void loadMesh(
   const Model& model = *options.nodeOptions.modelOptions.pModel;
   const Mesh& mesh = *options.pMesh;
 
+  result = LoadMeshResult();
+
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = options;
     primitiveOptions.pPrimitive = &primitive;
-    loadPrimitive(result, transform, options);
+    loadPrimitive(
+        result->primitiveResults.emplace_back(),
+        transform,
+        primitiveOptions);
   }
 }
 
 static void loadNode(
-    std::vector<LoadModelResult>& result,
+    std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options) {
   static constexpr std::array<double, 16> identityMatrix = {
@@ -1213,6 +1183,8 @@ static void loadNode(
 
   const Model& model = *options.modelOptions.pModel;
   const Node& node = *options.pNode;
+
+  LoadNodeResult& result = loadNodeResults.emplace_back();
 
   glm::dmat4x4 nodeTransform = transform;
 
@@ -1264,14 +1236,14 @@ static void loadNode(
   if (meshId >= 0 && meshId < model.meshes.size()) {
     CreateMeshOptions meshOptions = options;
     meshOptions.pMesh = &model.meshes[meshId];
-    loadMesh(result, nodeTransform, meshOptions);
+    loadMesh(result.meshResult, nodeTransform, meshOptions);
   }
 
   for (int childNodeId : node.children) {
     if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
       CreateNodeOptions childNodeOptions = options;
       childNodeOptions.pNode = &model.nodes[childNodeId];
-      loadNode(result, nodeTransform, childNodeOptions);
+      loadNode(loadNodeResults, nodeTransform, childNodeOptions);
     }
   }
 }
@@ -1324,13 +1296,13 @@ void applyGltfUpAxisTransform(
 }
 } // namespace
 
-static std::vector<LoadModelResult> loadModelAnyThreadPart(
+static LoadModelResult loadModelAnyThreadPart(
     const glm::dmat4x4& transform,
     const CreateModelOptions& options) {
   CESIUM_TRACE("loadModelAnyThreadPart");
 
   const Model& model = *options.pModel;
-  std::vector<LoadModelResult> result;
+  LoadModelResult result;
 
   glm::dmat4x4 rootTransform = transform;
 
@@ -1348,7 +1320,7 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = options;
       nodeOptions.pNode = &model.nodes[nodeId];
-      loadNode(result, rootTransform, nodeOptions);
+      loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
@@ -1356,20 +1328,21 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = options;
       nodeOptions.pNode = &model.nodes[nodeId];
-      loadNode(result, rootTransform, nodeOptions);
+      loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = options;
     nodeOptions.pNode = &model.nodes[0];
-    loadNode(result, model, model.nodes[0], rootTransform, nodeOptions);
+    loadNode(result.nodeResults, rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const CesiumGltf::Mesh& mesh : model.meshes) {
       CreateMeshOptions meshOptions;
       meshOptions.nodeOptions = options;
       meshOptions.pMesh = &mesh;
-      loadMesh(result, rootTransform, meshOptions);
+      LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
+      loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
     }
   }
 
@@ -1396,7 +1369,7 @@ bool applyTexture(
 }
 
 static void SetGltfParameterValues(
-    LoadModelResult& loadResult,
+    LoadPrimitiveResult& loadResult,
     const CesiumGltf::Material& material,
     const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
@@ -1468,7 +1441,7 @@ static void SetGltfParameterValues(
 }
 
 void SetWaterParameterValues(
-    LoadModelResult& loadResult,
+    LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation assocation,
     int32 index) {
@@ -1494,9 +1467,9 @@ void SetWaterParameterValues(
           loadResult.waterMaskScale));
 }
 
-static void loadModelGameThreadPart(
+static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
-    LoadModelResult& loadResult,
+    LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
 
   FName meshName = createSafeName(loadResult.name, "");
@@ -1681,7 +1654,7 @@ namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
   virtual ~HalfConstructedReal() {}
-  std::vector<LoadModelResult> loadModelResult;
+  LoadModelResult loadModelResult;
 };
 } // namespace
 
@@ -1703,10 +1676,12 @@ UCesiumGltfComponent::CreateOffGameThread(
     FCustomDepthParameters CustomDepthParameters) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.get());
-  std::vector<LoadModelResult>& result = pReal->loadModelResult;
-  if (result.size() == 0) {
-    return nullptr;
-  }
+
+  // TODO: was this a common case before?
+  // (This code checked if there were no loaded primitives in the model)
+  // if (result.size() == 0) {
+  //   return nullptr;
+  // }
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
   Gltf->SetUsingAbsoluteLocation(true);
@@ -1722,9 +1697,14 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   Gltf->CustomDepthParameters = CustomDepthParameters;
 
-  for (LoadModelResult& model : result) {
-    loadModelGameThreadPart(Gltf, model, cesiumToUnrealTransform);
+  for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
+    if (node.meshResult) {
+      for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
+        loadPrimitiveGameThreadPart(Gltf, primitive, cesiumToUnrealTransform);
+      }
+    }
   }
+
   Gltf->SetVisibility(false, true);
   Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
   return Gltf;
