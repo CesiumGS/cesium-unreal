@@ -44,7 +44,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
-#include <map>
+#include <algorithm>
 
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
@@ -67,6 +67,7 @@ struct LoadModelResult {
   FStaticMeshRenderData* RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::Node* pNode = nullptr;
+  const CesiumGltf::Mesh* pMesh = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
   const CesiumGltf::Material* pMaterial = nullptr;
   std::vector<int32> variants{};
@@ -1542,7 +1543,7 @@ void SetWaterParameterValues(
           loadResult.waterMaskScale));
 }
 
-static void loadModelGameThreadPart(
+static UCesiumGltfPrimitiveComponent* loadModelGameThreadPart(
     UCesiumGltfComponent* pGltf,
     USceneComponent* pOutter,
     LoadModelResult& loadResult,
@@ -1724,6 +1725,8 @@ static void loadModelGameThreadPart(
   // pMesh->bDrawMeshCollisionIfSimple = true;
   pMesh->SetupAttachment(pGltf);
   pMesh->RegisterComponent();
+
+  return pMesh;
 }
 
 namespace {
@@ -1779,6 +1782,67 @@ UCesiumGltfComponent::CreateOffGameThread(
   std::map<ExtensionNodeMaxarMeshVariants*, UCesiumGltfMeshVariantsComponent*> 
       uniqueNodeVariantsMap;
   uniqueNodeVariantsMap.reserve(result.size());
+
+  // This logic assumes the loaded primitives are sorted by node and then by mesh.
+  // This should be the case due to the way the glTF is recursed and the loaded 
+  // primitives list is built.
+  if (!result.empty()) {
+    const ExtensionModelMaxarMeshVariants* pModelVariants = 
+        result[0].pModel->getExtension<ExtensionModelMaxarMeshVariants>();
+    if (pModelVariants) {
+      const Node* pCurrentNode = nullptr;
+      const ExtensionNodeMaxarMeshVariants* pCurrentNodeVariants = nullptr;
+      const Mesh* pCurrentMesh = nullptr;
+      UCesiumGltfMeshVariantsComponent* pCurrentVariantsComponent = nullptr; 
+      uint32_t nodeVariantCount = 0;
+
+      // Reaggregates mesh from primitives.
+      std::vector<UCesiumGltfPrimitiveComponent*> mesh;
+
+      for (LoadModelResult& model : result) {
+        if (model.pNode != pCurrentNode) {
+          // This is a new node
+
+          pCurrentNode = model.pNode;
+          pCurrentNodeVariants = 
+              pCurrentNode->getExtension<ExtensionNodeMaxarMeshVariants>();
+
+          if (pCurrentNodeVariants) {
+            std::string name = "glTF";
+
+            auto urlIt = model.pModel->extras.find("Cesium3DTiles_TileUrl");
+            if (urlIt != model.pModel->end()) {
+              name = urlIt->second.getStringOrDefault("glTF");
+              name = constrainLength(name, 256);
+            }
+
+            name += "nodeVariant" + std::to_string(nodeVariantCount++);
+
+            pCurrentVariantsComponent = 
+                NewObject<UCesiumGltfMeshVariantsComponent>(
+                  Gltf, 
+                  createSafeName(name, ""));
+          } else {
+            pCurrentVariantsComponent = nullptr;
+          }
+        }
+
+        if (pCurrentVariantsComponent) {
+          if (model.pMesh != pCurrentMesh) {
+            pCurrentMesh = model.pMesh;
+
+            pCurrentVariantsComponent->AddMesh()
+          }
+          
+
+        } else {
+          loadModelGameThreadPart(Gltf, Gltf, model, cesiumToUnrealTransform);
+        }
+      }
+    }
+  }
+
+  
 
   for (LoadModelResult& model : result) {
     const ExtensionModelMaxarMeshVariants* pModelVariants = 
