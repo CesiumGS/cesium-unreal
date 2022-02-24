@@ -342,6 +342,7 @@ jobs:
     install:
     - df -k
     - choco install dotnet4.0
+    - choco install dotnetcore-sdk
     - choco install 7zip.portable
     - choco install python --version 3.9.2
     - python -m pip install --upgrade pip
