@@ -341,6 +341,7 @@ jobs:
     os: windows
     install:
     - df -k
+    - choco install dotnetfx
     - choco install 7zip.portable
     - choco install python --version 3.9.2
     - python -m pip install --upgrade pip
@@ -349,7 +350,6 @@ jobs:
     - pip3 install httpie
     - travis_wait 30 "./travis/travis-get-ue-500p1.sh"
     - df -k
-    - choco install dotnetfx
     # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe //quiet //install //norestart //log log.txt || echo failed"
     # - cat log.txt
     # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe /quiet /install /norestart /log log2.txt || echo failed"
