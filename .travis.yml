@@ -351,6 +351,7 @@ jobs:
     - pip3 install httpie
     - travis_wait 30 "./travis/travis-get-ue-500p1.sh"
     - df -k
+    - choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
     # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe //quiet //install //norestart //log log.txt || echo failed"
     # - cat log.txt
     # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe /quiet /install /norestart /log log2.txt || echo failed"
