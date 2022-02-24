@@ -340,6 +340,7 @@ jobs:
   - name: Windows 5.0.0 preview 1
     os: windows
     install:
+    - df -k
     - choco install 7zip.portable
     - choco install python --version 3.9.2
     - python -m pip install --upgrade pip
