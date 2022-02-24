@@ -1,9 +1,28 @@
 # Change Log
 
-### v1.11.0 - 2022-03-01
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- Exclusion Zones have been deprecated and will be removed in a future release. Please use Cartographic Polygon actor instead.
+
 ##### Additions :tada:
 
-- Integrated gpu pixel compression formats received from Cesium Native into Unreal's texture system.
+- Integrated GPU pixel compression formats received from Cesium Native into Unreal's texture system.
+- Added support for `CESIUM_RTC` glTF extension.
+- Added ability to set Georeference origin from ECEF coordinates in Blueprints and C++.
+- Exposed ion endpoint URL as a parameter.
+
+##### Fixes :wrench:
+
+- Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
+- Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
+- Fixed a bug where metadata from the feature table was not decoded from UTF-8.
+- Improved the shadows, making shadows fade in and out less noticable.
+
+##### Fixes :wrench:
+
+- The Cesium ion Token Troubleshooting panel will no longer appear in game worlds, including Play-In-Editor.
 
 ### v1.10.1 - 2022-02-01
 

@@ -219,7 +219,7 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   }
 }
 
-void ACesium3DTileset::SetUrl(FString InUrl) {
+void ACesium3DTileset::SetUrl(const FString& InUrl) {
   if (InUrl != this->Url) {
     this->Url = InUrl;
     if (this->TilesetSource == ETilesetSource::FromUrl) {
@@ -237,9 +237,19 @@ void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
   }
 }
 
-void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
+void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   if (this->IonAccessToken != InAccessToken) {
     this->IonAccessToken = InAccessToken;
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->DestroyTileset();
+    }
+  }
+}
+
+void ACesium3DTileset::SetIonAssetEndpointUrl(
+    const FString& InIonAssetEndpointUrl) {
+  if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
+    this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
@@ -870,11 +880,20 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAccessToken.IsEmpty()
             ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
             : this->IonAccessToken;
-    this->_pTileset = new Cesium3DTilesSelection::Tileset(
-        externals,
-        static_cast<uint32_t>(this->IonAssetID),
-        TCHAR_TO_UTF8(*token),
-        options);
+    if (!IonAssetEndpointUrl.IsEmpty()) {
+      this->_pTileset = new Cesium3DTilesSelection::Tileset(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options,
+          TCHAR_TO_UTF8(*IonAssetEndpointUrl));
+    } else {
+      this->_pTileset = new Cesium3DTilesSelection::Tileset(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options);
+    }
     break;
   }
 
@@ -1477,7 +1496,7 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
-    if (isInExclusionZone(ExclusionZones, pTile)) {
+    if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
       continue;
     }
 
@@ -1627,6 +1646,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetEndpointUrl) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==

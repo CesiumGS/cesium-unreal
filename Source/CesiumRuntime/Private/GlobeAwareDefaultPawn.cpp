@@ -91,6 +91,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     return;
   }
 
+  PitchAtDestination = glm::clamp(PitchAtDestination, -89.99f, 89.99f);
   // Compute source location in ECEF
   glm::dvec3 ECEFSource = this->GlobeAnchor->GetECEF();
 

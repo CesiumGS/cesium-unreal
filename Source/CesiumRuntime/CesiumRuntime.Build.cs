@@ -91,7 +91,8 @@ public class CesiumRuntime : ModuleRules
             "spdlog",
             "sqlite3",
             "tinyxml2",
-            "uriparser"
+            "uriparser",
+            "ktx_read"
         };
 
         // Use our own copy of MikkTSpace on Android.

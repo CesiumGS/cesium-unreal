@@ -86,11 +86,14 @@ void UCesiumRasterOverlay::AddToTileset() {
 
   std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
       this->CreateOverlay(options);
-  this->_pOverlay = pOverlay.get();
 
-  pTileset->getOverlays().add(std::move(pOverlay));
+  if (pOverlay) {
+    this->_pOverlay = pOverlay.get();
 
-  this->OnAdd(pTileset, this->_pOverlay);
+    pTileset->getOverlays().add(std::move(pOverlay));
+
+    this->OnAdd(pTileset, this->_pOverlay);
+  }
 }
 
 void UCesiumRasterOverlay::RemoveFromTileset() {

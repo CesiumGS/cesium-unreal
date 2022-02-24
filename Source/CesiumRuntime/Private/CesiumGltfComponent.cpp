@@ -2,6 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
+#include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumGeometry/Axis.h"
@@ -984,7 +985,7 @@ static void loadPrimitive(
     CESIUM_TRACE("SetIndices");
     LODResources.IndexBuffer.SetIndices(
         indices,
-        indices.Num() > std::numeric_limits<uint16>::max()
+        StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()
             ? EIndexBufferStride::Type::Force32Bit
             : EIndexBufferStride::Type::Force16Bit);
   }
@@ -1288,53 +1289,6 @@ static void loadNode(
 
 namespace {
 /**
- * @brief Apply the transform for the `RTC_CENTER`
- *
- * If the B3DM that contained the given model had an `RTC_CENTER` in its
- * Feature Table, then it was stored in the `extras` property of the glTF
- * model, as a 3-element array under the name `RTC_CENTER`.
- *
- * This function will multiply the given matrix with the (translation) matrix
- * that was created from this `RTC_CENTER` property in the `extras` of the
- * given model. If the given model does not have this property, then nothing
- * will be done.
- *
- * @param model The glTF model
- * @param rootTransform The matrix that will be multiplied with the transform
- */
-void applyRtcCenter(
-    const CesiumGltf::Model& model,
-    glm::dmat4x4& rootTransform) {
-  auto rtcCenterIt = model.extras.find("RTC_CENTER");
-  if (rtcCenterIt == model.extras.end()) {
-    return;
-  }
-  const CesiumUtility::JsonValue& rtcCenter = rtcCenterIt->second;
-  const std::vector<CesiumUtility::JsonValue>* pArray =
-      std::get_if<CesiumUtility::JsonValue::Array>(&rtcCenter.value);
-  if (!pArray) {
-    return;
-  }
-  if (pArray->size() != 3) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("The RTC_CENTER must have a size of 3, but has {}"),
-        pArray->size());
-    return;
-  }
-  const double x = (*pArray)[0].getSafeNumberOrDefault(0.0);
-  const double y = (*pArray)[1].getSafeNumberOrDefault(0.0);
-  const double z = (*pArray)[2].getSafeNumberOrDefault(0.0);
-  const glm::dmat4x4 rtcTransform(
-      glm::dvec4(1.0, 0.0, 0.0, 0.0),
-      glm::dvec4(0.0, 1.0, 0.0, 0.0),
-      glm::dvec4(0.0, 0.0, 1.0, 0.0),
-      glm::dvec4(x, y, z, 1.0));
-  rootTransform *= rtcTransform;
-}
-
-/**
  * @brief Apply the transform so that the up-axis of the given model is the
  * Z-axis.
  *
@@ -1393,7 +1347,9 @@ static std::vector<LoadModelResult> loadModelAnyThreadPart(
 
   {
     CESIUM_TRACE("Apply transforms");
-    applyRtcCenter(model, rootTransform);
+    rootTransform = Cesium3DTilesSelection::GltfContent::applyRtcCenter(
+        model,
+        rootTransform);
     applyGltfUpAxisTransform(model, rootTransform);
   }
 

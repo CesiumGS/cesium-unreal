@@ -426,7 +426,7 @@ ACesiumGeoreference::InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight()
   return FVector(OriginLongitude, OriginLatitude, OriginHeight);
 }
 
-void ACesiumGeoreference::SetGeoreferenceOrigin(
+void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
     const glm::dvec3& targetLongitudeLatitudeHeight) {
   // Should not allow externally initiated georeference origin changing if we
   // are inside a sublevel
@@ -439,12 +439,35 @@ void ACesiumGeoreference::SetGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.z);
 }
 
-void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
-    const FVector& targetLongitudeLatitudeHeight) {
-  this->SetGeoreferenceOrigin(glm::dvec3(
+void ACesiumGeoreference::SetGeoreferenceOrigin(
+    const glm::dvec3& TargetLongitudeLatitudeHeight) {
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT(
+          "SetGeoreferenceOrigin was renamed to SetGeoreferenceOriginLongitudeLatitudeHeight."));
+  SetGeoreferenceOriginLongitudeLatitudeHeight(TargetLongitudeLatitudeHeight);
+}
+
+void ACesiumGeoreference::SetGeoreferenceOriginEcef(
+    const glm::dvec3& TargetEcef) {
+  SetGeoreferenceOriginLongitudeLatitudeHeight(
+      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(TargetEcef));
+}
+
+void ACesiumGeoreference::
+    InaccurateSetGeoreferenceOriginLongitudeLatitudeHeight(
+        const FVector& targetLongitudeLatitudeHeight) {
+  this->SetGeoreferenceOriginLongitudeLatitudeHeight(glm::dvec3(
       targetLongitudeLatitudeHeight.X,
       targetLongitudeLatitudeHeight.Y,
       targetLongitudeLatitudeHeight.Z));
+}
+
+void ACesiumGeoreference::InaccurateSetGeoreferenceOriginEcef(
+    const FVector& TargetEcef) {
+  this->SetGeoreferenceOriginEcef(
+      glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
 }
 
 // Called when the game starts or when spawned
