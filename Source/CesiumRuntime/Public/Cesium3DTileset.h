@@ -4,6 +4,7 @@
 
 #include "Cesium3DTilesSelection/ViewState.h"
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
+#include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
@@ -15,16 +16,27 @@
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
-
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
+struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
 } // namespace Cesium3DTilesSelection
+
+/**
+ * The delegate for OnCesium3DTilesetLoadFailure, which is triggered when
+ * the tileset encounters a load error.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesium3DTilesetLoadFailure,
+    const FCesium3DTilesetLoadFailureDetails&);
+
+CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
+    OnCesium3DTilesetLoadFailure;
 
 UENUM(BlueprintType)
 enum class ETilesetSource : uint8 {
@@ -331,8 +343,12 @@ public:
    *
    * This is an experimental feature and may change in future versions.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Experimental")
-  TArray<FCesiumExclusionZone> ExclusionZones;
+  UPROPERTY(
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead."))
+  TArray<FCesiumExclusionZone> ExclusionZones_DEPRECATED;
 
   /**
    * The screen-space error to be enforced for tiles that are outside the view
@@ -449,6 +465,26 @@ private:
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
   FString IonAccessToken;
+
+  /**
+   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
+   * endpoint can be specified.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIonAssetEndpointUrl,
+      BlueprintSetter = SetIonAssetEndpointUrl,
+      Category = "Cesium",
+      AdvancedDisplay,
+      meta = (EditCondition = "TilesetSource==ETilesetSource::FromCesiumIon"))
+  FString IonAssetEndpointUrl;
+
+  /**
+   * Check if the Cesium ion token used to access this tileset is working
+   * correctly, and fix it if necessary.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void TroubleshootToken();
 
   /**
    * Whether to generate physics meshes for this tileset.
@@ -571,7 +607,7 @@ public:
   FString GetUrl() const { return Url; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetUrl(FString InUrl);
+  void SetUrl(const FString& InUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   int64 GetIonAssetID() const { return IonAssetID; }
@@ -583,7 +619,13 @@ public:
   FString GetIonAccessToken() const { return IonAccessToken; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetIonAccessToken(FString InAccessToken);
+  void SetIonAccessToken(const FString& InAccessToken);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FString GetIonAssetEndpointUrl() const { return IonAssetEndpointUrl; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
   bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
@@ -694,25 +736,13 @@ private:
   void LoadTileset();
   void DestroyTileset();
 
-  struct UnrealCameraParameters {
-    FVector2D viewportSize;
-    FVector location;
-    FRotator rotation;
-    double fieldOfViewDegrees;
-
-    // If not std::nullopt, the aspect ratio may be different from the one
-    // implied by the viewportSize and black bars are added as needed in order
-    // to achieve this aspect ratio within a larger viewport.
-    std::optional<double> aspectRatio = std::nullopt;
-  };
-
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
-      const UnrealCameraParameters& camera,
+      const FCesiumCamera& camera,
       const glm::dmat4& unrealWorldToTileset);
 
-  std::vector<UnrealCameraParameters> GetCameras() const;
-  std::vector<UnrealCameraParameters> GetPlayerCameras() const;
-  std::vector<UnrealCameraParameters> GetSceneCaptures() const;
+  std::vector<FCesiumCamera> GetCameras() const;
+  std::vector<FCesiumCamera> GetPlayerCameras() const;
+  std::vector<FCesiumCamera> GetSceneCaptures() const;
 
 public:
   /**
@@ -759,7 +789,7 @@ private:
   void AddFocusViewportDelegate();
 
 #if WITH_EDITOR
-  std::vector<UnrealCameraParameters> GetEditorCameras() const;
+  std::vector<FCesiumCamera> GetEditorCameras() const;
 
   /**
    * Will focus all viewports on this tileset.

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Cesium3DTilesSelection/RasterOverlay.h"
+#include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 #include <memory>
@@ -11,6 +12,17 @@
 namespace Cesium3DTilesSelection {
 class Tileset;
 }
+
+/**
+ * The delegate for OnCesiumRasterOverlayLoadFailure, which is triggered when
+ * the raster overlay encounters a load error.
+ */
+DECLARE_MULTICAST_DELEGATE_OneParam(
+    FCesiumRasterOverlayLoadFailure,
+    const FCesiumRasterOverlayLoadFailureDetails&);
+
+CESIUMRUNTIME_API extern FCesiumRasterOverlayLoadFailure
+    OnCesiumRasterOverlayLoadFailure;
 
 /**
  * A quadtree pyramid of 2D raster images meant to be draped over a Cesium 3D
