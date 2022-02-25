@@ -1152,8 +1152,7 @@ static void loadMesh(
   result = LoadMeshResult();
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = options;
-    primitiveOptions.pPrimitive = &primitive;
+    CreatePrimitiveOptions primitiveOptions = {&options, &primitive};
     loadPrimitive(
         result->primitiveResults.emplace_back(),
         transform,
@@ -1238,15 +1237,15 @@ static void loadNode(
 
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
-    CreateMeshOptions meshOptions = options;
-    meshOptions.pMesh = &model.meshes[meshId];
+    CreateMeshOptions meshOptions = {&options, &model.meshes[meshId]};
     loadMesh(result.meshResult, nodeTransform, meshOptions);
   }
 
   for (int childNodeId : node.children) {
     if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
-      CreateNodeOptions childNodeOptions = options;
-      childNodeOptions.pNode = &model.nodes[childNodeId];
+      CreateNodeOptions childNodeOptions = {
+          options.pModelOptions,
+          &model.nodes[childNodeId]};
       loadNode(loadNodeResults, nodeTransform, childNodeOptions);
     }
   }
@@ -1322,29 +1321,25 @@ static LoadModelResult loadModelAnyThreadPart(
     // Show the default scene
     const CesiumGltf::Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
-      CreateNodeOptions nodeOptions = options;
-      nodeOptions.pNode = &model.nodes[nodeId];
+      CreateNodeOptions nodeOptions = {&options, &model.nodes[nodeId]};
       loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const CesiumGltf::Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
-      CreateNodeOptions nodeOptions = options;
-      nodeOptions.pNode = &model.nodes[nodeId];
+      CreateNodeOptions nodeOptions = {&options, &model.nodes[nodeId]};
       loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
-    CreateNodeOptions nodeOptions = options;
-    nodeOptions.pNode = &model.nodes[0];
+    CreateNodeOptions nodeOptions = {&options, &model.nodes[0]};
     loadNode(result.nodeResults, rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const CesiumGltf::Mesh& mesh : model.meshes) {
-      CreateNodeOptions dummyNodeOptions = options;
-      CreateMeshOptions meshOptions = dummyNodeOptions;
-      meshOptions.pMesh = &mesh;
+      CreateNodeOptions dummyNodeOptions = {&options, nullptr};
+      CreateMeshOptions meshOptions = {&dummyNodeOptions, &mesh};
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
       loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
     }

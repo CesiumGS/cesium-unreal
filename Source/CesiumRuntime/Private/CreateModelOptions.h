@@ -13,29 +13,14 @@ struct CreateModelOptions {
 struct CreateNodeOptions {
   const CreateModelOptions* pModelOptions = nullptr;
   const CesiumGltf::Node* pNode = nullptr;
-
-  CreateNodeOptions() = default;
-
-  CreateNodeOptions(const CreateModelOptions& modelOptions_)
-      : pModelOptions(&modelOptions_) {}
 };
 
 struct CreateMeshOptions {
   const CreateNodeOptions* pNodeOptions = nullptr;
   const CesiumGltf::Mesh* pMesh = nullptr;
-
-  CreateMeshOptions() = default;
-
-  CreateMeshOptions(const CreateNodeOptions& nodeOptions_)
-      : pNodeOptions(&nodeOptions_) {}
 };
 
 struct CreatePrimitiveOptions {
   const CreateMeshOptions* pMeshOptions = nullptr;
   const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
-
-  CreatePrimitiveOptions() = default;
-
-  CreatePrimitiveOptions(const CreateMeshOptions& meshOptions_)
-      : pMeshOptions(&meshOptions_) {}
 };
