@@ -31,7 +31,7 @@ fi
 
 # Install our custom version of conan-ue4cli
 pushd ..
-git clone https://github.com/kring/conan-ue4cli.git
+git clone -b cesium https://github.com/kring/conan-ue4cli.git
 cd conan-ue4cli
 python ./setup.py install
 popd
