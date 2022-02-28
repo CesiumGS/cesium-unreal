@@ -17,6 +17,7 @@ jobs:
     install:
     - ./travis/travis-install-prereqs.sh
     - "./travis/travis-get-ue.sh &"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
@@ -35,12 +36,15 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4.26-Win64
   - name: Windows 4.27
     os: windows
     install:
     - ./travis/travis-install-prereqs.sh
     - "./travis/travis-get-ue-427.sh &"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}
@@ -60,7 +64,9 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4.27-Win64
   - name: Android 4.26
     os: windows
     cache:
@@ -71,6 +77,7 @@ jobs:
     - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue.sh"
     - travis_wait 30 "./travis/travis-get-android-ndk.sh"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export ANDROID_NDK_ROOT=$HOME/android-ndk-r21e
     - export NDKROOT=$ANDROID_NDK_ROOT
@@ -92,7 +99,9 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4.26-Android
   - name: Android 4.27
     os: windows
     cache:
@@ -103,6 +112,7 @@ jobs:
     - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
     - travis_wait 30 "./travis/travis-get-android-ndk.sh"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export ANDROID_NDK_ROOT=$HOME/android-ndk-r21e
     - export NDKROOT=$ANDROID_NDK_ROOT
@@ -125,14 +135,16 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4.27-Android
   - name: MacOS 4.26
     os: osx
     osx_image: xcode11.3
     install:
     - ./travis/travis-install-prereqs.sh
-    - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh &"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-macos-${CESIUM_UNREAL_VERSION}
@@ -151,13 +163,15 @@ jobs:
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env:
+    - CONAN_PROFILE=ue4.26-macOS
   - name: iOS 4.26
     os: osx
     osx_image: xcode11.3
     install:
     - ./travis/travis-install-prereqs.sh
-    - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh &"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-ios-${CESIUM_UNREAL_VERSION}
@@ -178,13 +192,15 @@ jobs:
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env:
+    - CONAN_PROFILE=ue4.26-iOS
   - name: MacOS 4.27
     os: osx
     osx_image: xcode11.3
     install:
     - ./travis/travis-install-prereqs.sh
-    - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-macos-${CESIUM_UNREAL_VERSION}
@@ -203,13 +219,15 @@ jobs:
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env:
+    - CONAN_PROFILE=ue4.27-macOS
   - name: iOS 4.27
     os: osx
     osx_image: xcode11.3
     install:
     - ./travis/travis-install-prereqs.sh
-    - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
+    - ./travis/travis-setup-native.sh
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
@@ -230,13 +248,15 @@ jobs:
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env:
+    - CONAN_PROFILE=ue4.27-iOS
   - name: Linux 4.26
     os: linux
     dist: focal
     install:
     - ./travis/travis-install-prereqs.sh
-    - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh"
+    - ./travis/travis-setup-native.sh
     script:
     - export UNREAL_ENGINE_DIR=$HOME/UE_4.26
     - export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7/x86_64-unknown-linux-gnu
@@ -256,6 +276,8 @@ jobs:
     - zip -r ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env:
+    - CONAN_PROFILE=ue4.26-Linux
   - name: Linux 4.27
     os: windows
     cache:
@@ -266,6 +288,7 @@ jobs:
     - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
+    - ./travis/travis-setup-native.sh
     script:
     - export UNREAL_ENGINE_DIR=/c/Epic/UE_4.27
     - export LINUX_MULTIARCH_ROOT=/c/UnrealToolchains/v19_clang-11.0.1-centos7/
@@ -289,7 +312,9 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4.27-Linux
   - stage: Combine Packages
     name: Combine for UE 4.26
     os: linux
