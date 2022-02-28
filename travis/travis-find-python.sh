@@ -4,3 +4,5 @@ if ! command -v python3
 then
   export CESIUM_PYTHON=python
 fi
+
+$CESIUM_PYTHON --version
