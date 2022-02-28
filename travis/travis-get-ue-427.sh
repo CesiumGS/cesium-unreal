@@ -7,12 +7,14 @@ then
     AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/4.27.0/Windows/UE_4.27-minimal.zip .
     7z x UE_4.27-minimal.zip "-oC:\Epic"
     rm UE_4.27-minimal.zip
+    ue4 setroot "C:\Epic\UE_4.27"
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
     aws s3 cp s3://cesium-unreal-engine/macos-2022-01-27/UE_4272_macOS.zip .
 
     unzip -q UE_4272_macOS.zip -d $HOME
     rm UE_4272_macOS.zip
+    ue4 setroot $HOME/UE_4.27
 # elif [[ $TRAVIS_OS_NAME == "linux" ]]
 # then
 #     AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/linux-2021-04-23/UnrealEngine-4.26.2.tar.gz .

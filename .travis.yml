@@ -21,21 +21,15 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -A x64
     script:
-    - cmake --build . --config Release --target install -- /maxcpucount:4
-    - cd ../..
-    - rm -rf extern
     - export CLONEDIR=$PWD
-    - wait
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.26-Win64
@@ -48,22 +42,16 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -A x64
     script:
-    - cmake --build . --config Release --target install -- /maxcpucount:4
-    - cd ../..
-    - rm -rf extern
     - export CLONEDIR=$PWD
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
-    - wait
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.27-Win64
@@ -83,15 +71,7 @@ jobs:
     - export NDKROOT=$ANDROID_NDK_ROOT
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-android-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build-android
-    - cd extern/build-android
-    - cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cd ../..
     script:
-    - cd extern/build-android
-    - cmake --build . --config Release --target install
-    - cd ../..
-    - rm -rf extern
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
@@ -99,6 +79,7 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.26-Android
@@ -118,15 +99,7 @@ jobs:
     - export NDKROOT=$ANDROID_NDK_ROOT
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build-android
-    - cd extern/build-android
-    - cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cd ../..
     script:
-    - cd extern/build-android
-    - cmake --build . --config Release --target install
-    - cd ../..
-    - rm -rf extern
     - export CLONEDIR=$PWD
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
@@ -135,6 +108,7 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.27-Android
@@ -148,21 +122,15 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-macos-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -DCMAKE_BUILD_TYPE=Release
     script:
-    - cmake --build . -j 4 --target install
-    - cd ../..
-    - rm -rf extern
     - export CLONEDIR=$PWD
-    - wait
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - CONAN_PROFILE=ue4.26-macOS
   - name: iOS 4.26
@@ -175,23 +143,15 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-ios-${CESIUM_UNREAL_VERSION}
-    - cd extern
-    - mkdir build-ios
-    - cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cd ..
     script:
-    - cd extern
-    - cmake --build build-ios -j 4 --target install --config Release -- -quiet # XCode output maxes out Travis log - Need to make it quiet
-    - cd ..
-    - rm -rf extern
     - export CLONEDIR=$PWD
-    - wait
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - CONAN_PROFILE=ue4.26-iOS
   - name: MacOS 4.27
@@ -204,21 +164,15 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-macos-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -DCMAKE_BUILD_TYPE=Release
     script:
-    - cmake --build . -j 4 --target install
-    - cd ../..
-    - rm -rf extern
     - export CLONEDIR=$PWD
-    - wait
     - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - CONAN_PROFILE=ue4.27-macOS
   - name: iOS 4.27
@@ -231,23 +185,15 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
-    - cd extern
-    - mkdir build-ios
-    - cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cd ..
     script:
-    - cd extern
-    - cmake --build build-ios -j 4 --target install --config Release -- -quiet # XCode output maxes out Travis log - Need to make it quiet
-    - cd ..
-    - rm -rf extern
     - export CLONEDIR=$PWD
-    - wait
     - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - CONAN_PROFILE=ue4.27-iOS
   - name: Linux 4.26
@@ -263,12 +209,6 @@ jobs:
     - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-linux-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern
-    - cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cmake --build build -j 4 --target install
-    - cd ..
-    - rm -rf extern
     - export CLONEDIR=$PWD
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
@@ -276,6 +216,7 @@ jobs:
     - zip -r ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - CONAN_PROFILE=ue4.26-Linux
   - name: Linux 4.27
@@ -296,14 +237,6 @@ jobs:
     - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern
-    - cmake --version
-    - cmake -G Ninja -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-from-windows-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    - cat /c/Users/travis/build/CesiumGS/cesium-unreal/extern/build/CMakeFiles/CMakeError.log
-    - cmake --build build -j 4 --target install
-    - cd ..
-    - rm -rf extern
     - export CLONEDIR=$PWD
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
@@ -312,6 +245,7 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    - echo $PACKAGE_LINK
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.27-Linux
