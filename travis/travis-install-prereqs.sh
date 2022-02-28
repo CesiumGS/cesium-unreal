@@ -1,5 +1,3 @@
-source travis/travis-find-python.sh
-
 if [[ $TRAVIS_OS_NAME == "windows" ]]
 then
   # Enable long paths, needed because Travis's deeply nested subdirectory
@@ -31,6 +29,8 @@ then
   sudo apt-get install unzip zip awscli httpie
   pip3 install conan
 fi
+
+source travis/travis-find-python.sh
 
 # Install our custom version of conan-ue4cli
 pushd ..

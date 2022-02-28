@@ -115,6 +115,10 @@ jobs:
   - name: MacOS 4.26
     os: osx
     osx_image: xcode11.3
+    addons:
+      homebrew:
+        packages:
+        - python
     install:
     - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue.sh"
@@ -157,6 +161,10 @@ jobs:
   - name: MacOS 4.27
     os: osx
     osx_image: xcode11.3
+    addons:
+      homebrew:
+        packages:
+        - python
     install:
     - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
