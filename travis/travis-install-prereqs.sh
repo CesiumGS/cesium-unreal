@@ -13,6 +13,7 @@ then
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
+  export SUDO=
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
   python -m pip install --upgrade pip
@@ -20,6 +21,7 @@ then
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
+  export SUDO=sudo
 elif [[ $TRAVIS_OS_NAME == "linux" ]]
 then
   # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
@@ -27,7 +29,8 @@ then
   sudo rm /etc/apt/sources.list.d/rabbitmq.list
   sudo apt-get update
   sudo apt-get install unzip zip awscli httpie
-  pip3 install conan
+  sudo pip3 install conan
+  export SUDO=sudo
 fi
 
 source travis/travis-find-python.sh
@@ -36,5 +39,5 @@ source travis/travis-find-python.sh
 pushd ..
 git clone -b cesium https://github.com/kring/conan-ue4cli.git
 cd conan-ue4cli
-$CESIUM_PYTHON ./setup.py install --user
+$SUDO $CESIUM_PYTHON ./setup.py install
 popd
