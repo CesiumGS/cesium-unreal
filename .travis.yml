@@ -132,7 +132,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - echo $PACKAGE_LINK
     env:
-    - CONAN_PROFILE=ue4.26-macOS
+    - CONAN_PROFILE=ue4.26-Mac
   - name: iOS 4.26
     os: osx
     osx_image: xcode11.3
@@ -174,7 +174,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - echo $PACKAGE_LINK
     env:
-    - CONAN_PROFILE=ue4.27-macOS
+    - CONAN_PROFILE=ue4.27-Mac
   - name: iOS 4.27
     os: osx
     osx_image: xcode11.3

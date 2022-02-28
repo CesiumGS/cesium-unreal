@@ -14,7 +14,7 @@ then
     mkdir $HOME/UE_4.26
     tar xfz UE_4.26.tar.gz -C $HOME/UE_4.26
     rm UE_4.26.tar.gz
-    ue4 setroot $HOME/UE_4.26
+    ue4 setroot $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26
 elif [[ $TRAVIS_OS_NAME == "linux" ]]
 then
     AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/linux-2021-04-23/UnrealEngine-4.26.2.tar.gz .
