@@ -1055,6 +1055,14 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     }
 
     if (useStereoRendering) {
+#if ENGINE_MAJOR_VERSION >= 5
+      const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
+      const auto rightEye = EStereoscopicEye::eSSE_RIGHT_EYE;
+#else
+      const auto leftEye = EStereoscopicPass::eSSP_LEFT_EYE;
+      const auto rightEye = EStereoscopicPass::eSSP_RIGHT_EYE;
+#endif
+
       uint32 stereoLeftSizeX = static_cast<uint32>(sizeX);
       uint32 stereoLeftSizeY = static_cast<uint32>(sizeY);
       uint32 stereoRightSizeX = static_cast<uint32>(sizeX);
@@ -1063,15 +1071,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         int32 _x;
         int32 _y;
 
-        pStereoRendering->AdjustViewRect(
-            EStereoscopicPass::eSSP_LEFT_EYE,
-            _x,
-            _y,
-            stereoLeftSizeX,
-            stereoLeftSizeY);
+        pStereoRendering
+            ->AdjustViewRect(leftEye, _x, _y, stereoLeftSizeX, stereoLeftSizeY);
 
         pStereoRendering->AdjustViewRect(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            rightEye,
             _x,
             _y,
             stereoRightSizeX,
@@ -1085,13 +1089,13 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         FVector leftEyeLocation = location;
         FRotator leftEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_LEFT_EYE,
+            leftEye,
             leftEyeRotation,
             worldToMeters,
             leftEyeLocation);
 
-        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_LEFT_EYE);
+        FMatrix projection =
+            pStereoRendering->GetStereoProjectionMatrix(leftEye);
 
         // TODO: consider assymetric frustums using 4 fovs
         float one_over_tan_half_hfov = projection.M[0][0];
@@ -1110,13 +1114,13 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         FVector rightEyeLocation = location;
         FRotator rightEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            rightEye,
             rightEyeRotation,
             worldToMeters,
             rightEyeLocation);
 
-        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_RIGHT_EYE);
+        FMatrix projection =
+            pStereoRendering->GetStereoProjectionMatrix(rightEye);
 
         float one_over_tan_half_hfov = projection.M[0][0];
 

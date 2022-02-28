@@ -8,6 +8,8 @@
 
 ##### Additions :tada:
 
+- Added experimental support for Unreal Engine 5 (preview 1).
+- Added collision meshes for tilesets when using the Chaos physics engine.
 - Integrated GPU pixel compression formats received from Cesium Native into Unreal's texture system.
 - Added support for `CESIUM_RTC` glTF extension.
 - Added ability to set Georeference origin from ECEF coordinates in Blueprints and C++.
