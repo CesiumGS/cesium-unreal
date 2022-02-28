@@ -2,6 +2,10 @@ source travis/travis-find-python.sh
 
 if [[ $TRAVIS_OS_NAME == "windows" ]]
 then
+  # Enable long paths, needed because Travis's deeply nested subdirectory
+  # compiled with Draco's super long path names causes us to exceed the 260
+  # character MAX_PATH limit.
+  reg import travis/enable-long-paths.reg
   choco install 7zip.portable
   choco install python --version 3.9.2
   choco install wget
