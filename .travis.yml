@@ -39,9 +39,6 @@ jobs:
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.26-Win64
-    # Undefine these, otherwise Conan will use GCC instead of Visual Studio
-    - CC=
-    - CXX=
   - name: Windows 4.27
     os: windows
     install:
@@ -70,9 +67,6 @@ jobs:
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
     - CONAN_PROFILE=ue4.27-Win64
-    # Undefine these, otherwise Conan will use GCC instead of Visual Studio
-    - CC=
-    - CXX=
   - name: Android 4.26
     os: windows
     cache:
@@ -171,9 +165,6 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - CONAN_PROFILE=ue4.26-macOS
-    # Undefine these, otherwise Conan will use GCC instead of Clang
-    - CC=
-    - CXX=
   - name: iOS 4.26
     os: osx
     osx_image: xcode11.3
@@ -203,9 +194,6 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - CONAN_PROFILE=ue4.26-iOS
-    # Undefine these, otherwise Conan will use GCC instead of Clang
-    - CC=
-    - CXX=
   - name: MacOS 4.27
     os: osx
     osx_image: xcode11.3
@@ -233,9 +221,6 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - CONAN_PROFILE=ue4.27-macOS
-    # Undefine these, otherwise Conan will use GCC instead of Clang
-    - CC=
-    - CXX=
   - name: iOS 4.27
     os: osx
     osx_image: xcode11.3
@@ -265,9 +250,6 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - CONAN_PROFILE=ue4.27-iOS
-    # Undefine these, otherwise Conan will use GCC instead of Clang
-    - CC=
-    - CXX=
   - name: Linux 4.26
     os: linux
     dist: focal

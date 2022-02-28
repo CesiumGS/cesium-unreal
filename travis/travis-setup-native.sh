@@ -1,3 +1,8 @@
+# Travis defines CC and CXX to gcc on Windows, for some reason.
+# We need to undo that, or conan will build with the wrong compiler.
+export CC=
+export CXX=
+
 ue4 conan generate
 cd extern/cesium-native
 python ./tools/automate.py conan-export-recipes
