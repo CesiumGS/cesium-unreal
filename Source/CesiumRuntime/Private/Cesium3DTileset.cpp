@@ -561,6 +561,7 @@ public:
       const glm::dmat4& transform) override {
 
     CreateModelOptions options;
+    options.pModel = &model;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
@@ -568,7 +569,7 @@ public:
 #endif
 
     std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(model, transform, options);
+        UCesiumGltfComponent::CreateOffGameThread(transform, options);
     return pHalf.release();
   }
 
