@@ -21,6 +21,11 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
+    - pip3 install conan
+    - git clone https://github.com/kring/conan-ue4cli.git
+    - cd conan-ue4cli
+    - ./setup.py install
+    - cd ..
     - "./travis/travis-get-ue.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
