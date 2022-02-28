@@ -1,3 +1,5 @@
+source travis/travis-find-python.sh
+
 # Travis defines CC and CXX to gcc on Windows, for some reason.
 # We need to undo that, or conan will build with the wrong compiler.
 export CC=
