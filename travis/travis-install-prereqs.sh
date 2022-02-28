@@ -36,5 +36,5 @@ source travis/travis-find-python.sh
 pushd ..
 git clone -b cesium https://github.com/kring/conan-ue4cli.git
 cd conan-ue4cli
-$CESIUM_PYTHON ./setup.py install
+$CESIUM_PYTHON ./setup.py install --user
 popd
