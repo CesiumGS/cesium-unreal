@@ -29,9 +29,16 @@ then
   pip3 install conan
 fi
 
+# On some platforms, it's python3, on others it's just python
+export CESIUM_PYTHON=python3
+if ! command -v python3
+then
+  export CESIUM_PYTHON=python
+fi
+
 # Install our custom version of conan-ue4cli
 pushd ..
 git clone -b cesium https://github.com/kring/conan-ue4cli.git
 cd conan-ue4cli
-python ./setup.py install
+$CESIUM_PYTHON ./setup.py install
 popd
