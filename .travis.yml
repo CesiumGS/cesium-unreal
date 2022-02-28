@@ -15,17 +15,7 @@ jobs:
     name: Windows 4.26
     os: windows
     install:
-    - choco install 7zip.portable
-    - choco install python --version 3.9.2
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
-    - pip3 install conan
-    - git clone https://github.com/kring/conan-ue4cli.git
-    - cd conan-ue4cli
-    - ./setup.py install
-    - cd ..
+    - ./travis/travis-install-prereqs.sh
     - "./travis/travis-get-ue.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
@@ -49,12 +39,7 @@ jobs:
   - name: Windows 4.27
     os: windows
     install:
-    - choco install 7zip.portable
-    - choco install python --version 3.9.2
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - "./travis/travis-get-ue-427.sh &"
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
@@ -83,14 +68,7 @@ jobs:
       directories:
       - $HOME/android-ndk-r21e
     install:
-    - choco install 7zip.portable
-    - choco install python --version 3.9.2
-    - choco install wget
-    - choco install ninja
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue.sh"
     - travis_wait 30 "./travis/travis-get-android-ndk.sh"
     before_script:
@@ -122,14 +100,7 @@ jobs:
       directories:
       - $HOME/android-ndk-r21e
     install:
-    - choco install 7zip.portable
-    - choco install python --version 3.9.2
-    - choco install wget
-    - choco install ninja
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
     - travis_wait 30 "./travis/travis-get-android-ndk.sh"
     before_script:
@@ -159,10 +130,7 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh &"
     before_script:
@@ -187,10 +155,7 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh &"
     before_script:
@@ -217,10 +182,7 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -245,10 +207,7 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -275,11 +234,7 @@ jobs:
     os: linux
     dist: focal
     install:
-    - # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
-    - # and breaks our ability to update. We don't need it, so remove it.
-    - sudo rm /etc/apt/sources.list.d/rabbitmq.list
-    - sudo apt-get update
-    - sudo apt-get install unzip zip awscli httpie
+    - ./travis/travis-install-prereqs.sh
     - chmod +x "./travis/travis-get-ue.sh"
     - "./travis/travis-get-ue.sh"
     script:
@@ -308,14 +263,7 @@ jobs:
       directories:
       - $HOME/android-ndk-r21e
     install:
-    - choco install 7zip.portable
-    - choco install python --version 3.9.2
-    - choco install wget
-    - choco install ninja
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
+    - ./travis/travis-install-prereqs.sh
     - travis_wait 30 "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
     - travis_wait 30 "./travis/travis-get-ue-427.sh"
     script:
