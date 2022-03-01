@@ -1,25 +1,25 @@
 # Change Log
 
-### ? - ?
+### v1.11.0 - 2022-03-01
 
 ##### Breaking Changes :mega:
 
-- Exclusion Zones have been deprecated and will be removed in a future release. Please use Cartographic Polygon actor instead.
+- Exclusion Zones have been deprecated and will be removed in a future release. Please use the Cartographic Polygon Actor instead.
 
 ##### Additions :tada:
 
 - Added experimental support for Unreal Engine 5 (preview 1).
 - Added collision meshes for tilesets when using the Chaos physics engine.
 - Integrated GPU pixel compression formats received from Cesium Native into Unreal's texture system.
-- Added support for `CESIUM_RTC` glTF extension.
-- Added ability to set Georeference origin from ECEF coordinates in Blueprints and C++.
-- Exposed ion endpoint URL as a parameter.
+- Added support for the `CESIUM_RTC` glTF extension.
+- Added the ability to set tne Georeference origin from ECEF coordinates in Blueprints and C++.
+- Exposed the Cesium ion endpoint URL as a property on tilesets and raster overlays.
 
 ##### Fixes :wrench:
 
 - Fixed bug where certain pitch values in "Innaccurate Fly to Location Longitude Latitude Height" cause gimbal lock.
-- Fixed a bug that causes a graphical glitch by using 16-bit indices when 32-bit is needed.
-- Fixed a bug where metadata from the feature table was not decoded from UTF-8.
+- Fixed a bug that caused a graphical glitch by using 16-bit indices when 32-bit indices are needed.
+- Fixed a bug where tileset metadata from a feature table was not decoded correctly from UTF-8.
 - Improved the shadows, making shadows fade in and out less noticable.
 
 ##### Fixes :wrench:
