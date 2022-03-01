@@ -128,13 +128,6 @@ uint32_t updateTextureCoordinates(
   size_t textureCoordinateIndex = textureCoordinateMap.size();
   textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
 
-  struct A {
-    double x[5];
-  };
-
-  const A* a;
-  using Foo = decltype(a->x[0]);
-
   CesiumGltf::AccessorView<TMeshVector2> uvAccessor(model, uvAccessorID);
   if (uvAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
     return 0;
@@ -1793,7 +1786,11 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
       UMaterialInstanceDynamic* pMaterial =
           Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
 
+#if ENGINE_MAJOR_VERSION >= 5
       if (!IsValid(pMaterial)) {
+#else
+      if (pMaterial->IsPendingKillOrUnreachable()) {
+#endif
         // Don't try to update the material while it's in the process of being
         // destroyed. This can lead to the render thread freaking out when
         // it's asked to update a parameter for a material that has been
