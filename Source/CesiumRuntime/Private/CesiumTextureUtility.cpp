@@ -126,6 +126,19 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     CESIUM_TRACE("Copying existing mips.");
 
     for (const CesiumGltf::ImageCesiumMipPosition& mip : image.mipPositions) {
+      if (mip.byteOffset >= image.pixelData.size() ||
+          mip.byteOffset + mip.byteSize > image.pixelData.size()) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT(
+                "Invalid mip in glTF; it has a byteOffset of %d and a byteSize of %d but only %d bytes of pixel data are available."),
+            mip.byteOffset,
+            mip.byteSize,
+            image.pixelData.size());
+        continue;
+      }
+
       FTexture2DMipMap* pLevel = new FTexture2DMipMap();
       pResult->pTextureData->Mips.Add(pLevel);
 
@@ -349,7 +362,11 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
         NAME_None,
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
+#if ENGINE_MAJOR_VERSION >= 5
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
+#else
     pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
+#endif
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
