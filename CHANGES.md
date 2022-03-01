@@ -21,10 +21,9 @@
 - Fixed a bug that caused a graphical glitch by using 16-bit indices when 32-bit indices are needed.
 - Fixed a bug where tileset metadata from a feature table was not decoded correctly from UTF-8.
 - Improved the shadows, making shadows fade in and out less noticable.
-
-##### Fixes :wrench:
-
 - The Cesium ion Token Troubleshooting panel will no longer appear in game worlds, including Play-In-Editor.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.12.0 to v0.13.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.10.1 - 2022-02-01
 
