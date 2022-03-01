@@ -1810,7 +1810,7 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
       f(pPrimitive, pMaterial, pCesiumData);
     }
   }
-}
+} // namespace
 
 } // namespace
 
