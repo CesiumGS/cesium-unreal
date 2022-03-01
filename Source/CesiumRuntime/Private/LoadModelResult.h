@@ -4,6 +4,7 @@
 
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
+  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata;
   FStaticMeshRenderData* RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
@@ -11,6 +12,7 @@ struct LoadPrimitiveResult {
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
   PxTriangleMesh* pCollisionMesh = nullptr;
+  FBodySetupUVInfo uvInfo;
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
       pCollisionMesh = nullptr;

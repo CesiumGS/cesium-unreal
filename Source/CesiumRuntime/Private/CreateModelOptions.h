@@ -2,8 +2,11 @@
 
 #pragma once
 
+class HalfConstructedReal;
+
 struct CreateModelOptions {
   const CesiumGltf::Model* pModel = nullptr;
+  HalfConstructedReal* pHalfConstructedModel = nullptr;
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCookingModule* pPhysXCookingModule = nullptr;
