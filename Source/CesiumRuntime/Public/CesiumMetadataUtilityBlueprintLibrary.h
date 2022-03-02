@@ -2,11 +2,15 @@
 
 #include "CesiumMetadataFeatureTable.h"
 #include "CesiumMetadataGenericValue.h"
+#include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
+
+struct FCesiumVertexMetadata;
+struct FCesiumFeatureIDTexture;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
@@ -15,6 +19,17 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
 
 public:
   /**
+   * Gets the model metadata of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned metadata is empty
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility")
+  static const FCesiumMetadataModel&
+  GetModelMetadata(const UPrimitiveComponent* component);
+
+  /**
    * Gets the primitive metadata of a glTF primitive component. If component is
    * not a Cesium glTF primitive component, the returned metadata is empty
    */
@@ -22,7 +37,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
-  static FCesiumMetadataPrimitive
+  static const FCesiumMetadataPrimitive&
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
@@ -61,6 +76,6 @@ public:
       Category = "Cesium|Metadata|Utility")
   static int64 GetFeatureIDForFace(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
-      UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+      UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata,
       int64 faceID);
 };

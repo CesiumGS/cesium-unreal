@@ -6,6 +6,7 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumRasterOverlays.h"
+#include "CesiumTextureUtility.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
@@ -23,6 +24,8 @@ public:
   virtual ~UCesiumGltfPrimitiveComponent();
 
   FCesiumMetadataPrimitive Metadata;
+
+  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata;
 
   const CesiumGltf::Model* pModel;
 

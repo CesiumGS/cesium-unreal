@@ -4,66 +4,9 @@
 #include "CesiumGltf/MetadataFeatureTableView.h"
 #include "CesiumMetadataPrimitive.h"
 
-namespace {
-
-struct FeatureIDFromAccessor {
-  int64 operator()(std::monostate) { return -1; }
-
-  int64 operator()(
-      const CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>&
-          value) {
-    return static_cast<int64>(glm::round(value[vertexIdx].value[0]));
-  }
-
-  template <typename T>
-  int64 operator()(const CesiumGltf::AccessorView<T>& value) {
-    return static_cast<int64>(value[vertexIdx].value[0]);
-  }
-
-  int64 vertexIdx;
-};
-
-} // namespace
-
 FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
     const CesiumGltf::Model& model,
-    const CesiumGltf::Accessor& featureIDAccessor,
     const CesiumGltf::FeatureTable& featureTable) {
-
-  switch (featureIDAccessor.componentType) {
-  case CesiumGltf::Accessor::ComponentType::BYTE:
-    _featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>(
-            model,
-            featureIDAccessor);
-    break;
-  case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
-    _featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>(
-            model,
-            featureIDAccessor);
-    break;
-  case CesiumGltf::Accessor::ComponentType::SHORT:
-    _featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>(
-            model,
-            featureIDAccessor);
-    break;
-  case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
-    _featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>(
-            model,
-            featureIDAccessor);
-    break;
-  case CesiumGltf::Accessor::ComponentType::FLOAT:
-    _featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>(
-            model,
-            featureIDAccessor);
-    break;
-  default:
-    break;
-  }
 
   CesiumGltf::MetadataFeatureTableView featureTableView{&model, &featureTable};
 
@@ -120,14 +63,6 @@ int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetNumberOfFeatures(
 
   return UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
       FeatureTable._properties.begin().Value());
-}
-
-int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
-    int64 vertexIdx) {
-  return std::visit(
-      FeatureIDFromAccessor{vertexIdx},
-      FeatureTable._featureIDAccessor);
 }
 
 const TMap<FString, FCesiumMetadataProperty>&

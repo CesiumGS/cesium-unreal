@@ -72,7 +72,6 @@ void destroyWaterParameterValues(
     int32 index) {
   destroyMaterialTexture(pMaterial, "WaterMask", assocation, index);
 }
-
 } // namespace
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
@@ -113,6 +112,9 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
             waterIndex);
       }
     }
+
+    CesiumTextureUtility::destroyEncodedMetadataPrimitive(
+        this->EncodedMetadata);
 
     CesiumLifetime::destroy(pMaterial);
   }

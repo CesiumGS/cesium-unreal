@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "CesiumMetadataModel.h"
+#include "CesiumTextureUtility.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -14,14 +16,10 @@
 class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
+
+namespace CreateGltfOptions {
 struct CreateModelOptions;
-struct CreateNodeOptions;
-struct CreateMeshOptions;
-struct CreatePrimitiveOptions;
-struct LoadModelResult;
-struct LoadNodeResult;
-struct LoadMeshResult;
-struct LoadPrimitiveResult;
+} // namespace CreateGltfOptions
 
 #if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;
@@ -66,7 +64,7 @@ public:
 
   static std::unique_ptr<HalfConstructed> CreateOffGameThread(
       const glm::dmat4x4& Transform,
-      const CreateModelOptions& Options);
+      const CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       AActor* ParentActor,
@@ -88,6 +86,10 @@ public:
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters;
 
+  FCesiumMetadataModel Metadata;
+
+  CesiumTextureUtility::EncodedMetadata EncodedMetadata;
+
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
   void AttachRasterTile(
@@ -105,6 +107,8 @@ public:
 
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
+
+  virtual void BeginDestroy() override;
 
 private:
   UPROPERTY()

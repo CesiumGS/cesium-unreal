@@ -2,26 +2,41 @@
 
 #pragma once
 
+#include "CesiumGltf/Mesh.h"
+#include "CesiumGltf/MeshPrimitive.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumGltf/Node.h"
+#include "LoadGltfResult.h"
+#if PHYSICS_INTERFACE_PHYSX
+#include "IPhysXCookingModule.h"
+#endif
+
+// TODO: internal documentation
+namespace CreateGltfOptions {
 struct CreateModelOptions {
   const CesiumGltf::Model* pModel = nullptr;
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
-  IPhysXCooking* pPhysXCooking = nullptr;
+  IPhysXCookingModule* pPhysXCookingModule = nullptr;
 #endif
 };
 
 struct CreateNodeOptions {
   const CreateModelOptions* pModelOptions = nullptr;
+  const LoadGltfResult::LoadModelResult* pHalfConstructedModelResult = nullptr;
   const CesiumGltf::Node* pNode = nullptr;
 };
 
 struct CreateMeshOptions {
   const CreateNodeOptions* pNodeOptions = nullptr;
+  const LoadGltfResult::LoadNodeResult* pHalfConstructedNodeResult = nullptr;
   const CesiumGltf::Mesh* pMesh = nullptr;
   std::vector<int32> variants{};
 };
 
 struct CreatePrimitiveOptions {
   const CreateMeshOptions* pMeshOptions = nullptr;
+  const LoadGltfResult::LoadMeshResult* pHalfConstructedMeshResult = nullptr;
   const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
 };
+} // namespace CreateGltfOptions

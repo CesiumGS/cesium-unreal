@@ -5,6 +5,9 @@
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
+#include "CesiumFeatureIDTexture.h"
+#include "CesiumFeatureTexture.h"
+#include "CesiumFeatureTextureProperty.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -15,21 +18,24 @@
 #include "CesiumGltf/ExtensionModelMaxarMeshVariantsValue.h"
 #include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
 #include "CesiumGltf/ExtensionNodeMaxarMeshVariantsMappingsValue.h"
+#include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumMetadataFeatureTable.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
-#include "CreateModelOptions.h"
+#include "CesiumVertexMetadata.h"
+#include "CreateGltfOptions.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
-#include "LoadModelResult.h"
+#include "LoadGltfResult.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
@@ -49,6 +55,9 @@
 
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
+#include "IPhysXCookingModule.h"
+#include "Interfaces/Interface_CollisionDataProvider.h"
+#include "PhysXCookHelper.h"
 #else
 #include "Chaos/AABBTree.h"
 #include "Chaos/CollisionConvexMesh.h"
@@ -59,7 +68,12 @@
 #include "ScopedTransaction.h"
 #endif
 
+// These headers are really just moved out for readability, so include them
+// last.
 using namespace CesiumGltf;
+using namespace CesiumTextureUtility;
+using namespace CreateGltfOptions;
+using namespace LoadGltfResult;
 
 namespace {
 
@@ -78,6 +92,14 @@ using TMeshVector4 = FVector4;
 } // namespace
 
 static uint32_t nextMaterialId = 0;
+
+namespace {
+class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
+public:
+  virtual ~HalfConstructedReal() {}
+  LoadModelResult loadModelResult;
+};
+} // namespace
 
 template <class... T> struct IsAccessorView;
 
@@ -267,7 +289,8 @@ static void computeFlatNormals(
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
-    const IPhysXCooking* pPhysXCooking,
+    FBodySetupUVInfo& uvInfo,
+    IPhysXCookingModule* pPhysXCooking,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
 #else
@@ -364,7 +387,7 @@ struct ColorVisitor {
 };
 
 template <class T>
-static CesiumTextureUtility::LoadedTextureResult* loadTexture(
+static LoadedTextureResult* loadTexture(
     const CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
@@ -383,7 +406,7 @@ static CesiumTextureUtility::LoadedTextureResult* loadTexture(
   const CesiumGltf::Texture& texture =
       model.textures[gltfTexture.value().index];
 
-  return CesiumTextureUtility::loadTextureAnyThreadPart(model, texture);
+  return loadTextureAnyThreadPart(model, texture);
 }
 
 static void applyWaterMask(
@@ -443,24 +466,112 @@ static void applyWaterMask(
 static FCesiumMetadataPrimitive loadMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive) {
-  const CesiumGltf::ExtensionModelExtFeatureMetadata* metadata =
-      model.getExtension<CesiumGltf::ExtensionModelExtFeatureMetadata>();
-  if (!metadata) {
+
+  const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
+      primitive
+          .getExtension<CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata>();
+  if (!pMetadata) {
     return FCesiumMetadataPrimitive();
   }
 
-  const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata*
-      primitiveMetadata = primitive.getExtension<
-          CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata>();
-  if (!primitiveMetadata) {
-    return FCesiumMetadataPrimitive();
+  return FCesiumMetadataPrimitive(model, primitive, *pMetadata);
+}
+
+static void updateTextureCoordinatesForMetadata(
+    const CesiumGltf::Model& model,
+    const CesiumGltf::MeshPrimitive& primitive,
+    bool duplicateVertices,
+    TArray<FStaticMeshBuildVertex>& vertices,
+    const TArray<uint32>& indices,
+    const EncodedMetadata& encodedMetadata,
+    EncodedMetadataPrimitive& encodedPrimitiveMetadata,
+    const TArray<FCesiumVertexMetadata>& vertexFeatures,
+    std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
+
+  for (const EncodedFeatureIdTexture& encodedFeatureIdTexture :
+       encodedPrimitiveMetadata.encodedFeatureIdTextures) {
+
+    updateTextureCoordinates(
+        model,
+        primitive,
+        duplicateVertices,
+        vertices,
+        indices,
+        "TEXCOORD_" +
+            std::to_string(encodedFeatureIdTexture.textureCoordinateIndex),
+        textureCoordinateMap);
   }
 
-  return FCesiumMetadataPrimitive(
-      model,
-      primitive,
-      *metadata,
-      *primitiveMetadata);
+  for (const FString& featureTextureName :
+       encodedPrimitiveMetadata.featureTextureNames) {
+    const EncodedFeatureTexture* pEncodedFeatureTexture =
+        encodedMetadata.encodedFeatureTextures.Find(featureTextureName);
+    if (pEncodedFeatureTexture) {
+      for (const EncodedFeatureTextureProperty& encodedProperty :
+           pEncodedFeatureTexture->properties) {
+
+        updateTextureCoordinates(
+            model,
+            primitive,
+            duplicateVertices,
+            vertices,
+            indices,
+            "TEXCOORD_" +
+                std::to_string(encodedProperty.textureCoordinateIndex),
+            textureCoordinateMap);
+      }
+    }
+  }
+
+  const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
+      primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
+
+  if (pMetadata) {
+    for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
+      const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
+      EncodedVertexMetadata& encodedVertexFeature =
+          encodedPrimitiveMetadata.encodedVertexMetadata[i];
+      size_t textureCoordinateIndex = textureCoordinateMap.size();
+      int32_t attribute = vertexFeature.getAttributeIndex();
+      textureCoordinateMap[attribute] = textureCoordinateIndex;
+      encodedVertexFeature.textureCoordinateIndex = textureCoordinateIndex;
+      int64 vertexCount =
+          UCesiumVertexMetadataBlueprintLibrary::GetVertexCount(vertexFeature);
+
+      // We encode unsigned integer feature ids as floats in the u-channel of
+      // a texture coordinate slot.
+      if (duplicateVertices) {
+        for (int64_t j = 0; j < indices.Num(); ++j) {
+          FStaticMeshBuildVertex& vertex = vertices[j];
+          uint32 vertexIndex = indices[j];
+          if (vertexIndex >= 0 && vertexIndex < vertexCount) {
+            uint32_t featureId = static_cast<uint32_t>(
+                UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
+                    vertexFeature,
+                    vertexIndex));
+            vertex.UVs[textureCoordinateIndex] =
+                FVector2D(*reinterpret_cast<const float*>(&featureId), 0.0f);
+          } else {
+            vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+          }
+        }
+      } else {
+        for (int64_t j = 0; j < vertices.Num(); ++j) {
+          FStaticMeshBuildVertex& vertex = vertices[j];
+          if (j < vertexCount) {
+            uint32_t featureId = static_cast<uint32_t>(
+                UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
+                    vertexFeature,
+                    j));
+            vertex.UVs[textureCoordinateIndex] =
+                FVector2D(*reinterpret_cast<float*>(&featureId), 0.0f);
+          } else {
+            vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+          }
+        }
+      }
+    }
+  }
 }
 
 namespace {
@@ -879,6 +990,22 @@ static void loadPrimitive(
     }
   }
 
+  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.EncodedMetadata =
+      encodeMetadataPrimitiveAnyThreadPart(primitiveResult.Metadata);
+  updateTextureCoordinatesForMetadata(
+      model,
+      primitive,
+      duplicateVertices,
+      StaticMeshBuildVertices,
+      indices,
+      options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult
+          ->EncodedMetadata,
+      primitiveResult.EncodedMetadata,
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
+          primitiveResult.Metadata),
+      textureCoordinateMap);
+
   // TangentX: Tangent
   // TangentY: Bi-tangent
   // TangentZ: Normal
@@ -1027,7 +1154,8 @@ static void loadPrimitive(
     CESIUM_TRACE("PhysX cook");
     BuildPhysXTriangleMeshes(
         primitiveResult.pCollisionMesh,
-        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCooking,
+        primitiveResult.uvInfo,
+        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
         StaticMeshBuildVertices,
         indices);
 #else
@@ -1168,7 +1296,7 @@ static void loadMesh(
   result = LoadMeshResult();
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &primitive};
+    CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     loadPrimitive(
         result->primitiveResults.emplace_back(),
         transform,
@@ -1253,7 +1381,7 @@ static void loadNode(
 
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
-    CreateMeshOptions meshOptions = {&options, &model.meshes[meshId]};
+    CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
     loadMesh(result.meshResult, nodeTransform, meshOptions);
   }
 
@@ -1261,6 +1389,7 @@ static void loadNode(
     if (childNodeId >= 0 && childNodeId < model.nodes.size()) {
       CreateNodeOptions childNodeOptions = {
           options.pModelOptions,
+          options.pHalfConstructedModelResult,
           &model.nodes[childNodeId]};
       loadNode(loadNodeResults, nodeTransform, childNodeOptions);
     }
@@ -1315,13 +1444,21 @@ void applyGltfUpAxisTransform(
 }
 } // namespace
 
-static LoadModelResult loadModelAnyThreadPart(
+static void loadModelAnyThreadPart(
+    LoadModelResult& result,
     const glm::dmat4x4& transform,
     const CreateModelOptions& options) {
   CESIUM_TRACE("loadModelAnyThreadPart");
 
   const Model& model = *options.pModel;
-  LoadModelResult result;
+
+  // TODO: add tracing for metadata and encoded metadata preparation
+  const CesiumGltf::ExtensionModelExtFeatureMetadata* pMetadataExtension =
+      model.getExtension<CesiumGltf::ExtensionModelExtFeatureMetadata>();
+  if (pMetadataExtension) {
+    result.Metadata = FCesiumMetadataModel(model, *pMetadataExtension);
+    result.EncodedMetadata = encodeMetadataAnyThreadPart(result.Metadata);
+  }
 
   glm::dmat4x4 rootTransform = transform;
 
@@ -1337,39 +1474,40 @@ static LoadModelResult loadModelAnyThreadPart(
     // Show the default scene
     const CesiumGltf::Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
-      CreateNodeOptions nodeOptions = {&options, &model.nodes[nodeId]};
+      CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
       loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const CesiumGltf::Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
-      CreateNodeOptions nodeOptions = {&options, &model.nodes[nodeId]};
+      CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
       loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
-    CreateNodeOptions nodeOptions = {&options, &model.nodes[0]};
+    CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
     loadNode(result.nodeResults, rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const CesiumGltf::Mesh& mesh : model.meshes) {
-      CreateNodeOptions dummyNodeOptions = {&options, nullptr};
-      CreateMeshOptions meshOptions = {&dummyNodeOptions, &mesh};
+      CreateNodeOptions dummyNodeOptions = {&options, &result, nullptr};
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
+      CreateMeshOptions meshOptions = {
+          &dummyNodeOptions,
+          &dummyNodeResult,
+          &mesh};
       loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
     }
   }
-
-  return result;
 }
 
 bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
-    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
+    LoadedTextureResult* pLoadedTexture) {
 
-  if (!CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture)) {
+  if (!loadTextureGameThreadPart(pLoadedTexture)) {
     return false;
   }
 
@@ -1393,7 +1531,7 @@ static void SetGltfParameterValues(
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
-            textureCoordinateSet.first.c_str(),
+            UTF8_TO_TCHAR(textureCoordinateSet.first.c_str()),
             assocation,
             index),
         textureCoordinateSet.second);
@@ -1482,6 +1620,148 @@ void SetWaterParameterValues(
           loadResult.waterMaskScale));
 }
 
+static void SetMetadataFeatureTableParameterValues(
+    const FString& outterName,
+    const EncodedMetadataFeatureTable& encodedFeatureTable,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    int32 index) {
+  for (const EncodedMetadataProperty& encodedProperty :
+       encodedFeatureTable.encodedProperties) {
+
+    pMaterial->SetTextureParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(outterName + "_" + encodedProperty.name),
+            association,
+            index),
+        encodedProperty.pTexture->pTexture);
+  }
+}
+
+static void SetMetadataParameterValues(
+    UCesiumGltfComponent& gltfComponent,
+    LoadPrimitiveResult& loadResult,
+    UMaterialInstanceDynamic* pMaterial,
+    EMaterialParameterAssociation association,
+    // TODO: probably have different layer for each feature id
+    // texture/attribute?
+    int32 index) {
+  if (!encodeMetadataPrimitiveGameThreadPart(loadResult.EncodedMetadata)) {
+    return;
+  }
+
+  for (const FString& featureTextureName :
+       loadResult.EncodedMetadata.featureTextureNames) {
+    EncodedFeatureTexture* pEncodedFeatureTexture =
+        gltfComponent.EncodedMetadata.encodedFeatureTextures.Find(
+            featureTextureName);
+
+    if (pEncodedFeatureTexture) {
+      for (EncodedFeatureTextureProperty& encodedProperty :
+           pEncodedFeatureTexture->properties) {
+
+        pMaterial->SetTextureParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(encodedProperty.name + "_Texture"),
+                association,
+                index),
+            encodedProperty.pTexture->pTexture);
+
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(encodedProperty.name + "_TextureCoordinateIndex"),
+                association,
+                index),
+            encodedProperty.textureCoordinateIndex);
+
+        pMaterial->SetVectorParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(encodedProperty.name + "_Swizzle"),
+                association,
+                index),
+            FLinearColor(
+                encodedProperty.channelOffsets[0],
+                encodedProperty.channelOffsets[1],
+                encodedProperty.channelOffsets[2],
+                encodedProperty.channelOffsets[3]));
+      }
+    }
+  }
+
+  for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
+       loadResult.EncodedMetadata.encodedFeatureIdTextures) {
+
+    pMaterial->SetTextureParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdTexture.name + "_Texture"),
+            association,
+            index),
+        encodedFeatureIdTexture.pTexture->pTexture);
+
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdTexture.name + "_TextureCoordinateIndex"),
+            association,
+            index),
+        static_cast<int32>(encodedFeatureIdTexture.textureCoordinateIndex));
+
+    FLinearColor channelMask;
+    switch (encodedFeatureIdTexture.channel) {
+    case 1:
+      channelMask = FLinearColor::Green;
+      break;
+    case 2:
+      channelMask = FLinearColor::Blue;
+      break;
+    default:
+      channelMask = FLinearColor::Red;
+    }
+
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdTexture.name + "_ChannelMask"),
+            association,
+            index),
+        channelMask);
+
+    const EncodedMetadataFeatureTable* pEncodedFeatureTable =
+        gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
+            encodedFeatureIdTexture.featureTableName);
+
+    if (pEncodedFeatureTable) {
+      SetMetadataFeatureTableParameterValues(
+          encodedFeatureIdTexture.name,
+          *pEncodedFeatureTable,
+          pMaterial,
+          association,
+          index);
+    }
+  }
+
+  for (const EncodedVertexMetadata& encodedVertexFeature :
+       loadResult.EncodedMetadata.encodedVertexMetadata) {
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedVertexFeature.name + "_TextureCoordinateIndex"),
+            association,
+            index),
+        encodedVertexFeature.textureCoordinateIndex);
+
+    const EncodedMetadataFeatureTable* pEncodedFeatureTable =
+        gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
+            encodedVertexFeature.featureTableName);
+
+    if (pEncodedFeatureTable) {
+      SetMetadataFeatureTableParameterValues(
+          encodedVertexFeature.name,
+          *pEncodedFeatureTable,
+          pMaterial,
+          association,
+          index);
+    }
+  }
+}
+
 static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
@@ -1499,7 +1779,6 @@ static void loadPrimitiveGameThreadPart(
   pMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
   pMesh->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-  pMesh->Metadata = std::move(loadResult.Metadata);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
   pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
@@ -1635,6 +1914,19 @@ static void loadPrimitiveGameThreadPart(
     }
   }
 
+  int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
+  if (metadataIndex >= 0) {
+    SetMetadataParameterValues(
+        *pGltf,
+        loadResult,
+        pMaterial,
+        EMaterialParameterAssociation::LayerParameter,
+        metadataIndex);
+  }
+
+  pMesh->Metadata = std::move(loadResult.Metadata);
+  pMesh->EncodedMetadata = std::move(loadResult.EncodedMetadata);
+
   pMaterial->TwoSided = true;
 
   pStaticMesh->AddMaterial(pMaterial);
@@ -1659,6 +1951,7 @@ static void loadPrimitiveGameThreadPart(
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
     pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh);
+    pBodySetup->UVInfo = std::move(loadResult.uvInfo);
 #else
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif
@@ -1668,6 +1961,7 @@ static void loadPrimitiveGameThreadPart(
   // mesh or not. We don't want the editor creating collision meshes itself in
   // the game thread, because that would be slow.
   pBodySetup->bCreatedPhysicsMeshes = true;
+  pBodySetup->bSupportUVsAndFaceRemap = true;
 
   pMesh->SetMobility(EComponentMobility::Movable);
 
@@ -1679,20 +1973,13 @@ static void loadPrimitiveGameThreadPart(
   return pMesh;
 }
 
-namespace {
-class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
-public:
-  virtual ~HalfConstructedReal() {}
-  LoadModelResult loadModelResult;
-};
-} // namespace
-
 /*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
   auto pResult = std::make_unique<HalfConstructedReal>();
-  pResult->loadModelResult = loadModelAnyThreadPart(Transform, Options);
+  loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
+
   return pResult;
 }
 
@@ -1716,6 +2003,9 @@ UCesiumGltfComponent::CreateOffGameThread(
   Gltf->SetUsingAbsoluteLocation(true);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
+  Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
+  Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
+
   if (pBaseMaterial) {
     Gltf->BaseMaterial = pBaseMaterial;
   }
@@ -1726,6 +2016,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   Gltf->CustomDepthParameters = CustomDepthParameters;
 
+  encodeMetadataGameThreadPart(Gltf->EncodedMetadata);
   for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
@@ -1936,43 +2227,76 @@ void UCesiumGltfComponent::SetCollisionEnabled(
   }
 }
 
+void UCesiumGltfComponent::BeginDestroy() {
+  // TODO: why does this crash?
+  destroyEncodedMetadata(this->EncodedMetadata);
+  Super::BeginDestroy();
+}
+
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
-    const IPhysXCooking* pPhysXCooking,
+    FBodySetupUVInfo& uvInfo,
+    IPhysXCookingModule* pPhysXCookingModule,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
 
-  if (pPhysXCooking) {
-    int32 vertexCount = vertexData.Num();
-    int32 triangleCount = indices.Num() / 3;
-
+  if (pPhysXCookingModule) {
+    CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
-    TArray<FVector> vertices;
-    vertices.SetNum(vertexCount);
 
-    for (size_t i = 0; i < vertexCount; ++i) {
-      vertices[i] = vertexData[i].Position;
+    FPhysXCookHelper cookHelper(pPhysXCookingModule);
+
+    cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
+    cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
+    cookHelper.CookInfo.TriangleMeshDesc.bFlipNormals = true;
+    cookHelper.CookInfo.bCookTriMesh = true;
+    cookHelper.CookInfo.bSupportUVFromHitResults = true;
+    cookHelper.CookInfo.bSupportFaceRemap = true;
+
+    TArray<FVector>& vertices = cookHelper.CookInfo.TriangleMeshDesc.Vertices;
+    vertices.SetNum(vertexData.Num());
+
+    TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
+    uvs.SetNum(8);
+
+    for (size_t i = 0; i < 8; ++i) {
+      uvs[i].SetNum(vertices.Num());
     }
 
-    TArray<FTriIndices> physicsIndices;
-    physicsIndices.SetNum(triangleCount);
+    for (size_t i = 0; i < vertexData.Num(); ++i) {
+      vertices[i] = vertexData[i].Position;
+      for (size_t j = 0; j < 8; ++j) {
+        uvs[j][i] = vertexData[i].UVs[j];
+      }
+    }
 
-    for (size_t i = 0; i < triangleCount; ++i) {
+    TArray<FTriIndices>& physicsIndices =
+        cookHelper.CookInfo.TriangleMeshDesc.Indices;
+    physicsIndices.SetNum(indices.Num() / 3);
+
+    for (size_t i = 0; i < indices.Num() / 3; ++i) {
       physicsIndices[i].v0 = indices[3 * i];
       physicsIndices[i].v1 = indices[3 * i + 1];
       physicsIndices[i].v2 = indices[3 * i + 2];
     }
 
-    pPhysXCooking->CreateTriMesh(
+    cookHelper.CreatePhysicsMeshes_Concurrent();
+    if (cookHelper.OutTriangleMeshes.Num() > 0) {
+      pCollisionMesh = cookHelper.OutTriangleMeshes[0];
+    }
+    uvInfo = cookHelper.OutUVInfo;
+
+    /**
+    options.pPhysXCooking->CreateTriMesh(
         "PhysXGeneric",
         EPhysXMeshCookFlags::Default,
         vertices,
         physicsIndices,
         TArray<uint16>(),
         true,
-        pCollisionMesh);
+        pCollisionMesh);*/
   }
 }
 

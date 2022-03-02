@@ -2,15 +2,12 @@
 
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
-#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/Model.h"
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
-    const CesiumGltf::ExtensionModelExtFeatureMetadata& metadata,
-    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata&
-        primitiveMetadata) {
+    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata) {
 
   const CesiumGltf::Accessor& indicesAccessor =
       model.getSafe(model.accessors, primitive.indices);
@@ -38,7 +35,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
 
   for (const CesiumGltf::FeatureIDAttribute& attribute :
-       primitiveMetadata.featureIdAttributes) {
+       metadata.featureIdAttributes) {
     if (attribute.featureIds.attribute) {
       auto featureID =
           primitive.attributes.find(attribute.featureIds.attribute.value());
@@ -58,25 +55,47 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         continue;
       }
 
-      auto featureTable = metadata.featureTables.find(attribute.featureTable);
-      if (featureTable == metadata.featureTables.end()) {
-        continue;
-      }
-
-      _featureTables.Add((
-          FCesiumMetadataFeatureTable(model, *accessor, featureTable->second)));
+      this->_vertexFeatures.Add(FCesiumVertexMetadata(
+          model,
+          *accessor,
+          featureID->second,
+          UTF8_TO_TCHAR(attribute.featureTable.c_str())));
     }
+  }
+
+  for (const CesiumGltf::FeatureIDTexture& featureIDTexture :
+       metadata.featureIdTextures) {
+    this->_featureIDTextures.Add(
+        FCesiumFeatureIDTexture(model, featureIDTexture));
+  }
+
+  this->_featureTextureNames.Reserve(metadata.featureTextures.size());
+  for (const std::string& featureTextureName : metadata.featureTextures) {
+    this->_featureTextureNames.Emplace(
+        UTF8_TO_TCHAR(featureTextureName.c_str()));
   }
 }
 
-const TArray<FCesiumMetadataFeatureTable>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
-    const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureTables;
+const TArray<FCesiumVertexMetadata>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._vertexFeatures;
+}
+
+const TArray<FCesiumFeatureIDTexture>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureIDTextures;
+}
+
+const TArray<FString>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureTextureNames;
 }
 
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
-    const FCesiumMetadataPrimitive& MetadataPrimitive,
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
     int64 faceID) {
   return std::visit(
       [faceID](const auto& accessor) {
