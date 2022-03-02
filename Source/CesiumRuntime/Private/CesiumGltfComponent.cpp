@@ -105,13 +105,12 @@ template <class... T> struct IsAccessorView;
 
 template <class T> struct IsAccessorView<T> : std::false_type {};
 
-template <class T>
-struct IsAccessorView<CesiumGltf::AccessorView<T>> : std::true_type {};
+template <class T> struct IsAccessorView<AccessorView<T>> : std::true_type {};
 
 template <class T>
 static uint32_t updateTextureCoordinates(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive,
+    const Model& model,
+    const MeshPrimitive& primitive,
     bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
@@ -132,8 +131,8 @@ static uint32_t updateTextureCoordinates(
 }
 
 uint32_t updateTextureCoordinates(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive,
+    const Model& model,
+    const MeshPrimitive& primitive,
     bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
@@ -155,8 +154,8 @@ uint32_t updateTextureCoordinates(
   size_t textureCoordinateIndex = textureCoordinateMap.size();
   textureCoordinateMap[uvAccessorID] = textureCoordinateIndex;
 
-  CesiumGltf::AccessorView<TMeshVector2> uvAccessor(model, uvAccessorID);
-  if (uvAccessor.status() != CesiumGltf::AccessorViewStatus::Valid) {
+  AccessorView<TMeshVector2> uvAccessor(model, uvAccessorID);
+  if (uvAccessor.status() != AccessorViewStatus::Valid) {
     return 0;
   }
 
@@ -300,9 +299,8 @@ BuildChaosTriangleMeshes(
     const TArray<uint32>& indices);
 #endif
 
-static const CesiumGltf::Material defaultMaterial;
-static const CesiumGltf::MaterialPBRMetallicRoughness
-    defaultPbrMetallicRoughness;
+static const Material defaultMaterial;
+static const MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
 
 struct ColorVisitor {
   bool duplicateVertices;
@@ -312,7 +310,7 @@ struct ColorVisitor {
   bool operator()(AccessorView<nullptr_t>&& invalidView) { return false; }
 
   template <typename TColorView> bool operator()(TColorView&& colorView) {
-    if (colorView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    if (colorView.status() != AccessorViewStatus::Valid) {
       return false;
     }
 
@@ -387,9 +385,8 @@ struct ColorVisitor {
 };
 
 template <class T>
-static LoadedTextureResult* loadTexture(
-    const CesiumGltf::Model& model,
-    const std::optional<T>& gltfTexture) {
+static LoadedTextureResult*
+loadTexture(const Model& model, const std::optional<T>& gltfTexture) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
       gltfTexture.value().index >= model.textures.size()) {
     if (gltfTexture && gltfTexture.value().index >= 0) {
@@ -403,15 +400,14 @@ static LoadedTextureResult* loadTexture(
     return nullptr;
   }
 
-  const CesiumGltf::Texture& texture =
-      model.textures[gltfTexture.value().index];
+  const Texture& texture = model.textures[gltfTexture.value().index];
 
   return loadTextureAnyThreadPart(model, texture);
 }
 
 static void applyWaterMask(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive,
+    const Model& model,
+    const MeshPrimitive& primitive,
     LoadPrimitiveResult& primitiveResult) {
   // Initialize water mask if needed.
   auto onlyWaterIt = primitive.extras.find("OnlyWater");
@@ -430,7 +426,7 @@ static void applyWaterMask(
           waterMaskTextureIdIt->second.isInt64()) {
         int32_t waterMaskTextureId = static_cast<int32_t>(
             waterMaskTextureIdIt->second.getInt64OrDefault(-1));
-        CesiumGltf::TextureInfo waterMaskInfo;
+        TextureInfo waterMaskInfo;
         waterMaskInfo.index = waterMaskTextureId;
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
@@ -463,13 +459,11 @@ static void applyWaterMask(
   }
 }
 
-static FCesiumMetadataPrimitive loadMetadataPrimitive(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive) {
+static FCesiumMetadataPrimitive
+loadMetadataPrimitive(const Model& model, const MeshPrimitive& primitive) {
 
-  const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
-      primitive
-          .getExtension<CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata>();
+  const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
+      primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
   if (!pMetadata) {
     return FCesiumMetadataPrimitive();
   }
@@ -478,8 +472,8 @@ static FCesiumMetadataPrimitive loadMetadataPrimitive(
 }
 
 static void updateTextureCoordinatesForMetadata(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive,
+    const Model& model,
+    const MeshPrimitive& primitive,
     bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
@@ -638,8 +632,8 @@ static void loadPrimitive(
     LoadPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
-    const CesiumGltf::Accessor& positionAccessor,
-    const CesiumGltf::AccessorView<TMeshVector3>& positionView,
+    const Accessor& positionAccessor,
+    const AccessorView<TMeshVector3>& positionView,
     const TIndexAccessor& indicesView) {
 
   CESIUM_TRACE("loadPrimitive<T>");
@@ -649,8 +643,8 @@ static void loadPrimitive(
   const Mesh& mesh = *options.pMeshOptions->pMesh;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
-  if (primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLES &&
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::TRIANGLE_STRIP) {
+  if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
+      primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP) {
     // TODO: add support for primitive types other than triangles.
     UE_LOG(
         LogCesium,
@@ -671,9 +665,7 @@ static void loadPrimitive(
   auto meshIt = std::find_if(
       model.meshes.begin(),
       model.meshes.end(),
-      [&mesh](const CesiumGltf::Mesh& candidate) {
-        return &candidate == &mesh;
-      });
+      [&mesh](const Mesh& candidate) { return &candidate == &mesh; });
   if (meshIt != model.meshes.end()) {
     int64_t meshIndex = meshIt - model.meshes.begin();
     name += " mesh " + std::to_string(meshIndex);
@@ -682,7 +674,7 @@ static void loadPrimitive(
   auto primitiveIt = std::find_if(
       mesh.primitives.begin(),
       mesh.primitives.end(),
-      [&primitive](const CesiumGltf::MeshPrimitive& candidate) {
+      [&primitive](const MeshPrimitive& candidate) {
         return &candidate == &primitive;
       });
   if (primitiveIt != mesh.primitives.end()) {
@@ -692,7 +684,7 @@ static void loadPrimitive(
 
   primitiveResult.name = name;
 
-  if (positionView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+  if (positionView.status() != AccessorViewStatus::Valid) {
     UE_LOG(
         LogCesium,
         Warning,
@@ -702,7 +694,7 @@ static void loadPrimitive(
   }
 
   if constexpr (IsAccessorView<TIndexAccessor>::value) {
-    if (indicesView.status() != CesiumGltf::AccessorViewStatus::Valid) {
+    if (indicesView.status() != AccessorViewStatus::Valid) {
       UE_LOG(
           LogCesium,
           Warning,
@@ -713,14 +705,12 @@ static void loadPrimitive(
   }
 
   auto normalAccessorIt = primitive.attributes.find("NORMAL");
-  CesiumGltf::AccessorView<TMeshVector3> normalAccessor;
+  AccessorView<TMeshVector3> normalAccessor;
   bool hasNormals = false;
   if (normalAccessorIt != primitive.attributes.end()) {
     int normalAccessorID = normalAccessorIt->second;
-    normalAccessor =
-        CesiumGltf::AccessorView<TMeshVector3>(model, normalAccessorID);
-    hasNormals =
-        normalAccessor.status() == CesiumGltf::AccessorViewStatus::Valid;
+    normalAccessor = AccessorView<TMeshVector3>(model, normalAccessorID);
+    hasNormals = normalAccessor.status() == AccessorViewStatus::Valid;
     if (!hasNormals) {
       UE_LOG(
           LogCesium,
@@ -732,17 +722,17 @@ static void loadPrimitive(
   }
 
   int materialID = primitive.material;
-  const CesiumGltf::Material& material =
+  const Material& material =
       materialID >= 0 && materialID < model.materials.size()
           ? model.materials[materialID]
           : defaultMaterial;
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbrMetallicRoughness =
+  const MaterialPBRMetallicRoughness& pbrMetallicRoughness =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
                                     : defaultPbrMetallicRoughness;
 
   bool hasNormalMap = material.normalTexture.has_value();
   if (hasNormalMap) {
-    const CesiumGltf::Texture* pTexture =
+    const Texture* pTexture =
         Model::getSafe(&model.textures, material.normalTexture->index);
     hasNormalMap = pTexture != nullptr &&
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
@@ -754,13 +744,11 @@ static void loadPrimitive(
 
   bool hasTangents = false;
   auto tangentAccessorIt = primitive.attributes.find("TANGENT");
-  CesiumGltf::AccessorView<TMeshVector4> tangentAccessor;
+  AccessorView<TMeshVector4> tangentAccessor;
   if (tangentAccessorIt != primitive.attributes.end()) {
     int tangentAccessorID = tangentAccessorIt->second;
-    tangentAccessor =
-        CesiumGltf::AccessorView<TMeshVector4>(model, tangentAccessorID);
-    hasTangents =
-        tangentAccessor.status() == CesiumGltf::AccessorViewStatus::Valid;
+    tangentAccessor = AccessorView<TMeshVector4>(model, tangentAccessorID);
+    hasTangents = tangentAccessor.status() == AccessorViewStatus::Valid;
     if (!hasTangents) {
       UE_LOG(
           LogCesium,
@@ -822,7 +810,7 @@ static void loadPrimitive(
   }
 
   TArray<uint32> indices;
-  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::TRIANGLES) {
+  if (primitive.mode == MeshPrimitive::Mode::TRIANGLES) {
     CESIUM_TRACE("copy TRIANGLE indices");
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
@@ -891,7 +879,7 @@ static void loadPrimitive(
   if (colorAccessorIt != primitive.attributes.end()) {
     CESIUM_TRACE("copy colors");
     int colorAccessorID = colorAccessorIt->second;
-    hasVertexColors = CesiumGltf::createAccessorView(
+    hasVertexColors = createAccessorView(
         model,
         colorAccessorID,
         ColorVisitor{duplicateVertices, StaticMeshBuildVertices, indices});
@@ -1173,18 +1161,16 @@ static void loadIndexedPrimitive(
     LoadPrimitiveResult& primitiveResult,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options,
-    const CesiumGltf::Accessor& positionAccessor,
-    const CesiumGltf::AccessorView<TMeshVector3>& positionView) {
+    const Accessor& positionAccessor,
+    const AccessorView<TMeshVector3>& positionView) {
 
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
-  const CesiumGltf::Accessor& indexAccessorGltf =
-      model.accessors[primitive.indices];
-  if (indexAccessorGltf.componentType ==
-      CesiumGltf::Accessor::ComponentType::BYTE) {
-    CesiumGltf::AccessorView<int8_t> indexAccessor(model, primitive.indices);
+  const Accessor& indexAccessorGltf = model.accessors[primitive.indices];
+  if (indexAccessorGltf.componentType == Accessor::ComponentType::BYTE) {
+    AccessorView<int8_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         primitiveResult,
         transform,
@@ -1194,8 +1180,18 @@ static void loadIndexedPrimitive(
         indexAccessor);
   } else if (
       indexAccessorGltf.componentType ==
-      CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE) {
-    CesiumGltf::AccessorView<uint8_t> indexAccessor(model, primitive.indices);
+      Accessor::ComponentType::UNSIGNED_BYTE) {
+    AccessorView<uint8_t> indexAccessor(model, primitive.indices);
+    loadPrimitive(
+        primitiveResult,
+        transform,
+        options,
+        positionAccessor,
+        positionView,
+        indexAccessor);
+  } else if (
+      indexAccessorGltf.componentType == Accessor::ComponentType::SHORT) {
+    AccessorView<int16_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         primitiveResult,
         transform,
@@ -1205,8 +1201,8 @@ static void loadIndexedPrimitive(
         indexAccessor);
   } else if (
       indexAccessorGltf.componentType ==
-      CesiumGltf::Accessor::ComponentType::SHORT) {
-    CesiumGltf::AccessorView<int16_t> indexAccessor(model, primitive.indices);
+      Accessor::ComponentType::UNSIGNED_SHORT) {
+    AccessorView<uint16_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         primitiveResult,
         transform,
@@ -1216,19 +1212,8 @@ static void loadIndexedPrimitive(
         indexAccessor);
   } else if (
       indexAccessorGltf.componentType ==
-      CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT) {
-    CesiumGltf::AccessorView<uint16_t> indexAccessor(model, primitive.indices);
-    loadPrimitive(
-        primitiveResult,
-        transform,
-        options,
-        positionAccessor,
-        positionView,
-        indexAccessor);
-  } else if (
-      indexAccessorGltf.componentType ==
-      CesiumGltf::Accessor::ComponentType::UNSIGNED_INT) {
-    CesiumGltf::AccessorView<uint32_t> indexAccessor(model, primitive.indices);
+      Accessor::ComponentType::UNSIGNED_INT) {
+    AccessorView<uint32_t> indexAccessor(model, primitive.indices);
     loadPrimitive(
         primitiveResult,
         transform,
@@ -1256,16 +1241,14 @@ static void loadPrimitive(
   }
 
   int positionAccessorID = positionAccessorIt->second;
-  const CesiumGltf::Accessor* pPositionAccessor =
-      CesiumGltf::Model::getSafe(&model.accessors, positionAccessorID);
+  const Accessor* pPositionAccessor =
+      Model::getSafe(&model.accessors, positionAccessorID);
   if (!pPositionAccessor) {
     // Position accessor does not exist, so ignore this primitive.
     return;
   }
 
-  CesiumGltf::AccessorView<TMeshVector3> positionView(
-      model,
-      *pPositionAccessor);
+  AccessorView<TMeshVector3> positionView(model, *pPositionAccessor);
 
   if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
     std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
@@ -1295,7 +1278,7 @@ static void loadMesh(
 
   result = LoadMeshResult();
 
-  for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
+  for (const MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     loadPrimitive(
         result->primitiveResults.emplace_back(),
@@ -1414,9 +1397,7 @@ namespace {
  * @param model The glTF model
  * @param rootTransform The matrix that will be multiplied with the transform
  */
-void applyGltfUpAxisTransform(
-    const CesiumGltf::Model& model,
-    glm::dmat4x4& rootTransform) {
+void applyGltfUpAxisTransform(const Model& model, glm::dmat4x4& rootTransform) {
 
   auto gltfUpAxisIt = model.extras.find("gltfUpAxis");
   if (gltfUpAxisIt == model.extras.end()) {
@@ -1453,8 +1434,8 @@ static void loadModelAnyThreadPart(
   const Model& model = *options.pModel;
 
   // TODO: add tracing for metadata and encoded metadata preparation
-  const CesiumGltf::ExtensionModelExtFeatureMetadata* pMetadataExtension =
-      model.getExtension<CesiumGltf::ExtensionModelExtFeatureMetadata>();
+  const ExtensionModelExtFeatureMetadata* pMetadataExtension =
+      model.getExtension<ExtensionModelExtFeatureMetadata>();
   if (pMetadataExtension) {
     result.Metadata = FCesiumMetadataModel(model, *pMetadataExtension);
     result.EncodedMetadata = encodeMetadataAnyThreadPart(result.Metadata);
@@ -1472,14 +1453,14 @@ static void loadModelAnyThreadPart(
 
   if (model.scene >= 0 && model.scene < model.scenes.size()) {
     // Show the default scene
-    const CesiumGltf::Scene& defaultScene = model.scenes[model.scene];
+    const Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
       loadNode(result.nodeResults, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
-    const CesiumGltf::Scene& defaultScene = model.scenes[0];
+    const Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
       loadNode(result.nodeResults, rootTransform, nodeOptions);
@@ -1490,7 +1471,7 @@ static void loadModelAnyThreadPart(
     loadNode(result.nodeResults, rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
-    for (const CesiumGltf::Mesh& mesh : model.meshes) {
+    for (const Mesh& mesh : model.meshes) {
       CreateNodeOptions dummyNodeOptions = {&options, &result, nullptr};
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
       CreateMeshOptions meshOptions = {
@@ -1523,8 +1504,8 @@ bool applyTexture(
 
 static void SetGltfParameterValues(
     LoadPrimitiveResult& loadResult,
-    const CesiumGltf::Material& material,
-    const CesiumGltf::MaterialPBRMetallicRoughness& pbr,
+    const Material& material,
+    const MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation assocation,
     int32 index) {
@@ -1810,11 +1791,11 @@ static void loadPrimitiveGameThreadPart(
       TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
 #endif
 
-  const CesiumGltf::Model& model = *loadResult.pModel;
-  const CesiumGltf::Material& material =
+  const Model& model = *loadResult.pModel;
+  const Material& material =
       loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
 
-  const CesiumGltf::MaterialPBRMetallicRoughness& pbr =
+  const MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
                                     : defaultPbrMetallicRoughness;
 

@@ -42,8 +42,6 @@ struct EncodedMetadataProperty {
   LoadedTextureResult* pTexture;
 };
 
-// TODO: some changes are needed here to avoid duplicated encoded feature
-// tables across multiple feature id textures/attributes
 struct EncodedMetadataFeatureTable {
   /**
    * @brief The encoded properties in this feature table.
