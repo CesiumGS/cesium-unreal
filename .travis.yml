@@ -226,7 +226,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - echo $PACKAGE_LINK
     env:
-    - CONAN_PROFILE=ue4.26-Linux
+    - CONAN_PROFILE=ue4.26-Linux-x86_64-unknown-linux-gnu
   - name: Linux 4.27
     os: windows
     cache:
@@ -256,7 +256,7 @@ jobs:
     - echo $PACKAGE_LINK
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
-    - CONAN_PROFILE=ue4.27-Linux
+    - CONAN_PROFILE=ue4.27-Linux-x86_64-unknown-linux-gnu
   - stage: Combine Packages
     name: Combine for UE 4.26
     os: linux
