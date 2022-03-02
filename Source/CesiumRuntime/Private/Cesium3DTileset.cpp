@@ -33,7 +33,7 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
-#include "CreateModelOptions.h"
+#include "CreateGltfOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/SceneCapture2D.h"
@@ -559,7 +559,7 @@ public:
       const CesiumGltf::Model& model,
       const glm::dmat4& transform) override {
 
-    CreateModelOptions options;
+    CreateGltfOptions::CreateModelOptions options;
     options.pModel = &model;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 

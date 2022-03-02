@@ -2,9 +2,33 @@
 
 #pragma once
 
+#include "CesiumGltf/Material.h"
+#include "CesiumGltf/MeshPrimitive.h"
+#include "CesiumGltf/Model.h"
+#include "CesiumMetadataModel.h"
+#include "CesiumMetadataPrimitive.h"
+#include "CesiumRasterOverlays.h"
+#include "CesiumTextureUtility.h"
+#include "StaticMeshResources.h"
+#include "Templates/SharedPointer.h"
+#include <cstdint>
+#include <glm/mat4x4.hpp>
+#include <optional>
+#include <string>
+#include <unordered_map>
+
+#if PHYSICS_INTERFACE_PHYSX
+#include "IPhysXCooking.h"
+#include "PhysicsEngine/BodySetup.h"
+#else
+#include "Chaos/TriangleMeshImplicitObject.h"
+#endif
+
+// TODO: internal documentation
+namespace LoadGltfResult {
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
-  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata;
+  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata{};
   FStaticMeshRenderData* RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
@@ -12,7 +36,7 @@ struct LoadPrimitiveResult {
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
   PxTriangleMesh* pCollisionMesh = nullptr;
-  FBodySetupUVInfo uvInfo;
+  FBodySetupUVInfo uvInfo{};
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
       pCollisionMesh = nullptr;
@@ -47,4 +71,7 @@ struct LoadNodeResult {
 
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
+  FCesiumMetadataModel Metadata{};
+  CesiumTextureUtility::EncodedMetadata EncodedMetadata{};
 };
+} // namespace LoadGltfResult

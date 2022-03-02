@@ -28,6 +28,8 @@
 
 using namespace CesiumGltf;
 
+namespace CesiumTextureUtility {
+
 static FTexturePlatformData*
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   if (sizeX > 0 && sizeY > 0 &&
@@ -44,14 +46,13 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   }
 }
 
-/*static*/ CesiumTextureUtility::LoadedTextureResult*
-CesiumTextureUtility::loadTextureAnyThreadPart(
+LoadedTextureResult* loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
     const TextureFilter& filter) {
 
-  CESIUM_TRACE("CesiumTextureUtility::loadTextureAnyThreadPart");
+  CESIUM_TRACE("loadTextureAnyThreadPart");
 
   EPixelFormat pixelFormat;
   if (image.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
@@ -244,8 +245,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return pResult;
 }
 
-/*static*/ CesiumTextureUtility::LoadedTextureResult*
-CesiumTextureUtility::loadTextureAnyThreadPart(
+LoadedTextureResult* loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
 
@@ -348,8 +348,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return loadTextureAnyThreadPart(image, addressX, addressY, filter);
 }
 
-/*static*/ bool CesiumTextureUtility::loadTextureGameThreadPart(
-    LoadedTextureResult* pHalfLoadedTexture) {
+bool loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
     return false;
   }
@@ -421,9 +420,7 @@ EncodedPixelFormat getPixelFormat(
 }
 } // namespace
 
-/*static*/
-CesiumTextureUtility::EncodedMetadataFeatureTable
-CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
+EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FString& featureTableName,
     const FCesiumMetadataFeatureTable& featureTable) {
 
@@ -563,9 +560,7 @@ CesiumTextureUtility::encodeMetadataFeatureTableAnyThreadPart(
   return encodedFeatureTable;
 }
 
-/*static*/
-CesiumTextureUtility::EncodedFeatureTexture
-CesiumTextureUtility::encodeFeatureTextureAnyThreadPart(
+EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<const CesiumGltf::ImageCesium*, LoadedTextureResult*>&
         featureTexturePropertyMap,
     const FString& featureTextureName,
@@ -648,9 +643,7 @@ CesiumTextureUtility::encodeFeatureTextureAnyThreadPart(
   return encodedFeatureTexture;
 }
 
-/*static*/
-CesiumTextureUtility::EncodedMetadataPrimitive
-CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
+EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const FCesiumMetadataPrimitive& primitive) {
   EncodedMetadataPrimitive result;
 
@@ -741,10 +734,8 @@ CesiumTextureUtility::encodeMetadataPrimitiveAnyThreadPart(
   return result;
 }
 
-/*static*/
-CesiumTextureUtility::EncodedMetadata
-CesiumTextureUtility::encodeMetadataAnyThreadPart(
-    const FCesiumMetadataModel& metadata) {
+EncodedMetadata
+encodeMetadataAnyThreadPart(const FCesiumMetadataModel& metadata) {
   EncodedMetadata result;
 
   const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
@@ -776,22 +767,19 @@ CesiumTextureUtility::encodeMetadataAnyThreadPart(
   return result;
 }
 
-/*static*/
-bool CesiumTextureUtility::encodeMetadataFeatureTableGameThreadPart(
+bool encodeMetadataFeatureTableGameThreadPart(
     EncodedMetadataFeatureTable& encodedFeatureTable) {
   bool success = true;
 
   for (EncodedMetadataProperty& encodedProperty :
        encodedFeatureTable.encodedProperties) {
-    success |= CesiumTextureUtility::loadTextureGameThreadPart(
-        encodedProperty.pTexture);
+    success |= loadTextureGameThreadPart(encodedProperty.pTexture);
   }
 
   return success;
 }
 
-/*static*/
-bool CesiumTextureUtility::encodeFeatureTextureGameThreadPart(
+bool encodeFeatureTextureGameThreadPart(
     TArray<LoadedTextureResult*>& uniqueTextures,
     EncodedFeatureTexture& encodedFeatureTexture) {
   bool success = true;
@@ -807,8 +795,7 @@ bool CesiumTextureUtility::encodeFeatureTextureGameThreadPart(
     }
 
     if (!found) {
-      success |=
-          CesiumTextureUtility::loadTextureGameThreadPart(property.pTexture);
+      success |= loadTextureGameThreadPart(property.pTexture);
       uniqueTextures.Emplace(property.pTexture);
     }
   }
@@ -816,8 +803,7 @@ bool CesiumTextureUtility::encodeFeatureTextureGameThreadPart(
   return success;
 }
 
-/*static*/
-bool CesiumTextureUtility::encodeMetadataPrimitiveGameThreadPart(
+bool encodeMetadataPrimitiveGameThreadPart(
     EncodedMetadataPrimitive& encodedPrimitive) {
   bool success = true;
 
@@ -837,8 +823,7 @@ bool CesiumTextureUtility::encodeMetadataPrimitiveGameThreadPart(
     }
 
     if (!found) {
-      success |= CesiumTextureUtility::loadTextureGameThreadPart(
-          encodedFeatureIdTexture.pTexture);
+      success |= loadTextureGameThreadPart(encodedFeatureIdTexture.pTexture);
       uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture);
     }
   }
@@ -846,9 +831,7 @@ bool CesiumTextureUtility::encodeMetadataPrimitiveGameThreadPart(
   return success;
 }
 
-/*static*/
-bool CesiumTextureUtility::encodeMetadataGameThreadPart(
-    EncodedMetadata& encodedMetadata) {
+bool encodeMetadataGameThreadPart(EncodedMetadata& encodedMetadata) {
   bool success = true;
 
   TArray<LoadedTextureResult*> uniqueTextures;
@@ -867,8 +850,7 @@ bool CesiumTextureUtility::encodeMetadataGameThreadPart(
   return success;
 }
 
-/*static*/
-void CesiumTextureUtility::destroyEncodedMetadataPrimitive(
+void destroyEncodedMetadataPrimitive(
     EncodedMetadataPrimitive& encodedPrimitive) {
   for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitive.encodedFeatureIdTextures) {
@@ -880,9 +862,7 @@ void CesiumTextureUtility::destroyEncodedMetadataPrimitive(
   }
 }
 
-/*static*/
-void CesiumTextureUtility::destroyEncodedMetadata(
-    EncodedMetadata& encodedMetadata) {
+void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
 
   // Destroy encoded feature tables.
   for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
@@ -905,3 +885,4 @@ void CesiumTextureUtility::destroyEncodedMetadata(
     }
   }
 }
+} // namespace CesiumTextureUtility
