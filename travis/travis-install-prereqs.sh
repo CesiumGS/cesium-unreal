@@ -28,8 +28,11 @@ then
   # and breaks our ability to update. We don't need it, so remove it.
   sudo rm /etc/apt/sources.list.d/rabbitmq.list
   sudo apt-get update
-  sudo apt-get install unzip zip awscli httpie
+  sudo apt-get install unzip zip awscli httpie python3
   sudo pip3 install conan
+  sudo python3 -m pip install --upgrade pip
+  sudo pip3 install --upgrade pip
+  sudo pip3 install pygments --upgrade
   export SUDO=sudo
 fi
 
