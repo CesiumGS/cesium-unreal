@@ -497,9 +497,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       break;
     }
 
-    void* pTextureData = static_cast<unsigned char*>(
-        encodedProperty.pTexture->pTextureData->Mips[0].BulkData.Lock(
-            LOCK_READ_WRITE));
+    FTexture2DMipMap* pMip = new FTexture2DMipMap();
+    encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
+    pMip->SizeX = propertyArraySize;
+    pMip->SizeY = 1;
+    pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+    void* pTextureData = pMip->BulkData.Realloc(propertyArraySize);
 
     if (isArray) {
       switch (gpuType) {
@@ -554,7 +558,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       }
     }
 
-    encodedProperty.pTexture->pTextureData->Mips[0].BulkData.Unlock();
+    pMip->BulkData.Unlock();
   }
 
   return encodedFeatureTable;
@@ -628,15 +632,20 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
         continue;
       }
 
-      void* pTextureData = static_cast<unsigned char*>(
-          encodedFeatureTextureProperty.pTexture->pTextureData->Mips[0]
-              .BulkData.Lock(LOCK_READ_WRITE));
+      FTexture2DMipMap* pMip = new FTexture2DMipMap();
+      encodedFeatureTextureProperty.pTexture->pTextureData->Mips.Add(pMip);
+      pMip->SizeX = pImage->width;
+      pMip->SizeY = pImage->height;
+      pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+      void* pTextureData = pMip->BulkData.Realloc(pImage->pixelData.size());
+
       FMemory::Memcpy(
           pTextureData,
           pImage->pixelData.data(),
           pImage->pixelData.size());
-      encodedFeatureTextureProperty.pTexture->pTextureData->Mips[0]
-          .BulkData.Unlock();
+
+      pMip->BulkData.Unlock();
     }
   }
 
@@ -706,14 +715,21 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
         continue;
       }
 
-      void* pTextureData = static_cast<unsigned char*>(
-          encodedFeatureIdTexture.pTexture->pTextureData->Mips[0].BulkData.Lock(
-              LOCK_READ_WRITE));
+      FTexture2DMipMap* pMip = new FTexture2DMipMap();
+      encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
+      pMip->SizeX = pFeatureIdImage->width;
+      pMip->SizeY = pFeatureIdImage->height;
+      pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+      void* pTextureData =
+          pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
+
       FMemory::Memcpy(
           pTextureData,
           pFeatureIdImage->pixelData.data(),
           pFeatureIdImage->pixelData.size());
-      encodedFeatureIdTexture.pTexture->pTextureData->Mips[0].BulkData.Unlock();
+
+      pMip->BulkData.Unlock();
     }
 
     encodedFeatureIdTexture.featureTableName = featureTableName;
