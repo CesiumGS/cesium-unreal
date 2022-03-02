@@ -76,7 +76,7 @@ void destroyWaterParameterValues(
 } // namespace
 
 void UCesiumGltfPrimitiveComponent::BeginDestroy() {
-  // This should mirror the logic in loadModelGameThreadPart in
+  // This should mirror the logic in loadPrimitiveGameThreadPart in
   // CesiumGltfComponent.cpp
   UMaterialInstanceDynamic* pMaterial =
       Cast<UMaterialInstanceDynamic>(this->GetMaterial(0));
@@ -119,8 +119,13 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
 
   UStaticMesh* pMesh = this->GetStaticMesh();
   if (pMesh) {
-    if (pMesh->BodySetup) {
-      CesiumLifetime::destroy(pMesh->BodySetup);
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
+    UBodySetup* pBodySetup = pMesh->BodySetup;
+#else
+    UBodySetup* pBodySetup = pMesh->GetBodySetup();
+#endif
+    if (pBodySetup) {
+      CesiumLifetime::destroy(pBodySetup);
     }
 
     CesiumLifetime::destroy(pMesh);

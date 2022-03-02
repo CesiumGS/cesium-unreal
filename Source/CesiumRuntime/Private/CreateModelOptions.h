@@ -3,6 +3,7 @@
 #pragma once
 
 struct CreateModelOptions {
+  const CesiumGltf::Model* pModel = nullptr;
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCooking* pPhysXCooking = nullptr;
@@ -10,23 +11,17 @@ struct CreateModelOptions {
 };
 
 struct CreateNodeOptions {
-  CreateModelOptions modelOptions{};
-
-  CreateNodeOptions(const CreateModelOptions& modelOptions_) 
-    : modelOptions(modelOptions_) {}
+  const CreateModelOptions* pModelOptions = nullptr;
+  const CesiumGltf::Node* pNode = nullptr;
 };
 
 struct CreateMeshOptions {
-  CreateNodeOptions nodeOptions{};
+  const CreateNodeOptions* pNodeOptions = nullptr;
+  const CesiumGltf::Mesh* pMesh = nullptr;
   std::vector<int32> variants{};
-
-  CreateMeshOptions(const CreateNodeOptions& nodeOptions_) 
-    : nodeOptions(nodeOptions_) {}
 };
 
 struct CreatePrimitiveOptions {
-  CreateMeshOptions meshOptions{};
-  
-  CreatePrimitiveOptions(const CreateMeshOptions& meshOptions_) 
-    : meshOptions(meshOptions_) {}
+  const CreateMeshOptions* pMeshOptions = nullptr;
+  const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
 };

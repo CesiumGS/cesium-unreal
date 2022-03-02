@@ -22,6 +22,8 @@
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumGltf/ImageCesium.h"
+#include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumLifetime.h"
@@ -50,6 +52,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
+#include "PixelFormat.h"
 #include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -216,7 +219,7 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   }
 }
 
-void ACesium3DTileset::SetUrl(FString InUrl) {
+void ACesium3DTileset::SetUrl(const FString& InUrl) {
   if (InUrl != this->Url) {
     this->Url = InUrl;
     if (this->TilesetSource == ETilesetSource::FromUrl) {
@@ -234,9 +237,19 @@ void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
   }
 }
 
-void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
+void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   if (this->IonAccessToken != InAccessToken) {
     this->IonAccessToken = InAccessToken;
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->DestroyTileset();
+    }
+  }
+}
+
+void ACesium3DTileset::SetIonAssetEndpointUrl(
+    const FString& InIonAssetEndpointUrl) {
+  if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
+    this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
@@ -548,6 +561,7 @@ public:
       const glm::dmat4& transform) override {
 
     CreateModelOptions options;
+    options.pModel = &model;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
@@ -555,7 +569,7 @@ public:
 #endif
 
     std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(model, transform, options);
+        UCesiumGltfComponent::CreateOffGameThread(transform, options);
     return pHalf.release();
   }
 
@@ -828,6 +842,27 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 #endif
 
+  CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
+  supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
+  supportedFormats.ETC2_RGBA =
+      GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
+  supportedFormats.BC1_RGB = GPixelFormats[EPixelFormat::PF_DXT1].Supported;
+  supportedFormats.BC3_RGBA = GPixelFormats[EPixelFormat::PF_DXT5].Supported;
+  supportedFormats.BC4_R = GPixelFormats[EPixelFormat::PF_BC4].Supported;
+  supportedFormats.BC5_RG = GPixelFormats[EPixelFormat::PF_BC5].Supported;
+  supportedFormats.BC7_RGBA = GPixelFormats[EPixelFormat::PF_BC7].Supported;
+  supportedFormats.ASTC_4x4_RGBA =
+      GPixelFormats[EPixelFormat::PF_ASTC_4x4].Supported;
+  supportedFormats.PVRTC2_4_RGBA =
+      GPixelFormats[EPixelFormat::PF_PVRTC2].Supported;
+  supportedFormats.ETC2_EAC_R11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_R11_EAC].Supported;
+  supportedFormats.ETC2_EAC_RG11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
+
+  options.contentOptions.ktx2TranscodeTargets =
+      CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
+
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
@@ -846,11 +881,20 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAccessToken.IsEmpty()
             ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
             : this->IonAccessToken;
-    this->_pTileset = new Cesium3DTilesSelection::Tileset(
-        externals,
-        static_cast<uint32_t>(this->IonAssetID),
-        TCHAR_TO_UTF8(*token),
-        options);
+    if (!IonAssetEndpointUrl.IsEmpty()) {
+      this->_pTileset = new Cesium3DTilesSelection::Tileset(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options,
+          TCHAR_TO_UTF8(*IonAssetEndpointUrl));
+    } else {
+      this->_pTileset = new Cesium3DTilesSelection::Tileset(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options);
+    }
     break;
   }
 
@@ -1011,6 +1055,14 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     }
 
     if (useStereoRendering) {
+#if ENGINE_MAJOR_VERSION >= 5
+      const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
+      const auto rightEye = EStereoscopicEye::eSSE_RIGHT_EYE;
+#else
+      const auto leftEye = EStereoscopicPass::eSSP_LEFT_EYE;
+      const auto rightEye = EStereoscopicPass::eSSP_RIGHT_EYE;
+#endif
+
       uint32 stereoLeftSizeX = static_cast<uint32>(sizeX);
       uint32 stereoLeftSizeY = static_cast<uint32>(sizeY);
       uint32 stereoRightSizeX = static_cast<uint32>(sizeX);
@@ -1019,35 +1071,31 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         int32 _x;
         int32 _y;
 
-        pStereoRendering->AdjustViewRect(
-            EStereoscopicPass::eSSP_LEFT_EYE,
-            _x,
-            _y,
-            stereoLeftSizeX,
-            stereoLeftSizeY);
+        pStereoRendering
+            ->AdjustViewRect(leftEye, _x, _y, stereoLeftSizeX, stereoLeftSizeY);
 
         pStereoRendering->AdjustViewRect(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            rightEye,
             _x,
             _y,
             stereoRightSizeX,
             stereoRightSizeY);
       }
 
-      FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
+      FVector2D stereoLeftSize(stereoLeftSizeX, stereoLeftSizeY);
       FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
 
       if (stereoLeftSize.X >= 1.0 && stereoLeftSize.Y >= 1.0) {
         FVector leftEyeLocation = location;
         FRotator leftEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_LEFT_EYE,
+            leftEye,
             leftEyeRotation,
             worldToMeters,
             leftEyeLocation);
 
-        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_LEFT_EYE);
+        FMatrix projection =
+            pStereoRendering->GetStereoProjectionMatrix(leftEye);
 
         // TODO: consider assymetric frustums using 4 fovs
         float one_over_tan_half_hfov = projection.M[0][0];
@@ -1066,13 +1114,13 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         FVector rightEyeLocation = location;
         FRotator rightEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            rightEye,
             rightEyeRotation,
             worldToMeters,
             rightEyeLocation);
 
-        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_RIGHT_EYE);
+        FMatrix projection =
+            pStereoRendering->GetStereoProjectionMatrix(rightEye);
 
         float one_over_tan_half_hfov = projection.M[0][0];
 
@@ -1603,6 +1651,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetEndpointUrl) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==
