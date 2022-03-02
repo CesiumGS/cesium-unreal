@@ -285,7 +285,7 @@ static void computeFlatNormals(
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
     FBodySetupUVInfo& uvInfo,
-    const IPhysXCooking* pPhysXCooking,
+    IPhysXCookingModule* pPhysXCooking,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
 #else
