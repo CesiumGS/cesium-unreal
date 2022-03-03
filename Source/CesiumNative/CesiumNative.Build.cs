@@ -41,6 +41,11 @@ public class CesiumNative : ModuleRules
 		return id;
 	}
 
+	private string GetProfileName(ReadOnlyTargetRules target)
+  {
+		return "ue" + this.GetEngineVersion() + "-" + this.TargetIdentifier(Target);
+  }
+
 	//Determines if a target's platform is a Windows target platform
 	private bool IsWindows(ReadOnlyTargetRules target) {
 		return target.IsInPlatformGroup(UnrealPlatformGroup.Windows);
@@ -227,43 +232,46 @@ public class CesiumNative : ModuleRules
 			Directory.CreateDirectory(stagingDir);
 		}
 
+		bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
+		string config = preferDebug ? "Debug" : "Release";
+
+		string automate = Path.Combine(ModuleDirectory, "../../extern/cesium-native/tools/automate.py");
+
+		// If the appropriate environment variable is set, do a baked build of cesium-native, instead of
+		// a regular development build. Baking copies cesium-native binaries and headers into
+		// Cesium for Unreal so that future builds don't need to build cesium-native at all.
+		// This is used for packaging the plugin for distribution, including in our continuous
+		// integration process.
+		string bakeCesiumNative = Environment.GetEnvironmentVariable("BAKE_CESIUM_NATIVE");
+		if (bakeCesiumNative != null)
+    {
+			// Set up cesium-native for Conan package creation
+			this.runPython(automate, "conan-export-recipes");
+			this.runPython(automate, "generate-library-recipes");
+			this.runPython(automate, "editable", "off");
+			this.runPython(automate, "conan-export-libraries");
+
+			// Run a conan install, which will also build cesium-native and its dependencies.
+			this.runConanInstall(Target, config);
+
+			// Run the conan-ue4cli bake to copy the binaries and headers to the location that
+			// ProcessPrecomputedData below expects to find them.
+			this.run("ue4", "conan", "bake", this.GetProfileName(Target));
+		}
+
 		//Determine if we have precomputed dependency data for the target that is being built
-		string engineVersion = this.GetEngineVersion();
-		if (this.ProcessPrecomputedData(Target, engineVersion, stagingDir) == false)
+		if (this.ProcessPrecomputedData(Target, this.GetEngineVersion(), stagingDir) == false)
 		{
 			//No precomputed data detected, install third-party dependencies using Conan
 			if (this.cesiumNativeVersion.Length == 0)
 			{
 				// Using the cesium-native submodule, so put it in editable mode.
-				string automate = Path.Combine(ModuleDirectory, "../../extern/cesium-native/tools/automate.py");
 				this.runPython(automate, "conan-export-recipes");
 				this.runPython(automate, "generate-library-recipes", "--editable");
 				this.runPython(automate, "editable", "on");
 			}
 
-			bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
-			string config = preferDebug ? "Debug" : "Release";
-			string extraOption = "";
-
-			// On Windows, Unreal uses the Release C runtime library even in debug builds.
-			if (preferDebug && Target.IsInPlatformGroup(UnrealPlatformGroup.Windows))
-      {
-				extraOption = "-s compiler.runtime=MD";
-      }
-			
-			this.run(
-				"conan",
-				"install",
-				".",
-				"--build=outdated",
-				"--build=cascade",
-				"-g=json",
-				"-pr:b=default",
-				"-pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target),
-				"-s", "build_type=" + config,
-				"-e", "CESIUM_NATIVE_VERSION=" + this.cesiumNativeVersion,
-				extraOption
-			);
+			this.runConanInstall(Target, config);
 
 			// When cesium-native is in editable mode, the above unfortunately won't actually compile it,
 			// and then ProcessDependencies below will fail because of missing binaries.
@@ -290,6 +298,33 @@ public class CesiumNative : ModuleRules
 		}
 	}
 
+	private void runConanInstall(ReadOnlyTargetRules Target, string config)
+  {
+		List<string> args = new List<string>()
+			{
+				"install",
+				".",
+				"--build=outdated",
+				"--build=cascade",
+				"-g=json",
+				"-pr:b=default",
+				"-pr:h=" + this.GetProfileName(Target),
+				"-s", "build_type=" + config,
+				"-e", "CESIUM_NATIVE_VERSION=" + this.cesiumNativeVersion,
+			};
+
+		// On Windows, Unreal uses the Release C runtime library even in debug builds.
+		if (config == "Debug" && Target.IsInPlatformGroup(UnrealPlatformGroup.Windows))
+		{
+			args.Add("-s compiler.runtime=MD");
+		}
+
+		this.run(
+			"conan",
+			args.ToArray()
+		);
+	}
+
 	private void run(string command, params string[] args)
   {
 		Process p = Process.Start(new ProcessStartInfo
@@ -310,14 +345,12 @@ public class CesiumNative : ModuleRules
 
 	private void runPython(string script, params string[] args)
   {
-		Process p;
-
 		if (this._python == PythonExecutable.Unknown)
 		{
 			// Determine if we should use "python" or "python3" by invoking
 			// python3 --version and seeing if it works. If not, assume we need
 			// to use python.
-			p = Process.Start(new ProcessStartInfo
+			Process p = Process.Start(new ProcessStartInfo
 			{
 				FileName = "python3",
 				Arguments = "--version",

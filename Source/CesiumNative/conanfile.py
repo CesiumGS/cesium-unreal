@@ -36,23 +36,30 @@ class CesiumNativeConan(ConanFile):
         self.requires("%s/%s" % (dependency, self.cesiumNativeVersion))
 
     def requirements(self):
-        self.cesiumNativeVersion = os.environ["CESIUM_NATIVE_VERSION"]
+        self.cesiumNativeVersion = os.environ.get("CESIUM_NATIVE_VERSION")
 
-        # If a CESIUM_NATIVE_VERSION is specified, just use it.
-        # Otherwise, set up the cesium-native sub-module in editable mode
-        # and set the entire cesium-native library as a dependency so that
-        # we can build the entire thing without missing any dependencies.
-        if self.cesiumNativeVersion:
-          for requirement in self.cesiumNativeRequirements:
-            self._requireNative(requirement)
-        else:
+        # If there's an explicit version specified, or if we're baking, we want to use
+        # individual cesium-native libraries. Otherwise, we depend on _all_ cesium-native
+        # libraries so that we can build the entire thing in a development workflow without
+        # missing any dependencies.
+        useIndividualLibraries = False
+        if (self.cesiumNativeVersion or os.environ.get("BAKE_CESIUM_NATIVE")):
+          useIndividualLibraries = True
+
+        # If a CESIUM_NATIVE_VERSION is specified, just use it. Otherwise, get it
+        # from the cesium-native submodule.
+        if not self.cesiumNativeVersion:
           sys.path.append("../../extern/cesium-native/tools")
           from automate import cesiumNativeYml
 
           # Grab the version from the cesium-native.yml file.
-          self.nativeYml = cesiumNativeYml()
-          self.cesiumNativeVersion = "%s@%s/%s" % (self.nativeYml["version"], self.nativeYml["user"], self.nativeYml["channel"])
+          nativeYml = cesiumNativeYml()
+          self.cesiumNativeVersion = "%s@%s/%s" % (nativeYml["version"], nativeYml["user"], nativeYml["channel"])
 
+        if useIndividualLibraries:
+          for requirement in self.cesiumNativeRequirements:
+            self._requireNative(requirement)
+        else:
           self._requireNative("cesium-native")
 
         # Use Unreal's version of third-party libraries where available
