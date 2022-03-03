@@ -350,22 +350,29 @@ public class CesiumNative : ModuleRules
 			// Determine if we should use "python" or "python3" by invoking
 			// python3 --version and seeing if it works. If not, assume we need
 			// to use python.
-			Process p = Process.Start(new ProcessStartInfo
+			try
 			{
-				FileName = "python3",
-				Arguments = "--version",
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			});
-			p.WaitForExit();
+				Process p = Process.Start(new ProcessStartInfo
+				{
+					FileName = "python3",
+					Arguments = "--version",
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true
+				});
+				p.WaitForExit();
 
-			if (p.ExitCode == 0)
-      {
-				this._python = PythonExecutable.python3;
-      }
-			else
-      {
+				if (p.ExitCode == 0)
+				{
+					this._python = PythonExecutable.python3;
+				}
+				else
+				{
+					this._python = PythonExecutable.python;
+				}
+			}
+			catch
+			{
 				this._python = PythonExecutable.python;
       }
 		}
