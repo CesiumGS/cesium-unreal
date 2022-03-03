@@ -13,6 +13,17 @@ using Tools.DotNETCommon;
 
 public class CesiumNative : ModuleRules
 {
+	public string cesiumNativeVersion = ""; // Empty string means get the version from extern/cesium-native.
+
+	enum PythonExecutable
+  {
+			Unknown,
+			python,
+			python3
+  }
+
+	private PythonExecutable _python = PythonExecutable.Unknown;
+
 	//Returns the identifier string for the given target, which includes its platform, architecture (if specified), and debug CRT status
 	private string TargetIdentifier(ReadOnlyTargetRules target)
 	{
@@ -220,21 +231,117 @@ public class CesiumNative : ModuleRules
 		string engineVersion = this.GetEngineVersion();
 		if (this.ProcessPrecomputedData(Target, engineVersion, stagingDir) == false)
 		{
+			//No precomputed data detected, install third-party dependencies using Conan
+			if (this.cesiumNativeVersion.Length == 0)
+			{
+				// Using the cesium-native submodule, so put it in editable mode.
+				string automate = Path.Combine(ModuleDirectory, "../../extern/cesium-native/tools/automate.py");
+				this.runPython(automate, "conan-export-recipes");
+				this.runPython(automate, "generate-library-recipes", "--editable");
+				this.runPython(automate, "editable", "on");
+			}
+
 			bool preferDebug = (Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.DebugGame);
 			string config = preferDebug ? "Debug" : "Release";
+			string extraOption = "";
 
-			//No precomputed data detected, install third-party dependencies using Conan
-			Process p = Process.Start(new ProcessStartInfo
-			{
-				FileName = "conan",
-				Arguments = "install . --build=outdated --build=cascade -g=json -pr:b=default -pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target) + " -s build_type=" + config,
-				WorkingDirectory = ModuleDirectory,
-				UseShellExecute = false
-			});
-			p.WaitForExit();
+			// On Windows, Unreal uses the Release C runtime library even in debug builds.
+			if (preferDebug && Target.IsInPlatformGroup(UnrealPlatformGroup.Windows))
+      {
+				extraOption = "-s compiler.runtime=MD";
+      }
+			
+			this.run(
+				"conan",
+				"install",
+				".",
+				"--build=outdated",
+				"--build=cascade",
+				"-g=json",
+				"-pr:b=default",
+				"-pr:h=ue" + engineVersion + "-" + this.TargetIdentifier(Target),
+				"-s", "build_type=" + config,
+				"-e", "CESIUM_NATIVE_VERSION=" + this.cesiumNativeVersion,
+				extraOption
+			);
+
+			// When cesium-native is in editable mode, the above unfortunately won't actually compile it,
+			// and then ProcessDependencies below will fail because of missing binaries.
+			// So when we're in editable mode, run the cesium-native build here.
+			string nativeDirectory = Path.Combine(ModuleDirectory, "..", "..", "extern", "cesium-native");
+			string buildDirectory = Path.Combine(nativeDirectory, "build");
+			string toolchainFile = Path.Combine(buildDirectory, "CesiumUtility", "conan", "conan_toolchain.cmake");
+
+			this.run(
+				"cmake",
+				"-S", nativeDirectory,
+				"-B", buildDirectory,
+				"-DCMAKE_TOOLCHAIN_FILE=" + toolchainFile
+ 			);
+
+			this.run(
+				"cmake",
+				"--build", buildDirectory,
+				"--config", config
+			);
 
 			//Link against our Conan-installed dependencies
 			this.ProcessDependencies(Path.Combine(ModuleDirectory, "conanbuildinfo.json"), Target, stagingDir);
 		}
+	}
+
+	private void run(string command, params string[] args)
+  {
+		Process p = Process.Start(new ProcessStartInfo
+		{
+			FileName = command,
+			Arguments = string.Join(" ", args),
+			UseShellExecute = false,
+			WorkingDirectory = ModuleDirectory
+		});
+
+		p.WaitForExit();
+
+		if (p.ExitCode != 0)
+		{
+			throw new Exception("Command failed");
+		}
+	}
+
+	private void runPython(string script, params string[] args)
+  {
+		Process p;
+
+		if (this._python == PythonExecutable.Unknown)
+		{
+			// Determine if we should use "python" or "python3" by invoking
+			// python3 --version and seeing if it works. If not, assume we need
+			// to use python.
+			p = Process.Start(new ProcessStartInfo
+			{
+				FileName = "python3",
+				Arguments = "--version",
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true
+			});
+			p.WaitForExit();
+
+			if (p.ExitCode == 0)
+      {
+				this._python = PythonExecutable.python3;
+      }
+			else
+      {
+				this._python = PythonExecutable.python;
+      }
+		}
+
+		string pythonCommand = this._python == PythonExecutable.python3 ? "python3" : "python";
+
+		List<string> fullArgs = new List<string>() { script };
+		fullArgs.AddRange(args);
+
+		this.run(pythonCommand, fullArgs.ToArray());
 	}
 }
