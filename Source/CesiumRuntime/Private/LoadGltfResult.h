@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "CesiumGltf/ExtensionModelMaxarMeshVariants.h"
+#include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
@@ -68,14 +70,16 @@ struct LoadMeshResult {
 
 struct LoadNodeResult {
   std::optional<LoadMeshResult> meshResult = std::nullopt;
-  std::vector<LoadMeshResult> meshVariantsResults;
-  const ExtensionNodeMaxarMeshVariants* pVariantsExtension = nullptr;
+  std::unordered_map<int32_t, LoadMeshResult> meshVariantsResults;
+  const CesiumGltf::ExtensionNodeMaxarMeshVariants* pVariantsExtension =
+      nullptr;
 };
 
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
   FCesiumMetadataModel Metadata{};
   CesiumTextureUtility::EncodedMetadata EncodedMetadata{};
-  const ExtensionModelMaxarMeshVariants* pVariantsExtension = nullptr;
+  const CesiumGltf::ExtensionModelMaxarMeshVariants* pVariantsExtension =
+      nullptr;
 };
 } // namespace LoadGltfResult

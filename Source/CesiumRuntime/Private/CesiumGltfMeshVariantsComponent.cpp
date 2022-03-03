@@ -1,32 +1,33 @@
 
 #include "CesiumGltfMeshVariantsComponent.h"
-#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltf/ExtensionModelMaxarMeshVariants.h"
 #include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
+#include "CesiumGltfPrimitiveComponent.h"
+#include "UObject/UObjectGlobals.h"
 #include <cassert>
 
 using namespace CesiumGltf;
 
-/*static*/ UCesiumGltfMeshVariantsComponent* 
+/*static*/ UCesiumGltfMeshVariantsComponent*
 UCesiumGltfMeshVariantsComponent::CreateMeshVariantsComponent(
     USceneComponent* pOutter,
-    const FString& name,
+    const FName& name,
     const ExtensionModelMaxarMeshVariants* pModelExtension,
     const ExtensionNodeMaxarMeshVariants* pNodeExtension) {
 
   if (!pModelExtension || !pNodeExtension ||
-      pModelExtension->defaultProperty < 0 || 
+      pModelExtension->defaultProperty < 0 ||
       pModelExtension->defaultProperty >= pModelExtension->variants.size()) {
     return nullptr;
   }
 
-  UCesiumMeshVariantsComponent* pVariantsComponent =
-      NewObject<UCesiumMeshVariantsComponent>(pOutter, name);
+  UCesiumGltfMeshVariantsComponent* pVariantsComponent =
+      NewObject<UCesiumGltfMeshVariantsComponent>(pOutter, name);
 
   pVariantsComponent->_pModelMeshVariants = pModelExtension;
   pVariantsComponent->_pNodeMeshVariants = pNodeExtension;
-  pVariantsComponent->_currentVariantIndex = 
-      static_cast<uint32_t>(this->_pModelMeshVariants->defaultProperty);
+  pVariantsComponent->_currentVariantIndex =
+      static_cast<uint32_t>(pModelExtension->defaultProperty);
 
   pVariantsComponent->SetMobility(EComponentMobility::Movable);
   pVariantsComponent->SetupAttachment(pOutter);
@@ -35,45 +36,25 @@ UCesiumGltfMeshVariantsComponent::CreateMeshVariantsComponent(
   return pVariantsComponent;
 }
 
-void AddMesh(uint32_t meshIndex, std::vector<UCesiumGltfPrimitiveComponent*>&& mesh) {
-  assert(this->_pModelMeshVariants != nullptr);
-  assert(this->_pNodeMeshVariants != nullptr);
-  assert(this->_currentVariantIndex != -1);
-  assert(this->_meshes.find(meshIndex) == this->_meshes.end());
-
-  auto meshIt = this->_meshes.emplace(meshIndex, std::move(mesh)).first;
-  
-  // Find the mapping for this mesh.
-  for (const ExtensionNodeMaxarMeshVariantsMappingsValue& mapping : 
-       this->_pNodeMeshVariants->mappings) {
-    if (mapping.mesh == meshIndex) {
-      // Check if this mapping contains the current variant.
-      for (int32_t variantIndex : mapping.variants) {
-        if (variantIndex == this->_currentVariantIndex) {
-          // This should be the only visible mesh for now.
-          // TODO: SetVisible
-          for (UCesiumGltfPrimitiveComponent* pPrimitive : meshIt->second) {
-            
-          }
-        }
-      }
-      break;
-    }
-  }
+void UCesiumGltfMeshVariantsComponent::AddMesh(
+    uint32_t meshIndex,
+    std::vector<UCesiumGltfPrimitiveComponent*>&& mesh) {
+  this->_meshes.emplace(meshIndex, std::move(mesh));
 }
 
 FString UCesiumGltfMeshVariantsComponent::GetCurrentVariantName() const {
   if (this->_pModelMeshVariants && this->_currentVariantIndex != -1) {
-    return 
-        FString(UTF8_TO_TCHAR(
-          this->_pModelMeshVariants->variants[this->_currentVariantIndex].name.c_str()));
+    return FString(UTF8_TO_TCHAR(
+        this->_pModelMeshVariants->variants[this->_currentVariantIndex]
+            .name.c_str()));
   }
 
   return "";
-}                                                     
+}
 
 bool UCesiumGltfMeshVariantsComponent::SetVariantByIndex(int32 VariantIndex) {
-  if (VariantIndex < 0 || VariantIndex >= this->_variants.Num()) {
+  if (VariantIndex < 0 ||
+      VariantIndex >= this->_pModelMeshVariants->variants.size()) {
     return false;
   }
 
@@ -85,7 +66,7 @@ bool UCesiumGltfMeshVariantsComponent::SetVariantByIndex(int32 VariantIndex) {
 bool UCesiumGltfMeshVariantsComponent::SetVariantByName(const FString& Name) {
   if (this->_pModelMeshVariants) {
     for (size_t i = 0; i < this->_pModelMeshVariants->variants.size(); ++i) {
-      const std::string& variantName = 
+      const std::string& variantName =
           this->_pModelMeshVariants->variants[i].name;
       if (Name == FString(UTF8_TO_TCHAR(variantName.c_str()))) {
         this->_currentVariantIndex = static_cast<int32_t>(i);
@@ -94,7 +75,7 @@ bool UCesiumGltfMeshVariantsComponent::SetVariantByName(const FString& Name) {
       }
     }
   }
-  
+
   return false;
 }
 
@@ -120,7 +101,7 @@ void UCesiumGltfMeshVariantsComponent::ShowCurrentVariant() {
   assert(this->_pModelMeshVariants != nullptr);
   assert(this->_pNodeMeshVariants != nullptr);
   assert(this->_currentVariantIndex != -1);
-  
+
   if (!this->GetVisibleFlag()) {
     this->SetVisibleFlag(true);
     this->OnVisibilityChanged();
@@ -136,7 +117,7 @@ void UCesiumGltfMeshVariantsComponent::ShowCurrentVariant() {
       // Need to check if this mesh contains the current variant.
       // Find the mapping for this mesh.
       for (const ExtensionNodeMaxarMeshVariantsMappingsValue& mapping :
-          this->_pNodeMeshVariants->mappings) {
+           this->_pNodeMeshVariants->mappings) {
         if (mapping.mesh == meshIt.first) {
           // We found the mesh's mapping.
           // Check if this mesh's mapping contains the current variant.
@@ -152,7 +133,7 @@ void UCesiumGltfMeshVariantsComponent::ShowCurrentVariant() {
       }
 
       if (visibleMeshFound) {
-        showMesh(meshit.second);
+        showMesh(meshIt.second);
       } else {
         hideMesh(meshIt.second);
       }
@@ -160,15 +141,15 @@ void UCesiumGltfMeshVariantsComponent::ShowCurrentVariant() {
   }
 }
 
-/*static*/ 
+/*static*/
 UCesiumGltfMeshVariantsComponent*
 UCesiumGltfMeshVariantsBlueprintLibrary::GetMeshVariantsComponent(
     UPARAM(ref) UPrimitiveComponent* Primitive) {
-  UCesiumGltfPrimitiveComponent* pGltfPrimitive = 
+  UCesiumGltfPrimitiveComponent* pGltfPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(Primitive);
   if (!IsValid(pGltfPrimitive)) {
     return nullptr;
   }
-  
-  return pGltfPrimitive->pMeshVariants;   
+
+  return pGltfPrimitive->pMeshVariants;
 }

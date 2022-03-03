@@ -1410,7 +1410,7 @@ void hideTilesToNoLongerRender(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     USceneComponent* Component) {
-  
+
   if (!Component) {
     return;
   }
@@ -1429,7 +1429,7 @@ void applyActorCollisionSettings(
       PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
     }
   }
-  
+
   // Recursively apply collision settings to children.
   for (USceneComponent* pChildComponent : Component->GetAttachChildren()) {
     applyActorCollisionSettings(BodyInstance, pChildComponent);

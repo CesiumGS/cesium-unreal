@@ -47,12 +47,12 @@
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
 #include "mikktspace.h"
+#include <algorithm>
 #include <cstddef>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
-#include <algorithm>
 
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
@@ -1126,13 +1126,10 @@ static void loadPrimitive(
 #endif
 
   primitiveResult.pModel = &model;
-  primitiveResult.pNode = &node;
   primitiveResult.pMeshPrimitive = &primitive;
   primitiveResult.RenderData = RenderData;
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
-
-  primitiveResult.variants = options.meshOptions.variants;
 
   section.MaterialIndex = 0;
 
@@ -1368,23 +1365,30 @@ static void loadNode(
         nodeTransform * translation * glm::dmat4(rotationQuat) * scale;
   }
 
-  result.pVariantsExtension = 
+  result.pVariantsExtension =
       node.getExtension<ExtensionNodeMaxarMeshVariants>();
   if (result.pVariantsExtension) {
-    result.meshVariantsResults.reserve(result.pVariantsExtension->mappings.size());
-    for (ExtensionNodeMaxarMeshVariantsMappingsValue& mapping : 
+    result.meshVariantsResults.reserve(
+        result.pVariantsExtension->mappings.size());
+    for (const ExtensionNodeMaxarMeshVariantsMappingsValue& mapping :
          result.pVariantsExtension->mappings) {
       if (mapping.mesh >= 0 && mapping.mesh < model.meshes.size()) {
-        CreateMeshOptions meshOptions = 
-            {&options, &result, &model.meshes[mapping.mesh]};
-        LoadMeshResult& meshResult = result.meshVariantsResults.emplace_back();
-        loadMesh(meshResult, nodeTransform, meshOptions);
+        CreateMeshOptions meshOptions = {
+            &options,
+            &result,
+            &model.meshes[mapping.mesh]};
+        auto meshResultIt =
+            result.meshVariantsResults.emplace(mapping.mesh, LoadMeshResult{});
+        loadMesh(meshResultIt.first->second, nodeTransform, meshOptions);
       }
     }
   } else {
     int meshId = node.mesh;
     if (meshId >= 0 && meshId < model.meshes.size()) {
-      CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
+      CreateMeshOptions meshOptions = {
+          &options,
+          &result,
+          &model.meshes[meshId]};
       result.meshResult = LoadMeshResult{};
       loadMesh(*result.meshResult, nodeTransform, meshOptions);
     }
@@ -1463,7 +1467,7 @@ static void loadModelAnyThreadPart(
     result.EncodedMetadata = encodeMetadataAnyThreadPart(result.Metadata);
   }
 
-  result.pVariantsExtension = 
+  result.pVariantsExtension =
       model.getExtension<ExtensionModelMaxarMeshVariants>();
 
   glm::dmat4x4 rootTransform = transform;
@@ -1499,11 +1503,12 @@ static void loadModelAnyThreadPart(
     for (const Mesh& mesh : model.meshes) {
       CreateNodeOptions dummyNodeOptions = {&options, &result, nullptr};
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
+      dummyNodeResult.meshResult = LoadMeshResult{};
       CreateMeshOptions meshOptions = {
           &dummyNodeOptions,
           &dummyNodeResult,
           &mesh};
-      loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
+      loadMesh(*dummyNodeResult.meshResult, rootTransform, meshOptions);
     }
   }
 }
@@ -2021,31 +2026,42 @@ UCesiumGltfComponent::CreateOffGameThread(
   encodeMetadataGameThreadPart(Gltf->EncodedMetadata);
   int32 nodeIndex = 0;
   for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
-    UCesiumMeshVariants* pVariants = 
-        UCesiumMeshVariants::CreateMeshVariantsComponent(
-          Gltf,
-          // TODO: create better name, maybe during worker thread part instead?
-          "node" + FString::FromInt(nodeIndex) + "_variant",
-          pReal->loadModelResult.pVariantsExtension,
-          node.pVariantsExtension);
-      
+    UCesiumGltfMeshVariantsComponent* pVariants =
+        UCesiumGltfMeshVariantsComponent::CreateMeshVariantsComponent(
+            Gltf,
+            // TODO: create better name, maybe during worker thread part
+            // instead?
+            createSafeName("node" + std::to_string(nodeIndex) + "_variant", ""),
+            pReal->loadModelResult.pVariantsExtension,
+            node.pVariantsExtension);
+
     if (pVariants) {
-      for (LoadMeshResult& meshResult : node.meshVariantsResults) {
+      for (auto& meshResult : node.meshVariantsResults) {
         std::vector<UCesiumGltfPrimitiveComponent*> mesh;
-        mesh.reserve(meshResult.primitiveResults.size());
-        
-        for (LoadPrimitiveResult& primitive : meshResult.primitiveResults) {
-          mesh.push_back(
-            loadPrimitiveGameThreadPart(Gltf, pVariants, primitive, cesiumToUnrealTransform));
+        mesh.reserve(meshResult.second.primitiveResults.size());
+
+        for (LoadPrimitiveResult& primitive :
+             meshResult.second.primitiveResults) {
+          mesh.push_back(loadPrimitiveGameThreadPart(
+              Gltf,
+              pVariants,
+              primitive,
+              cesiumToUnrealTransform));
         }
 
-        pVariants->AddMesh(std::move(mesh));
+        pVariants->AddMesh(meshResult.first, std::move(mesh));
       }
     } else if (node.meshResult) {
       for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
-        loadPrimitiveGameThreadPart(Gltf, Gltf, primitive, cesiumToUnrealTransform);
+        loadPrimitiveGameThreadPart(
+            Gltf,
+            Gltf,
+            primitive,
+            cesiumToUnrealTransform);
       }
     }
+
+    ++nodeIndex;
   }
 
   Gltf->HideGltf();
@@ -2087,10 +2103,10 @@ void UCesiumGltfComponent::ShowGltf() {
   }
 
   for (USceneComponent* pComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive = 
+    UCesiumGltfPrimitiveComponent* pPrimitive =
         Cast<UCesiumGltfPrimitiveComponent>(pComponent);
-    UCesiumGltfMeshVariantComponent* pVariant =
-        Cast<UCesiumGltfMeshvariantComponent>(pComponent);
+    UCesiumGltfMeshVariantsComponent* pVariant =
+        Cast<UCesiumGltfMeshVariantsComponent>(pComponent);
 
     if (pPrimitive && !pPrimitive->IsVisible()) {
       pPrimitive->SetVisibility(true, true);
