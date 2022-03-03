@@ -31,8 +31,6 @@ public:
 
   const CesiumGltf::MeshPrimitive* pMeshPrimitive;
 
-  UCesiumGltfMeshVariantsComponent* pMeshVariants;
-
   /**
    * The double-precision transformation matrix for this glTF node.
    */

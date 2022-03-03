@@ -151,5 +151,6 @@ UCesiumGltfMeshVariantsBlueprintLibrary::GetMeshVariantsComponent(
     return nullptr;
   }
 
-  return pGltfPrimitive->pMeshVariants;
+  return Cast<UCesiumGltfMeshVariantsComponent>(
+      pGltfPrimitive->GetAttachParent());
 }
