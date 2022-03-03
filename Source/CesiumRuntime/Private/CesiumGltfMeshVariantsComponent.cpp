@@ -7,26 +7,32 @@
 
 using namespace CesiumGltf;
 
-bool UCesiumGltfMeshVariantsComponent::InitializeVariants(
+/*static*/ UCesiumGltfMeshVariantsComponent* 
+UCesiumGltfMeshVariantsComponent::CreateMeshVariantsComponent(
+    USceneComponent* pOutter,
+    const FString& name,
     const ExtensionModelMaxarMeshVariants* pModelExtension,
     const ExtensionNodeMaxarMeshVariants* pNodeExtension) {
-  if (pModelExtension && pNodeExtension) {
-    return false;
+
+  if (!pModelExtension || !pNodeExtension ||
+      pModelExtension->defaultProperty < 0 || 
+      pModelExtension->defaultProperty >= pModelExtension->variants.size()) {
+    return nullptr;
   }
 
-  this->_pModelMeshVariants = pModelExtension;
-  this->_pNodeMeshVariants = pNodeExtension;
+  UCesiumMeshVariantsComponent* pVariantsComponent =
+      NewObject<UCesiumMeshVariantsComponent>(pOutter, name);
 
-  if (this->_pModelMeshVariants->defaultProperty < 0 || 
-      this->_pModelMeshVariants->defaultProperty >= 
-        this->_pModelMeshVariants->variants.size()) {
-    return false;
-  }
-
-  this->_currentVariantIndex = 
+  pVariantsComponent->_pModelMeshVariants = pModelExtension;
+  pVariantsComponent->_pNodeMeshVariants = pNodeExtension;
+  pVariantsComponent->_currentVariantIndex = 
       static_cast<uint32_t>(this->_pModelMeshVariants->defaultProperty);
 
-  return true;
+  pVariantsComponent->SetMobility(EComponentMobility::Movable);
+  pVariantsComponent->SetupAttachment(pOutter);
+  pVariantsComponent->RegisterComponent();
+
+  return pVariantsComponent;
 }
 
 void AddMesh(uint32_t meshIndex, std::vector<UCesiumGltfPrimitiveComponent*>&& mesh) {
@@ -56,13 +62,14 @@ void AddMesh(uint32_t meshIndex, std::vector<UCesiumGltfPrimitiveComponent*>&& m
   }
 }
 
-int32 UCesiumGltfMeshVariantsComponent::GetCurrentVariantIndex() const {
-  return this->_pCurrentVariant ? this->_pCurrentVariant->index : -1;
-}
+FString UCesiumGltfMeshVariantsComponent::GetCurrentVariantName() const {
+  if (this->_pModelMeshVariants && this->_currentVariantIndex != -1) {
+    return 
+        FString(UTF8_TO_TCHAR(
+          this->_pModelMeshVariants->variants[this->_currentVariantIndex].name.c_str()));
+  }
 
-const FString& UCesiumGltfMeshVariantsComponent::GetCurrentVariantName() const {
-  const static FString EMPTY_STRING = "";
-  return this->_pCurrentVariant ? this->_pCurrentVariant->name : EMPTY_STRING;
+  return "";
 }                                                     
 
 bool UCesiumGltfMeshVariantsComponent::SetVariantByIndex(int32 VariantIndex) {
@@ -70,15 +77,21 @@ bool UCesiumGltfMeshVariantsComponent::SetVariantByIndex(int32 VariantIndex) {
     return false;
   }
 
-  this->_pCurrentVariant = &this->_variants[VariantIndex];
+  this->_currentVariantIndex = VariantIndex;
+  ShowCurrentVariant();
   return true;
 }
 
 bool UCesiumGltfMeshVariantsComponent::SetVariantByName(const FString& Name) {
-  for (MeshVariant& variant : this->_variants) {
-    if (variant.name == Name) {
-      this->_pCurrentVariant = &variant;
-      return true;
+  if (this->_pModelMeshVariants) {
+    for (size_t i = 0; i < this->_pModelMeshVariants->variants.size(); ++i) {
+      const std::string& variantName = 
+          this->_pModelMeshVariants->variants[i].name;
+      if (Name == FString(UTF8_TO_TCHAR(variantName.c_str()))) {
+        this->_currentVariantIndex = static_cast<int32_t>(i);
+        ShowCurrentVariant();
+        return true;
+      }
     }
   }
   
@@ -103,13 +116,13 @@ static void hideMesh(const std::vector<UCesiumGltfPrimitiveComponent*>& mesh) {
   }
 }
 
-void ShowCurrentVariant() {
+void UCesiumGltfMeshVariantsComponent::ShowCurrentVariant() {
   assert(this->_pModelMeshVariants != nullptr);
   assert(this->_pNodeMeshVariants != nullptr);
   assert(this->_currentVariantIndex != -1);
   
   if (!this->GetVisibleFlag()) {
-    this->SetVisibleFlag(bNewVisibility);
+    this->SetVisibleFlag(true);
     this->OnVisibilityChanged();
   }
 
@@ -145,11 +158,6 @@ void ShowCurrentVariant() {
       }
     }
   }
-}
-
-void UCesiumGltfMeshVariantsComponent::BeginDestroy() {
-  this->_variants.Empty();
-  super::BeginDestroy();
 }
 
 /*static*/ 

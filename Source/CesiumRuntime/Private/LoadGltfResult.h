@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
@@ -67,11 +68,14 @@ struct LoadMeshResult {
 
 struct LoadNodeResult {
   std::optional<LoadMeshResult> meshResult = std::nullopt;
+  std::vector<LoadMeshResult> meshVariantsResults;
+  const ExtensionNodeMaxarMeshVariants* pVariantsExtension = nullptr;
 };
 
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
   FCesiumMetadataModel Metadata{};
   CesiumTextureUtility::EncodedMetadata EncodedMetadata{};
+  const ExtensionModelMaxarMeshVariants* pVariantsExtension = nullptr;
 };
 } // namespace LoadGltfResult

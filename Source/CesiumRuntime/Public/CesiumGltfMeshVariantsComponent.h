@@ -28,23 +28,21 @@ public:
   UCesiumGltfMeshVariantsComponent() = default;
   virtual ~UCesiumGltfMeshVariantsComponent() = default;
 
-  bool InitializeVariants(
-      const CesiumGltf::ExtensionModelMaxarMeshVariants* pModelExtension,
-      const CesiumGltf::ExtensionNodeMaxarMeshVariants* pNodeExtension);
-
   void AddMesh(uint32_t meshIndex, std::vector<UCesiumGltfPrimitiveComponent*>&& mesh);
 
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|MeshVariants")
-  int32 GetCurrentVariantIndex() const;
+  int32 GetCurrentVariantIndex() const {
+    return this->_currentVariantIndex;
+  }
 
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|MeshVariants")
-  const FString& GetCurrentVariantName() const;                                                     
+  FString GetCurrentVariantName() const;                                                     
   
   UFUNCTION(
       BlueprintCallable,
@@ -58,7 +56,11 @@ public:
 
   void ShowCurrentVariant();
 
-  virtual void BeginDestroy() override;
+  static UCesiumGltfMeshVariantsComponent* CreateMeshVariantsComponent(
+      USceneComponent* pOutter,
+      const FString& name,
+      const CesiumGltf::ExtensionModelMaxarMeshVariants* pModelExtension,
+      const CesiumGltf::ExtensionNodeMaxarMeshVariants* pNodeExtension);
 
 private:
 
