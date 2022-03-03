@@ -513,8 +513,7 @@ void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
 
     for (UCesiumGltfComponent* pGltf : gltfComponents) {
       if (pGltf && IsValid(pGltf) && pGltf->IsVisible()) {
-        pGltf->SetVisibility(false, true);
-        pGltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        pGltf->HideGltf();
       }
     }
   }
@@ -1389,8 +1388,7 @@ void hideTilesToNoLongerRender(
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
     if (Gltf && Gltf->IsVisible()) {
-      Gltf->SetVisibility(false, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+      Gltf->HideGltf();
     } else {
       // TODO: why is this happening?
       UE_LOG(
@@ -1411,9 +1409,14 @@ void hideTilesToNoLongerRender(
  */
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
-    UCesiumGltfComponent* Gltf) {
+    USceneComponent* Component) {
+  
+  if (!Component) {
+    return;
+  }
+
   UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
+      Cast<UCesiumGltfPrimitiveComponent>(Component);
   if (PrimitiveComponent != nullptr) {
     if (PrimitiveComponent->GetCollisionObjectType() !=
         BodyInstance.GetObjectType()) {
@@ -1425,6 +1428,11 @@ void applyActorCollisionSettings(
           BodyInstance.GetResponseToChannels();
       PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
     }
+  }
+  
+  // Recursively apply collision settings to children.
+  for (USceneComponent* pChildComponent : Component->GetAttachChildren()) {
+    applyActorCollisionSettings(BodyInstance, pChildComponent);
   }
 }
 } // namespace
@@ -1504,14 +1512,6 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
-    // That looks like some reeeally entertaining debug session...:
-    // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
-    // const CesiumGeometry::QuadtreeTileID* pQuadtreeID =
-    // std::get_if<CesiumGeometry::QuadtreeTileID>(&id); if (!pQuadtreeID ||
-    // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
-    // 11626) { 	continue;
-    //}
-
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
     if (!Gltf) {
@@ -1545,8 +1545,7 @@ void ACesium3DTileset::showTilesToRender(
     }
 
     if (!Gltf->IsVisible()) {
-      Gltf->SetVisibility(true, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+      Gltf->ShowGltf();
     }
   }
 }

@@ -1,24 +1,24 @@
 #pragma once
 
-#include "CesiumGltf/ExtensionModelMaxarMeshVariants.h"
-#include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Components/SceneComponent.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
-#include "CesiumGltfPrimitiveComponent.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 #include "CesiumGltfMeshVariantsComponent.generated.h"
 
 namespace CesiumGltf {
 struct Model;
 struct Node;
+struct ExtensionModelMaxarMeshVariants;
+struct ExtensionNodeMaxarMeshVariants;
+struct ExtensionModelMaxarMeshVariantsValue;
 } // namespace CesiumGltf
 
-namespace {
-} // namespace
+class UCesiumGltfPrimitiveComponent;
 
 UCLASS(BlueprintType)
 class CESIUMRUNTIME_API UCesiumGltfMeshVariantsComponent : public USceneComponent {
@@ -28,11 +28,11 @@ public:
   UCesiumGltfMeshVariantsComponent() = default;
   virtual ~UCesiumGltfMeshVariantsComponent() = default;
 
-  void addVariant(std::vector<int32_t>)
+  bool InitializeVariants(
+      const CesiumGltf::ExtensionModelMaxarMeshVariants* pModelExtension,
+      const CesiumGltf::ExtensionNodeMaxarMeshVariants* pNodeExtension);
 
-  void InitializeVariants(
-      const CesiumGltf::ExtensionModelMaxarMeshVariants& modelExtension,
-      const CesiumGltf::ExtensionNodeMaxarMeshVariants& nodeExtension);
+  void AddMesh(uint32_t meshIndex, std::vector<UCesiumGltfPrimitiveComponent*>&& mesh);
 
   UFUNCTION(
       BlueprintCallable,
@@ -56,21 +56,18 @@ public:
       Category = "Cesium|MeshVariants")
   bool SetVariantByName(const FString& Name);
 
+  void ShowCurrentVariant();
+
   virtual void BeginDestroy() override;
 
 private:
-  struct MeshVariant {
-    FString name;
-    int32 index;
-  };
 
-  struct MeshVariantMapping {
-    std::vector<MeshVariant> variants;
-    std::vector<UCesiumGltfPrimitiveComponent*> mesh;
-  };
+  const CesiumGltf::ExtensionModelMaxarMeshVariants* _pModelMeshVariants;
+  const CesiumGltf::ExtensionNodeMaxarMeshVariants* _pNodeMeshVariants;
 
-  TArray<MeshVariantMapping> _variantMappings;
-  MeshVariant* _pCurrentVariant;
+  int32_t _currentVariantIndex  = -1;
+
+  std::unordered_map<uint32_t, std::vector<UCesiumGltfPrimitiveComponent*>> _meshes;
 
   friend UCesiumGltfMeshVariantsBlueprintLibrary;
 };

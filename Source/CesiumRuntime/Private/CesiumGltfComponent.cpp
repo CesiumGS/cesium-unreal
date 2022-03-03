@@ -2006,8 +2006,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     }
   }
 
-  Gltf->SetVisibility(false, true);
-  Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  HideGltf();
   return Gltf;
 }
 
@@ -2037,6 +2036,37 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
 
 UCesiumGltfComponent::~UCesiumGltfComponent() {
   UE_LOG(LogCesium, VeryVerbose, TEXT("~UCesiumGltfComponent"));
+}
+
+void UCesiumGltfComponent::ShowGltf() {
+  if (!this->GetVisibleFlag()) {
+    this->SetVisibleFlag(true);
+    this->OnVisibilityChanged();
+  }
+
+  for (USceneComponent* pComponent : this->GetAttachChildren()) {
+    UCesiumGltfPrimitiveComponent* pPrimitive = 
+        Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+    UCesiumGltfMeshVariantComponent* pVariant =
+        Cast<UCesiumGltfMeshvariantComponent>(pComponent);
+
+    if (pPrimitive && !pPrimitive->IsVisible()) {
+      pPrimitive->SetVisibility(true, true);
+      pPrimitive->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
+
+    if (pVariant && !pVariant->IsVisible()) {
+      pVariant->ShowCurrentVariant();
+    }
+  }
+}
+
+void UCesiumGltfComponent::HideGltf() {
+  this->SetVisibility(false, true);
+
+  // TODO: check if this is recursive, do descendent components automatically
+  // get set to NoCollision after this call?
+  this->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UCesiumGltfComponent::UpdateTransformFromCesium(
