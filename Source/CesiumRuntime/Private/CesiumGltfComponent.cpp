@@ -1168,10 +1168,16 @@ static void loadMesh(
 
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &primitive};
+    LoadPrimitiveResult loadPrimitiveResult;
     loadPrimitive(
-        result->primitiveResults.emplace_back(),
+        loadPrimitiveResult,
         transform,
         primitiveOptions);
+
+    // if it doesn't have render data, then it can't be loaded
+    if (loadPrimitiveResult.RenderData) {
+      result->primitiveResults.emplace_back(loadPrimitiveResult);
+    }
   }
 }
 
@@ -1485,7 +1491,6 @@ static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
-
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
