@@ -17,15 +17,15 @@ then
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
   wget https://www.python.org/ftp/python/3.10.2/python-3.10.2-macos11.pkg
-  sudo installer -pkg python-3.10.2-macos11.pkg -target /
+  installer -pkg python-3.10.2-macos11.pkg -target /
   python3 -m pip install --upgrade pip
   export PIP_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
   export PIP3_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
-  sudo pip3 config set --global http.sslVerify false
+  pip3 config set --global http.sslVerify false
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
-  export SUDO=sudo
+  export SUDO=
 elif [[ $TRAVIS_OS_NAME == "linux" ]]
 then
   # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
