@@ -19,6 +19,7 @@ then
   wget https://www.python.org/ftp/python/3.10.2/python-3.10.2-macos11.pkg
   sudo installer -pkg python-3.10.2-macos11.pkg -target /
   python3 -m pip install --upgrade pip
+  sidp pip3 install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org pip setuptools
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
