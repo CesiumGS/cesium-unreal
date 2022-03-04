@@ -16,7 +16,7 @@ then
   export SUDO=
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
-  brew install pyenv
+  python3 --version
   pyenv install 3.9.2
   pip3 install awscli
   pip3 install httpie
