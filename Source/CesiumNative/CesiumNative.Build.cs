@@ -307,7 +307,7 @@ public class CesiumNative : ModuleRules
 				"--build=outdated",
 				"--build=cascade",
 				"-g=json",
-				"-pr:b=default",
+				"-pr:b=" + this.GetProfileName(Target),
 				"-pr:h=" + this.GetProfileName(Target),
 				"-s", "build_type=" + config,
 				"-e", "CESIUM_NATIVE_VERSION=" + this.cesiumNativeVersion,
