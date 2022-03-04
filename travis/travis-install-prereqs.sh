@@ -16,9 +16,8 @@ then
   export SUDO=
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
-  python3 --version
-  pyenv install --list
-  pyenv install 3.9
+  wget https://www.python.org/ftp/python/3.10.2/python-3.10.2-macos11.pkg
+  installer -pkg python-3.10.2-macos11.pkg -target /Applications
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
