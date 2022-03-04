@@ -1169,10 +1169,7 @@ static void loadMesh(
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &primitive};
     LoadPrimitiveResult loadPrimitiveResult;
-    loadPrimitive(
-        loadPrimitiveResult,
-        transform,
-        primitiveOptions);
+    loadPrimitive(loadPrimitiveResult, transform, primitiveOptions);
 
     // if it doesn't have render data, then it can't be loaded
     if (loadPrimitiveResult.RenderData) {
