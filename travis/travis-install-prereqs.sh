@@ -17,7 +17,8 @@ then
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
   python3 --version
-  pyenv install 3.9.2
+  pyenv install --list
+  pyenv install 3.9
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
