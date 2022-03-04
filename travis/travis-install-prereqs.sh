@@ -17,7 +17,7 @@ then
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
   wget https://www.python.org/ftp/python/3.10.2/python-3.10.2-macos11.pkg
-  installer -pkg python-3.10.2-macos11.pkg -target /
+  sudo installer -pkg python-3.10.2-macos11.pkg -target /
   python3 -m pip install --upgrade pip
   export PIP_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
   export PIP3_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
