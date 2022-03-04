@@ -16,8 +16,8 @@ then
   export SUDO=
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
-  python -m pip install --upgrade pip
-  pip3 install --upgrade pip
+  brew install pyenv
+  pyenv install 3.9.2
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
