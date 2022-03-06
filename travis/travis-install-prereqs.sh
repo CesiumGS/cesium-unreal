@@ -16,13 +16,13 @@ then
   export SUDO=
 elif [[ $TRAVIS_OS_NAME == "osx" ]]
 then
-  wget https://www.python.org/ftp/python/3.10.2/python-3.10.2-macos11.pkg
-  sudo installer -pkg python-3.10.2-macos11.pkg -target /
-  export PATH=/Library/Frameworks/Python.framework/Versions/3.10/bin:$PATH
-  python3 -m pip install --upgrade pip
-  export PIP_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
-  export PIP3_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
-  sudo pip3 config set --global http.sslVerify false
+  # wget https://www.python.org/ftp/python/3.10.2/python-3.10.2-macos11.pkg
+  # sudo installer -pkg python-3.10.2-macos11.pkg -target /
+  # export PATH=/Library/Frameworks/Python.framework/Versions/3.10/bin:$PATH
+  # python3 -m pip install --upgrade pip
+  # export PIP_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
+  # export PIP3_TRUSTED_HOST="pypi.org pypi.python.org files.pythonhosted.org"
+  # sudo pip3 config set --global http.sslVerify false
   pip3 install awscli
   pip3 install httpie
   pip3 install conan
