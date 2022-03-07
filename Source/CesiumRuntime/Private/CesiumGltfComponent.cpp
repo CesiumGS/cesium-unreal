@@ -540,9 +540,9 @@ static void updateTextureCoordinatesForMetadata(
                     vertexFeature,
                     vertexIndex));
             vertex.UVs[textureCoordinateIndex] =
-                FVector2D(*reinterpret_cast<const float*>(&featureId), 0.0f);
+                TMeshVector2(*reinterpret_cast<const float*>(&featureId), 0.0f);
           } else {
-            vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
           }
         }
       } else {
@@ -554,9 +554,9 @@ static void updateTextureCoordinatesForMetadata(
                     vertexFeature,
                     i));
             vertex.UVs[textureCoordinateIndex] =
-                FVector2D(*reinterpret_cast<float*>(&featureId), 0.0f);
+                TMeshVector2(*reinterpret_cast<float*>(&featureId), 0.0f);
           } else {
-            vertex.UVs[textureCoordinateIndex] = FVector2D(0.0f, 0.0f);
+            vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
           }
         }
       }
