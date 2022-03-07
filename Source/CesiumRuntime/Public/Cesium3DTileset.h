@@ -179,6 +179,9 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InvalidateResolvedCreditSystem();
 
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool ShowCreditsOnScreen = false;
+
   /**
    * The maximum number of pixels of error when rendering this tileset.
    *

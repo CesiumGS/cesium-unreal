@@ -36,10 +36,19 @@ public:
   FString Credits = "";
 
   /**
+   * The credits that should be displayed on screen.
+   */
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  FString OnScreenCredits = "";
+
+  /**
    * Whether the credit string has changed since last frame.
    */
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
+
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  bool ShowOnScreenCredits = false;
 
   // Called every frame
   virtual bool ShouldTickIfViewportsOnly() const override;

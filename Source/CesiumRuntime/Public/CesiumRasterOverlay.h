@@ -164,6 +164,9 @@ protected:
       Category = "Cesium")
   int64 SubTileCacheBytes = 16 * 1024 * 1024;
 
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool ShowCreditsOnScreen = false;
+
 #if WITH_EDITOR
   // Called when properties are changed in the editor
   virtual void
