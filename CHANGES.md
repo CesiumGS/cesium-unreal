@@ -5,6 +5,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug introduced in v1.11.0 that used the Y-size of the right eye viewport for the left eye in tile selection for stereographic rendering.
+- Fixed a bug where glTF primitives with no render data are added to the glTF render result.
 
 ### v1.11.0 - 2022-03-01
 
