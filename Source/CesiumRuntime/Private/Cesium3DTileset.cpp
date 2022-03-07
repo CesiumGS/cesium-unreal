@@ -568,7 +568,7 @@ public:
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
 
-    options.pEncodeMetadataInstructions = 
+    options.pEncodeMetadataInstructions =
         this->_pActor->_pEncodeMetadataInstructions;
 
     std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
@@ -786,7 +786,7 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  this->_pEncodeMetadataInstructions = 
+  this->_pEncodeMetadataInstructions =
       this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();

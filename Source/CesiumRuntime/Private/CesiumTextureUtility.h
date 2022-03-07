@@ -132,13 +132,11 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FString& featureTextureName,
     const FCesiumFeatureTexture& featureTexture);
 
-EncodedMetadataPrimitive
-encodeMetadataPrimitiveAnyThreadPart(
+EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const UCesiumEncodedMetadataComponent& encodedInformation,
     const FCesiumMetadataPrimitive& primitive);
 
-EncodedMetadata
-encodeMetadataAnyThreadPart(
+EncodedMetadata encodeMetadataAnyThreadPart(
     const UCesiumEncodedMetadataComponent& encodeInstructions,
     const FCesiumMetadataModel& metadata);
 

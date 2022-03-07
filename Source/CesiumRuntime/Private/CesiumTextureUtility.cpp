@@ -2,7 +2,6 @@
 
 #include "CesiumTextureUtility.h"
 #include "CesiumEncodedMetadataComponent.h"
-#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeatureIDTexture.h"
 #include "CesiumFeatureTexture.h"
 #include "CesiumLifetime.h"
@@ -440,7 +439,8 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FCesiumMetadataProperty& property = pair.Value;
 
     const FPropertyDescription* pExpectedProperty = nullptr;
-    for (const FPropertyDescription& expectedProperty : encodeInstructions.Properties) {
+    for (const FPropertyDescription& expectedProperty :
+         encodeInstructions.Properties) {
       if (pair.Key == expectedProperty.Name) {
         pExpectedProperty = &expectedProperty;
         break;
@@ -468,20 +468,20 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     } else {
       componentCount = 1;
     }
-    
+
     int32 expectedComponentCount = 1;
     switch (pExpectedProperty->Type) {
-      // case ECesiumPropertyType::Scalar:
-      //  expectedComponentCount = 1;
-      //  break;
-      case ECesiumPropertyType::Vec2:
-        expectedComponentCount = 2;
-        break;
-      case ECesiumPropertyType::Vec3:
-        expectedComponentCount = 3;
-        break;
-      case ECesiumPropertyType::Vec4:
-        expectedComponentCount = 4;
+    // case ECesiumPropertyType::Scalar:
+    //  expectedComponentCount = 1;
+    //  break;
+    case ECesiumPropertyType::Vec2:
+      expectedComponentCount = 2;
+      break;
+    case ECesiumPropertyType::Vec3:
+      expectedComponentCount = 3;
+      break;
+    case ECesiumPropertyType::Vec4:
+      expectedComponentCount = 4;
     };
 
     if (expectedComponentCount != componentCount) {
@@ -493,16 +493,16 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     // when the conversion is lossy. We can even attempt to convert strings to
     // numeric gpu types, but the target format should be explicitly set by the
     // user. [Done ?]
-    // TODO: Investigate if this commented out functionality is needed at all 
+    // TODO: Investigate if this commented out functionality is needed at all
     // now, can it be removed.
     /*
     ECesiumMetadataPackedGpuType gpuType =
         CesiumMetadataTrueTypeToDefaultPackedGpuType(trueType);
-    
+
     if (gpuType == ECesiumMetadataPackedGpuType::None) {
       continue;
     }*/
-    
+
     // Coerce the true type into the expected gpu component type.
     ECesiumMetadataPackedGpuType gpuType = ECesiumMetadataPackedGpuType::None;
     if (pExpectedProperty->ComponentType ==
@@ -717,7 +717,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   result.featureTextureNames.Reserve(featureTextureNames.Num());
 
   for (const FString& featureTextureName : featureTextureNames) {
-    for (const FFeatureTextureDescription& expectedFeatureTexture : 
+    for (const FFeatureTextureDescription& expectedFeatureTexture :
          encodeInstructions.FeatureTextures) {
       if (featureTextureName == expectedFeatureTexture.Name) {
         result.featureTextureNames.Add(featureTextureName);
@@ -741,7 +741,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
     bool featureTableFound = false;
     for (const FFeatureTableDescription& expectedFeatureTable :
-          encodeInstructions.FeatureTables) {
+         encodeInstructions.FeatureTables) {
       if (expectedFeatureTable.Name == featureTableName) {
         featureTableFound = true;
         break;
@@ -751,7 +751,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     if (!featureTableFound) {
       continue;
     }
-    
+
     EncodedFeatureIdTexture& encodedFeatureIdTexture =
         result.encodedFeatureIdTextures.Emplace_GetRef();
 
@@ -812,7 +812,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
   for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
     const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
-    const FString& featureTableName = 
+    const FString& featureTableName =
         UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
             vertexFeature);
 
@@ -828,7 +828,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     if (!featureTableFound) {
       continue;
     }
-    
+
     EncodedVertexMetadata& encodedVertexFeature =
         result.encodedVertexMetadata.Emplace_GetRef();
 
@@ -841,8 +841,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   return result;
 }
 
-EncodedMetadata
-encodeMetadataAnyThreadPart(
+EncodedMetadata encodeMetadataAnyThreadPart(
     const UCesiumEncodedMetadataComponent& encodeInstructions,
     const FCesiumMetadataModel& metadata) {
 

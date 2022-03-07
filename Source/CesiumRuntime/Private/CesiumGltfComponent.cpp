@@ -518,7 +518,7 @@ static void updateTextureCoordinatesForMetadata(
   if (pMetadata) {
     for (EncodedVertexMetadata& encodedVertexFeature :
          encodedPrimitiveMetadata.encodedVertexMetadata) {
-      const FCesiumVertexMetadata& vertexFeature = 
+      const FCesiumVertexMetadata& vertexFeature =
           vertexFeatures[encodedVertexFeature.index];
 
       size_t textureCoordinateIndex = textureCoordinateMap.size();
@@ -976,12 +976,12 @@ static void loadPrimitive(
 
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
   const UCesiumEncodedMetadataComponent* pEncodeInstructions =
-      options.pMeshOptions->pNodeOptions->pModelOptions->pEncodeMetadataInstructions; 
+      options.pMeshOptions->pNodeOptions->pModelOptions
+          ->pEncodeMetadataInstructions;
   if (pEncodeInstructions) {
-    primitiveResult.EncodedMetadata =
-        encodeMetadataPrimitiveAnyThreadPart(
-          *pEncodeInstructions, 
-          primitiveResult.Metadata);
+    primitiveResult.EncodedMetadata = encodeMetadataPrimitiveAnyThreadPart(
+        *pEncodeInstructions,
+        primitiveResult.Metadata);
   }
 
   updateTextureCoordinatesForMetadata(
@@ -1446,10 +1446,9 @@ static void loadModelAnyThreadPart(
   if (pMetadataExtension) {
     result.Metadata = FCesiumMetadataModel(model, *pMetadataExtension);
     if (options.pEncodeMetadataInstructions) {
-      result.EncodedMetadata = 
-          encodeMetadataAnyThreadPart(
-            *options.pEncodeMetadataInstructions, 
-            result.Metadata);
+      result.EncodedMetadata = encodeMetadataAnyThreadPart(
+          *options.pEncodeMetadataInstructions,
+          result.Metadata);
     }
   }
 
