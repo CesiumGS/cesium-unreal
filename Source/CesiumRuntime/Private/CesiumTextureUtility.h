@@ -20,6 +20,9 @@ struct FCesiumMetadataModel;
 struct FCesiumMetadataPrimitive;
 struct FCesiumMetadataFeatureTable;
 struct FCesiumFeatureTexture;
+struct FFeatureTableDescription;
+
+class UCesiumEncodedMetadataComponent;
 
 namespace CesiumTextureUtility {
 struct LoadedTextureResult {
@@ -81,6 +84,7 @@ struct EncodedVertexMetadata {
   FString name;
   FString featureTableName;
   int32 textureCoordinateIndex;
+  int32 index;
 };
 
 struct EncodedFeatureTextureProperty {
@@ -119,7 +123,7 @@ LoadedTextureResult* loadTextureAnyThreadPart(
 bool loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
-    const FString& featureTableName,
+    const FFeatureTableDescription& encodeInstructions,
     const FCesiumMetadataFeatureTable& featureTable);
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
@@ -129,10 +133,14 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FCesiumFeatureTexture& featureTexture);
 
 EncodedMetadataPrimitive
-encodeMetadataPrimitiveAnyThreadPart(const FCesiumMetadataPrimitive& primitive);
+encodeMetadataPrimitiveAnyThreadPart(
+    const UCesiumEncodedMetadataComponent& encodedInformation,
+    const FCesiumMetadataPrimitive& primitive);
 
 EncodedMetadata
-encodeMetadataAnyThreadPart(const FCesiumMetadataModel& metadata);
+encodeMetadataAnyThreadPart(
+    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FCesiumMetadataModel& metadata);
 
 bool encodeMetadataFeatureTableGameThreadPart(
     EncodedMetadataFeatureTable& encodedFeatureTable);

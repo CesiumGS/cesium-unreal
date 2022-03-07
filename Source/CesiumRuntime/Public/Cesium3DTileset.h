@@ -21,6 +21,7 @@
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 struct FCesiumCamera;
+class UCesiumEncodedMetadataComponent;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -806,6 +807,8 @@ private:
 private:
   Cesium3DTilesSelection::Tileset* _pTileset;
 
+  UCesiumEncodedMetadataComponent* _pEncodeMetadataInstructions;
+
   // For debug output
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;
@@ -838,4 +841,6 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToNoLongerRenderThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
+
+  friend class UnrealResourcePreparer;
 };

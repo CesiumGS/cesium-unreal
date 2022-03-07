@@ -1,6 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
+#include "CesiumEncodedMetadataComponent.h"
+#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeatureIDTexture.h"
 #include "CesiumFeatureTexture.h"
 #include "CesiumLifetime.h"
@@ -421,7 +423,7 @@ EncodedPixelFormat getPixelFormat(
 } // namespace
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
-    const FString& featureTableName,
+    const FFeatureTableDescription& encodeInstructions,
     const FCesiumMetadataFeatureTable& featureTable) {
 
   EncodedMetadataFeatureTable encodedFeatureTable;
@@ -436,6 +438,18 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
   encodedFeatureTable.encodedProperties.Reserve(properties.Num());
   for (const auto& pair : properties) {
     const FCesiumMetadataProperty& property = pair.Value;
+
+    const FPropertyDescription* pExpectedProperty = nullptr;
+    for (const FPropertyDescription& expectedProperty : encodeInstructions.Properties) {
+      if (pair.Key == expectedProperty.Name) {
+        pExpectedProperty = &expectedProperty;
+        break;
+      }
+    }
+
+    if (!pExpectedProperty) {
+      continue;
+    }
 
     // TODO: should be some user inputed ECesiumMetadataSupportedGpuType that
     // we check against the trueType
@@ -454,16 +468,51 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     } else {
       componentCount = 1;
     }
+    
+    int32 expectedComponentCount = 1;
+    switch (pExpectedProperty->Type) {
+      // case ECesiumPropertyType::Scalar:
+      //  expectedComponentCount = 1;
+      //  break;
+      case ECesiumPropertyType::Vec2:
+        expectedComponentCount = 2;
+        break;
+      case ECesiumPropertyType::Vec3:
+        expectedComponentCount = 3;
+        break;
+      case ECesiumPropertyType::Vec4:
+        expectedComponentCount = 4;
+    };
+
+    if (expectedComponentCount != componentCount) {
+      continue;
+    }
 
     // TODO: should be some user inputed target gpu type, instead of picking
     // the default gpu type for the source type. Warnings should be displayed
     // when the conversion is lossy. We can even attempt to convert strings to
     // numeric gpu types, but the target format should be explicitly set by the
-    // user.
+    // user. [Done ?]
+    // TODO: Investigate if this commented out functionality is needed at all 
+    // now, can it be removed.
+    /*
     ECesiumMetadataPackedGpuType gpuType =
         CesiumMetadataTrueTypeToDefaultPackedGpuType(trueType);
-
+    
     if (gpuType == ECesiumMetadataPackedGpuType::None) {
+      continue;
+    }*/
+    
+    // Coerce the true type into the expected gpu component type.
+    ECesiumMetadataPackedGpuType gpuType = ECesiumMetadataPackedGpuType::None;
+    if (pExpectedProperty->ComponentType ==
+        ECesiumPropertyComponentType::Uint8) {
+      gpuType = ECesiumMetadataPackedGpuType::Uint8;
+    } else /*if (expected type is float)*/ {
+      gpuType = ECesiumMetadataPackedGpuType::Float;
+    }
+
+    if (pExpectedProperty->Normalized != isNormalized) {
       continue;
     }
 
@@ -481,7 +530,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
-    encodedProperty.name = featureTableName + "_" + pair.Key;
+    encodedProperty.name = encodeInstructions.Name + "_" + pair.Key;
 
     int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
     encodedProperty.pTexture = new LoadedTextureResult();
@@ -653,6 +702,7 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
 }
 
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
+    const UCesiumEncodedMetadataComponent& encodeInstructions,
     const FCesiumMetadataPrimitive& primitive) {
   EncodedMetadataPrimitive result;
 
@@ -661,25 +711,50 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   const TArray<FCesiumVertexMetadata>& vertexFeatures =
       UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(primitive);
 
-  result.featureTextureNames =
+  const TArray<FString>& featureTextureNames =
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
           primitive);
+  result.featureTextureNames.Reserve(featureTextureNames.Num());
+
+  for (const FString& featureTextureName : featureTextureNames) {
+    for (const FFeatureTextureDescription& expectedFeatureTexture : 
+         encodeInstructions.FeatureTextures) {
+      if (featureTextureName == expectedFeatureTexture.Name) {
+        result.featureTextureNames.Add(featureTextureName);
+        break;
+      }
+    }
+  }
 
   std::unordered_map<const CesiumGltf::ImageCesium*, LoadedTextureResult*>
       featureIdTextureMap;
   featureIdTextureMap.reserve(featureIdTextures.Num());
 
-  result.encodedFeatureIdTextures.SetNum(featureIdTextures.Num());
-  result.encodedVertexMetadata.SetNum(vertexFeatures.Num());
+  result.encodedFeatureIdTextures.Reserve(featureIdTextures.Num());
+  result.encodedVertexMetadata.Reserve(vertexFeatures.Num());
 
   for (size_t i = 0; i < featureIdTextures.Num(); ++i) {
     const FCesiumFeatureIDTexture& featureIdTexture = featureIdTextures[i];
-    EncodedFeatureIdTexture& encodedFeatureIdTexture =
-        result.encodedFeatureIdTextures[i];
-
     const FString& featureTableName =
         UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
             featureIdTexture);
+
+    bool featureTableFound = false;
+    for (const FFeatureTableDescription& expectedFeatureTable :
+          encodeInstructions.FeatureTables) {
+      if (expectedFeatureTable.Name == featureTableName) {
+        featureTableFound = true;
+        break;
+      }
+    }
+
+    if (!featureTableFound) {
+      continue;
+    }
+    
+    EncodedFeatureIdTexture& encodedFeatureIdTexture =
+        result.encodedFeatureIdTextures.Emplace_GetRef();
+
     const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
         featureIdTexture.getFeatureIdTextureView();
     const CesiumGltf::ImageCesium* pFeatureIdImage =
@@ -737,32 +812,57 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
   for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
     const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
+    const FString& featureTableName = 
+        UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
+            vertexFeature);
+
+    bool featureTableFound = false;
+    for (const FFeatureTableDescription& expectedFeatureTable :
+         encodeInstructions.FeatureTables) {
+      if (expectedFeatureTable.Name == featureTableName) {
+        featureTableFound = true;
+        break;
+      }
+    }
+
+    if (!featureTableFound) {
+      continue;
+    }
+    
     EncodedVertexMetadata& encodedVertexFeature =
-        result.encodedVertexMetadata[i];
+        result.encodedVertexMetadata.Emplace_GetRef();
 
     encodedVertexFeature.name =
         "FeatureIdAttribute:" + FString::FromInt(static_cast<int32>(i));
-    encodedVertexFeature.featureTableName =
-        UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
-            vertexFeature);
+    encodedVertexFeature.featureTableName = featureTableName;
+    encodedVertexFeature.index = static_cast<int32>(i);
   }
 
   return result;
 }
 
 EncodedMetadata
-encodeMetadataAnyThreadPart(const FCesiumMetadataModel& metadata) {
+encodeMetadataAnyThreadPart(
+    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FCesiumMetadataModel& metadata) {
+
   EncodedMetadata result;
 
   const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(metadata);
   result.encodedFeatureTables.Reserve(featureTables.Num());
   for (const auto& featureTableIt : featureTables) {
-    result.encodedFeatureTables.Emplace(
-        featureTableIt.Key,
-        encodeMetadataFeatureTableAnyThreadPart(
+    for (const FFeatureTableDescription& expectedFeatureTable :
+         encodeInstructions.FeatureTables) {
+      if (expectedFeatureTable.Name == featureTableIt.Key) {
+        result.encodedFeatureTables.Emplace(
             featureTableIt.Key,
-            featureTableIt.Value));
+            encodeMetadataFeatureTableAnyThreadPart(
+                expectedFeatureTable,
+                featureTableIt.Value));
+        break;
+      }
+    }
   }
 
   const TMap<FString, FCesiumFeatureTexture>& featureTextures =
@@ -772,12 +872,18 @@ encodeMetadataAnyThreadPart(const FCesiumMetadataModel& metadata) {
       featureTexturePropertyMap;
   featureTexturePropertyMap.Reserve(featureTextures.Num());
   for (const auto& featureTextureIt : featureTextures) {
-    result.encodedFeatureTextures.Emplace(
-        featureTextureIt.Key,
-        encodeFeatureTextureAnyThreadPart(
-            featureTexturePropertyMap,
+    for (const FFeatureTextureDescription& expectedFeatureTexture :
+         encodeInstructions.FeatureTextures) {
+      if (expectedFeatureTexture.Name == featureTextureIt.Key) {
+        result.encodedFeatureTextures.Emplace(
             featureTextureIt.Key,
-            featureTextureIt.Value));
+            encodeFeatureTextureAnyThreadPart(
+                featureTexturePropertyMap,
+                featureTextureIt.Key,
+                featureTextureIt.Value));
+        break;
+      }
+    }
   }
 
   return result;

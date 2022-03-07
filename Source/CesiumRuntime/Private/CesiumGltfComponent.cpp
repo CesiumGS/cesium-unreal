@@ -516,10 +516,11 @@ static void updateTextureCoordinatesForMetadata(
       primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
 
   if (pMetadata) {
-    for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
-      const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
-      EncodedVertexMetadata& encodedVertexFeature =
-          encodedPrimitiveMetadata.encodedVertexMetadata[i];
+    for (EncodedVertexMetadata& encodedVertexFeature :
+         encodedPrimitiveMetadata.encodedVertexMetadata) {
+      const FCesiumVertexMetadata& vertexFeature = 
+          vertexFeatures[encodedVertexFeature.index];
+
       size_t textureCoordinateIndex = textureCoordinateMap.size();
       int32_t attribute = vertexFeature.getAttributeIndex();
       textureCoordinateMap[attribute] = textureCoordinateIndex;
@@ -530,9 +531,9 @@ static void updateTextureCoordinatesForMetadata(
       // We encode unsigned integer feature ids as floats in the u-channel of
       // a texture coordinate slot.
       if (duplicateVertices) {
-        for (int64_t j = 0; j < indices.Num(); ++j) {
-          FStaticMeshBuildVertex& vertex = vertices[j];
-          uint32 vertexIndex = indices[j];
+        for (int64_t i = 0; i < indices.Num(); ++i) {
+          FStaticMeshBuildVertex& vertex = vertices[i];
+          uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             uint32_t featureId = static_cast<uint32_t>(
                 UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
@@ -545,13 +546,13 @@ static void updateTextureCoordinatesForMetadata(
           }
         }
       } else {
-        for (int64_t j = 0; j < vertices.Num(); ++j) {
-          FStaticMeshBuildVertex& vertex = vertices[j];
-          if (j < vertexCount) {
+        for (int64_t i = 0; i < vertices.Num(); ++i) {
+          FStaticMeshBuildVertex& vertex = vertices[i];
+          if (i < vertexCount) {
             uint32_t featureId = static_cast<uint32_t>(
                 UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
                     vertexFeature,
-                    j));
+                    i));
             vertex.UVs[textureCoordinateIndex] =
                 FVector2D(*reinterpret_cast<float*>(&featureId), 0.0f);
           } else {
@@ -974,8 +975,15 @@ static void loadPrimitive(
   }
 
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
-  primitiveResult.EncodedMetadata =
-      encodeMetadataPrimitiveAnyThreadPart(primitiveResult.Metadata);
+  const UCesiumEncodedMetadataComponent* pEncodeInstructions =
+      options.pMeshOptions->pNodeOptions->pModelOptions->pEncodeMetadataInstructions; 
+  if (pEncodeInstructions) {
+    primitiveResult.EncodedMetadata =
+        encodeMetadataPrimitiveAnyThreadPart(
+          *pEncodeInstructions, 
+          primitiveResult.Metadata);
+  }
+
   updateTextureCoordinatesForMetadata(
       model,
       primitive,
@@ -1437,7 +1445,12 @@ static void loadModelAnyThreadPart(
       model.getExtension<ExtensionModelExtFeatureMetadata>();
   if (pMetadataExtension) {
     result.Metadata = FCesiumMetadataModel(model, *pMetadataExtension);
-    result.EncodedMetadata = encodeMetadataAnyThreadPart(result.Metadata);
+    if (options.pEncodeMetadataInstructions) {
+      result.EncodedMetadata = 
+          encodeMetadataAnyThreadPart(
+            *options.pEncodeMetadataInstructions, 
+            result.Metadata);
+    }
   }
 
   glm::dmat4x4 rootTransform = transform;
