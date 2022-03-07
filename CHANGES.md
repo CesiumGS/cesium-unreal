@@ -6,6 +6,10 @@
 
 - Fixed a bug introduced in v1.11.0 that used the Y-size of the right eye viewport for the left eye in tile selection for stereographic rendering.
 
+##### Additions :tada:
+
+- Added option to display credits on screen.
+
 ### v1.11.0 - 2022-03-01
 
 ##### Breaking Changes :mega:
