@@ -65,4 +65,7 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   TArray<FFeatureTextureDescription> FeatureTextures;
+
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void AutoFill();
 };
