@@ -10,16 +10,16 @@ struct CESIUMRUNTIME_API FCesiumIntegerColor {
   GENERATED_USTRUCT_BODY()
 
 public:
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 r;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 g;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 b;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 a;
 };
 
@@ -28,16 +28,16 @@ struct CESIUMRUNTIME_API FCesiumFloatColor {
   GENERATED_USTRUCT_BODY()
 
 public:
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float r;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float g;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float b;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float a;
 };
 
