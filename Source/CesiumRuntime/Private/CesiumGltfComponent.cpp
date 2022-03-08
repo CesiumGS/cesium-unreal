@@ -359,7 +359,7 @@ struct ColorVisitor {
 };
 
 template <class T>
-static CesiumTextureUtility::LoadedTextureResult* loadTexture(
+static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     const CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
@@ -662,7 +662,7 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
+  TUniquePtr<FStaticMeshRenderData> RenderData = MakeUnique<FStaticMeshRenderData>();
   RenderData->AllocateLODResources(1);
 
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
@@ -1006,7 +1006,7 @@ static void loadPrimitive(
 
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
-  primitiveResult.RenderData = RenderData;
+  primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
 
@@ -1370,12 +1370,8 @@ bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
-
-  if (!CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture)) {
-    return false;
-  }
-
-  UTexture2D* pTexture = pLoadedTexture->pTexture;
+  UTexture2D* pTexture =
+      CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
   if (!pTexture) {
     return false;
   }
@@ -1422,23 +1418,23 @@ static void SetGltfParameterValues(
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("baseColorTexture", assocation, index),
-      loadResult.baseColorTexture);
+      loadResult.baseColorTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("metallicRoughnessTexture", assocation, index),
-      loadResult.metallicRoughnessTexture);
+      loadResult.metallicRoughnessTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("normalTexture", assocation, index),
-      loadResult.normalTexture);
+      loadResult.normalTexture.Get());
   bool hasEmissiveTexture = applyTexture(
       pMaterial,
       FMaterialParameterInfo("emissiveTexture", assocation, index),
-      loadResult.emissiveTexture);
+      loadResult.emissiveTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("occlusionTexture", assocation, index),
-      loadResult.occlusionTexture);
+      loadResult.occlusionTexture.Get());
 
   if (material.emissiveFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(
@@ -1473,7 +1469,7 @@ void SetWaterParameterValues(
     applyTexture(
         pMaterial,
         FMaterialParameterInfo("WaterMask", assocation, index),
-        loadResult.waterMaskTexture);
+        loadResult.waterMaskTexture.Get());
   }
 
   pMaterial->SetVectorParameterValueByInfo(
@@ -1519,13 +1515,11 @@ static void loadPrimitiveGameThreadPart(
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
   // UE 4.26 or earlier
   pStaticMesh->bIsBuiltAtRuntime = true;
-  pStaticMesh->RenderData =
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+  pStaticMesh->RenderData = std::move(loadResult.RenderData);
 #elif ENGINE_MAJOR_VERSION == 4
   // UE 4.27 or later
   pStaticMesh->SetIsBuiltAtRuntime(true);
-  pStaticMesh->SetRenderData(
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #else
   // UE 5
   pStaticMesh->SetRenderData(
@@ -1686,24 +1680,24 @@ public:
 };
 } // namespace
 
-/*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
+/*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
-  auto pResult = std::make_unique<HalfConstructedReal>();
+  auto pResult = MakeUnique<HalfConstructedReal>();
   pResult->loadModelResult = loadModelAnyThreadPart(Transform, Options);
   return pResult;
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
     AActor* pParentActor,
-    std::unique_ptr<HalfConstructed> pHalfConstructed,
+    TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters) {
   HalfConstructedReal* pReal =
-      static_cast<HalfConstructedReal*>(pHalfConstructed.get());
+      static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
   // TODO: was this a common case before?
   // (This code checked if there were no loaded primitives in the model)

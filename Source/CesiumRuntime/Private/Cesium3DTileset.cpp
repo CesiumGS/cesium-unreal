@@ -568,9 +568,9 @@ public:
     options.pPhysXCooking = this->_pPhysXCooking;
 #endif
 
-    std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
+    TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
-    return pHalf.release();
+    return pHalf.Release();
   }
 
   virtual void* prepareInMainThread(
@@ -579,7 +579,7 @@ public:
     const Cesium3DTilesSelection::TileContentLoadResult* pContent =
         tile.getContent();
     if (pContent && pContent->model) {
-      std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
+      TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
       return UCesiumGltfComponent::CreateOnGameThread(
@@ -612,33 +612,30 @@ public:
 
   virtual void*
   prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(
+    auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         TextureFilter::TF_Bilinear);
+    return texture.Release();
   }
 
   virtual void* prepareRasterInMainThread(
       const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
       void* pLoadThreadResult) override {
 
-    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+    TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
         static_cast<CesiumTextureUtility::LoadedTextureResult*>(
-            pLoadThreadResult);
+            pLoadThreadResult)};
 
-    CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
-
-    if (!pLoadedTexture) {
+    UTexture2D* pTexture =
+        CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
+    if (!pLoadedTexture || !pTexture) {
       return nullptr;
     }
 
-    UTexture2D* pTexture = pLoadedTexture->pTexture;
     pTexture->AddToRoot();
-
-    delete pLoadedTexture;
-
-    return (void*)pTexture;
+    return pTexture;
   }
 
   virtual void freeRaster(

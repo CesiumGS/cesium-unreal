@@ -4,7 +4,7 @@
 
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
-  FStaticMeshRenderData* RenderData = nullptr;
+  TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
   const CesiumGltf::Material* pMaterial = nullptr;
@@ -17,12 +17,12 @@ struct LoadPrimitiveResult {
 #endif
   std::string name{};
 
-  CesiumTextureUtility::LoadedTextureResult* baseColorTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* normalTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* emissiveTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* occlusionTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> metallicRoughnessTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture = nullptr;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand = true;
