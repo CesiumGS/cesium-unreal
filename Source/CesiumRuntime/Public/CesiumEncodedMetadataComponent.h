@@ -12,7 +12,7 @@ enum class ECesiumPropertyComponentType : uint8 { Uint8, Float };
 UENUM()
 enum class ECesiumPropertyType : uint8 { Scalar, Vec2, Vec3, Vec4 };
 
-ENUM()
+UENUM()
 enum class ECesiumFeatureTableAccessType : uint8 {
   Unknown,
   Texture,

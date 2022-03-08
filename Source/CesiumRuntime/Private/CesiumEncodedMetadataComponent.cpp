@@ -144,6 +144,55 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
           FFeatureTextureDescription{featureTextureIt.Key});
     }
   }
+
+  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
+    const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
+        Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+    if (!pGltfPrimitive) {
+      continue;
+    }
+
+    const FCesiumMetadataPrimitive& primitive = pGltfPrimitive->Metadata;
+    const TArray<FCesiumVertexMetadata>& attributes =
+        UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(primitive);
+    const TArray<FCesiumFeatureIDTexture>& textures =
+        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+            primitive);
+
+    for (const FCesiumVertexMetadata& attribute : attributes) {
+      const FString& featureTableName =
+          UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(attribute);
+      for (FFeatureTableDescription& featureTable : this->FeatureTables) {
+        if (featureTableName == featureTable.Name) {
+          if (featureTable.AccessType ==
+              ECesiumFeatureTableAccessType::Unknown) {
+            featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
+          }
+
+          break;
+        }
+      }
+    }
+
+    for (const FCesiumFeatureIDTexture& texture : textures) {
+      const FString& featureTableName =
+          UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(texture);
+      for (FFeatureTableDescription& featureTable : this->FeatureTables) {
+        if (featureTableName == featureTable.Name) {
+          if (featureTable.AccessType ==
+              ECesiumFeatureTableAccessType::Unknown) {
+            featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
+          } else if (
+              featureTable.AccessType ==
+              ECesiumFeatureTableAccessType::Attribute) {
+            featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
+          }
+
+          break;
+        }
+      }
+    }
+  }
 }
 
 #if WITH_EDITOR
@@ -228,10 +277,10 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   UMaterialExpressionCustom* SelectTexCoords =
       CreateSelectTexCoords(UnrealMaterial, TexCoordsIndex);
 
-  UMaterial *
+  // UMaterial *
 
-      // let the material update itself if necessary
-      UnrealMaterial->PreEditChange(NULL);
+  // let the material update itself if necessary
+  UnrealMaterial->PreEditChange(NULL);
   UnrealMaterial->PostEditChange();
 
   // make sure that any static meshes, etc using this material will stop using
