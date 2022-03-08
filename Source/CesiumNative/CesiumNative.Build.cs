@@ -7,6 +7,9 @@ using System.IO;
 using UnrealBuildTool;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
 
 //For Tools.DotNETCommon.JsonObject and Tools.DotNETCommon.FileReference
 using Tools.DotNETCommon;
@@ -224,7 +227,12 @@ public class CesiumNative : ModuleRules
 
 	public CesiumNative(ReadOnlyTargetRules Target) : base(Target)
 	{
-		Type = ModuleType.External;
+    //while (!Debugger.IsAttached)
+    //{
+    //  Thread.Sleep(100);
+    //}
+
+    Type = ModuleType.External;
 
 		//Ensure our staging directory exists prior to copying any dependency data files into it
 		string stagingDir = Path.Combine("$(ProjectDir)", "Binaries", "Data", "CesiumNative");
@@ -298,6 +306,167 @@ public class CesiumNative : ModuleRules
 		}
 	}
 
+	private string getClangMajorVersion(string clangPath)
+  {
+		using (Process p = Process.Start(new ProcessStartInfo
+		{
+			FileName = clangPath,
+			Arguments = "-dumpversion",
+			UseShellExecute = false,
+			WorkingDirectory = ModuleDirectory,
+			RedirectStandardOutput = true
+		}))
+    {
+			p.WaitForExit();
+
+			if (p.ExitCode == 0)
+      {
+				string version = p.StandardOutput.ReadLine();
+				string[] parts = version.Split('.');
+				return parts[0];
+      }
+			else
+      {
+				Console.Error.WriteLine("Clang version could not be determined. Clang probably isn't working.");
+				return "10";
+      }
+    }
+  }
+
+	private string CreateConanProfile(ReadOnlyTargetRules Target, string config)
+	{
+		var settings = new Dictionary<string, string>();
+		var env = new Dictionary<string, string>();
+		var conf = new Dictionary<string, string>();
+
+		settings.Add("build_type", config);
+		env.Add("UNREAL_ENGINE_VERSION", this.GetEngineVersion());
+		env.Add("UNREAL_ENGINE_DIR", EngineDirectory);
+		env.Add("CESIUM_NATIVE_VERSION", this.cesiumNativeVersion);
+
+		if (Target.IsInPlatformGroup(UnrealPlatformGroup.Windows) && Target.WindowsPlatform != null)
+		{
+			settings.Add("os", "Windows");
+			settings.Add("compiler", "Visual Studio");
+
+			var platform = Target.WindowsPlatform;
+      if (platform.Compiler == WindowsCompiler.VisualStudio2017)
+				settings.Add("compiler.version", "15");
+      else if (platform.Compiler == WindowsCompiler.VisualStudio2019)
+				settings.Add("compiler.version", "16");
+      else
+        Console.Error.WriteLine("Unsupported compiler: " + platform.Compiler.ToString());
+
+			// Use the Release version of the C runtime library, even in debug builds.
+			settings.Add("compiler.runtime", "MD");
+
+			var architectureMap = new Dictionary<WindowsArchitecture, string>()
+			{
+				{ WindowsArchitecture.x86, "x86" },
+				{ WindowsArchitecture.x64, "x86_64" },
+				{ WindowsArchitecture.ARM32, "armv7" },
+				{ WindowsArchitecture.ARM64, "armv8" },
+			};
+
+			settings.Add("arch", architectureMap[platform.Architecture]);
+		}
+		else if (Target.IsInPlatformGroup(UnrealPlatformGroup.Linux) && Target.LinuxPlatform != null)
+    {
+			// On Linux, we might be using the system compiler (i.e. default profile), or else
+			// LINUX_MULTIARCH_ROOT must be set to the root of the linux toolchain.
+			// See UnrealBuildTool's LinuxToolChain.cs, which controls how UE source code outside
+			// Cesium Native is built. That is what this logic is attempting to mirror.
+			string toolchainRoot = Environment.GetEnvironmentVariable("LINUX_MULTIARCH_ROOT");
+			if (toolchainRoot == null) return "default";
+
+			settings.Add("os", "Linux");
+			settings.Add("compiler", "clang");
+			settings.Add("compiler.libcxx", "libc++");
+
+			var architectureMap = new Dictionary<string, string>()
+			{
+				{ "x86_64", "x86_64" },
+				{ "aarch64", "armv8" }
+			};
+
+			string architecture = Target.Architecture.Split('-')[0];
+			settings.Add("arch", architectureMap[architecture]);
+
+			string baseLinuxPath = Path.Combine(toolchainRoot, Target.Architecture);
+			string clangPath = Path.Combine(baseLinuxPath, "bin", "clang");
+			string clangPPPath = Path.Combine(baseLinuxPath, "bin", "clang++");
+
+			if (BuildHostPlatform.Current.Platform == UnrealTargetPlatform.Win64 || BuildHostPlatform.Current.Platform == UnrealTargetPlatform.Win32)
+      {
+				clangPath += ".exe";
+				clangPPPath += ".exe";
+      }
+
+			settings.Add("compiler.version", this.getClangMajorVersion(clangPath));
+			env.Add("CC", clangPath);
+			env.Add("CXX", clangPPPath);
+			env.Add("CONAN_CMAKE_SYSROOT", baseLinuxPath);
+			env.Add("CMAKE_SYSROOT", baseLinuxPath);
+			env.Add("CHOST", Target.Architecture);
+			env.Add("CONAN_CMAKE_GENERATOR", "Ninja");
+			env.Add("CMAKE_GENERATOR", "Ninja");
+
+			string libcxxPath = Path.Combine(EngineDirectory, "Source", "ThirdParty", "Linux", "LibCxx");
+			string[] includePaths = new string[]
+			{
+				//Path.Combine(libcxxPath, "include"),
+				//Path.Combine(libcxxPath, "include/c++/v1")
+			};
+			var arguments = includePaths.Select(p => "\"-I" + p + "\"");
+
+			env.Add("CXXFLAGS", "-nostdinc++ -target x86_64-unknown-linux-gnu " + string.Join(" ", arguments));
+			env.Add("CFLAGS", "-target x86_64-unknown-linux-gnu");
+			env.Add("CONAN_CMAKE_FIND_ROOT_PATH_MODE_PROGRAM", "NEVER");
+			env.Add("CONAN_CMAKE_FIND_ROOT_PATH_MODE_LIBRARY", "ONLY");
+			env.Add("CONAN_CMAKE_FIND_ROOT_PATH_MODE_INCLUDE", "ONLY");
+
+			string toolchainFile = "C:/Dev/cfus-conan/Plugins/cesium-unreal/extern/unreal-linux-from-windows-toolchain.cmake"; // TODO
+			env.Add("CONAN_CMAKE_TOOLCHAIN_FILE", toolchainFile);
+			env.Add("UNREAL_ENGINE_COMPILER_DIR", baseLinuxPath);
+
+			conf.Add("tools.cmake.cmaketoolchain:generator", "Ninja");
+			conf.Add("tools.cmake.cmaketoolchain:user_toolchain", toolchainFile);
+		}
+
+		StringBuilder profile = new StringBuilder();
+		profile.AppendLine("[settings]");
+		foreach (var kvp in settings)
+    {
+			profile.AppendLine(kvp.Key + "=" + kvp.Value);
+    }
+
+		profile.AppendLine();
+
+		profile.AppendLine("[env]");
+		foreach (var kvp in env)
+		{
+			profile.AppendLine(kvp.Key + "=" + kvp.Value);
+		}
+
+		profile.AppendLine();
+
+		profile.AppendLine("[conf]");
+		foreach (var kvp in conf)
+		{
+			profile.AppendLine(kvp.Key + "=" + kvp.Value);
+		}
+
+		string path = Path.Combine(ModuleDirectory, "host.profile");
+
+		Console.WriteLine("Generated Conan host profile:");
+		Console.WriteLine(profile.ToString());
+		Console.WriteLine();
+
+		File.WriteAllText(path, profile.ToString(), Encoding.UTF8);
+
+		return path;
+	}
+
 	private void runConanInstall(ReadOnlyTargetRules Target, string config)
   {
 		List<string> args = new List<string>()
@@ -307,10 +476,8 @@ public class CesiumNative : ModuleRules
 				"--build=outdated",
 				"--build=cascade",
 				"-g=json",
-				"-pr:b=" + this.GetProfileName(Target),
-				"-pr:h=" + this.GetProfileName(Target),
-				"-s", "build_type=" + config,
-				"-e", "CESIUM_NATIVE_VERSION=" + this.cesiumNativeVersion,
+				"-pr:b=default",
+				"-pr:h=" + this.CreateConanProfile(Target, config)
 			};
 
 		// On Windows, Unreal uses the Release C runtime library even in debug builds.
@@ -327,19 +494,20 @@ public class CesiumNative : ModuleRules
 
 	private void run(string command, params string[] args)
   {
-		Process p = Process.Start(new ProcessStartInfo
+		using (Process p = Process.Start(new ProcessStartInfo
 		{
 			FileName = command,
 			Arguments = string.Join(" ", args),
 			UseShellExecute = false,
 			WorkingDirectory = ModuleDirectory
-		});
+		}))
+    {
+			p.WaitForExit();
 
-		p.WaitForExit();
-
-		if (p.ExitCode != 0)
-		{
-			throw new Exception("Command failed");
+			if (p.ExitCode != 0)
+			{
+				throw new Exception("Command failed");
+			}
 		}
 	}
 
@@ -352,23 +520,25 @@ public class CesiumNative : ModuleRules
 			// to use python.
 			try
 			{
-				Process p = Process.Start(new ProcessStartInfo
+				using (Process p = Process.Start(new ProcessStartInfo
 				{
 					FileName = "python3",
 					Arguments = "--version",
 					UseShellExecute = false,
 					RedirectStandardOutput = true,
 					RedirectStandardError = true
-				});
-				p.WaitForExit();
+				}))
+				{
+					p.WaitForExit();
 
-				if (p.ExitCode == 0)
-				{
-					this._python = PythonExecutable.python3;
-				}
-				else
-				{
-					this._python = PythonExecutable.python;
+					if (p.ExitCode == 0)
+					{
+						this._python = PythonExecutable.python3;
+					}
+					else
+					{
+						this._python = PythonExecutable.python;
+					}
 				}
 			}
 			catch
