@@ -110,5 +110,24 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
                 propertyIt.Value);
       }
     }
+
+    for (const auto& featureTextureIt : featureTextures) {
+      bool found = false;
+      for (const FFeatureTextureDescription& existingFeatureTexture :
+           this->FeatureTextures) {
+        if (existingFeatureTexture.Name == featureTextureIt.Key) {
+          found = true;
+          break;
+        }
+      }
+
+      if (found) {
+        continue;
+      }
+
+      // TODO: add more checks than just name for feature textures?
+      this->FeatureTextures.Emplace(
+          FFeatureTextureDescription{featureTextureIt.Key});
+    }
   }
 }
