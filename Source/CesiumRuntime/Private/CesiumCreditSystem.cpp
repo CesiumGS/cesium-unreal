@@ -163,15 +163,31 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
       creditsToShowThisFrame.size() != _lastCreditsCount ||
       _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
   if (CreditsUpdated) {
+    DisplayOnScreenCredits = false;
+    std::string onScreenCreditString;
     std::string creditString =
         "<head>\n<meta charset=\"utf-16\"/>\n</head>\n<body style=\"color:white\"><ul>";
     for (size_t i = 0; i < creditsToShowThisFrame.size(); ++i) {
+      if (_pCreditSystem->shouldBeShownOnScreen(creditsToShowThisFrame[i])) {
+        if (!DisplayOnScreenCredits) {
+          DisplayOnScreenCredits = true;
+          onScreenCreditString =
+              "<head><style>body{color:white;} li {float:left;margin-left:16px;margin-right:16px;}</style>\n"
+              "<meta charset=\"utf-16\"/>\n</head>\n<body><ul>";
+        }
+        onScreenCreditString +=
+            "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
+            "</li>";
+      }
       creditString +=
           "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) + "</li>";
     }
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
-
+    if (DisplayOnScreenCredits) {
+      onScreenCreditString += "</ul></body>";
+      OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
+    }
     _lastCreditsCount = creditsToShowThisFrame.size();
   }
 

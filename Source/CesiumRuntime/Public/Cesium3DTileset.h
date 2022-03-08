@@ -180,6 +180,12 @@ public:
   void InvalidateResolvedCreditSystem();
 
   /**
+   * Whether or not to show this tileset's credits on screen.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool ShowCreditsOnScreen = false;
+
+  /**
    * The maximum number of pixels of error when rendering this tileset.
    *
    * This is used to select an appropriate level-of-detail: A low value
