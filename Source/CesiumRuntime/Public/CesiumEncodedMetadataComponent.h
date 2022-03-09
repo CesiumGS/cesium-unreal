@@ -22,7 +22,8 @@ enum class ECesiumFeatureTableAccessType : uint8 {
 
 // Note that these don't exhaustively cover the possibilities of glTF metadata
 // classes, they only cover the subset that can be encoded into textures. For
-// example, arbitrary size arrays and strings are excluded.
+// example, arbitrary size arrays and enums are excluded. Other un-encoded
+// types like strings will be coerced.
 
 // TODO: descriptions
 USTRUCT()
