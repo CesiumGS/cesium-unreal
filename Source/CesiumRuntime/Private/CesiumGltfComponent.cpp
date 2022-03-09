@@ -1623,7 +1623,8 @@ static void SetMetadataFeatureTableParameterValues(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(outterName + "_" + encodedProperty.name),
+            // FName(outterName + "_" + encodedProperty.name),
+            FName(encodedProperty.name),
             association,
             index),
         encodedProperty.pTexture->pTexture);
@@ -1685,14 +1686,19 @@ static void SetMetadataParameterValues(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(encodedFeatureIdTexture.name + "_Texture"),
+            // FName(encodedFeatureIdTexture.name + "_Texture"),
+            FName(
+                "FeatureIdTexture:" + encodedFeatureIdTexture.featureTableName),
             association,
             index),
         encodedFeatureIdTexture.pTexture->pTexture);
 
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(encodedFeatureIdTexture.name + "_TextureCoordinateIndex"),
+            FName(
+                "FeatureIdTexture:" + encodedFeatureIdTexture.featureTableName +
+                "_TextureCoordinateIndex"),
+            // FName(encodedFeatureIdTexture.name + "_TextureCoordinateIndex"),
             association,
             index),
         static_cast<int32>(encodedFeatureIdTexture.textureCoordinateIndex));
@@ -1711,7 +1717,10 @@ static void SetMetadataParameterValues(
 
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(encodedFeatureIdTexture.name + "_ChannelMask"),
+            // FName(encodedFeatureIdTexture.name + "_ChannelMask"),
+            FName(
+                "FeatureIdTexture:" + encodedFeatureIdTexture.featureTableName +
+                "_ChannelMask"),
             association,
             index),
         channelMask);
@@ -1730,6 +1739,7 @@ static void SetMetadataParameterValues(
     }
   }
 
+  // TODO: change naming for vertex attributes
   for (const EncodedVertexMetadata& encodedVertexFeature :
        loadResult.EncodedMetadata.encodedVertexMetadata) {
     pMaterial->SetScalarParameterValueByInfo(

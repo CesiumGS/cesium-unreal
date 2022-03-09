@@ -12,14 +12,15 @@
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionCustom.h"
+#include "Materials/MaterialExpressionFunctionInput.h"
+#include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionMaterialFunctionCall.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionTextureObjectParameter.h"
 #include "Materials/MaterialExpressionTextureProperty.h"
 #include "Materials/MaterialFunctionMaterialLayer.h"
 #include "UObject/Package.h"
-
-#include "Materials/MaterialExpressionTextureCoordinate.h"
 
 void UCesiumEncodedMetadataComponent::AutoFill() {
   const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
@@ -222,7 +223,8 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   UPackage* Package = CreatePackage(NULL, *PackageName);
 
   // Create an unreal material asset
-  auto MaterialFactory = NewObject<UMaterialFunctionMaterialLayerFactory>();
+  UMaterialFunctionMaterialLayerFactory* MaterialFactory =
+      NewObject<UMaterialFunctionMaterialLayerFactory>();
   UMaterialFunctionMaterialLayer* UnrealMaterial =
       (UMaterialFunctionMaterialLayer*)MaterialFactory->FactoryCreateNew(
           UMaterialFunctionMaterialLayer::StaticClass(),
@@ -257,11 +259,15 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
     int32 SectionLeft = NodeX;
     int32 SectionTop = NodeY;
-    // TODO: set the name of the node? description?
+
     UMaterialExpressionCustom* FeatureTableLookup =
         NewObject<UMaterialExpressionCustom>(UnrealMaterial);
     FeatureTableLookup->Inputs.Reserve(featureTable.Properties.Num() + 2);
     FeatureTableLookup->Outputs.Reset(featureTable.Properties.Num() + 1);
+    FeatureTableLookup->Outputs.Add(FExpressionOutput(TEXT("return")));
+    FeatureTableLookup->bShowOutputNameOnPin = true;
+    FeatureTableLookup->Description =
+        "Resolve properties from " + featureTable.Name;
     UnrealMaterial->FunctionExpressions.Add(FeatureTableLookup);
 
     if (featureTable.AccessType == ECesiumFeatureTableAccessType::Texture) {
@@ -314,8 +320,9 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       // TODO: use channel mask, instead of hardcoding r channel
       // cannot determine channel name in editor, use channel mask + sample to
       // derive id.
+
       FeatureTableLookup->Code =
-          "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTexture, TexCoords).r);\n";
+          "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords).r);\n";
     }
 
     // TODO: vertex attributes
@@ -329,7 +336,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       UMaterialExpressionTextureObjectParameter* PropertyArray =
           NewObject<UMaterialExpressionTextureObjectParameter>(UnrealMaterial);
       PropertyArray->ParameterName =
-          FName("FeatureTable:" + featureTable.Name + "_" + property.Name);
+          FName(featureTable.Name + "_" + property.Name);
       PropertyArray->MaterialExpressionEditorX = NodeX;
       PropertyArray->MaterialExpressionEditorY = NodeY;
       UnrealMaterial->FunctionExpressions.Add(PropertyArray);
@@ -341,8 +348,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       FCustomOutput& PropertyOutput =
           FeatureTableLookup->AdditionalOutputs.Emplace_GetRef();
       PropertyOutput.OutputName = FName(property.Name);
-
-      // Workaround
       FeatureTableLookup->Outputs.Add(
           FExpressionOutput(PropertyOutput.OutputName));
 
@@ -373,6 +378,8 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       NodeY += IncrY;
     }
 
+    int32 SectionBottom = NodeY;
+
     FeatureTableLookup->OutputType = ECustomMaterialOutputType::CMOT_Float1;
 
     FeatureTableLookup->Code += "float propertyIndexF = propertyIndex;\n";
@@ -381,18 +388,41 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     // TODO: why doesn't this link?
     // FeatureTableLookup->RebuildOutputs();
 
-    // Workaround
-    FeatureTableLookup->Outputs.Add(FExpressionOutput(TEXT("return")));
-    FeatureTableLookup->bShowOutputNameOnPin = true;
-
     NodeX += 2 * IncrX;
     NodeY = SectionTop;
 
     FeatureTableLookup->MaterialExpressionEditorX = NodeX;
     FeatureTableLookup->MaterialExpressionEditorY = NodeY;
 
-    NodeX += IncrX;
+    NodeX = SectionLeft;
+    NodeY = SectionBottom;
   }
+
+  NodeX = 0;
+  NodeY = -IncrY;
+
+  UMaterialExpressionFunctionInput* InputMaterial =
+      NewObject<UMaterialExpressionFunctionInput>(UnrealMaterial);
+  // InputMaterial->InputName = "Material Attributes";
+  InputMaterial->InputType =
+      EFunctionInputType::FunctionInput_MaterialAttributes;
+  InputMaterial->bUsePreviewValueAsDefault = true;
+  InputMaterial->MaterialExpressionEditorX = NodeX;
+  InputMaterial->MaterialExpressionEditorY = NodeY;
+  UnrealMaterial->FunctionExpressions.Add(InputMaterial);
+
+  NodeX += 3 * IncrX;
+
+  UMaterialExpressionFunctionOutput* OutputMaterial =
+      NewObject<UMaterialExpressionFunctionOutput>(UnrealMaterial);
+  // OutputMaterial->OutputName = "Material Attributes";
+  // TODO: ??
+  // OutputMaterial->Id = FGuid::NewGuid();
+  OutputMaterial->MaterialExpressionEditorX = NodeX;
+  OutputMaterial->MaterialExpressionEditorY = NodeY;
+  OutputMaterial->A = FMaterialAttributesInput();
+  OutputMaterial->A.Expression = InputMaterial;
+  UnrealMaterial->FunctionExpressions.Add(OutputMaterial);
 
   // let the material update itself if necessary
   UnrealMaterial->PreEditChange(NULL);
