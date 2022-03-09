@@ -17,12 +17,17 @@ struct LoadPrimitiveResult {
 #endif
   std::string name{};
 
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture = nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> metallicRoughnessTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture =
+      nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
+      metallicRoughnessTexture = nullptr;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture = nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture = nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture = nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture =
+      nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture =
+      nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture =
+      nullptr;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand = true;

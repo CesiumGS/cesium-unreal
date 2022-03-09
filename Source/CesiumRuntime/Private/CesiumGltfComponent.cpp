@@ -662,7 +662,8 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  TUniquePtr<FStaticMeshRenderData> RenderData = MakeUnique<FStaticMeshRenderData>();
+  TUniquePtr<FStaticMeshRenderData> RenderData =
+      MakeUnique<FStaticMeshRenderData>();
   RenderData->AllocateLODResources(1);
 
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];

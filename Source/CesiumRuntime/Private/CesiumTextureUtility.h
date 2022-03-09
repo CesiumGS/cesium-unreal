@@ -8,7 +8,6 @@
 #include "Templates/UniquePtr.h"
 #include <optional>
 
-
 class CesiumTextureUtility {
 public:
   struct LoadedTextureResult {

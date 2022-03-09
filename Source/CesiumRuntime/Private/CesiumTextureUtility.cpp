@@ -18,7 +18,8 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   if (sizeX > 0 && sizeY > 0 &&
       (sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
       (sizeY % GPixelFormats[format].BlockSizeY) == 0) {
-    TUniquePtr<FTexturePlatformData> pTexturePlatformData = MakeUnique<FTexturePlatformData>();
+    TUniquePtr<FTexturePlatformData> pTexturePlatformData =
+        MakeUnique<FTexturePlatformData>();
     pTexturePlatformData->SizeX = sizeX;
     pTexturePlatformData->SizeY = sizeY;
     pTexturePlatformData->PixelFormat = format;
@@ -157,7 +158,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
       CESIUM_TRACE("Copying image.");
 
       // Create level 0 mip (full res image)
-      FTexture2DMipMap *pLevel0 = new FTexture2DMipMap();
+      FTexture2DMipMap* pLevel0 = new FTexture2DMipMap();
       pResult->pTextureData->Mips.Add(pLevel0);
       pLevel0->SizeX = width;
       pLevel0->SizeY = height;
