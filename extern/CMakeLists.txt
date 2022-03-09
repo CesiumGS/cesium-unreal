@@ -66,10 +66,13 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
 endif()
 
-add_subdirectory(cesium-native)
+# Install cesium-native's dependencies, not just cesium-native.
+set(CESIUM_INSTALL_REQUIREMENTS ON)
+set(CESIUM_TESTS_ENABLED OFF)
+add_subdirectory(cesium-native ${CMAKE_CURRENT_LIST_DIR}/cesium-native/build)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
+#install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
@@ -84,4 +87,4 @@ if (ANDROID OR IOS)
 endif()
 
 # Don't build the cesium-native tests by default
-set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+#set_target_properties(cesium-native-tests PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
