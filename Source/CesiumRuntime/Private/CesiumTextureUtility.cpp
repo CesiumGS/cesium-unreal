@@ -335,24 +335,27 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
 
 /*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
     LoadedTextureResult* pHalfLoadedTexture) {
-  if (!pHalfLoadedTexture || !pHalfLoadedTexture->pTextureData) {
+  if (!pHalfLoadedTexture) {
     return nullptr;
   }
 
-  UTexture2D* pTexture = NewObject<UTexture2D>(
-      GetTransientPackage(),
-      NAME_None,
-      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UTexture2D*& pTexture = pHalfLoadedTexture->pTexture;
+  if (!pTexture && pHalfLoadedTexture->pTextureData) {
+    pTexture = NewObject<UTexture2D>(
+        GetTransientPackage(),
+        NAME_None,
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
 #if ENGINE_MAJOR_VERSION >= 5
-  pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
 #else
-  pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
+    pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
 #endif
-  pTexture->AddressX = pHalfLoadedTexture->addressX;
-  pTexture->AddressY = pHalfLoadedTexture->addressY;
-  pTexture->Filter = pHalfLoadedTexture->filter;
-  pTexture->UpdateResource();
+    pTexture->AddressX = pHalfLoadedTexture->addressX;
+    pTexture->AddressY = pHalfLoadedTexture->addressY;
+    pTexture->Filter = pHalfLoadedTexture->filter;
+    pTexture->UpdateResource();
+  }
 
   return pTexture;
 }

@@ -16,6 +16,7 @@ public:
     TextureAddress addressX;
     TextureAddress addressY;
     TextureFilter filter;
+    UTexture2D* pTexture{nullptr};
   };
 
   // TODO: documentation
