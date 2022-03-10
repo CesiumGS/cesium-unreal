@@ -1636,8 +1636,6 @@ static void SetMetadataParameterValues(
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
-    // TODO: probably have different layer for each feature id
-    // texture/attribute?
     int32 index) {
   if (!encodeMetadataPrimitiveGameThreadPart(loadResult.EncodedMetadata)) {
     return;

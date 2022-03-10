@@ -620,6 +620,8 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FCesiumFeatureTexture& featureTexture) {
   EncodedFeatureTexture encodedFeatureTexture;
 
+  // TODO: only load requested feature texture properties
+
   const CesiumGltf::FeatureTextureView& featureTextureView =
       featureTexture.getFeatureTextureView();
   const std::unordered_map<std::string, CesiumGltf::FeatureTexturePropertyView>&
@@ -716,9 +718,9 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           primitive);
   result.featureTextureNames.Reserve(featureTextureNames.Num());
 
-  for (const FString& featureTextureName : featureTextureNames) {
-    for (const FFeatureTextureDescription& expectedFeatureTexture :
-         encodeInstructions.FeatureTextures) {
+  for (const FFeatureTextureDescription& expectedFeatureTexture :
+       encodeInstructions.FeatureTextures) {
+    for (const FString& featureTextureName : featureTextureNames) {
       if (featureTextureName == expectedFeatureTexture.Name) {
         result.featureTextureNames.Add(featureTextureName);
         break;
@@ -733,109 +735,104 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   result.encodedFeatureIdTextures.Reserve(featureIdTextures.Num());
   result.encodedVertexMetadata.Reserve(vertexFeatures.Num());
 
-  for (size_t i = 0; i < featureIdTextures.Num(); ++i) {
-    const FCesiumFeatureIDTexture& featureIdTexture = featureIdTextures[i];
-    const FString& featureTableName =
-        UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
-            featureIdTexture);
+  // Imposed implementation limitation: Assume only upto one feature id texture
+  // or attribute corresponds to each feature table.
+  for (const FFeatureTableDescription& expectedFeatureTable :
+       encodeInstructions.FeatureTables) {
+    if (expectedFeatureTable.AccessType ==
+        ECesiumFeatureTableAccessType::Texture) {
+      for (const FCesiumFeatureIDTexture& featureIdTexture :
+           featureIdTextures) {
+        const FString& featureTableName =
+            UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
+                featureIdTexture);
 
-    bool featureTableFound = false;
-    for (const FFeatureTableDescription& expectedFeatureTable :
-         encodeInstructions.FeatureTables) {
-      if (expectedFeatureTable.Name == featureTableName) {
-        featureTableFound = true;
-        break;
+        if (expectedFeatureTable.Name == featureTableName) {
+
+          const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
+              featureIdTexture.getFeatureIdTextureView();
+          const CesiumGltf::ImageCesium* pFeatureIdImage =
+              featureIdTextureView.getImage();
+
+          if (!pFeatureIdImage) {
+            break;
+          }
+
+          EncodedFeatureIdTexture& encodedFeatureIdTexture =
+              result.encodedFeatureIdTextures.Emplace_GetRef();
+
+          encodedFeatureIdTexture.name = "FeatureIdTexture:" + featureTableName;
+          encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
+          encodedFeatureIdTexture.textureCoordinateIndex =
+              featureIdTextureView.getTextureCoordinateIndex();
+
+          auto mappedUnrealImage = featureIdTextureMap.find(pFeatureIdImage);
+          if (mappedUnrealImage != featureIdTextureMap.end()) {
+            encodedFeatureIdTexture.pTexture = mappedUnrealImage->second;
+          } else {
+            encodedFeatureIdTexture.pTexture = new LoadedTextureResult{};
+            encodedFeatureIdTexture.pTexture->pTextureData =
+                createTexturePlatformData(
+                    pFeatureIdImage->width,
+                    pFeatureIdImage->height,
+                    // TODO: currently this is always the case, but doesn't have
+                    // to be
+                    EPixelFormat::PF_R8G8B8A8_UINT);
+
+            encodedFeatureIdTexture.pTexture->addressX =
+                TextureAddress::TA_Clamp;
+            encodedFeatureIdTexture.pTexture->addressY =
+                TextureAddress::TA_Clamp;
+            encodedFeatureIdTexture.pTexture->filter =
+                TextureFilter::TF_Nearest;
+
+            if (!encodedFeatureIdTexture.pTexture->pTextureData) {
+              break;
+            }
+
+            FTexture2DMipMap* pMip = new FTexture2DMipMap();
+            encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
+            pMip->SizeX = pFeatureIdImage->width;
+            pMip->SizeY = pFeatureIdImage->height;
+            pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+            void* pTextureData =
+                pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
+
+            FMemory::Memcpy(
+                pTextureData,
+                pFeatureIdImage->pixelData.data(),
+                pFeatureIdImage->pixelData.size());
+
+            pMip->BulkData.Unlock();
+          }
+
+          encodedFeatureIdTexture.featureTableName = featureTableName;
+
+          break;
+        }
+      }
+    } else if (
+        expectedFeatureTable.AccessType ==
+        ECesiumFeatureTableAccessType::Attribute) {
+      for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
+        const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
+        const FString& featureTableName =
+            UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
+                vertexFeature);
+
+        if (expectedFeatureTable.Name == featureTableName) {
+          EncodedVertexMetadata& encodedVertexFeature =
+              result.encodedVertexMetadata.Emplace_GetRef();
+
+          encodedVertexFeature.name = "FeatureIdAttribute:" + featureTableName;
+          encodedVertexFeature.featureTableName = featureTableName;
+          encodedVertexFeature.index = static_cast<int32>(i);
+
+          break;
+        }
       }
     }
-
-    if (!featureTableFound) {
-      continue;
-    }
-
-    EncodedFeatureIdTexture& encodedFeatureIdTexture =
-        result.encodedFeatureIdTextures.Emplace_GetRef();
-
-    const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
-        featureIdTexture.getFeatureIdTextureView();
-    const CesiumGltf::ImageCesium* pFeatureIdImage =
-        featureIdTextureView.getImage();
-
-    if (!pFeatureIdImage) {
-      continue;
-    }
-
-    encodedFeatureIdTexture.name =
-        "FeatureIdTexture:" + FString::FromInt(static_cast<int32>(i));
-    encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
-    encodedFeatureIdTexture.textureCoordinateIndex =
-        featureIdTextureView.getTextureCoordinateIndex();
-
-    auto mappedUnrealImage = featureIdTextureMap.find(pFeatureIdImage);
-    if (mappedUnrealImage != featureIdTextureMap.end()) {
-      encodedFeatureIdTexture.pTexture = mappedUnrealImage->second;
-    } else {
-      encodedFeatureIdTexture.pTexture = new LoadedTextureResult{};
-      encodedFeatureIdTexture.pTexture->pTextureData =
-          createTexturePlatformData(
-              pFeatureIdImage->width,
-              pFeatureIdImage->height,
-              // TODO: currently this is always the case, but doesn't have to be
-              EPixelFormat::PF_R8G8B8A8_UINT);
-
-      encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
-      encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
-      encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
-
-      if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-        continue;
-      }
-
-      FTexture2DMipMap* pMip = new FTexture2DMipMap();
-      encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
-      pMip->SizeX = pFeatureIdImage->width;
-      pMip->SizeY = pFeatureIdImage->height;
-      pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-      void* pTextureData =
-          pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
-
-      FMemory::Memcpy(
-          pTextureData,
-          pFeatureIdImage->pixelData.data(),
-          pFeatureIdImage->pixelData.size());
-
-      pMip->BulkData.Unlock();
-    }
-
-    encodedFeatureIdTexture.featureTableName = featureTableName;
-  }
-
-  for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
-    const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
-    const FString& featureTableName =
-        UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
-            vertexFeature);
-
-    bool featureTableFound = false;
-    for (const FFeatureTableDescription& expectedFeatureTable :
-         encodeInstructions.FeatureTables) {
-      if (expectedFeatureTable.Name == featureTableName) {
-        featureTableFound = true;
-        break;
-      }
-    }
-
-    if (!featureTableFound) {
-      continue;
-    }
-
-    EncodedVertexMetadata& encodedVertexFeature =
-        result.encodedVertexMetadata.Emplace_GetRef();
-
-    encodedVertexFeature.name =
-        "FeatureIdAttribute:" + FString::FromInt(static_cast<int32>(i));
-    encodedVertexFeature.featureTableName = featureTableName;
-    encodedVertexFeature.index = static_cast<int32>(i);
   }
 
   return result;
@@ -895,6 +892,8 @@ bool encodeMetadataFeatureTableGameThreadPart(
   for (EncodedMetadataProperty& encodedProperty :
        encodedFeatureTable.encodedProperties) {
     success |= loadTextureGameThreadPart(encodedProperty.pTexture);
+    // TODO: check if this is the safest way
+    encodedProperty.pTexture->pTexture->AddToRoot();
   }
 
   return success;
@@ -917,6 +916,8 @@ bool encodeFeatureTextureGameThreadPart(
 
     if (!found) {
       success |= loadTextureGameThreadPart(property.pTexture);
+      // TODO: check if this is the safest way
+      property.pTexture->pTexture->AddToRoot();
       uniqueTextures.Emplace(property.pTexture);
     }
   }
@@ -989,6 +990,7 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
   for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
     for (EncodedMetadataProperty& encodedProperty :
          encodedFeatureTableIt.Value.encodedProperties) {
+      encodedProperty.pTexture->pTexture->RemoveFromRoot();
       CesiumLifetime::destroy(encodedProperty.pTexture->pTexture);
       encodedProperty.pTexture->pTexture = nullptr;
     }
@@ -1001,6 +1003,7 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
       if (encodedFeatureTextureProperty.pTexture->pTexture) {
         CesiumLifetime::destroy(
             encodedFeatureTextureProperty.pTexture->pTexture);
+        encodedFeatureTextureProperty.pTexture->pTexture->RemoveFromRoot();
         encodedFeatureTextureProperty.pTexture->pTexture = nullptr;
       }
     }
