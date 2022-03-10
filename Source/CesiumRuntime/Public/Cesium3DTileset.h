@@ -592,6 +592,13 @@ private:
       meta = (ShowOnlyInnerProperties))
   FCustomDepthParameters CustomDepthParameters;
 
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableAnisotropicFiltering,
+      BlueprintSetter = SetEnableAnisotropicFiltering,
+      Category = "Cesium|Rendering")
+  bool EnableAnisotropicFiltering = true;
+
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -668,8 +675,16 @@ public:
     return CustomDepthParameters;
   }
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetEnableAnisotropicFiltering() const {
+    return EnableAnisotropicFiltering;
+  }
+
   UFUNCTION(BlueprintSetter, Category = "Rendering")
   void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);
+
+  UFUNCTION(BlueprintSetter, Category = "Rendering|Cesium")
+  void SetEnableAnisotropicFiltering(bool InEnableAnisotropicFiltering);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();

@@ -170,7 +170,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
           image.pixelData.size());
     }
 
-    if (pResult->filter == TextureFilter::TF_Trilinear) {
+    if (pResult->filter == TextureFilter::TF_Trilinear ||
+        pResult->filter == TextureFilter::TF_MAX) {
       CESIUM_TRACE("Generate new mips.");
 
       // Generate mip levels.
