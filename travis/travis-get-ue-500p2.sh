@@ -4,7 +4,7 @@ then
     mkdir "C:\Epic"
     mkdir "C:\Epic\UE_5.0"
     compact //c "//s:C:\Epic\UE_5.0"
-    AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/5.0.0-preview1/UE_5.0p2.zip .
+    AWS_ACCESS_KEY_ID=${GOOGLE_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${GOOGLE_SECRET_ACCESS_KEY} aws s3 --endpoint-url https://storage.googleapis.com cp s3://cesium-unreal-engine/5.0.0-preview2/UE_5.0p2.zip .
     7z x UE_5.0p2.zip "-oC:\Epic"
     rm UE_5.0p2.zip
 # elif [[ $TRAVIS_OS_NAME == "osx" ]]
