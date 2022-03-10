@@ -83,10 +83,7 @@ public:
   void AutoFill();
 
 #if WITH_EDITOR
-  UPROPERTY(EditAnywhere, Category = "GenerateMaterial")
-  int32 FeatureIdAttributes;
-
-  UFUNCTION(CallInEditor, Category = "GenerateMaterial")
+  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
   void GenerateMaterial();
 #endif
 };

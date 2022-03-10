@@ -1613,7 +1613,6 @@ void SetWaterParameterValues(
 }
 
 static void SetMetadataFeatureTableParameterValues(
-    const FString& outterName,
     const EncodedMetadataFeatureTable& encodedFeatureTable,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
@@ -1622,11 +1621,7 @@ static void SetMetadataFeatureTableParameterValues(
        encodedFeatureTable.encodedProperties) {
 
     pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(
-            // FName(outterName + "_" + encodedProperty.name),
-            FName(encodedProperty.name),
-            association,
-            index),
+        FMaterialParameterInfo(FName(encodedProperty.name), association, index),
         encodedProperty.pTexture->pTexture);
   }
 }
@@ -1637,6 +1632,33 @@ static void SetMetadataParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
+
+  /**
+   * TODO: Write down this convention somewhere more permanent / accessible.
+   *
+   * The following is the naming convention for encoded metadata:
+   *
+   * Feature Id Textures:
+   *  - Base: "FIT_<feature table name>_"...
+   *    - Texture: ..."TX"
+   *    - Texture Coordinate Index: ..."UV"
+   *    - Channel Mask: ..."CM"
+   *
+   * Feature Id Attributes:
+   *  - Texture Coordinate Index (feature ids are encoded into UVs):
+   *    "FA_<feature table name>"
+   *
+   * Feature Texture Properties:
+   *  - Base: "FTX_<feature texture name>_<property name>_"...
+   *    - Texture: ..."TX"
+   *    - Texture Coordinate Index: ..."UV"
+   *    - Swizzle: ..."SW"
+   *
+   * Encoded Feature Table Properties:
+   *  - Encoded Property Table:
+   *    "FTB_<feature table name>_<property name>"
+   */
+
   if (!encodeMetadataPrimitiveGameThreadPart(loadResult.EncodedMetadata)) {
     return;
   }
@@ -1653,21 +1675,21 @@ static void SetMetadataParameterValues(
 
         pMaterial->SetTextureParameterValueByInfo(
             FMaterialParameterInfo(
-                FName(encodedProperty.name + "_Texture"),
+                FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
             encodedProperty.pTexture->pTexture);
 
         pMaterial->SetScalarParameterValueByInfo(
             FMaterialParameterInfo(
-                FName(encodedProperty.name + "_TextureCoordinateIndex"),
+                FName(encodedProperty.baseName + "UV"),
                 association,
                 index),
             encodedProperty.textureCoordinateIndex);
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
-                FName(encodedProperty.name + "_Swizzle"),
+                FName(encodedProperty.baseName + "SW"),
                 association,
                 index),
             FLinearColor(
@@ -1684,19 +1706,14 @@ static void SetMetadataParameterValues(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(
-            // FName(encodedFeatureIdTexture.name + "_Texture"),
-            FName(
-                "FeatureIdTexture:" + encodedFeatureIdTexture.featureTableName),
+            FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
         encodedFeatureIdTexture.pTexture->pTexture);
 
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(
-                "FeatureIdTexture:" + encodedFeatureIdTexture.featureTableName +
-                "_TextureCoordinateIndex"),
-            // FName(encodedFeatureIdTexture.name + "_TextureCoordinateIndex"),
+            FName(encodedFeatureIdTexture.baseName + "UV"),
             association,
             index),
         static_cast<int32>(encodedFeatureIdTexture.textureCoordinateIndex));
@@ -1715,10 +1732,7 @@ static void SetMetadataParameterValues(
 
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo(
-            // FName(encodedFeatureIdTexture.name + "_ChannelMask"),
-            FName(
-                "FeatureIdTexture:" + encodedFeatureIdTexture.featureTableName +
-                "_ChannelMask"),
+            FName(encodedFeatureIdTexture.baseName + "CM"),
             association,
             index),
         channelMask);
@@ -1729,7 +1743,6 @@ static void SetMetadataParameterValues(
 
     if (pEncodedFeatureTable) {
       SetMetadataFeatureTableParameterValues(
-          encodedFeatureIdTexture.name,
           *pEncodedFeatureTable,
           pMaterial,
           association,
@@ -1742,7 +1755,7 @@ static void SetMetadataParameterValues(
        loadResult.EncodedMetadata.encodedVertexMetadata) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(encodedVertexFeature.name + "_TextureCoordinateIndex"),
+            FName(encodedVertexFeature.name),
             association,
             index),
         encodedVertexFeature.textureCoordinateIndex);
@@ -1753,7 +1766,6 @@ static void SetMetadataParameterValues(
 
     if (pEncodedFeatureTable) {
       SetMetadataFeatureTableParameterValues(
-          encodedVertexFeature.name,
           *pEncodedFeatureTable,
           pMaterial,
           association,

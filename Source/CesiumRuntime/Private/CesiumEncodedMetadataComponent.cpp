@@ -252,7 +252,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
   for (const FFeatureTableDescription& featureTable : this->FeatureTables) {
     if (featureTable.AccessType == ECesiumFeatureTableAccessType::Unknown ||
-        // TODO: don't ignore mixed?
         featureTable.AccessType == ECesiumFeatureTableAccessType::Mixed) {
       continue;
     }
@@ -274,7 +273,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       UMaterialExpressionTextureObjectParameter* FeatureIdTexture =
           NewObject<UMaterialExpressionTextureObjectParameter>(UnrealMaterial);
       FeatureIdTexture->ParameterName =
-          FName("FeatureIdTexture:" + featureTable.Name);
+          FName("FIT_" + featureTable.Name + "_TX");
       FeatureIdTexture->MaterialExpressionEditorX = NodeX;
       FeatureIdTexture->MaterialExpressionEditorY = NodeY;
       UnrealMaterial->FunctionExpressions.Add(FeatureIdTexture);
@@ -287,8 +286,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       UMaterialExpressionScalarParameter* TexCoordsIndex =
           NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
-      TexCoordsIndex->ParameterName = FName(
-          "FeatureIdTexture:" + featureTable.Name + "_TextureCoordinateIndex");
+      TexCoordsIndex->ParameterName = FName("FIT_" + featureTable.Name + "_UV");
       TexCoordsIndex->DefaultValue = 0.0f;
       TexCoordsIndex->MaterialExpressionEditorX = NodeX;
       TexCoordsIndex->MaterialExpressionEditorY = NodeY;
@@ -315,14 +313,44 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       TexCoordsInput.InputName = "TexCoords";
       TexCoordsInput.Input.Expression = SelectTexCoords;
 
-      // FeatureTableLookup->OutputType =
-      // ECustomMaterialOutputType::CMOT_Float1;
       // TODO: use channel mask, instead of hardcoding r channel
       // cannot determine channel name in editor, use channel mask + sample to
       // derive id.
-
       FeatureTableLookup->Code =
           "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords).r);\n";
+    } else {
+      // Create material for vertex attributes
+
+      UMaterialExpressionScalarParameter* AttributeIndex =
+          NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+      AttributeIndex->ParameterName = FName("FA_" + featureTable.Name);
+      AttributeIndex->DefaultValue = 0.0f;
+      AttributeIndex->MaterialExpressionEditorX = NodeX;
+      AttributeIndex->MaterialExpressionEditorY = NodeY;
+      UnrealMaterial->FunctionExpressions.Add(AttributeIndex);
+
+      NodeX += IncrX;
+
+      UMaterialExpressionMaterialFunctionCall* SelectTexCoords =
+          NewObject<UMaterialExpressionMaterialFunctionCall>(UnrealMaterial);
+      SelectTexCoords->MaterialFunction = SelectTexCoordsFunction;
+      SelectTexCoords->MaterialExpressionEditorX = NodeX;
+      SelectTexCoords->MaterialExpressionEditorY = NodeY;
+
+      // TODO: need output?
+      TArray<FFunctionExpressionOutput> _;
+      SelectTexCoordsFunction->GetInputsAndOutputs(
+          SelectTexCoords->FunctionInputs,
+          _);
+      SelectTexCoords->FunctionInputs[0].Input.Expression = AttributeIndex;
+      UnrealMaterial->FunctionExpressions.Add(SelectTexCoords);
+
+      FCustomInput& TexCoordsInput = FeatureTableLookup->Inputs[0];
+      TexCoordsInput.InputName = "EncodedPropertyIndex";
+      TexCoordsInput.Input.Expression = SelectTexCoords;
+
+      FeatureTableLookup->Code =
+          "uint propertyIndex = asuint(EncodedPropertyIndex.r);\n";
     }
 
     // TODO: vertex attributes
@@ -336,7 +364,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       UMaterialExpressionTextureObjectParameter* PropertyArray =
           NewObject<UMaterialExpressionTextureObjectParameter>(UnrealMaterial);
       PropertyArray->ParameterName =
-          FName(featureTable.Name + "_" + property.Name);
+          FName("FTB_" + featureTable.Name + "_" + property.Name);
       PropertyArray->MaterialExpressionEditorX = NodeX;
       PropertyArray->MaterialExpressionEditorY = NodeY;
       UnrealMaterial->FunctionExpressions.Add(PropertyArray);
@@ -403,7 +431,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
   UMaterialExpressionFunctionInput* InputMaterial =
       NewObject<UMaterialExpressionFunctionInput>(UnrealMaterial);
-  // InputMaterial->InputName = "Material Attributes";
+
   InputMaterial->InputType =
       EFunctionInputType::FunctionInput_MaterialAttributes;
   InputMaterial->bUsePreviewValueAsDefault = true;
@@ -415,9 +443,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
   UMaterialExpressionFunctionOutput* OutputMaterial =
       NewObject<UMaterialExpressionFunctionOutput>(UnrealMaterial);
-  // OutputMaterial->OutputName = "Material Attributes";
-  // TODO: ??
-  // OutputMaterial->Id = FGuid::NewGuid();
+
   OutputMaterial->MaterialExpressionEditorX = NodeX;
   OutputMaterial->MaterialExpressionEditorY = NodeY;
   OutputMaterial->A = FMaterialAttributesInput();

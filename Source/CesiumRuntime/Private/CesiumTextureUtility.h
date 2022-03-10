@@ -56,7 +56,7 @@ struct EncodedFeatureIdTexture {
   /**
    * @brief The name to use for this feature id texture in the shader.
    */
-  FString name;
+  FString baseName;
 
   /**
    * @brief The encoded feature table corresponding to this feature id
@@ -88,7 +88,7 @@ struct EncodedVertexMetadata {
 };
 
 struct EncodedFeatureTextureProperty {
-  FString name;
+  FString baseName;
   LoadedTextureResult* pTexture;
   int64 textureCoordinateIndex;
   int32 channelOffsets[4];

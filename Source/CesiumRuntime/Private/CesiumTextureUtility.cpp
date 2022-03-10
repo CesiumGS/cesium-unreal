@@ -530,7 +530,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
-    encodedProperty.name = encodeInstructions.Name + "_" + pair.Key;
+    encodedProperty.name = "FTB_" + encodeInstructions.Name + "_" + pair.Key;
 
     int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
     encodedProperty.pTexture = new LoadedTextureResult();
@@ -642,9 +642,9 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
       continue;
     }
 
-    encodedFeatureTextureProperty.name =
-        "FeatureTexture:" + featureTextureName + "_" +
-        UTF8_TO_TCHAR(propertyIt.first.c_str());
+    encodedFeatureTextureProperty.baseName =
+        "FTX_" + featureTextureName + "_" +
+        UTF8_TO_TCHAR(propertyIt.first.c_str()) + "_";
     encodedFeatureTextureProperty.textureCoordinateIndex =
         featureTexturePropertyView.getTextureCoordinateIndex();
 
@@ -761,7 +761,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           EncodedFeatureIdTexture& encodedFeatureIdTexture =
               result.encodedFeatureIdTextures.Emplace_GetRef();
 
-          encodedFeatureIdTexture.name = "FeatureIdTexture:" + featureTableName;
+          encodedFeatureIdTexture.baseName = "FIT_" + featureTableName + "_";
           encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
           encodedFeatureIdTexture.textureCoordinateIndex =
               featureIdTextureView.getTextureCoordinateIndex();
@@ -825,7 +825,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           EncodedVertexMetadata& encodedVertexFeature =
               result.encodedVertexMetadata.Emplace_GetRef();
 
-          encodedVertexFeature.name = "FeatureIdAttribute:" + featureTableName;
+          encodedVertexFeature.name = "FA_" + featureTableName;
           encodedVertexFeature.featureTableName = featureTableName;
           encodedVertexFeature.index = static_cast<int32>(i);
 
