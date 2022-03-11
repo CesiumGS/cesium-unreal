@@ -5,6 +5,8 @@ source travis/travis-find-python.sh
 export CC=
 export CXX=
 
+$CESIUM_PIP install conan
+
 pushd extern
 $CESIUM_PYTHON ./cesium-native/tools/automate.py conan-export-recipes
 $CESIUM_PYTHON ./cesium-native/tools/automate.py generate-library-recipes --editable
