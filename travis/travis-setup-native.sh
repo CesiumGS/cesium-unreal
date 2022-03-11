@@ -13,5 +13,5 @@ $CESIUM_PYTHON ./cesium-native/tools/automate.py generate-library-recipes --edit
 $CESIUM_PYTHON ./cesium-native/tools/automate.py editable on
 conan install . -pr:b=default -pr:h=./conan-profiles/$CONAN_PROFILE.jinja
 cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=cesium-native/build/CesiumUtility/conan/conan_toolchain.cmake
-cmake --build build --target install -j 4
+cmake --build build --target install -j 4 --config Release
 popd
