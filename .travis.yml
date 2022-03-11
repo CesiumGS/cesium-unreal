@@ -25,12 +25,8 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -A x64
+    - "./travis/travis-setup-native.sh"
     script:
-    - cmake --build . --config Release --target install -- /maxcpucount:4
-    - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
     - wait
@@ -40,7 +36,9 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4-windows-release
   - name: Windows 4.27
     os: windows
     install:
@@ -54,12 +52,8 @@ jobs:
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -A x64
+    - "./travis/travis-setup-native.sh"
     script:
-    - cmake --build . --config Release --target install -- /maxcpucount:4
-    - cd ../..
     - rm -rf extern
     - export CLONEDIR=$PWD
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
@@ -70,7 +64,9 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    env:
+    - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue4-windows-release
   - name: Android 4.26
     os: windows
     cache:
