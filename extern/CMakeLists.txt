@@ -35,7 +35,7 @@ set(PRIVATE_CESIUM_SQLITE ON)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/../Source/ThirdParty)
-set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CESIUM_ARCHITECTURE})
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SYSTEM_NAME}-x${CESIUM_ARCHITECTURE}-$<CONFIG>)
 
 set(CESIUM_DEBUG_POSTFIX "d")
 set(CESIUM_RELEASE_POSTFIX "")
@@ -71,8 +71,9 @@ set(CESIUM_INSTALL_REQUIREMENTS ON)
 set(CESIUM_TESTS_ENABLED OFF)
 add_subdirectory(cesium-native ${CMAKE_CURRENT_LIST_DIR}/cesium-native/build)
 
-# cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
-#install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cesium-native/extern/stb/stb_image_resize.h TYPE INCLUDE)
+# cesium-native doesn't require STB to be public, but Cesium for Unreal wants to use it.
+find_package(stb REQUIRED)
+cesium_install_requirement(stb::stb PUBLIC)
 
 # Unreal Engine doesn't include MikkTSpace on Android.
 # So add our own.
