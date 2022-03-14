@@ -185,9 +185,11 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
         onScreenCreditString +=
             "<div>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
             "</div>";
+      } else {
+        creditString += "<li>" +
+                        _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
+                        "</li>";
       }
-      creditString +=
-          "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) + "</li>";
     }
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
