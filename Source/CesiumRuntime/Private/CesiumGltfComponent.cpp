@@ -1018,11 +1018,13 @@ static void loadPrimitive(
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
     CESIUM_TRACE("PhysX cook");
+    PxTriangleMesh* createdCollisionMesh = nullptr;
     BuildPhysXTriangleMeshes(
-        primitiveResult.pCollisionMesh,
+        createdCollisionMesh,
         options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCooking,
         StaticMeshBuildVertices,
         indices);
+    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
     CESIUM_TRACE("Chaos cook");
     primitiveResult.pCollisionMesh =
@@ -1654,7 +1656,7 @@ static void loadPrimitiveGameThreadPart(
 
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
-    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh);
+    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh.Release());
 #else
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif

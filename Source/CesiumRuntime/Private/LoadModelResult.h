@@ -2,6 +2,18 @@
 
 #pragma once
 
+#if PHYSICS_INTERFACE_PHYSX
+#include <PxTriangleMesh.h>
+
+struct PxTriangleMeshDeleter {
+  void operator()(PxTriangleMesh* pCollisionMesh) {
+    if (pCollisionMesh) {
+      pCollisionMesh->release();
+    }
+  }
+};
+#endif
+
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
@@ -10,24 +22,20 @@ struct LoadPrimitiveResult {
   const CesiumGltf::Material* pMaterial = nullptr;
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
-  PxTriangleMesh* pCollisionMesh = nullptr;
+  TUniquePtr<PxTriangleMesh, PxTriangleMeshDeleter> pCollisionMesh;
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
       pCollisionMesh = nullptr;
 #endif
   std::string name{};
 
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture =
-      nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
-      metallicRoughnessTexture = nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture = nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture =
-      nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture =
-      nullptr;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture =
-      nullptr;
+      metallicRoughnessTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand = true;
