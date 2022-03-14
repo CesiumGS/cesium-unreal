@@ -1525,8 +1525,7 @@ static void loadPrimitiveGameThreadPart(
   pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #else
   // UE 5
-  pStaticMesh->SetRenderData(
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #endif
 
   const CesiumGltf::Model& model = *loadResult.pModel;
