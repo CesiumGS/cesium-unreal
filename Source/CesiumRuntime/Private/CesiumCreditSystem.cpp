@@ -168,16 +168,23 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     std::string creditString =
         "<head>\n<meta charset=\"utf-16\"/>\n</head>\n<body style=\"color:white\"><ul>";
     for (size_t i = 0; i < creditsToShowThisFrame.size(); ++i) {
+      if (_pCreditSystem->isIon(creditsToShowThisFrame[i])) {
+        // avoid adding cesium ion logo to avoid duplicate cesium logos
+        continue;
+      }
       if (_pCreditSystem->shouldBeShownOnScreen(creditsToShowThisFrame[i])) {
         if (!DisplayOnScreenCredits) {
           DisplayOnScreenCredits = true;
           onScreenCreditString =
-              "<head><style>body{color:white;} li {float:left;margin-left:16px;margin-right:16px;}</style>\n"
-              "<meta charset=\"utf-16\"/>\n</head>\n<body><ul>";
+              "<head><base target=\"_blank\"><style>body{color:white;position:absolute;left:0;font-size:10px;font-family:sans-serif;}"
+              "div{display:inline;}a{color:white}</style>\n"
+              "<meta charset=\"utf-16\"/>\n</head>\n<body>";
+        } else {
+          onScreenCreditString += "<span> &bull; </span>";
         }
         onScreenCreditString +=
-            "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
-            "</li>";
+            "<div>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
+            "</div>";
       }
       creditString +=
           "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) + "</li>";
@@ -185,7 +192,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
     if (DisplayOnScreenCredits) {
-      onScreenCreditString += "</ul></body>";
+      onScreenCreditString += "</body>";
       OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
     }
     _lastCreditsCount = creditsToShowThisFrame.size();
