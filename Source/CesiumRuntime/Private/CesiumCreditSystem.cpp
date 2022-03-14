@@ -176,7 +176,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
         if (!DisplayOnScreenCredits) {
           DisplayOnScreenCredits = true;
           onScreenCreditString =
-              "<head><base target=\"_blank\"><style>body{color:white;position:absolute;left:0;font-size:10px;font-family:sans-serif;}"
+              "<head><base target=\"_blank\"><style>body{color:white;font-size:10px;font-family:sans-serif;}"
               "div{display:inline;}a{color:white}</style>\n"
               "<meta charset=\"utf-16\"/>\n</head>\n<body>";
         } else {
