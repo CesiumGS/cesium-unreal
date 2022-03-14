@@ -6,6 +6,8 @@ project(
     LANGUAGES CXX C
 )
 
+enable_testing()
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set(CESIUM_ARCHITECTURE "aarch64")
     set(HTTPLIB_USE_OPENSSL_IF_AVAILABLE OFF)
@@ -68,7 +70,7 @@ endif()
 
 # Install cesium-native's dependencies, not just cesium-native.
 set(CESIUM_INSTALL_REQUIREMENTS ON)
-set(CESIUM_TESTS_ENABLED OFF)
+set(CESIUM_TESTS_ENABLED ON)
 add_subdirectory(cesium-native ${CMAKE_CURRENT_LIST_DIR}/cesium-native/build)
 
 # cesium-native doesn't require STB to be public, but Cesium for Unreal wants to use it.

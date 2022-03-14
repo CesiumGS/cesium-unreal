@@ -1,0 +1,28 @@
+# NOTE: The following environment variables must be set externally:
+#  - LINUX_MULTIARCH_ROOT: The path to the root of the Unreal Engine Clang compiler, e.g. C:/UnrealToolchains/v17_clang-10.0.1-centos7
+#  - UNREAL_ENGINE_DIR: The path to the root of the Unreal Engine installation, e.g. C:/Program Files/Epic Games/UE_4.26
+
+[settings]
+os=Linux
+compiler=clang
+compiler.version=10
+compiler.libcxx=libc++
+arch=x86_64
+build_type=Release
+
+[env]
+# These are used by Conan's _old_ CMake integration
+CONAN_CMAKE_TOOLCHAIN_FILE=$PROFILE_DIR/../unreal-linux-toolchain.cmake
+CONAN_CMAKE_GENERATOR=Ninja
+
+# These settings are needed for non-CMake builds, e.g. OpenSSL
+# CMake builds will use the toolchain files instead.
+CXX=$UNREAL_ENGINE_COMPILER_DIR/bin/clang++
+CC=$UNREAL_ENGINE_COMPILER_DIR/bin/clang
+CXXFLAGS=-target x86_64-unknown-linux-gnu --sysroot=$UNREAL_ENGINE_COMPILER_DIR
+CFLAGS=-target x86_64-unknown-linux-gnu --sysroot=$UNREAL_ENGINE_COMPILER_DIR
+
+[conf]
+# These are used by Conan's _new_ CMake integration
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.cmake.cmaketoolchain:user_toolchain=$PROFILE_DIR/../unreal-linux-toolchain.cmake
