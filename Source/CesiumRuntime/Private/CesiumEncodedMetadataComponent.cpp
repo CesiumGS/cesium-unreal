@@ -222,7 +222,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   FString MaterialBaseName = "ML_Material";
   FString PackageName = "/Game/";
   PackageName += MaterialBaseName;
-  UPackage* Package = CreatePackage(NULL, *PackageName);
+  UPackage* Package = CreatePackage(*PackageName);
 
   // Create an unreal material asset
   UMaterialFunctionMaterialLayerFactory* MaterialFactory =
