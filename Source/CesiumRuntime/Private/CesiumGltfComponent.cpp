@@ -535,12 +535,11 @@ static void updateTextureCoordinatesForMetadata(
           FStaticMeshBuildVertex& vertex = vertices[i];
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
-            uint32_t featureId = static_cast<uint32_t>(
+            float featureId = static_cast<float>(
                 UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
                     vertexFeature,
                     vertexIndex));
-            vertex.UVs[textureCoordinateIndex] =
-                TMeshVector2(*reinterpret_cast<const float*>(&featureId), 0.0f);
+            vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
           }
@@ -549,12 +548,11 @@ static void updateTextureCoordinatesForMetadata(
         for (int64_t i = 0; i < vertices.Num(); ++i) {
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
-            uint32_t featureId = static_cast<uint32_t>(
+            uint32_t featureId = static_cast<float>(
                 UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
                     vertexFeature,
                     i));
-            vertex.UVs[textureCoordinateIndex] =
-                TMeshVector2(*reinterpret_cast<float*>(&featureId), 0.0f);
+            vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
           }
@@ -1750,7 +1748,6 @@ static void SetMetadataParameterValues(
     }
   }
 
-  // TODO: change naming for vertex attributes
   for (const EncodedVertexMetadata& encodedVertexFeature :
        loadResult.EncodedMetadata.encodedVertexMetadata) {
     pMaterial->SetScalarParameterValueByInfo(

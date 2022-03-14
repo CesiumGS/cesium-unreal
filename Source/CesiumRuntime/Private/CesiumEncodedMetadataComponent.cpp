@@ -16,9 +16,11 @@
 #include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionMaterialFunctionCall.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionSetMaterialAttributes.h"
 #include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionTextureObjectParameter.h"
 #include "Materials/MaterialExpressionTextureProperty.h"
+#include "Materials/MaterialExpressionVertexInterpolator.h"
 #include "Materials/MaterialFunctionMaterialLayer.h"
 #include "UObject/Package.h"
 
@@ -313,11 +315,16 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       TexCoordsInput.InputName = "TexCoords";
       TexCoordsInput.Input.Expression = SelectTexCoords;
 
+      NodeX += IncrX;
+
       // TODO: use channel mask, instead of hardcoding r channel
       // cannot determine channel name in editor, use channel mask + sample to
       // derive id.
       FeatureTableLookup->Code =
           "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords).r);\n";
+
+      FeatureTableLookup->MaterialExpressionEditorX = NodeX;
+      FeatureTableLookup->MaterialExpressionEditorY = NodeY;
     } else {
       // Create material for vertex attributes
 
@@ -346,14 +353,25 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       UnrealMaterial->FunctionExpressions.Add(SelectTexCoords);
 
       FCustomInput& TexCoordsInput = FeatureTableLookup->Inputs[0];
-      TexCoordsInput.InputName = "EncodedPropertyIndex";
+      TexCoordsInput.InputName = "PropertyIndexUV";
       TexCoordsInput.Input.Expression = SelectTexCoords;
 
-      FeatureTableLookup->Code =
-          "uint propertyIndex = asuint(EncodedPropertyIndex.r);\n";
-    }
+      NodeX += IncrX;
 
-    // TODO: vertex attributes
+      FeatureTableLookup->Code =
+          "uint propertyIndex = asuint(PropertyIndexUV.r);\n";
+
+      FeatureTableLookup->MaterialExpressionEditorX = NodeX;
+      FeatureTableLookup->MaterialExpressionEditorY = NodeY;
+
+      NodeX += IncrX;
+
+      UMaterialExpressionVertexInterpolator* Interpolator =
+          NewObject<UMaterialExpressionVertexInterpolator>(UnrealMaterial);
+      Interpolator->MaterialExpressionEditorX = NodeX;
+      Interpolator->MaterialExpressionEditorY = NodeY;
+      UnrealMaterial->FunctionExpressions.Add(Interpolator);
+    }
 
     NodeX = SectionLeft;
     NodeY += IncrY;
@@ -406,8 +424,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       NodeY += IncrY;
     }
 
-    int32 SectionBottom = NodeY;
-
     FeatureTableLookup->OutputType = ECustomMaterialOutputType::CMOT_Float1;
 
     FeatureTableLookup->Code += "float propertyIndexF = propertyIndex;\n";
@@ -416,22 +432,13 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     // TODO: why doesn't this link?
     // FeatureTableLookup->RebuildOutputs();
 
-    NodeX += 2 * IncrX;
-    NodeY = SectionTop;
-
-    FeatureTableLookup->MaterialExpressionEditorX = NodeX;
-    FeatureTableLookup->MaterialExpressionEditorY = NodeY;
-
     NodeX = SectionLeft;
-    NodeY = SectionBottom;
   }
 
-  NodeX = 0;
   NodeY = -IncrY;
 
   UMaterialExpressionFunctionInput* InputMaterial =
       NewObject<UMaterialExpressionFunctionInput>(UnrealMaterial);
-
   InputMaterial->InputType =
       EFunctionInputType::FunctionInput_MaterialAttributes;
   InputMaterial->bUsePreviewValueAsDefault = true;
@@ -439,15 +446,23 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   InputMaterial->MaterialExpressionEditorY = NodeY;
   UnrealMaterial->FunctionExpressions.Add(InputMaterial);
 
-  NodeX += 3 * IncrX;
+  NodeX += IncrX;
+
+  UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes =
+      NewObject<UMaterialExpressionSetMaterialAttributes>(UnrealMaterial);
+  SetMaterialAttributes->Inputs[0].Expression = InputMaterial;
+  SetMaterialAttributes->MaterialExpressionEditorX = NodeX;
+  SetMaterialAttributes->MaterialExpressionEditorY = NodeY;
+  UnrealMaterial->FunctionExpressions.Add(SetMaterialAttributes);
+
+  NodeX += IncrX;
 
   UMaterialExpressionFunctionOutput* OutputMaterial =
       NewObject<UMaterialExpressionFunctionOutput>(UnrealMaterial);
-
   OutputMaterial->MaterialExpressionEditorX = NodeX;
   OutputMaterial->MaterialExpressionEditorY = NodeY;
   OutputMaterial->A = FMaterialAttributesInput();
-  OutputMaterial->A.Expression = InputMaterial;
+  OutputMaterial->A.Expression = SetMaterialAttributes;
   UnrealMaterial->FunctionExpressions.Add(OutputMaterial);
 
   // let the material update itself if necessary
