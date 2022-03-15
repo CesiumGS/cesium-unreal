@@ -21,7 +21,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - "./travis/travis-get-ue.sh &"
+    - travis_wait 30 "./travis/travis-get-ue.sh"
     before_script:
     - export UNREAL_ENGINE_DIR=/c/Program\ Files/Epic\ Games/UE_4.26
     - export CESIUM_UNREAL_VERSION=$(git describe)
@@ -35,7 +35,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - wait
-    - cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+    - cd "$UNREAL_ENGINE_DIR/Engine/Build/BatchFiles"
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
@@ -53,7 +53,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - "./travis/travis-get-ue-427.sh &"
+    - travis_wait 30 "./travis/travis-get-ue-427.sh"
     before_script:
     - export UNREAL_ENGINE_DIR=/c/Epic/UE_4.27
     - export CESIUM_UNREAL_VERSION=$(git describe)
