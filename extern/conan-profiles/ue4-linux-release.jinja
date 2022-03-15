@@ -2,6 +2,8 @@
 #  - LINUX_MULTIARCH_ROOT: The path to the root of the Unreal Engine Clang compiler, e.g. C:/UnrealToolchains/v17_clang-10.0.1-centos7
 #  - UNREAL_ENGINE_DIR: The path to the root of the Unreal Engine installation, e.g. C:/Program Files/Epic Games/UE_4.26
 
+UNREAL_ENGINE_COMPILER_DIR={{ os.path.join(os.getenv("LINUX_MULTIARCH_ROOT"), "x86_64-unknown-linux-gnu") }}
+
 [settings]
 os=Linux
 compiler=clang
