@@ -10,7 +10,6 @@
 #include "ComponentReregisterContext.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
-#include "Factories/MaterialFactoryNew.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionCustom.h"
