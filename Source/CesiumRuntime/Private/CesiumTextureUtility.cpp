@@ -348,7 +348,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
 #if ENGINE_MAJOR_VERSION >= 5
-    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
 #else
     pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
 #endif
