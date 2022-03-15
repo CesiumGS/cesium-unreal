@@ -483,6 +483,111 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     NodeX = SectionLeft;
   }
 
+  for (const FFeatureTextureDescription& featureTexture :
+       this->FeatureTextures) {
+    int32 SectionLeft = NodeX;
+    int32 SectionTop = NodeY;
+
+    UMaterialExpressionCustom* FeatureTextureLookup =
+        NewObject<UMaterialExpressionCustom>(UnrealMaterial);
+    FeatureTextureLookup->Inputs.Reset(2 * featureTexture.Properties.Num());
+    FeatureTextureLookup->Outputs.Reset(featureTexture.Properties.Num() + 1);
+    FeatureTextureLookup->Outputs.Add(FExpressionOutput(TEXT("return")));
+    FeatureTextureLookup->bShowOutputNameOnPin = true;
+    FeatureTextureLookup->Description =
+        "Resolve properties from " + featureTexture.Name;
+    FeatureTextureLookup->MaterialExpressionEditorX = NodeX + 2 * IncrX;
+    FeatureTextureLookup->MaterialExpressionEditorY = NodeY;
+    UnrealMaterial->FunctionExpressions.Add(FeatureTextureLookup);
+
+    for (const FFeatureTexturePropertyDescription& property :
+         featureTexture.Properties) {
+      UMaterialExpressionTextureObjectParameter* PropertyTexture =
+          NewObject<UMaterialExpressionTextureObjectParameter>(UnrealMaterial);
+      PropertyTexture->ParameterName =
+          FName("FTX_" + featureTexture.Name + "_" + property.Name + "_TX");
+      PropertyTexture->MaterialExpressionEditorX = NodeX;
+      PropertyTexture->MaterialExpressionEditorY = NodeY;
+      UnrealMaterial->FunctionExpressions.Add(PropertyTexture);
+
+      FCustomInput& PropertyTextureInput =
+          FeatureTextureLookup->Inputs.Emplace_GetRef();
+      PropertyTextureInput.InputName = FName(property.Name + "_TX");
+      PropertyTextureInput.Input.Expression = PropertyTexture;
+
+      NodeY += IncrY;
+
+      UMaterialExpressionScalarParameter* TexCoordsIndex =
+          NewObject<UMaterialExpressionScalarParameter>(UnrealMaterial);
+      TexCoordsIndex->ParameterName =
+          FName("FTX_" + featureTexture.Name + "_" + property.Name + "_UV");
+      TexCoordsIndex->DefaultValue = 0.0f;
+      TexCoordsIndex->MaterialExpressionEditorX = NodeX;
+      TexCoordsIndex->MaterialExpressionEditorY = NodeY;
+      UnrealMaterial->FunctionExpressions.Add(TexCoordsIndex);
+
+      NodeX += IncrX;
+
+      UMaterialExpressionMaterialFunctionCall* SelectTexCoords =
+          NewObject<UMaterialExpressionMaterialFunctionCall>(UnrealMaterial);
+      SelectTexCoords->MaterialFunction = SelectTexCoordsFunction;
+      SelectTexCoords->MaterialExpressionEditorX = NodeX;
+      SelectTexCoords->MaterialExpressionEditorY = NodeY;
+
+      // TODO: need output?
+      TArray<FFunctionExpressionOutput> _;
+      SelectTexCoordsFunction->GetInputsAndOutputs(
+          SelectTexCoords->FunctionInputs,
+          _);
+      SelectTexCoords->FunctionInputs[0].Input.Expression = TexCoordsIndex;
+      UnrealMaterial->FunctionExpressions.Add(SelectTexCoords);
+
+      FCustomInput& TexCoordsInput =
+          FeatureTextureLookup->Inputs.Emplace_GetRef();
+      TexCoordsInput.InputName = FName(property.Name + "_UV");
+      TexCoordsInput.Input.Expression = SelectTexCoords;
+
+      FCustomOutput& PropertyOutput =
+          FeatureTextureLookup->AdditionalOutputs.Emplace_GetRef();
+      PropertyOutput.OutputName = FName(property.Name);
+      FeatureTextureLookup->Outputs.Add(
+          FExpressionOutput(PropertyOutput.OutputName));
+
+      // Either the property is normalized or it is coerced into float. Either
+      // way, the outputs will be float type.
+      switch (property.Type) {
+      case ECesiumPropertyType::Vec2:
+        PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float2;
+        break;
+      case ECesiumPropertyType::Vec3:
+        PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float3;
+        break;
+      case ECesiumPropertyType::Vec4:
+        PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float4;
+        break;
+      // case ECesiumPropertyType::Scalar:
+      default:
+        PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float1;
+      };
+
+      // TODO: should dynamic channel offsets be used instead of swizzle string
+      // determined at editor time? E.g. can swizzles be different for the same
+      // property texture on different tiles?
+      FeatureTextureLookup->Code +=
+          property.Name + " = " +
+          (property.Normalized ? "asfloat(" : "asuint(") + property.Name +
+          "_TX.Sample(" + property.Name + "_TXSampler, " + property.Name +
+          "_UV)." + property.Swizzle + ");\n";
+
+      NodeY += IncrY;
+    }
+
+    FeatureTextureLookup->OutputType = ECustomMaterialOutputType::CMOT_Float1;
+    FeatureTextureLookup->Code += "return 0.0f";
+
+    NodeX = SectionLeft;
+  }
+
   NodeY = -IncrY;
 
   UMaterialExpressionFunctionInput* InputMaterial =

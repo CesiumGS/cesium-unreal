@@ -1017,9 +1017,9 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
     for (EncodedFeatureTextureProperty& encodedFeatureTextureProperty :
          encodedFeatureTextureIt.Value.properties) {
       if (encodedFeatureTextureProperty.pTexture->pTexture) {
+        encodedFeatureTextureProperty.pTexture->pTexture->RemoveFromRoot();
         CesiumLifetime::destroy(
             encodedFeatureTextureProperty.pTexture->pTexture);
-        encodedFeatureTextureProperty.pTexture->pTexture->RemoveFromRoot();
         encodedFeatureTextureProperty.pTexture->pTexture = nullptr;
       }
     }
