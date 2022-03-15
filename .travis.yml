@@ -42,7 +42,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
-    - CONAN_PROFILE=ue4-windows-release
+    - CONAN_PROFILE=ue426-windows-release
   - name: Windows 4.27
     os: windows
     install:
@@ -74,7 +74,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
-    - CONAN_PROFILE=ue4-windows-release
+    - CONAN_PROFILE=ue427-windows-release
   - name: Android 4.26
     os: windows
     cache:
@@ -274,7 +274,7 @@ jobs:
     os: linux
     dist: focal
     env:
-    - CONAN_PROFILE=ue4-linux-release
+    - CONAN_PROFILE=ue426-linux-release
     install:
     - # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
     - # and breaks our ability to update. We don't need it, so remove it.
@@ -318,8 +318,6 @@ jobs:
     script:
     - export UNREAL_ENGINE_DIR=/c/Epic/UE_4.27
     - export LINUX_MULTIARCH_ROOT=/c/UnrealToolchains/v19_clang-11.0.1-centos7/
-    - export UNREAL_ENGINE_COMPILER_DIR=${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu
-    - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}
     - export "EXTRA_CONFIGURE_ARGS=-G Ninja"
@@ -335,7 +333,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
-    - CONAN_PROFILE=ue4-linux-release
+    - CONAN_PROFILE=ue427-linux-release
   - name: Windows 5.0.0 preview 1
     os: windows
     install:

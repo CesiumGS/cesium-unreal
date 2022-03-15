@@ -1,0 +1,6 @@
+include(ue426-windows-release.jinja)
+
+[settings]
+build_type=Debug
+# UE always uses the release runtime library, even in debug builds
+compiler.runtime=MD
