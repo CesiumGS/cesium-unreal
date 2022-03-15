@@ -1,4 +1,5 @@
 from conan import ConanFile
+import os
 
 class CesiumUnrealConan(ConanFile):
     name = "cesium-unreal"
@@ -11,9 +12,10 @@ class CesiumUnrealConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = []
     generators = "CMakeDeps"
-    requires = [
-      "cesium-native/0.12.0@user/dev"
-    ]
+
+    def requirements(self):
+      self.requires("cesium-native/0.12.0@user/dev")
+      self.requires("openssl/UE" + os.getenv("UNREAL_ENGINE_VERSION"), override=True)
 
     def layout(self):
       self.folders.source = "."
