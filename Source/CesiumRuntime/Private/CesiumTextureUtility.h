@@ -21,6 +21,7 @@ struct FCesiumMetadataPrimitive;
 struct FCesiumMetadataFeatureTable;
 struct FCesiumFeatureTexture;
 struct FFeatureTableDescription;
+struct FFeatureTextureDescription;
 
 class UCesiumEncodedMetadataComponent;
 
@@ -129,6 +130,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<const CesiumGltf::ImageCesium*, LoadedTextureResult*>&
         featureTexturePropertyMap,
+    const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
     const FCesiumFeatureTexture& featureTexture);
 

@@ -15,6 +15,16 @@ int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
   return property._pProperty->getComponentCount();
 }
 
+bool UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
+    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
+  return property._pProperty->isNormalized();
+}
+
+FString UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(
+    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
+  return UTF8_TO_TCHAR(property._pProperty->getSwizzle().c_str());
+}
+
 FCesiumIntegerColor UCesiumFeatureTexturePropertyBlueprintLibrary::
     GetIntegerColorFromTextureCoordinates(
         UPARAM(ref) const FCesiumFeatureTextureProperty& property,

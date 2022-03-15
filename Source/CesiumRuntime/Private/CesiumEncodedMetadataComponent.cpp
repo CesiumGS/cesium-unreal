@@ -1,13 +1,15 @@
 
 #include "CesiumEncodedMetadataComponent.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Cesium3DTileset.h"
+#include "CesiumFeatureTextureProperty.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataConversions.h"
 #include "CesiumMetadataModel.h"
-
-#include "AssetRegistry/AssetRegistryModule.h"
 #include "ComponentReregisterContext.h"
+#include "Containers/Array.h"
+#include "Containers/UnrealString.h"
 #include "Factories/MaterialFactoryNew.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "Materials/Material.h"
@@ -130,22 +132,68 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     }
 
     for (const auto& featureTextureIt : featureTextures) {
-      bool found = false;
-      for (const FFeatureTextureDescription& existingFeatureTexture :
+      FFeatureTextureDescription* pFeatureTexture = nullptr;
+      for (FFeatureTextureDescription& existingFeatureTexture :
            this->FeatureTextures) {
         if (existingFeatureTexture.Name == featureTextureIt.Key) {
-          found = true;
+          pFeatureTexture = &existingFeatureTexture;
           break;
         }
       }
 
-      if (found) {
-        continue;
+      if (!pFeatureTexture) {
+        pFeatureTexture = &this->FeatureTextures.Emplace_GetRef();
+        pFeatureTexture->Name = featureTextureIt.Key;
       }
 
-      // TODO: add more checks than just name for feature textures?
-      this->FeatureTextures.Emplace(
-          FFeatureTextureDescription{featureTextureIt.Key});
+      const TArray<FString>& propertyNames =
+          UCesiumFeatureTextureBlueprintLibrary::GetPropertyKeys(
+              featureTextureIt.Value);
+
+      for (const FString& propertyName : propertyNames) {
+        bool propertyExists = false;
+        for (const FFeatureTexturePropertyDescription& existingProperty :
+             pFeatureTexture->Properties) {
+          if (existingProperty.Name == propertyName) {
+            propertyExists = true;
+            break;
+          }
+        }
+
+        if (!propertyExists) {
+          FCesiumFeatureTextureProperty property =
+              UCesiumFeatureTextureBlueprintLibrary::FindProperty(
+                  featureTextureIt.Value,
+                  propertyName);
+          FFeatureTexturePropertyDescription& propertyDescription =
+              pFeatureTexture->Properties.Emplace_GetRef();
+          propertyDescription.Name = propertyName;
+          propertyDescription.Normalized =
+              UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
+                  property);
+
+          switch (
+              UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
+                  property)) {
+          case 2:
+            propertyDescription.Type = ECesiumPropertyType::Vec2;
+            break;
+          case 3:
+            propertyDescription.Type = ECesiumPropertyType::Vec3;
+            break;
+          case 4:
+            propertyDescription.Type = ECesiumPropertyType::Vec4;
+            break;
+          // case 1:
+          default:
+            propertyDescription.Type = ECesiumPropertyType::Scalar;
+          }
+
+          propertyDescription.Swizzle =
+              UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(
+                  property);
+        }
+      }
     }
   }
 

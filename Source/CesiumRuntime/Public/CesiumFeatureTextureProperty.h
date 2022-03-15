@@ -83,6 +83,20 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTextureProperty")
+  static FString GetSwizzle(UPARAM(ref)
+                                const FCesiumFeatureTextureProperty& property);
+
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTextureProperty")
+  static bool IsNormalized(UPARAM(ref)
+                               const FCesiumFeatureTextureProperty& property);
+
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTextureProperty")
   static FCesiumIntegerColor GetIntegerColorFromTextureCoordinates(
       UPARAM(ref) const FCesiumFeatureTextureProperty& property,
       float u,
