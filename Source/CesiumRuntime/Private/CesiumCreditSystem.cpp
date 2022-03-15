@@ -165,7 +165,8 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
   if (CreditsUpdated) {
     bool firstScreenCredit = false;
     std::string onScreenCreditString =
-        "<head><base target=\"_blank\"><style>body{color:white;font-size:10px;font-family:sans-serif;}"
+        "<head><base target=\"_blank\">"
+        "<style>body{position:fixed;bottom:0;color:white;font-size:10px;font-family:sans-serif;}"
         "div{display:inline;}a{color:white}</style>\n"
         "<meta charset=\"utf-16\"/>\n</head>\n<body>";
     std::string creditString =
