@@ -23,6 +23,7 @@ jobs:
     - pip3 install httpie
     - "./travis/travis-get-ue.sh &"
     before_script:
+    - export UNREAL_ENGINE_DIR=/c/Program\ Files/Epic\ Games/UE_4.26
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-${TRAVIS_OS_NAME}-${CESIUM_UNREAL_VERSION}
     # Travis defines CC and CXX to gcc on Windows, for some reason.
@@ -34,7 +35,7 @@ jobs:
     - rm -rf extern
     - export CLONEDIR=$PWD
     - wait
-    - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
+    - cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
@@ -54,6 +55,7 @@ jobs:
     - pip3 install httpie
     - "./travis/travis-get-ue-427.sh &"
     before_script:
+    - export UNREAL_ENGINE_DIR=/c/Epic/UE_4.27
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}
     # Travis defines CC and CXX to gcc on Windows, for some reason.
@@ -66,7 +68,7 @@ jobs:
     - export CLONEDIR=$PWD
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - wait
-    - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
+    - cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
