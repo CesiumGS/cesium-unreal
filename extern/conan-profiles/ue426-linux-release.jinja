@@ -27,4 +27,4 @@ CFLAGS=-target x86_64-unknown-linux-gnu --sysroot=$UNREAL_ENGINE_COMPILER_DIR
 [conf]
 # These are used by Conan's _new_ CMake integration
 tools.cmake.cmaketoolchain:generator=Ninja
-tools.cmake.cmaketoolchain:user_toolchain=$PROFILE_DIR/../unreal-linux-toolchain.cmake
+tools.cmake.cmaketoolchain:user_toolchain=[$PROFILE_DIR/../unreal-linux-toolchain.cmake]
