@@ -264,6 +264,14 @@ static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {
   return LoadObjFromPath<UMaterialFunction>(Path);
 }
 
+// Not exhaustive in fixing unsafe names. Add more functionality here as needed
+// when in-compatible metadata names arise as recurring problems.
+static FString createHlslSafeName(const FString& rawName) {
+  FString safeName = rawName;
+  safeName.ReplaceCharInline(':', '_', ESearchCase::Type::IgnoreCase);
+  return safeName;
+}
+
 // TODO: position nodes on graph sensibly
 // TODO: consider multiple attributes pointing to same table
 void UCesiumEncodedMetadataComponent::GenerateMaterial() {
@@ -435,8 +443,11 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       PropertyArray->MaterialExpressionEditorY = NodeY;
       UnrealMaterial->FunctionExpressions.Add(PropertyArray);
 
+      FString propertyName = createHlslSafeName(property.Name);
+
       FCustomInput& PropertyInput = FeatureTableLookup->Inputs.Emplace_GetRef();
-      PropertyInput.InputName = FName(property.Name + "_array");
+      FString propertyArrayName = property.Name + "_array";
+      PropertyInput.InputName = FName(propertyArrayName);
       PropertyInput.Input.Expression = PropertyArray;
 
       FCustomOutput& PropertyOutput =
@@ -466,8 +477,8 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       };
 
       FeatureTableLookup->Code +=
-          property.Name + " = asfloat(" + property.Name +
-          "_array.Load(int3(propertyIndex, 0, 0))." + swizzle + ");\n";
+          propertyName + " = asfloat(" + propertyArrayName +
+          ".Load(int3(propertyIndex, 0, 0))." + swizzle + ");\n";
 
       NodeY += IncrY;
     }
@@ -494,6 +505,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     FeatureTextureLookup->Outputs.Reset(featureTexture.Properties.Num() + 1);
     FeatureTextureLookup->Outputs.Add(FExpressionOutput(TEXT("return")));
     FeatureTextureLookup->bShowOutputNameOnPin = true;
+    FeatureTextureLookup->Code = "";
     FeatureTextureLookup->Description =
         "Resolve properties from " + featureTexture.Name;
     FeatureTextureLookup->MaterialExpressionEditorX = NodeX + 2 * IncrX;
@@ -510,9 +522,12 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       PropertyTexture->MaterialExpressionEditorY = NodeY;
       UnrealMaterial->FunctionExpressions.Add(PropertyTexture);
 
+      FString propertyName = createHlslSafeName(property.Name);
+
       FCustomInput& PropertyTextureInput =
           FeatureTextureLookup->Inputs.Emplace_GetRef();
-      PropertyTextureInput.InputName = FName(property.Name + "_TX");
+      FString propertyTextureName = propertyName + "_TX";
+      PropertyTextureInput.InputName = FName(propertyTextureName);
       PropertyTextureInput.Input.Expression = PropertyTexture;
 
       NodeY += IncrY;
@@ -544,12 +559,13 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       FCustomInput& TexCoordsInput =
           FeatureTextureLookup->Inputs.Emplace_GetRef();
-      TexCoordsInput.InputName = FName(property.Name + "_UV");
+      FString propertyUvName = propertyName + "_UV";
+      TexCoordsInput.InputName = FName(propertyUvName);
       TexCoordsInput.Input.Expression = SelectTexCoords;
 
       FCustomOutput& PropertyOutput =
           FeatureTextureLookup->AdditionalOutputs.Emplace_GetRef();
-      PropertyOutput.OutputName = FName(property.Name);
+      PropertyOutput.OutputName = FName(propertyName);
       FeatureTextureLookup->Outputs.Add(
           FExpressionOutput(PropertyOutput.OutputName));
 
@@ -574,16 +590,16 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       // determined at editor time? E.g. can swizzles be different for the same
       // property texture on different tiles?
       FeatureTextureLookup->Code +=
-          property.Name + " = " +
-          (property.Normalized ? "asfloat(" : "asuint(") + property.Name +
-          "_TX.Sample(" + property.Name + "_TXSampler, " + property.Name +
-          "_UV)." + property.Swizzle + ");\n";
+          propertyName + " = " +
+          (property.Normalized ? "asfloat(" : "asuint(") + propertyTextureName +
+          ".Sample(" + propertyTextureName + "Sampler, " + propertyUvName +
+          ")." + property.Swizzle + ");\n";
 
       NodeY += IncrY;
     }
 
     FeatureTextureLookup->OutputType = ECustomMaterialOutputType::CMOT_Float1;
-    FeatureTextureLookup->Code += "return 0.0f";
+    FeatureTextureLookup->Code += "return 0.0f;";
 
     NodeX = SectionLeft;
   }
