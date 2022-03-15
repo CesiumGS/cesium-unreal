@@ -62,6 +62,7 @@ void destroyGltfParameterValues(
       assocation,
       index);
   destroyMaterialTexture(pMaterial, "normalTexture", assocation, index);
+  destroyMaterialTexture(pMaterial, "emissiveTexture", assocation, index);
   destroyMaterialTexture(pMaterial, "occlusionTexture", assocation, index);
 }
 
