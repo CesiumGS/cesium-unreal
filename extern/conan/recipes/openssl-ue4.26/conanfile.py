@@ -50,8 +50,23 @@ class OpenSSLConan(ConanFile):
             self.cpp.source.system_libs = ["crypt32.lib"]
 
         elif self.settings.os == "Linux":
-            # TODO
-            pass
+            if self.settings.arch == "x86_64":
+                platformSubdir = "x86_64-unknown-linux-gnu"
+            else:
+                platformSubdir = self.settings.arch # Probably won't work, but let's try.
+
+            self.cpp.source.includedirs = [
+                os.path.join(OpenSSL111cPath, "include", "Linux", platformSubdir)
+            ]
+
+            self.cpp.source.libdirs = [
+                os.path.join(OpenSSL111cPath, "lib", "Linux", platformSubdir)
+            ]
+
+            self.cpp.source.libs = [
+                "libssl.a",
+                "libcrypto.a"
+            ]
 
     def package_id(self):
         # We'll use the same pre-built binaries no matter the build_type or runtime.
