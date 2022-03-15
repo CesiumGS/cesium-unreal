@@ -12,9 +12,18 @@ enum class ECesiumPropertyComponentType : uint8 { Uint8, Float };
 UENUM()
 enum class ECesiumPropertyType : uint8 { Scalar, Vec2, Vec3, Vec4 };
 
+UENUM()
+enum class ECesiumFeatureTableAccessType : uint8 {
+  Unknown,
+  Texture,
+  Attribute,
+  Mixed
+};
+
 // Note that these don't exhaustively cover the possibilities of glTF metadata
 // classes, they only cover the subset that can be encoded into textures. For
-// example, arbitrary size arrays and strings are excluded.
+// example, arbitrary size arrays and enums are excluded. Other un-encoded
+// types like strings will be coerced.
 
 // TODO: descriptions
 USTRUCT()
@@ -43,7 +52,34 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
   FString Name;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumFeatureTableAccessType AccessType =
+      ECesiumFeatureTableAccessType::Unknown;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   TArray<FPropertyDescription> Properties;
+};
+
+USTRUCT()
+struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
+  GENERATED_USTRUCT_BODY()
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name;
+
+  // For now, always assumes it is Uint8
+  /*
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumPropertyComponentType ComponentType =
+      ECesiumPropertyComponentType::Uint8;*/
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  bool Normalized = false;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Swizzle;
 };
 
 USTRUCT()
@@ -52,6 +88,9 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Name;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  TArray<FFeatureTexturePropertyDescription> Properties;
 };
 
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
@@ -60,12 +99,17 @@ class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
   GENERATED_BODY()
 
 public:
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "EncodeMetadata")
   TArray<FFeatureTableDescription> FeatureTables;
 
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "EncodeMetadata")
   TArray<FFeatureTextureDescription> FeatureTextures;
 
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
   void AutoFill();
+
+#if WITH_EDITOR
+  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
+  void GenerateMaterial();
+#endif
 };
