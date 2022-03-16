@@ -1,0 +1,39 @@
+# NOTE: The following environment variables must be set externally:
+#  - ANDROID_NDK_ROOT: The path to the root of the Android NDK
+#  - UNREAL_ENGINE_DIR: The path to the root of the Unreal Engine installation, e.g. C:/Program Files/Epic Games/UE_4.26
+#  - PATH: The Android NDK prebuilt bin directory must be in your path, e.g. $ANDROID_NDK_ROOT/prebuilt/windows-x86_64/bin
+
+BUILD_PLATFORM=windows-x86_64
+TARGET=aarch64-linux-android21
+HOST_PLATFORM=aarch64-linux-android
+ANDROID_NDK_ROOT={{ os.getenv("ANDROID_NDK_ROOT") }}
+
+[settings]
+os=Android
+os.api_level=21
+compiler=clang
+compiler.version=9
+compiler.libcxx=libc++
+arch=armv8
+build_type=Release
+
+[env]
+UNREAL_ENGINE_VERSION=4.26
+NDKROOT={{ os.getenv("ANDROID_NDK_ROOT") }}
+
+# These are needed by non-CMake builds
+base64:CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM/bin/clang -target $TARGET
+base64:PATH={{ os.getenv("PATH") }};$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM/$HOST_PLATFORM/bin;$ANDROID_NDK_ROOT/prebuilt/$BUILD_PLATFORM/bin
+base64:AR=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM/$HOST_PLATFORM/bin/ar
+
+# These are used by Conan's _old_ CMake integration
+CONAN_CMAKE_TOOLCHAIN_FILE=$PROFILE_DIR/../unreal-android-toolchain.cmake
+CONAN_CMAKE_GENERATOR=Ninja
+
+[conf]
+# These are used by Conan's _new_ CMake integration
+tools.build:jobs=1
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.cmake.cmaketoolchain:user_toolchain=["$PROFILE_DIR/../unreal-android-toolchain.cmake"]
+tools.android:ndk_path=$ANDROID_NDK_ROOT
+tools.gnu:make_program=$ANDROID_NDK_ROOT/prebuilt/$BUILD_PLATFORM/bin/make
