@@ -49,6 +49,9 @@ jobs:
     install:
     - choco install 7zip.portable
     - choco install python --version 3.9.2
+    - cmake --version
+    - choco install cmake --installargs 'ADD_CMAKE_TO_PATH=User'
+    - cmake --version
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
