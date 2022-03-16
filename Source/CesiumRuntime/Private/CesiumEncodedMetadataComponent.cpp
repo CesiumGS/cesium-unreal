@@ -317,8 +317,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   const int32 IncrY = 200;
   int32 NodeX = 0;
   int32 NodeY = 0;
-  int32 MaxX = 0;
-  int32 MaxY = 0;
 
   for (const FFeatureTableDescription& featureTable : this->FeatureTables) {
     if (featureTable.AccessType == ECesiumFeatureTableAccessType::Unknown ||

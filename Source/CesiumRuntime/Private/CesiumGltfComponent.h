@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
-#include "CesiumTextureUtility.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -88,7 +88,7 @@ public:
 
   FCesiumMetadataModel Metadata;
 
-  CesiumTextureUtility::EncodedMetadata EncodedMetadata;
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumRasterOverlays.h"
-#include "CesiumTextureUtility.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
@@ -23,7 +23,7 @@ public:
 
   FCesiumMetadataPrimitive Metadata;
 
-  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata;
+  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
 
   const CesiumGltf::Model* pModel;
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
@@ -28,7 +29,7 @@
 namespace LoadGltfResult {
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
-  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata{};
+  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
   FStaticMeshRenderData* RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
@@ -72,6 +73,6 @@ struct LoadNodeResult {
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
   FCesiumMetadataModel Metadata{};
-  CesiumTextureUtility::EncodedMetadata EncodedMetadata{};
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
 };
 } // namespace LoadGltfResult

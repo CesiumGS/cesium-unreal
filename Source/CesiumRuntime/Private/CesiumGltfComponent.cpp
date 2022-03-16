@@ -67,6 +67,7 @@
 // last.
 using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
+using namespace CesiumEncodedMetadataUtility;
 using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
