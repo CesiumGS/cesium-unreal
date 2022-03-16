@@ -7,9 +7,9 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataConversions.h"
 #include "CesiumMetadataModel.h"
+
+#if WITH_EDITOR
 #include "ComponentReregisterContext.h"
-#include "Containers/Array.h"
-#include "Containers/UnrealString.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionCustom.h"
@@ -24,6 +24,7 @@
 #include "Materials/MaterialExpressionVertexInterpolator.h"
 #include "Materials/MaterialFunctionMaterialLayer.h"
 #include "UObject/Package.h"
+#endif
 
 void UCesiumEncodedMetadataComponent::AutoFill() {
   const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
