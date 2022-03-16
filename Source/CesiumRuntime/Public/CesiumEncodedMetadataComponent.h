@@ -55,6 +55,14 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
   ECesiumFeatureTableAccessType AccessType =
       ECesiumFeatureTableAccessType::Unknown;
 
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "AccessType==ECesiumFeatureTableAccessType::Texture"))
+  FString Channel;
+
   UPROPERTY(EditAnywhere, Category = "Cesium")
   TArray<FPropertyDescription> Properties;
 };

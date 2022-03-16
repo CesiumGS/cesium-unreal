@@ -234,6 +234,20 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
           if (featureTable.AccessType ==
               ECesiumFeatureTableAccessType::Unknown) {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
+            switch (texture.getFeatureIdTextureView().getChannel()) {
+            case 1:
+              featureTable.Channel = "g";
+              break;
+            case 2:
+              featureTable.Channel = "b";
+              break;
+            case 3:
+              featureTable.Channel = "a";
+              break;
+            // case 0:
+            default:
+              featureTable.Channel = "r";
+            }
           } else if (
               featureTable.AccessType ==
               ECesiumFeatureTableAccessType::Attribute) {
@@ -272,9 +286,13 @@ static FString createHlslSafeName(const FString& rawName) {
   return safeName;
 }
 
-// TODO: position nodes on graph sensibly
-// TODO: consider multiple attributes pointing to same table
 void UCesiumEncodedMetadataComponent::GenerateMaterial() {
+  UMaterialFunction* SelectTexCoordsFunction = LoadMaterialFunction(
+      "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords");
+  if (!SelectTexCoordsFunction) {
+    return;
+  }
+
   FString MaterialBaseName = "ML_Material";
   FString PackageName = "/Game/";
   PackageName += MaterialBaseName;
@@ -301,12 +319,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   int32 NodeY = 0;
   int32 MaxX = 0;
   int32 MaxY = 0;
-
-  UMaterialFunction* SelectTexCoordsFunction = LoadMaterialFunction(
-      "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords");
-  if (!SelectTexCoordsFunction) {
-    // err out
-  }
 
   for (const FFeatureTableDescription& featureTable : this->FeatureTables) {
     if (featureTable.AccessType == ECesiumFeatureTableAccessType::Unknown ||
@@ -358,7 +370,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       SelectTexCoords->MaterialExpressionEditorX = NodeX;
       SelectTexCoords->MaterialExpressionEditorY = NodeY;
 
-      // TODO: need output?
       TArray<FFunctionExpressionOutput> _;
       SelectTexCoordsFunction->GetInputsAndOutputs(
           SelectTexCoords->FunctionInputs,
@@ -373,11 +384,11 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       NodeX += IncrX;
 
-      // TODO: use channel mask, instead of hardcoding r channel
-      // cannot determine channel name in editor, use channel mask + sample to
-      // derive id.
+      // TODO: Should the channel mask be determined dynamically instead of at
+      // editor-time like it is now?
       FeatureTableLookup->Code =
-          "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords).r);\n";
+          "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords)." +
+          featureTable.Channel + ");\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
       FeatureTableLookup->MaterialExpressionEditorY = NodeY;
@@ -400,7 +411,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       SelectTexCoords->MaterialExpressionEditorX = NodeX;
       SelectTexCoords->MaterialExpressionEditorY = NodeY;
 
-      // TODO: need output?
       TArray<FFunctionExpressionOutput> _;
       SelectTexCoordsFunction->GetInputsAndOutputs(
           SelectTexCoords->FunctionInputs,
@@ -488,9 +498,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     FeatureTableLookup->Code += "float propertyIndexF = propertyIndex;\n";
     FeatureTableLookup->Code += "return propertyIndexF;";
 
-    // TODO: why doesn't this link?
-    // FeatureTableLookup->RebuildOutputs();
-
     NodeX = SectionLeft;
   }
 
@@ -549,7 +556,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       SelectTexCoords->MaterialExpressionEditorX = NodeX;
       SelectTexCoords->MaterialExpressionEditorY = NodeY;
 
-      // TODO: need output?
       TArray<FFunctionExpressionOutput> _;
       SelectTexCoordsFunction->GetInputsAndOutputs(
           SelectTexCoords->FunctionInputs,
