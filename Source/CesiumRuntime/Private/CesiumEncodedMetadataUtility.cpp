@@ -17,6 +17,7 @@
 #include <CesiumGltf/FeatureIDTextureView.h>
 #include <CesiumGltf/FeatureTexturePropertyView.h>
 #include <CesiumGltf/FeatureTextureView.h>
+#include <CesiumUtility/Tracing.h>
 #include <unordered_map>
 
 using namespace CesiumTextureUtility;
@@ -160,6 +161,9 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
+    CESIUM_TRACE(
+        TCHAR_TO_UTF8(*("Encode Property Array: " + encodeInstructions.Name)));
+
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
     encodedProperty.name = "FTB_" + encodeInstructions.Name + "_" + pair.Key;
@@ -297,12 +301,14 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
           break;
         }
 
+        CESIUM_TRACE(TCHAR_TO_UTF8(
+            *("Encode Feature Texture Property: " + propertyDescription.Name)));
+
         EncodedFeatureTextureProperty& encodedFeatureTextureProperty =
             encodedFeatureTexture.properties.Emplace_GetRef();
 
         encodedFeatureTextureProperty.baseName =
-            "FTX_" + featureTextureName + "_" +
-            UTF8_TO_TCHAR(propertyIt.first.c_str()) + "_";
+            "FTX_" + featureTextureName + "_" + propertyDescription.Name + "_";
         encodedFeatureTextureProperty.textureCoordinateIndex =
             featureTexturePropertyView.getTextureCoordinateIndex();
 
@@ -368,6 +374,9 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const UCesiumEncodedMetadataComponent& encodeInstructions,
     const FCesiumMetadataPrimitive& primitive) {
+
+  CESIUM_TRACE("Encode Metadata Primitive");
+
   EncodedMetadataPrimitive result;
 
   const TArray<FCesiumFeatureIDTexture>& featureIdTextures =
@@ -419,6 +428,8 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           if (!pFeatureIdImage) {
             break;
           }
+
+          CESIUM_TRACE("Encode Feature Id Texture");
 
           EncodedFeatureIdTexture& encodedFeatureIdTexture =
               result.encodedFeatureIdTextures.Emplace_GetRef();
@@ -504,6 +515,8 @@ EncodedMetadata encodeMetadataAnyThreadPart(
     const UCesiumEncodedMetadataComponent& encodeInstructions,
     const FCesiumMetadataModel& metadata) {
 
+  CESIUM_TRACE("Encode Metadata Model");
+
   EncodedMetadata result;
 
   const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
@@ -513,6 +526,9 @@ EncodedMetadata encodeMetadataAnyThreadPart(
     for (const FFeatureTableDescription& expectedFeatureTable :
          encodeInstructions.FeatureTables) {
       if (expectedFeatureTable.Name == featureTableIt.Key) {
+        CESIUM_TRACE(
+            TCHAR_TO_UTF8(*("Encode Feature Table: " + featureTableIt.Key)));
+
         result.encodedFeatureTables.Emplace(
             featureTableIt.Key,
             encodeMetadataFeatureTableAnyThreadPart(
@@ -533,6 +549,9 @@ EncodedMetadata encodeMetadataAnyThreadPart(
     for (const FFeatureTextureDescription& expectedFeatureTexture :
          encodeInstructions.FeatureTextures) {
       if (expectedFeatureTexture.Name == featureTextureIt.Key) {
+        CESIUM_TRACE(TCHAR_TO_UTF8(
+            *("Encode Feature Texture: " + featureTextureIt.Key)));
+
         result.encodedFeatureTextures.Emplace(
             featureTextureIt.Key,
             encodeFeatureTextureAnyThreadPart(
