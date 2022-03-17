@@ -111,7 +111,7 @@ FCesiumMetadataArray UCesiumMetadataGenericValueBlueprintLibrary::GetArray(
         // TODO: Is this the best way?
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
           return createArrayView(value);
-        } 
+        }
 
         return FCesiumMetadataArray();
       },

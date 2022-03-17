@@ -1,8 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataProperty.h"
-#include "CesiumMetadataConversions.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumMetadataConversions.h"
 
 using namespace CesiumGltf;
 
@@ -139,7 +139,7 @@ FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
         // TODO: Is this the best way?
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
           return createArrayView(value);
-        } 
+        }
 
         return FCesiumMetadataArray();
       },
