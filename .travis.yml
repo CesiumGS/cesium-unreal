@@ -63,7 +63,7 @@ jobs:
     # We need to undo that, or conan will build with the wrong compiler.
     - export CC=
     - export CXX=
-    - export "EXTRA_CONFIGURE_ARGS=-G \"Visual Studio 16 2019\" -A x64"
+    - export "EXTRA_CONFIGURE_ARGS=-G \"Visual Studio 15 2017 Win64\""
     - "./travis/travis-setup-native.sh"
     script:
     - rm -rf extern
