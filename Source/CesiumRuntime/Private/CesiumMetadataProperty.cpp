@@ -2,6 +2,7 @@
 
 #include "CesiumMetadataProperty.h"
 #include "CesiumMetadataConversions.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 
 using namespace CesiumGltf;
 
@@ -130,9 +131,17 @@ FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
   return std::visit(
       [featureID](const auto& v) -> FCesiumMetadataArray {
         auto value = v.get(featureID);
-        return CesiumMetadataConversions<
-            FCesiumMetadataArray,
-            decltype(value)>::convert(value, FCesiumMetadataArray());
+
+        auto createArrayView = [](const auto& array) -> FCesiumMetadataArray {
+          return FCesiumMetadataArray(array);
+        };
+
+        // TODO: Is this the best way?
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
+          return createArrayView(value);
+        } 
+
+        return FCesiumMetadataArray();
       },
       Property._property);
 }
