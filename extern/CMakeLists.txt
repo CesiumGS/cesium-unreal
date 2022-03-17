@@ -68,9 +68,19 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
 endif()
 
+# cmake-conan doesn't properly detect the MSVC runtime library from CMAKE_MSVC_RUNTIME_LIBRARY.
+# So as a hack, temporarily add a /MD flag so that the detection works right.
+# See https://github.com/conan-io/cmake-conan/issues/174
+include(cesium-native/tools/cmake/ConfigureConan.cmake)
+set(ORIGINAL_CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_DEBUG "/MD")
+cesium_conan_install("${CMAKE_CURRENT_SOURCE_DIR}/conanfile.py")
+set(CMAKE_CXX_FLAGS_DEBUG "${ORIGINAL_CMAKE_CXX_FLAGS_DEBUG}")
+
 # Install cesium-native's dependencies, not just cesium-native.
 set(CESIUM_INSTALL_REQUIREMENTS ON)
 set(CESIUM_TESTS_ENABLED ON)
+set(CESIUM_CONAN_INSTALL OFF) # done above instead
 add_subdirectory(cesium-native ${CMAKE_CURRENT_LIST_DIR}/cesium-native/build)
 
 # cesium-native doesn't require STB to be public, but Cesium for Unreal wants to use it.
