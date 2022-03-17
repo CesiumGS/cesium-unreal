@@ -484,9 +484,15 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
         swizzle = "r";
       };
 
+      FString componentTypeInterpretation =
+          property.ComponentType == ECesiumPropertyComponentType::Float
+              ? "asfloat"
+              : "asuint";
+
       FeatureTableLookup->Code +=
-          propertyName + " = asfloat(" + propertyArrayName +
-          ".Load(int3(propertyIndex, 0, 0))." + swizzle + ");\n";
+          propertyName + " = " + componentTypeInterpretation + "(" +
+          propertyArrayName + ".Load(int3(propertyIndex, 0, 0))." + swizzle +
+          ");\n";
 
       NodeY += IncrY;
     }
