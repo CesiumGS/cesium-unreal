@@ -30,6 +30,7 @@ jobs:
     # We need to undo that, or conan will build with the wrong compiler.
     - export CC=
     - export CXX=
+    - export "EXTRA_CONFIGURE_ARGS=-G \"Visual Studio 15 2017 Win64\""
     - "./travis/travis-setup-native.sh"
     script:
     - rm -rf extern
@@ -62,6 +63,7 @@ jobs:
     # We need to undo that, or conan will build with the wrong compiler.
     - export CC=
     - export CXX=
+    - export "EXTRA_CONFIGURE_ARGS=-G \"Visual Studio 16 2019\" -A x64"
     - "./travis/travis-setup-native.sh"
     script:
     - rm -rf extern
@@ -100,7 +102,7 @@ jobs:
     - export NDKROOT=$ANDROID_NDK_ROOT
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-android-${CESIUM_UNREAL_VERSION}
-    - export "EXTRA_CONFIGURE_ARGS="-G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake""
+    - export "EXTRA_CONFIGURE_ARGS=-G Ninja -DCMAKE_TOOLCHAIN_FILE=unreal-android-toolchain.cmake"
     - "./travis/travis-setup-native.sh"
     script:
     - rm -rf extern
@@ -137,7 +139,7 @@ jobs:
     - export NDKROOT=$ANDROID_NDK_ROOT
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}
-    - export "EXTRA_CONFIGURE_ARGS="-G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake""
+    - export "EXTRA_CONFIGURE_ARGS=-G Ninja -DCMAKE_TOOLCHAIN_FILE=unreal-android-toolchain.cmake"
     - "./travis/travis-setup-native.sh"
     script:
     - rm -rf extern
@@ -294,7 +296,7 @@ jobs:
     - export LINUX_MULTIARCH_ROOT=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v17_clang-10.0.1-centos7
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-426-linux-${CESIUM_UNREAL_VERSION}
-    - export "EXTRA_CONFIGURE_ARGS="-G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake""
+    - export "EXTRA_CONFIGURE_ARGS=-G Ninja -DCMAKE_TOOLCHAIN_FILE=unreal-linux-toolchain.cmake"
     - "./travis/travis-setup-native.sh"
     - rm -rf extern
     - export CLONEDIR=$PWD
@@ -329,7 +331,7 @@ jobs:
     - export LINUX_MULTIARCH_ROOT=/c/UnrealToolchains/v19_clang-11.0.1-centos7/
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-linux-${CESIUM_UNREAL_VERSION}
-    - export "EXTRA_CONFIGURE_ARGS="-G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake""
+    - export "EXTRA_CONFIGURE_ARGS=-G Ninja -DCMAKE_TOOLCHAIN_FILE=unreal-linux-toolchain.cmake"
     - "./travis/travis-setup-native.sh"
     - rm -rf extern
     - export CLONEDIR=$PWD
