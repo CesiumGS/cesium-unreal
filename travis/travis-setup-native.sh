@@ -9,6 +9,7 @@ $CESIUM_PYTHON ./cesium-native/tools/automate.py generate-library-recipes --edit
 conan editable add conan/recipes/openssl-ue4.26 openssl/UE4.26
 conan editable add conan/recipes/openssl-ue4.27 openssl/UE4.27
 $CESIUM_PYTHON ./cesium-native/tools/automate.py editable on
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release $EXTRA_CONFIGURE_ARGS
+mkdir build
+eval "cmake -B build -S . -DCMAKE_BUILD_TYPE=Release $EXTRA_CONFIGURE_ARGS"
 cmake --build build --target install -j 4 --config Release
 popd
