@@ -189,7 +189,8 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     }
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
-    onScreenCreditString += "</body>";
+    onScreenCreditString +=
+        "<a href=\"data-attribution-popup\"> Data attribution</a></body>";
     OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
     _lastCreditsCount = creditsToShowThisFrame.size();
   }
