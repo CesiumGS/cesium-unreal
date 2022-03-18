@@ -172,10 +172,6 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     std::string creditString =
         "<head>\n<meta charset=\"utf-16\"/>\n</head>\n<body style=\"color:white\"><ul>";
     for (size_t i = 0; i < creditsToShowThisFrame.size(); ++i) {
-      if (_pCreditSystem->isIon(creditsToShowThisFrame[i])) {
-        // avoid adding cesium ion logo to avoid duplicate cesium logos
-        continue;
-      }
       if (_pCreditSystem->shouldBeShownOnScreen(creditsToShowThisFrame[i])) {
         if (!firstScreenCredit) {
           firstScreenCredit = true;
