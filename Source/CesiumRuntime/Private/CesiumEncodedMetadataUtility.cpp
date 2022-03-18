@@ -309,8 +309,8 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
 
         encodedFeatureTextureProperty.baseName =
             "FTX_" + featureTextureName + "_" + propertyDescription.Name + "_";
-        encodedFeatureTextureProperty.textureCoordinateIndex =
-            featureTexturePropertyView.getTextureCoordinateIndex();
+        encodedFeatureTextureProperty.textureCoordinateAttributeId =
+            featureTexturePropertyView.getTextureCoordinateAttributeId();
 
         const CesiumGltf::FeatureTexturePropertyChannelOffsets& channelOffsets =
             featureTexturePropertyView.getChannelOffsets();
@@ -436,8 +436,8 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
           encodedFeatureIdTexture.baseName = "FIT_" + featureTableName + "_";
           encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
-          encodedFeatureIdTexture.textureCoordinateIndex =
-              featureIdTextureView.getTextureCoordinateIndex();
+          encodedFeatureIdTexture.textureCoordinateAttributeId =
+              featureIdTextureView.getTextureCoordinateAttributeId();
 
           auto mappedUnrealImage = featureIdTextureMap.find(pFeatureIdImage);
           if (mappedUnrealImage != featureIdTextureMap.end()) {

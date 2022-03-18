@@ -474,22 +474,24 @@ static void updateTextureCoordinatesForMetadata(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const EncodedMetadata& encodedMetadata,
-    EncodedMetadataPrimitive& encodedPrimitiveMetadata,
+    const EncodedMetadataPrimitive& encodedPrimitiveMetadata,
     const TArray<FCesiumVertexMetadata>& vertexFeatures,
+    TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
 
   for (const EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
-
-    updateTextureCoordinates(
-        model,
-        primitive,
-        duplicateVertices,
-        vertices,
-        indices,
-        "TEXCOORD_" +
-            std::to_string(encodedFeatureIdTexture.textureCoordinateIndex),
-        textureCoordinateMap);
+    metadataTextureCoordinateParameters.Emplace(
+        encodedFeatureIdTexture.baseName + "UV",
+        updateTextureCoordinates(
+            model,
+            primitive,
+            duplicateVertices,
+            vertices,
+            indices,
+            "TEXCOORD_" +
+                std::to_string(encodedFeatureIdTexture.textureCoordinateAttributeId),
+            textureCoordinateMap));
   }
 
   for (const FString& featureTextureName :
@@ -499,16 +501,17 @@ static void updateTextureCoordinatesForMetadata(
     if (pEncodedFeatureTexture) {
       for (const EncodedFeatureTextureProperty& encodedProperty :
            pEncodedFeatureTexture->properties) {
-
-        updateTextureCoordinates(
-            model,
-            primitive,
-            duplicateVertices,
-            vertices,
-            indices,
-            "TEXCOORD_" +
-                std::to_string(encodedProperty.textureCoordinateIndex),
-            textureCoordinateMap);
+        metadataTextureCoordinateParameters.Emplace(
+            encodedProperty.baseName + "UV",
+            updateTextureCoordinates(
+                model,
+                primitive,
+                duplicateVertices,
+                vertices,
+                indices,
+                "TEXCOORD_" +
+                    std::to_string(encodedProperty.textureCoordinateAttributeId),
+                textureCoordinateMap));
       }
     }
   }
@@ -517,15 +520,18 @@ static void updateTextureCoordinatesForMetadata(
       primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
 
   if (pMetadata) {
-    for (EncodedVertexMetadata& encodedVertexFeature :
+    for (const EncodedVertexMetadata& encodedVertexFeature :
          encodedPrimitiveMetadata.encodedVertexMetadata) {
       const FCesiumVertexMetadata& vertexFeature =
           vertexFeatures[encodedVertexFeature.index];
 
-      size_t textureCoordinateIndex = textureCoordinateMap.size();
       int32_t attribute = vertexFeature.getAttributeIndex();
+      uint32_t textureCoordinateIndex = textureCoordinateMap.size();
       textureCoordinateMap[attribute] = textureCoordinateIndex;
-      encodedVertexFeature.textureCoordinateIndex = textureCoordinateIndex;
+      metadataTextureCoordinateParameters.Emplace(
+          encodedVertexFeature.name, 
+          textureCoordinateIndex);
+
       int64 vertexCount =
           UCesiumVertexMetadataBlueprintLibrary::GetVertexCount(vertexFeature);
 
@@ -885,7 +891,7 @@ static void loadPrimitive(
   // We need to copy the texture coordinates associated with each texture (if
   // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
 
-  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+  std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap = primitiveResult.textureCoordinateMap;
 
   {
     CESIUM_TRACE("loadTextures");
@@ -994,6 +1000,7 @@ static void loadPrimitive(
       primitiveResult.EncodedMetadata,
       UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
           primitiveResult.Metadata),
+      primitiveResult.metadataTextureCoordinateParameters,
       textureCoordinateMap);
 
   // TangentX: Tangent
@@ -1286,10 +1293,16 @@ static void loadMesh(
 
   for (const MeshPrimitive& primitive : mesh.primitives) {
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
+    LoadPrimitiveResult& primitiveResult =
+        result->primitiveResults.emplace_back();
     loadPrimitive(
-        result->primitiveResults.emplace_back(),
+        primitiveResult,
         transform,
         primitiveOptions);
+
+    if (!primitiveResult.RenderData) {
+      result->primitiveResults.pop_back();
+    }
   }
 }
 
@@ -1517,59 +1530,59 @@ static void SetGltfParameterValues(
     const Material& material,
     const MaterialPBRMetallicRoughness& pbr,
     UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation assocation,
+    EMaterialParameterAssociation association,
     int32 index) {
   for (auto& textureCoordinateSet : loadResult.textureCoordinateParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             UTF8_TO_TCHAR(textureCoordinateSet.first.c_str()),
-            assocation,
+            association,
             index),
         textureCoordinateSet.second);
   }
 
   if (pbr.baseColorFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("baseColorFactor", assocation, index),
+        FMaterialParameterInfo("baseColorFactor", association, index),
         FVector(
             pbr.baseColorFactor[0],
             pbr.baseColorFactor[1],
             pbr.baseColorFactor[2]));
   }
   pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo("metallicFactor", assocation, index),
+      FMaterialParameterInfo("metallicFactor", association, index),
       pbr.metallicFactor);
   pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo("roughnessFactor", assocation, index),
+      FMaterialParameterInfo("roughnessFactor", association, index),
       pbr.roughnessFactor);
   pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo("opacityMask", assocation, index),
+      FMaterialParameterInfo("opacityMask", association, index),
       1.0);
 
   applyTexture(
       pMaterial,
-      FMaterialParameterInfo("baseColorTexture", assocation, index),
+      FMaterialParameterInfo("baseColorTexture", association, index),
       loadResult.baseColorTexture);
   applyTexture(
       pMaterial,
-      FMaterialParameterInfo("metallicRoughnessTexture", assocation, index),
+      FMaterialParameterInfo("metallicRoughnessTexture", association, index),
       loadResult.metallicRoughnessTexture);
   applyTexture(
       pMaterial,
-      FMaterialParameterInfo("normalTexture", assocation, index),
+      FMaterialParameterInfo("normalTexture", association, index),
       loadResult.normalTexture);
   bool hasEmissiveTexture = applyTexture(
       pMaterial,
-      FMaterialParameterInfo("emissiveTexture", assocation, index),
+      FMaterialParameterInfo("emissiveTexture", association, index),
       loadResult.emissiveTexture);
   applyTexture(
       pMaterial,
-      FMaterialParameterInfo("occlusionTexture", assocation, index),
+      FMaterialParameterInfo("occlusionTexture", association, index),
       loadResult.occlusionTexture);
 
   if (material.emissiveFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("emissiveFactor", assocation, index),
+        FMaterialParameterInfo("emissiveFactor", association, index),
         FVector(
             material.emissiveFactor[0],
             material.emissiveFactor[1],
@@ -1579,7 +1592,7 @@ static void SetGltfParameterValues(
     // factor of vec3(1.0). The default, vec3(0.0), would disable the emission
     // from the texture.
     pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo("emissiveFactor", assocation, index),
+        FMaterialParameterInfo("emissiveFactor", association, index),
         FVector(1.0f, 1.0f, 1.0f));
   }
 }
@@ -1587,24 +1600,24 @@ static void SetGltfParameterValues(
 void SetWaterParameterValues(
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
-    EMaterialParameterAssociation assocation,
+    EMaterialParameterAssociation association,
     int32 index) {
   pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo("OnlyLand", assocation, index),
+      FMaterialParameterInfo("OnlyLand", association, index),
       static_cast<float>(loadResult.onlyLand));
   pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo("OnlyWater", assocation, index),
+      FMaterialParameterInfo("OnlyWater", association, index),
       static_cast<float>(loadResult.onlyWater));
 
   if (!loadResult.onlyLand && !loadResult.onlyWater) {
     applyTexture(
         pMaterial,
-        FMaterialParameterInfo("WaterMask", assocation, index),
+        FMaterialParameterInfo("WaterMask", association, index),
         loadResult.waterMaskTexture);
   }
 
   pMaterial->SetVectorParameterValueByInfo(
-      FMaterialParameterInfo("WaterMaskTranslationScale", assocation, index),
+      FMaterialParameterInfo("WaterMaskTranslationScale", association, index),
       FLinearColor(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
@@ -1662,6 +1675,15 @@ static void SetMetadataParameterValues(
     return;
   }
 
+  for (const auto& textureCoordinateSet : loadResult.metadataTextureCoordinateParameters) {
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(textureCoordinateSet.Key),
+            association,
+            index),
+        textureCoordinateSet.Value);
+  }
+
   for (const FString& featureTextureName :
        loadResult.EncodedMetadata.featureTextureNames) {
     EncodedFeatureTexture* pEncodedFeatureTexture =
@@ -1678,13 +1700,6 @@ static void SetMetadataParameterValues(
                 association,
                 index),
             encodedProperty.pTexture->pTexture);
-
-        pMaterial->SetScalarParameterValueByInfo(
-            FMaterialParameterInfo(
-                FName(encodedProperty.baseName + "UV"),
-                association,
-                index),
-            encodedProperty.textureCoordinateIndex);
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -1709,13 +1724,6 @@ static void SetMetadataParameterValues(
             association,
             index),
         encodedFeatureIdTexture.pTexture->pTexture);
-
-    pMaterial->SetScalarParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(encodedFeatureIdTexture.baseName + "UV"),
-            association,
-            index),
-        static_cast<int32>(encodedFeatureIdTexture.textureCoordinateIndex));
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {
@@ -1751,13 +1759,6 @@ static void SetMetadataParameterValues(
 
   for (const EncodedVertexMetadata& encodedVertexFeature :
        loadResult.EncodedMetadata.encodedVertexMetadata) {
-    pMaterial->SetScalarParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(encodedVertexFeature.name),
-            association,
-            index),
-        encodedVertexFeature.textureCoordinateIndex);
-
     const EncodedMetadataFeatureTable* pEncodedFeatureTable =
         gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
             encodedVertexFeature.featureTableName);
@@ -1782,6 +1783,7 @@ static void loadPrimitiveGameThreadPart(
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
+  pMesh->textureCoordinateMap = std::move(loadResult.textureCoordinateMap);
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
@@ -1849,6 +1851,8 @@ static void loadPrimitiveGameThreadPart(
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
+  // TODO: why were these called twice, is it okay to remove?
+  /*
   SetGltfParameterValues(
       loadResult,
       material,
@@ -1861,7 +1865,7 @@ static void loadPrimitiveGameThreadPart(
       pMaterial,
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
-
+  */
   UMaterialInstance* pBaseAsMaterialInstance =
       Cast<UMaterialInstance>(pBaseMaterial);
   UCesiumMaterialUserData* pCesiumData =
@@ -1922,17 +1926,17 @@ static void loadPrimitiveGameThreadPart(
           EMaterialParameterAssociation::LayerParameter,
           waterIndex);
     }
-  }
 
-  int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
-  if (metadataIndex >= 0) {
-    SetMetadataParameterValues(
-        *pGltf,
-        loadResult,
-        pMaterial,
-        EMaterialParameterAssociation::LayerParameter,
-        metadataIndex);
-  }
+    int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
+    if (metadataIndex >= 0) {
+      SetMetadataParameterValues(
+          *pGltf,
+          loadResult,
+          pMaterial,
+          EMaterialParameterAssociation::LayerParameter,
+          metadataIndex);
+    }
+  }  
 
   pMesh->Metadata = std::move(loadResult.Metadata);
   pMesh->EncodedMetadata = std::move(loadResult.EncodedMetadata);

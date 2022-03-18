@@ -1,13 +1,27 @@
 
 #include "CesiumFeatureTextureProperty.h"
 #include "CesiumMetadataConversions.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 #include <cstdint>
 #include <limits>
 
 int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
+    const UPrimitiveComponent* component,
     UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
-  return property._pProperty->getTextureCoordinateIndex();
+  const UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!pPrimitive) {
+    return 0;
+  }
+
+  auto textureCoordinateIndexIt = 
+      pPrimitive->textureCoordinateMap.find(
+        property._pProperty->getTextureCoordinateAttributeId());
+  if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
+    return 0;
+  }
+
+  return textureCoordinateIndexIt->second;
 }
 
 int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(

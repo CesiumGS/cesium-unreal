@@ -55,6 +55,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureIDTexture")
   static int64 GetTextureCoordinateIndex(
+      const UPrimitiveComponent* component,
       UPARAM(ref) const FCesiumFeatureIDTexture& featureIDTexture);
 
   UFUNCTION(

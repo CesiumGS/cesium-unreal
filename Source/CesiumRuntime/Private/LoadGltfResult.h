@@ -12,6 +12,8 @@
 #include "CesiumTextureUtility.h"
 #include "StaticMeshResources.h"
 #include "Templates/SharedPointer.h"
+#include "Containers/Map.h"
+#include "Containers/UnrealString.h"
 #include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <optional>
@@ -30,6 +32,7 @@ namespace LoadGltfResult {
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
   CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
+  TMap<FString, uint32_t> metadataTextureCoordinateParameters;
   FStaticMeshRenderData* RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
@@ -60,6 +63,7 @@ struct LoadPrimitiveResult {
   double waterMaskScale = 1.0;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
+  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 };
 
 struct LoadMeshResult {

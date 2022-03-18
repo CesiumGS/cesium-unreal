@@ -59,22 +59,21 @@ struct EncodedFeatureIdTexture {
   int32 channel;
 
   /**
-   * @brief The texture coordinate index for the feature id texture.
+   * @brief The texture coordinate accessor index for the feature id texture.
    */
-  int64 textureCoordinateIndex;
+  int64 textureCoordinateAttributeId;
 };
 
 struct EncodedVertexMetadata {
   FString name;
   FString featureTableName;
-  int32 textureCoordinateIndex;
   int32 index;
 };
 
 struct EncodedFeatureTextureProperty {
   FString baseName;
   CesiumTextureUtility::LoadedTextureResult* pTexture;
-  int64 textureCoordinateIndex;
+  int64 textureCoordinateAttributeId;
   int32 channelOffsets[4];
 };
 
