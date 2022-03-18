@@ -9,8 +9,8 @@
 #include "CesiumRasterOverlays.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
-#include <glm/mat4x4.hpp>
 #include <cstdint>
+#include <glm/mat4x4.hpp>
 #include <unordered_map>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 

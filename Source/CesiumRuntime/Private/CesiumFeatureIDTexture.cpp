@@ -2,9 +2,9 @@
 
 #include "CesiumFeatureIDTexture.h"
 
-#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltf/FeatureIDTexture.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 using namespace CesiumGltf;
 
@@ -23,14 +23,14 @@ const FString& UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
 int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* component,
     const FCesiumFeatureIDTexture& featureIDTexture) {
-  const UCesiumGltfPrimitiveComponent* pPrimitive = Cast<UCesiumGltfPrimitiveComponent>(component);
+  const UCesiumGltfPrimitiveComponent* pPrimitive =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!pPrimitive) {
     return 0;
   }
 
-  auto textureCoordinateIndexIt = 
-      pPrimitive->textureCoordinateMap.find(
-        featureIDTexture._featureIDTextureView.getTextureCoordinateAttributeId());
+  auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
+      featureIDTexture._featureIDTextureView.getTextureCoordinateAttributeId());
   if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
     return 0;
   }

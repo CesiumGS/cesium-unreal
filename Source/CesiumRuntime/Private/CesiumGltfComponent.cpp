@@ -490,7 +490,8 @@ static void updateTextureCoordinatesForMetadata(
             vertices,
             indices,
             "TEXCOORD_" +
-                std::to_string(encodedFeatureIdTexture.textureCoordinateAttributeId),
+                std::to_string(
+                    encodedFeatureIdTexture.textureCoordinateAttributeId),
             textureCoordinateMap));
   }
 
@@ -509,8 +510,8 @@ static void updateTextureCoordinatesForMetadata(
                 duplicateVertices,
                 vertices,
                 indices,
-                "TEXCOORD_" +
-                    std::to_string(encodedProperty.textureCoordinateAttributeId),
+                "TEXCOORD_" + std::to_string(
+                                  encodedProperty.textureCoordinateAttributeId),
                 textureCoordinateMap));
       }
     }
@@ -529,7 +530,7 @@ static void updateTextureCoordinatesForMetadata(
       uint32_t textureCoordinateIndex = textureCoordinateMap.size();
       textureCoordinateMap[attribute] = textureCoordinateIndex;
       metadataTextureCoordinateParameters.Emplace(
-          encodedVertexFeature.name, 
+          encodedVertexFeature.name,
           textureCoordinateIndex);
 
       int64 vertexCount =
@@ -891,7 +892,8 @@ static void loadPrimitive(
   // We need to copy the texture coordinates associated with each texture (if
   // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
 
-  std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap = primitiveResult.textureCoordinateMap;
+  std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap =
+      primitiveResult.textureCoordinateMap;
 
   {
     CESIUM_TRACE("loadTextures");
@@ -1295,10 +1297,7 @@ static void loadMesh(
     CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     LoadPrimitiveResult& primitiveResult =
         result->primitiveResults.emplace_back();
-    loadPrimitive(
-        primitiveResult,
-        transform,
-        primitiveOptions);
+    loadPrimitive(primitiveResult, transform, primitiveOptions);
 
     if (!primitiveResult.RenderData) {
       result->primitiveResults.pop_back();
@@ -1675,7 +1674,8 @@ static void SetMetadataParameterValues(
     return;
   }
 
-  for (const auto& textureCoordinateSet : loadResult.metadataTextureCoordinateParameters) {
+  for (const auto& textureCoordinateSet :
+       loadResult.metadataTextureCoordinateParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -1936,7 +1936,7 @@ static void loadPrimitiveGameThreadPart(
           EMaterialParameterAssociation::LayerParameter,
           metadataIndex);
     }
-  }  
+  }
 
   pMesh->Metadata = std::move(loadResult.Metadata);
   pMesh->EncodedMetadata = std::move(loadResult.EncodedMetadata);

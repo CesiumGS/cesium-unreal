@@ -10,10 +10,10 @@
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumTextureUtility.h"
-#include "StaticMeshResources.h"
-#include "Templates/SharedPointer.h"
 #include "Containers/Map.h"
 #include "Containers/UnrealString.h"
+#include "StaticMeshResources.h"
+#include "Templates/SharedPointer.h"
 #include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <optional>

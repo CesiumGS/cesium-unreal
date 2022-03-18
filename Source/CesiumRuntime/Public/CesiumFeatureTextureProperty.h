@@ -68,8 +68,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTextureProperty")
-  static int64
-  GetTextureCoordinateIndex(
+  static int64 GetTextureCoordinateIndex(
       const UPrimitiveComponent* component,
       UPARAM(ref) const FCesiumFeatureTextureProperty& property);
 
