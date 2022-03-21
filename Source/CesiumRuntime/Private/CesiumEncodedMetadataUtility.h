@@ -6,6 +6,8 @@
 #include "Containers/Array.h"
 #include "Containers/Map.h"
 #include "Containers/UnrealString.h"
+#include "Templates/SharedPointer.h"
+#include "Templates/UniquePtr.h"
 
 struct FCesiumMetadataModel;
 struct FCesiumMetadataPrimitive;
@@ -26,7 +28,7 @@ struct EncodedMetadataProperty {
   /**
    * @brief The encoded property array.
    */
-  CesiumTextureUtility::LoadedTextureResult* pTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 };
 
 struct EncodedMetadataFeatureTable {
@@ -51,7 +53,7 @@ struct EncodedFeatureIdTexture {
   /**
    * @brief The actual feature id texture.
    */
-  CesiumTextureUtility::LoadedTextureResult* pTexture;
+  TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 
   /**
    * @brief The channel that this feature id texture uses within the image.
@@ -72,7 +74,7 @@ struct EncodedVertexMetadata {
 
 struct EncodedFeatureTextureProperty {
   FString baseName;
-  CesiumTextureUtility::LoadedTextureResult* pTexture;
+  TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
   int64 textureCoordinateAttributeId;
   int32 channelOffsets[4];
 };
@@ -99,7 +101,8 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<
         const CesiumGltf::ImageCesium*,
-        CesiumTextureUtility::LoadedTextureResult*>& featureTexturePropertyMap,
+        TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
+        featureTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
     const FCesiumFeatureTexture& featureTexture);
@@ -116,7 +119,8 @@ bool encodeMetadataFeatureTableGameThreadPart(
     EncodedMetadataFeatureTable& encodedFeatureTable);
 
 bool encodeFeatureTextureGameThreadPart(
-    TArray<CesiumTextureUtility::LoadedTextureResult*>& uniqueTextures,
+    TArray<TUniquePtr<CesiumTextureUtility::LoadedTextureResult>>&
+        uniqueTextures,
     EncodedFeatureTexture& encodedFeatureTexture);
 
 bool encodeMetadataPrimitiveGameThreadPart(

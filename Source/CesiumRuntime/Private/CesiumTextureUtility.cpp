@@ -11,7 +11,9 @@
 
 using namespace CesiumGltf;
 
-static TUniquePtr<FTexturePlatformData>
+namespace CesiumTextureUtility {
+
+TUniquePtr<FTexturePlatformData>
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   if (sizeX > 0 && sizeY > 0 &&
       (sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
@@ -28,8 +30,7 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   }
 }
 
-/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
-CesiumTextureUtility::loadTextureAnyThreadPart(
+TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
@@ -228,8 +229,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return pResult;
 }
 
-/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
-CesiumTextureUtility::loadTextureAnyThreadPart(
+TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
 
@@ -332,8 +332,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return loadTextureAnyThreadPart(image, addressX, addressY, filter);
 }
 
-/*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
-    LoadedTextureResult* pHalfLoadedTexture) {
+UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
     return nullptr;
   }

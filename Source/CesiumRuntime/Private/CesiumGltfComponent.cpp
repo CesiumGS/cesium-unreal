@@ -1298,7 +1298,7 @@ static void loadMesh(
   result = LoadMeshResult();
   result->primitiveResults.reserve(mesh.primitives.size());
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &primitive};
+    CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
     auto& primitiveResult = result->primitiveResults.emplace_back();
     loadPrimitive(primitiveResult, transform, primitiveOptions);
 
@@ -1985,7 +1985,7 @@ static void loadPrimitiveGameThreadPart(
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
-  auto pResult = std::make_unique<HalfConstructedReal>();
+  auto pResult = MakeUnique<HalfConstructedReal>();
   loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
 
   return pResult;

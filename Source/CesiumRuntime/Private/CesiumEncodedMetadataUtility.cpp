@@ -169,7 +169,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     encodedProperty.name = "FTB_" + encodeInstructions.Name + "_" + pair.Key;
 
     int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
-    encodedProperty.pTexture = new LoadedTextureResult();
+    encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
     encodedProperty.pTexture->pTextureData =
         createTexturePlatformData(propertyArraySize, 1, encodedFormat.format);
 
@@ -250,7 +250,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 }
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
-    TMap<const CesiumGltf::ImageCesium*, LoadedTextureResult*>&
+    TMap<const CesiumGltf::ImageCesium*, TWeakPtr<LoadedTextureResult>>&
         featureTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
@@ -319,12 +319,16 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
         encodedFeatureTextureProperty.channelOffsets[2] = channelOffsets.b;
         encodedFeatureTextureProperty.channelOffsets[3] = channelOffsets.a;
 
-        LoadedTextureResult** pMappedUnrealImageIt =
+        TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
             featureTexturePropertyMap.Find(pImage);
         if (pMappedUnrealImageIt) {
-          encodedFeatureTextureProperty.pTexture = *pMappedUnrealImageIt;
+          encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
         } else {
-          encodedFeatureTextureProperty.pTexture = new LoadedTextureResult{};
+          encodedFeatureTextureProperty.pTexture =
+              MakeShared<LoadedTextureResult>();
+          featureTexturePropertyMap.Emplace(
+              pImage,
+              encodedFeatureTextureProperty.pTexture);
           encodedFeatureTextureProperty.pTexture->pTextureData =
               createTexturePlatformData(
                   pImage->width,
@@ -399,9 +403,9 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     }
   }
 
-  std::unordered_map<const CesiumGltf::ImageCesium*, LoadedTextureResult*>
+  TMap<const CesiumGltf::ImageCesium*, TWeakPtr<LoadedTextureResult>>
       featureIdTextureMap;
-  featureIdTextureMap.reserve(featureIdTextures.Num());
+  featureIdTextureMap.Reserve(featureIdTextures.Num());
 
   result.encodedFeatureIdTextures.Reserve(featureIdTextures.Num());
   result.encodedVertexMetadata.Reserve(vertexFeatures.Num());
@@ -439,11 +443,16 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           encodedFeatureIdTexture.textureCoordinateAttributeId =
               featureIdTextureView.getTextureCoordinateAttributeId();
 
-          auto mappedUnrealImage = featureIdTextureMap.find(pFeatureIdImage);
-          if (mappedUnrealImage != featureIdTextureMap.end()) {
-            encodedFeatureIdTexture.pTexture = mappedUnrealImage->second;
+          TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
+              featureIdTextureMap.Find(pFeatureIdImage);
+          if (pMappedUnrealImageIt) {
+            encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
           } else {
-            encodedFeatureIdTexture.pTexture = new LoadedTextureResult{};
+            encodedFeatureIdTexture.pTexture =
+                MakeShared<LoadedTextureResult>();
+            featureIdTextureMap.Emplace(
+                pFeatureIdImage,
+                encodedFeatureIdTexture.pTexture);
             encodedFeatureIdTexture.pTexture->pTextureData =
                 createTexturePlatformData(
                     pFeatureIdImage->width,
@@ -542,7 +551,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
   const TMap<FString, FCesiumFeatureTexture>& featureTextures =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(metadata);
   result.encodedFeatureTextures.Reserve(featureTextures.Num());
-  TMap<const CesiumGltf::ImageCesium*, LoadedTextureResult*>
+  TMap<const CesiumGltf::ImageCesium*, TWeakPtr<LoadedTextureResult>>
       featureTexturePropertyMap;
   featureTexturePropertyMap.Reserve(featureTextures.Num());
   for (const auto& featureTextureIt : featureTextures) {
@@ -573,7 +582,8 @@ bool encodeMetadataFeatureTableGameThreadPart(
 
   for (EncodedMetadataProperty& encodedProperty :
        encodedFeatureTable.encodedProperties) {
-    success |= loadTextureGameThreadPart(encodedProperty.pTexture);
+    success &=
+        loadTextureGameThreadPart(encodedProperty.pTexture.Get()) != nullptr;
     // TODO: check if this is the safest way
     encodedProperty.pTexture->pTexture->AddToRoot();
   }
@@ -590,17 +600,17 @@ bool encodeFeatureTextureGameThreadPart(
        encodedFeatureTexture.properties) {
     bool found = false;
     for (LoadedTextureResult* uniqueTexture : uniqueTextures) {
-      if (property.pTexture == uniqueTexture) {
+      if (property.pTexture.Get() == uniqueTexture) {
         found = true;
         break;
       }
     }
 
     if (!found) {
-      success |= loadTextureGameThreadPart(property.pTexture);
+      success &= loadTextureGameThreadPart(property.pTexture.Get()) != nullptr;
       // TODO: check if this is the safest way
       property.pTexture->pTexture->AddToRoot();
-      uniqueTextures.Emplace(property.pTexture);
+      uniqueTextures.Emplace(property.pTexture.Get());
     }
   }
 
@@ -620,15 +630,16 @@ bool encodeMetadataPrimitiveGameThreadPart(
     bool found = false;
     for (const LoadedTextureResult* pUniqueFeatureIdImage :
          uniqueFeatureIdImages) {
-      if (pUniqueFeatureIdImage == encodedFeatureIdTexture.pTexture) {
+      if (pUniqueFeatureIdImage == encodedFeatureIdTexture.pTexture.Get()) {
         found = true;
         break;
       }
     }
 
     if (!found) {
-      success |= loadTextureGameThreadPart(encodedFeatureIdTexture.pTexture);
-      uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture);
+      success &= loadTextureGameThreadPart(
+                     encodedFeatureIdTexture.pTexture.Get()) != nullptr;
+      uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture.Get());
     }
   }
 
@@ -641,13 +652,13 @@ bool encodeMetadataGameThreadPart(EncodedMetadata& encodedMetadata) {
   TArray<LoadedTextureResult*> uniqueTextures;
   uniqueTextures.Reserve(encodedMetadata.encodedFeatureTextures.Num());
   for (auto& encodedFeatureTextureIt : encodedMetadata.encodedFeatureTextures) {
-    success |= encodeFeatureTextureGameThreadPart(
+    success &= encodeFeatureTextureGameThreadPart(
         uniqueTextures,
         encodedFeatureTextureIt.Value);
   }
 
   for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
-    success |=
+    success &=
         encodeMetadataFeatureTableGameThreadPart(encodedFeatureTableIt.Value);
   }
 
