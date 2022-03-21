@@ -422,8 +422,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       NodeX += IncrX;
 
-      FeatureTableLookup->Code =
-          "uint propertyIndex = asuint(PropertyIndexUV.r);\n";
+      FeatureTableLookup->Code = "uint propertyIndex = PropertyIndexUV.r;\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
       FeatureTableLookup->MaterialExpressionEditorY = NodeY;
