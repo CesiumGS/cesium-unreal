@@ -8,7 +8,6 @@
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
-#include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
@@ -19,6 +18,7 @@
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
 #include "CesiumCustomVersion.h"
+#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -566,9 +566,12 @@ public:
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
 
-    std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
+    options.pEncodeMetadataInstructions =
+        this->_pActor->_pEncodeMetadataInstructions;
+
+    TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
-    return pHalf.release();
+    return pHalf.Release();
   }
 
   virtual void* prepareInMainThread(
@@ -577,7 +580,7 @@ public:
     const Cesium3DTilesSelection::TileContentLoadResult* pContent =
         tile.getContent();
     if (pContent && pContent->model) {
-      std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
+      TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
       return UCesiumGltfComponent::CreateOnGameThread(
@@ -610,33 +613,30 @@ public:
 
   virtual void*
   prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(
+    auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         TextureFilter::TF_Bilinear);
+    return texture.Release();
   }
 
   virtual void* prepareRasterInMainThread(
       const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
       void* pLoadThreadResult) override {
 
-    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+    TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
         static_cast<CesiumTextureUtility::LoadedTextureResult*>(
-            pLoadThreadResult);
+            pLoadThreadResult)};
 
-    CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
-
-    if (!pLoadedTexture) {
+    UTexture2D* pTexture =
+        CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
+    if (!pLoadedTexture || !pTexture) {
       return nullptr;
     }
 
-    UTexture2D* pTexture = pLoadedTexture->pTexture;
     pTexture->AddToRoot();
-
-    delete pLoadedTexture;
-
-    return (void*)pTexture;
+    return pTexture;
   }
 
   virtual void freeRaster(
@@ -781,6 +781,9 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
+  this->_pEncodeMetadataInstructions =
+      this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
+
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
   Cesium3DTilesSelection::TilesetExternals externals{
@@ -864,7 +867,7 @@ void ACesium3DTileset::LoadTileset() {
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-    this->_pTileset = new Cesium3DTilesSelection::Tileset(
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
         externals,
         TCHAR_TO_UTF8(*this->Url),
         options);
@@ -880,14 +883,14 @@ void ACesium3DTileset::LoadTileset() {
             ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
             : this->IonAccessToken;
     if (!IonAssetEndpointUrl.IsEmpty()) {
-      this->_pTileset = new Cesium3DTilesSelection::Tileset(
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
           externals,
           static_cast<uint32_t>(this->IonAssetID),
           TCHAR_TO_UTF8(*token),
           options,
           TCHAR_TO_UTF8(*IonAssetEndpointUrl));
     } else {
-      this->_pTileset = new Cesium3DTilesSelection::Tileset(
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
           externals,
           static_cast<uint32_t>(this->IonAssetID),
           TCHAR_TO_UTF8(*token),
@@ -949,8 +952,7 @@ void ACesium3DTileset::DestroyTileset() {
     return;
   }
 
-  delete this->_pTileset;
-  this->_pTileset = nullptr;
+  this->_pTileset.Reset();
 
   if (this->Url.Len() > 0) {
     UE_LOG(

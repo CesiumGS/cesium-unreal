@@ -10,16 +10,16 @@ struct CESIUMRUNTIME_API FCesiumIntegerColor {
   GENERATED_USTRUCT_BODY()
 
 public:
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 r;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 g;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 b;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   int32 a;
 };
 
@@ -28,16 +28,16 @@ struct CESIUMRUNTIME_API FCesiumFloatColor {
   GENERATED_USTRUCT_BODY()
 
 public:
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float r;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float g;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float b;
 
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   float a;
 };
 
@@ -68,9 +68,9 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTextureProperty")
-  static int64
-  GetTextureCoordinateIndex(UPARAM(ref)
-                                const FCesiumFeatureTextureProperty& property);
+  static int64 GetTextureCoordinateIndex(
+      const UPrimitiveComponent* component,
+      UPARAM(ref) const FCesiumFeatureTextureProperty& property);
 
   UFUNCTION(
       BlueprintCallable,
@@ -78,6 +78,20 @@ public:
       Category = "Cesium|Metadata|FeatureTextureProperty")
   static int64
   GetComponentCount(UPARAM(ref) const FCesiumFeatureTextureProperty& property);
+
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTextureProperty")
+  static FString GetSwizzle(UPARAM(ref)
+                                const FCesiumFeatureTextureProperty& property);
+
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureTextureProperty")
+  static bool IsNormalized(UPARAM(ref)
+                               const FCesiumFeatureTextureProperty& property);
 
   UFUNCTION(
       BlueprintCallable,

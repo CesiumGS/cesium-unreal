@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumGltf/Mesh.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
@@ -15,6 +16,7 @@
 namespace CreateGltfOptions {
 struct CreateModelOptions {
   const CesiumGltf::Model* pModel = nullptr;
+  const UCesiumEncodedMetadataComponent* pEncodeMetadataInstructions = nullptr;
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCookingModule* pPhysXCookingModule = nullptr;

@@ -1,18 +1,42 @@
 
 #include "CesiumFeatureTextureProperty.h"
+#include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataConversions.h"
 
 #include <cstdint>
 #include <limits>
 
 int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
+    const UPrimitiveComponent* component,
     UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
-  return property._pProperty->getTextureCoordinateIndex();
+  const UCesiumGltfPrimitiveComponent* pPrimitive =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!pPrimitive) {
+    return 0;
+  }
+
+  auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
+      property._pProperty->getTextureCoordinateAttributeId());
+  if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
+    return 0;
+  }
+
+  return textureCoordinateIndexIt->second;
 }
 
 int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
     UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
   return property._pProperty->getComponentCount();
+}
+
+bool UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
+    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
+  return property._pProperty->isNormalized();
+}
+
+FString UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(
+    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
+  return UTF8_TO_TCHAR(property._pProperty->getSwizzle().c_str());
 }
 
 FCesiumIntegerColor UCesiumFeatureTexturePropertyBlueprintLibrary::

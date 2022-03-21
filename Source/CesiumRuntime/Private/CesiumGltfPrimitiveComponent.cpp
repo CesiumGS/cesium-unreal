@@ -63,6 +63,7 @@ void destroyGltfParameterValues(
       assocation,
       index);
   destroyMaterialTexture(pMaterial, "normalTexture", assocation, index);
+  destroyMaterialTexture(pMaterial, "emissiveTexture", assocation, index);
   destroyMaterialTexture(pMaterial, "occlusionTexture", assocation, index);
 }
 
@@ -113,7 +114,7 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
       }
     }
 
-    CesiumTextureUtility::destroyEncodedMetadataPrimitive(
+    CesiumEncodedMetadataUtility::destroyEncodedMetadataPrimitive(
         this->EncodedMetadata);
 
     CesiumLifetime::destroy(pMaterial);

@@ -104,9 +104,16 @@ FCesiumMetadataArray UCesiumMetadataGenericValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataGenericValue& Value) {
   return std::visit(
       [](auto value) -> FCesiumMetadataArray {
-        return CesiumMetadataConversions<
-            FCesiumMetadataArray,
-            decltype(value)>::convert(value, FCesiumMetadataArray());
+        auto createArrayView = [](const auto& array) -> FCesiumMetadataArray {
+          return FCesiumMetadataArray(array);
+        };
+
+        // TODO: Is this the best way?
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
+          return createArrayView(value);
+        }
+
+        return FCesiumMetadataArray();
       },
       Value._value);
 }

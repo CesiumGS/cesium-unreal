@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
-#include "CesiumTextureUtility.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -62,13 +62,13 @@ public:
     virtual ~HalfConstructed() = default;
   };
 
-  static std::unique_ptr<HalfConstructed> CreateOffGameThread(
+  static TUniquePtr<HalfConstructed> CreateOffGameThread(
       const glm::dmat4x4& Transform,
       const CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       AActor* ParentActor,
-      std::unique_ptr<HalfConstructed> HalfConstructed,
+      TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
       UMaterialInterface* BaseWaterMaterial,
@@ -88,7 +88,7 @@ public:
 
   FCesiumMetadataModel Metadata;
 
-  CesiumTextureUtility::EncodedMetadata EncodedMetadata;
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata;
 
   void ShowGltf();
 

@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/FeatureIDTexture.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 using namespace CesiumGltf;
 
@@ -20,8 +21,21 @@ const FString& UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
 }
 
 int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
+    const UPrimitiveComponent* component,
     const FCesiumFeatureIDTexture& featureIDTexture) {
-  return featureIDTexture._featureIDTextureView.getTextureCoordinateIndex();
+  const UCesiumGltfPrimitiveComponent* pPrimitive =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!pPrimitive) {
+    return 0;
+  }
+
+  auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
+      featureIDTexture._featureIDTextureView.getTextureCoordinateAttributeId());
+  if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
+    return 0;
+  }
+
+  return textureCoordinateIndexIt->second;
 }
 
 int64 UCesiumFeatureIDTextureBlueprintLibrary::

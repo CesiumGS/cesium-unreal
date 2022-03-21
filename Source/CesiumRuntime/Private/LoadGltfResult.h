@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/ExtensionModelMaxarMeshVariants.h"
 #include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
@@ -11,6 +12,8 @@
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumTextureUtility.h"
+#include "Containers/Map.h"
+#include "Containers/UnrealString.h"
 #include "StaticMeshResources.h"
 #include "Templates/SharedPointer.h"
 #include <cstdint>
@@ -23,6 +26,15 @@
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCooking.h"
 #include "PhysicsEngine/BodySetup.h"
+#include <PxTriangleMesh.h>
+
+struct PxTriangleMeshDeleter {
+  void operator()(PxTriangleMesh* pCollisionMesh) {
+    if (pCollisionMesh) {
+      pCollisionMesh->release();
+    }
+  }
+};
 #else
 #include "Chaos/TriangleMeshImplicitObject.h"
 #endif
@@ -31,14 +43,15 @@
 namespace LoadGltfResult {
 struct LoadPrimitiveResult {
   FCesiumMetadataPrimitive Metadata{};
-  CesiumTextureUtility::EncodedMetadataPrimitive EncodedMetadata{};
-  FStaticMeshRenderData* RenderData = nullptr;
+  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
+  TMap<FString, uint32_t> metadataTextureCoordinateParameters;
+  TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
   const CesiumGltf::Material* pMaterial = nullptr;
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
-  PxTriangleMesh* pCollisionMesh = nullptr;
+  TUniquePtr<PxTriangleMesh, PxTriangleMeshDeleter> pCollisionMesh;
   FBodySetupUVInfo uvInfo{};
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
@@ -46,12 +59,13 @@ struct LoadPrimitiveResult {
 #endif
   std::string name{};
 
-  CesiumTextureUtility::LoadedTextureResult* baseColorTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* metallicRoughnessTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* normalTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* emissiveTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* occlusionTexture = nullptr;
-  CesiumTextureUtility::LoadedTextureResult* waterMaskTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
+      metallicRoughnessTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand = true;
@@ -62,6 +76,7 @@ struct LoadPrimitiveResult {
   double waterMaskScale = 1.0;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
+  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 };
 
 struct LoadMeshResult {
@@ -78,7 +93,7 @@ struct LoadNodeResult {
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
   FCesiumMetadataModel Metadata{};
-  CesiumTextureUtility::EncodedMetadata EncodedMetadata{};
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
   const CesiumGltf::ExtensionModelMaxarMeshVariants* pVariantsExtension =
       nullptr;
 };
