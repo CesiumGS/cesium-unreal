@@ -1292,13 +1292,13 @@ static void loadMesh(
   const Mesh& mesh = *options.pMesh;
 
   result = LoadMeshResult();
-
-  for (const MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
-    LoadPrimitiveResult& primitiveResult =
-        result->primitiveResults.emplace_back();
+  result->primitiveResults.reserve(mesh.primitives.size());
+  for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
+    CreatePrimitiveOptions primitiveOptions = {&options, &primitive};
+    auto& primitiveResult = result->primitiveResults.emplace_back();
     loadPrimitive(primitiveResult, transform, primitiveOptions);
 
+    // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
       result->primitiveResults.pop_back();
     }
@@ -1777,7 +1777,6 @@ static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
-
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);

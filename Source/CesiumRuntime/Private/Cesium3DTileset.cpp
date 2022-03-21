@@ -1088,7 +1088,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             stereoRightSizeY);
       }
 
-      FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
+      FVector2D stereoLeftSize(stereoLeftSizeX, stereoLeftSizeY);
       FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
 
       if (stereoLeftSize.X >= 1.0 && stereoLeftSize.Y >= 1.0) {
