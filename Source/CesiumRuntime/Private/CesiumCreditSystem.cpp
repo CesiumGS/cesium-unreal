@@ -165,12 +165,13 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
   if (CreditsUpdated) {
     bool firstScreenCredit = false;
     std::string onScreenCreditString =
-        "<!DOCTYPE html><head><base target=\"_blank\">"
+        "document.write('<!DOCTYPE html><head><base target=\"_blank\">"
         "<style>body{position:fixed;bottom:0;color:white;font-size:10px;font-family:sans-serif;}"
-        "div{display:inline;}a{color:white}</style>\n"
-        "<meta charset=\"utf-8\"/>\n</head>\n<body>";
+        "div{display:inline;}a{color:white}</style>"
+        "<meta charset=\"utf-8\"/></head><body>";
     std::string creditString =
         "<head>\n<meta charset=\"utf-16\"/>\n</head>\n<body style=\"color:white\"><ul>";
+    bool hasPopupCredits = false;
     for (size_t i = 0; i < creditsToShowThisFrame.size(); ++i) {
       if (_pCreditSystem->shouldBeShownOnScreen(creditsToShowThisFrame[i])) {
         if (!firstScreenCredit) {
@@ -185,12 +186,16 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
         creditString += "<li>" +
                         _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
                         "</li>";
+        hasPopupCredits = true;
       }
     }
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
-    onScreenCreditString +=
-        "<a href=\"data-attribution-popup\"> Data attribution</a></body>";
+    if (hasPopupCredits) {
+      onScreenCreditString +=
+          "<span> </span><a href=\"https://data-attribution-popup\">Data attribution</a>";
+    }
+    onScreenCreditString += "</body>')";
     OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
     _lastCreditsCount = creditsToShowThisFrame.size();
   }
