@@ -381,8 +381,9 @@ struct ColorVisitor {
 };
 
 template <class T>
-static LoadedTextureResult*
-loadTexture(const Model& model, const std::optional<T>& gltfTexture) {
+static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
+    const CesiumGltf::Model& model,
+    const std::optional<T>& gltfTexture) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
       gltfTexture.value().index >= model.textures.size()) {
     if (gltfTexture && gltfTexture.value().index >= 0) {
@@ -768,7 +769,8 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
+  TUniquePtr<FStaticMeshRenderData> RenderData =
+      MakeUnique<FStaticMeshRenderData>();
   RenderData->AllocateLODResources(1);
 
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
@@ -1137,7 +1139,7 @@ static void loadPrimitive(
 
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
-  primitiveResult.RenderData = RenderData;
+  primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
 
@@ -1148,12 +1150,14 @@ static void loadPrimitive(
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
     CESIUM_TRACE("PhysX cook");
+    PxTriangleMesh* createdCollisionMesh = nullptr;
     BuildPhysXTriangleMeshes(
-        primitiveResult.pCollisionMesh,
+        createdCollisionMesh,
         primitiveResult.uvInfo,
         options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
         StaticMeshBuildVertices,
         indices);
+    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
     CESIUM_TRACE("Chaos cook");
     primitiveResult.pCollisionMesh =
@@ -1508,13 +1512,9 @@ static void loadModelAnyThreadPart(
 bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
-    LoadedTextureResult* pLoadedTexture) {
-
-  if (!loadTextureGameThreadPart(pLoadedTexture)) {
-    return false;
-  }
-
-  UTexture2D* pTexture = pLoadedTexture->pTexture;
+    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
+  UTexture2D* pTexture =
+      CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
   if (!pTexture) {
     return false;
   }
@@ -1561,23 +1561,23 @@ static void SetGltfParameterValues(
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("baseColorTexture", association, index),
-      loadResult.baseColorTexture);
+      loadResult.baseColorTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("metallicRoughnessTexture", association, index),
-      loadResult.metallicRoughnessTexture);
+      loadResult.metallicRoughnessTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("normalTexture", association, index),
-      loadResult.normalTexture);
+      loadResult.normalTexture.Get());
   bool hasEmissiveTexture = applyTexture(
       pMaterial,
       FMaterialParameterInfo("emissiveTexture", association, index),
-      loadResult.emissiveTexture);
+      loadResult.emissiveTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("occlusionTexture", association, index),
-      loadResult.occlusionTexture);
+      loadResult.occlusionTexture.Get());
 
   if (material.emissiveFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(
@@ -1612,7 +1612,7 @@ void SetWaterParameterValues(
     applyTexture(
         pMaterial,
         FMaterialParameterInfo("WaterMask", association, index),
-        loadResult.waterMaskTexture);
+        loadResult.waterMaskTexture.Get());
   }
 
   pMaterial->SetVectorParameterValueByInfo(
@@ -1808,17 +1808,14 @@ static void loadPrimitiveGameThreadPart(
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
   // UE 4.26 or earlier
   pStaticMesh->bIsBuiltAtRuntime = true;
-  pStaticMesh->RenderData =
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+  pStaticMesh->RenderData = std::move(loadResult.RenderData);
 #elif ENGINE_MAJOR_VERSION == 4
   // UE 4.27 or later
   pStaticMesh->SetIsBuiltAtRuntime(true);
-  pStaticMesh->SetRenderData(
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #else
   // UE 5
-  pStaticMesh->SetRenderData(
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #endif
 
   const Model& model = *loadResult.pModel;
@@ -1963,7 +1960,7 @@ static void loadPrimitiveGameThreadPart(
 
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
-    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh);
+    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh.Release());
     pBodySetup->UVInfo = std::move(loadResult.uvInfo);
 #else
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
@@ -1984,7 +1981,7 @@ static void loadPrimitiveGameThreadPart(
   pMesh->RegisterComponent();
 }
 
-/*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
+/*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
@@ -1996,13 +1993,13 @@ UCesiumGltfComponent::CreateOffGameThread(
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
     AActor* pParentActor,
-    std::unique_ptr<HalfConstructed> pHalfConstructed,
+    TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters) {
   HalfConstructedReal* pReal =
-      static_cast<HalfConstructedReal*>(pHalfConstructed.get());
+      static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
   // TODO: was this a common case before?
   // (This code checked if there were no loaded primitives in the model)
@@ -2297,9 +2294,9 @@ static void BuildPhysXTriangleMeshes(
     if (cookHelper.OutTriangleMeshes.Num() > 0) {
       pCollisionMesh = cookHelper.OutTriangleMeshes[0];
     }
-    uvInfo = cookHelper.OutUVInfo;
+    uvInfo = std::move(cookHelper.OutUVInfo);
 
-    /**
+    /** The old way of creating physX tri meshes, for reference
     options.pPhysXCooking->CreateTriMesh(
         "PhysXGeneric",
         EPhysXMeshCookFlags::Default,

@@ -6,6 +6,7 @@
 #include "CesiumMetadataValueType.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
+#include "Templates/UniquePtr.h"
 #include <optional>
 
 namespace CesiumGltf {
@@ -14,26 +15,25 @@ struct ImageCesium;
 
 namespace CesiumTextureUtility {
 struct LoadedTextureResult {
-  FTexturePlatformData* pTextureData;
+  TUniquePtr<FTexturePlatformData> pTextureData;
   TextureAddress addressX;
   TextureAddress addressY;
   TextureFilter filter;
   UTexture2D* pTexture;
-};
 
-FTexturePlatformData*
+static TUniquePtr<FTexturePlatformData>
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format);
 
 // TODO: documentation
-LoadedTextureResult* loadTextureAnyThreadPart(
+static TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
     const TextureFilter& filter);
 
-LoadedTextureResult* loadTextureAnyThreadPart(
+static TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture);
 
-bool loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
+static UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 } // namespace CesiumTextureUtility

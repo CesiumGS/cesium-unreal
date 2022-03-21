@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTilesSelection/ViewState.h"
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
@@ -690,9 +691,11 @@ public:
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
-  Cesium3DTilesSelection::Tileset* GetTileset() { return this->_pTileset; }
+  Cesium3DTilesSelection::Tileset* GetTileset() {
+    return this->_pTileset.Get();
+  }
   const Cesium3DTilesSelection::Tileset* GetTileset() const {
-    return this->_pTileset;
+    return this->_pTileset.Get();
   }
 
   // AActor overrides (some or most of them should be protected)
@@ -805,7 +808,7 @@ private:
 #endif
 
 private:
-  Cesium3DTilesSelection::Tileset* _pTileset;
+  TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
 
   UCesiumEncodedMetadataComponent* _pEncodeMetadataInstructions;
 
