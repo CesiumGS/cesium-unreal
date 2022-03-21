@@ -24,6 +24,12 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString Url;
 
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FString datasetId;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FString authorization;
+
   /**
    * True to directly specify minum and maximum zoom levels available from the
    * server, or false to automatically determine the minimum and maximum zoom

@@ -37,7 +37,3 @@ void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
 #undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FCesiumRuntimeModule, CesiumRuntime)
-
-FCesium3DTilesetIonTroubleshooting OnCesium3DTilesetIonTroubleshooting{};
-FCesiumRasterOverlayIonTroubleshooting
-    OnCesiumRasterOverlayIonTroubleshooting{};

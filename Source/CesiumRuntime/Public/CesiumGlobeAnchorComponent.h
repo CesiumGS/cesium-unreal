@@ -37,7 +37,7 @@ private:
       BlueprintReadWrite,
       BlueprintGetter = GetGeoreference,
       BlueprintSetter = SetGeoreference,
-      Category = "Cesium|Georeference",
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* Georeference = nullptr;
 
@@ -84,13 +84,13 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InvalidateResolvedGeoreference();
 
-private:
+
   /**
    * The latitude in degrees of this component, in the range [-90, 90]
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      Category = "Cesium",
       Meta = (AllowPrivateAccess, ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
@@ -99,7 +99,7 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      Category = "Cesium",
       meta = (AllowPrivateAccess, ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
@@ -109,13 +109,10 @@ private:
    * which can be tens of meters higher or lower depending on where in the world
    * the object is located.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Georeference",
-      Meta = (AllowPrivateAccess))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
   double Height = 0.0;
 
-public:
+
   /**
    * Returns the longitude in degrees (x), latitude in degrees (y),
    * and height in meters (z) of the actor.
@@ -164,28 +161,19 @@ private:
   /**
    * The Earth-Centered Earth-Fixed X-coordinate of this component in meters.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Georeference",
-      Meta = (AllowPrivateAccess))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
   double ECEF_X = 0.0;
 
   /**
    * The Earth-Centered Earth-Fixed Y-coordinate of this component in meters.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Georeference",
-      Meta = (AllowPrivateAccess))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
   double ECEF_Y = 0.0;
 
   /**
    * The Earth-Centered Earth-Fixed Z-coordinate of this component in meters.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Georeference",
-      Meta = (AllowPrivateAccess))
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (AllowPrivateAccess))
   double ECEF_Z = 0.0;
 
 public:
@@ -257,7 +245,7 @@ public:
    * working with physics actors that maintain an internal velocity which we do
    * not want to change when updating location.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Georeference")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool TeleportWhenUpdatingTransform = true;
 
   /**
@@ -279,7 +267,7 @@ public:
    * updates an Actor's position and orientation, because in that case the Actor
    * would be over-rotated.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Georeference")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool AdjustOrientationForGlobeWhenMoving = true;
 
   //
@@ -350,7 +338,7 @@ private:
   double _actorToECEF_Array[16];
 
   static_assert(sizeof(_actorToECEF_Array) == sizeof(glm::dmat4));
-
+public:
   /**
    * The _actorToECEF_Array cast as a glm::dmat4 for convenience.
    */
@@ -364,7 +352,7 @@ private:
    */
   UPROPERTY()
   bool _actorToECEFIsValid = false;
-
+private:
   /**
    * Whether an update of the actor transform is currently in progress,
    * and further calls that are received by _onActorTransformChanged
@@ -393,7 +381,7 @@ private:
    */
   UFUNCTION()
   void _onGeoreferenceChanged();
-
+public:
   /**
    * Updates the globe-relative (ECEF) transform from the current Actor
    * transform.
@@ -401,7 +389,7 @@ private:
    * @returns The new globe position.
    */
   const glm::dmat4& _updateGlobeTransformFromActorTransform();
-
+private:
   /**
    * Updates the Unreal world Actor position from the current globe position.
    *
@@ -412,7 +400,7 @@ private:
    */
   FTransform _updateActorTransformFromGlobeTransform(
       const std::optional<glm::dvec3>& newWorldOrigin = std::nullopt);
-
+  public:
   /**
    * Sets a new globe transform and updates the Actor transform to match. If
    * `AdjustOrientationForGlobeWhenMoving` is enabled, the orientation is also

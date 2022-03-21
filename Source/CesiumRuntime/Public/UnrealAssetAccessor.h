@@ -4,8 +4,6 @@
 
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumAsync/IAssetAccessor.h"
-#include "Containers/UnrealString.h"
-#include "HAL/Platform.h"
 #include <cstddef>
 
 class CESIUMRUNTIME_API UnrealAssetAccessor
@@ -14,15 +12,14 @@ public:
   UnrealAssetAccessor();
 
   virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
-  get(const CesiumAsync::AsyncSystem& asyncSystem,
+  requestAsset(
+      const CesiumAsync::AsyncSystem& asyncSystem,
       const std::string& url,
       const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers)
       override;
 
-  virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
-  request(
+  virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>> post(
       const CesiumAsync::AsyncSystem& asyncSystem,
-      const std::string& verb,
       const std::string& url,
       const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
       const gsl::span<const std::byte>& contentPayload) override;

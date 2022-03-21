@@ -5,30 +5,29 @@
 #include "CesiumGltf/Model.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
-#include "Templates/UniquePtr.h"
 #include <optional>
 
 class CesiumTextureUtility {
 public:
   struct LoadedTextureResult {
-    TUniquePtr<FTexturePlatformData> pTextureData;
+    FTexturePlatformData* pTextureData;
     TextureAddress addressX;
     TextureAddress addressY;
     TextureFilter filter;
-    UTexture2D* pTexture{nullptr};
+    UTexture2D* pTexture;
   };
 
   // TODO: documentation
-  static TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
+  static LoadedTextureResult* loadTextureAnyThreadPart(
       const CesiumGltf::ImageCesium& image,
       const TextureAddress& addressX,
       const TextureAddress& addressY,
       const TextureFilter& filter);
 
-  static TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
+  static LoadedTextureResult* loadTextureAnyThreadPart(
       const CesiumGltf::Model& model,
       const CesiumGltf::Texture& texture);
 
-  static UTexture2D*
+  static bool
   loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 };

@@ -32,13 +32,6 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString IonAccessToken;
 
-  /**
-   * Check if the Cesium ion token used to access this raster overlay is working
-   * correctly, and fix it if necessary.
-   */
-  UFUNCTION(CallInEditor, Category = "Cesium")
-  void TroubleshootToken();
-
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
       const Cesium3DTilesSelection::RasterOverlayOptions& options = {})

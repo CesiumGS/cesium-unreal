@@ -190,9 +190,10 @@ protected:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
-private:
+
   void _moveAlongViewAxis(EAxis::Type axis, float Val);
   void _moveAlongVector(const FVector& axis, float Val);
+private:
   void _interruptFlight();
 
   /**

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CesiumGeospatial/Ellipsoid.h"
-#include "HAL/Platform.h"
+
 #include <glm/glm.hpp>
 
 /**

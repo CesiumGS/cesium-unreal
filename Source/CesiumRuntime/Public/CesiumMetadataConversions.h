@@ -211,7 +211,7 @@ struct CesiumMetadataConversions<
 template <> struct CesiumMetadataConversions<FString, std::string_view> {
   static FString
   convert(const std::string_view& from, const FString& defaultValue) {
-    return FString(UTF8_TO_TCHAR(std::string(from.data(), from.size()).data()));
+    return FString(from.size(), from.data());
   }
 };
 

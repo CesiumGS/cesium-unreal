@@ -4,7 +4,6 @@
 #include "Engine/Texture2D.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "UObject/Object.h"
-#include <algorithm>
 
 /*static*/ TArray<TWeakObjectPtr<UObject>> CesiumLifetime::_pending;
 /*static*/ TArray<TWeakObjectPtr<UObject>> CesiumLifetime::_nextPending;
@@ -22,13 +21,9 @@
     return true;
   }
 
-#if ENGINE_MAJOR_VERSION >= 5
-  pObject->MarkAsGarbage();
-#else
   if (!pObject->IsPendingKill()) {
     pObject->MarkPendingKill();
   }
-#endif
 
   if (pObject->HasAnyFlags(RF_FinishDestroyed)) {
     // Already done being destroyed.
@@ -81,24 +76,13 @@
 
   UTexture2D* pTexture2D = Cast<UTexture2D>(pObject);
   if (pTexture2D) {
-#if ENGINE_MAJOR_VERSION >= 5
-    FTexturePlatformData* pPlatformData = pTexture2D->GetPlatformData();
-    pTexture2D->SetPlatformData(nullptr);
-    delete pPlatformData;
-#else
     delete pTexture2D->PlatformData;
     pTexture2D->PlatformData = nullptr;
-#endif
   }
 
   UStaticMesh* pMesh = Cast<UStaticMesh>(pObject);
   if (pMesh) {
-#if ENGINE_MAJOR_VERSION >= 5 ||                                               \
-    (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 27)
-    pMesh->SetRenderData(nullptr);
-#else
     pMesh->RenderData.Reset();
-#endif
   }
 
   UBodySetup* pBodySetup = Cast<UBodySetup>(pObject);

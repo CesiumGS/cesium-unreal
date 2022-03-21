@@ -2,10 +2,8 @@
 #include "CesiumActors.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeoreference.h"
-#include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneComponent.h"
-#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
 #include <glm/gtx/matrix_decompose.hpp>

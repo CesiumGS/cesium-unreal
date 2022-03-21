@@ -43,12 +43,6 @@ void FCesiumCommands::RegisterCommands() {
       "Search for existing questions or ask a new question on the Cesium Community Forum",
       EUserInterfaceActionType::Button,
       FInputChord());
-  UI_COMMAND(
-      OpenTokenSelector,
-      "Token",
-      "Select or create a token to use to access Cesium ion assets",
-      EUserInterfaceActionType::Button,
-      FInputChord());
 
   UI_COMMAND(
       OpenCesiumPanel,

@@ -52,19 +52,9 @@ ACesiumSunSky::ACesiumSunSky() {
   DirectionalLight->SetupAttachment(Scene);
   DirectionalLight->Intensity = 111000.f;
   DirectionalLight->LightSourceAngle = 0.5;
-  DirectionalLight->DynamicShadowCascades = 5;
-  DirectionalLight->CascadeDistributionExponent = 2.0;
-  DirectionalLight->DynamicShadowDistanceMovableLight = 500000.f;
-
-#if ENGINE_MAJOR_VERSION >= 5
-  // We need to set both of these, because in the case of a pre-UE5 asset, UE5
-  // will replace the normal atmosphere sun light flag with the value of the
-  // deprecated one on load.
-  DirectionalLight->bUsedAsAtmosphereSunLight_DEPRECATED = true;
-  DirectionalLight->SetAtmosphereSunLight(true);
-#else
   DirectionalLight->bUsedAsAtmosphereSunLight = true;
-#endif
+  DirectionalLight->DynamicShadowCascades = 5;
+  DirectionalLight->CascadeDistributionExponent = 1.4;
 
   // The location of the DirectionalLight should never matter, but by making it
   // absolute we do less math when the Actor moves as a result of the
@@ -87,13 +77,8 @@ ACesiumSunSky::ACesiumSunSky() {
   SkyLight->bRealTimeCapture = true;
   SkyLight->bLowerHemisphereIsBlack = false;
   SkyLight->bTransmission = true;
-  SkyLight->SamplesPerPixel = 2;
-
-#if ENGINE_MAJOR_VERSION >= 5
-  SkyLight->CastRaytracedShadow = ECastRayTracedShadow::Enabled;
-#else
   SkyLight->bCastRaytracedShadow = true;
-#endif
+  SkyLight->SamplesPerPixel = 2;
 
   // The Sky Light is fixed at the Georeference origin.
   // TODO: should it follow the player?
@@ -140,19 +125,19 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
       Verbose,
       TEXT("Spawn new sky sphere: %s"),
       _wantsSpawnMobileSkySphere ? TEXT("true") : TEXT("false"));
-  if (UseMobileRendering) {
+  if (EnableMobileRendering) {
     DirectionalLight->Intensity = MobileDirectionalLightIntensity;
     if (_wantsSpawnMobileSkySphere && SkySphereClass) {
       _spawnSkySphere();
     }
   }
-  _setSkyAtmosphereVisibility(!UseMobileRendering);
+  _setSkyAtmosphereVisibility(!EnableMobileRendering);
 
   this->UpdateSun();
 }
 
 void ACesiumSunSky::_spawnSkySphere() {
-  if (!UseMobileRendering || !IsValid(GetWorld())) {
+  if (!EnableMobileRendering || !IsValid(GetWorld())) {
     return;
   }
 
@@ -179,7 +164,7 @@ void ACesiumSunSky::_spawnSkySphere() {
 }
 
 void ACesiumSunSky::UpdateSkySphere() {
-  if (!UseMobileRendering || !SkySphereActor) {
+  if (!EnableMobileRendering || !SkySphereActor) {
     return;
   }
   UFunction* UpdateSkySphere =
@@ -199,12 +184,12 @@ void ACesiumSunSky::BeginPlay() {
           this,
           &ACesiumSunSky::_handleTransformUpdated);
 
-  _setSkyAtmosphereVisibility(!UseMobileRendering);
+  _setSkyAtmosphereVisibility(!EnableMobileRendering);
 
   this->UpdateSun();
 
   if (this->UpdateAtmosphereAtRuntime) {
-    this->UpdateAtmosphereRadius();
+    this->AdjustAtmosphereRadius();
   }
 }
 
@@ -246,7 +231,7 @@ void ACesiumSunSky::Tick(float DeltaSeconds) {
   Super::Tick(DeltaSeconds);
 
   if (this->UpdateAtmosphereAtRuntime) {
-    this->UpdateAtmosphereRadius();
+    this->AdjustAtmosphereRadius();
   }
 }
 
@@ -279,7 +264,7 @@ void ACesiumSunSky::_setSkyAtmosphereVisibility(bool bVisible) {
 }
 
 void ACesiumSunSky::_setSkySphereDirectionalLight() {
-  if (!UseMobileRendering || !SkySphereClass || !IsValid(SkySphereActor)) {
+  if (!EnableMobileRendering || !SkySphereClass || !IsValid(SkySphereActor)) {
     return;
   }
 
@@ -322,10 +307,10 @@ void ACesiumSunSky::PostEditChangeProperty(
     }
   }
   if (propertyName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, UseMobileRendering)) {
-    _wantsSpawnMobileSkySphere = UseMobileRendering;
-    _setSkyAtmosphereVisibility(!UseMobileRendering);
-    if (!UseMobileRendering && SkySphereActor) {
+      GET_MEMBER_NAME_CHECKED(ACesiumSunSky, EnableMobileRendering)) {
+    _wantsSpawnMobileSkySphere = EnableMobileRendering;
+    _setSkyAtmosphereVisibility(!EnableMobileRendering);
+    if (!EnableMobileRendering && SkySphereActor) {
       SkySphereActor->Destroy();
     }
   }
@@ -435,7 +420,7 @@ FVector getViewLocation(UWorld* pWorld) {
 
 } // namespace
 
-void ACesiumSunSky::UpdateAtmosphereRadius() {
+void ACesiumSunSky::AdjustAtmosphereRadius() {
   FVector location = getViewLocation(this->GetWorld());
   glm::dvec3 llh =
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(

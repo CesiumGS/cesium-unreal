@@ -14,7 +14,6 @@ public:
   TSharedPtr<FUICommandInfo> SignOut;
   TSharedPtr<FUICommandInfo> OpenDocumentation;
   TSharedPtr<FUICommandInfo> OpenSupport;
-  TSharedPtr<FUICommandInfo> OpenTokenSelector;
 
   TSharedPtr<FUICommandInfo> OpenCesiumPanel;
 

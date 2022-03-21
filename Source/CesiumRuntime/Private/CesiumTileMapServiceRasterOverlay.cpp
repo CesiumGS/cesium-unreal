@@ -12,9 +12,13 @@ UCesiumTileMapServiceRasterOverlay::CreateOverlay(
     tmsOptions.minimumLevel = MinimumLevel;
     tmsOptions.maximumLevel = MaximumLevel;
   }
+  
+
   return std::make_unique<Cesium3DTilesSelection::TileMapServiceRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       TCHAR_TO_UTF8(*this->Url),
+      TCHAR_TO_UTF8(*this->datasetId),
+      TCHAR_TO_UTF8(*this->authorization),
       std::vector<CesiumAsync::IAssetAccessor::THeader>(),
       tmsOptions,
       options);

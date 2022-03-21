@@ -1,11 +1,8 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRasterOverlay.h"
-#include "Cesium3DTilesSelection/RasterOverlayLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
-
-FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
 
 // Sets default values for this component's properties
 UCesiumRasterOverlay::UCesiumRasterOverlay() {
@@ -44,56 +41,14 @@ void UCesiumRasterOverlay::AddToTileset() {
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.maximumTextureSize = this->MaximumTextureSize;
   options.subTileCacheBytes = this->SubTileCacheBytes;
-  options.loadErrorCallback =
-      [this](const Cesium3DTilesSelection::RasterOverlayLoadFailureDetails&
-                 details) {
-        static_assert(
-            uint8_t(ECesiumRasterOverlayLoadType::CesiumIon) ==
-            uint8_t(Cesium3DTilesSelection::RasterOverlayLoadType::CesiumIon));
-        static_assert(
-            uint8_t(ECesiumRasterOverlayLoadType::TileProvider) ==
-            uint8_t(
-                Cesium3DTilesSelection::RasterOverlayLoadType::TileProvider));
-        static_assert(
-            uint8_t(ECesiumRasterOverlayLoadType::Unknown) ==
-            uint8_t(Cesium3DTilesSelection::RasterOverlayLoadType::Unknown));
-
-        uint8_t typeValue = uint8_t(details.type);
-        assert(
-            uint8_t(details.type) <=
-            uint8_t(
-                Cesium3DTilesSelection::RasterOverlayLoadType::TilesetJson));
-        assert(this->_pTileset == details.pTileset);
-
-        FCesiumRasterOverlayLoadFailureDetails ueDetails;
-        ueDetails.Overlay = this;
-        ueDetails.Type = ECesiumRasterOverlayLoadType(typeValue);
-        ueDetails.HttpStatusCode =
-            details.pRequest && details.pRequest->response()
-                ? details.pRequest->response()->statusCode()
-                : 0;
-        ueDetails.Message = UTF8_TO_TCHAR(details.message.c_str());
-
-        // Broadcast the event from the game thread.
-        // Even if we're already in the game thread, let the stack unwind.
-        // Otherwise actions that destroy the Tileset will cause a deadlock.
-        AsyncTask(
-            ENamedThreads::GameThread,
-            [ueDetails = std::move(ueDetails)]() {
-              OnCesiumRasterOverlayLoadFailure.Broadcast(ueDetails);
-            });
-      };
 
   std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
       this->CreateOverlay(options);
+  this->_pOverlay = pOverlay.get();
 
-  if (pOverlay) {
-    this->_pOverlay = pOverlay.get();
+  pTileset->getOverlays().add(std::move(pOverlay));
 
-    pTileset->getOverlays().add(std::move(pOverlay));
-
-    this->OnAdd(pTileset, this->_pOverlay);
-  }
+  this->OnAdd(pTileset, this->_pOverlay);
 }
 
 void UCesiumRasterOverlay::RemoveFromTileset() {

@@ -426,7 +426,7 @@ ACesiumGeoreference::InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight()
   return FVector(OriginLongitude, OriginLatitude, OriginHeight);
 }
 
-void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
+void ACesiumGeoreference::SetGeoreferenceOrigin(
     const glm::dvec3& targetLongitudeLatitudeHeight) {
   // Should not allow externally initiated georeference origin changing if we
   // are inside a sublevel
@@ -439,35 +439,12 @@ void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
       targetLongitudeLatitudeHeight.z);
 }
 
-void ACesiumGeoreference::SetGeoreferenceOrigin(
-    const glm::dvec3& TargetLongitudeLatitudeHeight) {
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT(
-          "SetGeoreferenceOrigin was renamed to SetGeoreferenceOriginLongitudeLatitudeHeight."));
-  SetGeoreferenceOriginLongitudeLatitudeHeight(TargetLongitudeLatitudeHeight);
-}
-
-void ACesiumGeoreference::SetGeoreferenceOriginEcef(
-    const glm::dvec3& TargetEcef) {
-  SetGeoreferenceOriginLongitudeLatitudeHeight(
-      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(TargetEcef));
-}
-
-void ACesiumGeoreference::
-    InaccurateSetGeoreferenceOriginLongitudeLatitudeHeight(
-        const FVector& targetLongitudeLatitudeHeight) {
-  this->SetGeoreferenceOriginLongitudeLatitudeHeight(glm::dvec3(
+void ACesiumGeoreference::InaccurateSetGeoreferenceOrigin(
+    const FVector& targetLongitudeLatitudeHeight) {
+  this->SetGeoreferenceOrigin(glm::dvec3(
       targetLongitudeLatitudeHeight.X,
       targetLongitudeLatitudeHeight.Y,
       targetLongitudeLatitudeHeight.Z));
-}
-
-void ACesiumGeoreference::InaccurateSetGeoreferenceOriginEcef(
-    const FVector& TargetEcef) {
-  this->SetGeoreferenceOriginEcef(
-      glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
 }
 
 // Called when the game starts or when spawned
@@ -1211,9 +1188,9 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
     pLevel->LevelLongitude = this->OriginLongitude;
     pLevel->LevelLatitude = this->OriginLatitude;
     pLevel->LevelHeight = this->OriginHeight;
-
-    pLevel->Enabled = pLevel->CanBeEnabled;
   }
+
+  pLevel->Enabled = pLevel->CanBeEnabled;
 }
 
 #endif
