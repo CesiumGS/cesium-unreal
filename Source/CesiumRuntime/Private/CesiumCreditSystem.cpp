@@ -198,6 +198,8 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     onScreenCreditString += "</body>')";
     OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
     _lastCreditsCount = creditsToShowThisFrame.size();
+
+    DisplayCredits = hasPopupCredits || firstScreenCredit;
   }
 
   _pCreditSystem->startNextFrame();

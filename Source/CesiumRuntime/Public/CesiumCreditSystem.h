@@ -44,6 +44,12 @@ public:
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
 
+  /**
+   * Whether any credits are part of the frame.
+   */
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  bool DisplayCredits = false;
+
   // Called every frame
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
