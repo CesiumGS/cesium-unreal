@@ -94,8 +94,6 @@ public:
 
   void HideGltf();
 
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
-
   void AttachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,
       const Cesium3DTilesSelection::RasterOverlayTile& RasterTile,

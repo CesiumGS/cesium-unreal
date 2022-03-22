@@ -2158,17 +2158,6 @@ void UCesiumGltfComponent::HideGltf() {
   this->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void UCesiumGltfComponent::UpdateTransformFromCesium(
-    const glm::dmat4& cesiumToUnrealTransform) {
-  for (USceneComponent* pSceneComponent : this->GetAttachChildren()) {
-    UCesiumGltfPrimitiveComponent* pPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pSceneComponent);
-    if (pPrimitive) {
-      pPrimitive->UpdateTransformFromCesium(cesiumToUnrealTransform);
-    }
-  }
-}
-
 namespace {
 
 template <typename Func>

@@ -464,11 +464,11 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
 
   const glm::dmat4& CesiumToUnreal =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  TArray<UCesiumGltfComponent*> gltfComponents;
-  this->GetComponents<UCesiumGltfComponent>(gltfComponents);
+  TInlineComponentArray<UCesiumGltfPrimitiveComponent*> primitiveComponents(
+      this);
 
-  for (UCesiumGltfComponent* pGltf : gltfComponents) {
-    pGltf->UpdateTransformFromCesium(CesiumToUnreal);
+  for (UCesiumGltfPrimitiveComponent* pPrimitive : primitiveComponents) {
+    pPrimitive->UpdateTransformFromCesium(CesiumToUnreal);
   }
 }
 
