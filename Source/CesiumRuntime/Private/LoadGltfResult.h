@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/ExtensionModelMaxarMeshVariants.h"
 #include "CesiumGltf/ExtensionNodeMaxarMeshVariants.h"
-#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
@@ -51,7 +51,7 @@ struct LoadPrimitiveResult {
   const CesiumGltf::Material* pMaterial = nullptr;
   glm::dmat4x4 transform{1.0};
 #if PHYSICS_INTERFACE_PHYSX
-  TUniquePtr<PxTriangleMesh, PxTriangleMeshDeleter> pCollisionMesh;
+  TUniquePtr<PxTriangleMesh, PxTriangleMeshDeleter> pCollisionMesh = nullptr;
   FBodySetupUVInfo uvInfo{};
 #else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
@@ -59,13 +59,17 @@ struct LoadPrimitiveResult {
 #endif
   std::string name{};
 
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture =
+      nullptr;
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
-      metallicRoughnessTexture;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture;
-  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture;
+      metallicRoughnessTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> normalTexture = nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> emissiveTexture =
+      nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> occlusionTexture =
+      nullptr;
+  TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture =
+      nullptr;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
   bool onlyLand = true;
@@ -79,11 +83,20 @@ struct LoadPrimitiveResult {
   std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 };
 
+// TODO: which ones of these explicit constructors are actually needed??
 struct LoadMeshResult {
-  std::vector<LoadPrimitiveResult> primitiveResults{};
+  LoadMeshResult() = default;
+  LoadMeshResult(const LoadMeshResult& result) = delete;
+  LoadMeshResult(LoadMeshResult&& result) = default;
+
+  std::vector<LoadPrimitiveResult> primitiveResults;
 };
 
 struct LoadNodeResult {
+  LoadNodeResult() = default;
+  LoadNodeResult(const LoadNodeResult& result) = delete;
+  LoadNodeResult(LoadNodeResult&& result) = default;
+
   std::optional<LoadMeshResult> meshResult = std::nullopt;
   std::unordered_map<int32_t, LoadMeshResult> meshVariantsResults;
   const CesiumGltf::ExtensionNodeMaxarMeshVariants* pVariantsExtension =
@@ -91,7 +104,10 @@ struct LoadNodeResult {
 };
 
 struct LoadModelResult {
-  std::vector<LoadNodeResult> nodeResults{};
+  LoadModelResult() = default;
+  LoadModelResult(const LoadModelResult& result) = delete;
+
+  std::vector<LoadNodeResult> nodeResults;
   FCesiumMetadataModel Metadata{};
   CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
   const CesiumGltf::ExtensionModelMaxarMeshVariants* pVariantsExtension =

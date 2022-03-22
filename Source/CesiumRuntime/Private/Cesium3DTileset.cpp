@@ -585,7 +585,7 @@ public:
               pLoadThreadResult));
       return UCesiumGltfComponent::CreateOnGameThread(
           this->_pActor,
-          std::move(pHalf),
+          MoveTemp(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
           this->_pActor->GetWaterMaterial(),

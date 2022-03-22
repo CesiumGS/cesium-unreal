@@ -99,7 +99,7 @@ namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
   virtual ~HalfConstructedReal() {}
-  LoadModelResult loadModelResult;
+  LoadModelResult loadModelResult{};
 };
 } // namespace
 
@@ -1301,16 +1301,15 @@ static void loadMesh(
   const Model& model = *options.pNodeOptions->pModelOptions->pModel;
   const Mesh& mesh = *options.pMesh;
 
-  result = LoadMeshResult();
-  result->primitiveResults.reserve(mesh.primitives.size());
+  result.primitiveResults.reserve(mesh.primitives.size());
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
-    auto& primitiveResult = result->primitiveResults.emplace_back();
+    CreatePrimitiveOptions primitiveOptions = {&options, &result, &primitive};
+    auto& primitiveResult = result.primitiveResults.emplace_back();
     loadPrimitive(primitiveResult, transform, primitiveOptions);
 
     // if it doesn't have render data, then it can't be loaded
     if (!primitiveResult.RenderData) {
-      result->primitiveResults.pop_back();
+      result.primitiveResults.pop_back();
     }
   }
 }
@@ -1403,7 +1402,7 @@ static void loadNode(
             &result,
             &model.meshes[mapping.mesh]};
         auto meshResultIt =
-            result.meshVariantsResults.emplace(mapping.mesh, LoadMeshResult{});
+            result.meshVariantsResults.try_emplace(mapping.mesh);
         loadMesh(meshResultIt.first->second, nodeTransform, meshOptions);
       }
     }
@@ -1414,7 +1413,7 @@ static void loadNode(
           &options,
           &result,
           &model.meshes[meshId]};
-      result.meshResult = LoadMeshResult{};
+      result.meshResult.emplace();
       loadMesh(*result.meshResult, nodeTransform, meshOptions);
     }
   }
@@ -1532,7 +1531,7 @@ static void loadModelAnyThreadPart(
     for (const Mesh& mesh : model.meshes) {
       CreateNodeOptions dummyNodeOptions = {&options, &result, nullptr};
       LoadNodeResult& dummyNodeResult = result.nodeResults.emplace_back();
-      dummyNodeResult.meshResult = LoadMeshResult{};
+      dummyNodeResult.meshResult.emplace();
       CreateMeshOptions meshOptions = {
           &dummyNodeOptions,
           &dummyNodeResult,
@@ -2025,7 +2024,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   auto pResult = MakeUnique<HalfConstructedReal>();
   loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
 
-  return pResult;
+  return MoveTemp(pResult);
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
