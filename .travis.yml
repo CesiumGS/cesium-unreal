@@ -44,6 +44,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue426-windows-release
     - UNREAL_ENGINE_VERSION=4.26
   - name: Windows 4.27
     os: windows
@@ -78,6 +79,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env:
     - PATH=/c/Python39:/c/Python39/Scripts:$PATH
+    - CONAN_PROFILE=ue427-windows-release
     - UNREAL_ENGINE_VERSION=4.27
   - name: Android 4.26
     os: windows
