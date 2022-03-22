@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CesiumFeatureIDTexture.h"
-#include "CesiumVertexMetadata.h"
+#include "CesiumFeatureIdAttribute.h"
+#include "CesiumFeatureIdTexture.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataPrimitive.generated.h"
@@ -46,8 +46,8 @@ public:
       const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata);
 
 private:
-  TArray<FCesiumVertexMetadata> _vertexFeatures;
-  TArray<FCesiumFeatureIDTexture> _featureIDTextures;
+  TArray<FCesiumFeatureIdAttribute> _featureIdAttributes;
+  TArray<FCesiumFeatureIdTexture> _featureIdTextures;
   TArray<FString> _featureTextureNames;
   VertexIDAccessorType _vertexIDAccessor;
 
@@ -67,9 +67,9 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumVertexMetadata>&
-  GetVertexFeatures(UPARAM(ref)
-                        const FCesiumMetadataPrimitive& MetadataPrimitive);
+  static const TArray<FCesiumFeatureIdAttribute>&
+  GetFeatureIdAttributes(UPARAM(ref)
+                             const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
    * @brief Get all the feature id textures that are associated with the
@@ -79,8 +79,8 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumFeatureIDTexture>&
-  GetFeatureIDTextures(UPARAM(ref)
+  static const TArray<FCesiumFeatureIdTexture>&
+  GetFeatureIdTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**

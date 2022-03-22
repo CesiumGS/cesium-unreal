@@ -55,7 +55,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         continue;
       }
 
-      this->_vertexFeatures.Add(FCesiumVertexMetadata(
+      this->_featureIdAttributes.Add(FCesiumFeatureIdAttribute(
           model,
           *accessor,
           featureID->second,
@@ -63,10 +63,10 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     }
   }
 
-  for (const CesiumGltf::FeatureIDTexture& featureIDTexture :
+  for (const CesiumGltf::FeatureIDTexture& featureIdTexture :
        metadata.featureIdTextures) {
-    this->_featureIDTextures.Add(
-        FCesiumFeatureIDTexture(model, featureIDTexture));
+    this->_featureIdTextures.Add(
+        FCesiumFeatureIdTexture(model, featureIdTexture));
   }
 
   this->_featureTextureNames.Reserve(metadata.featureTextures.size());
@@ -76,16 +76,16 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
 }
 
-const TArray<FCesiumVertexMetadata>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
+const TArray<FCesiumFeatureIdAttribute>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._vertexFeatures;
+  return MetadataPrimitive._featureIdAttributes;
 }
 
-const TArray<FCesiumFeatureIDTexture>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+const TArray<FCesiumFeatureIdTexture>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureIDTextures;
+  return MetadataPrimitive._featureIdTextures;
 }
 
 const TArray<FString>&

@@ -66,7 +66,7 @@ struct EncodedFeatureIdTexture {
   int64 textureCoordinateAttributeId;
 };
 
-struct EncodedVertexMetadata {
+struct EncodedFeatureIdAttribute {
   FString name;
   FString featureTableName;
   int32 index;
@@ -85,7 +85,7 @@ struct EncodedFeatureTexture {
 
 struct EncodedMetadataPrimitive {
   TArray<EncodedFeatureIdTexture> encodedFeatureIdTextures;
-  TArray<EncodedVertexMetadata> encodedVertexMetadata;
+  TArray<EncodedFeatureIdAttribute> encodedFeatureIdAttributes;
   TArray<FString> featureTextureNames;
 };
 

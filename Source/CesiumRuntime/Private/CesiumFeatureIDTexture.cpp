@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumFeatureIDTexture.h"
+#include "CesiumFeatureIdTexture.h"
 
 #include "CesiumGltf/FeatureIDTexture.h"
 #include "CesiumGltf/Model.h"
@@ -8,21 +8,21 @@
 
 using namespace CesiumGltf;
 
-FCesiumFeatureIDTexture::FCesiumFeatureIDTexture(
+FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const Model& model,
-    const FeatureIDTexture& featureIDTexture)
-    : _featureIDTextureView(model, featureIDTexture),
+    const FeatureIDTexture& featureIdTexture)
+    : _featureIdTextureView(model, featureIdTexture),
       _featureTableName(UTF8_TO_TCHAR(
-          this->_featureIDTextureView.getFeatureTableName().c_str())) {}
+          this->_featureIdTextureView.getFeatureTableName().c_str())) {}
 
-const FString& UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
-    const FCesiumFeatureIDTexture& featureIDTexture) {
-  return featureIDTexture._featureTableName;
+const FString& UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
+    const FCesiumFeatureIdTexture& featureIdTexture) {
+  return featureIdTexture._featureTableName;
 }
 
-int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
+int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* component,
-    const FCesiumFeatureIDTexture& featureIDTexture) {
+    const FCesiumFeatureIdTexture& featureIdTexture) {
   const UCesiumGltfPrimitiveComponent* pPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!pPrimitive) {
@@ -30,7 +30,7 @@ int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
   }
 
   auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
-      featureIDTexture._featureIDTextureView.getTextureCoordinateAttributeId());
+      featureIdTexture._featureIdTextureView.getTextureCoordinateAttributeId());
   if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
     return 0;
   }
@@ -38,10 +38,10 @@ int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
   return textureCoordinateIndexIt->second;
 }
 
-int64 UCesiumFeatureIDTextureBlueprintLibrary::
-    GetFeatureIDForTextureCoordinates(
-        const FCesiumFeatureIDTexture& featureIDTexture,
+int64 UCesiumFeatureIdTextureBlueprintLibrary::
+    GetFeatureIdForTextureCoordinates(
+        const FCesiumFeatureIdTexture& featureIdTexture,
         float u,
         float v) {
-  return featureIDTexture._featureIDTextureView.getFeatureID(u, v);
+  return featureIdTexture._featureIdTextureView.getFeatureID(u, v);
 }

@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumVertexMetadata.h"
+#include "CesiumFeatureIdAttribute.h"
 #include "CesiumGltf/Accessor.h"
 #include "CesiumGltf/FeatureTable.h"
 #include "CesiumGltf/Model.h"
@@ -34,7 +34,7 @@ struct VertexCountFromAccessor {
 };
 } // namespace
 
-FCesiumVertexMetadata::FCesiumVertexMetadata(
+FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     const Model& model,
     const Accessor& featureIDAccessor,
     int32 attributeIndex,
@@ -76,22 +76,22 @@ FCesiumVertexMetadata::FCesiumVertexMetadata(
   }
 }
 
-const FString& UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
-    UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata) {
-  return VertexMetadata._featureTableName;
+const FString& UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute) {
+  return FeatureIdAttribute._featureTableName;
 }
 
-int64 UCesiumVertexMetadataBlueprintLibrary::GetVertexCount(
-    UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata) {
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute) {
   return std::visit(
       VertexCountFromAccessor{},
-      VertexMetadata._featureIDAccessor);
+      FeatureIdAttribute._featureIDAccessor);
 }
 
-int64 UCesiumVertexMetadataBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata,
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
     int64 vertexIdx) {
   return std::visit(
       FeatureIDFromAccessor{vertexIdx},
-      VertexMetadata._featureIDAccessor);
+      FeatureIdAttribute._featureIDAccessor);
 }

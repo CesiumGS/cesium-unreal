@@ -205,15 +205,17 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     }
 
     const FCesiumMetadataPrimitive& primitive = pGltfPrimitive->Metadata;
-    const TArray<FCesiumVertexMetadata>& attributes =
-        UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(primitive);
-    const TArray<FCesiumFeatureIDTexture>& textures =
-        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+    const TArray<FCesiumFeatureIdAttribute>& attributes =
+        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
+            primitive);
+    const TArray<FCesiumFeatureIdTexture>& textures =
+        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
             primitive);
 
-    for (const FCesiumVertexMetadata& attribute : attributes) {
+    for (const FCesiumFeatureIdAttribute& attribute : attributes) {
       const FString& featureTableName =
-          UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(attribute);
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
+              attribute);
       for (FFeatureTableDescription& featureTable : this->FeatureTables) {
         if (featureTableName == featureTable.Name) {
           if (featureTable.AccessType ==
@@ -226,9 +228,9 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
       }
     }
 
-    for (const FCesiumFeatureIDTexture& texture : textures) {
+    for (const FCesiumFeatureIdTexture& texture : textures) {
       const FString& featureTableName =
-          UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(texture);
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(texture);
       for (FFeatureTableDescription& featureTable : this->FeatureTables) {
         if (featureTableName == featureTable.Name) {
           if (featureTable.AccessType ==
