@@ -192,8 +192,9 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
     if (hasPopupCredits) {
+      // create phony url to detect when to open popup menu
       onScreenCreditString +=
-          "<span> </span><a href=\"https://data-attribution-popup\">Data attribution</a>";
+          "<span> </span><a href=\"cesium-unreal://data-attribution-popup\">Data attribution</a>";
     }
     onScreenCreditString += "</body>')";
     OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
