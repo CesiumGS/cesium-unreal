@@ -17,6 +17,7 @@
 #include "CesiumAsync/SqliteCache.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
+#include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -1093,10 +1094,10 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             pStereoRendering->GetStereoProjectionMatrix(leftEye);
 
         // TODO: consider assymetric frustums using 4 fovs
-        float one_over_tan_half_hfov = projection.M[0][0];
+        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
 
-        float hfov =
-            glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+        CesiumReal hfov =
+            glm::degrees(2.0 * glm::atan(1.0 / one_over_tan_half_hfov));
 
         cameras.emplace_back(
             stereoLeftSize,
@@ -1117,9 +1118,9 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         FMatrix projection =
             pStereoRendering->GetStereoProjectionMatrix(rightEye);
 
-        float one_over_tan_half_hfov = projection.M[0][0];
+        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
 
-        float hfov =
+        CesiumReal hfov =
             glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
         cameras.emplace_back(
@@ -1308,7 +1309,7 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 
 namespace {
 
-// TODO These could or should be members, but extracted here as a first step:
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 /**
  * @brief Check if the given tile is contained in one of the given exclusion
@@ -1350,6 +1351,8 @@ bool isInExclusionZone(
   }
   return false;
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void removeVisibleTilesFromList(
     std::vector<Cesium3DTilesSelection::Tile*>& list,
@@ -1496,9 +1499,11 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
       continue;
     }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     // That looks like some reeeally entertaining debug session...:
     // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();

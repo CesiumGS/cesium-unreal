@@ -3,6 +3,7 @@
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
 #include "CesiumActors.h"
+#include "CesiumCommon.h"
 #include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
@@ -673,7 +674,7 @@ namespace {
  * @param i The integer value
  * @return The clamped result
  */
-int32 clampedAdd(float f, int32 i) {
+int32 clampedAdd(double f, int32 i) {
   int64 sum = static_cast<int64>(f) + static_cast<int64>(i);
   int64 min = static_cast<int64>(TNumericLimits<int32>::Min());
   int64 max = static_cast<int64>(TNumericLimits<int32>::Max());

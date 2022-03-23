@@ -232,7 +232,7 @@ protected:
       Category = "Cesium|Date and Time|Daylight Savings",
       meta = (ClampMin = 0, ClampMax = 23),
       meta = (EditCondition = "UseDaylightSavingTime"))
-  int32 DSTSwitchHour = 2.f;
+  int32 DSTSwitchHour = 2;
 
   /**
    * Updates the atmosphere automatically given current player pawn's longitude,
