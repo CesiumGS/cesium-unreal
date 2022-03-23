@@ -25,6 +25,7 @@
 #include "Materials/MaterialExpressionTextureProperty.h"
 #include "Materials/MaterialExpressionVertexInterpolator.h"
 #include "Materials/MaterialFunctionMaterialLayer.h"
+#include "Misc/PackageName.h"
 #include "Modules/ModuleManager.h"
 #include "UObject/Package.h"
 #endif
@@ -299,8 +300,20 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   }
 
   FString MaterialBaseName = "ML_Material";
-  FString PackageName = "/Game/";
-  PackageName += MaterialBaseName;
+  FString MaterialName = MaterialBaseName;
+  FString PackageBaseName = "/Game/";
+  FString PackageName = PackageBaseName + MaterialName;
+
+  int MaterialNameIndex = 0;
+  while (FPackageName::DoesPackageExist(PackageName)) {
+    if (++MaterialNameIndex == 10) {
+      return;
+    }
+
+    MaterialName = MaterialBaseName + FString::FromInt(MaterialNameIndex);
+    PackageName = PackageBaseName + MaterialName;
+  }
+
   UPackage* Package = CreatePackage(*PackageName);
 
   // Create an unreal material asset
@@ -310,7 +323,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       (UMaterialFunctionMaterialLayer*)MaterialFactory->FactoryCreateNew(
           UMaterialFunctionMaterialLayer::StaticClass(),
           Package,
-          *MaterialBaseName,
+          *MaterialName,
           RF_Standalone | RF_Public | RF_Transactional,
           NULL,
           GWarn);
