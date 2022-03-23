@@ -13,12 +13,13 @@
 
 using namespace CesiumGltf;
 
-static FTexturePlatformData*
+static TUniquePtr<FTexturePlatformData>
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   if (sizeX > 0 && sizeY > 0 &&
       (sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
       (sizeY % GPixelFormats[format].BlockSizeY) == 0) {
-    FTexturePlatformData* pTexturePlatformData = new FTexturePlatformData();
+    TUniquePtr<FTexturePlatformData> pTexturePlatformData =
+        MakeUnique<FTexturePlatformData>();
     pTexturePlatformData->SizeX = sizeX;
     pTexturePlatformData->SizeY = sizeY;
     pTexturePlatformData->PixelFormat = format;
@@ -29,7 +30,7 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   }
 }
 
-/*static*/ CesiumTextureUtility::LoadedTextureResult*
+/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
@@ -93,7 +94,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     };
   }
 
-  LoadedTextureResult* pResult = new LoadedTextureResult{};
+  TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
   pResult->pTextureData =
       createTexturePlatformData(image.width, image.height, pixelFormat);
   if (!pResult->pTextureData) {
@@ -229,7 +230,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return pResult;
 }
 
-/*static*/ CesiumTextureUtility::LoadedTextureResult*
+/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
@@ -333,24 +334,23 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return loadTextureAnyThreadPart(image, addressX, addressY, filter);
 }
 
-/*static*/ bool CesiumTextureUtility::loadTextureGameThreadPart(
+/*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
     LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
-    return false;
+    return nullptr;
   }
 
   UTexture2D*& pTexture = pHalfLoadedTexture->pTexture;
-
-  if (!pTexture) {
+  if (!pTexture && pHalfLoadedTexture->pTextureData) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
         NAME_None,
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
 #if ENGINE_MAJOR_VERSION >= 5
-    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
 #else
-    pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
+    pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
 #endif
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
@@ -358,5 +358,5 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     pTexture->UpdateResource();
   }
 
-  return true;
+  return pTexture;
 }
