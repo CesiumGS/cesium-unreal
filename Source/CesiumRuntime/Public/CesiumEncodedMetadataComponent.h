@@ -63,7 +63,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
                "AccessType==ECesiumFeatureTableAccessType::Texture"))
   FString Channel;
 
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FPropertyDescription> Properties;
 };
 
@@ -97,20 +97,26 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Name;
 
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FFeatureTexturePropertyDescription> Properties;
 };
 
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
     : public UActorComponent {
   GENERATED_BODY()
 
 public:
-  UPROPERTY(EditAnywhere, Category = "EncodeMetadata")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "EncodeMetadata",
+      Meta = (TitleProperty = "Name"))
   TArray<FFeatureTableDescription> FeatureTables;
 
-  UPROPERTY(EditAnywhere, Category = "EncodeMetadata")
+  UPROPERTY(
+      EditAnywhere,
+      Category = "EncodeMetadata",
+      Meta = (TitleProperty = "Name"))
   TArray<FFeatureTextureDescription> FeatureTextures;
 
   UFUNCTION(CallInEditor, Category = "EncodeMetadata")

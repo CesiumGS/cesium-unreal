@@ -983,6 +983,11 @@ static void loadPrimitive(
   }
 
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+
+  // TODO: this is very thread unsafe, change this so the instructions are
+  // copied to the tileset when updated / refreshed. Later, the tileset can
+  // thread through the metadata instructions all the way here. The component
+  // itself should not be accessed here!!
   const UCesiumEncodedMetadataComponent* pEncodeInstructions =
       options.pMeshOptions->pNodeOptions->pModelOptions
           ->pEncodeMetadataInstructions;
