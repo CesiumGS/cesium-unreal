@@ -10,7 +10,9 @@
 
 #if WITH_EDITOR
 #include "ComponentReregisterContext.h"
+#include "ContentBrowserModule.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
+#include "IContentBrowserSingleton.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionCustom.h"
 #include "Materials/MaterialExpressionFunctionInput.h"
@@ -23,6 +25,7 @@
 #include "Materials/MaterialExpressionTextureProperty.h"
 #include "Materials/MaterialExpressionVertexInterpolator.h"
 #include "Materials/MaterialFunctionMaterialLayer.h"
+#include "Modules/ModuleManager.h"
 #include "UObject/Package.h"
 #endif
 
@@ -653,5 +656,13 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   // the FMaterialResource of the original material, and will use the new
   // FMaterialResource created when we make a new UMaterial in place
   FGlobalComponentReregisterContext RecreateComponents;
+
+  TArray<UObject*> AssetsToHighlight;
+  AssetsToHighlight.Add(UnrealMaterial);
+
+  FContentBrowserModule& ContentBrowserModule =
+      FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(
+          "ContentBrowser");
+  ContentBrowserModule.Get().SyncBrowserToAssets(AssetsToHighlight);
 }
 #endif
