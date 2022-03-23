@@ -337,7 +337,7 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
-  - name: Windows 5.0.0 preview 1
+  - name: Windows 5.0.0 preview 2
     os: windows
     install:
     - df -k
@@ -349,7 +349,7 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - travis_wait 30 "./travis/travis-get-ue-500p1.sh"
+    - travis_wait 30 "./travis/travis-get-ue-500p2.sh"
     - df -k
     - choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
     # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe //quiet //install //norestart //log log.txt || echo failed"
@@ -359,7 +359,7 @@ jobs:
     - df -k
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
-    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-500p1-windows-${CESIUM_UNREAL_VERSION}
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-500p2-windows-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -A x64
@@ -376,7 +376,7 @@ jobs:
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE5.0p1-Windows "target_url=${PACKAGE_LINK}" --ignore-stdin
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE5.0p2-Windows "target_url=${PACKAGE_LINK}" --ignore-stdin
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - stage: Combine Packages
     name: Combine for UE 4.26
