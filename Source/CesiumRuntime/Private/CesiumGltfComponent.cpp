@@ -301,8 +301,7 @@ struct ColorVisitor {
         }
       }
     } else {
-      for (int i = 0; success && i < this->StaticMeshBuildVertices.Num();
-           ++i) {
+      for (int i = 0; success && i < this->StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
         if (i >= colorView.size()) {
           success = false;
