@@ -293,13 +293,13 @@ static FString createHlslSafeName(const FString& rawName) {
 }
 
 void UCesiumEncodedMetadataComponent::GenerateMaterial() {
-  UMaterialFunction* SelectTexCoordsFunction = LoadMaterialFunction(
-      "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords");
-  if (!SelectTexCoordsFunction) {
+  ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(this->GetOwner());
+
+  if (!pTileset) {
     return;
   }
 
-  FString MaterialBaseName = "ML_Material";
+  FString MaterialBaseName = pTileset->GetFName().ToString() + "_Metadata_ML";
   FString MaterialName = MaterialBaseName;
   FString PackageBaseName = "/Game/";
   FString PackageName = PackageBaseName + MaterialName;
@@ -312,6 +312,12 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
     MaterialName = MaterialBaseName + FString::FromInt(MaterialNameIndex);
     PackageName = PackageBaseName + MaterialName;
+  }
+
+  UMaterialFunction* SelectTexCoordsFunction = LoadMaterialFunction(
+      "/CesiumForUnreal/Materials/MaterialFunctions/CesiumSelectTexCoords.CesiumSelectTexCoords");
+  if (!SelectTexCoordsFunction) {
+    return;
   }
 
   UPackage* Package = CreatePackage(*PackageName);
