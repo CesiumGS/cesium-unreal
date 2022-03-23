@@ -8,7 +8,7 @@
 
 /**
  * @brief The GPU component type to coerce this property to.
- * 
+ *
  */
 UENUM()
 enum class ECesiumPropertyComponentType : uint8 { Uint8, Float };
@@ -20,7 +20,7 @@ UENUM()
 enum class ECesiumPropertyType : uint8 { Scalar, Vec2, Vec3, Vec4 };
 
 /**
- * @brief Describes how this feature table is accessed. Either through feature 
+ * @brief Describes how this feature table is accessed. Either through feature
  * id textures, feature id attributes, mixed, or neither.
  */
 UENUM()
@@ -37,15 +37,15 @@ enum class ECesiumFeatureTableAccessType : uint8 {
 // types like strings will be coerced.
 
 /**
- * @brief Description of a feature table property that should be encoded for 
- * access on the GPU. 
+ * @brief Description of a feature table property that should be encoded for
+ * access on the GPU.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FPropertyDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief The name of this property as it will be referenced in the 
+   * @brief The name of this property as it will be referenced in the
    * material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
@@ -53,7 +53,7 @@ struct CESIUMRUNTIME_API FPropertyDescription {
 
   /**
    * @brief The GPU component type to coerce this property to.
-   * 
+   *
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumPropertyComponentType ComponentType =
@@ -66,21 +66,21 @@ struct CESIUMRUNTIME_API FPropertyDescription {
   ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
 
   /**
-   * @brief If ComponentType==Uint8, this indicates whether to normalize into a 
-   * [0-1] range before accessing on the GPU. 
+   * @brief If ComponentType==Uint8, this indicates whether to normalize into a
+   * [0-1] range before accessing on the GPU.
    */
   UPROPERTY(
-      EditAnywhere, 
-      Category = "Cesium", 
+      EditAnywhere,
+      Category = "Cesium",
       Meta =
-          (EditCondition = 
-            "ComponentType==ECesiumPropertyComponentType::Uint8"))
+          (EditCondition =
+               "ComponentType==ECesiumPropertyComponentType::Uint8"))
   bool Normalized = false;
 };
 
 /**
- * @brief Description of a feature table containing properties to be encoded 
- * for access on the GPU. 
+ * @brief Description of a feature table containing properties to be encoded
+ * for access on the GPU.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FFeatureTableDescription {
@@ -88,13 +88,13 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
 
   /**
    * @brief The name of this feature table.
-   * 
+   *
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Name;
 
   /**
-   * @brief Describes how this feature table is accessed. Either through feature 
+   * @brief Describes how this feature table is accessed. Either through feature
    * id textures, feature id attributes, mixed, or neither.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
@@ -103,7 +103,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
 
   /**
    * @brief If the AccessType==Texture, this string represents the channel of
-   * the feature id texture that will be used to index into this feature table.  
+   * the feature id texture that will be used to index into this feature table.
    */
   UPROPERTY(
       EditAnywhere,
@@ -114,7 +114,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
   FString Channel;
 
   /**
-   * @brief Descriptions of the properties to upload to the GPU. 
+   * @brief Descriptions of the properties to upload to the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FPropertyDescription> Properties;
@@ -122,14 +122,14 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
 
 /**
  * @brief Description of a feature texture property that should be uploaded to
- * the GPU. 
+ * the GPU.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief The name of this property as it will be referenced in the 
+   * @brief The name of this property as it will be referenced in the
    * material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
@@ -148,24 +148,24 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
   ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
 
   /**
-   * @brief If ComponentType==Uint8, this indicates whether to normalize into a 
-   * [0-1] range before accessing on the GPU. 
+   * @brief If ComponentType==Uint8, this indicates whether to normalize into a
+   * [0-1] range before accessing on the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   bool Normalized = false;
 
   /**
-   * @brief This string describes the channel order of the incoming feature 
-   * texture property (e.g., "rgb", "bgra", etc.). This helps us fix the 
-   * channel order when accessing on the GPU. 
+   * @brief This string describes the channel order of the incoming feature
+   * texture property (e.g., "rgb", "bgra", etc.). This helps us fix the
+   * channel order when accessing on the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Swizzle;
 };
 
 /**
- * @brief Description of a feature texture with properties that should be 
- * uploaded to the GPU. 
+ * @brief Description of a feature texture with properties that should be
+ * uploaded to the GPU.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FFeatureTextureDescription {
@@ -178,22 +178,22 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
   FString Name;
 
   /**
-   * @brief Descriptions of the properties to upload to the GPU. 
+   * @brief Descriptions of the properties to upload to the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FFeatureTexturePropertyDescription> Properties;
 };
 
 /**
- * @brief Description of metadata from a glTF that should be uploaded to the 
- * GPU for access in materials. 
+ * @brief Description of metadata from a glTF that should be uploaded to the
+ * GPU for access in materials.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief Descriptions of feature tables to upload to the GPU. 
+   * @brief Descriptions of feature tables to upload to the GPU.
    */
   UPROPERTY(
       EditAnywhere,
@@ -209,16 +209,15 @@ struct CESIUMRUNTIME_API FMetadataDescription {
       Category = "EncodeMetadata",
       Meta = (TitleProperty = "Name"))
   TArray<FFeatureTextureDescription> FeatureTextures;
-
 };
 
 /**
  * @brief An actor component that can be added to Cesium3DTileset actors to
  * dictate what metadata to encode for access on the GPU. The selection can be
- * automatically populated based on available metadata by clicking the 
- * "Auto Fill" button. Once a selection of desired metadata is made, the 
- * boiler-plate material code to access the selected properties can be 
- * auto-generated using the "Generate Material" button. 
+ * automatically populated based on available metadata by clicking the
+ * "Auto Fill" button. Once a selection of desired metadata is made, the
+ * boiler-plate material code to access the selected properties can be
+ * auto-generated using the "Generate Material" button.
  */
 UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
@@ -226,12 +225,12 @@ class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
   GENERATED_BODY()
 
 public:
-  // Note: Here, we avoid wrapping the feature tables and feature textures 
+  // Note: Here, we avoid wrapping the feature tables and feature textures
   // inside a FMetadataDescription to avoid further complicating the details
   // panel UI for editing the hierarchy.
 
   /**
-   * @brief Descriptions of feature tables to upload to the GPU. 
+   * @brief Descriptions of feature tables to upload to the GPU.
    */
   UPROPERTY(
       EditAnywhere,
@@ -250,19 +249,19 @@ public:
 
   /**
    * @brief This button can be used to pre-populate the description of metadata
-   * to encode based on the existing metadata in the current tiles. 
-   * 
-   * Warning: Using Auto Fill may populate the description with a large amount 
-   * of metadata. Make sure to delete the properties that aren't relevant. 
+   * to encode based on the existing metadata in the current tiles.
+   *
+   * Warning: Using Auto Fill may populate the description with a large amount
+   * of metadata. Make sure to delete the properties that aren't relevant.
    */
   UFUNCTION(CallInEditor, Category = "EncodeMetadata")
   void AutoFill();
 
 /**
- * @brief This button can be used to create a boiler-plate material layer that 
- * exposes the requested metadata properties in the current description. The 
+ * @brief This button can be used to create a boiler-plate material layer that
+ * exposes the requested metadata properties in the current description. The
  * new material layer will be called "ML_Material" and be spawned in the /Game
- * directory.  
+ * directory.
  */
 #if WITH_EDITOR
   UFUNCTION(CallInEditor, Category = "EncodeMetadata")

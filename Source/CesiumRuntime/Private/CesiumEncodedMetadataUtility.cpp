@@ -161,12 +161,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
-    CESIUM_TRACE(
-        TCHAR_TO_UTF8(*("Encode Property Array: " + featureTableDescription.Name)));
+    CESIUM_TRACE(TCHAR_TO_UTF8(
+        *("Encode Property Array: " + featureTableDescription.Name)));
 
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
-    encodedProperty.name = "FTB_" + featureTableDescription.Name + "_" + pair.Key;
+    encodedProperty.name =
+        "FTB_" + featureTableDescription.Name + "_" + pair.Key;
 
     int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
     encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
