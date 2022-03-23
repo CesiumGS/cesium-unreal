@@ -70,7 +70,7 @@ EncodedPixelFormat getPixelFormat(
 } // namespace
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
-    const FFeatureTableDescription& encodeInstructions,
+    const FFeatureTableDescription& featureTableDescription,
     const FCesiumMetadataFeatureTable& featureTable) {
 
   EncodedMetadataFeatureTable encodedFeatureTable;
@@ -88,7 +88,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
     const FPropertyDescription* pExpectedProperty = nullptr;
     for (const FPropertyDescription& expectedProperty :
-         encodeInstructions.Properties) {
+         featureTableDescription.Properties) {
       if (pair.Key == expectedProperty.Name) {
         pExpectedProperty = &expectedProperty;
         break;
@@ -162,11 +162,11 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     CESIUM_TRACE(
-        TCHAR_TO_UTF8(*("Encode Property Array: " + encodeInstructions.Name)));
+        TCHAR_TO_UTF8(*("Encode Property Array: " + featureTableDescription.Name)));
 
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
-    encodedProperty.name = "FTB_" + encodeInstructions.Name + "_" + pair.Key;
+    encodedProperty.name = "FTB_" + featureTableDescription.Name + "_" + pair.Key;
 
     int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
     encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
@@ -376,7 +376,7 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
 }
 
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataPrimitive& primitive) {
 
   CESIUM_TRACE("Encode Metadata Primitive");
@@ -395,7 +395,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   result.featureTextureNames.Reserve(featureTextureNames.Num());
 
   for (const FFeatureTextureDescription& expectedFeatureTexture :
-       encodeInstructions.FeatureTextures) {
+       metadataDescription.FeatureTextures) {
     for (const FString& featureTextureName : featureTextureNames) {
       if (featureTextureName == expectedFeatureTexture.Name) {
         result.featureTextureNames.Add(featureTextureName);
@@ -414,7 +414,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   // Imposed implementation limitation: Assume only upto one feature id texture
   // or attribute corresponds to each feature table.
   for (const FFeatureTableDescription& expectedFeatureTable :
-       encodeInstructions.FeatureTables) {
+       metadataDescription.FeatureTables) {
     if (expectedFeatureTable.AccessType ==
         ECesiumFeatureTableAccessType::Texture) {
       for (const FCesiumFeatureIdTexture& featureIdTexture :
@@ -523,7 +523,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 }
 
 EncodedMetadata encodeMetadataAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataModel& metadata) {
 
   CESIUM_TRACE("Encode Metadata Model");
@@ -535,7 +535,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
   result.encodedFeatureTables.Reserve(featureTables.Num());
   for (const auto& featureTableIt : featureTables) {
     for (const FFeatureTableDescription& expectedFeatureTable :
-         encodeInstructions.FeatureTables) {
+         metadataDescription.FeatureTables) {
       if (expectedFeatureTable.Name == featureTableIt.Key) {
         CESIUM_TRACE(
             TCHAR_TO_UTF8(*("Encode Feature Table: " + featureTableIt.Key)));
@@ -558,7 +558,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
   featureTexturePropertyMap.Reserve(featureTextures.Num());
   for (const auto& featureTextureIt : featureTextures) {
     for (const FFeatureTextureDescription& expectedFeatureTexture :
-         encodeInstructions.FeatureTextures) {
+         metadataDescription.FeatureTextures) {
       if (expectedFeatureTexture.Name == featureTextureIt.Key) {
         CESIUM_TRACE(TCHAR_TO_UTF8(
             *("Encode Feature Texture: " + featureTextureIt.Key)));

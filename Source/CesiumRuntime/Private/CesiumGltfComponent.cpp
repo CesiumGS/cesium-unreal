@@ -984,16 +984,12 @@ static void loadPrimitive(
 
   primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
 
-  // TODO: this is very thread unsafe, change this so the instructions are
-  // copied to the tileset when updated / refreshed. Later, the tileset can
-  // thread through the metadata instructions all the way here. The component
-  // itself should not be accessed here!!
-  const UCesiumEncodedMetadataComponent* pEncodeInstructions =
+  const FMetadataDescription* pEncodedMetadataDescription =
       options.pMeshOptions->pNodeOptions->pModelOptions
-          ->pEncodeMetadataInstructions;
-  if (pEncodeInstructions) {
+          ->pEncodedMetadataDescription;
+  if (pEncodedMetadataDescription) {
     primitiveResult.EncodedMetadata = encodeMetadataPrimitiveAnyThreadPart(
-        *pEncodeInstructions,
+        *pEncodedMetadataDescription,
         primitiveResult.Metadata);
   }
 
@@ -1464,9 +1460,9 @@ static void loadModelAnyThreadPart(
       model.getExtension<ExtensionModelExtFeatureMetadata>();
   if (pMetadataExtension) {
     result.Metadata = FCesiumMetadataModel(model, *pMetadataExtension);
-    if (options.pEncodeMetadataInstructions) {
+    if (options.pEncodedMetadataDescription) {
       result.EncodedMetadata = encodeMetadataAnyThreadPart(
-          *options.pEncodeMetadataInstructions,
+          *options.pEncodedMetadataDescription,
           result.Metadata);
     }
   }

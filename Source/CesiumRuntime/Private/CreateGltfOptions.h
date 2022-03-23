@@ -16,7 +16,7 @@
 namespace CreateGltfOptions {
 struct CreateModelOptions {
   const CesiumGltf::Model* pModel = nullptr;
-  const UCesiumEncodedMetadataComponent* pEncodeMetadataInstructions = nullptr;
+  const FMetadataDescription* pEncodedMetadataDescription = nullptr;
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCookingModule* pPhysXCookingModule = nullptr;

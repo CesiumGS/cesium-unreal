@@ -15,8 +15,7 @@ struct FCesiumMetadataFeatureTable;
 struct FCesiumFeatureTexture;
 struct FFeatureTableDescription;
 struct FFeatureTextureDescription;
-
-class UCesiumEncodedMetadataComponent;
+struct FMetadataDescription;
 
 namespace CesiumEncodedMetadataUtility {
 struct EncodedMetadataProperty {
@@ -95,7 +94,7 @@ struct EncodedMetadata {
 };
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
-    const FFeatureTableDescription& encodeInstructions,
+    const FFeatureTableDescription& featureTableDescription,
     const FCesiumMetadataFeatureTable& featureTable);
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
@@ -108,11 +107,11 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FCesiumFeatureTexture& featureTexture);
 
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodedInformation,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataPrimitive& primitive);
 
 EncodedMetadata encodeMetadataAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataModel& metadata);
 
 bool encodeMetadataFeatureTableGameThreadPart(
