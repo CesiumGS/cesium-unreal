@@ -306,14 +306,6 @@ void ACesium3DTileset::SetCustomDepthParameters(
   }
 }
 
-void ACesium3DTileset::SetEnableAnisotropicFiltering(
-    bool InEnableAnisotropicFiltering) {
-  if (this->EnableAnisotropicFiltering != InEnableAnisotropicFiltering) {
-    this->EnableAnisotropicFiltering = InEnableAnisotropicFiltering;
-    this->DestroyTileset();
-  }
-}
-
 void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
@@ -624,7 +616,7 @@ public:
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        _pActor->GetEnableAnisotropicFiltering() ? TF_MAX : TF_Bilinear);
+        TextureFilter::TF_Bilinear);
   }
 
   virtual void* prepareRasterInMainThread(
