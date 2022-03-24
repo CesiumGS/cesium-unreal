@@ -609,13 +609,29 @@ public:
     }
   }
 
-  virtual void*
-  prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
+  virtual void* prepareRasterInLoadThread(
+      const CesiumGltf::ImageCesium& image,
+      int filter) override {
+    TextureFilter textureFilter;
+    switch (filter) {
+    case CesiumGltf::Sampler::MinFilter::NEAREST:
+      textureFilter = TextureFilter::TF_Nearest;
+      break;
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+      textureFilter = TextureFilter::TF_Bilinear;
+      break;
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+      textureFilter = TextureFilter::TF_Trilinear;
+      break;
+    default:
+      textureFilter = TextureFilter::TF_Default;
+      break;
+    }
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        TextureFilter::TF_Bilinear);
+        textureFilter);
     return texture.Release();
   }
 

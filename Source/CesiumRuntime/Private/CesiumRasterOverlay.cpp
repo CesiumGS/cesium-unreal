@@ -44,6 +44,21 @@ void UCesiumRasterOverlay::AddToTileset() {
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.maximumTextureSize = this->MaximumTextureSize;
   options.subTileCacheBytes = this->SubTileCacheBytes;
+  switch (this->RasterTextureFilter) {
+  case TextureFilter::TF_Nearest:
+    options.filter = CesiumGltf::Sampler::MinFilter::NEAREST;
+    break;
+  case TextureFilter::TF_Bilinear:
+    options.filter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST;
+    break;
+  case TextureFilter::TF_Trilinear:
+    options.filter = CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR;
+    break;
+  case TextureFilter::TF_Default:
+  default:
+    options.filter = CesiumGltf::Sampler::MinFilter::LINEAR;
+    break;
+  }
   options.loadErrorCallback =
       [this](const Cesium3DTilesSelection::RasterOverlayLoadFailureDetails&
                  details) {
