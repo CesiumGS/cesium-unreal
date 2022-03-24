@@ -12,6 +12,9 @@
 struct FCesiumFeatureIdAttribute;
 struct FCesiumFeatureIdTexture;
 
+// REMOVE AFTER DEPRECATION
+struct FCesiumMetadataFeatureTable;
+
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
     : public UBlueprintFunctionLibrary {
@@ -68,14 +71,31 @@ public:
       int64 faceID);
 
   /**
-   * Gets the feature ID associated with a given face for a given feature table.
+   * Gets the feature ID associated with a given face for a feature id
+   * attribute.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
-  static int64 GetFeatureIDForFace(
+  static int64 GetFeatureIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
+      int64 faceID);
+
+  /**
+   * Gets the feature ID associated with a given face for a given feature table.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility",
+      Meta =
+          (Deprecated,
+           DeprecationMessage =
+               "GetFeatureIDForFace(Primitive, FeatureTable) is deprecated. Please use GetFeatureIDFromFaceID(Primitive, FeatureIdAttribute)."))
+  static int64 GetFeatureIDForFace(
+      UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+      UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 faceID);
 };

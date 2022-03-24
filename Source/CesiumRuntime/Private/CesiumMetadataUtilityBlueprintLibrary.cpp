@@ -4,6 +4,9 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
+// REMOVE AFTER DEPRECATION
+#include "CesiumMetadataFeatureTable.h"
+
 static FCesiumMetadataModel EmptyModelMetadata;
 static FCesiumMetadataPrimitive EmptyPrimitiveMetadata;
 
@@ -78,7 +81,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   }
 
   int64 featureID =
-      GetFeatureIDForFace(primitiveMetadata, featureIdAttributes[0], faceID);
+      GetFeatureIDFromFaceID(primitiveMetadata, featureIdAttributes[0], faceID);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
@@ -128,7 +131,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
   }
 
   int64 featureID =
-      GetFeatureIDForFace(primitiveMetadata, featureIdAttributes[0], faceID);
+      GetFeatureIDFromFaceID(primitiveMetadata, featureIdAttributes[0], faceID);
   if (featureID < 0) {
     return TMap<FString, FString>();
   }
@@ -137,7 +140,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
       GetMetadataValuesAsStringForFeatureID(*pFeatureTable, featureID);
 }
 
-int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
+int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
     UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
     int64 faceID) {
@@ -146,4 +149,16 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
           Primitive,
           faceID));
+}
+
+int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
+    UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
+    int64 faceID) {
+  return UDEPRECATED_UCesiumMetadataFeatureTableBlueprintLibrary::
+      GetFeatureIDForVertex(
+          FeatureTable,
+          UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
+              Primitive,
+              faceID));
 }
