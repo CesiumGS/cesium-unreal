@@ -5,6 +5,7 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataProperty.h"
+#include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataFeatureTable.generated.h"
@@ -21,7 +22,10 @@ struct FeatureTable;
  * to look up the feature ID associated with a given mesh vertex.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumMetadataFeatureTable {
+struct UE_DEPRECATED(
+    4.26,
+    "FCesiumMetadataFeatureTable is deprecated, use FCesiumFeatureTable instead.")
+    CESIUMRUNTIME_API FCesiumMetadataFeatureTable {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDAccessorType = std::variant<
@@ -55,11 +59,15 @@ private:
   FeatureIDAccessorType _featureIDAccessor;
   TMap<FString, FCesiumMetadataProperty> _properties;
 
-  friend class UCesiumMetadataFeatureTableBlueprintLibrary;
+  friend class UDEPRECATED_UCesiumMetadataFeatureTableBlueprintLibrary;
 };
 
-UCLASS()
-class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
+UCLASS(
+    Deprecated,
+    Meta =
+        (DeprecationMessage =
+             "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
+class CESIUMRUNTIME_API UDEPRECATED_UCesiumMetadataFeatureTableBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
@@ -70,7 +78,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (Deprecated,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static int64
   GetNumberOfFeatures(UPARAM(ref)
                           const FCesiumMetadataFeatureTable& FeatureTable);
@@ -81,7 +93,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (Deprecated,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 VertexIndex);
@@ -94,7 +110,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (Deprecated,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static TMap<FString, FCesiumMetadataGenericValue>
   GetMetadataValuesForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
@@ -109,7 +129,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (Deprecated,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static TMap<FString, FString> GetMetadataValuesAsStringForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
       int64 FeatureID);
@@ -120,7 +144,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (Deprecated,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static const TMap<FString, FCesiumMetadataProperty>&
   GetProperties(UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable);
 };
