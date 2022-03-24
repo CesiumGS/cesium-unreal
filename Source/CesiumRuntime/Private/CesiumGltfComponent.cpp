@@ -459,13 +459,27 @@ static void applyWaterMask(
 static FCesiumMetadataPrimitive
 loadMetadataPrimitive(const Model& model, const MeshPrimitive& primitive) {
 
+  // NOTE: will have a deprecation period after which this function should no
+  // longer rely on model, only primitive.
+
   const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
       primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
   if (!pMetadata) {
     return FCesiumMetadataPrimitive();
   }
 
-  return FCesiumMetadataPrimitive(model, primitive, *pMetadata);
+  const ExtensionModelExtFeatureMetadata* pModelMetadata =
+      model.getExtension<ExtensionModelExtFeatureMetadata>();
+  if (!pModelMetadata) {
+    return FCesiumMetadataPrimitive{};
+  }
+
+  // This will change to no longer require the model-level extension
+  return FCesiumMetadataPrimitive(
+      model,
+      primitive,
+      *pMetadata,
+      *pModelMetadata);
 }
 
 static void updateTextureCoordinatesForMetadata(

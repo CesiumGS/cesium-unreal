@@ -4,10 +4,14 @@
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/Model.h"
 
+// REMOVE AFTER DEPRECATION
+#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
+
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
-    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata) {
+    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
+    const CesiumGltf::ExtensionModelExtFeatureMetadata& modelMetadata) {
 
   const CesiumGltf::Accessor& indicesAccessor =
       model.getSafe(model.accessors, primitive.indices);
@@ -60,6 +64,17 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
           *accessor,
           featureID->second,
           UTF8_TO_TCHAR(attribute.featureTable.c_str())));
+
+      // REMOVE AFTER DEPRECATION
+      auto featureTableIt =
+          modelMetadata.featureTables.find(attribute.featureTable);
+      if (featureTableIt == modelMetadata.featureTables.end()) {
+        continue;
+      }
+      this->_featureTables_deprecated.Add((FCesiumMetadataFeatureTable(
+          model,
+          *accessor,
+          featureTableIt->second)));
     }
   }
 
@@ -74,6 +89,12 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     this->_featureTextureNames.Emplace(
         UTF8_TO_TCHAR(featureTextureName.c_str()));
   }
+}
+
+const TArray<FCesiumMetadataFeatureTable>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
+    const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureTables_deprecated;
 }
 
 const TArray<FCesiumFeatureIdAttribute>&

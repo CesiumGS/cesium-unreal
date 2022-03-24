@@ -6,10 +6,19 @@
 #include "CesiumFeatureIdTexture.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
+// REMOVE AFTER DEPRECATION
+#include "CesiumMetadataFeatureTable.h"
+
 #include "CesiumMetadataPrimitive.generated.h"
+
+// REMOVE AFTER DEPRECATION
+struct FCesiumMetadataFeatureTable;
 
 namespace CesiumGltf {
 struct ExtensionMeshPrimitiveExtFeatureMetadata;
+
+// REMOVE AFTER DEPRECATION
+struct ExtensionModelExtFeatureMetadata;
 } // namespace CesiumGltf
 
 /**
@@ -43,13 +52,17 @@ public:
   FCesiumMetadataPrimitive(
       const CesiumGltf::Model& model,
       const CesiumGltf::MeshPrimitive& primitive,
-      const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata);
+      const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
+      const CesiumGltf::ExtensionModelExtFeatureMetadata& modelMetadata);
 
 private:
   TArray<FCesiumFeatureIdAttribute> _featureIdAttributes;
   TArray<FCesiumFeatureIdTexture> _featureIdTextures;
   TArray<FString> _featureTextureNames;
   VertexIDAccessorType _vertexIDAccessor;
+
+  // REMOVE AFTER DEPRECATION
+  TArray<FCesiumMetadataFeatureTable> _featureTables_deprecated;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
@@ -60,6 +73,21 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  /**
+   * Get all the feature tables that are associated with the primitive.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use UCesiumMetadataModelBlueprintLibrary::GetFeatureTables() instead."))
+  static const TArray<FCesiumMetadataFeatureTable>&
+  GetFeatureTables(UPARAM(ref)
+                       const FCesiumMetadataPrimitive& MetadataPrimitive);
+
   /**
    * @brief Get all the vertex features that are associated with the primitive.
    */
