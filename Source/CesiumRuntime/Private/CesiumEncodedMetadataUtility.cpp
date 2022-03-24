@@ -3,11 +3,11 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
+#include "CesiumFeatureTable.h"
 #include "CesiumFeatureTexture.h"
 #include "CesiumLifetime.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataConversions.h"
-#include "CesiumMetadataFeatureTable.h"
 #include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumMetadataProperty.h"
@@ -71,16 +71,15 @@ EncodedPixelFormat getPixelFormat(
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
-    const FCesiumMetadataFeatureTable& featureTable) {
+    const FCesiumFeatureTable& featureTable) {
 
   EncodedMetadataFeatureTable encodedFeatureTable;
 
   int64 featureCount =
-      UCesiumMetadataFeatureTableBlueprintLibrary::GetNumberOfFeatures(
-          featureTable);
+      UCesiumFeatureTableBlueprintLibrary::GetNumberOfFeatures(featureTable);
 
   const TMap<FString, FCesiumMetadataProperty>& properties =
-      UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(featureTable);
+      UCesiumFeatureTableBlueprintLibrary::GetProperties(featureTable);
 
   encodedFeatureTable.encodedProperties.Reserve(properties.Num());
   for (const auto& pair : properties) {
@@ -531,7 +530,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
 
   EncodedMetadata result;
 
-  const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
+  const TMap<FString, FCesiumFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(metadata);
   result.encodedFeatureTables.Reserve(featureTables.Num());
   for (const auto& featureTableIt : featureTables) {

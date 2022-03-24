@@ -43,14 +43,14 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     }
 
     const FCesiumMetadataModel& model = pGltf->Metadata;
-    const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
+    const TMap<FString, FCesiumFeatureTable>& featureTables =
         UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(model);
     const TMap<FString, FCesiumFeatureTexture>& featureTextures =
         UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(model);
 
     for (const auto& featureTableIt : featureTables) {
       const TMap<FString, FCesiumMetadataProperty>& properties =
-          UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(
+          UCesiumFeatureTableBlueprintLibrary::GetProperties(
               featureTableIt.Value);
 
       FFeatureTableDescription* pFeatureTable = nullptr;

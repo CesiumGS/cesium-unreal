@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "CesiumFeatureTable.h"
 #include "CesiumGltf/FeatureIDTextureView.h"
-#include "CesiumMetadataFeatureTable.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdTexture.generated.h"

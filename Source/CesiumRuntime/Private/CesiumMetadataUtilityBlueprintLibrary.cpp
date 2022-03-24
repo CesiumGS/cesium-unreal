@@ -66,12 +66,12 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   // For now, only considers the first feature
   // TODO: expand to arbitrary number of features once testing data is
   // available
-  const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
+  const TMap<FString, FCesiumFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(modelMetadata);
   const FString& featureTableName =
       UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
           featureIdAttributes[0]);
-  const FCesiumMetadataFeatureTable* pFeatureTable =
+  const FCesiumFeatureTable* pFeatureTable =
       featureTables.Find(featureTableName);
   if (!pFeatureTable) {
     return TMap<FString, FCesiumMetadataGenericValue>();
@@ -83,8 +83,9 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
 
-  return UCesiumMetadataFeatureTableBlueprintLibrary::
-      GetMetadataValuesForFeatureID(*pFeatureTable, featureID);
+  return UCesiumFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
+      *pFeatureTable,
+      featureID);
 }
 
 TMap<FString, FString>
@@ -115,12 +116,12 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
   // For now, only considers the first feature
   // TODO: expand to arbitrary number of features once testing data is
   // available
-  const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
+  const TMap<FString, FCesiumFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(modelMetadata);
   const FString& featureTableName =
       UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
           featureIdAttributes[0]);
-  const FCesiumMetadataFeatureTable* pFeatureTable =
+  const FCesiumFeatureTable* pFeatureTable =
       featureTables.Find(featureTableName);
   if (!pFeatureTable) {
     return TMap<FString, FString>();
@@ -132,7 +133,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
     return TMap<FString, FString>();
   }
 
-  return UCesiumMetadataFeatureTableBlueprintLibrary::
+  return UCesiumFeatureTableBlueprintLibrary::
       GetMetadataValuesAsStringForFeatureID(*pFeatureTable, featureID);
 }
 

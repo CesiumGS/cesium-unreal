@@ -1,10 +1,10 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeatureIdAttribute.h"
+#include "CesiumFeatureTable.h"
 #include "CesiumGltf/Accessor.h"
 #include "CesiumGltf/FeatureTable.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumMetadataFeatureTable.h"
 
 using namespace CesiumGltf;
 

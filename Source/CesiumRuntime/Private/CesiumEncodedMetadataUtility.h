@@ -11,7 +11,7 @@
 
 struct FCesiumMetadataModel;
 struct FCesiumMetadataPrimitive;
-struct FCesiumMetadataFeatureTable;
+struct FCesiumFeatureTable;
 struct FCesiumFeatureTexture;
 struct FFeatureTableDescription;
 struct FFeatureTextureDescription;
@@ -95,7 +95,7 @@ struct EncodedMetadata {
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
-    const FCesiumMetadataFeatureTable& featureTable);
+    const FCesiumFeatureTable& featureTable);
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<
