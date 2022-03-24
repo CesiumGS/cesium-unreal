@@ -5,6 +5,7 @@
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
+#include "CesiumCommon.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -1820,7 +1821,15 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
 
+#if CESIUM_UNREAL_ENGINE_DOUBLE
   FVector4 translationAndScale(translation.x, translation.y, scale.x, scale.y);
+#else
+  FLinearColor translationAndScale(
+      translation.x,
+      translation.y,
+      scale.x,
+      scale.y);
+#endif
 
   forEachPrimitiveComponent(
       this,
