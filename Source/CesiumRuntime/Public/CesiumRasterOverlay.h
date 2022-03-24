@@ -164,6 +164,12 @@ protected:
       Category = "Cesium")
   int64 SubTileCacheBytes = 16 * 1024 * 1024;
 
+  /**
+   * Whether or not to show credits of this raster overlay on screen.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool ShowCreditsOnScreen;
+
 #if WITH_EDITOR
   // Called when properties are changed in the editor
   virtual void
