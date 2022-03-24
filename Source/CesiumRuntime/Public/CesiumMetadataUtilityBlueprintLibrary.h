@@ -91,7 +91,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|Utility",
       Meta =
-          (Deprecated,
+          (DeprecatedFunction,
            DeprecationMessage =
                "GetFeatureIDForFace(Primitive, FeatureTable) is deprecated. Please use GetFeatureIDFromFaceID(Primitive, FeatureIdAttribute)."))
   static int64 GetFeatureIDForFace(

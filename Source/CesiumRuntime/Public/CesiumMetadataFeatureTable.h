@@ -59,15 +59,11 @@ private:
   FeatureIDAccessorType _featureIDAccessor;
   TMap<FString, FCesiumMetadataProperty> _properties;
 
-  friend class UDEPRECATED_UCesiumMetadataFeatureTableBlueprintLibrary;
+  friend class UCesiumMetadataFeatureTableBlueprintLibrary;
 };
 
-UCLASS(
-    Deprecated,
-    Meta =
-        (DeprecationMessage =
-             "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
-class CESIUMRUNTIME_API UDEPRECATED_UCesiumMetadataFeatureTableBlueprintLibrary
+UCLASS()
+class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
@@ -80,7 +76,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable",
       Meta =
-          (Deprecated,
+          (DeprecatedFunction,
            DeprecationMessage =
                "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static int64
@@ -95,7 +91,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable",
       Meta =
-          (Deprecated,
+          (DeprecatedFunction,
            DeprecationMessage =
                "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static int64 GetFeatureIDForVertex(
@@ -112,7 +108,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable",
       Meta =
-          (Deprecated,
+          (DeprecatedFunction,
            DeprecationMessage =
                "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static TMap<FString, FCesiumMetadataGenericValue>
@@ -131,7 +127,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable",
       Meta =
-          (Deprecated,
+          (DeprecatedFunction,
            DeprecationMessage =
                "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static TMap<FString, FString> GetMetadataValuesAsStringForFeatureID(
@@ -146,7 +142,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTable",
       Meta =
-          (Deprecated,
+          (DeprecatedFunction,
            DeprecationMessage =
                "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeaturetable instead."))
   static const TMap<FString, FCesiumMetadataProperty>&
