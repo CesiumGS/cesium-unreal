@@ -4,8 +4,12 @@
 #include "Components/ActorComponent.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
-#include "Materials/MaterialFunctionMaterialLayer.h"
 #include "Misc/Guid.h"
+
+#if WITH_EDITOR
+#include "Materials/MaterialFunctionMaterialLayer.h"
+#endif
+
 #include "CesiumEncodedMetadataComponent.generated.h"
 
 /**
@@ -227,6 +231,37 @@ class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief This button can be used to pre-populate the description of metadata
+   * to encode based on the existing metadata in the current tiles.
+   *
+   * Warning: Using Auto Fill may populate the description with a large amount
+   * of metadata. Make sure to delete the properties that aren't relevant.
+   */
+  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
+  void AutoFill();
+
+#if WITH_EDITOR
+  /**
+   * @brief This button can be used to create a boiler-plate material layer that
+   * exposes the requested metadata properties in the current description. The
+   * new material layer will be called "ML_Material" and be spawned in the /Game
+   * directory.
+   */
+  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
+  void GenerateMaterial();
+
+  /**
+   * @brief This is the target UMaterialFunctionMaterialLayer that the
+   * boiler-plate material generation will use. When pressing
+   * "Generate Material", nodes will be added to this material to enable access
+   * to the requested metadata. If this is left blank, a new material layer
+   * will be created in the /Game/ folder.
+   */
+  UPROPERTY(EditAnywhere, Category = "EncodeMetadata")
+  UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
+#endif
+
   // Note: Here, we avoid wrapping the feature tables and feature textures
   // inside a FMetadataDescription to avoid further complicating the details
   // panel UI for editing the hierarchy.
@@ -248,25 +283,4 @@ public:
       Category = "EncodeMetadata",
       Meta = (TitleProperty = "Name"))
   TArray<FFeatureTextureDescription> FeatureTextures;
-
-  /**
-   * @brief This button can be used to pre-populate the description of metadata
-   * to encode based on the existing metadata in the current tiles.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
-   */
-  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
-  void AutoFill();
-
-/**
- * @brief This button can be used to create a boiler-plate material layer that
- * exposes the requested metadata properties in the current description. The
- * new material layer will be called "ML_Material" and be spawned in the /Game
- * directory.
- */
-#if WITH_EDITOR
-  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
-  void GenerateMaterial();
-#endif
 };
