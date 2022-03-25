@@ -78,5 +78,35 @@
     "name": "uriparser",
     "url": "https://github.com/uriparser/uriparser",
     "license": "BSD-3-Clause"
+  },
+  {
+    "name": "Catch2",
+    "url": "https://github.com/catchorg/Catch2",
+    "license": "Boost Software License 1.0"
+  },
+  {
+    "name": "KTX-Software",
+    "url": "https://github.com/KhronosGroup/KTX-Software",
+    "license": "Apache 2.0"
+  },
+  {
+    "name": "earcut",
+    "url": "https://github.com/mapbox/earcut.hpp",
+    "license": "ISC License"
+  },
+  {
+    "name": "s2geometry",
+    "url": "https://github.com/google/s2geometry",
+    "license": "Apache 2.0"
+  },
+  {
+    "name": "cmake-modules",
+    "url": "https://github.com/bilke/cmake-modules",
+    "license": "Boost Software License 1.0"
+  },
+  {
+    "name": "MikkTSpace",
+    "url": "https://github.com/mmikk/MikkTSpace",
+    "license": ""
   }
 ]
