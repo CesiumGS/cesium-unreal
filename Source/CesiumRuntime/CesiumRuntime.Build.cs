@@ -183,7 +183,9 @@ public class CesiumRuntime : ModuleRules
                     "Slate",
                     "SlateCore",
                     "WorldBrowser",
-                    "ContentBrowser"
+                    "ContentBrowser",
+                    "EditorScriptingUtilities",
+                    "MaterialEditor"
                 }
             );
         }
