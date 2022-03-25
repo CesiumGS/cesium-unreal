@@ -792,6 +792,8 @@ void ACesium3DTileset::LoadTileset() {
 
   Cesium3DTilesSelection::TilesetOptions options;
 
+  options.showCreditsOnScreen = ShowCreditsOnScreen;
+
   options.loadErrorCallback =
       [this](const Cesium3DTilesSelection::TilesetLoadFailureDetails& details) {
         static_assert(
