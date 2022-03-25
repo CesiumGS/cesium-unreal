@@ -163,16 +163,44 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
       creditsToShowThisFrame.size() != _lastCreditsCount ||
       _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
   if (CreditsUpdated) {
+    bool firstScreenCredit = false;
+    std::string onScreenCreditString =
+        "document.write('<!DOCTYPE html><head><base target=\"_blank\">"
+        "<style>body{position:fixed;bottom:0;color:white;font-size:10px;font-family:sans-serif;}"
+        "div{display:inline;}a{color:white}</style>"
+        "<meta charset=\"utf-8\"/></head><body>";
     std::string creditString =
         "<head>\n<meta charset=\"utf-16\"/>\n</head>\n<body style=\"color:white\"><ul>";
+    bool hasPopupCredits = false;
     for (size_t i = 0; i < creditsToShowThisFrame.size(); ++i) {
-      creditString +=
-          "<li>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) + "</li>";
+      if (_pCreditSystem->shouldBeShownOnScreen(creditsToShowThisFrame[i])) {
+        if (!firstScreenCredit) {
+          firstScreenCredit = true;
+        } else {
+          onScreenCreditString += "<span> &bull; </span>";
+        }
+        onScreenCreditString +=
+            "<div>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
+            "</div>";
+      } else {
+        creditString += "<li>" +
+                        _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
+                        "</li>";
+        hasPopupCredits = true;
+      }
     }
     creditString += "</ul></body>";
     Credits = UTF8_TO_TCHAR(creditString.c_str());
-
+    if (hasPopupCredits) {
+      // create phony url to detect when to open popup menu
+      onScreenCreditString +=
+          "<span> </span><a href=\"cesium-unreal://data-attribution-popup\">Data attribution</a>";
+    }
+    onScreenCreditString += "</body>')";
+    OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
     _lastCreditsCount = creditsToShowThisFrame.size();
+
+    DisplayCredits = hasPopupCredits || firstScreenCredit;
   }
 
   _pCreditSystem->startNextFrame();
