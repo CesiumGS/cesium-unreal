@@ -6,7 +6,6 @@
 #include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
-#include "Engine/Texture.h"
 #include <memory>
 #include "CesiumRasterOverlay.generated.h"
 
@@ -46,9 +45,6 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString MaterialLayerKey = "Overlay0";
-
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  TEnumAsByte<TextureFilter> RasterTextureFilter = TextureFilter::TF_Default;
 
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
