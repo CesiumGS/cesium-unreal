@@ -609,13 +609,17 @@ public:
     }
   }
 
-  virtual void*
-  prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
+  virtual void* prepareRasterInLoadThread(
+      const CesiumGltf::ImageCesium& image,
+      void* pRendererOptions) override {
+    auto options =
+        reinterpret_cast<FRasterOverlayRendererOptions*>(pRendererOptions);
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        TextureFilter::TF_Bilinear);
+        options->filter,
+        options->group);
     return texture.Release();
   }
 

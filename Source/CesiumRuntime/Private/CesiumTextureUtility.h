@@ -5,6 +5,7 @@
 #include "CesiumGltf/Model.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
+#include "Engine/TextureDefines.h"
 #include "Templates/UniquePtr.h"
 #include <optional>
 
@@ -15,6 +16,7 @@ public:
     TextureAddress addressX;
     TextureAddress addressY;
     TextureFilter filter;
+    TextureGroup group;
     UTexture2D* pTexture{nullptr};
   };
 
@@ -23,7 +25,8 @@ public:
       const CesiumGltf::ImageCesium& image,
       const TextureAddress& addressX,
       const TextureAddress& addressY,
-      const TextureFilter& filter);
+      const TextureFilter& filter,
+      const TextureGroup& group);
 
   static TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       const CesiumGltf::Model& model,

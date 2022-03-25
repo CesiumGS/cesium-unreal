@@ -35,7 +35,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
-    const TextureFilter& filter) {
+    const TextureFilter& filter,
+    const TextureGroup& group) {
 
   CESIUM_TRACE("CesiumTextureUtility::loadTextureAnyThreadPart");
 
@@ -104,6 +105,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   pResult->addressX = addressX;
   pResult->addressY = addressY;
   pResult->filter = filter;
+  pResult->group = group;
 
   if (!image.mipPositions.empty()) {
     int32_t width = image.width;
@@ -331,7 +333,12 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     }
   }
 
-  return loadTextureAnyThreadPart(image, addressX, addressY, filter);
+  return loadTextureAnyThreadPart(
+      image,
+      addressX,
+      addressY,
+      filter,
+      TextureGroup::TEXTUREGROUP_World);
 }
 
 /*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
@@ -355,6 +362,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
+    pTexture->LODGroup = pHalfLoadedTexture->group;
     pTexture->UpdateResource();
   }
 

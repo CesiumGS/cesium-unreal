@@ -6,6 +6,8 @@
 #include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "Engine/Texture.h"
+#include "Engine/TextureDefines.h"
 #include <memory>
 #include "CesiumRasterOverlay.generated.h"
 
@@ -23,6 +25,17 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 
 CESIUMRUNTIME_API extern FCesiumRasterOverlayLoadFailure
     OnCesiumRasterOverlayLoadFailure;
+
+USTRUCT(BlueprintType)
+struct FRasterOverlayRendererOptions {
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TEnumAsByte<TextureFilter> filter = TextureFilter::TF_Default;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TEnumAsByte<TextureGroup> group = TextureGroup::TEXTUREGROUP_World;
+};
 
 /**
  * A quadtree pyramid of 2D raster images meant to be draped over a Cesium 3D
@@ -45,6 +58,9 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString MaterialLayerKey = "Overlay0";
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FRasterOverlayRendererOptions rendererOptions;
 
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
