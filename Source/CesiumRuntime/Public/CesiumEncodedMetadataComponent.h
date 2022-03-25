@@ -4,6 +4,8 @@
 #include "Components/ActorComponent.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
+#include "Materials/MaterialFunctionMaterialLayer.h"
+#include "Misc/Guid.h"
 #include "CesiumEncodedMetadataComponent.generated.h"
 
 /**
