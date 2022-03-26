@@ -9,7 +9,7 @@
 
 ##### Additions :tada:
 
-- Add option to tileset to enable anisotropic filtering of raster overlay textures.
+- Add option to raster overlay to enable anisotropic filtering of raster overlay textures to reduce flickering.
 - Added option to show credits on screen for both tileset and raster overlay.
 
 ### v1.11.0 - 2022-03-01

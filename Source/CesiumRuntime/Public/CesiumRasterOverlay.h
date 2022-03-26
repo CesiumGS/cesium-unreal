@@ -26,6 +26,10 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 CESIUMRUNTIME_API extern FCesiumRasterOverlayLoadFailure
     OnCesiumRasterOverlayLoadFailure;
 
+/**
+ * This struct is passed through the raster overlay options and is used when
+ * `prepareRasterInLoadThread` is called.
+ */
 USTRUCT(BlueprintType)
 struct FRasterOverlayRendererOptions {
   GENERATED_BODY()
@@ -59,6 +63,11 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString MaterialLayerKey = "Overlay0";
 
+  /**
+   * Sets the texture filter and texture group of raster tile images. Depending
+   * on the project settings, the default texture filter, TF_Default, should
+   * have the best quality.
+   */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FRasterOverlayRendererOptions rendererOptions;
 
