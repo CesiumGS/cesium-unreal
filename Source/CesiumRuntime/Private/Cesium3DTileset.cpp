@@ -777,6 +777,21 @@ void ACesium3DTileset::LoadTileset() {
     return;
   }
 
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    return;
+  }
+
+  AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
+  if (!pWorldSettings || !pWorldSettings->bEnableLargeWorlds) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cesium for Unreal requires that \"Enable Large Worlds\" be checked in World Settings. Otherwise, expect incorrect culling (missing tiles) and other problems."),
+        *this->Url);
+  }
+
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
