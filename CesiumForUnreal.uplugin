@@ -42,10 +42,6 @@
 		{
 			"Name": "Water",
 			"Enabled": true
-		},
-    {
-      "Name": "EditorScriptingUtilities",
-      "Enabled": true
-    }
+		}
 	]
 }
