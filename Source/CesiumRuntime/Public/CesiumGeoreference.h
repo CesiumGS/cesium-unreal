@@ -173,9 +173,7 @@ public:
    * The camera to use to determine which sub-level is closest, so that one can
    * be activated and all others deactivated.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "CesiumSublevels")
+  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
   APlayerCameraManager* SubLevelCamera;
 
   // TODO: Allow user to select/configure the ellipsoid.
