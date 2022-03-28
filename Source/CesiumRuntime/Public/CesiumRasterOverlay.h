@@ -39,6 +39,9 @@ struct FRasterOverlayRendererOptions {
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   TEnumAsByte<TextureGroup> group = TextureGroup::TEXTUREGROUP_World;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool useMipmaps = true;
 };
 
 /**

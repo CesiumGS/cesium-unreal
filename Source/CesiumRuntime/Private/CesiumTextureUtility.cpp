@@ -36,7 +36,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     const TextureAddress& addressX,
     const TextureAddress& addressY,
     const TextureFilter& filter,
-    const TextureGroup& group) {
+    const TextureGroup& group,
+    bool generateMipMaps) {
 
   CESIUM_TRACE("CesiumTextureUtility::loadTextureAnyThreadPart");
 
@@ -173,7 +174,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
           image.pixelData.size());
     }
 
-    if (pResult->filter == TextureFilter::TF_Trilinear) {
+    if (generateMipMaps) {
       CESIUM_TRACE("Generate new mips.");
 
       // Generate mip levels.
@@ -275,6 +276,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   TextureAddress addressY = TextureAddress::TA_Wrap;
 
   TextureFilter filter = TextureFilter::TF_Default;
+  bool useMipMaps = false;
 
   if (pSampler) {
     switch (pSampler->wrapS) {
@@ -331,6 +333,18 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
                    ? TextureFilter::TF_Bilinear
                    : TextureFilter::TF_Nearest;
     }
+
+    switch (pSampler->minFilter.value()) {
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+      useMipMaps = true;
+      break;
+    default: // LINEAR and NEAREST
+      useMipMaps = false;
+      break;
+    }
   }
 
   return loadTextureAnyThreadPart(
@@ -338,7 +352,8 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
       addressX,
       addressY,
       filter,
-      TextureGroup::TEXTUREGROUP_World);
+      TextureGroup::TEXTUREGROUP_World,
+      useMipMaps);
 }
 
 /*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(

@@ -619,7 +619,8 @@ public:
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         options->filter,
-        options->group);
+        options->group,
+        options->useMipmaps);
     return texture.Release();
   }
 
