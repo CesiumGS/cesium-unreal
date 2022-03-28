@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include "CesiumFeatureTable.h"
 #include "CesiumGltf/AccessorView.h"
-#include "CesiumMetadataFeatureTable.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "CesiumVertexMetadata.generated.h"
+#include "CesiumFeatureIdAttribute.generated.h"
 
 namespace CesiumGltf {
 struct Model;
@@ -14,7 +14,7 @@ struct FeatureTable;
 } // namespace CesiumGltf
 
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumVertexMetadata {
+struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDAccessorType = std::variant<
@@ -27,9 +27,9 @@ struct CESIUMRUNTIME_API FCesiumVertexMetadata {
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>>;
 
 public:
-  FCesiumVertexMetadata() {}
+  FCesiumFeatureIdAttribute() {}
 
-  FCesiumVertexMetadata(
+  FCesiumFeatureIdAttribute(
       const CesiumGltf::Model& Model,
       const CesiumGltf::Accessor& FeatureIDAccessor,
       const int32 attributeIndex,
@@ -42,27 +42,29 @@ private:
   FString _featureTableName;
   int32 _attributeIndex;
 
-  friend class UCesiumVertexMetadataBlueprintLibrary;
+  friend class UCesiumFeatureIdAttributeBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumVertexMetadataBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumFeatureIdAttributeBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|VertexMetadata")
+      Category = "Cesium|Metadata|FeatureIdAttribute")
   static const FString&
-  GetFeatureTableName(UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata);
+  GetFeatureTableName(UPARAM(ref)
+                          const FCesiumFeatureIdAttribute& FeatureIdAttribute);
 
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|VertexMetadata")
-  static int64 GetVertexCount(UPARAM(ref)
-                                  const FCesiumVertexMetadata& VertexMetadata);
+      Category = "Cesium|Metadata|FeatureIdAttribute")
+  static int64
+  GetVertexCount(UPARAM(ref)
+                     const FCesiumFeatureIdAttribute& FeatureIdAttribute);
 
   /**
    * Gets the feature ID associated with a given vertex.
@@ -70,8 +72,8 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|VertexMetadata")
+      Category = "Cesium|Metadata|FeatureIdAttribute")
   static int64 GetFeatureIDForVertex(
-      UPARAM(ref) const FCesiumVertexMetadata& VertexMetadata,
+      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
       int64 VertexIndex);
 };

@@ -1,17 +1,17 @@
 
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumEncodedMetadataComponent.h"
-#include "CesiumFeatureIDTexture.h"
+#include "CesiumFeatureIdAttribute.h"
+#include "CesiumFeatureIdTexture.h"
+#include "CesiumFeatureTable.h"
 #include "CesiumFeatureTexture.h"
 #include "CesiumLifetime.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataConversions.h"
-#include "CesiumMetadataFeatureTable.h"
 #include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumMetadataProperty.h"
 #include "CesiumRuntime.h"
-#include "CesiumVertexMetadata.h"
 #include "Containers/Map.h"
 #include "PixelFormat.h"
 #include <CesiumGltf/FeatureIDTextureView.h>
@@ -70,17 +70,16 @@ EncodedPixelFormat getPixelFormat(
 } // namespace
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
-    const FFeatureTableDescription& encodeInstructions,
-    const FCesiumMetadataFeatureTable& featureTable) {
+    const FFeatureTableDescription& featureTableDescription,
+    const FCesiumFeatureTable& featureTable) {
 
   EncodedMetadataFeatureTable encodedFeatureTable;
 
   int64 featureCount =
-      UCesiumMetadataFeatureTableBlueprintLibrary::GetNumberOfFeatures(
-          featureTable);
+      UCesiumFeatureTableBlueprintLibrary::GetNumberOfFeatures(featureTable);
 
   const TMap<FString, FCesiumMetadataProperty>& properties =
-      UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(featureTable);
+      UCesiumFeatureTableBlueprintLibrary::GetProperties(featureTable);
 
   encodedFeatureTable.encodedProperties.Reserve(properties.Num());
   for (const auto& pair : properties) {
@@ -88,7 +87,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
     const FPropertyDescription* pExpectedProperty = nullptr;
     for (const FPropertyDescription& expectedProperty :
-         encodeInstructions.Properties) {
+         featureTableDescription.Properties) {
       if (pair.Key == expectedProperty.Name) {
         pExpectedProperty = &expectedProperty;
         break;
@@ -161,12 +160,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
-    CESIUM_TRACE(
-        TCHAR_TO_UTF8(*("Encode Property Array: " + encodeInstructions.Name)));
+    CESIUM_TRACE(TCHAR_TO_UTF8(
+        *("Encode Property Array: " + featureTableDescription.Name)));
 
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
-    encodedProperty.name = "FTB_" + encodeInstructions.Name + "_" + pair.Key;
+    encodedProperty.name =
+        "FTB_" + featureTableDescription.Name + "_" + pair.Key;
 
     int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
     encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
@@ -376,17 +376,18 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
 }
 
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataPrimitive& primitive) {
 
   CESIUM_TRACE("Encode Metadata Primitive");
 
   EncodedMetadataPrimitive result;
 
-  const TArray<FCesiumFeatureIDTexture>& featureIdTextures =
-      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(primitive);
-  const TArray<FCesiumVertexMetadata>& vertexFeatures =
-      UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(primitive);
+  const TArray<FCesiumFeatureIdTexture>& featureIdTextures =
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(primitive);
+  const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes =
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
+          primitive);
 
   const TArray<FString>& featureTextureNames =
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
@@ -394,7 +395,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   result.featureTextureNames.Reserve(featureTextureNames.Num());
 
   for (const FFeatureTextureDescription& expectedFeatureTexture :
-       encodeInstructions.FeatureTextures) {
+       metadataDescription.FeatureTextures) {
     for (const FString& featureTextureName : featureTextureNames) {
       if (featureTextureName == expectedFeatureTexture.Name) {
         result.featureTextureNames.Add(featureTextureName);
@@ -408,18 +409,18 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   featureIdTextureMap.Reserve(featureIdTextures.Num());
 
   result.encodedFeatureIdTextures.Reserve(featureIdTextures.Num());
-  result.encodedVertexMetadata.Reserve(vertexFeatures.Num());
+  result.encodedFeatureIdAttributes.Reserve(featureIdAttributes.Num());
 
   // Imposed implementation limitation: Assume only upto one feature id texture
   // or attribute corresponds to each feature table.
   for (const FFeatureTableDescription& expectedFeatureTable :
-       encodeInstructions.FeatureTables) {
+       metadataDescription.FeatureTables) {
     if (expectedFeatureTable.AccessType ==
         ECesiumFeatureTableAccessType::Texture) {
-      for (const FCesiumFeatureIDTexture& featureIdTexture :
+      for (const FCesiumFeatureIdTexture& featureIdTexture :
            featureIdTextures) {
         const FString& featureTableName =
-            UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureTableName(
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
                 featureIdTexture);
 
         if (expectedFeatureTable.Name == featureTableName) {
@@ -497,19 +498,20 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     } else if (
         expectedFeatureTable.AccessType ==
         ECesiumFeatureTableAccessType::Attribute) {
-      for (size_t i = 0; i < vertexFeatures.Num(); ++i) {
-        const FCesiumVertexMetadata& vertexFeature = vertexFeatures[i];
+      for (size_t i = 0; i < featureIdAttributes.Num(); ++i) {
+        const FCesiumFeatureIdAttribute& featureIdAttribute =
+            featureIdAttributes[i];
         const FString& featureTableName =
-            UCesiumVertexMetadataBlueprintLibrary::GetFeatureTableName(
-                vertexFeature);
+            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
+                featureIdAttribute);
 
         if (expectedFeatureTable.Name == featureTableName) {
-          EncodedVertexMetadata& encodedVertexFeature =
-              result.encodedVertexMetadata.Emplace_GetRef();
+          EncodedFeatureIdAttribute& encodedFeatureIdAttribute =
+              result.encodedFeatureIdAttributes.Emplace_GetRef();
 
-          encodedVertexFeature.name = "FA_" + featureTableName;
-          encodedVertexFeature.featureTableName = featureTableName;
-          encodedVertexFeature.index = static_cast<int32>(i);
+          encodedFeatureIdAttribute.name = "FA_" + featureTableName;
+          encodedFeatureIdAttribute.featureTableName = featureTableName;
+          encodedFeatureIdAttribute.index = static_cast<int32>(i);
 
           break;
         }
@@ -521,19 +523,19 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 }
 
 EncodedMetadata encodeMetadataAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataModel& metadata) {
 
   CESIUM_TRACE("Encode Metadata Model");
 
   EncodedMetadata result;
 
-  const TMap<FString, FCesiumMetadataFeatureTable>& featureTables =
+  const TMap<FString, FCesiumFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(metadata);
   result.encodedFeatureTables.Reserve(featureTables.Num());
   for (const auto& featureTableIt : featureTables) {
     for (const FFeatureTableDescription& expectedFeatureTable :
-         encodeInstructions.FeatureTables) {
+         metadataDescription.FeatureTables) {
       if (expectedFeatureTable.Name == featureTableIt.Key) {
         CESIUM_TRACE(
             TCHAR_TO_UTF8(*("Encode Feature Table: " + featureTableIt.Key)));
@@ -556,7 +558,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
   featureTexturePropertyMap.Reserve(featureTextures.Num());
   for (const auto& featureTextureIt : featureTextures) {
     for (const FFeatureTextureDescription& expectedFeatureTexture :
-         encodeInstructions.FeatureTextures) {
+         metadataDescription.FeatureTextures) {
       if (expectedFeatureTexture.Name == featureTextureIt.Key) {
         CESIUM_TRACE(TCHAR_TO_UTF8(
             *("Encode Feature Texture: " + featureTextureIt.Key)));

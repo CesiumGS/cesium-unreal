@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include "CesiumFeatureTable.h"
 #include "CesiumGltf/FeatureIDTextureView.h"
-#include "CesiumMetadataFeatureTable.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "CesiumFeatureIDTexture.generated.h"
+#include "CesiumFeatureIdTexture.generated.h"
 
 namespace CesiumGltf {
 struct Model;
@@ -14,30 +14,30 @@ struct FeatureIDTexture;
 } // namespace CesiumGltf
 
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureIDTexture {
+struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
   GENERATED_USTRUCT_BODY()
 
 public:
-  FCesiumFeatureIDTexture() {}
+  FCesiumFeatureIdTexture() {}
 
-  FCesiumFeatureIDTexture(
+  FCesiumFeatureIdTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::FeatureIDTexture& featureIDTexture);
+      const CesiumGltf::FeatureIDTexture& featureIdTexture);
 
   constexpr const CesiumGltf::FeatureIDTextureView&
   getFeatureIdTextureView() const {
-    return this->_featureIDTextureView;
+    return this->_featureIdTextureView;
   }
 
 private:
-  CesiumGltf::FeatureIDTextureView _featureIDTextureView;
+  CesiumGltf::FeatureIDTextureView _featureIdTextureView;
   FString _featureTableName;
 
-  friend class UCesiumFeatureIDTextureBlueprintLibrary;
+  friend class UCesiumFeatureIdTextureBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumFeatureIDTextureBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumFeatureIdTextureBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
@@ -45,25 +45,25 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIDTexture")
+      Category = "Cesium|Metadata|FeatureIdTexture")
   static const FString&
   GetFeatureTableName(UPARAM(ref)
-                          const FCesiumFeatureIDTexture& featureIDTexture);
+                          const FCesiumFeatureIdTexture& featureIdTexture);
 
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIDTexture")
+      Category = "Cesium|Metadata|FeatureIdTexture")
   static int64 GetTextureCoordinateIndex(
       const UPrimitiveComponent* component,
-      UPARAM(ref) const FCesiumFeatureIDTexture& featureIDTexture);
+      UPARAM(ref) const FCesiumFeatureIdTexture& featureIdTexture);
 
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIDTexture")
-  static int64 GetFeatureIDForTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureIDTexture& featureIDTexture,
+      Category = "Cesium|Metadata|FeatureIdTexture")
+  static int64 GetFeatureIdForTextureCoordinates(
+      UPARAM(ref) const FCesiumFeatureIdTexture& featureIdTexture,
       float u,
       float v);
 };

@@ -18,7 +18,6 @@
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
 #include "CesiumCustomVersion.h"
-#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
@@ -566,8 +565,8 @@ public:
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
 
-    options.pEncodeMetadataInstructions =
-        this->_pActor->_pEncodeMetadataInstructions;
+    options.pEncodedMetadataDescription =
+        &this->_pActor->encodedMetadataDescription;
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
@@ -781,8 +780,13 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  this->_pEncodeMetadataInstructions =
+  const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
       this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
+  if (pEncodedMetadataDescriptionComponent) {
+    this->encodedMetadataDescription = {
+        pEncodedMetadataDescriptionComponent->FeatureTables,
+        pEncodedMetadataDescriptionComponent->FeatureTextures};
+  }
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 

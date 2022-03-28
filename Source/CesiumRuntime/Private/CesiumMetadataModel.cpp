@@ -13,7 +13,7 @@ FCesiumMetadataModel::FCesiumMetadataModel(
   for (const auto& featureTableIt : metadata.featureTables) {
     this->_featureTables.Emplace(
         UTF8_TO_TCHAR(featureTableIt.first.c_str()),
-        FCesiumMetadataFeatureTable(model, featureTableIt.second));
+        FCesiumFeatureTable(model, featureTableIt.second));
   }
 
   this->_featureTextures.Reserve(metadata.featureTextures.size());
@@ -25,7 +25,7 @@ FCesiumMetadataModel::FCesiumMetadataModel(
 }
 
 /*static*/
-const TMap<FString, FCesiumMetadataFeatureTable>&
+const TMap<FString, FCesiumFeatureTable>&
 UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(
     UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
   return MetadataModel._featureTables;

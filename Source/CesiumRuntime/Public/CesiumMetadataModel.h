@@ -1,8 +1,8 @@
 
 #pragma once
 
+#include "CesiumFeatureTable.h"
 #include "CesiumFeatureTexture.h"
-#include "CesiumMetadataFeatureTable.h"
 
 #include "Containers/Array.h"
 #include "Containers/Map.h"
@@ -27,7 +27,7 @@ public:
       const CesiumGltf::ExtensionModelExtFeatureMetadata& metadata);
 
 private:
-  TMap<FString, FCesiumMetadataFeatureTable> _featureTables;
+  TMap<FString, FCesiumFeatureTable> _featureTables;
   TMap<FString, FCesiumFeatureTexture> _featureTextures;
 
   friend class UCesiumMetadataModelBlueprintLibrary;
@@ -46,7 +46,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Model")
-  static const TMap<FString, FCesiumMetadataFeatureTable>&
+  static const TMap<FString, FCesiumFeatureTable>&
   GetFeatureTables(UPARAM(ref) const FCesiumMetadataModel& MetadataModel);
 
   /**

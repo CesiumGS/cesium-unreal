@@ -4,10 +4,14 @@
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/Model.h"
 
+// REMOVE AFTER DEPRECATION
+#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
+
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const CesiumGltf::Model& model,
     const CesiumGltf::MeshPrimitive& primitive,
-    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata) {
+    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
+    const CesiumGltf::ExtensionModelExtFeatureMetadata& modelMetadata) {
 
   const CesiumGltf::Accessor& indicesAccessor =
       model.getSafe(model.accessors, primitive.indices);
@@ -55,18 +59,29 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
         continue;
       }
 
-      this->_vertexFeatures.Add(FCesiumVertexMetadata(
+      this->_featureIdAttributes.Add(FCesiumFeatureIdAttribute(
           model,
           *accessor,
           featureID->second,
           UTF8_TO_TCHAR(attribute.featureTable.c_str())));
+
+      // REMOVE AFTER DEPRECATION
+      auto featureTableIt =
+          modelMetadata.featureTables.find(attribute.featureTable);
+      if (featureTableIt == modelMetadata.featureTables.end()) {
+        continue;
+      }
+      this->_featureTables_deprecated.Add((FCesiumMetadataFeatureTable(
+          model,
+          *accessor,
+          featureTableIt->second)));
     }
   }
 
-  for (const CesiumGltf::FeatureIDTexture& featureIDTexture :
+  for (const CesiumGltf::FeatureIDTexture& featureIdTexture :
        metadata.featureIdTextures) {
-    this->_featureIDTextures.Add(
-        FCesiumFeatureIDTexture(model, featureIDTexture));
+    this->_featureIdTextures.Add(
+        FCesiumFeatureIdTexture(model, featureIdTexture));
   }
 
   this->_featureTextureNames.Reserve(metadata.featureTextures.size());
@@ -76,16 +91,22 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
 }
 
-const TArray<FCesiumVertexMetadata>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetVertexFeatures(
-    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._vertexFeatures;
+const TArray<FCesiumMetadataFeatureTable>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
+    const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureTables_deprecated;
 }
 
-const TArray<FCesiumFeatureIDTexture>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIDTextures(
+const TArray<FCesiumFeatureIdAttribute>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureIDTextures;
+  return MetadataPrimitive._featureIdAttributes;
+}
+
+const TArray<FCesiumFeatureIdTexture>&
+UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
+    UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
+  return MetadataPrimitive._featureIdTextures;
 }
 
 const TArray<FString>&

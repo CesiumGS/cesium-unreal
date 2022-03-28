@@ -7,6 +7,7 @@
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
+#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
 #include "CoreMinimal.h"
@@ -22,7 +23,6 @@
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 struct FCesiumCamera;
-class UCesiumEncodedMetadataComponent;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
@@ -810,7 +810,7 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
 
-  UCesiumEncodedMetadataComponent* _pEncodeMetadataInstructions;
+  FMetadataDescription encodedMetadataDescription;
 
   // For debug output
   uint32_t _lastTilesRendered;

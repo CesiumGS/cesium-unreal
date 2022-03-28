@@ -11,12 +11,11 @@
 
 struct FCesiumMetadataModel;
 struct FCesiumMetadataPrimitive;
-struct FCesiumMetadataFeatureTable;
+struct FCesiumFeatureTable;
 struct FCesiumFeatureTexture;
 struct FFeatureTableDescription;
 struct FFeatureTextureDescription;
-
-class UCesiumEncodedMetadataComponent;
+struct FMetadataDescription;
 
 namespace CesiumEncodedMetadataUtility {
 struct EncodedMetadataProperty {
@@ -66,7 +65,7 @@ struct EncodedFeatureIdTexture {
   int64 textureCoordinateAttributeId;
 };
 
-struct EncodedVertexMetadata {
+struct EncodedFeatureIdAttribute {
   FString name;
   FString featureTableName;
   int32 index;
@@ -85,7 +84,7 @@ struct EncodedFeatureTexture {
 
 struct EncodedMetadataPrimitive {
   TArray<EncodedFeatureIdTexture> encodedFeatureIdTextures;
-  TArray<EncodedVertexMetadata> encodedVertexMetadata;
+  TArray<EncodedFeatureIdAttribute> encodedFeatureIdAttributes;
   TArray<FString> featureTextureNames;
 };
 
@@ -95,8 +94,8 @@ struct EncodedMetadata {
 };
 
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
-    const FFeatureTableDescription& encodeInstructions,
-    const FCesiumMetadataFeatureTable& featureTable);
+    const FFeatureTableDescription& featureTableDescription,
+    const FCesiumFeatureTable& featureTable);
 
 EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     TMap<
@@ -108,11 +107,11 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FCesiumFeatureTexture& featureTexture);
 
 EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodedInformation,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataPrimitive& primitive);
 
 EncodedMetadata encodeMetadataAnyThreadPart(
-    const UCesiumEncodedMetadataComponent& encodeInstructions,
+    const FMetadataDescription& metadataDescription,
     const FCesiumMetadataModel& metadata);
 
 bool encodeMetadataFeatureTableGameThreadPart(
