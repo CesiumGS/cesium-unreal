@@ -486,14 +486,14 @@ void ACesiumGeoreference::BeginPlay() {
     return;
   }
 
-  if (!this->WorldOriginCamera) {
+  if (!this->SubLevelCamera) {
     // Find the first player's camera manager
     APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
     if (pPlayerController) {
-      this->WorldOriginCamera = pPlayerController->PlayerCameraManager;
+      this->SubLevelCamera = pPlayerController->PlayerCameraManager;
     }
 
-    if (!this->WorldOriginCamera) {
+    if (!this->SubLevelCamera) {
       UE_LOG(
           LogCesium,
           Warning,
@@ -690,13 +690,13 @@ bool ACesiumGeoreference::_updateSublevelState() {
     return false;
   }
 
-  if (!IsValid(WorldOriginCamera)) {
+  if (!IsValid(this->SubLevelCamera)) {
     return false;
   }
 
   UWorld* pWorld = this->GetWorld();
   const FIntVector& originLocation = pWorld->OriginLocation;
-  const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
+  const FMinimalViewInfo& pov = this->SubLevelCamera->ViewTarget.POV;
   const FVector& cameraLocation = pov.Location;
 
   glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
@@ -730,46 +730,6 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   // activeLevel may be -1, in which case all levels will be deactivated.
   return this->SwitchToLevel(activeLevel);
-}
-
-void ACesiumGeoreference::_performOriginRebasing() {
-  UWorld* world = this->GetWorld();
-  if (!world->IsGameWorld()) {
-    return;
-  }
-  if (!IsValid(WorldOriginCamera)) {
-    return;
-  }
-  if (!this->KeepWorldOriginNearCamera) {
-    return;
-  }
-  if (this->_insideSublevel && !this->OriginRebaseInsideSublevels) {
-    // If we are not going to continue origin rebasing inside the
-    // sublevel, just set the origin back to zero if necessary,
-    // since the sublevel will be centered around zero anyways.
-    if (!world->OriginLocation.IsZero()) {
-      world->SetNewWorldOrigin(FIntVector::ZeroValue);
-    }
-    return;
-  }
-
-  // We're either not in a sublevel, or OriginRebaseInsideSublevels is true.
-  // Check whether a rebasing is necessary.
-  const FIntVector& originLocation = world->OriginLocation;
-  const FMinimalViewInfo& pov = this->WorldOriginCamera->ViewTarget.POV;
-  const FVector& cameraLocation = pov.Location;
-  bool distanceTooLarge = !cameraLocation.Equals(
-      FVector::ZeroVector,
-      this->MaximumWorldOriginDistanceFromCamera);
-  if (distanceTooLarge) {
-    // Camera has moved too far from the origin, move the origin,
-    // but make sure that no component exceeds the maximum value
-    // that can be represented as a 32bit signed integer.
-    int32 newX = clampedAdd(cameraLocation.X, originLocation.X);
-    int32 newY = clampedAdd(cameraLocation.Y, originLocation.Y);
-    int32 newZ = clampedAdd(cameraLocation.Z, originLocation.Z);
-    world->SetNewWorldOrigin(FIntVector(newX, newY, newZ));
-  }
 }
 
 void ACesiumGeoreference::_updateGeoTransforms() {
@@ -808,8 +768,6 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   if (!this->_shouldManageSubLevels()) {
     this->_insideSublevel = _updateSublevelState();
   }
-
-  _performOriginRebasing();
 }
 
 void ACesiumGeoreference::Serialize(FArchive& Ar) {

@@ -91,7 +91,6 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _beforeMovieKeepWorldOriginNearCamera{true},
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
@@ -310,18 +309,11 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->_beforeMovieKeepWorldOriginNearCamera =
-        this->ResolveGeoreference()->KeepWorldOriginNearCamera;
-  }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
-  }
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
@@ -329,10 +321,6 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->ResolveGeoreference()->KeepWorldOriginNearCamera =
-        this->_beforeMovieKeepWorldOriginNearCamera;
-  }
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }

@@ -836,7 +836,6 @@ private:
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
-  bool _beforeMovieKeepWorldOriginNearCamera;
 
   // This is used as a workaround for cesium-native#186
   //

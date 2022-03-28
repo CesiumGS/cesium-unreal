@@ -55,17 +55,6 @@ public:
   ACesiumGeoreference();
 
   /*
-   * Whether to continue origin rebasing once inside a sublevel. If actors
-   * inside the sublevels react poorly to origin rebasing, it might be worth
-   * turning this option off.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "CesiumSublevels",
-      meta = (EditCondition = "KeepWorldOriginNearCamera"))
-  bool OriginRebaseInsideSublevels = true;
-
-  /*
    * Whether to visualize the level loading radii in the editor. Helpful for
    * initially positioning the level and choosing a load radius.
    */
@@ -165,17 +154,6 @@ public:
   // UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
   bool EditOriginInViewport = false;
 
-  /**
-   * If true, the world origin is periodically rebased to keep it near the
-   * camera.
-   *
-   * This is important for maintaining vertex precision in large worlds. Setting
-   * it to false can lead to jiterring artifacts when the camera gets far away
-   * from the origin.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool KeepWorldOriginNearCamera = true;
-
 #if WITH_EDITOR
   /**
    * Places the georeference origin at the camera's current location. Rotates
@@ -192,24 +170,13 @@ public:
 #endif
 
   /**
-   * The maximum distance in centimeters that the camera may move from the
-   * world's OriginLocation before the world origin is moved closer to the
-   * camera.
+   * The camera to use to determine which sub-level is closest, so that one can
+   * be activated and all others deactivated.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium",
-      meta = (EditCondition = "KeepWorldOriginNearCamera", ClampMin = 0.0))
-  double MaximumWorldOriginDistanceFromCamera = 10000.0;
-
-  /**
-   * The camera to use for setting the world origin.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (EditCondition = "KeepWorldOriginNearCamera"))
-  APlayerCameraManager* WorldOriginCamera;
+      Category = "CesiumSublevels")
+  APlayerCameraManager* SubLevelCamera;
 
   // TODO: Allow user to select/configure the ellipsoid.
   // Yeah, we're working on that...
@@ -233,7 +200,7 @@ public:
    * origin. I.e. it moves the globe so that these coordinates exactly fall on
    * the origin.
    *
-   * When the WorldOriginCamera of this instance is currently contained
+   * When the SubLevelCamera of this instance is currently contained in
    * the bounds of a sublevel, then this call has no effect.
    */
   void SetGeoreferenceOriginLongitudeLatitudeHeight(
@@ -250,7 +217,7 @@ public:
    * Unreal's world origin. I.e. it moves the globe so that these coordinates
    * exactly fall on the origin.
    *
-   * When the WorldOriginCamera of this instance is currently contained
+   * When the SubLevelCamera of this instance is currently contained in
    * the bounds of a sublevel, then this call has no effect.
    */
   void SetGeoreferenceOriginEcef(const glm::dvec3& TargetEcef);
@@ -261,7 +228,7 @@ public:
    * origin. I.e. it moves the globe so that these coordinates exactly fall on
    * the origin.
    *
-   * When the WorldOriginCamera of this instance is currently contained
+   * When the SubLevelCamera of this instance is currently contained in
    * the bounds of a sublevel, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
@@ -273,7 +240,7 @@ public:
    * Unreal's world origin. I.e. it moves the globe so that these coordinates
    * exactly fall on the origin.
    *
-   * When the WorldOriginCamera of this instance is currently contained
+   * When the SubLevelCamera of this instance is currently contained in
    * the bounds of a sublevel, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
@@ -619,26 +586,12 @@ private:
    * @brief Updates the load state of sublevels.
    *
    * This checks all sublevels whether their load radius contains the
-   * `WorldOriginCamera`, in ECEF coordinates. The sublevels that
+   * `SubLevelCamera`, in ECEF coordinates. The sublevels that
    * contain the camera will be loaded. All others will be unloaded.
    *
    * @return Whether the camera is contained in *any* sublevel.
    */
   bool _updateSublevelState();
-
-  /**
-   * @brief Perform the origin-rebasing.
-   *
-   * If this actor is currently "in-game", and has an associated
-   * `WorldOriginCamera`, and the camera is further away from the origin than
-   * `MaximumWorldOriginDistanceFromCamera`, then this may set a new world
-   * origin by calling `GetWorld()->SetNewWorldOrigin` with a new position.
-   *
-   * This will only be done if origin rebasing is enabled via
-   * `KeepWorldOriginNearCamera`, and the actor is either *not* in a sublevel,
-   * or `OriginRebaseInsideSublevels` is enabled.
-   */
-  void _performOriginRebasing();
 
   /**
    * Updates _geoTransforms based on the current ellipsoid and center, and
