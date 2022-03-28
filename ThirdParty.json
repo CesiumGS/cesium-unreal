@@ -5,9 +5,19 @@
     "license": "MIT"
   },
   {
+    "name": "Catch2",
+    "url": "https://github.com/catchorg/Catch2",
+    "license": "Boost Software License 1.0"
+  },
+  {
     "name": "cesium-native",
     "url": "https://github.com/CesiumGS/cesium-native",
     "license": "Apache 2.0"
+  },
+  {
+    "name": "cmake-modules",
+    "url": "https://github.com/bilke/cmake-modules",
+    "license": "Boost Software License 1.0"
   },
   {
     "name": "cpp-httplib",
@@ -25,6 +35,11 @@
     "license": "Apache 2.0"
   },
   {
+    "name": "earcut",
+    "url": "https://github.com/mapbox/earcut.hpp",
+    "license": "ISC License"
+  },
+  {
     "name": "Font Awesome Icons",
     "url": "https://fontawesome.com/",
     "license": "CC BY 4.0 License"
@@ -40,9 +55,14 @@
     "license": "MIT"
   },
   {
-    "name": "PicoSHA2",
-    "url": "https://github.com/okdshin/PicoSHA2",
-    "license": "MIT"
+    "name": "KTX-Software",
+    "url": "https://github.com/KhronosGroup/KTX-Software",
+    "license": "Apache 2.0"
+  },
+  {
+    "name": "MikkTSpace",
+    "url": "https://github.com/mmikk/MikkTSpace",
+    "license": "Mikktspace License"
   },
   {
     "name": "modp_b64",
@@ -50,9 +70,19 @@
     "license": "BSD-3-Clause"
   },
   {
+    "name": "PicoSHA2",
+    "url": "https://github.com/okdshin/PicoSHA2",
+    "license": "MIT"
+  },
+  {
     "name": "RapidJSON",
     "url": "https://github.com/Tencent/rapidjson",
     "license": "MIT"
+  },
+  {
+    "name": "s2geometry",
+    "url": "https://github.com/google/s2geometry",
+    "license": "Apache 2.0"
   },
   {
     "name": "spdlog",
@@ -78,35 +108,5 @@
     "name": "uriparser",
     "url": "https://github.com/uriparser/uriparser",
     "license": "BSD-3-Clause"
-  },
-  {
-    "name": "Catch2",
-    "url": "https://github.com/catchorg/Catch2",
-    "license": "Boost Software License 1.0"
-  },
-  {
-    "name": "KTX-Software",
-    "url": "https://github.com/KhronosGroup/KTX-Software",
-    "license": "Apache 2.0"
-  },
-  {
-    "name": "earcut",
-    "url": "https://github.com/mapbox/earcut.hpp",
-    "license": "ISC License"
-  },
-  {
-    "name": "s2geometry",
-    "url": "https://github.com/google/s2geometry",
-    "license": "Apache 2.0"
-  },
-  {
-    "name": "cmake-modules",
-    "url": "https://github.com/bilke/cmake-modules",
-    "license": "Boost Software License 1.0"
-  },
-  {
-    "name": "MikkTSpace",
-    "url": "https://github.com/mmikk/MikkTSpace",
-    "license": "Mikktspace License"
   }
 ]
