@@ -5,6 +5,7 @@
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
+#include "CesiumCommon.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -134,7 +135,7 @@ uint32_t updateTextureCoordinates(
   }
 
   if (duplicateVertices) {
-    for (int64_t i = 0; i < indices.Num(); ++i) {
+    for (int i = 0; i < indices.Num(); ++i) {
       FStaticMeshBuildVertex& vertex = vertices[i];
       uint32 vertexIndex = indices[i];
       if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
@@ -144,7 +145,7 @@ uint32_t updateTextureCoordinates(
       }
     }
   } else {
-    for (int64_t i = 0; i < vertices.Num(); ++i) {
+    for (int i = 0; i < vertices.Num(); ++i) {
       FStaticMeshBuildVertex& vertex = vertices[i];
       if (i >= 0 && i < uvAccessor.size()) {
         vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
@@ -244,7 +245,7 @@ static void computeFlatNormals(
     const TArray<uint32_t>& indices,
     TArray<FStaticMeshBuildVertex>& vertices) {
   // Compute flat normals
-  for (int64_t i = 0; i < indices.Num(); i += 3) {
+  for (int i = 0; i < indices.Num(); i += 3) {
     FStaticMeshBuildVertex& v0 = vertices[i];
     FStaticMeshBuildVertex& v1 = vertices[i + 1];
     FStaticMeshBuildVertex& v2 = vertices[i + 2];
@@ -290,7 +291,7 @@ struct ColorVisitor {
 
     bool success = true;
     if (duplicateVertices) {
-      for (int64_t i = 0; success && i < this->indices.Num(); ++i) {
+      for (int i = 0; success && i < this->indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
         uint32 vertexIndex = this->indices[i];
         if (vertexIndex >= colorView.size()) {
@@ -301,8 +302,7 @@ struct ColorVisitor {
         }
       }
     } else {
-      for (int64_t i = 0; success && i < this->StaticMeshBuildVertices.Num();
-           ++i) {
+      for (int i = 0; success && i < this->StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
         if (i >= colorView.size()) {
           success = false;
@@ -741,12 +741,13 @@ static void loadPrimitive(
 
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
   StaticMeshBuildVertices.SetNum(
-      duplicateVertices ? indices.Num() : positionView.size());
+      duplicateVertices ? indices.Num()
+                        : static_cast<int>(positionView.size()));
 
   {
     if (duplicateVertices) {
       CESIUM_TRACE("copy duplicated positions");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
+      for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         vertex.Position = positionView[vertexIndex];
@@ -758,7 +759,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy positions");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.Position = positionView[i];
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
@@ -882,7 +883,7 @@ static void loadPrimitive(
   if (hasNormals) {
     if (duplicateVertices) {
       CESIUM_TRACE("copy normals for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
+      for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
@@ -891,7 +892,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy normals");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
         vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
@@ -906,7 +907,7 @@ static void loadPrimitive(
   if (hasTangents) {
     if (duplicateVertices) {
       CESIUM_TRACE("copy tangents for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
+      for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector4& tangent = tangentAccessor[vertexIndex];
@@ -917,7 +918,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy tangents");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector4& tangent = tangentAccessor[i];
         vertex.TangentX = tangent;
@@ -1397,7 +1398,7 @@ static void SetGltfParameterValues(
             textureCoordinateSet.first.c_str(),
             assocation,
             index),
-        textureCoordinateSet.second);
+        static_cast<float>(textureCoordinateSet.second));
   }
 
   if (pbr.baseColorFactor.size() >= 3) {
@@ -1410,13 +1411,13 @@ static void SetGltfParameterValues(
   }
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", assocation, index),
-      pbr.metallicFactor);
+      static_cast<float>(pbr.metallicFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("roughnessFactor", assocation, index),
-      pbr.roughnessFactor);
+      static_cast<float>(pbr.roughnessFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("opacityMask", assocation, index),
-      1.0);
+      1.0f);
 
   applyTexture(
       pMaterial,
@@ -1477,7 +1478,7 @@ void SetWaterParameterValues(
 
   pMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo("WaterMaskTranslationScale", assocation, index),
-      FLinearColor(
+      FVector(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
@@ -1820,11 +1821,15 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
 
+#if CESIUM_UNREAL_ENGINE_DOUBLE
+  FVector4 translationAndScale(translation.x, translation.y, scale.x, scale.y);
+#else
   FLinearColor translationAndScale(
       translation.x,
       translation.y,
       scale.x,
       scale.y);
+#endif
 
   forEachPrimitiveComponent(
       this,
@@ -1861,8 +1866,9 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                pPrimitive
-                    ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
+                static_cast<float>(
+                    pPrimitive->overlayTextureCoordinateIDToUVIndex
+                        [textureCoordinateID]));
           }
         } else {
           pMaterial->SetTextureParameterValue(
@@ -1877,8 +1883,8 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              pPrimitive
-                  ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
+              static_cast<float>(pPrimitive->overlayTextureCoordinateIDToUVIndex
+                                     [textureCoordinateID]));
         }
       });
 }

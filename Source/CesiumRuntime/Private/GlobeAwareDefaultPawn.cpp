@@ -291,7 +291,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   }
 
   // Find the keypoint indexes corresponding to the current percentage
-  int lastIndex = glm::floor(flyPercentage * (this->_keypoints.size() - 1));
+  int lastIndex = static_cast<int>(
+      glm::floor(flyPercentage * (this->_keypoints.size() - 1)));
   double segmentPercentage =
       flyPercentage * (this->_keypoints.size() - 1) - lastIndex;
   int nextIndex = lastIndex + 1;
