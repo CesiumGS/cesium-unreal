@@ -182,6 +182,12 @@ public:
   void InvalidateResolvedCreditSystem();
 
   /**
+   * Whether or not to show this tileset's credits on screen.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool ShowCreditsOnScreen = false;
+
+  /**
    * The maximum number of pixels of error when rendering this tileset.
    *
    * This is used to select an appropriate level-of-detail: A low value
@@ -329,6 +335,8 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnforceCulledScreenSpaceError = false;
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
   /**
    * A list of rectangles that are excluded from this tileset. Any tiles that
    * overlap any of these rectangles are not shown. This is a crude method to
@@ -351,6 +359,8 @@ public:
            DeprecationMessage =
                "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead."))
   TArray<FCesiumExclusionZone> ExclusionZones_DEPRECATED;
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * The screen-space error to be enforced for tiles that are outside the view

@@ -6,6 +6,7 @@
 #include "CesiumMetadataValueType.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
+#include "Engine/TextureDefines.h"
 #include "Templates/UniquePtr.h"
 #include <optional>
 
@@ -20,7 +21,8 @@ struct LoadedTextureResult {
   TextureAddress addressX;
   TextureAddress addressY;
   TextureFilter filter;
-  UTexture2D* pTexture;
+  TextureGroup group;
+  UTexture2D* pTexture{nullptr};
 };
 
 TUniquePtr<FTexturePlatformData>
@@ -31,7 +33,9 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
-    const TextureFilter& filter);
+    const TextureFilter& filter,
+      const TextureGroup& group,
+      bool generateMipMaps);
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,

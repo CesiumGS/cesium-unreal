@@ -17,6 +17,7 @@
 #include "CesiumAsync/SqliteCache.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
+#include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
@@ -611,13 +612,25 @@ public:
     }
   }
 
-  virtual void*
-  prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
+  virtual void* prepareRasterInLoadThread(
+      const CesiumGltf::ImageCesium& image,
+      const std::any& rendererOptions) override {
+    auto ppOptions =
+        std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
+    check(ppOptions != nullptr && *ppOptions != nullptr);
+    if (ppOptions == nullptr || *ppOptions == nullptr) {
+      return nullptr;
+    }
+
+    auto pOptions = *ppOptions;
+
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        TextureFilter::TF_Bilinear);
+        pOptions->filter,
+        pOptions->group,
+        pOptions->useMipmaps);
     return texture.Release();
   }
 
@@ -801,6 +814,8 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.showCreditsOnScreen = ShowCreditsOnScreen;
 
   options.loadErrorCallback =
       [this](const Cesium3DTilesSelection::TilesetLoadFailureDetails& details) {
@@ -1103,10 +1118,10 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             pStereoRendering->GetStereoProjectionMatrix(leftEye);
 
         // TODO: consider assymetric frustums using 4 fovs
-        float one_over_tan_half_hfov = projection.M[0][0];
+        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
 
-        float hfov =
-            glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+        CesiumReal hfov =
+            glm::degrees(2.0 * glm::atan(1.0 / one_over_tan_half_hfov));
 
         cameras.emplace_back(
             stereoLeftSize,
@@ -1127,9 +1142,9 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
         FMatrix projection =
             pStereoRendering->GetStereoProjectionMatrix(rightEye);
 
-        float one_over_tan_half_hfov = projection.M[0][0];
+        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
 
-        float hfov =
+        CesiumReal hfov =
             glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
         cameras.emplace_back(
@@ -1318,7 +1333,7 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 
 namespace {
 
-// TODO These could or should be members, but extracted here as a first step:
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 /**
  * @brief Check if the given tile is contained in one of the given exclusion
@@ -1360,6 +1375,8 @@ bool isInExclusionZone(
   }
   return false;
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void removeVisibleTilesFromList(
     std::vector<Cesium3DTilesSelection::Tile*>& list,
@@ -1506,9 +1523,11 @@ void ACesium3DTileset::showTilesToRender(
       continue;
     }
 
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
       continue;
     }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     // That looks like some reeeally entertaining debug session...:
     // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
