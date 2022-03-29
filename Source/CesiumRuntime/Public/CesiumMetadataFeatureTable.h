@@ -16,16 +16,18 @@ struct Accessor;
 struct FeatureTable;
 } // namespace CesiumGltf
 
+struct UE_DEPRECATED(
+    4.26,
+    "FCesiumMetadataFeatureTable is deprecated, use FCesiumFeatureTable instead.")
+    FCesiumMetadataFeatureTable;
+
 /**
  * A Blueprint-accessible wrapper for a glTF feature table. A feature table is a
  * collection of properties for each feature ID in the mesh. It also knows how
  * to look up the feature ID associated with a given mesh vertex.
  */
 USTRUCT(BlueprintType)
-struct UE_DEPRECATED(
-    4.26,
-    "FCesiumMetadataFeatureTable is deprecated, use FCesiumFeatureTable instead.")
-    CESIUMRUNTIME_API FCesiumMetadataFeatureTable {
+struct CESIUMRUNTIME_API FCesiumMetadataFeatureTable {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDAccessorType = std::variant<
