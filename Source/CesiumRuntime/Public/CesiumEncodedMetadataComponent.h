@@ -241,7 +241,7 @@ public:
   UFUNCTION(CallInEditor, Category = "EncodeMetadata")
   void AutoFill();
 
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITOR
   /**
    * @brief This button can be used to create a boiler-plate material layer that
    * exposes the requested metadata properties in the current description. The
@@ -251,7 +251,9 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "EncodeMetadata")
   void GenerateMaterial();
+#endif
 
+#if WITH_EDITORONLY_DATA
   /**
    * @brief This is the target UMaterialFunctionMaterialLayer that the
    * boiler-plate material generation will use. When pressing

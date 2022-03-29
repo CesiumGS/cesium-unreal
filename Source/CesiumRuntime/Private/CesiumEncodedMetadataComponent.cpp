@@ -390,10 +390,8 @@ static void RemapUserConnections(
     }
   }
 }
-#endif // WITH_EDITOR
 
 void UCesiumEncodedMetadataComponent::GenerateMaterial() {
-#if WITH_EDITOR
   ACesium3DTileset* pTileset = Cast<ACesium3DTileset>(this->GetOwner());
 
   if (!pTileset) {
@@ -882,5 +880,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     AssetsToHighlight.Add(this->TargetMaterialLayer);
     pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
   }
-#endif
 }
+
+#endif // WITH_EDITOR
