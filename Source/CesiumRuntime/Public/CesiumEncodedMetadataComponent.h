@@ -251,7 +251,9 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "EncodeMetadata")
   void GenerateMaterial();
+#endif
 
+#if WITH_EDITORONLY_DATA
   /**
    * @brief This is the target UMaterialFunctionMaterialLayer that the
    * boiler-plate material generation will use. When pressing

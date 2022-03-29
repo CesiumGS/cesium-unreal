@@ -13,10 +13,8 @@
 #include "ComponentReregisterContext.h"
 #include "Containers/Map.h"
 #include "ContentBrowserModule.h"
-#include "EditorAssetLibrary.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "IContentBrowserSingleton.h"
-#include "MaterialEditorUtilities.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionCustom.h"
 #include "Materials/MaterialExpressionFunctionInput.h"
@@ -32,6 +30,8 @@
 #include "Modules/ModuleManager.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "UObject/Package.h"
+
+extern UNREALED_API class UEditorEngine* GEditor;
 #endif
 
 void UCesiumEncodedMetadataComponent::AutoFill() {
@@ -863,19 +863,23 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   // FMaterialResource created when we make a new UMaterial in place
   FGlobalComponentReregisterContext RecreateComponents;
 
-  // Save the asset
-  UEditorAssetLibrary::SaveLoadedAsset(this->TargetMaterialLayer, true);
-
   // Open updated material in editor.
-  FAssetData assetData(this->TargetMaterialLayer);
-  FMaterialEditorUtilities::OnOpenFunction(assetData);
+  if (GEditor) {
+    UAssetEditorSubsystem* pAssetEditor =
+        GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+    if (pAssetEditor) {
+      pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
+    }
+  }
 
-  TArray<UObject*> AssetsToHighlight;
-  AssetsToHighlight.Add(this->TargetMaterialLayer);
-
-  FContentBrowserModule& ContentBrowserModule =
-      FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(
+  FContentBrowserModule* pContentBrowserModule =
+      FModuleManager::Get().GetModulePtr<FContentBrowserModule>(
           "ContentBrowser");
-  ContentBrowserModule.Get().SyncBrowserToAssets(AssetsToHighlight);
+  if (pContentBrowserModule) {
+    TArray<UObject*> AssetsToHighlight;
+    AssetsToHighlight.Add(this->TargetMaterialLayer);
+    pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
+  }
 }
-#endif
+
+#endif // WITH_EDITOR
