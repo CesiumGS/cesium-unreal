@@ -6,6 +6,8 @@
 #include "CesiumRasterOverlayLoadFailureDetails.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "Engine/Texture.h"
+#include "Engine/TextureDefines.h"
 #include <memory>
 #include "CesiumRasterOverlay.generated.h"
 
@@ -23,6 +25,24 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 
 CESIUMRUNTIME_API extern FCesiumRasterOverlayLoadFailure
     OnCesiumRasterOverlayLoadFailure;
+
+/**
+ * This struct is passed through the raster overlay options and is used when
+ * `prepareRasterInLoadThread` is called.
+ */
+USTRUCT(BlueprintType)
+struct FRasterOverlayRendererOptions {
+  GENERATED_BODY()
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TEnumAsByte<TextureFilter> filter = TextureFilter::TF_Default;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  TEnumAsByte<TextureGroup> group = TextureGroup::TEXTUREGROUP_World;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool useMipmaps = true;
+};
 
 /**
  * A quadtree pyramid of 2D raster images meant to be draped over a Cesium 3D
@@ -45,6 +65,14 @@ public:
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString MaterialLayerKey = "Overlay0";
+
+  /**
+   * Sets the texture filter and texture group of raster tile images. Depending
+   * on the project settings, the default texture filter, TF_Default, should
+   * have the best quality.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  FRasterOverlayRendererOptions rendererOptions;
 
   // Sets default values for this component's properties
   UCesiumRasterOverlay();
