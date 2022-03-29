@@ -609,13 +609,25 @@ public:
     }
   }
 
-  virtual void*
-  prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
+  virtual void* prepareRasterInLoadThread(
+      const CesiumGltf::ImageCesium& image,
+      const std::any& rendererOptions) override {
+    auto ppOptions =
+        std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
+    check(ppOptions != nullptr && *ppOptions != nullptr);
+    if (ppOptions == nullptr || *ppOptions == nullptr) {
+      return nullptr;
+    }
+
+    auto pOptions = *ppOptions;
+
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
         image,
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        TextureFilter::TF_Bilinear);
+        pOptions->filter,
+        pOptions->group,
+        pOptions->useMipmaps);
     return texture.Release();
   }
 
