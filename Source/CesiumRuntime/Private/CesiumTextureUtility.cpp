@@ -303,38 +303,47 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
       break;
     }
 
-    // Unreal Engine's available filtering modes are only nearest, bilinear, and
-    // trilinear, and are not specified separately for minification and
-    // magnification. So we get as close as we can.
-    if (!image.mipPositions.empty()) {
-      filter = TextureFilter::TF_Trilinear;
-    } else if (!pSampler->minFilter && !pSampler->magFilter) {
-      filter = TextureFilter::TF_Default;
-    } else if (
-        (!pSampler->minFilter ||
-         pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
-        (!pSampler->magFilter ||
-         pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)) {
-      filter = TextureFilter::TF_Nearest;
+    // Unreal Engine's available filtering modes are only nearest, bilinear,
+    // trilinear, and "default". Default means "use the texture group settings",
+    // and the texture group settings are defined in a config file and can
+    // vary per platform. All filter modes can use mipmaps if they're available,
+    // but only TF_Default will ever use anisotropic texture filtering.
+    //
+    // Unreal also doesn't separate the minification filter from the
+    // magnification filter. So we'll just ignore the magFilter unless it's the
+    // only filter specified.
+    //
+    // Generally our bias is toward TF_Default, because that gives the user more
+    // control via texture groups.
+
+    if (pSampler->magFilter && !pSampler->minFilter) {
+      // Only a magnification filter is specified, so use it.
+      filter =
+          pSampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::NEAREST
+              ? TextureFilter::TF_Nearest
+              : TextureFilter::TF_Default;
     } else if (pSampler->minFilter) {
+      // Use specified minFilter.
       switch (pSampler->minFilter.value()) {
-      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
-      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
-      case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+      case CesiumGltf::Sampler::MinFilter::NEAREST:
       case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
-        filter = TextureFilter::TF_Trilinear;
+        filter = TextureFilter::TF_Nearest;
         break;
-      default:
+      case CesiumGltf::Sampler::MinFilter::LINEAR:
+      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
         filter = TextureFilter::TF_Bilinear;
         break;
+      default:
+        filter = TextureFilter::TF_Default;
+        break;
       }
-    } else if (pSampler->magFilter) {
-      filter = pSampler->magFilter == CesiumGltf::Sampler::MagFilter::LINEAR
-                   ? TextureFilter::TF_Bilinear
-                   : TextureFilter::TF_Nearest;
+    } else {
+      // No filtering specified at all, let the texture group decide.
+      filter = TextureFilter::TF_Default;
     }
 
-    switch (pSampler->minFilter.value()) {
+    switch (pSampler->minFilter.value_or(
+        CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR)) {
     case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
     case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
     case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:

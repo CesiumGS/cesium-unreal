@@ -45,7 +45,7 @@ void UCesiumRasterOverlay::AddToTileset() {
   options.maximumTextureSize = this->MaximumTextureSize;
   options.subTileCacheBytes = this->SubTileCacheBytes;
   options.showCreditsOnScreen = this->ShowCreditsOnScreen;
-  options.pRendererOptions = &this->rendererOptions;
+  options.rendererOptions = &this->rendererOptions;
   options.loadErrorCallback =
       [this](const Cesium3DTilesSelection::RasterOverlayLoadFailureDetails&
                  details) {
