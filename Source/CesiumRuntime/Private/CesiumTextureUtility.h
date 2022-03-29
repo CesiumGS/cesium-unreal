@@ -34,8 +34,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const TextureAddress& addressX,
     const TextureAddress& addressY,
     const TextureFilter& filter,
-      const TextureGroup& group,
-      bool generateMipMaps);
+    const TextureGroup& group,
+    bool generateMipMaps);
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
