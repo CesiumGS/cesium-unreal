@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumWebMapServiceRasterOverlay.h"
+#include "Algo/Transform.h"
 #include "Cesium3DTilesSelection/WebMapServiceRasterOverlay.h"
 #include "CesiumRuntime.h"
 
@@ -23,3 +24,26 @@ UCesiumWebMapServiceRasterOverlay::CreateOverlay(
       wmsOptions,
       options);
 }
+
+#if WITH_EDITOR
+
+void UCesiumWebMapServiceRasterOverlay::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+
+  if (PropertyChangedEvent.Property &&
+      (PropertyChangedEvent.Property->GetFName() ==
+       GET_MEMBER_NAME_CHECKED(UCesiumWebMapServiceRasterOverlay, Layers))) {
+    TArray<FString> OutArray;
+    Layers.ParseIntoArray(OutArray, TEXT(","));
+    TArray<FString> EncodedArray;
+
+    Algo::Transform(OutArray, EncodedArray, [](auto& Layer) {
+      return Layer.Replace(TEXT(" "), TEXT("%20"));
+    });
+    Layers = FString::Join(EncodedArray, TEXT(","));
+  }
+
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+
+#endif

@@ -8,7 +8,7 @@
 #include "CesiumWebMapServiceRasterOverlay.generated.h"
 
 /**
- * A raster overlay that directly accesses a Web Map Service (WMS) server. 
+ * A raster overlay that directly accesses a Web Map Service (WMS) server.
  * https://www.ogc.org/standards/wms
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
@@ -24,13 +24,14 @@ public:
   FString OverlayName;
   /**
    * The base url of the Tile Map Service (WMS).
-   * e.g. https://services.ga.gov.au/gis/services/NM_Culture_and_Infrastructure/MapServer/WMSServer
+   * e.g.
+   * https://services.ga.gov.au/gis/services/NM_Culture_and_Infrastructure/MapServer/WMSServer
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString BaseUrl;
-  
-  /** 
-   * Comma separated layer names. 
+
+  /**
+   * Comma separated layer names.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString Layers;
@@ -50,7 +51,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      meta = (ClampMin = 64, ClampMax=2048))
+      meta = (ClampMin = 64, ClampMax = 2048))
   int32 TileWidth = 256;
 
   /**
@@ -60,7 +61,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      meta = (ClampMin = 64, ClampMax=2048))
+      meta = (ClampMin = 64, ClampMax = 2048))
   int32 TileHeight = 256;
 
   /**
@@ -83,6 +84,12 @@ public:
       meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
   int32 MaximumLevel = 10;
 
+#if WITH_EDITOR
+
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
+#endif
 
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
