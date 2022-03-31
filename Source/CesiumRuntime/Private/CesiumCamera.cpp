@@ -4,9 +4,9 @@
 #include "Math/UnrealMathUtility.h"
 
 FCesiumCamera::FCesiumCamera()
-    : ViewportSize(1.0f, 1.0f),
-      Location(0.0f, 0.0f, 0.0f),
-      Rotation(0.0f, 0.0f, 0.0f),
+    : ViewportSize(1.0, 1.0),
+      Location(0.0f, 0.0, 0.0),
+      Rotation(0.0, 0.0, 0.0),
       FieldOfViewDegrees(0.0f),
       OverrideAspectRatio(0.0f) {}
 

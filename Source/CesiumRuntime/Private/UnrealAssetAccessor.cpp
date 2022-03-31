@@ -39,7 +39,7 @@ public:
         _headers(parseHeaders(pResponse->GetAllHeaders())) {}
 
   virtual uint16_t statusCode() const override {
-    return this->_pResponse->GetResponseCode();
+    return static_cast<uint16_t>(this->_pResponse->GetResponseCode());
   }
 
   virtual std::string contentType() const override {

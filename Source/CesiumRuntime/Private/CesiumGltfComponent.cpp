@@ -5,6 +5,7 @@
 #include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
+#include "CesiumCommon.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -134,7 +135,7 @@ uint32_t updateTextureCoordinates(
   }
 
   if (duplicateVertices) {
-    for (int64_t i = 0; i < indices.Num(); ++i) {
+    for (int i = 0; i < indices.Num(); ++i) {
       FStaticMeshBuildVertex& vertex = vertices[i];
       uint32 vertexIndex = indices[i];
       if (vertexIndex >= 0 && vertexIndex < uvAccessor.size()) {
@@ -144,7 +145,7 @@ uint32_t updateTextureCoordinates(
       }
     }
   } else {
-    for (int64_t i = 0; i < vertices.Num(); ++i) {
+    for (int i = 0; i < vertices.Num(); ++i) {
       FStaticMeshBuildVertex& vertex = vertices[i];
       if (i >= 0 && i < uvAccessor.size()) {
         vertex.UVs[textureCoordinateIndex] = uvAccessor[i];
@@ -244,7 +245,7 @@ static void computeFlatNormals(
     const TArray<uint32_t>& indices,
     TArray<FStaticMeshBuildVertex>& vertices) {
   // Compute flat normals
-  for (int64_t i = 0; i < indices.Num(); i += 3) {
+  for (int i = 0; i < indices.Num(); i += 3) {
     FStaticMeshBuildVertex& v0 = vertices[i];
     FStaticMeshBuildVertex& v1 = vertices[i + 1];
     FStaticMeshBuildVertex& v2 = vertices[i + 2];
@@ -290,7 +291,7 @@ struct ColorVisitor {
 
     bool success = true;
     if (duplicateVertices) {
-      for (int64_t i = 0; success && i < this->indices.Num(); ++i) {
+      for (int i = 0; success && i < this->indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
         uint32 vertexIndex = this->indices[i];
         if (vertexIndex >= colorView.size()) {
@@ -301,8 +302,7 @@ struct ColorVisitor {
         }
       }
     } else {
-      for (int64_t i = 0; success && i < this->StaticMeshBuildVertices.Num();
-           ++i) {
+      for (int i = 0; success && i < this->StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
         if (i >= colorView.size()) {
           success = false;
@@ -359,7 +359,7 @@ struct ColorVisitor {
 };
 
 template <class T>
-static CesiumTextureUtility::LoadedTextureResult* loadTexture(
+static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     const CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
@@ -662,7 +662,8 @@ static void loadPrimitive(
     needsTangents = true;
   }
 
-  FStaticMeshRenderData* RenderData = new FStaticMeshRenderData();
+  TUniquePtr<FStaticMeshRenderData> RenderData =
+      MakeUnique<FStaticMeshRenderData>();
   RenderData->AllocateLODResources(1);
 
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
@@ -740,12 +741,13 @@ static void loadPrimitive(
 
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
   StaticMeshBuildVertices.SetNum(
-      duplicateVertices ? indices.Num() : positionView.size());
+      duplicateVertices ? indices.Num()
+                        : static_cast<int>(positionView.size()));
 
   {
     if (duplicateVertices) {
       CESIUM_TRACE("copy duplicated positions");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
+      for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         vertex.Position = positionView[vertexIndex];
@@ -757,7 +759,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy positions");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.Position = positionView[i];
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
@@ -881,7 +883,7 @@ static void loadPrimitive(
   if (hasNormals) {
     if (duplicateVertices) {
       CESIUM_TRACE("copy normals for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
+      for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
@@ -890,7 +892,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy normals");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
         vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
@@ -905,7 +907,7 @@ static void loadPrimitive(
   if (hasTangents) {
     if (duplicateVertices) {
       CESIUM_TRACE("copy tangents for duplicated vertices");
-      for (int64_t i = 0; i < indices.Num(); ++i) {
+      for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector4& tangent = tangentAccessor[vertexIndex];
@@ -916,7 +918,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy tangents");
-      for (int64_t i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
+      for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector4& tangent = tangentAccessor[i];
         vertex.TangentX = tangent;
@@ -1006,7 +1008,7 @@ static void loadPrimitive(
 
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
-  primitiveResult.RenderData = RenderData;
+  primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
 
@@ -1017,11 +1019,13 @@ static void loadPrimitive(
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
     CESIUM_TRACE("PhysX cook");
+    PxTriangleMesh* createdCollisionMesh = nullptr;
     BuildPhysXTriangleMeshes(
-        primitiveResult.pCollisionMesh,
+        createdCollisionMesh,
         options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCooking,
         StaticMeshBuildVertices,
         indices);
+    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
     CESIUM_TRACE("Chaos cook");
     primitiveResult.pCollisionMesh =
@@ -1370,12 +1374,8 @@ bool applyTexture(
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
-
-  if (!CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture)) {
-    return false;
-  }
-
-  UTexture2D* pTexture = pLoadedTexture->pTexture;
+  UTexture2D* pTexture =
+      CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
   if (!pTexture) {
     return false;
   }
@@ -1398,7 +1398,7 @@ static void SetGltfParameterValues(
             textureCoordinateSet.first.c_str(),
             assocation,
             index),
-        textureCoordinateSet.second);
+        static_cast<float>(textureCoordinateSet.second));
   }
 
   if (pbr.baseColorFactor.size() >= 3) {
@@ -1411,34 +1411,34 @@ static void SetGltfParameterValues(
   }
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", assocation, index),
-      pbr.metallicFactor);
+      static_cast<float>(pbr.metallicFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("roughnessFactor", assocation, index),
-      pbr.roughnessFactor);
+      static_cast<float>(pbr.roughnessFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("opacityMask", assocation, index),
-      1.0);
+      1.0f);
 
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("baseColorTexture", assocation, index),
-      loadResult.baseColorTexture);
+      loadResult.baseColorTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("metallicRoughnessTexture", assocation, index),
-      loadResult.metallicRoughnessTexture);
+      loadResult.metallicRoughnessTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("normalTexture", assocation, index),
-      loadResult.normalTexture);
+      loadResult.normalTexture.Get());
   bool hasEmissiveTexture = applyTexture(
       pMaterial,
       FMaterialParameterInfo("emissiveTexture", assocation, index),
-      loadResult.emissiveTexture);
+      loadResult.emissiveTexture.Get());
   applyTexture(
       pMaterial,
       FMaterialParameterInfo("occlusionTexture", assocation, index),
-      loadResult.occlusionTexture);
+      loadResult.occlusionTexture.Get());
 
   if (material.emissiveFactor.size() >= 3) {
     pMaterial->SetVectorParameterValueByInfo(
@@ -1473,12 +1473,12 @@ void SetWaterParameterValues(
     applyTexture(
         pMaterial,
         FMaterialParameterInfo("WaterMask", assocation, index),
-        loadResult.waterMaskTexture);
+        loadResult.waterMaskTexture.Get());
   }
 
   pMaterial->SetVectorParameterValueByInfo(
       FMaterialParameterInfo("WaterMaskTranslationScale", assocation, index),
-      FLinearColor(
+      FVector(
           loadResult.waterMaskTranslationX,
           loadResult.waterMaskTranslationY,
           loadResult.waterMaskScale));
@@ -1519,17 +1519,14 @@ static void loadPrimitiveGameThreadPart(
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
   // UE 4.26 or earlier
   pStaticMesh->bIsBuiltAtRuntime = true;
-  pStaticMesh->RenderData =
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData);
+  pStaticMesh->RenderData = std::move(loadResult.RenderData);
 #elif ENGINE_MAJOR_VERSION == 4
   // UE 4.27 or later
   pStaticMesh->SetIsBuiltAtRuntime(true);
-  pStaticMesh->SetRenderData(
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #else
   // UE 5
-  pStaticMesh->SetRenderData(
-      TUniquePtr<FStaticMeshRenderData>(loadResult.RenderData));
+  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #endif
 
   const CesiumGltf::Model& model = *loadResult.pModel;
@@ -1659,7 +1656,7 @@ static void loadPrimitiveGameThreadPart(
 
   if (loadResult.pCollisionMesh) {
 #if PHYSICS_INTERFACE_PHYSX
-    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh);
+    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh.Release());
 #else
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif
@@ -1686,24 +1683,24 @@ public:
 };
 } // namespace
 
-/*static*/ std::unique_ptr<UCesiumGltfComponent::HalfConstructed>
+/*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
     const CreateModelOptions& Options) {
-  auto pResult = std::make_unique<HalfConstructedReal>();
+  auto pResult = MakeUnique<HalfConstructedReal>();
   pResult->loadModelResult = loadModelAnyThreadPart(Transform, Options);
   return pResult;
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
     AActor* pParentActor,
-    std::unique_ptr<HalfConstructed> pHalfConstructed,
+    TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters) {
   HalfConstructedReal* pReal =
-      static_cast<HalfConstructedReal*>(pHalfConstructed.get());
+      static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
   // TODO: was this a common case before?
   // (This code checked if there were no loaded primitives in the model)
@@ -1824,11 +1821,15 @@ void UCesiumGltfComponent::AttachRasterTile(
     const glm::dvec2& scale,
     int32 textureCoordinateID) {
 
+#if CESIUM_UNREAL_ENGINE_DOUBLE
+  FVector4 translationAndScale(translation.x, translation.y, scale.x, scale.y);
+#else
   FLinearColor translationAndScale(
       translation.x,
       translation.y,
       scale.x,
       scale.y);
+#endif
 
   forEachPrimitiveComponent(
       this,
@@ -1865,8 +1866,9 @@ void UCesiumGltfComponent::AttachRasterTile(
                     "TextureCoordinateIndex",
                     EMaterialParameterAssociation::LayerParameter,
                     i),
-                pPrimitive
-                    ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
+                static_cast<float>(
+                    pPrimitive->overlayTextureCoordinateIDToUVIndex
+                        [textureCoordinateID]));
           }
         } else {
           pMaterial->SetTextureParameterValue(
@@ -1881,8 +1883,8 @@ void UCesiumGltfComponent::AttachRasterTile(
               createSafeName(
                   rasterTile.getOverlay().getName(),
                   "_TextureCoordinateIndex"),
-              pPrimitive
-                  ->overlayTextureCoordinateIDToUVIndex[textureCoordinateID]);
+              static_cast<float>(pPrimitive->overlayTextureCoordinateIDToUVIndex
+                                     [textureCoordinateID]));
         }
       });
 }

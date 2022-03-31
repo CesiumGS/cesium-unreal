@@ -13,12 +13,13 @@
 
 using namespace CesiumGltf;
 
-static FTexturePlatformData*
+static TUniquePtr<FTexturePlatformData>
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   if (sizeX > 0 && sizeY > 0 &&
       (sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
       (sizeY % GPixelFormats[format].BlockSizeY) == 0) {
-    FTexturePlatformData* pTexturePlatformData = new FTexturePlatformData();
+    TUniquePtr<FTexturePlatformData> pTexturePlatformData =
+        MakeUnique<FTexturePlatformData>();
     pTexturePlatformData->SizeX = sizeX;
     pTexturePlatformData->SizeY = sizeY;
     pTexturePlatformData->PixelFormat = format;
@@ -29,12 +30,14 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   }
 }
 
-/*static*/ CesiumTextureUtility::LoadedTextureResult*
+/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
-    const TextureFilter& filter) {
+    const TextureFilter& filter,
+    const TextureGroup& group,
+    bool generateMipMaps) {
 
   CESIUM_TRACE("CesiumTextureUtility::loadTextureAnyThreadPart");
 
@@ -93,7 +96,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     };
   }
 
-  LoadedTextureResult* pResult = new LoadedTextureResult{};
+  TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
   pResult->pTextureData =
       createTexturePlatformData(image.width, image.height, pixelFormat);
   if (!pResult->pTextureData) {
@@ -103,6 +106,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   pResult->addressX = addressX;
   pResult->addressY = addressY;
   pResult->filter = filter;
+  pResult->group = group;
 
   if (!image.mipPositions.empty()) {
     int32_t width = image.width;
@@ -170,7 +174,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
           image.pixelData.size());
     }
 
-    if (pResult->filter == TextureFilter::TF_Trilinear) {
+    if (generateMipMaps) {
       CESIUM_TRACE("Generate new mips.");
 
       // Generate mip levels.
@@ -229,7 +233,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return pResult;
 }
 
-/*static*/ CesiumTextureUtility::LoadedTextureResult*
+/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
 CesiumTextureUtility::loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture) {
@@ -272,6 +276,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   TextureAddress addressY = TextureAddress::TA_Wrap;
 
   TextureFilter filter = TextureFilter::TF_Default;
+  bool useMipMaps = false;
 
   if (pSampler) {
     switch (pSampler->wrapS) {
@@ -298,65 +303,92 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
       break;
     }
 
-    // Unreal Engine's available filtering modes are only nearest, bilinear, and
-    // trilinear, and are not specified separately for minification and
-    // magnification. So we get as close as we can.
-    if (!image.mipPositions.empty()) {
-      filter = TextureFilter::TF_Trilinear;
-    } else if (!pSampler->minFilter && !pSampler->magFilter) {
-      filter = TextureFilter::TF_Default;
-    } else if (
-        (!pSampler->minFilter ||
-         pSampler->minFilter == CesiumGltf::Sampler::MinFilter::NEAREST) &&
-        (!pSampler->magFilter ||
-         pSampler->magFilter == CesiumGltf::Sampler::MagFilter::NEAREST)) {
-      filter = TextureFilter::TF_Nearest;
+    // Unreal Engine's available filtering modes are only nearest, bilinear,
+    // trilinear, and "default". Default means "use the texture group settings",
+    // and the texture group settings are defined in a config file and can
+    // vary per platform. All filter modes can use mipmaps if they're available,
+    // but only TF_Default will ever use anisotropic texture filtering.
+    //
+    // Unreal also doesn't separate the minification filter from the
+    // magnification filter. So we'll just ignore the magFilter unless it's the
+    // only filter specified.
+    //
+    // Generally our bias is toward TF_Default, because that gives the user more
+    // control via texture groups.
+
+    if (pSampler->magFilter && !pSampler->minFilter) {
+      // Only a magnification filter is specified, so use it.
+      filter =
+          pSampler->magFilter.value() == CesiumGltf::Sampler::MagFilter::NEAREST
+              ? TextureFilter::TF_Nearest
+              : TextureFilter::TF_Default;
     } else if (pSampler->minFilter) {
+      // Use specified minFilter.
       switch (pSampler->minFilter.value()) {
-      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
-      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
-      case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+      case CesiumGltf::Sampler::MinFilter::NEAREST:
       case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
-        filter = TextureFilter::TF_Trilinear;
+        filter = TextureFilter::TF_Nearest;
         break;
-      default:
+      case CesiumGltf::Sampler::MinFilter::LINEAR:
+      case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
         filter = TextureFilter::TF_Bilinear;
         break;
+      default:
+        filter = TextureFilter::TF_Default;
+        break;
       }
-    } else if (pSampler->magFilter) {
-      filter = pSampler->magFilter == CesiumGltf::Sampler::MagFilter::LINEAR
-                   ? TextureFilter::TF_Bilinear
-                   : TextureFilter::TF_Nearest;
+    } else {
+      // No filtering specified at all, let the texture group decide.
+      filter = TextureFilter::TF_Default;
+    }
+
+    switch (pSampler->minFilter.value_or(
+        CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR)) {
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::LINEAR_MIPMAP_NEAREST:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_LINEAR:
+    case CesiumGltf::Sampler::MinFilter::NEAREST_MIPMAP_NEAREST:
+      useMipMaps = true;
+      break;
+    default: // LINEAR and NEAREST
+      useMipMaps = false;
+      break;
     }
   }
 
-  return loadTextureAnyThreadPart(image, addressX, addressY, filter);
+  return loadTextureAnyThreadPart(
+      image,
+      addressX,
+      addressY,
+      filter,
+      TextureGroup::TEXTUREGROUP_World,
+      useMipMaps);
 }
 
-/*static*/ bool CesiumTextureUtility::loadTextureGameThreadPart(
+/*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
     LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
-    return false;
+    return nullptr;
   }
 
   UTexture2D*& pTexture = pHalfLoadedTexture->pTexture;
-
-  if (!pTexture) {
+  if (!pTexture && pHalfLoadedTexture->pTextureData) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
         NAME_None,
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
 #if ENGINE_MAJOR_VERSION >= 5
-    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData);
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
 #else
-    pTexture->PlatformData = pHalfLoadedTexture->pTextureData;
+    pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
 #endif
     pTexture->AddressX = pHalfLoadedTexture->addressX;
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
+    pTexture->LODGroup = pHalfLoadedTexture->group;
     pTexture->UpdateResource();
   }
 
-  return true;
+  return pTexture;
 }
