@@ -18,12 +18,7 @@ class CESIUMRUNTIME_API UCesiumWebMapServiceRasterOverlay
 
 public:
   /**
-   * The name of the overlay
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  FString OverlayName;
-  /**
-   * The base url of the Tile Map Service (WMS).
+   * The base url of the Web Map Service (WMS).
    * e.g.
    * https://services.ga.gov.au/gis/services/NM_Culture_and_Infrastructure/MapServer/WMSServer
    */
@@ -31,18 +26,10 @@ public:
   FString BaseUrl;
 
   /**
-   * Comma separated layer names.
+   * Comma-separated layer names to request from the server.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString Layers;
-
-  /**
-   * True to directly specify minum and maximum zoom levels available from the
-   * server, or false to automatically determine the minimum and maximum zoom
-   * levels from the server's tilemapresource.xml file.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool bSpecifyZoomLevels = false;
 
   /**
    * Image width
@@ -66,12 +53,16 @@ public:
 
   /**
    * Minimum zoom level.
+   *
+   * Take care when specifying this that the number of tiles at the minimum
+   * level is small, such as four or less. A larger number is likely to
+   * result in rendering problems.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
+      meta = (ClampMin = 0))
   int32 MinimumLevel = 0;
 
   /**
@@ -81,15 +72,8 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      meta = (EditCondition = "bSpecifyZoomLevels", ClampMin = 0))
-  int32 MaximumLevel = 10;
-
-#if WITH_EDITOR
-
-  virtual void
-  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-
-#endif
+      meta = (ClampMin = 0))
+  int32 MaximumLevel = 14;
 
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(

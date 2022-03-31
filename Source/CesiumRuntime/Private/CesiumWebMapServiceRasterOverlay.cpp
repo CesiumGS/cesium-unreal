@@ -10,7 +10,7 @@ UCesiumWebMapServiceRasterOverlay::CreateOverlay(
     const Cesium3DTilesSelection::RasterOverlayOptions& options) {
 
   Cesium3DTilesSelection::WebMapServiceRasterOverlayOptions wmsOptions;
-  if (MaximumLevel > MinimumLevel && bSpecifyZoomLevels) {
+  if (MaximumLevel > MinimumLevel) {
     wmsOptions.minimumLevel = MinimumLevel;
     wmsOptions.maximumLevel = MaximumLevel;
   }
@@ -24,26 +24,3 @@ UCesiumWebMapServiceRasterOverlay::CreateOverlay(
       wmsOptions,
       options);
 }
-
-#if WITH_EDITOR
-
-void UCesiumWebMapServiceRasterOverlay::PostEditChangeProperty(
-    FPropertyChangedEvent& PropertyChangedEvent) {
-
-  if (PropertyChangedEvent.Property &&
-      (PropertyChangedEvent.Property->GetFName() ==
-       GET_MEMBER_NAME_CHECKED(UCesiumWebMapServiceRasterOverlay, Layers))) {
-    TArray<FString> OutArray;
-    Layers.ParseIntoArray(OutArray, TEXT(","));
-    TArray<FString> EncodedArray;
-
-    Algo::Transform(OutArray, EncodedArray, [](auto& Layer) {
-      return Layer.Replace(TEXT(" "), TEXT("%20"));
-    });
-    Layers = FString::Join(EncodedArray, TEXT(","));
-  }
-
-  Super::PostEditChangeProperty(PropertyChangedEvent);
-}
-
-#endif
