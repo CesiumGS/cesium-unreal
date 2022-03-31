@@ -5,7 +5,8 @@
 ##### Breaking Changes :mega:
 
 - Removed the `KeepWorldOriginNearCamera`, `OriginRebaseInsideSublevels`, and `MaximumWorldOriginDistanceFromCamera` options from `CesiumGeoreference`. These options are not usually necessary with Unreal Engine 5's double-precision coordinates.
-- Renamed the `WorldOriginCamera` property on `CesiumGeoreference` to `SubLevelCamera`, as this property is now only used for switching sub-levels.
+- Renamed the `WorldOriginCamera` property on `CesiumGeoreference` to `SubLevelCamera`, as this property is now only used for switching sub-levels. Core Redirects should automatically make this change in Blueprints.
+- Removed `Inaccurate` from the name of a large number of Blueprint functions, now that Unreal Engine 5 supports double-precision in Blueprints. Core Redirects should automatically make this change in Blueprints.
 
 ##### Fixes :wrench:
 
