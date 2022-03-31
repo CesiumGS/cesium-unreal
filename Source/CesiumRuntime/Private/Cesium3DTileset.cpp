@@ -783,12 +783,13 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
-  if (!pWorldSettings || !pWorldSettings->bEnableLargeWorlds) {
+  if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
+    pWorldSettings->bEnableLargeWorlds = true;
     UE_LOG(
         LogCesium,
-        Error,
+        Warning,
         TEXT(
-            "Cesium for Unreal requires that \"Enable Large Worlds\" be checked in World Settings. Otherwise, expect incorrect culling (missing tiles) and other problems."),
+            "Cesium for Unreal has enabled the \"Enable Large Worlds\" option in this world's settings, as it is required in order to avoid serious culling problems with Cesium3DTilesets in Unreal Engine 5."),
         *this->Url);
   }
 

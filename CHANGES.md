@@ -2,13 +2,20 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- Removed the `KeepWorldOriginNearCamera`, `OriginRebaseInsideSublevels`, and `MaximumWorldOriginDistanceFromCamera` options from `CesiumGeoreference`. These options are not usually necessary with Unreal Engine 5's double-precision coordinates.
+- Renamed the `WorldOriginCamera` property on `CesiumGeoreference` to `SubLevelCamera`, as this property is now only used for switching sub-levels.
+
 ##### Fixes :wrench:
 
 - Fixed a bug introduced in v1.11.0 that used the Y-size of the right eye viewport for the left eye in tile selection for stereographic rendering.
 - Fixed a bug where glTF primitives with no render data are added to the glTF render result.
+- Fixed a bug that could sometimes lead to a crash when switching levels.
 
 ##### Additions :tada:
 
+- Cesium for Unreal automatically enables Unreal Engine 5's "Enable Large Worlds" setting, which is required for correct culling of Cesium tilesets.
 - Add option to raster overlay to enable anisotropic filtering of raster overlay textures to reduce flickering.
 - Added option to show credits on screen for both tileset and raster overlay.
 
