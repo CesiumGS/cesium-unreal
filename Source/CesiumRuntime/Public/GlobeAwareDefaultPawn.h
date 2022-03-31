@@ -121,7 +121,7 @@ public:
    * {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateFlyToLocationECEF(
+  void FlyToLocationECEF(
       const FVector& ECEFDestination,
       double YawAtDestination,
       double PitchAtDestination,
@@ -150,7 +150,7 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateFlyToLocationLongitudeLatitudeHeight(
+  void FlyToLocationLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeightDestination,
       double YawAtDestination,
       double PitchAtDestination,

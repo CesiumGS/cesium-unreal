@@ -184,13 +184,9 @@ public:
    * longitude (degrees), `Y` is latitude (degrees), and `Z` is height above the
    * ellipsoid (meters). Only valid if the placement type is Cartographic Origin
    * (i.e. Longitude / Latitude / Height).
-   *
-   * This converts the values to single-precision floating point values.
-   * The double-precision values can be accessed via the
-   * OriginLongitude, OriginLatitude and OriginHeight properties.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateGetGeoreferenceOriginLongitudeLatitudeHeight() const;
+  FVector GetGeoreferenceOriginLongitudeLatitudeHeight() const;
 
   /**
    * This aligns the specified longitude in degrees (x), latitude in
@@ -230,7 +226,7 @@ public:
    * the bounds of a sublevel, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateSetGeoreferenceOriginLongitudeLatitudeHeight(
+  void SetGeoreferenceOriginLongitudeLatitudeHeight(
       const FVector& TargetLongitudeLatitudeHeight);
 
   /**
@@ -242,7 +238,7 @@ public:
    * the bounds of a sublevel, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateSetGeoreferenceOriginEcef(const FVector& TargetEcef);
+  void SetGeoreferenceOriginEcef(const FVector& TargetEcef);
 
   /*
    * USEFUL CONVERSION FUNCTIONS
@@ -266,7 +262,7 @@ public:
    * TransformLongitudeLatitudeHeightToEcef can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateTransformLongitudeLatitudeHeightToEcef(
+  FVector TransformLongitudeLatitudeHeightToEcef(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
@@ -281,14 +277,9 @@ public:
    * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
    * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
    * the ellipsoid in meters (z).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformEcefToLongitudeLatitudeHeight can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector
-  InaccurateTransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
+  FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
@@ -302,13 +293,9 @@ public:
    * Transforms the given longitude in degrees (x), latitude in
    * degrees (y), and height above the ellipsoid in meters (z) into Unreal world
    * coordinates (relative to the floating origin).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformLongitudeLatitudeHeightToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateTransformLongitudeLatitudeHeightToUnreal(
+  FVector TransformLongitudeLatitudeHeightToUnreal(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
@@ -323,14 +310,9 @@ public:
    * Transforms Unreal world coordinates (relative to the floating origin) into
    * longitude in degrees (x), latitude in degrees (y), and height above the
    * ellipsoid in meters (z).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformUnrealToLongitudeLatitudeHeight can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateTransformUnrealToLongitudeLatitudeHeight(
-      const FVector& Unreal) const;
+  FVector TransformUnrealToLongitudeLatitudeHeight(const FVector& Unreal) const;
 
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
@@ -341,13 +323,9 @@ public:
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
    * Unreal relative world (relative to the floating origin).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformEcefToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateTransformEcefToUnreal(const FVector& Ecef) const;
+  FVector TransformEcefToUnreal(const FVector& Ecef) const;
 
   /**
    * Transforms the given point from Unreal relative world (relative to the
@@ -358,13 +336,9 @@ public:
   /**
    * Transforms the given point from Unreal relative world (relative to the
    * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformUnrealToEcef can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector InaccurateTransformUnrealToEcef(const FVector& Unreal) const;
+  FVector TransformUnrealToEcef(const FVector& Unreal) const;
 
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
@@ -377,13 +351,9 @@ public:
   /**
    * Transforms a rotator from Unreal world to East-North-Up at the given
    * Unreal world location (relative to the floating origin).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformRotatorUnrealToEastNorthUp can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FRotator InaccurateTransformRotatorUnrealToEastNorthUp(
+  FRotator TransformRotatorUnrealToEastNorthUp(
       const FRotator& UnrealRotator,
       const FVector& UnrealLocation) const;
 
@@ -398,13 +368,9 @@ public:
   /**
    * Transforms a rotator from East-North-Up to Unreal world at the given
    * Unreal world location (relative to the floating origin).
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformRotatorEastNorthUpToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FRotator InaccurateTransformRotatorEastNorthUpToUnreal(
+  FRotator TransformRotatorEastNorthUpToUnreal(
       const FRotator& EnuRotator,
       const FVector& UnrealLocation) const;
 
@@ -421,13 +387,9 @@ public:
    * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * ComputeEastNorthUpToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& Unreal) const;
+  FMatrix ComputeEastNorthUpToUnreal(const FVector& Unreal) const;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to
@@ -438,13 +400,9 @@ public:
   /**
    * Computes the rotation matrix from the local East-North-Up to
    * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * ComputeEastNorthUpToEcef can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FMatrix InaccurateComputeEastNorthUpToEcef(const FVector& Ecef) const;
+  FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
 
   /**
    * @brief Computes the normal of the plane tangent to the surface of the

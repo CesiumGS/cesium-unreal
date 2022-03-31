@@ -44,7 +44,7 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
 
   glm::dvec4 upEcef(
       CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
-          this->GlobeAnchor->GetECEF()),
+          VecMath::createVector3D(this->GlobeAnchor->GetECEF())),
       0.0);
   glm::dvec4 up = this->GlobeAnchor->ResolveGeoreference()
                       ->GetGeoTransforms()
@@ -71,7 +71,7 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
 
   // Transform the rotation in the ESU frame to the Unreal world frame.
   FMatrix enuAdjustmentMatrix =
-      this->GetGeoreference()->InaccurateComputeEastNorthUpToUnreal(
+      this->GetGeoreference()->ComputeEastNorthUpToUnreal(
           this->GetPawnViewLocation());
 
   return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
@@ -93,7 +93,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   PitchAtDestination = glm::clamp(PitchAtDestination, -89.99, 89.99);
   // Compute source location in ECEF
-  glm::dvec3 ECEFSource = this->GlobeAnchor->GetECEF();
+  glm::dvec3 ECEFSource = VecMath::createVector3D(this->GlobeAnchor->GetECEF());
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
@@ -186,7 +186,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   this->_bCanInterruptFlight = CanInterruptByMoving;
 }
 
-void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
+void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     const FVector& ECEFDestination,
     double YawAtDestination,
     double PitchAtDestination,
@@ -223,7 +223,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
 }
 
 UFUNCTION(BlueprintCallable)
-void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
+void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     const FVector& LongitudeLatitudeHeightDestination,
     double YawAtDestination,
     double PitchAtDestination,
