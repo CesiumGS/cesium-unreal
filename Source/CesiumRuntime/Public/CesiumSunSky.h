@@ -406,7 +406,8 @@ protected:
    * @param Radius The radius in kilometers.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, double Radius);
+  void
+  SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, double Radius);
 
   /**
    * Update MobileSkySphere by calling its RefreshMaterial function
