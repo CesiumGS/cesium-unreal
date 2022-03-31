@@ -18,6 +18,7 @@
 - Cesium for Unreal automatically enables Unreal Engine 5's "Enable Large Worlds" setting, which is required for correct culling of Cesium tilesets.
 - Add option to raster overlay to enable anisotropic filtering of raster overlay textures to reduce flickering.
 - Added option to show credits on screen for both tileset and raster overlay.
+- Added Blueprints functions to get metadata as Float64 (double-precision) values.
 
 ### v1.11.0 - 2022-03-01
 

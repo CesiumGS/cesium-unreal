@@ -268,3 +268,53 @@ template <> struct CesiumMetadataConversions<float, std::string_view> {
     return defaultValue;
   }
 };
+
+//
+// Conversions to double
+//
+
+// bool -> double
+template <> struct CesiumMetadataConversions<double, bool> {
+  static double convert(bool from, double defaultValue) {
+    return from ? 1.0 : 0.0;
+  }
+};
+
+// any integer -> double
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    double,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
+  static double convert(TFrom from, double defaultValue) {
+    return static_cast<double>(from);
+  }
+};
+
+// float -> double
+template <> struct CesiumMetadataConversions<double, float> {
+  static double convert(float from, double defaultValue) {
+    return static_cast<double>(from);
+  }
+};
+
+// string -> double
+template <> struct CesiumMetadataConversions<double, std::string_view> {
+  static double convert(const std::string_view& from, double defaultValue) {
+    // Amazingly, C++ has no* string parsing functions that work with strings
+    // that might not be null-terminated. So we have to copy to a std::string
+    // (which _is_ guaranteed to be null terminated) before parsing.
+    // * except std::from_chars, but compiler/library support for the
+    //   floating-point version of that method is spotty at best.
+    std::string temp(from);
+
+    char* pLastUsed;
+    double parsedValue = std::strtod(temp.c_str(), &pLastUsed);
+    if (pLastUsed == temp.c_str() + temp.size()) {
+      // Successfully parsed the entire string as a float.
+      return parsedValue;
+    }
+
+    return defaultValue;
+  }
+};

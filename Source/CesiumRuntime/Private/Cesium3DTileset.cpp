@@ -1020,7 +1020,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     return {};
   }
 
-  float worldToMeters = 100.0f;
+  double worldToMeters = 100.0;
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings) {
     worldToMeters = pWorldSettings->WorldToMeters;
@@ -1056,7 +1056,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    float fov = pPlayerCameraManager->GetFOVAngle();
+    double fov = pPlayerCameraManager->GetFOVAngle();
 
     FVector location;
     FRotator rotation;
@@ -1198,7 +1198,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 
     FVector captureLocation = pSceneCaptureComponent->GetComponentLocation();
     FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
-    float captureFov = pSceneCaptureComponent->FOVAngle;
+    double captureFov = pSceneCaptureComponent->FOVAngle;
 
     cameras.emplace_back(
         renderTargetSize,
@@ -1296,7 +1296,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-    float fov = pEditorViewportClient->ViewFOV;
+    double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);

@@ -88,6 +88,18 @@ float UCesiumMetadataGenericValueBlueprintLibrary::GetFloat(
       Value._value);
 }
 
+double UCesiumMetadataGenericValueBlueprintLibrary::GetFloat64(
+    UPARAM(ref) const FCesiumMetadataGenericValue& Value,
+    double DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> double {
+        return CesiumMetadataConversions<double, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
 FString UCesiumMetadataGenericValueBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataGenericValue& Value,
     const FString& DefaultValue) {
