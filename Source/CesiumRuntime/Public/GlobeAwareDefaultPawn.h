@@ -108,8 +108,8 @@ public:
    */
   void FlyToLocationECEF(
       const glm::dvec3& ECEFDestination,
-      float YawAtDestination,
-      float PitchAtDestination,
+      double YawAtDestination,
+      double PitchAtDestination,
       bool CanInterruptByMoving);
 
   /**
@@ -121,10 +121,10 @@ public:
    * {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateFlyToLocationECEF(
+  void FlyToLocationECEF(
       const FVector& ECEFDestination,
-      float YawAtDestination,
-      float PitchAtDestination,
+      double YawAtDestination,
+      double PitchAtDestination,
       bool CanInterruptByMoving);
 
   /**
@@ -137,8 +137,8 @@ public:
    */
   void FlyToLocationLongitudeLatitudeHeight(
       const glm::dvec3& LongitudeLatitudeHeightDestination,
-      float YawAtDestination,
-      float PitchAtDestination,
+      double YawAtDestination,
+      double PitchAtDestination,
       bool CanInterruptByMoving);
 
   /**
@@ -150,10 +150,10 @@ public:
    * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InaccurateFlyToLocationLongitudeLatitudeHeight(
+  void FlyToLocationLongitudeLatitudeHeight(
       const FVector& LongitudeLatitudeHeightDestination,
-      float YawAtDestination,
-      float PitchAtDestination,
+      double YawAtDestination,
+      double PitchAtDestination,
       bool CanInterruptByMoving);
 
   virtual bool ShouldTickIfViewportsOnly() const override;
@@ -191,8 +191,8 @@ protected:
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
 private:
-  void _moveAlongViewAxis(EAxis::Type axis, float Val);
-  void _moveAlongVector(const FVector& axis, float Val);
+  void _moveAlongViewAxis(EAxis::Type axis, double Val);
+  void _moveAlongVector(const FVector& axis, double Val);
   void _interruptFlight();
 
   /**

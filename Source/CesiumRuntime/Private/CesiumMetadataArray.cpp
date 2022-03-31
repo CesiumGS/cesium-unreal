@@ -91,6 +91,20 @@ float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
       array._value);
 }
 
+double UCesiumMetadataArrayBlueprintLibrary::GetFloat64(
+    UPARAM(ref) const FCesiumMetadataArray& array,
+    int64 index,
+    double defaultValue) {
+  return std::visit(
+      [index, defaultValue](const auto& v) -> double {
+        auto value = v[index];
+        return CesiumMetadataConversions<double, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      array._value);
+}
+
 FString UCesiumMetadataArrayBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataArray& array,
     int64 index,

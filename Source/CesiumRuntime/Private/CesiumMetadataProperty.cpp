@@ -105,6 +105,20 @@ float UCesiumMetadataPropertyBlueprintLibrary::GetFloat(
       Property._property);
 }
 
+double UCesiumMetadataPropertyBlueprintLibrary::GetFloat64(
+    UPARAM(ref) const FCesiumMetadataProperty& Property,
+    int64 featureID,
+    double defaultValue) {
+  return std::visit(
+      [featureID, defaultValue](const auto& v) -> double {
+        auto value = v.get(featureID);
+        return CesiumMetadataConversions<double, decltype(value)>::convert(
+            value,
+            defaultValue);
+      },
+      Property._property);
+}
+
 FString UCesiumMetadataPropertyBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataProperty& Property,
     int64 featureID,
