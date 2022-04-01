@@ -132,7 +132,8 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
-  - name: Combine
+  - stage: Combine Packages
+    name: Combine 5.0 preview 2
     os: linux
     dist: focal
     git:
