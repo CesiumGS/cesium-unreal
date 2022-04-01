@@ -12,7 +12,7 @@ jobs:
     - npm install
     - npm run format -- --dry-run -Werror
   - stage: Build OS Packages
-    name: Windows 5.0.0 preview 2
+    name: Windows 5.0 preview 2
     os: windows
     install:
     - df -k
@@ -34,7 +34,7 @@ jobs:
     - df -k
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
-    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-500p2-windows-${CESIUM_UNREAL_VERSION}
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-50p2-windows-${CESIUM_UNREAL_VERSION}
     - mkdir -p extern/build
     - cd extern/build
     - cmake .. -A x64
@@ -53,3 +53,111 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE5.0p2-Windows "target_url=${PACKAGE_LINK}" --ignore-stdin
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+  - name: Linux 5.0 preview 2
+    os: windows
+    cache:
+      timeout: 1000
+    install:
+    - choco install 7zip.portable
+    - choco install python --version 3.9.2
+    - choco install wget
+    - choco install ninja
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
+    - pip3 install httpie
+    - travis_wait 30 "./travis/travis-get-ue-linux-crosscompile-toolchain-427.sh"
+    - travis_wait 30 "./travis/travis-get-ue-500p2.sh"
+    script:
+    - export UNREAL_ENGINE_DIR=/c/Epic/UE_5.0
+    - export LINUX_MULTIARCH_ROOT=/c/UnrealToolchains/v19_clang-11.0.1-centos7/
+    - export UNREAL_ENGINE_COMPILER_DIR=${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu
+    - export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-50p2-linux-${CESIUM_UNREAL_VERSION}
+    - mkdir -p extern/build
+    - cd extern
+    - cmake --version
+    - cmake -G Ninja -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-from-windows-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+    - cat /c/Users/travis/build/CesiumGS/cesium-unreal/extern/build/CMakeFiles/CMakeError.log
+    - cmake --build build -j 4 --target install
+    - cd ..
+    - rm -rf extern
+    - export CLONEDIR=$PWD
+    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"5.0.0\"/g' CesiumForUnreal.uplugin"
+    - cd /c/Epic/UE_5.0/Engine/Build/BatchFiles
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
+    - cd "$CLONEDIR/../packages"
+    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+  - name: Android 5.0 preview 2
+    os: windows
+    cache:
+      timeout: 1000
+      directories:
+      - $HOME/android-ndk-r21e
+    install:
+    - choco install 7zip.portable
+    - choco install python --version 3.9.2
+    - choco install wget
+    - choco install ninja
+    - python -m pip install --upgrade pip
+    - pip3 install --upgrade pip
+    - pip3 install awscli
+    - pip3 install httpie
+    - travis_wait 30 "./travis/travis-get-ue-500p2.sh"
+    - travis_wait 30 "./travis/travis-get-android-ndk.sh"
+    before_script:
+    - export ANDROID_NDK_ROOT=$HOME/android-ndk-r21e
+    - export NDKROOT=$ANDROID_NDK_ROOT
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-50p2-android-${CESIUM_UNREAL_VERSION}
+    - mkdir -p extern/build-android
+    - cd extern/build-android
+    - cmake .. -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+    - cd ../..
+    script:
+    - cd extern/build-android
+    - cmake --build . --config Release --target install
+    - cd ../..
+    - rm -rf extern
+    - export CLONEDIR=$PWD
+    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"5.0.0\"/g' CesiumForUnreal.uplugin"
+    - cd /c/Epic/UE_5.0/Engine/Build/BatchFiles
+    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+    - cd "$CLONEDIR/../packages"
+    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
+    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
+    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+  - name: Combine
+    os: linux
+    dist: focal
+    git:
+      submodules: false
+    install:
+    - # As of 2021-08-23, the server listed in the rabbitmq PPA has an expired certificate
+    - # and breaks our ability to update. We don't need it, so remove it.
+    - sudo rm /etc/apt/sources.list.d/rabbitmq.list
+    - sudo apt-get update
+    - sudo apt-get install unzip zip awscli httpie
+    script:
+    - export CESIUM_UNREAL_VERSION=$(git describe)
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-50p2-linux-${CESIUM_UNREAL_VERSION}.zip .
+    - #aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-50p2-macos-${CESIUM_UNREAL_VERSION}.zip .
+    - #aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-50p2-ios-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-50p2-android-${CESIUM_UNREAL_VERSION}.zip .
+    - aws s3 cp s3://builds-cesium-unreal/CesiumForUnreal-50p2-windows-${CESIUM_UNREAL_VERSION}.zip .
+    - mkdir -p build/package
+    - cd build/package
+    - unzip ../../CesiumForUnreal-50p2-linux-${CESIUM_UNREAL_VERSION}.zip
+    - #unzip -o ../../CesiumForUnreal-50p2-macos-${CESIUM_UNREAL_VERSION}.zip
+    - #unzip -o ../../CesiumForUnreal-50p2-ios-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-50p2-android-${CESIUM_UNREAL_VERSION}.zip
+    - unzip -o ../../CesiumForUnreal-50p2-windows-${CESIUM_UNREAL_VERSION}.zip
+    - zip -r CesiumForUnreal-50p2-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
+    - aws s3 cp CesiumForUnreal-50p2-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
+    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-50p2-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
+    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE5.0p2 -AllPlatforms "target_url=${PACKAGE_LINK}" --ignore-stdin
