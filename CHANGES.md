@@ -1,11 +1,23 @@
 # Change Log
 
-### ? - ?
+### v1.12.0 - 2022-04-01
+
+##### Additions :tada:
+
+- Raster overlays are now, by default, rendered using the default settings for the `World` texture group, which yields much higher quality on many platforms by enabling anisotrpic texture filtering. Shimmering of overlay textures in the distance should be drastically reduced.
+- New options on `RasterOverlay` give the user control over the texture group, texture filtering, and mipmapping used for overlay textures.
+- Improved the mapping between glTF textures and Unreal Engine texture options, which should improve texture quality in tilesets.
+- Added `CesiumWebMapServiceRasterOverlay` to pull raster overlays from a WMS server.
+- Added option to show `Cesium3DTileset` and `CesiumRasterOverlay` credits on screen, rather than in a separate popup.
 
 ##### Fixes :wrench:
 
+- Fixed a leak of some of the memory used by tiles that were loaded but then ended up not being used because the camera had moved.
+- Fixed a leak of glTF emissive textures.
 - Fixed a bug introduced in v1.11.0 that used the Y-size of the right eye viewport for the left eye in tile selection for stereographic rendering.
 - Fixed a bug where glTF primitives with no render data are added to the glTF render result.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.13.0 to v0.14.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.11.0 - 2022-03-01
 
