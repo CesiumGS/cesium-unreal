@@ -1,5 +1,7 @@
 [![Cesium for Unreal Logo](Content/Cesium-for-Unreal-Logo-WhiteBGH.jpg)](https://cesium.com/unreal-marketplace?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal)
 
+_This branch targets Unreal Engine 4. There is also a branch targeting [Unreal Engine 5](../ue5-main/README.md)_
+
 Cesium for Unreal brings the 3D geospatial ecosystem to Unreal Engine. By combining a high-accuracy full-scale WGS84 globe, open APIs and open standards for spatial indexing such as 3D Tiles, and cloud-based real-world content from [Cesium ion](https://cesium.com/cesium-ion) with Unreal Engine, this project enables a new era of 3D geospatial software.
 
 [Cesium for Unreal Homepage](https://cesium.com/cesium-for-unreal?utm_source=github&utm_medium=github&utm_campaign=unreal)
