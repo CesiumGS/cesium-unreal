@@ -277,11 +277,29 @@ static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {
   return LoadObjFromPath<UMaterialFunction>(Path);
 }
 
-// Not exhaustive in fixing unsafe names. Add more functionality here as needed
-// when in-compatible metadata names arise as recurring problems.
+// The result should be a safe hlsl identifier, but any name clashes after
+// fixing safety will not be automatically handled.
 static FString createHlslSafeName(const FString& rawName) {
+  static const FString identifierHeadChar =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+  static const FString identifierTailChar = identifierHeadChar + "0123456789";
+
   FString safeName = rawName;
-  safeName.ReplaceCharInline(':', '_', ESearchCase::Type::IgnoreCase);
+  int32 _;
+  if (safeName.Len() == 0) {
+    return "_";
+  } else {
+    if (!identifierHeadChar.FindChar(safeName[0], _)) {
+      safeName = "_" + safeName;
+    }
+  }
+
+  for (size_t i = 1; i < safeName.Len(); ++i) {
+    if (!identifierTailChar.FindChar(safeName[i], _)) {
+      safeName[i] = '_';
+    }
+  }
+
   return safeName;
 }
 
