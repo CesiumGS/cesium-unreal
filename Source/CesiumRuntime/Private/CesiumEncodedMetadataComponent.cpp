@@ -387,7 +387,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     return;
   }
 
-  FString MaterialName = pTileset->GetFName().ToString() + "_Metadata_ML";
+  FString MaterialName = "ML_" + pTileset->GetFName().ToString() + "_Metadata";
   FString PackageBaseName = "/Game/";
   FString PackageName = PackageBaseName + MaterialName;
 
