@@ -10,6 +10,7 @@ jobs:
           submodules: recursive
       - name: Build cesium-native
         run: |
+          choco install -y cmake
           mkdir extern/build
           cd extern/build
           cmake .. -A x64
