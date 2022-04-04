@@ -95,8 +95,6 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
-    // TODO: should be some user inputed ECesiumMetadataSupportedGpuType that
-    // we check against the trueType
     ECesiumMetadataTrueType trueType =
         UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(property);
     bool isArray = trueType == ECesiumMetadataTrueType::Array;
@@ -129,6 +127,10 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     };
 
     if (expectedComponentCount != componentCount) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("Unexpected component count in feature table property."));
       continue;
     }
 
@@ -142,11 +144,27 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     }
 
     if (pExpectedProperty->Normalized != isNormalized) {
+      if (isNormalized) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("Unexpected normalization in feature table property."));
+      } else {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("Feature table property not normalized as expected"));
+      }
       continue;
     }
 
     // Only support normalization of uint8 for now
     if (isNormalized && trueType != ECesiumMetadataTrueType::Uint8) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "Feature table property has unexpected type for normalization, only normalization of Uint8 is supported."));
       continue;
     }
 
@@ -154,6 +172,11 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
         getPixelFormat(gpuType, componentCount, isNormalized);
 
     if (encodedFormat.format == EPixelFormat::PF_Unknown) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "Unable to determine a suitable GPU format for this feature table property."));
       continue;
     }
 
@@ -175,8 +198,12 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
 
     if (!encodedProperty.pTexture->pTextureData) {
-      // TODO: print error?
-      break;
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
+      continue;
     }
 
     FTexture2DMipMap* pMip = new FTexture2DMipMap();
@@ -280,6 +307,10 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
         featureTexturePropertyView.getImage();
 
     if (!pImage) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("This feature texture property does not have a valid image."));
       continue;
     }
 
@@ -302,6 +333,11 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
         pPropertyDescription->Normalized != propertyIt.second.isNormalized() ||
         pPropertyDescription->Swizzle !=
             UTF8_TO_TCHAR(propertyIt.second.getSwizzle().c_str())) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "This feature texture property does not have the expected component count, normalization, or swizzle string."));
       continue;
     }
 
@@ -352,6 +388,11 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
           TextureFilter::TF_Nearest;
 
       if (!encodedFeatureTextureProperty.pTexture->pTextureData) {
+        UE_LOG(
+            LogCesium,
+            Error,
+            TEXT(
+                "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
         continue;
       }
 
@@ -433,6 +474,10 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
             featureIdTextureView.getImage();
 
         if (!pFeatureIdImage) {
+          UE_LOG(
+              LogCesium,
+              Warning,
+              TEXT("Feature id texture missing valid image."));
           continue;
         }
 
@@ -468,6 +513,11 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
 
           if (!encodedFeatureIdTexture.pTexture->pTextureData) {
+            UE_LOG(
+                LogCesium,
+                Error,
+                TEXT(
+                    "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
             continue;
           }
 
