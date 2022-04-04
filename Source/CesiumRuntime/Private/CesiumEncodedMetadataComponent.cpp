@@ -57,14 +57,12 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
           UCesiumFeatureTableBlueprintLibrary::GetProperties(
               featureTableIt.Value);
 
-      FFeatureTableDescription* pFeatureTable = nullptr;
-      for (FFeatureTableDescription& existingFeatureTable :
-           this->FeatureTables) {
-        if (existingFeatureTable.Name == featureTableIt.Key) {
-          pFeatureTable = &existingFeatureTable;
-          break;
-        }
-      }
+      FFeatureTableDescription* pFeatureTable =
+          this->FeatureTables.FindByPredicate(
+              [&featureTableName = featureTableIt.Key](
+                  const FFeatureTableDescription& existingFeatureTable) {
+                return existingFeatureTable.Name == featureTableName;
+              });
 
       if (!pFeatureTable) {
         pFeatureTable = &this->FeatureTables.Emplace_GetRef();
@@ -72,16 +70,12 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
       }
 
       for (const auto& propertyIt : properties) {
-        bool propertyFound = false;
-        for (const FPropertyDescription& existingProperty :
-             pFeatureTable->Properties) {
-          if (existingProperty.Name == propertyIt.Key) {
-            propertyFound = true;
-            break;
-          }
-        }
-
-        if (propertyFound) {
+        if (pFeatureTable->Properties.FindByPredicate(
+                [&propertyName = propertyIt.Key](
+                    const FPropertyDescription& existingProperty) {
+                  return existingProperty.Name == propertyName;
+                })) {
+          // We have already filled this property.
           continue;
         }
 
@@ -140,14 +134,12 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     }
 
     for (const auto& featureTextureIt : featureTextures) {
-      FFeatureTextureDescription* pFeatureTexture = nullptr;
-      for (FFeatureTextureDescription& existingFeatureTexture :
-           this->FeatureTextures) {
-        if (existingFeatureTexture.Name == featureTextureIt.Key) {
-          pFeatureTexture = &existingFeatureTexture;
-          break;
-        }
-      }
+      FFeatureTextureDescription* pFeatureTexture =
+          this->FeatureTextures.FindByPredicate(
+              [&featureTextureName = featureTextureIt.Key](
+                  const FFeatureTextureDescription& existingFeatureTexture) {
+                return existingFeatureTexture.Name == featureTextureName;
+              });
 
       if (!pFeatureTexture) {
         pFeatureTexture = &this->FeatureTextures.Emplace_GetRef();
@@ -159,48 +151,45 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
               featureTextureIt.Value);
 
       for (const FString& propertyName : propertyNames) {
-        bool propertyExists = false;
-        for (const FFeatureTexturePropertyDescription& existingProperty :
-             pFeatureTexture->Properties) {
-          if (existingProperty.Name == propertyName) {
-            propertyExists = true;
-            break;
-          }
+        if (pFeatureTexture->Properties.FindByPredicate(
+                [&propertyName](const FFeatureTexturePropertyDescription&
+                                    existingProperty) {
+                  return propertyName == existingProperty.Name;
+                })) {
+          // We have already filled this property.
+          continue;
         }
 
-        if (!propertyExists) {
-          FCesiumFeatureTextureProperty property =
-              UCesiumFeatureTextureBlueprintLibrary::FindProperty(
-                  featureTextureIt.Value,
-                  propertyName);
-          FFeatureTexturePropertyDescription& propertyDescription =
-              pFeatureTexture->Properties.Emplace_GetRef();
-          propertyDescription.Name = propertyName;
-          propertyDescription.Normalized =
-              UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
-                  property);
+        FCesiumFeatureTextureProperty property =
+            UCesiumFeatureTextureBlueprintLibrary::FindProperty(
+                featureTextureIt.Value,
+                propertyName);
+        FFeatureTexturePropertyDescription& propertyDescription =
+            pFeatureTexture->Properties.Emplace_GetRef();
+        propertyDescription.Name = propertyName;
+        propertyDescription.Normalized =
+            UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
+                property);
 
-          switch (
-              UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
-                  property)) {
-          case 2:
-            propertyDescription.Type = ECesiumPropertyType::Vec2;
-            break;
-          case 3:
-            propertyDescription.Type = ECesiumPropertyType::Vec3;
-            break;
-          case 4:
-            propertyDescription.Type = ECesiumPropertyType::Vec4;
-            break;
-          // case 1:
-          default:
-            propertyDescription.Type = ECesiumPropertyType::Scalar;
-          }
-
-          propertyDescription.Swizzle =
-              UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(
-                  property);
+        switch (
+            UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
+                property)) {
+        case 2:
+          propertyDescription.Type = ECesiumPropertyType::Vec2;
+          break;
+        case 3:
+          propertyDescription.Type = ECesiumPropertyType::Vec3;
+          break;
+        case 4:
+          propertyDescription.Type = ECesiumPropertyType::Vec4;
+          break;
+        // case 1:
+        default:
+          propertyDescription.Type = ECesiumPropertyType::Scalar;
         }
+
+        propertyDescription.Swizzle =
+            UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(property);
       }
     }
   }

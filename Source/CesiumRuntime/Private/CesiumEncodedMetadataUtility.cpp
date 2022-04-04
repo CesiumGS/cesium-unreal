@@ -85,14 +85,11 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
   for (const auto& pair : properties) {
     const FCesiumMetadataProperty& property = pair.Value;
 
-    const FPropertyDescription* pExpectedProperty = nullptr;
-    for (const FPropertyDescription& expectedProperty :
-         featureTableDescription.Properties) {
-      if (pair.Key == expectedProperty.Name) {
-        pExpectedProperty = &expectedProperty;
-        break;
-      }
-    }
+    const FPropertyDescription* pExpectedProperty =
+        featureTableDescription.Properties.FindByPredicate(
+            [&key = pair.Key](const FPropertyDescription& expectedProperty) {
+              return key == expectedProperty.Name;
+            });
 
     if (!pExpectedProperty) {
       continue;
@@ -265,110 +262,113 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
   encodedFeatureTexture.properties.Reserve(properties.size());
 
   for (const auto& propertyIt : properties) {
-    for (const FFeatureTexturePropertyDescription& propertyDescription :
-         featureTextureDescription.Properties) {
-      if (propertyDescription.Name == UTF8_TO_TCHAR(propertyIt.first.c_str())) {
-        const CesiumGltf::FeatureTexturePropertyView&
-            featureTexturePropertyView = propertyIt.second;
+    const FFeatureTexturePropertyDescription* pPropertyDescription =
+        featureTextureDescription.Properties.FindByPredicate(
+            [propertyName = UTF8_TO_TCHAR(propertyIt.first.c_str())](
+                const FFeatureTexturePropertyDescription& expectedProperty) {
+              return propertyName == expectedProperty.Name;
+            });
 
-        const CesiumGltf::ImageCesium* pImage =
-            featureTexturePropertyView.getImage();
+    if (!pPropertyDescription) {
+      continue;
+    }
 
-        if (!pImage) {
-          break;
-        }
+    const CesiumGltf::FeatureTexturePropertyView& featureTexturePropertyView =
+        propertyIt.second;
 
-        int32 expectedComponentCount = 1;
-        switch (propertyDescription.Type) {
-        // case ECesiumPropertyType::Scalar:
-        //  expectedComponentCount = 1;
-        //  break;
-        case ECesiumPropertyType::Vec2:
-          expectedComponentCount = 2;
-          break;
-        case ECesiumPropertyType::Vec3:
-          expectedComponentCount = 3;
-          break;
-        case ECesiumPropertyType::Vec4:
-          expectedComponentCount = 4;
-        };
+    const CesiumGltf::ImageCesium* pImage =
+        featureTexturePropertyView.getImage();
 
-        if (expectedComponentCount != propertyIt.second.getComponentCount() ||
-            propertyDescription.Normalized !=
-                propertyIt.second.isNormalized() ||
-            propertyDescription.Swizzle !=
-                UTF8_TO_TCHAR(propertyIt.second.getSwizzle().c_str())) {
-          break;
-        }
+    if (!pImage) {
+      continue;
+    }
 
-        CESIUM_TRACE(TCHAR_TO_UTF8(
-            *("Encode Feature Texture Property: " + propertyDescription.Name)));
+    int32 expectedComponentCount = 1;
+    switch (pPropertyDescription->Type) {
+    // case ECesiumPropertyType::Scalar:
+    //  expectedComponentCount = 1;
+    //  break;
+    case ECesiumPropertyType::Vec2:
+      expectedComponentCount = 2;
+      break;
+    case ECesiumPropertyType::Vec3:
+      expectedComponentCount = 3;
+      break;
+    case ECesiumPropertyType::Vec4:
+      expectedComponentCount = 4;
+    };
 
-        EncodedFeatureTextureProperty& encodedFeatureTextureProperty =
-            encodedFeatureTexture.properties.Emplace_GetRef();
+    if (expectedComponentCount != propertyIt.second.getComponentCount() ||
+        pPropertyDescription->Normalized != propertyIt.second.isNormalized() ||
+        pPropertyDescription->Swizzle !=
+            UTF8_TO_TCHAR(propertyIt.second.getSwizzle().c_str())) {
+      continue;
+    }
 
-        encodedFeatureTextureProperty.baseName =
-            "FTX_" + featureTextureName + "_" + propertyDescription.Name + "_";
-        encodedFeatureTextureProperty.textureCoordinateAttributeId =
-            featureTexturePropertyView.getTextureCoordinateAttributeId();
+    CESIUM_TRACE(TCHAR_TO_UTF8(
+        *("Encode Feature Texture Property: " + pPropertyDescription->Name)));
 
-        const CesiumGltf::FeatureTexturePropertyChannelOffsets& channelOffsets =
-            featureTexturePropertyView.getChannelOffsets();
-        encodedFeatureTextureProperty.channelOffsets[0] = channelOffsets.r;
-        encodedFeatureTextureProperty.channelOffsets[1] = channelOffsets.g;
-        encodedFeatureTextureProperty.channelOffsets[2] = channelOffsets.b;
-        encodedFeatureTextureProperty.channelOffsets[3] = channelOffsets.a;
+    EncodedFeatureTextureProperty& encodedFeatureTextureProperty =
+        encodedFeatureTexture.properties.Emplace_GetRef();
 
-        TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
-            featureTexturePropertyMap.Find(pImage);
-        if (pMappedUnrealImageIt) {
-          encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
-        } else {
-          encodedFeatureTextureProperty.pTexture =
-              MakeShared<LoadedTextureResult>();
-          featureTexturePropertyMap.Emplace(
-              pImage,
-              encodedFeatureTextureProperty.pTexture);
-          encodedFeatureTextureProperty.pTexture->pTextureData =
-              createTexturePlatformData(
-                  pImage->width,
-                  pImage->height,
-                  // TODO: currently the unnormalized pixels are always in
-                  // unsigned R8G8B8A8 form, but this does not necessarily need
-                  // to be the case in the future.
-                  featureTexturePropertyView.isNormalized()
-                      ? EPixelFormat::PF_R8G8B8A8
-                      : EPixelFormat::PF_R8G8B8A8_UINT);
+    encodedFeatureTextureProperty.baseName =
+        "FTX_" + featureTextureName + "_" + pPropertyDescription->Name + "_";
+    encodedFeatureTextureProperty.textureCoordinateAttributeId =
+        featureTexturePropertyView.getTextureCoordinateAttributeId();
 
-          encodedFeatureTextureProperty.pTexture->addressX =
-              TextureAddress::TA_Clamp;
-          encodedFeatureTextureProperty.pTexture->addressY =
-              TextureAddress::TA_Clamp;
-          encodedFeatureTextureProperty.pTexture->filter =
-              TextureFilter::TF_Nearest;
+    const CesiumGltf::FeatureTexturePropertyChannelOffsets& channelOffsets =
+        featureTexturePropertyView.getChannelOffsets();
+    encodedFeatureTextureProperty.channelOffsets[0] = channelOffsets.r;
+    encodedFeatureTextureProperty.channelOffsets[1] = channelOffsets.g;
+    encodedFeatureTextureProperty.channelOffsets[2] = channelOffsets.b;
+    encodedFeatureTextureProperty.channelOffsets[3] = channelOffsets.a;
 
-          if (!encodedFeatureTextureProperty.pTexture->pTextureData) {
-            break;
-          }
+    TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
+        featureTexturePropertyMap.Find(pImage);
+    if (pMappedUnrealImageIt) {
+      encodedFeatureTextureProperty.pTexture = pMappedUnrealImageIt->Pin();
+    } else {
+      encodedFeatureTextureProperty.pTexture =
+          MakeShared<LoadedTextureResult>();
+      featureTexturePropertyMap.Emplace(
+          pImage,
+          encodedFeatureTextureProperty.pTexture);
+      encodedFeatureTextureProperty.pTexture->pTextureData =
+          createTexturePlatformData(
+              pImage->width,
+              pImage->height,
+              // TODO: currently the unnormalized pixels are always in
+              // unsigned R8G8B8A8 form, but this does not necessarily need
+              // to be the case in the future.
+              featureTexturePropertyView.isNormalized()
+                  ? EPixelFormat::PF_R8G8B8A8
+                  : EPixelFormat::PF_R8G8B8A8_UINT);
 
-          FTexture2DMipMap* pMip = new FTexture2DMipMap();
-          encodedFeatureTextureProperty.pTexture->pTextureData->Mips.Add(pMip);
-          pMip->SizeX = pImage->width;
-          pMip->SizeY = pImage->height;
-          pMip->BulkData.Lock(LOCK_READ_WRITE);
+      encodedFeatureTextureProperty.pTexture->addressX =
+          TextureAddress::TA_Clamp;
+      encodedFeatureTextureProperty.pTexture->addressY =
+          TextureAddress::TA_Clamp;
+      encodedFeatureTextureProperty.pTexture->filter =
+          TextureFilter::TF_Nearest;
 
-          void* pTextureData = pMip->BulkData.Realloc(pImage->pixelData.size());
-
-          FMemory::Memcpy(
-              pTextureData,
-              pImage->pixelData.data(),
-              pImage->pixelData.size());
-
-          pMip->BulkData.Unlock();
-        }
-
-        break;
+      if (!encodedFeatureTextureProperty.pTexture->pTextureData) {
+        continue;
       }
+
+      FTexture2DMipMap* pMip = new FTexture2DMipMap();
+      encodedFeatureTextureProperty.pTexture->pTextureData->Mips.Add(pMip);
+      pMip->SizeX = pImage->width;
+      pMip->SizeY = pImage->height;
+      pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+      void* pTextureData = pMip->BulkData.Realloc(pImage->pixelData.size());
+
+      FMemory::Memcpy(
+          pTextureData,
+          pImage->pixelData.data(),
+          pImage->pixelData.size());
+
+      pMip->BulkData.Unlock();
     }
   }
 
@@ -396,11 +396,8 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
   for (const FFeatureTextureDescription& expectedFeatureTexture :
        metadataDescription.FeatureTextures) {
-    for (const FString& featureTextureName : featureTextureNames) {
-      if (featureTextureName == expectedFeatureTexture.Name) {
-        result.featureTextureNames.Add(featureTextureName);
-        break;
-      }
+    if (featureTextureNames.Find(expectedFeatureTexture.Name) != INDEX_NONE) {
+      result.featureTextureNames.Add(expectedFeatureTexture.Name);
     }
   }
 
@@ -415,85 +412,83 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   // or attribute corresponds to each feature table.
   for (const FFeatureTableDescription& expectedFeatureTable :
        metadataDescription.FeatureTables) {
+    const FString& featureTableName = expectedFeatureTable.Name;
+
     if (expectedFeatureTable.AccessType ==
         ECesiumFeatureTableAccessType::Texture) {
-      for (const FCesiumFeatureIdTexture& featureIdTexture :
-           featureIdTextures) {
-        const FString& featureTableName =
-            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
-                featureIdTexture);
 
-        if (expectedFeatureTable.Name == featureTableName) {
+      const FCesiumFeatureIdTexture* pFeatureIdTexture =
+          featureIdTextures.FindByPredicate([&featureTableName](
+                                                const FCesiumFeatureIdTexture&
+                                                    featureIdTexture) {
+            return featureTableName ==
+                   UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
+                       featureIdTexture);
+          });
 
-          const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
-              featureIdTexture.getFeatureIdTextureView();
-          const CesiumGltf::ImageCesium* pFeatureIdImage =
-              featureIdTextureView.getImage();
+      if (pFeatureIdTexture) {
+        const CesiumGltf::FeatureIDTextureView& featureIdTextureView =
+            pFeatureIdTexture->getFeatureIdTextureView();
+        const CesiumGltf::ImageCesium* pFeatureIdImage =
+            featureIdTextureView.getImage();
 
-          if (!pFeatureIdImage) {
-            break;
-          }
-
-          CESIUM_TRACE("Encode Feature Id Texture");
-
-          EncodedFeatureIdTexture& encodedFeatureIdTexture =
-              result.encodedFeatureIdTextures.Emplace_GetRef();
-
-          encodedFeatureIdTexture.baseName = "FIT_" + featureTableName + "_";
-          encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
-          encodedFeatureIdTexture.textureCoordinateAttributeId =
-              featureIdTextureView.getTextureCoordinateAttributeId();
-
-          TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
-              featureIdTextureMap.Find(pFeatureIdImage);
-          if (pMappedUnrealImageIt) {
-            encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
-          } else {
-            encodedFeatureIdTexture.pTexture =
-                MakeShared<LoadedTextureResult>();
-            featureIdTextureMap.Emplace(
-                pFeatureIdImage,
-                encodedFeatureIdTexture.pTexture);
-            encodedFeatureIdTexture.pTexture->pTextureData =
-                createTexturePlatformData(
-                    pFeatureIdImage->width,
-                    pFeatureIdImage->height,
-                    // TODO: currently this is always the case, but doesn't have
-                    // to be
-                    EPixelFormat::PF_R8G8B8A8_UINT);
-
-            encodedFeatureIdTexture.pTexture->addressX =
-                TextureAddress::TA_Clamp;
-            encodedFeatureIdTexture.pTexture->addressY =
-                TextureAddress::TA_Clamp;
-            encodedFeatureIdTexture.pTexture->filter =
-                TextureFilter::TF_Nearest;
-
-            if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-              break;
-            }
-
-            FTexture2DMipMap* pMip = new FTexture2DMipMap();
-            encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
-            pMip->SizeX = pFeatureIdImage->width;
-            pMip->SizeY = pFeatureIdImage->height;
-            pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-            void* pTextureData =
-                pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
-
-            FMemory::Memcpy(
-                pTextureData,
-                pFeatureIdImage->pixelData.data(),
-                pFeatureIdImage->pixelData.size());
-
-            pMip->BulkData.Unlock();
-          }
-
-          encodedFeatureIdTexture.featureTableName = featureTableName;
-
-          break;
+        if (!pFeatureIdImage) {
+          continue;
         }
+
+        CESIUM_TRACE("Encode Feature Id Texture");
+
+        EncodedFeatureIdTexture& encodedFeatureIdTexture =
+            result.encodedFeatureIdTextures.Emplace_GetRef();
+
+        encodedFeatureIdTexture.baseName = "FIT_" + featureTableName + "_";
+        encodedFeatureIdTexture.channel = featureIdTextureView.getChannel();
+        encodedFeatureIdTexture.textureCoordinateAttributeId =
+            featureIdTextureView.getTextureCoordinateAttributeId();
+
+        TWeakPtr<LoadedTextureResult>* pMappedUnrealImageIt =
+            featureIdTextureMap.Find(pFeatureIdImage);
+        if (pMappedUnrealImageIt) {
+          encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
+        } else {
+          encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
+          featureIdTextureMap.Emplace(
+              pFeatureIdImage,
+              encodedFeatureIdTexture.pTexture);
+          encodedFeatureIdTexture.pTexture->pTextureData =
+              createTexturePlatformData(
+                  pFeatureIdImage->width,
+                  pFeatureIdImage->height,
+                  // TODO: currently this is always the case, but doesn't have
+                  // to be
+                  EPixelFormat::PF_R8G8B8A8_UINT);
+
+          encodedFeatureIdTexture.pTexture->addressX = TextureAddress::TA_Clamp;
+          encodedFeatureIdTexture.pTexture->addressY = TextureAddress::TA_Clamp;
+          encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
+
+          if (!encodedFeatureIdTexture.pTexture->pTextureData) {
+            continue;
+          }
+
+          FTexture2DMipMap* pMip = new FTexture2DMipMap();
+          encodedFeatureIdTexture.pTexture->pTextureData->Mips.Add(pMip);
+          pMip->SizeX = pFeatureIdImage->width;
+          pMip->SizeY = pFeatureIdImage->height;
+          pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+          void* pTextureData =
+              pMip->BulkData.Realloc(pFeatureIdImage->pixelData.size());
+
+          FMemory::Memcpy(
+              pTextureData,
+              pFeatureIdImage->pixelData.data(),
+              pFeatureIdImage->pixelData.size());
+
+          pMip->BulkData.Unlock();
+        }
+
+        encodedFeatureIdTexture.featureTableName = featureTableName;
       }
     } else if (
         expectedFeatureTable.AccessType ==
@@ -501,11 +496,10 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
       for (size_t i = 0; i < featureIdAttributes.Num(); ++i) {
         const FCesiumFeatureIdAttribute& featureIdAttribute =
             featureIdAttributes[i];
-        const FString& featureTableName =
-            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
-                featureIdAttribute);
 
-        if (expectedFeatureTable.Name == featureTableName) {
+        if (featureTableName ==
+            UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
+                featureIdAttribute)) {
           EncodedFeatureIdAttribute& encodedFeatureIdAttribute =
               result.encodedFeatureIdAttributes.Emplace_GetRef();
 
@@ -534,19 +528,24 @@ EncodedMetadata encodeMetadataAnyThreadPart(
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(metadata);
   result.encodedFeatureTables.Reserve(featureTables.Num());
   for (const auto& featureTableIt : featureTables) {
-    for (const FFeatureTableDescription& expectedFeatureTable :
-         metadataDescription.FeatureTables) {
-      if (expectedFeatureTable.Name == featureTableIt.Key) {
-        CESIUM_TRACE(
-            TCHAR_TO_UTF8(*("Encode Feature Table: " + featureTableIt.Key)));
+    const FString& featureTableName = featureTableIt.Key;
 
-        result.encodedFeatureTables.Emplace(
-            featureTableIt.Key,
-            encodeMetadataFeatureTableAnyThreadPart(
-                expectedFeatureTable,
-                featureTableIt.Value));
-        break;
-      }
+    const FFeatureTableDescription* pExpectedFeatureTable =
+        metadataDescription.FeatureTables.FindByPredicate(
+            [&featureTableName](
+                const FFeatureTableDescription& expectedFeatureTable) {
+              return featureTableName == expectedFeatureTable.Name;
+            });
+
+    if (pExpectedFeatureTable) {
+      CESIUM_TRACE(
+          TCHAR_TO_UTF8(*("Encode Feature Table: " + featureTableName)));
+
+      result.encodedFeatureTables.Emplace(
+          featureTableName,
+          encodeMetadataFeatureTableAnyThreadPart(
+              *pExpectedFeatureTable,
+              featureTableIt.Value));
     }
   }
 
@@ -557,21 +556,26 @@ EncodedMetadata encodeMetadataAnyThreadPart(
       featureTexturePropertyMap;
   featureTexturePropertyMap.Reserve(featureTextures.Num());
   for (const auto& featureTextureIt : featureTextures) {
-    for (const FFeatureTextureDescription& expectedFeatureTexture :
-         metadataDescription.FeatureTextures) {
-      if (expectedFeatureTexture.Name == featureTextureIt.Key) {
-        CESIUM_TRACE(TCHAR_TO_UTF8(
-            *("Encode Feature Texture: " + featureTextureIt.Key)));
+    const FString& featureTextureName = featureTextureIt.Key;
 
-        result.encodedFeatureTextures.Emplace(
-            featureTextureIt.Key,
-            encodeFeatureTextureAnyThreadPart(
-                featureTexturePropertyMap,
-                expectedFeatureTexture,
-                featureTextureIt.Key,
-                featureTextureIt.Value));
-        break;
-      }
+    const FFeatureTextureDescription* pExpectedFeatureTexture =
+        metadataDescription.FeatureTextures.FindByPredicate(
+            [&featureTextureName](
+                const FFeatureTextureDescription& expectedFeatureTexture) {
+              return featureTextureName == expectedFeatureTexture.Name;
+            });
+
+    if (pExpectedFeatureTexture) {
+      CESIUM_TRACE(
+          TCHAR_TO_UTF8(*("Encode Feature Texture: " + featureTextureName)));
+
+      result.encodedFeatureTextures.Emplace(
+          featureTextureName,
+          encodeFeatureTextureAnyThreadPart(
+              featureTexturePropertyMap,
+              *pExpectedFeatureTexture,
+              featureTextureName,
+              featureTextureIt.Value));
     }
   }
 
@@ -600,15 +604,7 @@ bool encodeFeatureTextureGameThreadPart(
 
   for (EncodedFeatureTextureProperty& property :
        encodedFeatureTexture.properties) {
-    bool found = false;
-    for (LoadedTextureResult* uniqueTexture : uniqueTextures) {
-      if (property.pTexture.Get() == uniqueTexture) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
+    if (uniqueTextures.Find(property.pTexture.Get()) == INDEX_NONE) {
       success &= loadTextureGameThreadPart(property.pTexture.Get()) != nullptr;
       // TODO: check if this is the safest way
       property.pTexture->pTexture->AddToRoot();
@@ -629,16 +625,8 @@ bool encodeMetadataPrimitiveGameThreadPart(
 
   for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitive.encodedFeatureIdTextures) {
-    bool found = false;
-    for (const LoadedTextureResult* pUniqueFeatureIdImage :
-         uniqueFeatureIdImages) {
-      if (pUniqueFeatureIdImage == encodedFeatureIdTexture.pTexture.Get()) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
+    if (uniqueFeatureIdImages.Find(encodedFeatureIdTexture.pTexture.Get()) ==
+        INDEX_NONE) {
       success &= loadTextureGameThreadPart(
                      encodedFeatureIdTexture.pTexture.Get()) != nullptr;
       uniqueFeatureIdImages.Emplace(encodedFeatureIdTexture.pTexture.Get());
