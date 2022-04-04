@@ -13,7 +13,14 @@ jobs:
           choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=User'
       - name: Build cesium-native
         run: |
-          mkdir extern/build
-          cd extern/build
-          cmake .. -A x64
-          cmake --build . --config Release --target install -- /maxcpucount:8
+          cd extern
+          cmake -B build -S . -A x64
+          cmake --build build --config Release --target install -j8
+      - name: Package plugin
+        run: |
+          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
+          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-500p2-windows-${ENV:CESIUM_UNREAL_VERSION}"
+          cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+          ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
+          cd "$ENV:GITHUB_WORKSPACE/../packages"
+          7z a "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" "CesiumForUnreal/"
