@@ -640,8 +640,6 @@ bool encodeMetadataFeatureTableGameThreadPart(
        encodedFeatureTable.encodedProperties) {
     success &=
         loadTextureGameThreadPart(encodedProperty.pTexture.Get()) != nullptr;
-    // TODO: check if this is the safest way
-    encodedProperty.pTexture->pTexture->AddToRoot();
   }
 
   return success;
@@ -656,8 +654,6 @@ bool encodeFeatureTextureGameThreadPart(
        encodedFeatureTexture.properties) {
     if (uniqueTextures.Find(property.pTexture.Get()) == INDEX_NONE) {
       success &= loadTextureGameThreadPart(property.pTexture.Get()) != nullptr;
-      // TODO: check if this is the safest way
-      property.pTexture->pTexture->AddToRoot();
       uniqueTextures.Emplace(property.pTexture.Get());
     }
   }
@@ -723,7 +719,6 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
   for (auto& encodedFeatureTableIt : encodedMetadata.encodedFeatureTables) {
     for (EncodedMetadataProperty& encodedProperty :
          encodedFeatureTableIt.Value.encodedProperties) {
-      encodedProperty.pTexture->pTexture->RemoveFromRoot();
       CesiumLifetime::destroy(encodedProperty.pTexture->pTexture);
       encodedProperty.pTexture->pTexture = nullptr;
     }
@@ -734,7 +729,6 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
     for (EncodedFeatureTextureProperty& encodedFeatureTextureProperty :
          encodedFeatureTextureIt.Value.properties) {
       if (encodedFeatureTextureProperty.pTexture->pTexture) {
-        encodedFeatureTextureProperty.pTexture->pTexture->RemoveFromRoot();
         CesiumLifetime::destroy(
             encodedFeatureTextureProperty.pTexture->pTexture);
         encodedFeatureTextureProperty.pTexture->pTexture = nullptr;

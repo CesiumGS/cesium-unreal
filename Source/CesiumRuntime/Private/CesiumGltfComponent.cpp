@@ -2256,7 +2256,6 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 }
 
 void UCesiumGltfComponent::BeginDestroy() {
-  // TODO: why does this crash?
   destroyEncodedMetadata(this->EncodedMetadata);
   Super::BeginDestroy();
 }
