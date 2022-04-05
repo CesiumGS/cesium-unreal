@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumActors.h"
 #include "CesiumCustomVersion.h"
