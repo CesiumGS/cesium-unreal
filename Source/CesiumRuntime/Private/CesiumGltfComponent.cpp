@@ -2314,16 +2314,6 @@ static void BuildPhysXTriangleMeshes(
       pCollisionMesh = cookHelper.OutTriangleMeshes[0];
     }
     uvInfo = std::move(cookHelper.OutUVInfo);
-
-    /** The old way of creating physX tri meshes, for reference
-    options.pPhysXCooking->CreateTriMesh(
-        "PhysXGeneric",
-        EPhysXMeshCookFlags::Default,
-        vertices,
-        physicsIndices,
-        TArray<uint16>(),
-        true,
-        pCollisionMesh);*/
   }
 }
 
