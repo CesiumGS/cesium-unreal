@@ -6,7 +6,7 @@
 
 namespace {
 
-struct FeatureIDFromAccessor2 {
+struct FeatureIDFromAccessor_Deprecated {
   int64 operator()(std::monostate) { return -1; }
 
   int64 operator()(
@@ -126,7 +126,7 @@ int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 vertexIdx) {
   return std::visit(
-      FeatureIDFromAccessor2{vertexIdx},
+      FeatureIDFromAccessor_Deprecated{vertexIdx},
       FeatureTable._featureIDAccessor);
 }
 
