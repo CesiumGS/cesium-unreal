@@ -64,8 +64,6 @@
 #include "ScopedTransaction.h"
 #endif
 
-// These headers are really just moved out for readability, so include them
-// last.
 using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
 using namespace CesiumEncodedMetadataUtility;
