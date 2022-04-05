@@ -29,8 +29,9 @@ jobs:
         run: |
           cd "$ENV:GITHUB_WORKSPACE/../packages"
           7z a "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" "CesiumForUnreal/"
+          mv "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" "$ENV:GITHUB_WORKSPACE"
       - name: Publish plugin package artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
-          path: ${{ github.workspace }}/../${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          path: ${{ github.workspace }}/${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
