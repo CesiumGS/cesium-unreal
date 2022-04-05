@@ -754,7 +754,7 @@ static void loadPrimitive(
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     } else {
@@ -765,7 +765,7 @@ static void loadPrimitive(
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     }

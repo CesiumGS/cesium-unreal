@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.12.1 - 2022-04-06
+
+##### Fixes :wrench:
+
+- Fixed compiler errors with the official release of Unreal Engine 5.
+
 ### v1.12.0 - 2022-04-01
 
 ##### Breaking Changes :mega:
