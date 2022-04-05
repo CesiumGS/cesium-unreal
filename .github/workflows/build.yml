@@ -29,13 +29,8 @@ jobs:
         run: |
           cd "$ENV:GITHUB_WORKSPACE/../packages"
           7z a "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" "CesiumForUnreal/"
-      - name: Set AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Publish plugin package artifact
+        uses: actions/upload-artifact@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Upload plugin package to S3
-        run: |
-          cd "$ENV:GITHUB_WORKSPACE/../packages"
-          aws s3 cp "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" s3://builds-cesium-unreal/
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          path: ${{ github.workspace }}/../${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
