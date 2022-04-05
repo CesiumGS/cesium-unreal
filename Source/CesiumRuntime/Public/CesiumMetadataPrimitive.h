@@ -22,8 +22,9 @@ struct ExtensionModelExtFeatureMetadata;
 } // namespace CesiumGltf
 
 /**
- * A Blueprint-accessible wrapper for a glTF Primitive's Metadata. It holds a
- * collection of feature tables.
+ * A Blueprint-accessible wrapper for a glTF Primitive's Metadata. It holds
+ * views of feature id attributes / feature id textures and names of feature
+ * textures associated with this primitive.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {
@@ -89,7 +90,8 @@ public:
                        const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
-   * @brief Get all the feature id attributes that are associated with the primitive.
+   * @brief Get all the feature id attributes that are associated with the
+   * primitive.
    */
   UFUNCTION(
       BlueprintCallable,
