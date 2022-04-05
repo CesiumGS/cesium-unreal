@@ -568,7 +568,7 @@ public:
 #endif
 
     options.pEncodedMetadataDescription =
-        &this->_pActor->encodedMetadataDescription;
+        &this->_pActor->_encodedMetadataDescription;
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
@@ -797,7 +797,7 @@ void ACesium3DTileset::LoadTileset() {
   const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
       this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
   if (pEncodedMetadataDescriptionComponent) {
-    this->encodedMetadataDescription = {
+    this->_encodedMetadataDescription = {
         pEncodedMetadataDescriptionComponent->FeatureTables,
         pEncodedMetadataDescriptionComponent->FeatureTextures};
   }

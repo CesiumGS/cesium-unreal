@@ -820,7 +820,7 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
 
-  FMetadataDescription encodedMetadataDescription;
+  FMetadataDescription _encodedMetadataDescription;
 
   // For debug output
   uint32_t _lastTilesRendered;
