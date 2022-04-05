@@ -83,9 +83,9 @@ jobs:
       - name: Build cesium-native
         run: |
           $ENV:UNREAL_ENGINE_DIR="C:/Program Files/Epic Games/UE_5.0"
-          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v19_clang-11.0.1-centos7/""
-          $ENV:UNREAL_ENGINE_COMPILER_DIR=${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu
-          $ENV:UNREAL_ENGINE_LIBCXX_DIR=${ENV:UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Linux/LibCxx
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v19_clang-11.0.1-centos7/"
+          $ENV:UNREAL_ENGINE_COMPILER_DIR="${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
+          $ENV:UNREAL_ENGINE_LIBCXX_DIR="${ENV:UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Linux/LibCxx"
           cd extern
           cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-from-windows-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --target install -j8
