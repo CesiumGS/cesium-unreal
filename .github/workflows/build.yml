@@ -8,19 +8,33 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Install extra dependencies
+          fetch-depth: 0 # so that `git describe` works.
+      - name: Set environment variables
         run: |
-          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=User'
+          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
+          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-500p2-windows-${ENV:CESIUM_UNREAL_VERSION}"
+          # Make these available to subsequent steps
+          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
       - name: Build cesium-native
         run: |
           cd extern
           cmake -B build -S . -A x64
           cmake --build build --config Release --target install -j8
-      - name: Package plugin
+      - name: Build plugin
         run: |
-          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-500p2-windows-${ENV:CESIUM_UNREAL_VERSION}"
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
+      - name: ZIP plugin package
+        run: |
           cd "$ENV:GITHUB_WORKSPACE/../packages"
           7z a "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" "CesiumForUnreal/"
+      - name: Set AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Upload plugin package to S3
+        run: |
+          aws s3 cp "${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip" s3://builds-cesium-unreal/
