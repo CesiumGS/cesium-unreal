@@ -89,7 +89,7 @@ public:
                        const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
-   * @brief Get all the vertex features that are associated with the primitive.
+   * @brief Get all the feature id attributes that are associated with the primitive.
    */
   UFUNCTION(
       BlueprintCallable,
