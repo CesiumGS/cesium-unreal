@@ -100,8 +100,8 @@ jobs:
           path: packages
   Combine:
     runs-on: ubuntu-latest
-    needs:
-    steps: [Windows, Android, Linux]
+    needs: [Windows, Android, Linux]
+    steps:
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
