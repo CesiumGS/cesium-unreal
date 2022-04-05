@@ -15,6 +15,11 @@ struct ExtensionModelExtFeatureMetadata;
 struct Model;
 } // namespace CesiumGltf
 
+/**
+ * @brief A blueprint-accessible wrapper for metadata contained in a glTF model.
+ * Provides access to views of feature tables and feature textures available on
+ * the glTF.
+ */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataModel {
   GENERATED_USTRUCT_BODY()

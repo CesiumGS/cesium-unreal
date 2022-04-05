@@ -11,6 +11,11 @@ struct Model;
 struct FeatureTexture;
 }; // namespace CesiumGltf
 
+/**
+ * @brief A blueprint-accessible wrapper of a feature texture from a glTF.
+ * Provides access to {@link FCesiumFeatureTextureProperty} views of texture
+ * metadata.
+ */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureTexture {
   GENERATED_USTRUCT_BODY()
@@ -39,6 +44,12 @@ class CESIUMRUNTIME_API UCesiumFeatureTextureBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief Gets an array of property names corresponding to
+   * {@link FCesiumFeatureTextureProperty} views. These property names can be
+   * used with FindProperty to retrieve the corresponding
+   * {@link FCesiumFeatureTextureProperty} views.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
@@ -46,6 +57,11 @@ public:
   static const TArray<FString>&
   GetPropertyKeys(UPARAM(ref) const FCesiumFeatureTexture& FeatureTexture);
 
+  /**
+   * @brief Retrieve a {@link FCesiumFeatureTextureProperty} by name. Use
+   * GetPropertyKeys to get a list of names for existing feature texture
+   * properties.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,

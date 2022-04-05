@@ -13,6 +13,11 @@ struct Model;
 struct FeatureIDTexture;
 } // namespace CesiumGltf
 
+/**
+ * @brief A blueprint-accessible wrapper for a feature id texture from a glTF
+ * primitive. Provides access to per-pixel feature IDs which can be used with
+ * the corresponding {@link FCesiumFeatureTable} to access per-pixel metadata.
+ */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
   GENERATED_USTRUCT_BODY()
@@ -42,6 +47,11 @@ class CESIUMRUNTIME_API UCesiumFeatureIdTextureBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  /**
+   * @brief Get the name of the feature table corresponding to this feature ID
+   * texture. The name can be used to fetch the appropriate
+   * {@link FCesiumFeatureTable} from the {@link FCesiumMetadataModel}.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
@@ -50,6 +60,10 @@ public:
   GetFeatureTableName(UPARAM(ref)
                           const FCesiumFeatureIdTexture& featureIdTexture);
 
+  /**
+   * @brief Get the index of the texture coordinate set that corresponds to the
+   * feature id texture.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
@@ -58,6 +72,12 @@ public:
       const UPrimitiveComponent* component,
       UPARAM(ref) const FCesiumFeatureIdTexture& featureIdTexture);
 
+  /**
+   * @brief Given texture coordinates from the appropriate texture coordinate
+   * set (as indicated by GetTextureCoordinateIndex), returns a feature ID
+   * corresponding the pixel. The feature ID can be used with a
+   * {@link FCesiumFeatureTable} to retrieve the per-vertex metadata.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,

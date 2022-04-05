@@ -13,6 +13,11 @@ struct Accessor;
 struct FeatureTable;
 } // namespace CesiumGltf
 
+/**
+ * @brief A blueprint-accessible wrapper for a feature id attribute from a glTF
+ * primitive. Provides access to per-vertex feature IDs which can be used with
+ * the corresponding {@link FCesiumFeatureTable} to access per-vertex metadata.
+ */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
   GENERATED_USTRUCT_BODY()
@@ -50,6 +55,11 @@ class CESIUMRUNTIME_API UCesiumFeatureIdAttributeBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 public:
+  /**
+   * @brief Get the name of the feature table corresponding to this feature ID
+   * attribute. The name can be used to fetch the appropriate
+   * {@link FCesiumFeatureTable} from the {@link FCesiumMetadataModel}.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
@@ -58,6 +68,9 @@ public:
   GetFeatureTableName(UPARAM(ref)
                           const FCesiumFeatureIdAttribute& FeatureIdAttribute);
 
+  /**
+   * @brief Get the number of vertices this primitive has.
+   */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
@@ -67,7 +80,9 @@ public:
                      const FCesiumFeatureIdAttribute& FeatureIdAttribute);
 
   /**
-   * Gets the feature ID associated with a given vertex.
+   * Gets the feature ID associated with a given vertex. The feature ID can be
+   * used with a {@link FCesiumFeatureTable} to retrieve the per-vertex
+   * metadata.
    */
   UFUNCTION(
       BlueprintCallable,
