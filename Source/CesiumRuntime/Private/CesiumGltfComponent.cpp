@@ -1860,8 +1860,6 @@ static void loadPrimitiveGameThreadPart(
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
-  // TODO: why were these called twice, is it okay to remove?
-  /*
   SetGltfParameterValues(
       loadResult,
       material,
@@ -1874,7 +1872,7 @@ static void loadPrimitiveGameThreadPart(
       pMaterial,
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
-  */
+
   UMaterialInstance* pBaseAsMaterialInstance =
       Cast<UMaterialInstance>(pBaseMaterial);
   UCesiumMaterialUserData* pCesiumData =
