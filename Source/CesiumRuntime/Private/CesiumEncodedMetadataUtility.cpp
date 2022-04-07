@@ -19,6 +19,7 @@
 #include <CesiumGltf/FeatureTexturePropertyView.h>
 #include <CesiumGltf/FeatureTextureView.h>
 #include <CesiumUtility/Tracing.h>
+#include <glm/gtx/integer.hpp>
 #include <unordered_map>
 
 using namespace CesiumTextureUtility;
@@ -189,10 +190,16 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     encodedProperty.name =
         "FTB_" + featureTableDescription.Name + "_" + pair.Key;
 
-    int64 propertyArraySize = featureCount * encodedFormat.pixelSize;
+    int64 floorSqrtFeatureCount = glm::sqrt(featureCount);
+    int64 ceilSqrtFeatureCount =
+        (floorSqrtFeatureCount * floorSqrtFeatureCount == featureCount)
+            ? floorSqrtFeatureCount
+            : (floorSqrtFeatureCount + 1);
     encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
-    encodedProperty.pTexture->pTextureData =
-        createTexturePlatformData(propertyArraySize, 1, encodedFormat.format);
+    encodedProperty.pTexture->pTextureData = createTexturePlatformData(
+        ceilSqrtFeatureCount,
+        ceilSqrtFeatureCount,
+        encodedFormat.format);
 
     encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
     encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
@@ -209,11 +216,12 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
 
     FTexture2DMipMap* pMip = new FTexture2DMipMap();
     encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
-    pMip->SizeX = propertyArraySize;
-    pMip->SizeY = 1;
+    pMip->SizeX = ceilSqrtFeatureCount;
+    pMip->SizeY = ceilSqrtFeatureCount;
     pMip->BulkData.Lock(LOCK_READ_WRITE);
 
-    void* pTextureData = pMip->BulkData.Realloc(propertyArraySize);
+    void* pTextureData = pMip->BulkData.Realloc(
+        ceilSqrtFeatureCount * ceilSqrtFeatureCount * encodedFormat.pixelSize);
 
     if (isArray) {
       switch (gpuType) {

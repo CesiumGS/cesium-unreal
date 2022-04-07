@@ -16,6 +16,7 @@
 #include "ContentBrowserModule.h"
 #include "Factories/MaterialFunctionMaterialLayerFactory.h"
 #include "IContentBrowserSingleton.h"
+#include "IMaterialEditor.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionCustom.h"
 #include "Materials/MaterialExpressionFunctionInput.h"
@@ -567,6 +568,19 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       FeatureTableLookup->MaterialExpressionEditorY = NodeY;
     }
 
+    // Get the pixel dimensions of the first property, all the properties will
+    // have the same dimensions since it is based on the feature count.
+    if (featureTable.Properties.Num()) {
+      const FPropertyDescription& property = featureTable.Properties[0];
+      FString propertyArrayName = property.Name + "_array";
+
+      FeatureTableLookup->Code += "uint width;\nuint height;\n";
+      FeatureTableLookup->Code +=
+          propertyArrayName + ".GetDimensions(width, height);\n";
+      FeatureTableLookup->Code += "uint pixelX = propertyIndex % width;\n";
+      FeatureTableLookup->Code += "uint pixelY = propertyIndex / width;\n";
+    }
+
     NodeX = SectionLeft;
     NodeY += IncrY;
 
@@ -622,7 +636,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       FeatureTableLookup->Code +=
           propertyName + " = " + componentTypeInterpretation + "(" +
-          propertyArrayName + ".Load(int3(propertyIndex, 0, 0))." + swizzle +
+          propertyArrayName + ".Load(int3(pixelX, pixelY, 0))." + swizzle +
           ");\n";
 
       NodeY += IncrY;
@@ -871,22 +885,31 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
   // FMaterialResource created when we make a new UMaterial in place
   FGlobalComponentReregisterContext RecreateComponents;
 
+  // If this is a new material open the content browser to the auto-generated
+  // material.
+  if (!Overwriting) {
+    FContentBrowserModule* pContentBrowserModule =
+        FModuleManager::Get().GetModulePtr<FContentBrowserModule>(
+            "ContentBrowser");
+    if (pContentBrowserModule) {
+      TArray<UObject*> AssetsToHighlight;
+      AssetsToHighlight.Add(this->TargetMaterialLayer);
+      pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
+    }
+  }
+
   // Open updated material in editor.
   if (GEditor) {
     UAssetEditorSubsystem* pAssetEditor =
         GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
     if (pAssetEditor) {
       pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
+      IMaterialEditor* pMaterialEditor = static_cast<IMaterialEditor*>(
+          pAssetEditor->FindEditorForAsset(this->TargetMaterialLayer, true));
+      if (pMaterialEditor) {
+        pMaterialEditor->UpdateMaterialAfterGraphChange();
+      }
     }
-  }
-
-  FContentBrowserModule* pContentBrowserModule =
-      FModuleManager::Get().GetModulePtr<FContentBrowserModule>(
-          "ContentBrowser");
-  if (pContentBrowserModule) {
-    TArray<UObject*> AssetsToHighlight;
-    AssetsToHighlight.Add(this->TargetMaterialLayer);
-    pContentBrowserModule->Get().SyncBrowserToAssets(AssetsToHighlight);
   }
 }
 
