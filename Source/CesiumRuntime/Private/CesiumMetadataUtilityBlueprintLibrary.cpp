@@ -153,6 +153,7 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
           faceID));
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
     UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
@@ -163,3 +164,4 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
           Primitive,
           faceID));
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

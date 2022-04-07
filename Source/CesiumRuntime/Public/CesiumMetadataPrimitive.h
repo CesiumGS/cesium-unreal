@@ -63,7 +63,9 @@ private:
   VertexIDAccessorType _vertexIDAccessor;
 
   // REMOVE AFTER DEPRECATION
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   TArray<FCesiumMetadataFeatureTable> _featureTables_deprecated;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
@@ -74,6 +76,7 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Get all the feature tables that are associated with the primitive.
    */
@@ -88,6 +91,7 @@ public:
   static const TArray<FCesiumMetadataFeatureTable>&
   GetFeatureTables(UPARAM(ref)
                        const FCesiumMetadataPrimitive& MetadataPrimitive);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * @brief Get all the feature id attributes that are associated with the

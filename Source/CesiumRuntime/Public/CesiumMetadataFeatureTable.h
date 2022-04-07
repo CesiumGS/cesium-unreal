@@ -64,12 +64,19 @@ private:
   friend class UCesiumMetadataFeatureTableBlueprintLibrary;
 };
 
+class UE_DEPRECATED(
+    4.26,
+    "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary instead.")
+    UCesiumMetadataFeatureTableBlueprintLibrary;
+
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
   /**
    * Gets the number of features in the feature table.
    */
@@ -149,4 +156,6 @@ public:
                "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeatureTable instead."))
   static const TMap<FString, FCesiumMetadataProperty>&
   GetProperties(UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable);
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

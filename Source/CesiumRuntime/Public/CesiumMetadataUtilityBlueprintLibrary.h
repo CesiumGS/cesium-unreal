@@ -85,6 +85,7 @@ public:
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
       int64 faceID);
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the feature ID associated with a given face for a given feature table.
    */
@@ -100,4 +101,5 @@ public:
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 faceID);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

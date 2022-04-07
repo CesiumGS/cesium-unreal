@@ -78,6 +78,8 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
   });
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 TMap<FString, FCesiumMetadataGenericValue>
 UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
@@ -135,3 +137,5 @@ UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable) {
   return FeatureTable._properties;
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

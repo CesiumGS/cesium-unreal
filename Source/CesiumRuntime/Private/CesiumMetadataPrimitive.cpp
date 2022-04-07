@@ -66,6 +66,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
           UTF8_TO_TCHAR(attribute.featureTable.c_str())));
 
       // REMOVE AFTER DEPRECATION
+      PRAGMA_DISABLE_DEPRECATION_WARNINGS
       auto featureTableIt =
           modelMetadata.featureTables.find(attribute.featureTable);
       if (featureTableIt == modelMetadata.featureTables.end()) {
@@ -75,6 +76,7 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
           model,
           *accessor,
           featureTableIt->second)));
+      PRAGMA_ENABLE_DEPRECATION_WARNINGS
     }
   }
 
@@ -91,11 +93,13 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 const TArray<FCesiumMetadataFeatureTable>&
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
     const FCesiumMetadataPrimitive& MetadataPrimitive) {
   return MetadataPrimitive._featureTables_deprecated;
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 const TArray<FCesiumFeatureIdAttribute>&
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
