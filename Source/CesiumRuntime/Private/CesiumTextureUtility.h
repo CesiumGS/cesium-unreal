@@ -22,6 +22,7 @@ struct LoadedTextureResult {
   TextureAddress addressY;
   TextureFilter filter;
   TextureGroup group;
+  bool sRGB{true};
   UTexture2D* pTexture{nullptr};
 };
 
@@ -35,11 +36,13 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const TextureAddress& addressY,
     const TextureFilter& filter,
     const TextureGroup& group,
-    bool generateMipMaps);
+    bool generateMipMaps,
+    bool sRGB);
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
-    const CesiumGltf::Texture& texture);
+    const CesiumGltf::Texture& texture,
+    bool sRGB);
 
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 } // namespace CesiumTextureUtility

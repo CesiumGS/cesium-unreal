@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
+
 ### v1.12.0 - 2022-04-01
 
 ##### Additions :tada:

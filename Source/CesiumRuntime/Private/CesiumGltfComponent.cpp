@@ -381,7 +381,8 @@ struct ColorVisitor {
 template <class T>
 static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     const CesiumGltf::Model& model,
-    const std::optional<T>& gltfTexture) {
+    const std::optional<T>& gltfTexture,
+    bool sRGB) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
       gltfTexture.value().index >= model.textures.size()) {
     if (gltfTexture && gltfTexture.value().index >= 0) {
@@ -397,7 +398,7 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
 
   const Texture& texture = model.textures[gltfTexture.value().index];
 
-  return loadTextureAnyThreadPart(model, texture);
+  return loadTextureAnyThreadPart(model, texture, sRGB);
 }
 
 static void applyWaterMask(
@@ -426,7 +427,7 @@ static void applyWaterMask(
         if (waterMaskTextureId >= 0 &&
             waterMaskTextureId < model.textures.size()) {
           primitiveResult.waterMaskTexture =
-              loadTexture(model, std::make_optional(waterMaskInfo));
+              loadTexture(model, std::make_optional(waterMaskInfo), false);
         }
       }
     }
@@ -912,14 +913,17 @@ static void loadPrimitive(
   {
     CESIUM_TRACE("loadTextures");
     primitiveResult.baseColorTexture =
-        loadTexture(model, pbrMetallicRoughness.baseColorTexture);
-    primitiveResult.metallicRoughnessTexture =
-        loadTexture(model, pbrMetallicRoughness.metallicRoughnessTexture);
-    primitiveResult.normalTexture = loadTexture(model, material.normalTexture);
+        loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
+    primitiveResult.metallicRoughnessTexture = loadTexture(
+        model,
+        pbrMetallicRoughness.metallicRoughnessTexture,
+        false);
+    primitiveResult.normalTexture =
+        loadTexture(model, material.normalTexture, false);
     primitiveResult.occlusionTexture =
-        loadTexture(model, material.occlusionTexture);
+        loadTexture(model, material.occlusionTexture, false);
     primitiveResult.emissiveTexture =
-        loadTexture(model, material.emissiveTexture);
+        loadTexture(model, material.emissiveTexture, true);
   }
 
   {

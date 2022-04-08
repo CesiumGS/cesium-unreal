@@ -630,7 +630,9 @@ public:
         TextureAddress::TA_Clamp,
         pOptions->filter,
         pOptions->group,
-        pOptions->useMipmaps);
+        pOptions->useMipmaps,
+        true); // TODO: sRGB should probably be configurable on the raster
+               // overlay
     return texture.Release();
   }
 

@@ -27,7 +27,6 @@
 #include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionTextureObjectParameter.h"
 #include "Materials/MaterialExpressionTextureProperty.h"
-#include "Materials/MaterialExpressionVertexInterpolator.h"
 #include "Misc/PackageName.h"
 #include "Modules/ModuleManager.h"
 #include "Subsystems/AssetEditorSubsystem.h"
@@ -562,7 +561,8 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       NodeX += IncrX;
 
-      FeatureTableLookup->Code = "uint propertyIndex = PropertyIndexUV.r;\n";
+      FeatureTableLookup->Code =
+          "uint propertyIndex = round(PropertyIndexUV.r);\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
       FeatureTableLookup->MaterialExpressionEditorY = NodeY;
@@ -785,15 +785,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     OneTimeGeneratedNodes.Add(InputMaterial);
   }
 
-  bool VertexInterpolatorExists = false;
-  for (UMaterialExpression* ExistingNode :
-       this->TargetMaterialLayer->FunctionExpressions) {
-    if (Cast<UMaterialExpressionVertexInterpolator>(ExistingNode)) {
-      VertexInterpolatorExists = true;
-      break;
-    }
-  }
-
   bool AtleastOneFeatureIdAttribute = false;
   for (const FFeatureTableDescription& featureTable : this->FeatureTables) {
     if (featureTable.AccessType == ECesiumFeatureTableAccessType::Attribute) {
@@ -802,20 +793,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     }
   }
 
-  NodeX += 3 * IncrX;
-  NodeY += IncrY;
-
-  if (!VertexInterpolatorExists && AtleastOneFeatureIdAttribute) {
-    UMaterialExpressionVertexInterpolator* Interpolator =
-        NewObject<UMaterialExpressionVertexInterpolator>(
-            this->TargetMaterialLayer);
-    Interpolator->MaterialExpressionEditorX = NodeX;
-    Interpolator->MaterialExpressionEditorY = NodeY;
-    OneTimeGeneratedNodes.Add(Interpolator);
-  }
-
-  NodeY -= IncrY;
-  NodeX += IncrX;
+  NodeX += 4 * IncrX;
 
   UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes = nullptr;
   for (UMaterialExpression* ExistingNode :

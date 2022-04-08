@@ -36,7 +36,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const TextureAddress& addressY,
     const TextureFilter& filter,
     const TextureGroup& group,
-    bool generateMipMaps) {
+    bool generateMipMaps,
+    bool sRGB) {
 
   CESIUM_TRACE("loadTextureAnyThreadPart");
 
@@ -106,6 +107,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->addressY = addressY;
   pResult->filter = filter;
   pResult->group = group;
+  pResult->sRGB = sRGB;
 
   if (!image.mipPositions.empty()) {
     int32_t width = image.width;
@@ -234,7 +236,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
-    const CesiumGltf::Texture& texture) {
+    const CesiumGltf::Texture& texture,
+    bool sRGB) {
 
   const CesiumGltf::ExtensionKhrTextureBasisu* pKtxExtension =
       texture.getExtension<CesiumGltf::ExtensionKhrTextureBasisu>();
@@ -360,7 +363,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       addressY,
       filter,
       TextureGroup::TEXTUREGROUP_World,
-      useMipMaps);
+      useMipMaps,
+      sRGB);
 }
 
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
@@ -384,6 +388,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
     pTexture->LODGroup = pHalfLoadedTexture->group;
+    pTexture->SRGB = pHalfLoadedTexture->sRGB;
     pTexture->UpdateResource();
   }
 
