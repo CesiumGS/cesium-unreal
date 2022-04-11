@@ -7,6 +7,7 @@
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
+#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
 #include "CoreMinimal.h"
@@ -819,6 +820,8 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
 
+  FMetadataDescription _encodedMetadataDescription;
+
   // For debug output
   uint32_t _lastTilesRendered;
   uint32_t _lastTilesLoadingLowPriority;
@@ -850,4 +853,6 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToNoLongerRenderThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
+
+  friend class UnrealResourcePreparer;
 };

@@ -33,7 +33,7 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
-#include "CreateModelOptions.h"
+#include "CreateGltfOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/SceneCapture2D.h"
@@ -536,10 +536,9 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(
-            pActor->GetCreatePhysicsMeshes()
-                ? GetPhysXCookingModule()->GetPhysXCooking()
-                : nullptr)
+        _pPhysXCookingModule(
+            pActor->GetCreatePhysicsMeshes() ? GetPhysXCookingModule()
+                                             : nullptr)
 #endif
   {
   }
@@ -548,13 +547,16 @@ public:
       const CesiumGltf::Model& model,
       const glm::dmat4& transform) override {
 
-    CreateModelOptions options;
+    CreateGltfOptions::CreateModelOptions options;
     options.pModel = &model;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
-    options.pPhysXCooking = this->_pPhysXCooking;
+    options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
+
+    options.pEncodedMetadataDescription =
+        &this->_pActor->_encodedMetadataDescription;
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
@@ -616,7 +618,9 @@ public:
         TextureAddress::TA_Clamp,
         pOptions->filter,
         pOptions->group,
-        pOptions->useMipmaps);
+        pOptions->useMipmaps,
+        true); // TODO: sRGB should probably be configurable on the raster
+               // overlay
     return texture.Release();
   }
 
@@ -729,7 +733,7 @@ private:
 
   ACesium3DTileset* _pActor;
 #if PHYSICS_INTERFACE_PHYSX
-  IPhysXCooking* _pPhysXCooking;
+  IPhysXCookingModule* _pPhysXCookingModule;
 #endif
 };
 
@@ -795,6 +799,14 @@ void ACesium3DTileset::LoadTileset() {
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
+
+  const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
+      this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
+  if (pEncodedMetadataDescriptionComponent) {
+    this->_encodedMetadataDescription = {
+        pEncodedMetadataDescriptionComponent->FeatureTables,
+        pEncodedMetadataDescriptionComponent->FeatureTextures};
+  }
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 

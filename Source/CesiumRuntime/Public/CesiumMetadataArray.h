@@ -132,7 +132,7 @@ public:
   static bool GetBoolean(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
-      bool DefaultValue);
+      bool DefaultValue = false);
 
   /**
    * Retrieves an element from the array and attempts to convert it to an
@@ -165,7 +165,7 @@ public:
   static uint8 GetByte(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
-      uint8 DefaultValue);
+      uint8 DefaultValue = 0);
 
   /**
    * Retrieves an element from the array and attempts to convert it to a signed
@@ -199,7 +199,7 @@ public:
   static int32 GetInteger(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
-      int32 DefaultValue);
+      int32 DefaultValue = 0);
 
   /**
    * Retrieves an element from the array and attempts to convert it to a signed
@@ -233,7 +233,7 @@ public:
   static int64 GetInteger64(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
-      int64 DefaultValue);
+      int64 DefaultValue = 0);
 
   /**
    * Retrieves an element from the array and attempts to convert it to a 32-bit
@@ -266,7 +266,7 @@ public:
   static float GetFloat(
       UPARAM(ref) const FCesiumMetadataArray& array,
       int64 index,
-      float DefaultValue);
+      float DefaultValue = 0.0f);
 
   /**
    * Retrieves an element from the array and attempts to convert it to a 64-bit
@@ -324,5 +324,5 @@ public:
   static FString GetString(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
-      const FString& DefaultValue);
+      const FString& DefaultValue = "");
 };

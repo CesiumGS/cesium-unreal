@@ -1,3 +1,5 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #include "CesiumLifetime.h"
 #include "Async/Async.h"
 #include "Engine/StaticMesh.h"

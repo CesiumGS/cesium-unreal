@@ -6,16 +6,18 @@
 
 #include "CesiumExclusionZone.generated.h"
 
+struct UE_DEPRECATED(
+    4.26,
+    "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead.")
+    FCesiumExclusionZone;
+
 /**
  * A region that should be excluded from a tileset.
  *
  * This is **experimental**, and may change in future releases.
  */
 USTRUCT()
-struct UE_DEPRECATED(
-    4.26,
-    "Exclusion Zones have been deprecated. Please use Cartographic Polygon actor instead.")
-    FCesiumExclusionZone {
+struct CESIUMRUNTIME_API FCesiumExclusionZone {
   GENERATED_BODY()
 
   /**

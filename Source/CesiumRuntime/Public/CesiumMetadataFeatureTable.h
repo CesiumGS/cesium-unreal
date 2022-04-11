@@ -5,6 +5,7 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataProperty.h"
+#include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataFeatureTable.generated.h"
@@ -14,6 +15,11 @@ struct Model;
 struct Accessor;
 struct FeatureTable;
 } // namespace CesiumGltf
+
+struct UE_DEPRECATED(
+    4.26,
+    "FCesiumMetadataFeatureTable is deprecated, use FCesiumFeatureTable instead.")
+    FCesiumMetadataFeatureTable;
 
 /**
  * A Blueprint-accessible wrapper for a glTF feature table. A feature table is a
@@ -58,19 +64,30 @@ private:
   friend class UCesiumMetadataFeatureTableBlueprintLibrary;
 };
 
+class UE_DEPRECATED(
+    4.26,
+    "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary instead.")
+    UCesiumMetadataFeatureTableBlueprintLibrary;
+
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataFeatureTableBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
   /**
    * Gets the number of features in the feature table.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeatureTable instead."))
   static int64
   GetNumberOfFeatures(UPARAM(ref)
                           const FCesiumMetadataFeatureTable& FeatureTable);
@@ -81,7 +98,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeatureTable instead."))
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 VertexIndex);
@@ -94,7 +115,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeatureTable instead."))
   static TMap<FString, FCesiumMetadataGenericValue>
   GetMetadataValuesForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
@@ -109,7 +134,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeatureTable instead."))
   static TMap<FString, FString> GetMetadataValuesAsStringForFeatureID(
       UPARAM(ref) const FCesiumMetadataFeatureTable& featureTable,
       int64 FeatureID);
@@ -120,7 +149,13 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTable")
+      Category = "Cesium|Metadata|FeatureTable",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "UCesiumMetadataFeatureTableBlueprintLibrary is deprecated, use UCesiumFeatureTableBlueprintLibrary and FCesiumFeatureTable instead."))
   static const TMap<FString, FCesiumMetadataProperty>&
   GetProperties(UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable);
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
