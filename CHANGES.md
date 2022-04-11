@@ -2,6 +2,17 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- Deprecated parts of the old Blueprint API for feature ID attributes from `EXT_feature_metadata`. 
+
+##### Additions :tada:
+
+- Added a Blueprint API to access feature ID textures and feature textures from the `EXT_feature_metadata` extension. 
+- Improved the Blueprint API for feature ID attributes from `EXT_feature_metadata` (and upgraded batch tables).
+- Added the `UCesiumEncodedMetadataComponent` to enable styling with the metadata from the `EXT_feature_metadata` extension. This component provides a convenient way to query for existing metadata, dictate which metadata properties to encode for styling, and generate a starter material layer to access the wanted properties.
+- Added two example metadata styling materials for the NYC buildings tileset.
+
 ##### Fixes :wrench:
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
