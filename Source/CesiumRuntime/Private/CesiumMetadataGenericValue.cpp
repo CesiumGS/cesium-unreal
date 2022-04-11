@@ -104,9 +104,10 @@ FCesiumMetadataArray UCesiumMetadataGenericValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataGenericValue& Value) {
   return std::visit(
       [](auto value) -> FCesiumMetadataArray {
-        return CesiumMetadataConversions<
-            FCesiumMetadataArray,
-            decltype(value)>::convert(value, FCesiumMetadataArray());
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
+          return FCesiumMetadataArray(value);
+        }
+        return FCesiumMetadataArray();
       },
       Value._value);
 }
