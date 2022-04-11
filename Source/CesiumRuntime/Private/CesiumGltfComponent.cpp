@@ -873,7 +873,7 @@ static void loadPrimitive(
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     } else {
@@ -884,7 +884,7 @@ static void loadPrimitive(
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     }
@@ -2103,11 +2103,7 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
       UMaterialInstanceDynamic* pMaterial =
           Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
 
-#if ENGINE_MAJOR_VERSION >= 5
-      if (!IsValid(pMaterial)) {
-#else
-      if (pMaterial->IsPendingKillOrUnreachable()) {
-#endif
+      if (!IsValid(pMaterial) || pMaterial->IsUnreachable()) {
         // Don't try to update the material while it's in the process of being
         // destroyed. This can lead to the render thread freaking out when
         // it's asked to update a parameter for a material that has been

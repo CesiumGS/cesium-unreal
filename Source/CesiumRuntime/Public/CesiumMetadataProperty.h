@@ -333,6 +333,39 @@ public:
 
   /**
    * Retrieves the value of the property for the feature with the given ID and
+   * attempts to convert it to a 64-bit floating-point value.
+   *
+   * If the property is a single- or double-precision floating-point number, is
+   * is returned.
+   *
+   * If the property is an integer, it is converted to the closest representable
+   * single-precision floating-point number.
+   *
+   * If the property is a boolean, 0.0 is returned for false and 1.0 for true.
+   *
+   * If the property is a string and the entire string can be parsed as a
+   * number, the parsed value is returned. The string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Property")
+  static double GetFloat64(
+      UPARAM(ref) const FCesiumMetadataProperty& Property,
+      int64 FeatureID,
+      double DefaultValue = 0.0);
+
+  /**
+   * Retrieves the value of the property for the feature with the given ID and
    * attempts to convert it to a string value.
    *
    * Numeric properties are converted to a string with `FString::Format`, which
