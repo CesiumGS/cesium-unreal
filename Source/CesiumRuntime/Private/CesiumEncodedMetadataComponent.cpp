@@ -785,14 +785,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     OneTimeGeneratedNodes.Add(InputMaterial);
   }
 
-  bool AtleastOneFeatureIdAttribute = false;
-  for (const FFeatureTableDescription& featureTable : this->FeatureTables) {
-    if (featureTable.AccessType == ECesiumFeatureTableAccessType::Attribute) {
-      AtleastOneFeatureIdAttribute = true;
-      break;
-    }
-  }
-
   NodeX += 4 * IncrX;
 
   UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes = nullptr;

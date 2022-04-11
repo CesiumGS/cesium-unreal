@@ -570,7 +570,7 @@ static void updateTextureCoordinatesForMetadata(
         for (int64_t i = 0; i < vertices.Num(); ++i) {
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
-            uint32_t featureId = static_cast<float>(
+            float featureId = static_cast<float>(
                 UCesiumFeatureIdAttributeBlueprintLibrary::
                     GetFeatureIDForVertex(featureIdAttribute, i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
