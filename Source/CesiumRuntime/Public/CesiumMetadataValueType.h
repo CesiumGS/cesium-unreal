@@ -16,7 +16,6 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   Integer,
   Integer64,
   Float,
-  Float64,
   String,
   Array
 };

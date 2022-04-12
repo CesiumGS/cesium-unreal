@@ -17,23 +17,10 @@
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
 
-### v1.12.1 - 2022-04-06
-
-##### Fixes :wrench:
-
-- Fixed compiler errors with the official release of Unreal Engine 5.
-
 ### v1.12.0 - 2022-04-01
-
-##### Breaking Changes :mega:
-
-- Removed the `KeepWorldOriginNearCamera`, `OriginRebaseInsideSublevels`, and `MaximumWorldOriginDistanceFromCamera` options from `CesiumGeoreference`. These options are not usually necessary with Unreal Engine 5's double-precision coordinates.
-- Renamed the `WorldOriginCamera` property on `CesiumGeoreference` to `SubLevelCamera`, as this property is now only used for switching sub-levels. Core Redirects should automatically make this change in Blueprints.
-- Removed `Inaccurate` from the name of a large number of Blueprint functions, now that Unreal Engine 5 supports double-precision in Blueprints. Core Redirects should automatically make this change in Blueprints.
 
 ##### Additions :tada:
 
-- Cesium for Unreal automatically enables Unreal Engine 5's "Enable Large Worlds" setting, which is required for correct culling of Cesium tilesets.
 - Raster overlays are now, by default, rendered using the default settings for the `World` texture group, which yields much higher quality on many platforms by enabling anisotrpic texture filtering. Shimmering of overlay textures in the distance should be drastically reduced.
 - New options on `RasterOverlay` give the user control over the texture group, texture filtering, and mipmapping used for overlay textures.
 - Improved the mapping between glTF textures and Unreal Engine texture options, which should improve texture quality in tilesets.

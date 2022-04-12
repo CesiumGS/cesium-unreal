@@ -470,7 +470,7 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
 }
 
 void ACesiumSunSky::GetHMSFromSolarTime(
-    double InSolarTime,
+    float InSolarTime,
     int32& Hour,
     int32& Minute,
     int32& Second) {
@@ -509,7 +509,7 @@ bool ACesiumSunSky::IsDST(
 
 void ACesiumSunSky::SetSkyAtmosphereGroundRadius(
     USkyAtmosphereComponent* Sky,
-    double Radius) {
+    float Radius) {
   // Only update if there's a significant change to be made
   if (Sky && FMath::Abs(Sky->BottomRadius - Radius) > 0.1) {
     Sky->BottomRadius = Radius;

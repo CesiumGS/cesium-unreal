@@ -117,13 +117,24 @@ private:
 
 public:
   /**
+   * Returns the longitude in degrees (x), latitude in degrees (y),
+   * and height in meters (z) of the actor.
+   *
+   * Returns a zero vector if the component is not yet registered.
+   */
+  glm::dvec3 GetLongitudeLatitudeHeight() const;
+
+  /**
    * Returns the longitude in degrees (X), latitude in degrees (Y),
    * and height in meters (Z) of the actor.
+   *
+   * This function is inaccurate because large coordinate values are represented
+   * as singe-precision floating point numbers.
    *
    * Returns a zero vector if the component is not yet registered.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector GetLongitudeLatitudeHeight() const;
+  FVector InaccurateGetLongitudeLatitudeHeight() const;
 
   /**
    * Move the actor to the specified longitude in degrees (x), latitude
@@ -141,10 +152,13 @@ public:
    *
    * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
    * orientation will also be adjusted to account for globe curvature.
+   *
+   * This function is inaccurate because large coordinate values are represented
+   * as singe-precision floating point numbers.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void
-  MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
+  void InaccurateMoveToLongitudeLatitudeHeight(
+      const FVector& TargetLongitudeLatitudeHeight);
 
 private:
   /**
@@ -177,12 +191,23 @@ private:
 public:
   /**
    * Returns the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
-   * meters, downcasted to a single-precision floating point vector.
+   * meters.
    *
    * Returns a zero vector if the component is not yet registered.
    */
+  glm::dvec3 GetECEF() const;
+
+  /**
+   * Returns the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
+   * meters, downcasted to a single-precision floating point vector.
+   *
+   * Returns a zero vector if the component is not yet registered.
+   *
+   * This function is inaccurate because large coordinate values are represented
+   * as singe-precision floating point numbers.
+   */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector GetECEF() const;
+  FVector InaccurateGetECEF() const;
 
   /**
    * Moves the Actor to which this component is attached to a given globe
@@ -202,10 +227,13 @@ public:
    * If AdjustOrientationForGlobeWhenMoving is enabled, this method will also
    * update the orientation based on the globe curvature.
    *
+   * This function is inaccurate because large coordinate values are represented
+   * as singe-precision floating point numbers.
+   *
    * @param newPosition The new position.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void MoveToECEF(const FVector& TargetEcef);
+  void InaccurateMoveToECEF(const FVector& TargetEcef);
 
   /**
    * Rotates the Actor so that its local +Z axis is aligned with the ellipsoid

@@ -44,7 +44,7 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
 
   glm::dvec4 upEcef(
       CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
-          VecMath::createVector3D(this->GlobeAnchor->GetECEF())),
+          this->GlobeAnchor->GetECEF()),
       0.0);
   glm::dvec4 up = this->GlobeAnchor->ResolveGeoreference()
                       ->GetGeoTransforms()
@@ -71,7 +71,7 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
 
   // Transform the rotation in the ESU frame to the Unreal world frame.
   FMatrix enuAdjustmentMatrix =
-      this->GetGeoreference()->ComputeEastNorthUpToUnreal(
+      this->GetGeoreference()->InaccurateComputeEastNorthUpToUnreal(
           this->GetPawnViewLocation());
 
   return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
@@ -83,17 +83,17 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     const glm::dvec3& ECEFDestination,
-    double YawAtDestination,
-    double PitchAtDestination,
+    float YawAtDestination,
+    float PitchAtDestination,
     bool CanInterruptByMoving) {
 
   if (this->_bFlyingToLocation) {
     return;
   }
 
-  PitchAtDestination = glm::clamp(PitchAtDestination, -89.99, 89.99);
+  PitchAtDestination = glm::clamp(PitchAtDestination, -89.99f, 89.99f);
   // Compute source location in ECEF
-  glm::dvec3 ECEFSource = VecMath::createVector3D(this->GlobeAnchor->GetECEF());
+  glm::dvec3 ECEFSource = this->GlobeAnchor->GetECEF();
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
@@ -166,12 +166,12 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       if (this->FlyToAltitudeProfileCurve != NULL) {
         double maxAltitude = 30000;
         if (this->FlyToMaximumAltitudeCurve != NULL) {
-          maxAltitude =
-              this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
+          maxAltitude = static_cast<double>(
+              this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance));
         }
-        offsetAltitude =
+        offsetAltitude = static_cast<double>(
             maxAltitude *
-            this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+            this->FlyToAltitudeProfileCurve->GetFloatValue(percentage));
       }
 
       glm::dvec3 point = *scaled + upVector * (altitude + offsetAltitude);
@@ -186,10 +186,10 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   this->_bCanInterruptFlight = CanInterruptByMoving;
 }
 
-void AGlobeAwareDefaultPawn::FlyToLocationECEF(
+void AGlobeAwareDefaultPawn::InaccurateFlyToLocationECEF(
     const FVector& ECEFDestination,
-    double YawAtDestination,
-    double PitchAtDestination,
+    float YawAtDestination,
+    float PitchAtDestination,
     bool CanInterruptByMoving) {
 
   this->FlyToLocationECEF(
@@ -201,8 +201,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
 void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     const glm::dvec3& LongitudeLatitudeHeightDestination,
-    double YawAtDestination,
-    double PitchAtDestination,
+    float YawAtDestination,
+    float PitchAtDestination,
     bool CanInterruptByMoving) {
 
   if (!IsValid(this->GetGeoreference())) {
@@ -223,10 +223,10 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
 }
 
 UFUNCTION(BlueprintCallable)
-void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
+void AGlobeAwareDefaultPawn::InaccurateFlyToLocationLongitudeLatitudeHeight(
     const FVector& LongitudeLatitudeHeightDestination,
-    double YawAtDestination,
-    double PitchAtDestination,
+    float YawAtDestination,
+    float PitchAtDestination,
     bool CanInterruptByMoving) {
 
   this->FlyToLocationLongitudeLatitudeHeight(
@@ -349,8 +349,8 @@ ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
   return this->GlobeAnchor->ResolveGeoreference();
 }
 
-void AGlobeAwareDefaultPawn::_moveAlongViewAxis(EAxis::Type axis, double Val) {
-  if (Val == 0.0) {
+void AGlobeAwareDefaultPawn::_moveAlongViewAxis(EAxis::Type axis, float Val) {
+  if (Val == 0.0f) {
     return;
   }
 
@@ -362,8 +362,8 @@ void AGlobeAwareDefaultPawn::_moveAlongViewAxis(EAxis::Type axis, double Val) {
 
 void AGlobeAwareDefaultPawn::_moveAlongVector(
     const FVector& vector,
-    double Val) {
-  if (Val == 0.0) {
+    float Val) {
+  if (Val == 0.0f) {
     return;
   }
 

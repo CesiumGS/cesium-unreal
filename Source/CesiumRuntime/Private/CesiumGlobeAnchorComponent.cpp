@@ -61,7 +61,7 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   this->ResolveGeoreference();
 }
 
-FVector UCesiumGlobeAnchorComponent::GetECEF() const {
+glm::dvec3 UCesiumGlobeAnchorComponent::GetECEF() const {
   if (!this->_actorToECEFIsValid) {
     UE_LOG(
         LogCesium,
@@ -69,10 +69,14 @@ FVector UCesiumGlobeAnchorComponent::GetECEF() const {
         TEXT(
             "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
         *this->GetName());
-    return FVector(0.0);
+    return glm::dvec3(0.0);
   }
 
-  return VecMath::createVector(glm::dvec3(this->_actorToECEF[3]));
+  return glm::dvec3(this->_actorToECEF[3]);
+}
+
+FVector UCesiumGlobeAnchorComponent::InaccurateGetECEF() const {
+  return VecMath::createVector(this->GetECEF());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToECEF(const glm::dvec3& newPosition) {
@@ -82,7 +86,8 @@ void UCesiumGlobeAnchorComponent::MoveToECEF(const glm::dvec3& newPosition) {
   this->_applyCartesianProperties();
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF(const FVector& TargetEcef) {
+void UCesiumGlobeAnchorComponent::InaccurateMoveToECEF(
+    const FVector& TargetEcef) {
   this->MoveToECEF(VecMath::createVector3D(TargetEcef));
 }
 
@@ -103,8 +108,7 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
 
   // Compute the surface normal of the ellipsoid
   const glm::dvec3 ellipsoidNormal =
-      this->ResolvedGeoreference->ComputeGeodeticSurfaceNormal(
-          VecMath::createVector3D(this->GetECEF()));
+      this->ResolvedGeoreference->ComputeGeodeticSurfaceNormal(this->GetECEF());
 
   // Find the shortest rotation to align local up with the ellipsoid normal
   const glm::dquat R = glm::rotation(actorUp, ellipsoidNormal);
@@ -202,7 +206,7 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
   this->ResolvedGeoreference = nullptr;
 }
 
-FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
+glm::dvec3 UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
   if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
     UE_LOG(
         LogCesium,
@@ -210,11 +214,16 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
         TEXT(
             "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
         *this->GetName());
-    return FVector(0.0);
+    return glm::dvec3(0.0);
   }
 
   return this->ResolvedGeoreference->TransformEcefToLongitudeLatitudeHeight(
       this->GetECEF());
+}
+
+FVector
+UCesiumGlobeAnchorComponent::InaccurateGetLongitudeLatitudeHeight() const {
+  return VecMath::createVector(this->GetLongitudeLatitudeHeight());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
@@ -234,7 +243,7 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
           TargetLongitudeLatitudeHeight));
 }
 
-void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
+void UCesiumGlobeAnchorComponent::InaccurateMoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight) {
   return this->MoveToLongitudeLatitudeHeight(
       VecMath::createVector3D(TargetLongitudeLatitudeHeight));

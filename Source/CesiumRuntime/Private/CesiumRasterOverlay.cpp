@@ -118,11 +118,11 @@ void UCesiumRasterOverlay::Refresh() {
   this->AddToTileset();
 }
 
-double UCesiumRasterOverlay::GetMaximumScreenSpaceError() const {
+float UCesiumRasterOverlay::GetMaximumScreenSpaceError() const {
   return this->MaximumScreenSpaceError;
 }
 
-void UCesiumRasterOverlay::SetMaximumScreenSpaceError(double Value) {
+void UCesiumRasterOverlay::SetMaximumScreenSpaceError(float Value) {
   this->MaximumScreenSpaceError = Value;
   this->Refresh();
 }
