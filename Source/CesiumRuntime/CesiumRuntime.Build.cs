@@ -142,7 +142,9 @@ public class CesiumRuntime : ModuleRules
                 "Projects",
                 "RenderCore",
                 "SunPosition",
-                "DeveloperSettings"
+                "DeveloperSettings",
+                "RenderCore",
+                "Renderer"
             }
         );
 
