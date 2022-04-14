@@ -1,5 +1,9 @@
 # Change Log
 
+### v1.12.2 - 2022-04-14
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.14.0 to v0.14.1 to fix two important bugs. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.12.0 - 2022-04-01
 
 ##### Additions :tada:
