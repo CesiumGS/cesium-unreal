@@ -13,6 +13,7 @@
 #include "CustomDepthParameters.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include "PrimitiveSceneProxy.h"
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
@@ -427,6 +428,13 @@ public:
   FBodyInstance BodyInstance;
 
 private:
+  int32 OccludedTilesCount = 0;
+  bool WaitingForOcclusion = false;
+  TArray<UPrimitiveComponent*> OccludedPrimitives;
+
+  void _countOccludedPrims(
+      TArray<FSceneViewState*>&& views,
+      TArray<UPrimitiveComponent*>&& primitives);
   /**
    * The type of source from which to load this tileset.
    */

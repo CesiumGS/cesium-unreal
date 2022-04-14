@@ -36,12 +36,12 @@
 #include "CreateModelOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/SceneCapture2D.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Engine/World.h"
-#include "Engine/LocalPlayer.h"
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
@@ -54,6 +54,8 @@
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
 #include "PixelFormat.h"
+#include "Runtime/Renderer/Private/ScenePrivate.h"
+#include "SceneTypes.h"
 #include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -62,7 +64,6 @@
 #include <glm/trigonometric.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
-#include "Runtime/Renderer/Private/ScenePrivate.h"
 
 FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
@@ -1569,15 +1570,13 @@ void ACesium3DTileset::showTilesToRender(
 }
 
 namespace {
-  
-template <typename Tag, typename Tag::type M>
-struct Rob {
+
+template <typename Tag, typename Tag::type M> struct Rob {
 public:
-  friend typename Tag::type get(Tag) {
-    return M;
-  }
+  friend typename Tag::type get(Tag) { return M; }
 };
 
+// Hack to retrieve the private ULocalPlayer::ViewStates
 class LocalPlayer_f {
 public:
   typedef TArray<FSceneViewStateReference> ULocalPlayer::*type;
@@ -1586,94 +1585,104 @@ public:
 
 template struct Rob<LocalPlayer_f, &ULocalPlayer::ViewStates>;
 
-void countOccludedPrims(FSceneViewState* pViewState, TArray<UPrimitiveComponent*>& primitives) {
-  if (pViewState) {
-    return;
-  }
+} // namespace
 
-  int32 occludedTiles = 0;
-  for (FPrimitiveOcclusionHistory& primitiveHistory :
-       pViewState->PrimitiveOcclusionHistorySet) {
+// TODO: make this const-correct
+void ACesium3DTileset::_countOccludedPrims(
+    TArray<FSceneViewState*>&& views,
+    TArray<UPrimitiveComponent*>&& primitives) {
+  // I think passing UPrimitiveComponent to render thread is safe, UE4 uses
+  // some sort of fencing to make sure primitive components don't get GC'd
+  // during the render thread. I'm less sure if it's thread safe with how we
+  // manually destroy resources from the component.
+  this->WaitingForOcclusion = true;
+  this->OccludedTilesCount = 0;
+  this->OccludedPrimitives.Reset(primitives.Num());
+  ENQUEUE_RENDER_COMMAND(CountOccludedPrimitives)
+  ([views = std::move(views),
+    primitives = std::move(primitives),
+    &OccludedTilesCount = this->OccludedTilesCount,
+    &WaitingForOcclusion =
+        this->WaitingForOcclusion](FRHICommandList& RHICmdList) {
+    for (const UPrimitiveComponent* pPrimitive : primitives) {
+      if (pPrimitive) {
+        // Check that the primitive is occluded in every view
+        bool isOccluded = false;
+        for (FSceneViewState* pViewState : views) {
+          if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
+            for (FPrimitiveOcclusionHistory& primitiveHistory :
+                 pViewState->PrimitiveOcclusionHistorySet) {
+              if (primitiveHistory.PrimitiveId == pPrimitive->ComponentId &&
+                  primitiveHistory.OcclusionStateWasDefiniteLastFrame) {
+                isOccluded = primitiveHistory.WasOccludedLastFrame;
+                break;
+              }
+            }
 
-    UPrimitiveComponent** ppPrimitive =
-        primitives.FindByPredicate(
-            [&primitiveHistory](const UPrimitiveComponent* pComponent) {
-              return primitiveHistory.PrimitiveId == pComponent->ComponentId;
-            });
-    if (ppPrimitive) {
-      UPrimitiveComponent* pPrimitive = *ppPrimitive;
-      if (primitiveHistory.WasOccludedLastFrame) {
-        ++occludedTiles;
+            if (!isOccluded) {
+              break;
+            }
+          }
+        }
+
+        if (isOccluded) {
+          ++OccludedTilesCount;
+        }
       }
     }
-  }
 
-  if (occludedTiles != 0) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Occluded Tiles Last Frame: %d"),
-        occludedTiles);
-  }
+    WaitingForOcclusion = false;
+  });
 }
-} // namespace
+
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
   // EXPERIMENTS BEGIN
-  TArray<UPrimitiveComponent*> primitiveComponents;
-  this->GetComponents<UPrimitiveComponent>(
-      primitiveComponents,
-      false);
 
-  /** / this commented out code may be useful
-  if (GEngine && GEngine->GameViewport) {
-    TArray<FSceneView> sceneViews;
+  if (!this->WaitingForOcclusion) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("Occluded Tiles Count: %d"),
+        this->OccludedTilesCount);
+
+    TArray<FSceneViewState*> views;
     UWorld* pWorld = this->GetWorld();
-
-    if (pWorld) {
+    if (GEngine && pWorld) {
       for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
            playerControllerIt;
            playerControllerIt++) {
         const TWeakObjectPtr<APlayerController> pPlayerController =
             *playerControllerIt;
-        if (pPlayerController) {
+        if (pPlayerController != nullptr) {
           ULocalPlayer* pLocalPlayer = pPlayerController->GetLocalPlayer();
           if (pLocalPlayer) {
-            pLocalPlayer->CalcSceneView(
-
-            )
+            for (FSceneViewStateReference& viewRef :
+                 pLocalPlayer->*get(LocalPlayer_f())) {
+              views.Add((FSceneViewState*)viewRef.GetReference());
+            }
           }
         }
       }
     }
-  }*/
-
-  if (GEngine && this->GetWorld()) {
-    // TODO: Check all localplayers
-    ULocalPlayer* pLocalPlayer = 
-        this->GetWorld()->GetFirstLocalPlayerFromController<ULocalPlayer>();
-    if (pLocalPlayer) {
-      TArray<FSceneViewStateReference> viewRefs =
-          pLocalPlayer->*get(LocalPlayer_f());
-      for (FSceneViewStateReference& viewRef : viewRefs) {
-        FSceneViewState* pViewState =
-            (FSceneViewState*)viewRef.GetReference();
-        //countOccludedPrims(pViewState, primitiveComponents);
+#if WITH_EDITOR
+    if (GEditor) {
+      TArray<FEditorViewportClient*> viewports =
+          GEditor->GetAllViewportClients();
+      for (FEditorViewportClient* viewport : viewports) {
+        views.Add((FSceneViewState*)viewport->ViewState.GetReference());
       }
     }
-  }
-#if WITH_EDITOR
-  if (GEditor) {
-    TArray<FEditorViewportClient*> viewports = GEditor->GetAllViewportClients();
-    for (FEditorViewportClient* viewport : viewports) {
-      FSceneViewState* pViewState =
-          (FSceneViewState*)viewport->ViewState.GetReference();
-      countOccludedPrims(pViewState, primitiveComponents);
-    }
-  }
 #endif
+
+    TArray<UPrimitiveComponent*> primitiveComponents;
+    this->GetComponents<UPrimitiveComponent>(primitiveComponents, false);
+
+    this->_countOccludedPrims(std::move(views), std::move(primitiveComponents));
+  }
+
   // EXPERIMENTS END
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
