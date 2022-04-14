@@ -91,6 +91,7 @@ public class CesiumRuntime : ModuleRules
             "spdlog",
             "sqlite3",
             "tinyxml2",
+            "TracyClient",
             "uriparser",
             "ktx_read"
         };
@@ -161,6 +162,7 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_XYZW_ONLY",
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
+                "TRACY_ENABLE",
                 //"CESIUM_TRACING_ENABLED"
             }
         );
