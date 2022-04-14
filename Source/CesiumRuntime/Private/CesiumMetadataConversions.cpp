@@ -13,6 +13,8 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
   case ECesiumMetadataTrueType::Int16:
   case ECesiumMetadataTrueType::Uint16:
   case ECesiumMetadataTrueType::Int32:
+  // TODO: remove this one
+  case ECesiumMetadataTrueType::Uint32:
     return ECesiumMetadataBlueprintType::Integer;
   case ECesiumMetadataTrueType::Int64:
     return ECesiumMetadataBlueprintType::Integer64;
@@ -26,5 +28,26 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
     return ECesiumMetadataBlueprintType::Array;
   default:
     return ECesiumMetadataBlueprintType::None;
+  }
+}
+
+ECesiumMetadataPackedGpuType
+CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType) {
+  switch (trueType) {
+  case ECesiumMetadataTrueType::Boolean:
+  case ECesiumMetadataTrueType::Int8: // lossy or reinterpreted
+  case ECesiumMetadataTrueType::Uint8:
+    return ECesiumMetadataPackedGpuType::Uint8;
+  case ECesiumMetadataTrueType::Float32:
+  case ECesiumMetadataTrueType::Float64: // lossy
+  case ECesiumMetadataTrueType::Int16:
+  case ECesiumMetadataTrueType::Uint16:
+  case ECesiumMetadataTrueType::Int32:  // lossy or reinterpreted
+  case ECesiumMetadataTrueType::Uint32: // lossy or reinterpreted
+  case ECesiumMetadataTrueType::Int64:  // lossy
+  case ECesiumMetadataTrueType::Uint64: // lossy
+    return ECesiumMetadataPackedGpuType::Float;
+  default:
+    return ECesiumMetadataPackedGpuType::None;
   }
 }

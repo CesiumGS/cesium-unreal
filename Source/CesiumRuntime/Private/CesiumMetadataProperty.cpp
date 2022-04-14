@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataProperty.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataConversions.h"
 
 using namespace CesiumGltf;
@@ -33,6 +34,11 @@ int64 UCesiumMetadataPropertyBlueprintLibrary::GetNumberOfFeatures(
   return std::visit(
       [](const auto& view) { return view.size(); },
       Property._property);
+}
+
+int64 UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property._componentCount;
 }
 
 bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
@@ -125,9 +131,17 @@ FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
   return std::visit(
       [featureID](const auto& v) -> FCesiumMetadataArray {
         auto value = v.get(featureID);
-        return CesiumMetadataConversions<
-            FCesiumMetadataArray,
-            decltype(value)>::convert(value, FCesiumMetadataArray());
+
+        auto createArrayView = [](const auto& array) -> FCesiumMetadataArray {
+          return FCesiumMetadataArray(array);
+        };
+
+        // TODO: Is this the best way?
+        if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
+          return createArrayView(value);
+        }
+
+        return FCesiumMetadataArray();
       },
       Property._property);
 }
@@ -141,4 +155,9 @@ UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
         return FCesiumMetadataGenericValue{view.get(featureID)};
       },
       Property._property);
+}
+
+bool UCesiumMetadataPropertyBlueprintLibrary::IsNormalized(
+    UPARAM(ref) const FCesiumMetadataProperty& Property) {
+  return Property._normalized;
 }

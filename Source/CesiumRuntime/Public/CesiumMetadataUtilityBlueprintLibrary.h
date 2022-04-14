@@ -1,12 +1,21 @@
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+
 #pragma once
 
-#include "CesiumMetadataFeatureTable.h"
+#include "CesiumFeatureTable.h"
 #include "CesiumMetadataGenericValue.h"
+#include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
+
+struct FCesiumFeatureIdAttribute;
+struct FCesiumFeatureIdTexture;
+
+// REMOVE AFTER DEPRECATION
+struct FCesiumMetadataFeatureTable;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
@@ -15,6 +24,17 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
 
 public:
   /**
+   * Gets the model metadata of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned metadata is empty
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility")
+  static const FCesiumMetadataModel&
+  GetModelMetadata(const UPrimitiveComponent* component);
+
+  /**
    * Gets the primitive metadata of a glTF primitive component. If component is
    * not a Cesium glTF primitive component, the returned metadata is empty
    */
@@ -22,7 +42,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
-  static FCesiumMetadataPrimitive
+  static const FCesiumMetadataPrimitive&
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
@@ -53,14 +73,33 @@ public:
       int64 faceID);
 
   /**
-   * Gets the feature ID associated with a given face for a given feature table.
+   * Gets the feature ID associated with a given face for a feature id
+   * attribute.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
+  static int64 GetFeatureIDFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
+      int64 faceID);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets the feature ID associated with a given face for a given feature table.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "GetFeatureIDForFace(Primitive, FeatureTable) is deprecated. Please use GetFeatureIDFromFaceID(Primitive, FeatureIdAttribute)."))
   static int64 GetFeatureIDForFace(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
       UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
       int64 faceID);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

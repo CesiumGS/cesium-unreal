@@ -12,6 +12,9 @@
 ECesiumMetadataBlueprintType
 CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType);
 
+ECesiumMetadataPackedGpuType
+CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType);
+
 // Default conversion, just returns the default value.
 template <typename TTo, typename TFrom, typename Enable = void>
 struct CesiumMetadataConversions {
