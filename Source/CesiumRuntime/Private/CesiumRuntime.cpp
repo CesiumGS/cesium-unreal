@@ -30,6 +30,20 @@ void FCesiumRuntimeModule::StartupModule() {
                          .time_since_epoch()
                          .count()) +
       ".json");
+
+#ifdef TRACY_ENABLE
+  bool tracingEnabled = true;
+#else
+  bool tracingEnabled = false;
+#endif
+
+  if (tracingEnabled != CesiumUtility::isCesiumTracingEnabled()) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "cesium-native and cesium-unreal don't agree on whether tracing is enabled. You're probably about to crash."));
+  }
 }
 
 void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
