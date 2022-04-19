@@ -7,6 +7,22 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 
+class FCesiumGltfPrimitiveSceneProxy : public FStaticMeshSceneProxy {
+public:
+  FCesiumGltfPrimitiveSceneProxy(const UCesiumGltfPrimitiveComponent* pComponent) :
+    FStaticMeshSceneProxy(pComponent, false) {}
+
+  // Explicitly disable dynamic occlusion culling on gltf primitives since we
+  // will be handling it ourselves. The selection will receive occlusion 
+  // feedback via a stand-in UCesiumBoundingVolumeComponent for every traversed
+  // tile, so occluded tiles should automatically be culled. Unreal will waste
+  // draw calls computing occlusion on these primitives if we don't disable it
+  // here.
+  bool CanBeOccluded() override {
+    return false;
+  }
+};
+
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   // Set this component to be initialized when the game starts, and to be ticked
@@ -33,6 +49,29 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
       FVector(transform[1].x, transform[1].y, transform[1].z),
       FVector(transform[2].x, transform[2].y, transform[2].z),
       FVector(transform[3].x, transform[3].y, transform[3].z))));
+}
+
+FPrimitiveSceneProxy* UCesiumGltfPrimitiveComponent::CreateSceneProxy() {
+  // Copied and adapted from UStaticMeshComponent::CreateSceneProxy
+
+  if (GetStaticMesh() == nullptr || GetStaticMesh()->GetRenderData() == nullptr)
+	{
+		return nullptr;
+	}
+
+	const FStaticMeshLODResourcesArray& LODResources = GetStaticMesh()->GetRenderData()->LODResources;
+	if (LODResources.Num() == 0	|| LODResources[FMath::Clamp<int32>(GetStaticMesh()->GetMinLOD().Default, 0, LODResources.Num()-1)].VertexBuffers.StaticMeshVertexBuffer.GetNumVertices() == 0)
+	{
+		return nullptr;
+	}
+	LLM_SCOPE(ELLMTag::StaticMesh);
+
+	FPrimitiveSceneProxy* Proxy = ::new FCesiumGltfPrimitiveSceneProxy(this);
+#if STATICMESH_ENABLE_DEBUG_RENDERING
+	SendRenderDebugPhysics(Proxy);
+#endif
+
+	return Proxy;
 }
 
 namespace {

@@ -23,6 +23,7 @@
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
+class UCesiumBoundingVolumeComponent;
 struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
@@ -303,6 +304,12 @@ public:
   bool EnableFrustumCulling = true;
 
   /**
+   * Whether to cull tiles that are occluded. 
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  bool EnableOcclusionCulling = true;
+
+  /**
    * Whether to cull tiles that are occluded by fog.
    *
    * This does not refer to the atmospheric fog of the Unreal Engine,
@@ -429,13 +436,6 @@ public:
   FBodyInstance BodyInstance;
 
 private:
-  int32 OccludedTilesCount = 0;
-  bool WaitingForOcclusion = false;
-  TArray<UPrimitiveComponent*> OccludedPrimitives;
-
-  void _countOccludedPrims(
-      TArray<FSceneViewState*>&& views,
-      TArray<UPrimitiveComponent*>&& primitives);
   /**
    * The type of source from which to load this tileset.
    */
@@ -766,6 +766,19 @@ private:
   std::vector<FCesiumCamera> GetPlayerCameras() const;
   std::vector<FCesiumCamera> GetSceneCaptures() const;
 
+  // TODO: Does this need to be atomic? Is it already atomic?
+  // Whether we are waiting for occlusion results from the render thread.
+  bool WaitingForOcclusion = false;
+
+  // Dispatches a render thread task to retrieves occlusion information.
+  void RetrieveOccludedBoundingVolumes(
+      TArray<FSceneViewState*>&& views,
+      TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes);
+  
+  // Polls to check whether the render thread occlusion retrieval task is done,
+  // syncs render thread results to the game thread, and dispatches a new 
+  // render thread occlusion task.
+  void TickOcclusionHandling();
 public:
   /**
    * Update the transforms of the glTF components based on the

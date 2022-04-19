@@ -31,6 +31,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
+#include "CesiumBoundingVolumeComponent.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "CreateGltfOptions.h"
@@ -814,7 +815,9 @@ void ACesium3DTileset::LoadTileset() {
       std::make_shared<UnrealResourcePreparer>(this),
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
-      spdlog::default_logger()};
+      spdlog::default_logger(),
+      // TODO: manage deletion of this!!
+      std::make_shared(NewObject<UCesiumBoundingVolumeComponent>(this))};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -1468,8 +1471,8 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.forbidHoles = this->ForbidHoles;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
-
   options.enableFrustumCulling = this->EnableFrustumCulling;
+  options.enableOcclusionCulling = this->EnableOcclusionCulling;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
@@ -1589,56 +1592,49 @@ public:
 };
 
 // Hack to retrieve the private ULocalPlayer::ViewStates
-class LocalPlayer_f {
+class ULocalPlayer_Hack {
 public:
   typedef TArray<FSceneViewStateReference> ULocalPlayer::*type;
-  friend type get(LocalPlayer_f);
+  friend type get(ULocalPlayer_Hack);
 };
 
-template struct Rob<LocalPlayer_f, &ULocalPlayer::ViewStates>;
-
+template struct Rob<ULocalPlayer_Hack, &ULocalPlayer::ViewStates>;
 } // namespace
 
-// TODO: make this const-correct
-void ACesium3DTileset::_countOccludedPrims(
+void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
     TArray<FSceneViewState*>&& views,
-    TArray<UPrimitiveComponent*>&& primitives) {
+    TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes) {
   // I think passing UPrimitiveComponent to render thread is safe, UE4 uses
   // some sort of fencing to make sure primitive components don't get GC'd
   // during the render thread. I'm less sure if it's thread safe with how we
   // manually destroy resources from the component.
   this->WaitingForOcclusion = true;
-  this->OccludedTilesCount = 0;
-  this->OccludedPrimitives.Reset(primitives.Num());
-  ENQUEUE_RENDER_COMMAND(CountOccludedPrimitives)
+  ENQUEUE_RENDER_COMMAND(RetrieveOccludedPrimitives)
   ([views = std::move(views),
-    primitives = std::move(primitives),
-    &OccludedTilesCount = this->OccludedTilesCount,
+    boundingVolumes = std::move(boundingVolumes),
     &WaitingForOcclusion =
         this->WaitingForOcclusion](FRHICommandList& RHICmdList) {
-    for (const UPrimitiveComponent* pPrimitive : primitives) {
+    for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
       if (pPrimitive) {
-        // Check that the primitive is occluded in every view
+        // Check that the primitive is definitely occluded in every view.
         bool isOccluded = false;
+        bool isDefinite = true;
         for (FSceneViewState* pViewState : views) {
           if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
             for (FPrimitiveOcclusionHistory& primitiveHistory :
                  pViewState->PrimitiveOcclusionHistorySet) {
-              if (primitiveHistory.PrimitiveId == pPrimitive->ComponentId &&
-                  primitiveHistory.OcclusionStateWasDefiniteLastFrame) {
-                isOccluded = primitiveHistory.WasOccludedLastFrame;
+              if (primitiveHistory.PrimitiveId == pBoundingVolume->ComponentId) {
+                isDefinite &= 
+                    primitiveHistory.OcclusionStateWasDefiniteLastFrame;
+                isOccluded |= primitiveHistory.WasOccludedLastFrame;
                 break;
               }
-            }
-
-            if (!isOccluded) {
-              break;
             }
           }
         }
 
-        if (isOccluded) {
-          ++OccludedTilesCount;
+        if (isDefinite) {
+          pBoundingVolume->SetOcclusionResult_RenderThread(isOccluded);
         }
       }
     }
@@ -1647,18 +1643,18 @@ void ACesium3DTileset::_countOccludedPrims(
   });
 }
 
-// Called every frame
-void ACesium3DTileset::Tick(float DeltaTime) {
-  Super::Tick(DeltaTime);
-
-  // EXPERIMENTS BEGIN
-
+void ACesium3DTileset::TickOcclusionHandling() {
   if (!this->WaitingForOcclusion) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("Occluded Tiles Count: %d"),
-        this->OccludedTilesCount);
+    TArray<UCesiumBoundingVolumeComponent*> boundingVolumes;
+    this->GetComponents<UCesiumBoundingVolumeComponent>(primitiveComponents, false);
+
+    // We are not waiting on the render thread, we can let the primitives know
+    // about the last-received occlusion info.
+    for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
+      if (pBoundingVolume) {
+        pBoundingVolume->SyncOcclusionResult();
+      }
+    }
 
     TArray<FSceneViewState*> views;
     UWorld* pWorld = this->GetWorld();
@@ -1672,7 +1668,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
           ULocalPlayer* pLocalPlayer = pPlayerController->GetLocalPlayer();
           if (pLocalPlayer) {
             for (FSceneViewStateReference& viewRef :
-                 pLocalPlayer->*get(LocalPlayer_f())) {
+                 pLocalPlayer->*get(ULocalPlayer_Hack())) {
               views.Add((FSceneViewState*)viewRef.GetReference());
             }
           }
@@ -1689,13 +1685,15 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
 #endif
 
-    TArray<UPrimitiveComponent*> primitiveComponents;
-    this->GetComponents<UPrimitiveComponent>(primitiveComponents, false);
-
-    this->_countOccludedPrims(std::move(views), std::move(primitiveComponents));
+    this->RetrieveOccludedBoundingVolumes(
+        std::move(views), 
+        std::move(boundingVolumes));
   }
+}
 
-  // EXPERIMENTS END
+// Called every frame
+void ACesium3DTileset::Tick(float DeltaTime) {
+  Super::Tick(DeltaTime);
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
   if (!pRoot) {
@@ -1719,6 +1717,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   updateTilesetOptionsFromProperties();
 
+  // TODO: Tileset traversal and occlusion history retrieval may use different 
+  // cameras, look for ways to consolidate them. 
+  if (this->EnableOcclusionCulling) {
+    this->TickOcclusionHandling();
+  }
+  
   std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {
     return;
