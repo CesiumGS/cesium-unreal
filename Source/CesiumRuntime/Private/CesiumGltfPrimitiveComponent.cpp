@@ -174,11 +174,13 @@ struct CalcBoundsOperation {
   FBoxSphereBounds
   operator()(const CesiumGeometry::BoundingSphere& sphere) const {
     glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
-    glm::dvec3 center = glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
+    glm::dvec3 center =
+        glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
     glm::dmat3 halfAxes = glm::dmat3(matrix) * glm::dmat3(sphere.getRadius());
 
     // The sphere only needs to reach the sides of the box, not the corners.
-    double sphereRadius = glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
+    double sphereRadius =
+        glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
     sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
 
     FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
