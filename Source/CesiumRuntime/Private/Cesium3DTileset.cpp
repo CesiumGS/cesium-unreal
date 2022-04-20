@@ -817,7 +817,8 @@ void ACesium3DTileset::LoadTileset() {
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),
       // TODO: manage deletion of this!!
-      std::make_shared(NewObject<UCesiumBoundingVolumeComponent>(this))};
+      std::shared_ptr<Cesium3DTilesSelection::TileOcclusionRendererProxyPool>(
+        NewObject<UCesiumBoundingVolumePoolComponent>(this))};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -1547,7 +1548,7 @@ void ACesium3DTileset::showTilesToRender(
 
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
-    if (!Gltf) {
+    if (!Gltf || Gltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
       // or the tile is from an external tileset and does not directly
@@ -1615,7 +1616,7 @@ void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
     &WaitingForOcclusion =
         this->WaitingForOcclusion](FRHICommandList& RHICmdList) {
     for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
-      if (pPrimitive) {
+      if (pBoundingVolume) {
         // Check that the primitive is definitely occluded in every view.
         bool isOccluded = false;
         bool isDefinite = true;
@@ -1646,7 +1647,7 @@ void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
 void ACesium3DTileset::TickOcclusionHandling() {
   if (!this->WaitingForOcclusion) {
     TArray<UCesiumBoundingVolumeComponent*> boundingVolumes;
-    this->GetComponents<UCesiumBoundingVolumeComponent>(primitiveComponents, false);
+    this->GetComponents<UCesiumBoundingVolumeComponent>(boundingVolumes, false);
 
     // We are not waiting on the render thread, we can let the primitives know
     // about the last-received occlusion info.

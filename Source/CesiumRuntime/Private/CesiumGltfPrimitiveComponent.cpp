@@ -10,7 +10,7 @@
 class FCesiumGltfPrimitiveSceneProxy : public FStaticMeshSceneProxy {
 public:
   FCesiumGltfPrimitiveSceneProxy(const UCesiumGltfPrimitiveComponent* pComponent) :
-    FStaticMeshSceneProxy(pComponent, false) {}
+    FStaticMeshSceneProxy((UStaticMeshComponent*)pComponent, false) {}
 
   // Explicitly disable dynamic occlusion culling on gltf primitives since we
   // will be handling it ourselves. The selection will receive occlusion 
@@ -18,7 +18,7 @@ public:
   // tile, so occluded tiles should automatically be culled. Unreal will waste
   // draw calls computing occlusion on these primitives if we don't disable it
   // here.
-  bool CanBeOccluded() override {
+  bool CanBeOccluded() const override {
     return false;
   }
 };
@@ -66,7 +66,9 @@ FPrimitiveSceneProxy* UCesiumGltfPrimitiveComponent::CreateSceneProxy() {
 	}
 	LLM_SCOPE(ELLMTag::StaticMesh);
 
-	FPrimitiveSceneProxy* Proxy = ::new FCesiumGltfPrimitiveSceneProxy(this);
+	FPrimitiveSceneProxy* Proxy = new FCesiumGltfPrimitiveSceneProxy(this);
+
+  //FPrimitiveSceneProxy* Proxy = new FStaticMeshSceneProxy(this);
 #if STATICMESH_ENABLE_DEBUG_RENDERING
 	SendRenderDebugPhysics(Proxy);
 #endif

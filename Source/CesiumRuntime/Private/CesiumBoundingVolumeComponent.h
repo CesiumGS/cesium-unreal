@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Components/PrimitiveComponent.h"	
+#include "Components/SceneComponent.h"
 #include "PrimitiveSceneProxy.h"
 #include "CoreMinimal.h"
 #include <glm/mat4x4.hpp>
@@ -15,17 +16,24 @@ class ACesiumGeoreference;
 
 UCLASS()
 class UCesiumBoundingVolumePoolComponent : 
-public UActorComponent
+public USceneComponent,
 public Cesium3DTilesSelection::TileOcclusionRendererProxyPool {
   GENERATED_BODY()
 
 public:
-  ACesiumGeoreference* Georeference;
+  /**
+   * Updates bounding volume transforms from a new double-precision
+   * transformation from the Cesium world to the Unreal Engine world.
+   *
+   * @param CesiumToUnrealTransform The new transformation.
+   */
+  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
 protected:
-  TileOcclusionRendererProxy* createProxy() override;
+  Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy() override;
 
-  void destroyProxy(TileOcclusionRendererProxy* pProxy) override;
+  void destroyProxy(
+      Cesium3DTilesSelection::TileOcclusionRendererProxy* pProxy) override;
 };
 
 UCLASS()
@@ -35,7 +43,7 @@ public UPrimitiveComponent, public Cesium3DTilesSelection::TileOcclusionRenderer
 
 public:
   // Sets default values for this component's properties
-  UCesiumBoundingVolumeComponent() = default;
+  UCesiumBoundingVolumeComponent();
   virtual ~UCesiumBoundingVolumeComponent() = default;
 
   FPrimitiveSceneProxy* CreateSceneProxy() override;
@@ -59,7 +67,7 @@ public:
   /**
    * Updates this component's transform from a new double-precision
    * transformation from the Cesium world to the Unreal Engine world, as well as
-   * the current HighPrecisionNodeTransform.
+   * the current tile's transform.
    *
    * @param CesiumToUnrealTransform The new transformation.
    */
@@ -72,18 +80,13 @@ public:
 
   int32_t getLastUpdatedFrame() const override;
 
-
-  struct OcclusionRenderThreadResult {
-    // 
-    std::optional<bool> isOccluded;
-  };
-
 protected:
   void reset(const Cesium3DTilesSelection::Tile* pTile) override;
 
   void update(int32_t currentFrame) override;
 
 private: 
+  void _updateTransform();
   
   // Updated in render thread 
   std::optional<bool> _isOccluded_RenderThread;
@@ -96,6 +99,9 @@ private:
   // TODO:
   // Do these need to be accessed on the game thread, render thread?
   // Do they get reloaded on render state reload? 
-  Cesium3DTilesSelection::BoundingVolume _tileBounds;
+  Cesium3DTilesSelection::BoundingVolume _localTileBounds = 
+      CesiumGeometry::OrientedBoundingBox(
+        glm::dvec3(0.0), glm::dmat3(1.0));
   glm::dmat4 _tileTransform;
+  glm::dmat4 _cesiumToUnreal;
 };
