@@ -173,11 +173,23 @@ struct CalcBoundsOperation {
 
   FBoxSphereBounds
   operator()(const CesiumGeometry::BoundingSphere& sphere) const {
-    // Create a temporary box for the sphere, and then transform the box.
-    double side = glm::sqrt(sphere.getRadius() * sphere.getRadius() * 0.5);
-    glm::dmat3 halfAxes(side);
-    CesiumGeometry::OrientedBoundingBox box(sphere.getCenter(), halfAxes);
-    return (*this)(box);
+    glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
+    glm::dvec3 center = glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
+    glm::dmat3 halfAxes = glm::dmat3(matrix) * glm::dmat3(sphere.getRadius());
+
+    // The sphere only needs to reach the sides of the box, not the corners.
+    double sphereRadius = glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
+    sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
+
+    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
+    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
+    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+
+    FBoxSphereBounds result;
+    result.Origin = VecMath::createVector(center);
+    result.SphereRadius = sphereRadius;
+    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    return result;
   }
 
   FBoxSphereBounds
