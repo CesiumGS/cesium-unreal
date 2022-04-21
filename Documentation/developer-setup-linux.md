@@ -70,4 +70,6 @@ And finally copy the built plugin into the Engine plugins directory:
     mkdir -p $UNREAL_ENGINE_DIR/Engine/Plugins/Marketplace
     cp -r $CESIUM_FOR_UNREAL_DIR/../packages/CesiumForUnreal $UNREAL_ENGINE_DIR/Engine/Plugins/Marketplace/
 
+> Note: On Linux (unlike Windows), it is essential that the `CesiumForUnreal` plugin go in the `Plugins/Marketplace/` subdirectory, rather than directly in `Plugins/`. Otherwise, the relative paths to other plugin `.so` files that the Unreal Build Tool has built into the plugin will not resolve correctly.
+
 You should now be able to launch the Unreal Editor and open the `CesiumForUnrealSamples.uproject` found in `~/dev/cesium-unreal-samples`.
