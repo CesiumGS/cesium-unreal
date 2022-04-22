@@ -13,7 +13,7 @@ export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNot
 export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
 ```
 
-> Note: `v19_clang-11.0.1-centos7` is correct for Unreal Engine v4.27 and v5.0.0. It may be different for other versions of Unreal Engine.
+> Note: `v19_clang-11.0.1-centos7` is correct for Unreal Engine v4.27 and v5.0.0. It may be different for other versions of Unreal Engine. See https://docs.unrealengine.com/4.27/en-US/SharingAndReleasing/Linux/GettingStarted/ or the equivalent for your version of Unreal Engine.
 
 # Cloning the git repos
 
@@ -26,9 +26,8 @@ The following illustrates the recommended directory layout for developers:
 
 In this setup, we will build the Cesium for Unreal plugin separately from any project, and then install it as an Engine plugin.
 
-This can be set up with the following sequence of commands, on the console, starting in the `~/dev` directory:
+First, let's clone the Cesium for Unreal repo by issuing the following command in the `~/dev` directory:
 
-    git clone https://github.com/CesiumGS/cesium-unreal-samples.git
     git clone -b ue4-main --recursive https://github.com/CesiumGS/cesium-unreal.git
 
 > Note: The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
@@ -41,18 +40,20 @@ The cesium-native libraries and their dependencies use CMake and must be built s
 
 ## CMake command-line
 
-First, configure the CMake project in the `~/dev/cesium-unreal/extern` directory by following the instructions below.
+Configure the CMake project in the `~/dev/cesium-unreal/extern` directory by following the instructions below.
 **Note**: The following steps must be done in the `extern` directory, and *not* the `cesium-native` subdirectory!
 
 Change to the `~/dev/cesium-unreal/extern` directory, and execute the following commands to build and install a Debug version of cesium-native:
 
     cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Debug
-    cmake --build build --target install -j14
+    cmake --build build --target install
 
 To build a Release version, do the following:
 
     cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-    cmake --build build --target install -j14
+    cmake --build build --target install
+
+> To build faster by using multiple CPU cores, add `-j14` to the build/install command above, i.e. `cmake --build build --target install -j14`. "14" is the number of threads to use, and a higher or lower number may be more suitable for your system.
 
 # Build and package the Cesium for Unreal plugin
 
@@ -72,4 +73,12 @@ And finally copy the built plugin into the Engine plugins directory:
 
 > Note: On Linux (unlike Windows), it is essential that the `CesiumForUnreal` plugin go in the `Plugins/Marketplace/` subdirectory, rather than directly in `Plugins/`. Otherwise, the relative paths to other plugin `.so` files that the Unreal Build Tool has built into the plugin will not resolve correctly.
 
-You should now be able to launch the Unreal Editor and open the `CesiumForUnrealSamples.uproject` found in `~/dev/cesium-unreal-samples`.
+# Using the plugin with the Cesium for Unreal Samples project
+
+The Cesium for Unreal Samples project demonstrates a bunch of features of Cesium for Unreal, and it is useful during development for testing the plugin. I can be cloned from GitHub as well:
+
+    cd ~/dev
+    git clone https://github.com/CesiumGS/cesium-unreal-samples.git
+    
+Then, launch the Unreal Editor and open `~/dev/cesium-unreal-samples/CesiumForUnrealSamples.uproject`. Because we've already installed the plugin to the Engine Plugins directory, the samples project should pick it up automatically.
+
