@@ -745,4 +745,31 @@ void destroyEncodedMetadata(EncodedMetadata& encodedMetadata) {
     }
   }
 }
+
+// The result should be a safe hlsl identifier, but any name clashes after
+// fixing safety will not be automatically handled.
+FString createHlslSafeName(const FString& rawName) {
+  static const FString identifierHeadChar =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+  static const FString identifierTailChar = identifierHeadChar + "0123456789";
+
+  FString safeName = rawName;
+  int32 _;
+  if (safeName.Len() == 0) {
+    return "_";
+  } else {
+    if (!identifierHeadChar.FindChar(safeName[0], _)) {
+      safeName = "_" + safeName;
+    }
+  }
+
+  for (size_t i = 1; i < safeName.Len(); ++i) {
+    if (!identifierTailChar.FindChar(safeName[i], _)) {
+      safeName[i] = '_';
+    }
+  }
+
+  return safeName;
+}
+
 } // namespace CesiumEncodedMetadataUtility

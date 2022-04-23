@@ -6,6 +6,7 @@
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumFeatureTable.h"
@@ -1649,7 +1650,10 @@ static void SetMetadataFeatureTableParameterValues(
        encodedFeatureTable.encodedProperties) {
 
     pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(FName(encodedProperty.name), association, index),
+        FMaterialParameterInfo(
+            FName(createHlslSafeName(encodedProperty.name)),
+            association,
+            index),
         encodedProperty.pTexture->pTexture);
   }
 }
