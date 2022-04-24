@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfMeshVariantsComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"

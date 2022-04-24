@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include "CesiumGltfPrimitiveComponent.generated.h"
 
+class UCesiumGltfMeshVariantsComponent;
+
 UCLASS()
 class UCesiumGltfPrimitiveComponent : public UStaticMeshComponent {
   GENERATED_BODY()

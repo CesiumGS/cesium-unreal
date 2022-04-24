@@ -90,7 +90,9 @@ public:
 
   CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata;
 
-  void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+  void ShowGltf();
+
+  void HideGltf();
 
   void AttachRasterTile(
       const Cesium3DTilesSelection::Tile& Tile,

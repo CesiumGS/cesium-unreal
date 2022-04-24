@@ -33,6 +33,7 @@ struct CreateMeshOptions {
   const CreateNodeOptions* pNodeOptions = nullptr;
   const LoadGltfResult::LoadNodeResult* pHalfConstructedNodeResult = nullptr;
   const CesiumGltf::Mesh* pMesh = nullptr;
+  std::vector<int32> variants{};
 };
 
 struct CreatePrimitiveOptions {
