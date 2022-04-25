@@ -500,7 +500,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       // TODO: Should the channel mask be determined dynamically instead of at
       // editor-time like it is now?
       FeatureTableLookup->Code =
-          "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords)." +
+          "uint _czm_propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords)." +
           featureTable.Channel + ");\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
@@ -539,7 +539,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       NodeX += IncrX;
 
       FeatureTableLookup->Code =
-          "uint propertyIndex = round(PropertyIndexUV.r);\n";
+          "uint _czm_propertyIndex = round(PropertyIndexUV.r);\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
       FeatureTableLookup->MaterialExpressionEditorY = NodeY;
@@ -551,11 +551,13 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       const FPropertyDescription& property = featureTable.Properties[0];
       FString propertyArrayName = createHlslSafeName(property.Name) + "_array";
 
-      FeatureTableLookup->Code += "uint width;\nuint height;\n";
+      FeatureTableLookup->Code += "uint _czm_width;\nuint _czm_height;\n";
       FeatureTableLookup->Code +=
-          propertyArrayName + ".GetDimensions(width, height);\n";
-      FeatureTableLookup->Code += "uint pixelX = propertyIndex % width;\n";
-      FeatureTableLookup->Code += "uint pixelY = propertyIndex / width;\n";
+          propertyArrayName + ".GetDimensions(_czm_width, _czm_height);\n";
+      FeatureTableLookup->Code +=
+          "uint _czm_pixelX = _czm_propertyIndex % _czm_width;\n";
+      FeatureTableLookup->Code +=
+          "uint _czm_pixelY = _czm_propertyIndex / _czm_width;\n";
     }
 
     NodeX = SectionLeft;
@@ -614,16 +616,17 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       FeatureTableLookup->Code +=
           propertyName + " = " + componentTypeInterpretation + "(" +
-          propertyArrayName + ".Load(int3(pixelX, pixelY, 0))." + swizzle +
-          ");\n";
+          propertyArrayName + ".Load(int3(_czm_pixelX, _czm_pixelY, 0))." +
+          swizzle + ");\n";
 
       NodeY += IncrY;
     }
 
     FeatureTableLookup->OutputType = ECustomMaterialOutputType::CMOT_Float1;
 
-    FeatureTableLookup->Code += "float propertyIndexF = propertyIndex;\n";
-    FeatureTableLookup->Code += "return propertyIndexF;";
+    FeatureTableLookup->Code +=
+        "float _czm_propertyIndexF = _czm_propertyIndex;\n";
+    FeatureTableLookup->Code += "return _czm_propertyIndexF;";
 
     NodeX = SectionLeft;
   }

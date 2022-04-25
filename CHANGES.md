@@ -16,7 +16,6 @@
 ##### Fixes :wrench:
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
-- Metadata property names are now more consistently given HLSL-safe names, avoiding Material compilation errors with some property names.
 
 ### v1.12.0 - 2022-04-01
 
