@@ -16,6 +16,7 @@
 ##### Fixes :wrench:
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
+- Fixed a bug that could cause a crash by destroying a single texture multiple times, particularly a texture that is not utilized by the Material.
 
 ### v1.12.0 - 2022-04-01
 
