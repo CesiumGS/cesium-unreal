@@ -27,6 +27,9 @@ bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
     bool defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> bool {
+        if (index >= v.size()) {
+          return defaultValue;
+        }
         auto value = v[index];
         return CesiumMetadataConversions<bool, decltype(value)>::convert(
             value,
@@ -41,6 +44,9 @@ uint8 UCesiumMetadataArrayBlueprintLibrary::GetByte(
     uint8 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> uint8 {
+        if (index >= v.size()) {
+          return defaultValue;
+        }
         auto value = v[index];
         return CesiumMetadataConversions<uint8, decltype(value)>::convert(
             value,
@@ -55,6 +61,9 @@ int32 UCesiumMetadataArrayBlueprintLibrary::GetInteger(
     int32 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> int32 {
+        if (index >= v.size()) {
+          return defaultValue;
+        }
         auto value = v[index];
         return CesiumMetadataConversions<int32, decltype(value)>::convert(
             value,
@@ -69,6 +78,9 @@ int64 UCesiumMetadataArrayBlueprintLibrary::GetInteger64(
     int64 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> int64 {
+        if (index >= v.size()) {
+          return defaultValue;
+        }
         auto value = v[index];
         return CesiumMetadataConversions<int64, decltype(value)>::convert(
             value,
@@ -83,6 +95,9 @@ float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
     float defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> float {
+        if (index >= v.size()) {
+          return defaultValue;
+        }
         auto value = v[index];
         return CesiumMetadataConversions<float, decltype(value)>::convert(
             value,
@@ -97,6 +112,9 @@ FString UCesiumMetadataArrayBlueprintLibrary::GetString(
     const FString& defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> FString {
+        if (index >= v.size()) {
+          return defaultValue;
+        }
         auto value = v[index];
         return CesiumMetadataConversions<FString, decltype(value)>::convert(
             value,
