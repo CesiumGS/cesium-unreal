@@ -6,6 +6,8 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "VecMath.h"
+#include <glm/gtc/matrix_inverse.hpp>
 
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
@@ -134,4 +136,117 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
   }
 
   Super::BeginDestroy();
+}
+
+namespace {
+
+struct CalcBoundsOperation {
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume;
+  const FTransform& localToWorld;
+  const glm::dmat4& highPrecisionNodeTransform;
+
+  // Bounding volumes are expressed in tileset coordinates, which is usually
+  // ECEF.
+  //
+  // - `localToWorld` goes from model coordinates to Unreal world
+  //    coordinates, where model coordinates include the tile's transform as
+  //    well as any glTF node transforms.
+  // - `highPrecisionNodeTransform` transforms from model coordinates to tileset
+  //    coordinates.
+  //
+  // So to transform a bounding volume, we need to first transform by the
+  // inverse of `HighPrecisionNodeTransform` in order bring the bounding volume
+  // into model coordinates, and then transform by `localToWorld` to bring the
+  // bounding volume into Unreal world coordinates.
+
+  glm::dmat4 getModelToUnrealWorldMatrix() const {
+    const FMatrix matrix = localToWorld.ToMatrixWithScale();
+    return VecMath::createMatrix4D(matrix);
+  }
+
+  glm::dmat4 getTilesetToUnrealWorldMatrix() const {
+    const glm::dmat4 modelToUnreal = getModelToUnrealWorldMatrix();
+    const glm::dmat4 tilesetToModel =
+        glm::affineInverse(highPrecisionNodeTransform);
+    return modelToUnreal * tilesetToModel;
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeometry::BoundingSphere& sphere) const {
+    glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
+    glm::dvec3 center =
+        glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
+    glm::dmat3 halfAxes = glm::dmat3(matrix) * glm::dmat3(sphere.getRadius());
+
+    // The sphere only needs to reach the sides of the box, not the corners.
+    double sphereRadius =
+        glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
+    sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
+
+    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
+    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
+    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+
+    FBoxSphereBounds result;
+    result.Origin = VecMath::createVector(center);
+    result.SphereRadius = sphereRadius;
+    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    return result;
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeometry::OrientedBoundingBox& box) const {
+    glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
+    glm::dvec3 center = glm::dvec3(matrix * glm::dvec4(box.getCenter(), 1.0));
+    glm::dmat3 halfAxes = glm::dmat3(matrix) * box.getHalfAxes();
+
+    glm::dvec3 corner1 = halfAxes[0] + halfAxes[1];
+    glm::dvec3 corner2 = halfAxes[0] + halfAxes[2];
+    glm::dvec3 corner3 = halfAxes[1] + halfAxes[2];
+
+    double sphereRadius = glm::max(glm::length(corner1), glm::length(corner2));
+    sphereRadius = glm::max(sphereRadius, glm::length(corner3));
+
+    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
+    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
+    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+
+    FBoxSphereBounds result;
+    result.Origin = VecMath::createVector(center);
+    result.SphereRadius = sphereRadius;
+    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    return result;
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeospatial::BoundingRegion& region) const {
+    return (*this)(region.getBoundingBox());
+  }
+
+  FBoxSphereBounds operator()(
+      const CesiumGeospatial::BoundingRegionWithLooseFittingHeights& region)
+      const {
+    return (*this)(region.getBoundingRegion());
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) const {
+    return (*this)(s2.computeBoundingRegion());
+  }
+};
+
+} // namespace
+
+FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
+    const FTransform& LocalToWorld) const {
+  if (!this->boundingVolume) {
+    return Super::CalcBounds(LocalToWorld);
+  }
+
+  return std::visit(
+      CalcBoundsOperation{
+          *this->boundingVolume,
+          LocalToWorld,
+          this->HighPrecisionNodeTransform},
+      *this->boundingVolume);
 }
