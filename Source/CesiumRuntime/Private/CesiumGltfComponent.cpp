@@ -1651,7 +1651,7 @@ static void SetMetadataFeatureTableParameterValues(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(
-            FName(createHlslSafeName(encodedProperty.name)),
+            FName(encodedProperty.name),
             association,
             index),
         encodedProperty.pTexture->pTexture);
