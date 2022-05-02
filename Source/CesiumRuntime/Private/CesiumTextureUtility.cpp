@@ -3,6 +3,7 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumRuntime.h"
 #include "PixelFormat.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>

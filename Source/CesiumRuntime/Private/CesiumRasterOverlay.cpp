@@ -1,9 +1,11 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumRasterOverlay.h"
+#include "Async/Async.h"
 #include "Cesium3DTilesSelection/RasterOverlayLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "CesiumAsync/IAssetResponse.h"
 
 FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
 
