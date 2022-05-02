@@ -1650,10 +1650,7 @@ static void SetMetadataFeatureTableParameterValues(
        encodedFeatureTable.encodedProperties) {
 
     pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(encodedProperty.name),
-            association,
-            index),
+        FMaterialParameterInfo(FName(encodedProperty.name), association, index),
         encodedProperty.pTexture->pTexture);
   }
 }
