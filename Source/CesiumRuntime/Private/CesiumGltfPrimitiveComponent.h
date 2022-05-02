@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
@@ -39,6 +40,8 @@ public:
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
   std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
 
+  std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
+
   /**
    * Updates this component's transform from a new double-precision
    * transformation from the Cesium world to the Unreal Engine world, as well as
@@ -49,4 +52,6 @@ public:
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
   virtual void BeginDestroy() override;
+
+  virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
 };
