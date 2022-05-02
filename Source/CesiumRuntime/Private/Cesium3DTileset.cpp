@@ -803,6 +803,8 @@ void ACesium3DTileset::LoadTileset() {
     this->_encodedMetadataDescription = {
         pEncodedMetadataDescriptionComponent->FeatureTables,
         pEncodedMetadataDescriptionComponent->FeatureTextures};
+  } else {
+    this->_encodedMetadataDescription = {};
   }
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
