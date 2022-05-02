@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "CesiumAsync/Promise.h"
-#include "CesiumAsync/SharedFuture.h"
+#include "CesiumAsync/AsyncSystem.h"
 #include "CesiumIonClient/Token.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/SWindow.h"

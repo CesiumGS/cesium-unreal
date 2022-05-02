@@ -2,6 +2,7 @@
 
 #include "CesiumMaterialUserData.h"
 #include "Materials/MaterialInstance.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 void UCesiumMaterialUserData::PostEditChangeOwner() {
   Super::PostEditChangeOwner();
