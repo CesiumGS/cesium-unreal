@@ -1651,7 +1651,7 @@ static void SetMetadataFeatureTableParameterValues(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(FName(encodedProperty.name), association, index),
-        encodedProperty.pTexture->pTexture);
+        encodedProperty.pTexture->pTexture.Get());
   }
 }
 
@@ -1717,7 +1717,7 @@ static void SetMetadataParameterValues(
                 FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
-            encodedProperty.pTexture->pTexture);
+            encodedProperty.pTexture->pTexture.Get());
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -1741,7 +1741,7 @@ static void SetMetadataParameterValues(
             FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
-        encodedFeatureIdTexture.pTexture->pTexture);
+        encodedFeatureIdTexture.pTexture->pTexture.Get());
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {
