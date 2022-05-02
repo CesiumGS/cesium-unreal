@@ -17,6 +17,7 @@
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
 - Fixed a bug that could cause a crash by destroying a single texture multiple times, particularly a texture that is not utilized by the Material.
+- Improved the computation of axis-aligned bounding boxes for Unreal Engine, producing much smaller and more accurate bounding boxes in many cases.
 
 ### v1.12.0 - 2022-04-01
 
