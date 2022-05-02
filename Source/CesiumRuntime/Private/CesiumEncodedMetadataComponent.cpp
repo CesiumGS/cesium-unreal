@@ -569,7 +569,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       UMaterialExpressionTextureObjectParameter* PropertyArray =
           NewObject<UMaterialExpressionTextureObjectParameter>(
               this->TargetMaterialLayer);
-
       PropertyArray->ParameterName =
           FName("FTB_" + featureTable.Name + "_" + property.Name);
       PropertyArray->MaterialExpressionEditorX = NodeX;
@@ -654,7 +653,6 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       UMaterialExpressionTextureObjectParameter* PropertyTexture =
           NewObject<UMaterialExpressionTextureObjectParameter>(
               this->TargetMaterialLayer);
-
       PropertyTexture->ParameterName =
           FName("FTX_" + featureTexture.Name + "_" + property.Name + "_TX");
       PropertyTexture->MaterialExpressionEditorX = NodeX;
