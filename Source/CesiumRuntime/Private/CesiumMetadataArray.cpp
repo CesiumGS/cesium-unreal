@@ -27,7 +27,7 @@ bool UCesiumMetadataArrayBlueprintLibrary::GetBoolean(
     bool defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> bool {
-        if (index >= v.size()) {
+        if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
@@ -44,7 +44,7 @@ uint8 UCesiumMetadataArrayBlueprintLibrary::GetByte(
     uint8 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> uint8 {
-        if (index >= v.size()) {
+        if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
@@ -61,7 +61,7 @@ int32 UCesiumMetadataArrayBlueprintLibrary::GetInteger(
     int32 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> int32 {
-        if (index >= v.size()) {
+        if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
@@ -78,7 +78,7 @@ int64 UCesiumMetadataArrayBlueprintLibrary::GetInteger64(
     int64 defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> int64 {
-        if (index >= v.size()) {
+        if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
@@ -95,7 +95,7 @@ float UCesiumMetadataArrayBlueprintLibrary::GetFloat(
     float defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> float {
-        if (index >= v.size()) {
+        if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];
@@ -112,7 +112,7 @@ FString UCesiumMetadataArrayBlueprintLibrary::GetString(
     const FString& defaultValue) {
   return std::visit(
       [index, defaultValue](const auto& v) -> FString {
-        if (index >= v.size()) {
+        if (index < 0 || index >= v.size()) {
           return defaultValue;
         }
         auto value = v[index];

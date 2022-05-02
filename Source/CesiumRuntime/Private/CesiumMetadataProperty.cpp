@@ -47,7 +47,7 @@ bool UCesiumMetadataPropertyBlueprintLibrary::GetBoolean(
     bool defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> bool {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return defaultValue;
         }
         auto value = v.get(featureID);
@@ -64,7 +64,7 @@ uint8 UCesiumMetadataPropertyBlueprintLibrary::GetByte(
     uint8 defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> uint8 {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return defaultValue;
         }
         auto value = v.get(featureID);
@@ -81,7 +81,7 @@ int32 UCesiumMetadataPropertyBlueprintLibrary::GetInteger(
     int32 defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> int32 {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return defaultValue;
         }
         auto value = v.get(featureID);
@@ -98,7 +98,7 @@ int64 UCesiumMetadataPropertyBlueprintLibrary::GetInteger64(
     int64 defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> int64 {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return defaultValue;
         }
         auto value = v.get(featureID);
@@ -115,7 +115,7 @@ float UCesiumMetadataPropertyBlueprintLibrary::GetFloat(
     float defaultValue) {
   return std::visit(
       [featureID, defaultValue](const auto& v) -> float {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return defaultValue;
         }
         auto value = v.get(featureID);
@@ -132,7 +132,7 @@ FString UCesiumMetadataPropertyBlueprintLibrary::GetString(
     const FString& defaultValue) {
   return std::visit(
       [featureID, &defaultValue](const auto& v) -> FString {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return defaultValue;
         }
         auto value = v.get(featureID);
@@ -148,7 +148,7 @@ FCesiumMetadataArray UCesiumMetadataPropertyBlueprintLibrary::GetArray(
     int64 featureID) {
   return std::visit(
       [featureID](const auto& v) -> FCesiumMetadataArray {
-        if (featureID >= v.size()) {
+        if (featureID < 0 || featureID >= v.size()) {
           return FCesiumMetadataArray();
         }
         auto value = v.get(featureID);
@@ -173,7 +173,7 @@ UCesiumMetadataPropertyBlueprintLibrary::GetGenericValue(
     int64 featureID) {
   return std::visit(
       [featureID](const auto& view) {
-        if (featureID >= view.size()) {
+        if (featureID < 0 || featureID >= view.size()) {
           return FCesiumMetadataGenericValue();
         }
         return FCesiumMetadataGenericValue{view.get(featureID)};
