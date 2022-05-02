@@ -590,7 +590,8 @@ public:
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
           this->_pActor->GetWaterMaterial(),
-          this->_pActor->GetCustomDepthParameters());
+          this->_pActor->GetCustomDepthParameters(),
+          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()));
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;

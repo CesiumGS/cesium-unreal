@@ -16,6 +16,7 @@
 ##### Fixes :wrench:
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
+- Improved the computation of axis-aligned bounding boxes for Unreal Engine, producing much smaller and more accurate bounding boxes in many cases.
 - Metadata-related Blueprint functions will now return the default value if asked for an out-of-range feature or array element. Previously, they would assert or read undefined memory.
 
 ### v1.12.0 - 2022-04-01
