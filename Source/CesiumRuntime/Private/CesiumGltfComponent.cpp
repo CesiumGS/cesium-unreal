@@ -6,6 +6,7 @@
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumFeatureTable.h"
@@ -1650,7 +1651,7 @@ static void SetMetadataFeatureTableParameterValues(
 
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(FName(encodedProperty.name), association, index),
-        encodedProperty.pTexture->pTexture);
+        encodedProperty.pTexture->pTexture.Get());
   }
 }
 
@@ -1716,7 +1717,7 @@ static void SetMetadataParameterValues(
                 FName(encodedProperty.baseName + "TX"),
                 association,
                 index),
-            encodedProperty.pTexture->pTexture);
+            encodedProperty.pTexture->pTexture.Get());
 
         pMaterial->SetVectorParameterValueByInfo(
             FMaterialParameterInfo(
@@ -1740,7 +1741,7 @@ static void SetMetadataParameterValues(
             FName(encodedFeatureIdTexture.baseName + "TX"),
             association,
             index),
-        encodedFeatureIdTexture.pTexture->pTexture);
+        encodedFeatureIdTexture.pTexture->pTexture.Get());
 
     FLinearColor channelMask;
     switch (encodedFeatureIdTexture.channel) {
@@ -1793,7 +1794,8 @@ static void SetMetadataParameterValues(
 static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
-    const glm::dmat4x4& cesiumToUnrealTransform) {
+    const glm::dmat4x4& cesiumToUnrealTransform,
+    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
@@ -1809,6 +1811,7 @@ static void loadPrimitiveGameThreadPart(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
+  pMesh->boundingVolume = boundingVolume;
   pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
   pMesh->SetCustomDepthStencilWriteMask(
       pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
@@ -2012,7 +2015,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
     UMaterialInterface* pBaseWaterMaterial,
-    FCustomDepthParameters CustomDepthParameters) {
+    FCustomDepthParameters CustomDepthParameters,
+    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
@@ -2043,7 +2047,11 @@ UCesiumGltfComponent::CreateOffGameThread(
   for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
-        loadPrimitiveGameThreadPart(Gltf, primitive, cesiumToUnrealTransform);
+        loadPrimitiveGameThreadPart(
+            Gltf,
+            primitive,
+            cesiumToUnrealTransform,
+            boundingVolume);
       }
     }
   }

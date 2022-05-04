@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
 #include "Components/PrimitiveComponent.h"
@@ -72,7 +73,8 @@ public:
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
       UMaterialInterface* BaseWaterMaterial,
-      FCustomDepthParameters CustomDepthParameters);
+      FCustomDepthParameters CustomDepthParameters,
+      const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();

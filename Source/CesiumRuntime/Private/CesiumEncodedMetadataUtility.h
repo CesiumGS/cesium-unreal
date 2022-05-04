@@ -132,4 +132,7 @@ void destroyEncodedMetadataPrimitive(
     EncodedMetadataPrimitive& encodedPrimitive);
 
 void destroyEncodedMetadata(EncodedMetadata& encodedMetadata);
+
+FString createHlslSafeName(const FString& rawName);
+
 } // namespace CesiumEncodedMetadataUtility

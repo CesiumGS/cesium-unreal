@@ -5,6 +5,7 @@
 #include "Widgets/SWindow.h"
 #include <optional>
 #include <variant>
+#include <vector>
 
 class ACesium3DTileset;
 class UCesiumRasterOverlay;

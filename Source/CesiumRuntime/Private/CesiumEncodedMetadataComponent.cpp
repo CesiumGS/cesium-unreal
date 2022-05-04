@@ -2,6 +2,7 @@
 
 #include "CesiumEncodedMetadataComponent.h"
 #include "Cesium3DTileset.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureTextureProperty.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -34,6 +35,8 @@
 
 extern UNREALED_API class UEditorEngine* GEditor;
 #endif
+
+using namespace CesiumEncodedMetadataUtility;
 
 void UCesiumEncodedMetadataComponent::AutoFill() {
   const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
@@ -278,32 +281,6 @@ static FORCEINLINE UMaterialFunction* LoadMaterialFunction(const FName& Path) {
   return LoadObjFromPath<UMaterialFunction>(Path);
 }
 
-// The result should be a safe hlsl identifier, but any name clashes after
-// fixing safety will not be automatically handled.
-static FString createHlslSafeName(const FString& rawName) {
-  static const FString identifierHeadChar =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
-  static const FString identifierTailChar = identifierHeadChar + "0123456789";
-
-  FString safeName = rawName;
-  int32 _;
-  if (safeName.Len() == 0) {
-    return "_";
-  } else {
-    if (!identifierHeadChar.FindChar(safeName[0], _)) {
-      safeName = "_" + safeName;
-    }
-  }
-
-  for (size_t i = 1; i < safeName.Len(); ++i) {
-    if (!identifierTailChar.FindChar(safeName[i], _)) {
-      safeName[i] = '_';
-    }
-  }
-
-  return safeName;
-}
-
 // Seperate nodes into auto-generated and user-added. Collect the property
 // result nodes.
 static void ClassifyNodes(
@@ -523,7 +500,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       // TODO: Should the channel mask be determined dynamically instead of at
       // editor-time like it is now?
       FeatureTableLookup->Code =
-          "uint propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords)." +
+          "uint _czm_propertyIndex = asuint(FeatureIdTexture.Sample(FeatureIdTextureSampler, TexCoords)." +
           featureTable.Channel + ");\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
@@ -562,7 +539,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       NodeX += IncrX;
 
       FeatureTableLookup->Code =
-          "uint propertyIndex = round(PropertyIndexUV.r);\n";
+          "uint _czm_propertyIndex = round(PropertyIndexUV.r);\n";
 
       FeatureTableLookup->MaterialExpressionEditorX = NodeX;
       FeatureTableLookup->MaterialExpressionEditorY = NodeY;
@@ -572,13 +549,15 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
     // have the same dimensions since it is based on the feature count.
     if (featureTable.Properties.Num()) {
       const FPropertyDescription& property = featureTable.Properties[0];
-      FString propertyArrayName = property.Name + "_array";
+      FString propertyArrayName = createHlslSafeName(property.Name) + "_array";
 
-      FeatureTableLookup->Code += "uint width;\nuint height;\n";
+      FeatureTableLookup->Code += "uint _czm_width;\nuint _czm_height;\n";
       FeatureTableLookup->Code +=
-          propertyArrayName + ".GetDimensions(width, height);\n";
-      FeatureTableLookup->Code += "uint pixelX = propertyIndex % width;\n";
-      FeatureTableLookup->Code += "uint pixelY = propertyIndex / width;\n";
+          propertyArrayName + ".GetDimensions(_czm_width, _czm_height);\n";
+      FeatureTableLookup->Code +=
+          "uint _czm_pixelX = _czm_propertyIndex % _czm_width;\n";
+      FeatureTableLookup->Code +=
+          "uint _czm_pixelY = _czm_propertyIndex / _czm_width;\n";
     }
 
     NodeX = SectionLeft;
@@ -599,13 +578,13 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
       FString propertyName = createHlslSafeName(property.Name);
 
       FCustomInput& PropertyInput = FeatureTableLookup->Inputs.Emplace_GetRef();
-      FString propertyArrayName = property.Name + "_array";
+      FString propertyArrayName = propertyName + "_array";
       PropertyInput.InputName = FName(propertyArrayName);
       PropertyInput.Input.Expression = PropertyArray;
 
       FCustomOutput& PropertyOutput =
           FeatureTableLookup->AdditionalOutputs.Emplace_GetRef();
-      PropertyOutput.OutputName = FName(property.Name);
+      PropertyOutput.OutputName = FName(propertyName);
       FeatureTableLookup->Outputs.Add(
           FExpressionOutput(PropertyOutput.OutputName));
 
@@ -636,16 +615,17 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 
       FeatureTableLookup->Code +=
           propertyName + " = " + componentTypeInterpretation + "(" +
-          propertyArrayName + ".Load(int3(pixelX, pixelY, 0))." + swizzle +
-          ");\n";
+          propertyArrayName + ".Load(int3(_czm_pixelX, _czm_pixelY, 0))." +
+          swizzle + ");\n";
 
       NodeY += IncrY;
     }
 
     FeatureTableLookup->OutputType = ECustomMaterialOutputType::CMOT_Float1;
 
-    FeatureTableLookup->Code += "float propertyIndexF = propertyIndex;\n";
-    FeatureTableLookup->Code += "return propertyIndexF;";
+    FeatureTableLookup->Code +=
+        "float _czm_propertyIndexF = _czm_propertyIndex;\n";
+    FeatureTableLookup->Code += "return _czm_propertyIndexF;";
 
     NodeX = SectionLeft;
   }

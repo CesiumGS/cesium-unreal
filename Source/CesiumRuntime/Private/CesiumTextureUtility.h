@@ -23,7 +23,7 @@ struct LoadedTextureResult {
   TextureFilter filter;
   TextureGroup group;
   bool sRGB{true};
-  UTexture2D* pTexture{nullptr};
+  TWeakObjectPtr<UTexture2D> pTexture;
 };
 
 TUniquePtr<FTexturePlatformData>

@@ -3,6 +3,7 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumRuntime.h"
 #include "PixelFormat.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
@@ -372,7 +373,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return nullptr;
   }
 
-  UTexture2D*& pTexture = pHalfLoadedTexture->pTexture;
+  UTexture2D* pTexture = pHalfLoadedTexture->pTexture.Get();
   if (!pTexture && pHalfLoadedTexture->pTextureData) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
@@ -390,6 +391,8 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->LODGroup = pHalfLoadedTexture->group;
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
     pTexture->UpdateResource();
+
+    pHalfLoadedTexture->pTexture = pTexture;
   }
 
   return pTexture;

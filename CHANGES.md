@@ -4,18 +4,27 @@
 
 ##### Breaking Changes :mega:
 
-- Deprecated parts of the old Blueprint API for feature ID attributes from `EXT_feature_metadata`. 
+- Removed the following material assets that were accidentally included in the plugin in v1.13.0: `MetadataStyling/Layers/NYCBuildings_ByHeight_ML`, `MetadataStyling/Layers/NYCBuildings_ByYear_ML`, `MetadataStyling/NYCBuildings_ByHeight_M`, and `MetadataStyling/NYCBuildings_ByYear_M`. These assets can still be found in the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) project.
+
+### v1.13.0 - 2022-05-02
+
+##### Breaking Changes :mega:
+
+- Deprecated parts of the old Blueprint API for feature ID attributes from `EXT_feature_metadata`.
 
 ##### Additions :tada:
 
-- Added a Blueprint API to access feature ID textures and feature textures from the `EXT_feature_metadata` extension. 
 - Improved the Blueprint API for feature ID attributes from `EXT_feature_metadata` (and upgraded batch tables).
+- Added a Blueprint API to access feature ID textures and feature textures from the `EXT_feature_metadata` extension.
 - Added the `UCesiumEncodedMetadataComponent` to enable styling with the metadata from the `EXT_feature_metadata` extension. This component provides a convenient way to query for existing metadata, dictate which metadata properties to encode for styling, and generate a starter material layer to access the wanted properties.
-- Added two example metadata styling materials for the NYC buildings tileset.
 
 ##### Fixes :wrench:
 
 - glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
+- Improved the computation of axis-aligned bounding boxes for Unreal Engine, producing much smaller and more accurate bounding boxes in many cases.
+- Metadata-related Blueprint functions will now return the default value if asked for an out-of-range feature or array element. Previously, they would assert or read undefined memory.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.14.0 to v0.15.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.12.0 - 2022-04-01
 
