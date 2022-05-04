@@ -810,15 +810,18 @@ void ACesium3DTileset::LoadTileset() {
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
+  if (!this->_pBoundingVolumePool) {
+    this->_pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
+  }
+
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),
-      // TODO: manage deletion of this!!
-      std::shared_ptr<Cesium3DTilesSelection::TileOcclusionRendererProxyPool>(
-        NewObject<UCesiumBoundingVolumePoolComponent>(this))};
+      // TODO: manage deletion of this!!};
+      this->_pBoundingVolumePool->getPool()};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -1548,7 +1551,7 @@ void ACesium3DTileset::showTilesToRender(
 
     UCesiumGltfComponent* Gltf =
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
-    if (!Gltf || Gltf) {
+    if (!Gltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
       // or the tile is from an external tileset and does not directly

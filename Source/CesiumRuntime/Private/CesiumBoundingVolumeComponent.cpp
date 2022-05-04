@@ -9,6 +9,11 @@
 
 using namespace Cesium3DTilesSelection;
 
+UCesiumBoundingVolumePoolComponent::UCesiumBoundingVolumePoolComponent() {
+  this->_pPool = 
+      std::make_shared<UCesiumBoundingVolumePool>(this);
+}
+
 TileOcclusionRendererProxy* 
 UCesiumBoundingVolumePoolComponent::createProxy() {
   UCesiumBoundingVolumeComponent* pBoundingVolume = 
@@ -24,7 +29,25 @@ void
 UCesiumBoundingVolumePoolComponent::destroyProxy(
     TileOcclusionRendererProxy* pProxy) {
   // TODO: verify correctness of destruction
-  //pProxy->BeginDestroy();
+  UCesiumBoundingVolumeComponent* pBoundingVolumeComponent =
+      (UCesiumBoundingVolumeComponent*)pProxy;
+  if (pBoundingVolumeComponent) {
+    pBoundingVolumeComponent->ConditionalBeginDestroy(); 
+  }
+}
+
+UCesiumBoundingVolumePool::UCesiumBoundingVolumePool(UCesiumBoundingVolumePoolComponent* pOutter) :
+    _pOutter(pOutter) {}
+
+TileOcclusionRendererProxy* 
+UCesiumBoundingVolumePool::createProxy() {
+  return this->_pOutter->createProxy();
+}
+
+void 
+UCesiumBoundingVolumePool::destroyProxy(
+    TileOcclusionRendererProxy* pProxy) {
+  this->_pOutter->destroyProxy(pProxy);
 }
 
 void UCesiumBoundingVolumePoolComponent::UpdateTransformFromCesium(

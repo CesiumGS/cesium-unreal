@@ -24,11 +24,13 @@
 class UMaterialInterface;
 class ACesiumCartographicSelection;
 class UCesiumBoundingVolumeComponent;
+class UCesiumBoundingVolumePoolComponent;
 struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
+class TileOcclusionRendererProxyPool;
 } // namespace Cesium3DTilesSelection
 
 /**
@@ -458,7 +460,9 @@ private:
       BlueprintSetter = SetUrl,
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
-  FString Url;
+  FString Url = "file:///d:/Documents/Tilesets/YemenNext3/tileset.json";
+
+  UCesiumBoundingVolumePoolComponent* _pBoundingVolumePool;
 
   /**
    * The ID of the Cesium ion asset to use.

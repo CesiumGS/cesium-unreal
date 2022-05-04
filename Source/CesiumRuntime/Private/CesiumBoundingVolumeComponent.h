@@ -10,17 +10,19 @@
 #include <Cesium3DTilesSelection/BoundingVolume.h>
 #include <Cesium3DTilesSelection/TileOcclusionRendererProxy.h>
 #include <optional>
+#include <memory>
 #include "CesiumBoundingVolumeComponent.generated.h"
 
 class ACesiumGeoreference;
 
 UCLASS()
 class UCesiumBoundingVolumePoolComponent : 
-public USceneComponent,
-public Cesium3DTilesSelection::TileOcclusionRendererProxyPool {
+public USceneComponent {
   GENERATED_BODY()
 
 public:
+  UCesiumBoundingVolumePoolComponent();
+
   /**
    * Updates bounding volume transforms from a new double-precision
    * transformation from the Cesium world to the Unreal Engine world.
@@ -29,11 +31,37 @@ public:
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
+  const std::shared_ptr<Cesium3DTilesSelection::TileOcclusionRendererProxyPool>& getPool() {
+    return this->_pPool;
+  }
+
+private:
+  // These are really implementations of the functions in 
+  // TileOcclusionRendererProxyPool, but we can't use multiple inheritance with
+  // UObjects. Instead use the CesiumBoundingVolumePool and forward virtual 
+  // calls to the implementations.
+  friend class UCesiumBoundingVolumePool;
+
+  Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy();
+
+  void destroyProxy(
+      Cesium3DTilesSelection::TileOcclusionRendererProxy* pProxy);
+
+  std::shared_ptr<Cesium3DTilesSelection::TileOcclusionRendererProxyPool> _pPool;
+};
+
+class UCesiumBoundingVolumePool : public Cesium3DTilesSelection::TileOcclusionRendererProxyPool {
+public:
+  UCesiumBoundingVolumePool(UCesiumBoundingVolumePoolComponent* pOutter);
+
 protected:
   Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy() override;
 
   void destroyProxy(
       Cesium3DTilesSelection::TileOcclusionRendererProxy* pProxy) override;
+
+private:
+  UCesiumBoundingVolumePoolComponent* _pOutter;
 };
 
 UCLASS()
