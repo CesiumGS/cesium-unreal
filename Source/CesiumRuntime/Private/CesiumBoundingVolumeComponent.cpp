@@ -63,27 +63,6 @@ void UCesiumBoundingVolumePoolComponent::UpdateTransformFromCesium(
 }
 
 class FCesiumBoundingVolumeSceneProxy : public FPrimitiveSceneProxy {
-private:
-  struct ConvertBoundingVolume {
-    std::optional<FBoxSphereBounds>
-    operator()(const CesiumGeometry::OrientedBoundingBox& box) {
-      const glm::dmat3& halfAxes = box.getHalfAxes();
-      FVector extent =
-          VecMath::createVector(halfAxes[0] + halfAxes[1] + halfAxes[2]);
-      return FBoxSphereBounds(FVector(), extent, extent.Size());
-    }
-
-    std::optional<FBoxSphereBounds>
-    operator()(const CesiumGeometry::BoundingSphere& sphere) {
-      float radius = static_cast<float>(sphere.getRadius());
-      return FBoxSphereBounds(FVector(), FVector(radius), radius);
-    }
-
-    template <typename T>
-    std::optional<FBoxSphereBounds> operator()(const T& other) {
-      return std::nullopt;
-    }
-  };
 
 public:
   FCesiumBoundingVolumeSceneProxy(
@@ -92,26 +71,41 @@ public:
       FPrimitiveSceneProxy(pComponent/*, name?*/),
       _localTileBounds(localTileBounds) {}
 
-  bool HasCustomOcclusionBounds() const override {
-    return true;
-  }
+  //bool HasCustomOcclusionBounds() const override {
+  //  return true;
+  //}
 
-  FBoxSphereBounds GetCustomOcclusionBounds() const override {
-    BoundingVolume transformedBoundingVolume = 
-    transformBoundingVolume(
-      VecMath::createMatrix4D(GetLocalToWorld()),
-      this->_localTileBounds);
-
-    std::optional<FBoxSphereBounds> bounds = 
-        std::visit(ConvertBoundingVolume{}, transformedBoundingVolume);
-    if (bounds) {
-      return *bounds;
-    }
+  //FBoxSphereBounds GetCustomOcclusionBounds() const override {
+    // TODO: fix this
 
     // TODO: find better default?
-    return FBoxSphereBounds();
-  }
+    //return FBoxSphereBounds();
+  //}
 
+  void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override {
+    for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
+      /* * / RenderBounds(
+          Collector.GetPDI(ViewIndex),
+          ViewFamily.EngineShowFlags,
+          GetBounds(),
+          true /*!Owner || IsSelected()* /);*/
+
+		  const ESceneDepthPriorityGroup DrawBoundsDPG = SDPG_World;
+		  DrawWireBox(
+          Collector.GetPDI(ViewIndex),
+          GetBounds().GetBox(),
+          FColor(72, 72, 255),
+          DrawBoundsDPG);
+    }
+  }
+  
+  FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const override {
+    FPrimitiveViewRelevance Result;
+    Result.bDrawRelevance = true;
+    Result.bDynamicRelevance = true;
+    // Result.bEditorPrimitiveRelevance = true;
+    return Result;
+  }
 
   // TODO: IMPLEMENT THIS
   // this is almost certainly the key to removing _all_ current hacks 
@@ -144,11 +138,10 @@ private:
 };
 
 FPrimitiveSceneProxy* UCesiumBoundingVolumeComponent::CreateSceneProxy() {
-	return
+  return 
       (FPrimitiveSceneProxy*)new FCesiumBoundingVolumeSceneProxy(
         this, 
         this->_localTileBounds);
-
 }
 
 UCesiumBoundingVolumeComponent::UCesiumBoundingVolumeComponent() 
@@ -204,10 +197,12 @@ void UCesiumBoundingVolumeComponent::reset(const Tile* pTile) {
     // TODO: reject incompatible bounding volume types? Convert them all to
     // OBB / spheres?
     this->_tileTransform = pTile->getTransform();
-    this->_localTileBounds = 
-        transformBoundingVolume(
-          glm::inverse(this->_tileTransform),
-          pTile->getBoundingVolume());
+    // TODO: content BV instead? 
+    // TODO: union of children BVs instead?
+    this->_localTileBounds = pTile->getBoundingVolume();
+    //    transformBoundingVolume(
+    //      glm::inverse(this->_tileTransform),
+    //     pTile->getBoundingVolume());
     this->_updateTransform();
 
     this->SetVisibility(true);
@@ -224,4 +219,117 @@ void UCesiumBoundingVolumeComponent::update(int32_t currentFrame) {
     this->_lastUpdatedFrame = currentFrame;
     this->_occlusionUpdatedThisFrame = false;
   }
+}
+
+// TEMP COPY MOVE TO UTIL
+namespace {
+struct CalcBoundsOperation {
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume;
+  const FTransform& localToWorld;
+  const glm::dmat4& highPrecisionNodeTransform;
+
+  // Bounding volumes are expressed in tileset coordinates, which is usually
+  // ECEF.
+  //
+  // - `localToWorld` goes from model coordinates to Unreal world
+  //    coordinates, where model coordinates include the tile's transform as
+  //    well as any glTF node transforms.
+  // - `highPrecisionNodeTransform` transforms from model coordinates to tileset
+  //    coordinates.
+  //
+  // So to transform a bounding volume, we need to first transform by the
+  // inverse of `HighPrecisionNodeTransform` in order bring the bounding volume
+  // into model coordinates, and then transform by `localToWorld` to bring the
+  // bounding volume into Unreal world coordinates.
+
+  glm::dmat4 getModelToUnrealWorldMatrix() const {
+    const FMatrix matrix = localToWorld.ToMatrixWithScale();
+    return VecMath::createMatrix4D(matrix);
+  }
+
+  glm::dmat4 getTilesetToUnrealWorldMatrix() const {
+    const glm::dmat4 modelToUnreal = getModelToUnrealWorldMatrix();
+    const glm::dmat4 tilesetToModel =
+        glm::affineInverse(highPrecisionNodeTransform);
+    return modelToUnreal * tilesetToModel;
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeometry::BoundingSphere& sphere) const {
+    glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
+    glm::dvec3 center =
+        glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
+    glm::dmat3 halfAxes = glm::dmat3(matrix) * glm::dmat3(sphere.getRadius());
+
+    // The sphere only needs to reach the sides of the box, not the corners.
+    double sphereRadius =
+        glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
+    sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
+
+    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
+    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
+    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+
+    FBoxSphereBounds result;
+    result.Origin = VecMath::createVector(center);
+    result.SphereRadius = sphereRadius;
+    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    return result;
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeometry::OrientedBoundingBox& box) const {
+    glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
+    glm::dvec3 center = glm::dvec3(matrix * glm::dvec4(box.getCenter(), 1.0));
+    glm::dmat3 halfAxes = glm::dmat3(matrix) * box.getHalfAxes();
+
+    glm::dvec3 corner1 = halfAxes[0] + halfAxes[1];
+    glm::dvec3 corner2 = halfAxes[0] + halfAxes[2];
+    glm::dvec3 corner3 = halfAxes[1] + halfAxes[2];
+
+    double sphereRadius = glm::max(glm::length(corner1), glm::length(corner2));
+    sphereRadius = glm::max(sphereRadius, glm::length(corner3));
+
+    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
+    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
+    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+
+    FBoxSphereBounds result;
+    result.Origin = VecMath::createVector(center);
+    result.SphereRadius = sphereRadius;
+    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    return result;
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeospatial::BoundingRegion& region) const {
+    return (*this)(region.getBoundingBox());
+  }
+
+  FBoxSphereBounds operator()(
+      const CesiumGeospatial::BoundingRegionWithLooseFittingHeights& region)
+      const {
+    return (*this)(region.getBoundingRegion());
+  }
+
+  FBoxSphereBounds
+  operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) const {
+    return (*this)(s2.computeBoundingRegion());
+  }
+};
+
+} // namespace
+
+FBoxSphereBounds UCesiumBoundingVolumeComponent::CalcBounds(
+    const FTransform& LocalToWorld) const {
+  //if (!this->boundingVolume) {
+  //  return Super::CalcBounds(LocalToWorld);
+  //}
+
+  return std::visit(
+      CalcBoundsOperation{
+          this->_localTileBounds,
+          LocalToWorld,
+          this->_tileTransform},
+      this->_localTileBounds);
 }

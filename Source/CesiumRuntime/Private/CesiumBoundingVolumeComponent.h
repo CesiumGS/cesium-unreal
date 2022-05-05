@@ -100,6 +100,8 @@ public:
    * @param CesiumToUnrealTransform The new transformation.
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
+  
+  virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 
   //virtual void BeginDestroy() override;
 

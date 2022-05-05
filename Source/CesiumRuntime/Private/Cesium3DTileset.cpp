@@ -474,6 +474,10 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
   for (UCesiumGltfComponent* pGltf : gltfComponents) {
     pGltf->UpdateTransformFromCesium(CesiumToUnreal);
   }
+
+  if (this->_pBoundingVolumePool) {
+    this->_pBoundingVolumePool->UpdateTransformFromCesium(CesiumToUnreal);
+  }
 }
 
 // Called when the game starts or when spawned
@@ -814,7 +818,10 @@ void ACesium3DTileset::LoadTileset() {
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
   if (!this->_pBoundingVolumePool) {
+    const glm::dmat4& cesiumToUnreal = 
+        GetCesiumTilesetToUnrealRelativeWorldTransform();
     this->_pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
+    this->_pBoundingVolumePool->UpdateTransformFromCesium(cesiumToUnreal);
   }
 
   Cesium3DTilesSelection::TilesetExternals externals{

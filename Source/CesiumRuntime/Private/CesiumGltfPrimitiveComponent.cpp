@@ -7,6 +7,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "VecMath.h"
+#include <variant>
 #include <glm/gtc/matrix_inverse.hpp>
 
 class FCesiumGltfPrimitiveSceneProxy : public FStaticMeshSceneProxy {
@@ -181,7 +182,7 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
 
 namespace {
 
-struct CalcBoundsOperation {
+struct CalcBoundsOperation2 {
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume;
   const FTransform& localToWorld;
   const glm::dmat4& highPrecisionNodeTransform;
@@ -285,7 +286,7 @@ FBoxSphereBounds UCesiumGltfPrimitiveComponent::CalcBounds(
   }
 
   return std::visit(
-      CalcBoundsOperation{
+      CalcBoundsOperation2{
           *this->boundingVolume,
           LocalToWorld,
           this->HighPrecisionNodeTransform},
