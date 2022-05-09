@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause a crash after applying a non-UMaterialInstanceDynamic material to a tileset.
+
 ### v1.13.1 - 2022-05-05
 
 ##### Breaking Changes :mega:
