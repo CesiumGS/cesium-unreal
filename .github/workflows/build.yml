@@ -127,7 +127,7 @@ jobs:
           mkdir -p extern/build
           cd extern/build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-          cmake --build . -j14 --target install
+          cmake --build . -j4 --target install
           cd ../..
           rm -rf extern
       - name: Build plugin
@@ -158,7 +158,7 @@ jobs:
       - name: Download macOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-500-macOS-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-500-macos-${{ env.CESIUM_UNREAL_VERSION}}.zip
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v3
