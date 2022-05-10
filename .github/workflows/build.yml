@@ -126,7 +126,7 @@ jobs:
         run: |
           mkdir -p extern/build
           cd extern/build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
           cmake --build . -j14 --target install
           cd ../..
           rm -rf extern
