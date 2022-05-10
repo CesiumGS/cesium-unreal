@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added pre-built binaries for Unreal Engine 5 on macOS.
+
 ### v1.13.1 - 2022-05-05
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.0 to v0.15.1, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
