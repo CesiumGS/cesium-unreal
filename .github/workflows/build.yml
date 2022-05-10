@@ -117,8 +117,8 @@ jobs:
           fetch-depth: 0 # so that `git describe` works.
       - name: Set environment variables
         run: |
-          export $CESIUM_UNREAL_VERSION=$(git describe)
-          export $BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-500-macos-${CESIUM_UNREAL_VERSION}"
+          export CESIUM_UNREAL_VERSION=$(git describe)
+          export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-500-macos-${CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
