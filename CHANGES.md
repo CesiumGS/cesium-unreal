@@ -2,9 +2,17 @@
 
 ### ? - ?
 
+##### Fixes :wrench:
+
+- Fixed a bug introduced in v1.13.0 that could lead to incorrect axis-aligned bounding boxes.
+
+### v1.13.1 - 2022-05-05
+
 ##### Breaking Changes :mega:
 
 - Removed the following material assets that were accidentally included in the plugin in v1.13.0: `MetadataStyling/Layers/NYCBuildings_ByHeight_ML`, `MetadataStyling/Layers/NYCBuildings_ByYear_ML`, `MetadataStyling/NYCBuildings_ByHeight_M`, and `MetadataStyling/NYCBuildings_ByYear_M`. These assets can still be found in the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) project.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.0 to v0.15.1, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.13.0 - 2022-05-02
 
