@@ -19,7 +19,8 @@ glm::dmat4 CalcBoundsOperation::getTilesetToUnrealWorldMatrix() const {
 FBoxSphereBounds CalcBoundsOperation::operator()(
     const CesiumGeometry::BoundingSphere& sphere) const {
   glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
-  glm::dvec3 center = glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
+  glm::dvec3 center =
+      glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
   glm::dmat3 halfAxes = glm::dmat3(matrix) * glm::dmat3(sphere.getRadius());
 
   // The sphere only needs to reach the sides of the box, not the corners.
@@ -27,14 +28,10 @@ FBoxSphereBounds CalcBoundsOperation::operator()(
       glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
   sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
 
-  FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
-  FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
-  FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
-
   FBoxSphereBounds result;
   result.Origin = VecMath::createVector(center);
   result.SphereRadius = sphereRadius;
-  result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+  result.BoxExtent = FVector(sphereRadius, sphereRadius, sphereRadius);
   return result;
 }
 
@@ -51,14 +48,17 @@ FBoxSphereBounds CalcBoundsOperation::operator()(
   double sphereRadius = glm::max(glm::length(corner1), glm::length(corner2));
   sphereRadius = glm::max(sphereRadius, glm::length(corner3));
 
-  FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
-  FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
-  FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+  double maxX = glm::abs(halfAxes[0].x) + glm::abs(halfAxes[1].x) +
+                glm::abs(halfAxes[2].x);
+  double maxY = glm::abs(halfAxes[0].y) + glm::abs(halfAxes[1].y) +
+                glm::abs(halfAxes[2].y);
+  double maxZ = glm::abs(halfAxes[0].z) + glm::abs(halfAxes[1].z) +
+                glm::abs(halfAxes[2].z);
 
   FBoxSphereBounds result;
   result.Origin = VecMath::createVector(center);
   result.SphereRadius = sphereRadius;
-  result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+  result.BoxExtent = FVector(maxX, maxY, maxZ);
   return result;
 }
 
