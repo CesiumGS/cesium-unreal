@@ -4,7 +4,7 @@
 
 ##### Additions :tada:
 
-- Added pre-built binaries for Unreal Engine 5 on macOS.
+- Added pre-built binaries for Unreal Engine 5 on macOS and iOS.
 
 ### v1.13.1 - 2022-05-05
 
