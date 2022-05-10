@@ -168,7 +168,7 @@ jobs:
         run: |
           mkdir -p extern/build-ios
           cd extern
-          cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-fembed-bitcode" -DCMAKE_C_FLAGS="-fembed-bitcode"
           cmake --build build-ios -j 4 --target install --config Release -- -quiet # XCode output maxes out Travis log - Need to make it quiet
           cd ..
           rm -rf extern
