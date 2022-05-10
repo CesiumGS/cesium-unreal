@@ -306,7 +306,7 @@ public:
   bool EnableFrustumCulling = true;
 
   /**
-   * Whether to cull tiles that are occluded. 
+   * Whether to cull tiles that are occluded.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
   bool EnableOcclusionCulling = true;
@@ -461,8 +461,6 @@ private:
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
   FString Url = "file:///d:/Documents/Tilesets/YemenNext3/tileset.json";
-
-  UCesiumBoundingVolumePoolComponent* _pBoundingVolumePool;
 
   /**
    * The ID of the Cesium ion asset to use.
@@ -778,11 +776,12 @@ private:
   void RetrieveOccludedBoundingVolumes(
       TArray<FSceneViewState*>&& views,
       TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes);
-  
+
   // Polls to check whether the render thread occlusion retrieval task is done,
-  // syncs render thread results to the game thread, and dispatches a new 
+  // syncs render thread results to the game thread, and dispatches a new
   // render thread occlusion task.
   void TickOcclusionHandling();
+
 public:
   /**
    * Update the transforms of the glTF components based on the

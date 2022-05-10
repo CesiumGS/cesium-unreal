@@ -15,6 +15,7 @@
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
 #include "CesiumCommon.h"
@@ -31,7 +32,6 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
-#include "CesiumBoundingVolumeComponent.h"
 #include "CesiumTransforms.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "CreateGltfOptions.h"
@@ -475,8 +475,10 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
     pGltf->UpdateTransformFromCesium(CesiumToUnreal);
   }
 
-  if (this->_pBoundingVolumePool) {
-    this->_pBoundingVolumePool->UpdateTransformFromCesium(CesiumToUnreal);
+  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
+      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
+  if (pBoundingVolumePool) {
+    pBoundingVolumePool->UpdateTransformFromCesium(CesiumToUnreal);
   }
 }
 
@@ -817,11 +819,18 @@ void ACesium3DTileset::LoadTileset() {
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
-  if (!this->_pBoundingVolumePool) {
-    const glm::dmat4& cesiumToUnreal = 
+  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
+      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
+  if (!pBoundingVolumePool) {
+    const glm::dmat4& cesiumToUnreal =
         GetCesiumTilesetToUnrealRelativeWorldTransform();
-    this->_pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
-    this->_pBoundingVolumePool->UpdateTransformFromCesium(cesiumToUnreal);
+    pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
+    pBoundingVolumePool->RegisterComponent();
+    pBoundingVolumePool->SetUsingAbsoluteLocation(true);
+    pBoundingVolumePool->SetFlags(
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+    pBoundingVolumePool->RegisterComponent();
+    pBoundingVolumePool->UpdateTransformFromCesium(cesiumToUnreal);
   }
 
   Cesium3DTilesSelection::TilesetExternals externals{
@@ -830,8 +839,7 @@ void ACesium3DTileset::LoadTileset() {
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),
-      // TODO: manage deletion of this!!};
-      this->_pBoundingVolumePool->getPool()};
+      pBoundingVolumePool->getPool()};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -1635,14 +1643,14 @@ void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
         bool isDefinite = true;
         for (FSceneViewState* pViewState : views) {
           if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
-            for (FPrimitiveOcclusionHistory& primitiveHistory :
-                 pViewState->PrimitiveOcclusionHistorySet) {
-              if (primitiveHistory.PrimitiveId == pBoundingVolume->ComponentId) {
-                isDefinite &= 
-                    primitiveHistory.OcclusionStateWasDefiniteLastFrame;
-                isOccluded |= primitiveHistory.WasOccludedLastFrame;
-                break;
-              }
+            FPrimitiveOcclusionHistory* pHistory =
+                pViewState->PrimitiveOcclusionHistorySet.Find(
+                    FPrimitiveOcclusionHistoryKey(
+                        pBoundingVolume->ComponentId,
+                        0));
+            if (pHistory) {
+              isDefinite &= pHistory->OcclusionStateWasDefiniteLastFrame;
+              isOccluded |= pHistory->WasOccludedLastFrame;
             }
           }
         }
@@ -1700,7 +1708,7 @@ void ACesium3DTileset::TickOcclusionHandling() {
 #endif
 
     this->RetrieveOccludedBoundingVolumes(
-        std::move(views), 
+        std::move(views),
         std::move(boundingVolumes));
   }
 }
@@ -1731,12 +1739,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   updateTilesetOptionsFromProperties();
 
-  // TODO: Tileset traversal and occlusion history retrieval may use different 
-  // cameras, look for ways to consolidate them. 
+  // TODO: Tileset traversal and occlusion history retrieval may use different
+  // cameras, look for ways to consolidate them.
   if (this->EnableOcclusionCulling) {
     this->TickOcclusionHandling();
   }
-  
+
   std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {
     return;
