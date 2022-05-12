@@ -4,6 +4,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug that could cause a crash after applying a non-UMaterialInstanceDynamic material to a tileset.
 - Fixed a bug introduced in v1.13.0 that could lead to incorrect axis-aligned bounding boxes.
 
 ### v1.13.1 - 2022-05-05
