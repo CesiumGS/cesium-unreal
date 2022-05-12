@@ -183,14 +183,10 @@ struct CalcBoundsOperation {
         glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
     sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
 
-    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
-    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
-    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
-
     FBoxSphereBounds result;
     result.Origin = VecMath::createVector(center);
     result.SphereRadius = sphereRadius;
-    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    result.BoxExtent = FVector(sphereRadius, sphereRadius, sphereRadius);
     return result;
   }
 
@@ -207,14 +203,17 @@ struct CalcBoundsOperation {
     double sphereRadius = glm::max(glm::length(corner1), glm::length(corner2));
     sphereRadius = glm::max(sphereRadius, glm::length(corner3));
 
-    FVector xs(halfAxes[0].x, halfAxes[1].x, halfAxes[2].x);
-    FVector ys(halfAxes[0].y, halfAxes[1].y, halfAxes[2].y);
-    FVector zs(halfAxes[0].z, halfAxes[1].z, halfAxes[2].z);
+    double maxX = glm::abs(halfAxes[0].x) + glm::abs(halfAxes[1].x) +
+                  glm::abs(halfAxes[2].x);
+    double maxY = glm::abs(halfAxes[0].y) + glm::abs(halfAxes[1].y) +
+                  glm::abs(halfAxes[2].y);
+    double maxZ = glm::abs(halfAxes[0].z) + glm::abs(halfAxes[1].z) +
+                  glm::abs(halfAxes[2].z);
 
     FBoxSphereBounds result;
     result.Origin = VecMath::createVector(center);
     result.SphereRadius = sphereRadius;
-    result.BoxExtent = FVector(xs.GetAbsMax(), ys.GetAbsMax(), zs.GetAbsMax());
+    result.BoxExtent = FVector(maxX, maxY, maxZ);
     return result;
   }
 
