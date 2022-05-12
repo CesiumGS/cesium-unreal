@@ -73,7 +73,6 @@ FPrimitiveSceneProxy* UCesiumGltfPrimitiveComponent::CreateSceneProxy() {
 
   FPrimitiveSceneProxy* Proxy = new FCesiumGltfPrimitiveSceneProxy(this);
 
-  // FPrimitiveSceneProxy* Proxy = new FStaticMeshSceneProxy(this);
 #if STATICMESH_ENABLE_DEBUG_RENDERING
   SendRenderDebugPhysics(Proxy);
 #endif

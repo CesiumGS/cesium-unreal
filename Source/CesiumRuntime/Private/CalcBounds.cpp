@@ -19,8 +19,7 @@ glm::dmat4 CalcBoundsOperation::getTilesetToUnrealWorldMatrix() const {
 FBoxSphereBounds CalcBoundsOperation::operator()(
     const CesiumGeometry::BoundingSphere& sphere) const {
   glm::dmat4 matrix = getTilesetToUnrealWorldMatrix();
-  glm::dvec3 center =
-      glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
+  glm::dvec3 center = glm::dvec3(matrix * glm::dvec4(sphere.getCenter(), 1.0));
   glm::dmat3 halfAxes = glm::dmat3(matrix) * glm::dmat3(sphere.getRadius());
 
   // The sphere only needs to reach the sides of the box, not the corners.

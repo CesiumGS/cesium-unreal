@@ -11,7 +11,8 @@
 
 using namespace Cesium3DTilesSelection;
 
-UCesiumBoundingVolumePoolComponent::UCesiumBoundingVolumePoolComponent() {
+UCesiumBoundingVolumePoolComponent::UCesiumBoundingVolumePoolComponent()
+    : _cesiumToUnreal(1.0) {
   this->_pPool = std::make_shared<UCesiumBoundingVolumePool>(this);
   SetMobility(EComponentMobility::Static);
 }
@@ -31,6 +32,8 @@ TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pBoundingVolume->SetupAttachment(this);
   pBoundingVolume->RegisterComponent();
+
+  pBoundingVolume->UpdateTransformFromCesium(this->_cesiumToUnreal);
 
   return (TileOcclusionRendererProxy*)pBoundingVolume;
 }
@@ -60,7 +63,8 @@ void UCesiumBoundingVolumePool::destroyProxy(
 
 void UCesiumBoundingVolumePoolComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
-  // SetRelativeTransform_Direct(FTransform(FMatrix::Identity));
+  this->_cesiumToUnreal = CesiumToUnrealTransform;
+
   TArray<USceneComponent*> children = this->GetAttachChildren();
   for (USceneComponent* pChild : children) {
     UCesiumBoundingVolumeComponent* pBoundingVolume =

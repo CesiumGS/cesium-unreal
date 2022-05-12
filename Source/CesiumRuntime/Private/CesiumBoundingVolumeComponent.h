@@ -36,6 +36,8 @@ public:
   }
 
 private:
+  glm::dmat4 _cesiumToUnreal;
+
   // These are really implementations of the functions in
   // TileOcclusionRendererProxyPool, but we can't use multiple inheritance with
   // UObjects. Instead use the CesiumBoundingVolumePool and forward virtual
