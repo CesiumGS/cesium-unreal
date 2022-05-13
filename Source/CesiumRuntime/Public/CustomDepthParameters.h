@@ -20,7 +20,7 @@ public:
       BlueprintReadOnly,
       Category = Rendering,
       meta = (DisplayName = "Render CustomDepth Pass"))
-  bool RenderCustomDepth;
+  bool RenderCustomDepth = false;
 
   /** Mask used for stencil buffer writes. */
   UPROPERTY(
@@ -29,7 +29,8 @@ public:
       BlueprintReadOnly,
       Category = "Rendering",
       meta = (EditCondition = "RenderCustomDepth"))
-  ERendererStencilMask CustomDepthStencilWriteMask;
+  ERendererStencilMask CustomDepthStencilWriteMask =
+      ERendererStencilMask::ERSM_Default;
 
   /** Optionally write this 0-255 value to the stencil buffer in CustomDepth
    * pass (Requires project setting or r.CustomDepth == 3) */
@@ -39,7 +40,7 @@ public:
       BlueprintReadOnly,
       Category = Rendering,
       meta = (UIMin = "0", UIMax = "255", EditCondition = "RenderCustomDepth"))
-  int32 CustomDepthStencilValue;
+  int32 CustomDepthStencilValue = 0;
 
   bool operator==(const FCustomDepthParameters& other) const {
     return RenderCustomDepth == other.RenderCustomDepth &&

@@ -33,13 +33,13 @@ struct CESIUMRUNTIME_API FCesiumRasterOverlayLoadFailureDetails {
    * The overlay that encountered the load failure.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  UCesiumRasterOverlay* Overlay;
+  UCesiumRasterOverlay* Overlay = nullptr;
 
   /**
    * The type of request that failed to load.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  ECesiumRasterOverlayLoadType Type;
+  ECesiumRasterOverlayLoadType Type = ECesiumRasterOverlayLoadType::Unknown;
 
   /**
    * The HTTP status code of the response that led to the failure.
@@ -48,7 +48,7 @@ struct CESIUMRUNTIME_API FCesiumRasterOverlayLoadFailureDetails {
    * the value of this property will be 0.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  int32 HttpStatusCode;
+  int32 HttpStatusCode = 0;
 
   /**
    * A human-readable explanation of what failed.
