@@ -1,11 +1,14 @@
 # Change Log
 
-### ? - ?
+### v1.13.2 - 2022-05-13
 
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause a crash after applying a non-UMaterialInstanceDynamic material to a tileset.
 - Fixed a bug introduced in v1.13.0 that could lead to incorrect axis-aligned bounding boxes.
+- Gave initial values to some fields in UStructs that did not have them, including two `UObject` pointers.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.1 to v0.15.2, fixing an important bug and updating some third-party libraries. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.13.1 - 2022-05-05
 
