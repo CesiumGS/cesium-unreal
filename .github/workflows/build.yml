@@ -26,6 +26,7 @@ jobs:
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
       - name: Publish plugin package artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
@@ -58,6 +59,7 @@ jobs:
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
       - name: Publish plugin package artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
@@ -94,6 +96,7 @@ jobs:
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
       - name: Publish plugin package artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
@@ -136,6 +139,7 @@ jobs:
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
       - name: Publish plugin package artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
@@ -178,6 +182,7 @@ jobs:
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
       - name: Publish plugin package artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
@@ -223,6 +228,7 @@ jobs:
           name: CesiumForUnreal-500-windows-${{ env.CESIUM_UNREAL_VERSION}}.zip
           path: combine
       - name: Publish combined package artifact
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
