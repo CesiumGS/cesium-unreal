@@ -32,14 +32,27 @@ public:
   TArray<ACesiumCartographicPolygon*> Polygons;
 
   /**
-   * Whether tiles that fall entirely inside this overlay's polygons should be
+   * Whether to invert the selection specified by the polygons. 
+   * 
+   * If this is true, only the areas outside of all the polygons will be
+   * rasterized. 
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  bool InvertSelection = false;
+
+  /**
+   * Whether tiles that fall entirely within the rasterized selection should be
    * excluded from loading and rendering. For better performance, this should be
    * enabled when this overlay will be used for clipping. But when this overlay
    * is used for other effects, this option should be disabled to avoid missing
    * tiles.
+   * 
+   * Note that if InvertSelection is true, this will cull tiles that are 
+   * outside of all the polygons. If it is false, this will cull tiles that are
+   * completely inside at least one polygon. 
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool ExcludeTilesInside = true;
+  bool ExcludeSelectedTiles = true;
 
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
