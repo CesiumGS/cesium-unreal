@@ -90,6 +90,7 @@ public class CesiumRuntime : ModuleRules
             "s2geometry",
             "spdlog",
             "sqlite3",
+            "tidy_static",
             "tinyxml2",
             "uriparser",
             "ktx_read"
@@ -142,7 +143,8 @@ public class CesiumRuntime : ModuleRules
                 "Projects",
                 "RenderCore",
                 "SunPosition",
-                "DeveloperSettings"
+                "DeveloperSettings",
+                "UMG"
             }
         );
 
@@ -161,6 +163,7 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_XYZW_ONLY",
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
+                "TIDY_STATIC"
                 //"CESIUM_TRACING_ENABLED"
             }
         );
