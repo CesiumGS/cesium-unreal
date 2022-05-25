@@ -575,10 +575,10 @@ public:
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContent* pContent =
+    const Cesium3DTilesSelection::TileContent& content =
         tile.getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
-        pContent->getRenderContent();
+        content.getRenderContent();
     if (pRenderContent && pRenderContent->model) {
       TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
@@ -676,20 +676,17 @@ public:
       void* pMainThreadRendererResources,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
-    const Cesium3DTilesSelection::TileContent* pContent =
-        tile.getContent();
-    if (pContent) {
-      UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(pContent->getRenderResources());
-      if (pGltfContent) {
-        pGltfContent->AttachRasterTile(
-            tile,
-            rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources),
-            translation,
-            scale,
-            overlayTextureCoordinateID);
-      }
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    UCesiumGltfComponent* pGltfContent =
+        reinterpret_cast<UCesiumGltfComponent*>(content.getRenderResources());
+    if (pGltfContent) {
+      pGltfContent->AttachRasterTile(
+          tile,
+          rasterTile,
+          static_cast<UTexture2D*>(pMainThreadRendererResources),
+          translation,
+          scale,
+          overlayTextureCoordinateID);
     }
   }
 
@@ -698,17 +695,14 @@ public:
       int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources) noexcept override {
-    const Cesium3DTilesSelection::TileContent* pContent =
-        tile.getContent();
-    if (pContent) {
-      UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(pContent->getRenderResources());
-      if (pGltfContent) {
-        pGltfContent->DetachRasterTile(
-            tile,
-            rasterTile,
-            static_cast<UTexture2D*>(pMainThreadRendererResources));
-      }
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    UCesiumGltfComponent* pGltfContent =
+        reinterpret_cast<UCesiumGltfComponent*>(content.getRenderResources());
+    if (pGltfContent) {
+      pGltfContent->DetachRasterTile(
+          tile,
+          rasterTile,
+          static_cast<UTexture2D*>(pMainThreadRendererResources));
     }
   }
 
@@ -1400,13 +1394,10 @@ void hideTilesToNoLongerRender(
       continue;
     }
 
-    const Cesium3DTilesSelection::TileContent* pContent = pTile->getContent();
-    if (!pContent) {
-      continue;
-    }
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
 
     UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pContent->getRenderResources());
+        static_cast<UCesiumGltfComponent*>(content.getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetVisibility(false, true);
       Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -1532,13 +1523,9 @@ void ACesium3DTileset::showTilesToRender(
     // pQuadtreeID->level != 14 || pQuadtreeID->x != 5503 || pQuadtreeID->y !=
     // 11626) { 	continue;
     //}
-    const Cesium3DTilesSelection::TileContent* pContent = pTile->getContent();
-    if (!pContent) {
-      continue;
-    }
-
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
     UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pContent->getRenderResources());
+        static_cast<UCesiumGltfComponent*>(content.getRenderResources());
     if (!Gltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
