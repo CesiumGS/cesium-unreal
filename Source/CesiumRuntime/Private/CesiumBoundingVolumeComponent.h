@@ -74,27 +74,20 @@ class UCesiumBoundingVolumeComponent
   GENERATED_BODY()
 
 public:
+
   // Sets default values for this component's properties
   UCesiumBoundingVolumeComponent();
   virtual ~UCesiumBoundingVolumeComponent() = default;
 
+
   FPrimitiveSceneProxy* CreateSceneProxy() override;
 
   /**
-   * Set the occlusion result for this bounding volume, or nullopt if there
-   * was not a definitive occlusion result this frame.
+   * Set the occlusion result for this bounding volume.
    *
-   * @param isOccluded The occlusion result.
+   * @param result The occlusion result.
    */
-  void SetOcclusionResult_RenderThread(const std::optional<bool>& isOccluded);
-
-  /**
-   * Notifies that the render thread occlusion retrieval task is complete and
-   * has not been re-queued up yet. Upon receiving this notification, the
-   * component will save the render thread result onto a game thread
-   * reflection. Called on the game thread.
-   */
-  void SyncOcclusionResult();
+  void SetOcclusionResult_RenderThread(bool isOccluded);
 
   /**
    * Updates this component's transform from a new double-precision
@@ -125,13 +118,9 @@ protected:
 private:
   void _updateTransform();
 
-  // Updated in render thread
-  std::optional<bool> _isOccluded_RenderThread;
-
-  // Game thread safe information. Synced from the render thread result
+  int32_t _lastUpdatedFrame = -100;
   bool _isOccluded = false;
-  bool _occlusionUpdatedThisFrame = false;
-  int32_t _lastUpdatedFrame = -1000;
+  bool _isOccluded_RenderThread = false;
 
   // TODO:
   // Do these need to be accessed on the game thread, render thread?

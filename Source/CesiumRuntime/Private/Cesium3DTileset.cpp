@@ -55,7 +55,6 @@
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
 #include "PixelFormat.h"
-#include "Runtime/Renderer/Private/ScenePrivate.h"
 #include "SceneTypes.h"
 #include "StereoRendering.h"
 #include "UnrealAssetAccessor.h"
@@ -73,6 +72,17 @@ FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 #include "EditorViewportClient.h"
 #include "LevelEditorViewport.h"
 #endif
+
+int32 ACesium3DTileset::GetRenderedTilesCount() {
+  return this->_lastTilesRendered;
+}
+
+void ACesium3DTileset::SetOcclusionCulling(bool value) {
+  if (this->_pTileset) {
+    this->EnableOcclusionCulling = value;
+    this->_pTileset->getOptions().enableOcclusionCulling = value;
+  }
+}
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset()
@@ -1606,113 +1616,6 @@ void ACesium3DTileset::showTilesToRender(
   }
 }
 
-namespace {
-
-template <typename Tag, typename Tag::type M> struct Rob {
-public:
-  friend typename Tag::type get(Tag) { return M; }
-};
-
-// Hack to retrieve the private ULocalPlayer::ViewStates
-class ULocalPlayer_Hack {
-public:
-  typedef TArray<FSceneViewStateReference> ULocalPlayer::*type;
-  friend type get(ULocalPlayer_Hack);
-};
-
-template struct Rob<ULocalPlayer_Hack, &ULocalPlayer::ViewStates>;
-} // namespace
-
-void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
-    TArray<FSceneViewState*>&& views,
-    TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes) {
-  // I think passing UPrimitiveComponent to render thread is safe, UE4 uses
-  // some sort of fencing to make sure primitive components don't get GC'd
-  // during the render thread. I'm less sure if it's thread safe with how we
-  // manually destroy resources from the component.
-  this->WaitingForOcclusion = true;
-  ENQUEUE_RENDER_COMMAND(RetrieveOccludedPrimitives)
-  ([views = std::move(views),
-    boundingVolumes = std::move(boundingVolumes),
-    &WaitingForOcclusion =
-        this->WaitingForOcclusion](FRHICommandList& RHICmdList) {
-    for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
-      if (pBoundingVolume) {
-        // Check that the primitive is definitely occluded in every view.
-        bool isOccluded = false;
-        bool isDefinite = true;
-        for (FSceneViewState* pViewState : views) {
-          if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
-            FPrimitiveOcclusionHistory* pHistory =
-                pViewState->PrimitiveOcclusionHistorySet.Find(
-                    FPrimitiveOcclusionHistoryKey(
-                        pBoundingVolume->ComponentId,
-                        0));
-            if (pHistory) {
-              isDefinite &= pHistory->OcclusionStateWasDefiniteLastFrame;
-              isOccluded |= pHistory->WasOccludedLastFrame;
-            }
-          }
-        }
-
-        if (isDefinite) {
-          pBoundingVolume->SetOcclusionResult_RenderThread(isOccluded);
-        }
-      }
-    }
-
-    WaitingForOcclusion = false;
-  });
-}
-
-void ACesium3DTileset::TickOcclusionHandling() {
-  if (!this->WaitingForOcclusion) {
-    TArray<UCesiumBoundingVolumeComponent*> boundingVolumes;
-    this->GetComponents<UCesiumBoundingVolumeComponent>(boundingVolumes, false);
-
-    // We are not waiting on the render thread, we can let the primitives know
-    // about the last-received occlusion info.
-    for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
-      if (pBoundingVolume) {
-        pBoundingVolume->SyncOcclusionResult();
-      }
-    }
-
-    TArray<FSceneViewState*> views;
-    UWorld* pWorld = this->GetWorld();
-    if (GEngine && pWorld) {
-      for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
-           playerControllerIt;
-           playerControllerIt++) {
-        const TWeakObjectPtr<APlayerController> pPlayerController =
-            *playerControllerIt;
-        if (pPlayerController != nullptr) {
-          ULocalPlayer* pLocalPlayer = pPlayerController->GetLocalPlayer();
-          if (pLocalPlayer) {
-            for (FSceneViewStateReference& viewRef :
-                 pLocalPlayer->*get(ULocalPlayer_Hack())) {
-              views.Add((FSceneViewState*)viewRef.GetReference());
-            }
-          }
-        }
-      }
-    }
-#if WITH_EDITOR
-    if (GEditor) {
-      TArray<FEditorViewportClient*> viewports =
-          GEditor->GetAllViewportClients();
-      for (FEditorViewportClient* viewport : viewports) {
-        views.Add((FSceneViewState*)viewport->ViewState.GetReference());
-      }
-    }
-#endif
-
-    this->RetrieveOccludedBoundingVolumes(
-        std::move(views),
-        std::move(boundingVolumes));
-  }
-}
-
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
@@ -1738,12 +1641,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   updateTilesetOptionsFromProperties();
-
-  // TODO: Tileset traversal and occlusion history retrieval may use different
-  // cameras, look for ways to consolidate them.
-  if (this->EnableOcclusionCulling) {
-    this->TickOcclusionHandling();
-  }
 
   std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {

@@ -8,6 +8,7 @@
 #include "VecMath.h"
 #include <optional>
 #include <variant>
+#include "Runtime/Renderer/Private/ScenePrivate.h"
 
 using namespace Cesium3DTilesSelection;
 
@@ -76,15 +77,69 @@ void UCesiumBoundingVolumePoolComponent::UpdateTransformFromCesium(
 }
 
 class FCesiumBoundingVolumeSceneProxy : public FPrimitiveSceneProxy {
+private:
+  // TODO: FIND ANOTHER WAY, THIS IS NOT SAFE!!
+  mutable UCesiumBoundingVolumeComponent* _pBoundingVolumeComponent;
 public:
   FCesiumBoundingVolumeSceneProxy(UCesiumBoundingVolumeComponent* pComponent)
-      : FPrimitiveSceneProxy(pComponent /*, name?*/) {}
+      : FPrimitiveSceneProxy(pComponent /*, name?*/),
+        _pBoundingVolumeComponent(pComponent) {}
+
+  bool AllowApproximateOcclusion() const {
+    return true;
+  }
 
   void GetDynamicMeshElements(
       const TArray<const FSceneView*>& Views,
       const FSceneViewFamily& ViewFamily,
       uint32 VisibilityMap,
       FMeshElementCollector& Collector) const override {
+    bool isDefinite = true;
+    // TODO: this is a workaround, not correct
+    bool isOccluded = true;
+    for (const FSceneView* pView : Views) {
+      const FSceneViewState* pViewState = (FSceneViewState*)pView->State;
+      //->GetConcreteViewState();
+      if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
+        const FPrimitiveOcclusionHistory* pHistory =
+            pViewState->PrimitiveOcclusionHistorySet.Find(
+                FPrimitiveOcclusionHistoryKey(
+                    this->GetPrimitiveComponentId(),
+                    0));
+        //int32 NumBufferedFrames = FOcclusionQueryHelpers::GetNumBufferedFrames(ViewFamily.Scene->GetFeatureLevel());
+        bool bGrouped = false;
+        
+        if (pHistory) {
+          FRHIRenderQuery* query = pHistory->GetQueryForReading(
+              pViewState->OcclusionFrameCounter,
+              1,
+              1,
+              bGrouped);
+
+          if (query) {
+
+            uint64 NumSamples = 0;
+            if (GDynamicRHI->RHIGetRenderQueryResult(query, NumSamples, true)) {
+              isOccluded = isOccluded && (NumSamples == 0);
+            }
+
+            // isDefinite &= pHistory->OcclusionStateWasDefiniteLastFrame;
+            // TODO: this is a hack, not correct
+            // pHistory->WasOccludedLastFrame;
+            // pHistory->LastPixelsPercentage < 0.1f; // WasOccludedLastFrame;
+            /** / if (!pHistory->WasOccludedLastFrame) {
+              isOccluded = false;
+              break;
+            }*/
+          }
+        }
+      }
+    }
+
+    if (isDefinite) {
+      this->_pBoundingVolumeComponent->SetOcclusionResult_RenderThread({isOccluded});
+    }
+
     for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
       const ESceneDepthPriorityGroup DrawBoundsDPG = SDPG_World;
       DrawWireBox(
@@ -99,6 +154,7 @@ public:
   FPrimitiveViewRelevance
   GetViewRelevance(const FSceneView* View) const override {
     FPrimitiveViewRelevance Result;
+    
     Result.bDrawRelevance = true;
     Result.bDynamicRelevance = true;
     // Result.bEditorPrimitiveRelevance = true;
@@ -117,8 +173,9 @@ public:
 };
 
 FPrimitiveSceneProxy* UCesiumBoundingVolumeComponent::CreateSceneProxy() {
-  this->_isOccluded_RenderThread = std::nullopt;
   this->_isOccluded = false;
+  this->_isOccluded_RenderThread = false;
+  this->_lastUpdatedFrame = -1000;
   return (FPrimitiveSceneProxy*)new FCesiumBoundingVolumeSceneProxy(this);
 }
 
@@ -129,17 +186,8 @@ UCesiumBoundingVolumeComponent::UCesiumBoundingVolumeComponent()
       _tileTransform(1.0),
       _cesiumToUnreal(1.0) {}
 
-void UCesiumBoundingVolumeComponent::SetOcclusionResult_RenderThread(
-    const std::optional<bool>& isOccluded_) {
-  this->_isOccluded_RenderThread = isOccluded_;
-}
-
-void UCesiumBoundingVolumeComponent::SyncOcclusionResult() {
-  if (this->_isOccluded_RenderThread) {
-    this->_isOccluded = *this->_isOccluded_RenderThread;
-    this->_occlusionUpdatedThisFrame = true;
-    this->_isOccluded_RenderThread = std::nullopt;
-  }
+void UCesiumBoundingVolumeComponent::SetOcclusionResult_RenderThread(bool isOccluded) {
+  this->_isOccluded_RenderThread = isOccluded;
 }
 
 void UCesiumBoundingVolumeComponent::_updateTransform() {
@@ -177,18 +225,13 @@ void UCesiumBoundingVolumeComponent::reset(const Tile* pTile) {
     this->SetVisibility(true);
     // TODO: might have to mark render state dirty somewhere here
   } else {
-    this->_isOccluded_RenderThread = std::nullopt;
-    this->_isOccluded = false;
-    this->_lastUpdatedFrame = -1000;
     this->SetVisibility(false);
   }
 }
 
 void UCesiumBoundingVolumeComponent::update(int32_t currentFrame) {
-  if (this->_occlusionUpdatedThisFrame) {
-    this->_lastUpdatedFrame = currentFrame;
-    this->_occlusionUpdatedThisFrame = false;
-  }
+  this->_lastUpdatedFrame = currentFrame;
+  this->_isOccluded = this->_isOccluded_RenderThread;
 }
 
 FBoxSphereBounds UCesiumBoundingVolumeComponent::CalcBounds(

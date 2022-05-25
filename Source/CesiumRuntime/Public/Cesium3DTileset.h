@@ -702,6 +702,12 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PauseMovieSequencer();
 
+  UFUNCTION(BlueprintCallable, Category = "Cesium | Rendering")
+  int32 GetRenderedTilesCount();
+
+  UFUNCTION(BlueprintCallable, Category = "Cesium | Rendering")
+  void SetOcclusionCulling(bool value);
+
   /**
    * This method is not supposed to be called by clients. It is currently
    * only required by the UnrealResourcePreparer.
@@ -767,20 +773,6 @@ private:
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
   std::vector<FCesiumCamera> GetSceneCaptures() const;
-
-  // TODO: Does this need to be atomic? Is it already atomic?
-  // Whether we are waiting for occlusion results from the render thread.
-  bool WaitingForOcclusion = false;
-
-  // Dispatches a render thread task to retrieves occlusion information.
-  void RetrieveOccludedBoundingVolumes(
-      TArray<FSceneViewState*>&& views,
-      TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes);
-
-  // Polls to check whether the render thread occlusion retrieval task is done,
-  // syncs render thread results to the game thread, and dispatches a new
-  // render thread occlusion task.
-  void TickOcclusionHandling();
 
 public:
   /**
