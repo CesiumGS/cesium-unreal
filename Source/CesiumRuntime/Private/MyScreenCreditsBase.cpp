@@ -3,6 +3,7 @@
 #include "MyScreenCreditsBase.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Components/RichTextBlock.h"
+#include "MyRichTextBlockDecorator.h"
 #include <tidybuffio.h>
 #include <vector>
 
@@ -12,13 +13,22 @@ UMyScreenCreditsBase::UMyScreenCreditsBase(
     const FObjectInitializer& ObjectInitializer)
     : UUserWidget(ObjectInitializer) {}
 
+void UMyScreenCreditsBase::NativeConstruct() {
+  if (RichTextBlock_127) {
+    _imageDecorator = static_cast<UMyRichTextBlockDecorator*>(
+        RichTextBlock_127->GetDecoratorByClass(
+            UMyRichTextBlockDecorator::StaticClass()));
+  }
+  UWorld* world = GetWorld();
+  if (world) {
+    _pCreditSystem = ACesiumCreditSystem::GetDefaultCreditSystem(GetWorld())
+                         ->GetExternalCreditSystem();
+  }
+}
+
 void UMyScreenCreditsBase::Update() {
   if (!_pCreditSystem) {
-    UWorld* world = GetWorld();
-    if (world) {
-      _pCreditSystem = ACesiumCreditSystem::GetDefaultCreditSystem(GetWorld())
-                           ->GetExternalCreditSystem();
-    }
+    return;
   }
 
   const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
@@ -38,13 +48,13 @@ void UMyScreenCreditsBase::Update() {
         output += " ";
       }
       const Credit* credit = &creditsToShowThisFrame[i];
-      // if (_creditToRTF.Contains(credit)) {
-      //   output += _creditToRTF[credit];
-      // } else {
-      FString convert = ConvertCreditToRTF(credit);
-      // _creditToRTF.Add(credit, convert);
-      output += convert;
-      //}
+      if (_creditToRTF.Contains(credit)) {
+        output += _creditToRTF[credit];
+      } else {
+        FString convert = ConvertCreditToRTF(credit);
+        _creditToRTF.Add(credit, convert);
+        output += convert;
+      }
     }
     if (RichTextBlock_127) {
       RichTextBlock_127->SetText(FText::FromString(output));
@@ -54,7 +64,12 @@ void UMyScreenCreditsBase::Update() {
 }
 
 namespace {
-void ConvertHTMLToRTF(std::string& html, TidyDoc tdoc, TidyNode tnod) {
+void LoadImage(const std::string& url) {}
+void ConvertHTMLToRTF(
+    std::string& html,
+    TidyDoc tdoc,
+    TidyNode tnod,
+    int& textureCount) {
   TidyNode child;
   for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
     if (tidyNodeIsText(child)) {
@@ -65,11 +80,21 @@ void ConvertHTMLToRTF(std::string& html, TidyDoc tdoc, TidyNode tnod) {
         html += reinterpret_cast<const char*>(buf.bp);
       }
       tidyBufFree(&buf);
+    } else if (tidyNodeGetId(child) == TidyTagId::TidyTag_IMG) {
+      auto srcAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_SRC);
+      if (srcAttr) {
+        auto srcValue = tidyAttrValue(srcAttr);
+        if (srcValue) {
+          html += "<img id=\"" + std::to_string(textureCount++) + "\"/>";
+          LoadImage(std::string(reinterpret_cast<const char*>(srcValue)));
+        }
+      }
     }
-    ConvertHTMLToRTF(html, tdoc, child);
+    ConvertHTMLToRTF(html, tdoc, child, textureCount);
   }
 }
 } // namespace
+
 FString UMyScreenCreditsBase::ConvertCreditToRTF(
     const Cesium3DTilesSelection::Credit* credit) {
 
@@ -80,34 +105,33 @@ FString UMyScreenCreditsBase::ConvertCreditToRTF(
   int err;
 
   tdoc = tidyCreate();
-  tidyOptSetBool(tdoc, TidyForceOutput, yes); /* try harder */
-  tidyOptSetInt(tdoc, TidyWrapLen, 4096);
+  tidyOptSetBool(tdoc, TidyForceOutput, yes);
+  tidyOptSetInt(tdoc, TidyWrapLen, 0);
+  tidyOptSetInt(tdoc, TidyNewline, TidyLF);
+
   tidySetErrorBuffer(tdoc, &tidy_errbuf);
   tidyBufInit(&docbuf);
 
-  if (html.find("<") == html.npos) {
-    html = "<span>" + html + "</span>";
-  }
+  // avoid buffer overflow by wrapping with html tags
+  html = "<span>" + html + "</span>";
 
   tidyBufAppend(
       &docbuf,
       reinterpret_cast<void*>(const_cast<char*>(html.c_str())),
       static_cast<uint>(html.size()));
 
-  err = tidyParseBuffer(tdoc, &docbuf); /* parse the input */
+  err = tidyParseBuffer(tdoc, &docbuf);
 
   std::string output;
-  ConvertHTMLToRTF(output, tdoc, tidyGetRoot(tdoc));
+  ConvertHTMLToRTF(output, tdoc, tidyGetRoot(tdoc), _textureCount);
 
   tidyBufFree(&docbuf);
   tidyBufFree(&tidy_errbuf);
   tidyRelease(tdoc);
 
-  // remove new line '/r/n'
-  if (output.size() > 2) {
-    output.pop_back();
+  // could not find correct option in tidy html to not add new lines
+  if (output.size() != 0 && output[output.size() - 1] == '\n') {
     output.pop_back();
   }
-
   return UTF8_TO_TCHAR(output.c_str());
 }

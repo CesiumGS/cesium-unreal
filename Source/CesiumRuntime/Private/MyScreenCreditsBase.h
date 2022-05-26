@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "CesiumCreditSystem.h"
 #include "CoreMinimal.h"
+#include "Engine/Texture2DDynamic.h"
 #include "MyScreenCreditsBase.generated.h"
 
 namespace Cesium3DTilesSelection {
@@ -16,7 +17,7 @@ class UMyScreenCreditsBase : public UUserWidget {
   GENERATED_BODY()
 
   UMyScreenCreditsBase(const FObjectInitializer& ObjectInitializer);
-
+  virtual void NativeConstruct() override;
   UFUNCTION(BlueprintCallable)
   void Update();
 
@@ -28,5 +29,7 @@ private:
 
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
   size_t _lastCreditsCount;
-  // TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
+  TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
+  int _textureCount;
+  UMyRichTextBlockDecorator* _imageDecorator;
 };
