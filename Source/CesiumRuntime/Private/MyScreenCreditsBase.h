@@ -12,6 +12,7 @@ namespace Cesium3DTilesSelection {
 class CreditSystem;
 struct Credit;
 } // namespace Cesium3DTilesSelection
+
 UCLASS()
 class UMyScreenCreditsBase : public UUserWidget {
   GENERATED_BODY()
@@ -30,6 +31,5 @@ private:
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
   size_t _lastCreditsCount;
   TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
-  int _textureCount;
   UMyRichTextBlockDecorator* _imageDecorator;
 };

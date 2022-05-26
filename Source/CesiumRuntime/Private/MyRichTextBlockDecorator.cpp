@@ -1,16 +1,20 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MyRichTextBlockDecorator.h"
-#include "Blueprint/AsyncTaskDownloadImage.h"
 #include "Components/RichTextBlockImageDecorator.h"
 #include "Engine/Texture2D.h"
+#include "Engine/Texture2DDynamic.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Text/SlateTextLayout.h"
 #include "Framework/Text/SlateTextRun.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "Interfaces/IHttpResponse.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/Base64.h"
 #include "Misc/DefaultValueHelper.h"
+#include "Modules/ModuleManager.h"
 #include "Rendering/DrawElements.h"
 #include "Slate/SlateGameResources.h"
 #include "UObject/Package.h"
@@ -22,6 +26,7 @@
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SCompoundWidget.h"
 #include <Runtime/Engine/Public/ImageUtils.h>
+#include <Runtime/Online/HTTP/Public/HttpModule.h>
 
 class SRichInlineImage : public SCompoundWidget {
 public:
@@ -138,18 +143,90 @@ private:
 };
 
 void UMyRichTextBlockDecorator::OnImageSuccess(UTexture2DDynamic* Texture) {
-  UE_LOG(LogTemp, Warning, TEXT("Image loading successful"));
+  if (ImageSet) {
+
+    FRichImageRow row;
+    // row.Brush = FSlateDynamicImageBrush(Texture, FVector2D(Texture->SizeX,
+    // Texture->SizeY));
+
+    // ImageSet->AddRow(
+  }
 }
-UFUNCTION()
+
 void UMyRichTextBlockDecorator::OnImageFailure(UTexture2DDynamic* Texture) {
   UE_LOG(LogTemp, Warning, TEXT("Image loading failed"));
 }
 
+void UMyRichTextBlockDecorator::HandleImageRequest(
+    FHttpRequestPtr HttpRequest,
+    FHttpResponsePtr HttpResponse,
+    bool bSucceeded) {
+  if (bSucceeded && HttpResponse.IsValid() &&
+      HttpResponse->GetContentLength() > 0) {
+    IImageWrapperModule& ImageWrapperModule =
+        FModuleManager::LoadModuleChecked<IImageWrapperModule>(
+            FName("ImageWrapper"));
+    TSharedPtr<IImageWrapper> ImageWrappers[3] = {
+        ImageWrapperModule.CreateImageWrapper(EImageFormat::PNG),
+        ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG),
+        ImageWrapperModule.CreateImageWrapper(EImageFormat::BMP),
+    };
+
+    for (auto ImageWrapper : ImageWrappers) {
+      if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(
+                                        HttpResponse->GetContent().GetData(),
+                                        HttpResponse->GetContentLength())) {
+        TArray64<uint8>* RawData = new TArray64<uint8>();
+        const ERGBFormat InFormat = ERGBFormat::BGRA;
+        if (ImageWrapper->GetRaw(InFormat, 8, *RawData)) {
+          if (UTexture2D* Texture = UTexture2D::CreateTransient(
+                  ImageWrapper->GetWidth(),
+                  ImageWrapper->GetHeight())) {
+            Texture->SRGB = true;
+            Texture->UpdateResource();
+
+            // FTexture2DDynamicResource* TextureResource =
+            //     static_cast<FTexture2DDynamicResource*>(Texture->Resource);
+            // if (TextureResource) {
+            //   ENQUEUE_RENDER_COMMAND(FWriteRawDataToTexture)
+            //   ([TextureResource,
+            //     RawData](FRHICommandListImmediate& RHICmdList) {
+            //     WriteRawToTexture_RenderThread(TextureResource, RawData);
+            //   });
+            // } else {
+            //   delete RawData;
+            // }
+            //  OnSuccess.Broadcast(Texture);
+
+            FRichImageRow row;
+            // row.Brush = FSlateDynamicImageBrush(
+            //     Texture,
+            //     FVector2D(
+            //         Texture->PlatformData->SizeX,
+            //         Texture->PlatformData->SizeY),
+            //     "hello");
+
+            // ImageSet->AddRow(
+            //     UTF8_TO_TCHAR(std::to_string(_textureCountGenerated++).c_str()),
+            //     row);
+
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // OnFail.Broadcast(nullptr);
+}
+
 UMyRichTextBlockDecorator::UMyRichTextBlockDecorator(
     const FObjectInitializer& ObjectInitializer)
-    : URichTextBlockDecorator(ObjectInitializer) {}
+    : URichTextBlockDecorator(ObjectInitializer) {
+  ImageSet = NewObject<UDataTable>();
+}
 
-void UMyRichTextBlockDecorator::LoadImage(const std::string& url) {
+std::string UMyRichTextBlockDecorator::LoadImage(const std::string& url) {
 
   const std::string base_64_prefix = "data:image/png;base64,";
 
@@ -167,19 +244,21 @@ void UMyRichTextBlockDecorator::LoadImage(const std::string& url) {
       Texture->UpdateResource();
     }
   } else {
-    UAsyncTaskDownloadImage* asyncTask =
-        UAsyncTaskDownloadImage::DownloadImage(UTF8_TO_TCHAR(url.c_str()));
+    // UAsyncTaskDownloadImage* asyncTask
+    // =UAsyncTaskDownloadImage::DownloadImage(UTF8_TO_TCHAR(url.c_str()));
 
-    UE_LOG(LogTemp, Warning, TEXT("adding the delegate!"));
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
+        FHttpModule::Get().CreateRequest();
 
-    FScriptDelegate DelegateSuccess;
-    DelegateSuccess.BindUFunction(this, TEXT("OnImageSuccess"));
-    asyncTask->OnSuccess.Add(DelegateSuccess);
-
-    FScriptDelegate DelegateFailure;
-    DelegateFailure.BindUFunction(this, TEXT("OnImageFailure"));
-    asyncTask->OnFail.Add(DelegateFailure);
+    HttpRequest->OnProcessRequestComplete().BindUObject(
+        this,
+        &UMyRichTextBlockDecorator::HandleImageRequest);
+    HttpRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
+    HttpRequest->SetVerb(TEXT("GET"));
+    HttpRequest->ProcessRequest();
   }
+
+  return std::to_string(_textureCount++);
 }
 
 TSharedPtr<ITextDecorator>

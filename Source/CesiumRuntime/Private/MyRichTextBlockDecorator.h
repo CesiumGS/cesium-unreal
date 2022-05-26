@@ -9,6 +9,7 @@
 #include "Framework/Text/ISlateRun.h"
 #include "Framework/Text/ITextDecorator.h"
 #include "Framework/Text/TextLayout.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Styling/SlateTypes.h"
 #include "UObject/Object.h"
 #include "UObject/ObjectMacros.h"
@@ -28,7 +29,7 @@ class UMyRichTextBlockDecorator : public URichTextBlockDecorator {
 public:
   UMyRichTextBlockDecorator(const FObjectInitializer& ObjectInitializer);
 
-  void LoadImage(const std::string& url);
+  std::string LoadImage(const std::string& url);
 
   virtual TSharedPtr<ITextDecorator>
   CreateDecorator(URichTextBlock* InOwner) override;
@@ -49,4 +50,12 @@ protected:
       Category = Appearance,
       meta = (RequiredAssetDataTags = "RowStructure=RichImageRow"))
   class UDataTable* ImageSet;
+
+private:
+  int _textureCount;
+  int _textureCountGenerated;
+  void HandleImageRequest(
+      FHttpRequestPtr HttpRequest,
+      FHttpResponsePtr HttpResponse,
+      bool bSucceeded);
 };
