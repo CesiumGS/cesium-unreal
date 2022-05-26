@@ -3,17 +3,18 @@
 #include "CesiumTextureUtility.h"
 #include "CesiumRuntime.h"
 #include "PixelFormat.h"
-
+#include "Runtime/Launch/Resources/Version.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumUtility/Tracing.h>
-
 #include <stb_image_resize.h>
 
 using namespace CesiumGltf;
 
-static TUniquePtr<FTexturePlatformData>
+namespace CesiumTextureUtility {
+
+TUniquePtr<FTexturePlatformData>
 createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   if (sizeX > 0 && sizeY > 0 &&
       (sizeX % GPixelFormats[format].BlockSizeX) == 0 &&
@@ -30,16 +31,16 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
   }
 }
 
-/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
-CesiumTextureUtility::loadTextureAnyThreadPart(
+TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
     const TextureAddress& addressX,
     const TextureAddress& addressY,
     const TextureFilter& filter,
     const TextureGroup& group,
-    bool generateMipMaps) {
+    bool generateMipMaps,
+    bool sRGB) {
 
-  CESIUM_TRACE("CesiumTextureUtility::loadTextureAnyThreadPart");
+  CESIUM_TRACE("loadTextureAnyThreadPart");
 
   EPixelFormat pixelFormat;
   if (image.compressedPixelFormat != GpuCompressedPixelFormat::NONE) {
@@ -107,6 +108,7 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   pResult->addressY = addressY;
   pResult->filter = filter;
   pResult->group = group;
+  pResult->sRGB = sRGB;
 
   if (!image.mipPositions.empty()) {
     int32_t width = image.width;
@@ -233,10 +235,10 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
   return pResult;
 }
 
-/*static*/ TUniquePtr<CesiumTextureUtility::LoadedTextureResult>
-CesiumTextureUtility::loadTextureAnyThreadPart(
+TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
-    const CesiumGltf::Texture& texture) {
+    const CesiumGltf::Texture& texture,
+    bool sRGB) {
 
   const CesiumGltf::ExtensionKhrTextureBasisu* pKtxExtension =
       texture.getExtension<CesiumGltf::ExtensionKhrTextureBasisu>();
@@ -362,16 +364,16 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
       addressY,
       filter,
       TextureGroup::TEXTUREGROUP_World,
-      useMipMaps);
+      useMipMaps,
+      sRGB);
 }
 
-/*static*/ UTexture2D* CesiumTextureUtility::loadTextureGameThreadPart(
-    LoadedTextureResult* pHalfLoadedTexture) {
+UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
     return nullptr;
   }
 
-  UTexture2D*& pTexture = pHalfLoadedTexture->pTexture;
+  UTexture2D* pTexture = pHalfLoadedTexture->pTexture.Get();
   if (!pTexture && pHalfLoadedTexture->pTextureData) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
@@ -387,8 +389,12 @@ CesiumTextureUtility::loadTextureAnyThreadPart(
     pTexture->AddressY = pHalfLoadedTexture->addressY;
     pTexture->Filter = pHalfLoadedTexture->filter;
     pTexture->LODGroup = pHalfLoadedTexture->group;
+    pTexture->SRGB = pHalfLoadedTexture->sRGB;
     pTexture->UpdateResource();
+
+    pHalfLoadedTexture->pTexture = pTexture;
   }
 
   return pTexture;
 }
+} // namespace CesiumTextureUtility

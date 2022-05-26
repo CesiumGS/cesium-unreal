@@ -1,112 +1,20 @@
 [
   {
-    "name": "Async++",
-    "url": "https://github.com/Amanieu/asyncplusplus",
-    "license": "MIT"
-  },
-  {
-    "name": "Catch2",
-    "url": "https://github.com/catchorg/Catch2",
-    "license": "Boost Software License 1.0"
-  },
-  {
     "name": "cesium-native",
     "url": "https://github.com/CesiumGS/cesium-native",
-    "license": "Apache 2.0"
-  },
-  {
-    "name": "cmake-modules",
-    "url": "https://github.com/bilke/cmake-modules",
-    "license": "Boost Software License 1.0"
-  },
-  {
-    "name": "cpp-httplib",
-    "url": "https://github.com/yhirose/cpp-httplib",
-    "license": "MIT"
-  },
-  {
-    "name": "CSPRNG",
-    "url": "https://github.com/Duthomhas/CSPRNG",
-    "license": "Boost Software License 1.0"
-  },
-  {
-    "name": "Draco",
-    "url": "https://github.com/google/draco",
-    "license": "Apache 2.0"
-  },
-  {
-    "name": "earcut",
-    "url": "https://github.com/mapbox/earcut.hpp",
-    "license": "ISC License"
+    "version": "Latest",
+    "license": ["Apache 2.0"]
   },
   {
     "name": "Font Awesome Icons",
     "url": "https://fontawesome.com/",
-    "license": "CC BY 4.0 License"
-  },
-  {
-    "name": "GLM",
-    "url": "https://github.com/g-truc/glm",
-    "license": "MIT"
-  },
-  {
-    "name": "GSL",
-    "url": "https://github.com/microsoft/GSL",
-    "license": "MIT"
-  },
-  {
-    "name": "KTX-Software",
-    "url": "https://github.com/KhronosGroup/KTX-Software",
-    "license": "Apache 2.0"
+    "version": "N/A",
+    "license": ["CC BY 4.0 License"],
+    "notes": "See Content/FontAwesome/attribution.txt"
   },
   {
     "name": "MikkTSpace",
     "url": "https://github.com/mmikk/MikkTSpace",
-    "license": "Mikktspace License"
-  },
-  {
-    "name": "modp_b64",
-    "url": "https://github.com/chromium/chromium/tree/15996b5d2322b634f4197447b10289bddc2b0b32/third_party/modp_b64",
-    "license": "BSD-3-Clause"
-  },
-  {
-    "name": "PicoSHA2",
-    "url": "https://github.com/okdshin/PicoSHA2",
-    "license": "MIT"
-  },
-  {
-    "name": "RapidJSON",
-    "url": "https://github.com/Tencent/rapidjson",
-    "license": "MIT"
-  },
-  {
-    "name": "s2geometry",
-    "url": "https://github.com/google/s2geometry",
-    "license": "Apache 2.0"
-  },
-  {
-    "name": "spdlog",
-    "url": "https://github.com/gabime/spdlog",
-    "license": "MIT"
-  },
-  {
-    "name": "SQLite Amalgamation",
-    "url": "https://www.sqlite.org/amalgamation.html",
-    "license": "Public Domain"
-  },
-  {
-    "name": "STB",
-    "url": "https://github.com/nothings/stb",
-    "license": "Public Domain"
-  },
-  {
-    "name": "tinyxml2",
-    "url": "https://github.com/leethomason/tinyxml2",
-    "license": "zlib"
-  },
-  {
-    "name": "uriparser",
-    "url": "https://github.com/uriparser/uriparser",
-    "license": "BSD-3-Clause"
+    "license": ["Zlib"]
   }
 ]

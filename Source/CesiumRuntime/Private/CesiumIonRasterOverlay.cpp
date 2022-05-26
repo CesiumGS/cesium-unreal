@@ -3,6 +3,7 @@
 #include "CesiumIonRasterOverlay.h"
 #include "Cesium3DTilesSelection/IonRasterOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
+#include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 
 void UCesiumIonRasterOverlay::TroubleshootToken() {

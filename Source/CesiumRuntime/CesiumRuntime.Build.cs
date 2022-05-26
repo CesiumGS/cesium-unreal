@@ -182,7 +182,9 @@ public class CesiumRuntime : ModuleRules
                     "UnrealEd",
                     "Slate",
                     "SlateCore",
-                    "WorldBrowser"
+                    "WorldBrowser",
+                    "ContentBrowser",
+                    "MaterialEditor"
                 }
             );
         }

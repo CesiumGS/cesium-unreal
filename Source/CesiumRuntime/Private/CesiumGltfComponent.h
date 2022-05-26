@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "Cesium3DTilesSelection/BoundingVolume.h"
+#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumMetadataModel.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -14,14 +17,10 @@
 class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
+
+namespace CreateGltfOptions {
 struct CreateModelOptions;
-struct CreateNodeOptions;
-struct CreateMeshOptions;
-struct CreatePrimitiveOptions;
-struct LoadModelResult;
-struct LoadNodeResult;
-struct LoadMeshResult;
-struct LoadPrimitiveResult;
+} // namespace CreateGltfOptions
 
 #if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;
@@ -66,7 +65,7 @@ public:
 
   static TUniquePtr<HalfConstructed> CreateOffGameThread(
       const glm::dmat4x4& Transform,
-      const CreateModelOptions& Options);
+      const CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       AActor* ParentActor,
@@ -74,7 +73,8 @@ public:
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
       UMaterialInterface* BaseWaterMaterial,
-      FCustomDepthParameters CustomDepthParameters);
+      FCustomDepthParameters CustomDepthParameters,
+      const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
@@ -87,6 +87,10 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
   FCustomDepthParameters CustomDepthParameters;
+
+  FCesiumMetadataModel Metadata;
+
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
@@ -105,6 +109,8 @@ public:
 
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
+
+  virtual void BeginDestroy() override;
 
 private:
   UPROPERTY()

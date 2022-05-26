@@ -36,6 +36,7 @@ jobs:
     - wait
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
+    after_success:
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -66,6 +67,7 @@ jobs:
     - wait
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
+    after_success:
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -105,6 +107,7 @@ jobs:
     - export CLONEDIR=$PWD
     - cd /c/Program\ Files/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+    after_success:
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -145,6 +148,7 @@ jobs:
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+    after_success:
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -174,6 +178,7 @@ jobs:
     - wait
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
+    after_success:
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -204,6 +209,7 @@ jobs:
     - wait
     - cd $HOME/UE_4.26/Users/Shared/Epic\ Games/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
+    after_success:
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -232,6 +238,7 @@ jobs:
     - wait
     - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
+    after_success:
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -262,6 +269,7 @@ jobs:
     - wait
     - cd $HOME/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
+    after_success:
     - cd "$CLONEDIR/../packages"
     - zip -r -X ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -292,6 +300,7 @@ jobs:
     - export CLONEDIR=$PWD
     - cd $HOME/UE_4.26/Engine/Build/BatchFiles
     - ./RunUAT.sh BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
+    after_success:
     - cd "$CLONEDIR/../packages"
     - zip -r ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
@@ -332,51 +341,11 @@ jobs:
     - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"4.27.0\"/g' CesiumForUnreal.uplugin"
     - cd /c/Epic/UE_4.27/Engine/Build/BatchFiles
     - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
+    after_success:
     - cd "$CLONEDIR/../packages"
     - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
-  - name: Windows 5.0.0 preview 2
-    os: windows
-    install:
-    - df -k
-    - choco install dotnet4.0
-    - choco install dotnetcore-sdk
-    - choco install 7zip.portable
-    - choco install python --version 3.9.2
-    - python -m pip install --upgrade pip
-    - pip3 install --upgrade pip
-    - pip3 install awscli
-    - pip3 install httpie
-    - travis_wait 30 "./travis/travis-get-ue-500p2.sh"
-    - df -k
-    - choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-    # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe //quiet //install //norestart //log log.txt || echo failed"
-    # - cat log.txt
-    # - "/c/Epic/UE_5.0/Engine/Extras/Redist/en-us/UEPrereqSetup_x64.exe /quiet /install /norestart /log log2.txt || echo failed"
-    # - cat log2.txt
-    - df -k
-    before_script:
-    - export CESIUM_UNREAL_VERSION=$(git describe)
-    - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-500p2-windows-${CESIUM_UNREAL_VERSION}
-    - mkdir -p extern/build
-    - cd extern/build
-    - cmake .. -A x64
-    script:
-    - cmake --build . --config Release --target install -- /maxcpucount:4
-    - cd ../..
-    - rm -rf extern
-    - export CLONEDIR=$PWD
-    - "sed -i 's/\"EngineVersion\": \"4.26.0\"/\"EngineVersion\": \"5.0.0\"/g' CesiumForUnreal.uplugin"
-    #- wait
-    - cd /c/Epic/UE_5.0/Engine/Build/BatchFiles
-    - ./RunUAT.bat BuildPlugin -Plugin="$CLONEDIR/CesiumForUnreal.uplugin" -Package="$CLONEDIR/../packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
-    - cd "$CLONEDIR/../packages"
-    - 7z a ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip CesiumForUnreal/
-    - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
-    - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
-    - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE5.0p2-Windows "target_url=${PACKAGE_LINK}" --ignore-stdin
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - stage: Combine Packages
     name: Combine for UE 4.26
@@ -405,6 +374,7 @@ jobs:
     - unzip -o ../../CesiumForUnreal-426-android-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-426-windows-${CESIUM_UNREAL_VERSION}.zip
     - zip -r CesiumForUnreal-426-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
+    after_success:
     - aws s3 cp CesiumForUnreal-426-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-426-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.26-AllPlatforms "target_url=${PACKAGE_LINK}" --ignore-stdin
@@ -434,6 +404,7 @@ jobs:
     - unzip -o ../../CesiumForUnreal-427-android-${CESIUM_UNREAL_VERSION}.zip
     - unzip -o ../../CesiumForUnreal-427-windows-${CESIUM_UNREAL_VERSION}.zip
     - zip -r CesiumForUnreal-427-${CESIUM_UNREAL_VERSION}.zip CesiumForUnreal
+    after_success:
     - aws s3 cp CesiumForUnreal-427-${CESIUM_UNREAL_VERSION}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/CesiumForUnreal-427-${CESIUM_UNREAL_VERSION}.zip --expires-in 315360000)
     - http POST "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/statuses/${TRAVIS_COMMIT}" "Authorization:token ${GITHUB_TOKEN}" state=success context=UE4.27-AllPlatforms "target_url=${PACKAGE_LINK}" --ignore-stdin

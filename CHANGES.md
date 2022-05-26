@@ -1,16 +1,61 @@
 # Change Log
 
-### ? - ?
+### v1.13.2 - 2022-05-13
 
 ##### Fixes :wrench:
 
-- Fixed a bug introduced in v1.11.0 that used the Y-size of the right eye viewport for the left eye in tile selection for stereographic rendering.
-- Fixed a bug where glTF primitives with no render data are added to the glTF render result.
+- Fixed a bug that could cause a crash after applying a non-UMaterialInstanceDynamic material to a tileset.
+- Fixed a bug introduced in v1.13.0 that could lead to incorrect axis-aligned bounding boxes.
+- Gave initial values to some fields in UStructs that did not have them, including two `UObject` pointers.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.1 to v0.15.2, fixing an important bug and updating some third-party libraries. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.13.1 - 2022-05-05
+
+##### Breaking Changes :mega:
+
+- Removed the following material assets that were accidentally included in the plugin in v1.13.0: `MetadataStyling/Layers/NYCBuildings_ByHeight_ML`, `MetadataStyling/Layers/NYCBuildings_ByYear_ML`, `MetadataStyling/NYCBuildings_ByHeight_M`, and `MetadataStyling/NYCBuildings_ByYear_M`. These assets can still be found in the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) project.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.0 to v0.15.1, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.13.0 - 2022-05-02
+
+##### Breaking Changes :mega:
+
+- Deprecated parts of the old Blueprint API for feature ID attributes from `EXT_feature_metadata`.
 
 ##### Additions :tada:
 
-- Add option to raster overlay to enable anisotropic filtering of raster overlay textures to reduce flickering.
-- Added option to show credits on screen for both tileset and raster overlay.
+- Improved the Blueprint API for feature ID attributes from `EXT_feature_metadata` (and upgraded batch tables).
+- Added a Blueprint API to access feature ID textures and feature textures from the `EXT_feature_metadata` extension.
+- Added the `UCesiumEncodedMetadataComponent` to enable styling with the metadata from the `EXT_feature_metadata` extension. This component provides a convenient way to query for existing metadata, dictate which metadata properties to encode for styling, and generate a starter material layer to access the wanted properties.
+
+##### Fixes :wrench:
+
+- glTF normal, occlusion, and metallic/roughness textures are no longer treated as sRGB.
+- Improved the computation of axis-aligned bounding boxes for Unreal Engine, producing much smaller and more accurate bounding boxes in many cases.
+- Metadata-related Blueprint functions will now return the default value if asked for an out-of-range feature or array element. Previously, they would assert or read undefined memory.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.14.0 to v0.15.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.12.0 - 2022-04-01
+
+##### Additions :tada:
+
+- Raster overlays are now, by default, rendered using the default settings for the `World` texture group, which yields much higher quality on many platforms by enabling anisotrpic texture filtering. Shimmering of overlay textures in the distance should be drastically reduced.
+- New options on `RasterOverlay` give the user control over the texture group, texture filtering, and mipmapping used for overlay textures.
+- Improved the mapping between glTF textures and Unreal Engine texture options, which should improve texture quality in tilesets.
+- Added `CesiumWebMapServiceRasterOverlay` to pull raster overlays from a WMS server.
+- Added option to show `Cesium3DTileset` and `CesiumRasterOverlay` credits on screen, rather than in a separate popup.
+
+##### Fixes :wrench:
+
+- Fixed a leak of some of the memory used by tiles that were loaded but then ended up not being used because the camera had moved.
+- Fixed a leak of glTF emissive textures.
+- Fixed a bug introduced in v1.11.0 that used the Y-size of the right eye viewport for the left eye in tile selection for stereographic rendering.
+- Fixed a bug where glTF primitives with no render data are added to the glTF render result.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.13.0 to v0.14.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.11.0 - 2022-03-01
 
