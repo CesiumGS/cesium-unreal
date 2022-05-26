@@ -12,6 +12,7 @@
 #include "Styling/SlateTypes.h"
 #include "UObject/Object.h"
 #include "UObject/ObjectMacros.h"
+#include <string>
 #include "MyRichTextBlockDecorator.generated.h"
 
 class ISlateStyle;
@@ -27,6 +28,8 @@ class UMyRichTextBlockDecorator : public URichTextBlockDecorator {
 public:
   UMyRichTextBlockDecorator(const FObjectInitializer& ObjectInitializer);
 
+  void LoadImage(const std::string& url);
+
   virtual TSharedPtr<ITextDecorator>
   CreateDecorator(URichTextBlock* InOwner) override;
 
@@ -34,6 +37,12 @@ public:
 
 protected:
   FRichImageRow* FindImageRow(FName TagOrId, bool bWarnIfMissing);
+
+  UFUNCTION()
+  void OnImageSuccess(UTexture2DDynamic* Texture);
+
+  UFUNCTION()
+  void OnImageFailure(UTexture2DDynamic* Texture);
 
   UPROPERTY(
       EditAnywhere,

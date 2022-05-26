@@ -64,12 +64,12 @@ void UMyScreenCreditsBase::Update() {
 }
 
 namespace {
-void LoadImage(const std::string& url) {}
 void ConvertHTMLToRTF(
     std::string& html,
     TidyDoc tdoc,
     TidyNode tnod,
-    int& textureCount) {
+    int& textureCount,
+    UMyRichTextBlockDecorator* imageDecorator) {
   TidyNode child;
   for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
     if (tidyNodeIsText(child)) {
@@ -86,11 +86,12 @@ void ConvertHTMLToRTF(
         auto srcValue = tidyAttrValue(srcAttr);
         if (srcValue) {
           html += "<img id=\"" + std::to_string(textureCount++) + "\"/>";
-          LoadImage(std::string(reinterpret_cast<const char*>(srcValue)));
+          imageDecorator->LoadImage(
+              std::string(reinterpret_cast<const char*>(srcValue)));
         }
       }
     }
-    ConvertHTMLToRTF(html, tdoc, child, textureCount);
+    ConvertHTMLToRTF(html, tdoc, child, textureCount, imageDecorator);
   }
 }
 } // namespace
@@ -123,7 +124,12 @@ FString UMyScreenCreditsBase::ConvertCreditToRTF(
   err = tidyParseBuffer(tdoc, &docbuf);
 
   std::string output;
-  ConvertHTMLToRTF(output, tdoc, tidyGetRoot(tdoc), _textureCount);
+  ConvertHTMLToRTF(
+      output,
+      tdoc,
+      tidyGetRoot(tdoc),
+      _textureCount,
+      _imageDecorator);
 
   tidyBufFree(&docbuf);
   tidyBufFree(&tidy_errbuf);
