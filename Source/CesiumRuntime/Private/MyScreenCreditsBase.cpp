@@ -1,11 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "MyScreenCreditsBase.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Components/RichTextBlock.h"
+#include "Misc/Base64.h"
+#include "Engine/Texture2D.h"
+#include "Interfaces/IHttpResponse.h"
+#include "HttpModule.h"
+#include "ImageUtils.h"
 #include "MyRichTextBlockDecorator.h"
 #include <tidybuffio.h>
 #include <vector>
+#include "CesiumCreditSystem.h"
 
 using namespace Cesium3DTilesSelection;
 
@@ -24,6 +30,70 @@ void UMyScreenCreditsBase::NativeConstruct() {
     _pCreditSystem = ACesiumCreditSystem::GetDefaultCreditSystem(GetWorld())
                          ->GetExternalCreditSystem();
   }
+}
+
+void UMyScreenCreditsBase::HandleImageRequest(
+    FHttpRequestPtr HttpRequest,
+    FHttpResponsePtr HttpResponse,
+    bool bSucceeded,
+    int32 id) {
+  if (bSucceeded && HttpResponse.IsValid() &&
+      HttpResponse->GetContentLength() > 0) {
+    UTexture2D* Texture =
+        FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
+    Texture->MipGenSettings = TMGS_NoMipmaps;
+    Texture->CompressionSettings =
+        TextureCompressionSettings::TC_VectorDisplacementmap;
+    Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+    Texture->SRGB = false;
+    Texture->Filter = TextureFilter::TF_Nearest;
+    Texture->UpdateResource();
+
+    _imageDecorator->_textureResources[id] = new FSlateDynamicImageBrush(
+        Texture,
+        FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
+        "Untitled");
+    RebuildWidget();
+    return;
+  }
+}
+
+std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
+
+  const std::string base_64_prefix = "data:image/png;base64,";
+
+  if (url.rfind(base_64_prefix, 0) == 0) {
+    TArray<uint8> data_buffer;
+    FString base64 = UTF8_TO_TCHAR(url.c_str() + base_64_prefix.length());
+    if (FBase64::Decode(base64, data_buffer)) {
+      UTexture2D* Texture = FImageUtils::ImportBufferAsTexture2D(data_buffer);
+      Texture->MipGenSettings = TMGS_NoMipmaps;
+      Texture->CompressionSettings =
+          TextureCompressionSettings::TC_VectorDisplacementmap;
+      Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+      Texture->SRGB = false;
+      Texture->Filter = TextureFilter::TF_Nearest;
+      Texture->UpdateResource();
+      _imageDecorator->_textureResources.Add(new FSlateDynamicImageBrush(
+          Texture,
+          FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
+          "Untitled"));
+    }
+  } else {
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
+        FHttpModule::Get().CreateRequest();
+
+    _imageDecorator->_textureResources.Add(nullptr);
+    HttpRequest->OnProcessRequestComplete().BindUObject(
+        this,
+        &UMyScreenCreditsBase::HandleImageRequest,
+        _imageDecorator->_textureResources.Num() - 1);
+
+    HttpRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
+    HttpRequest->SetVerb(TEXT("GET"));
+    HttpRequest->ProcessRequest();
+  }
+  return std::to_string(_imageDecorator->_textureResources.Num() - 1);
 }
 
 void UMyScreenCreditsBase::Update() {
@@ -68,7 +138,7 @@ void ConvertHTMLToRTF(
     std::string& html,
     TidyDoc tdoc,
     TidyNode tnod,
-    UMyRichTextBlockDecorator* imageDecorator) {
+    UMyScreenCreditsBase* base) {
   TidyNode child;
   for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
     if (tidyNodeIsText(child)) {
@@ -85,14 +155,13 @@ void ConvertHTMLToRTF(
         auto srcValue = tidyAttrValue(srcAttr);
         if (srcValue) {
           html += "<img id=\"" +
-                  imageDecorator->LoadImage(
+                  base->LoadImage(
                       std::string(reinterpret_cast<const char*>(srcValue))) +
                   "\"/>";
-          ;
         }
       }
     }
-    ConvertHTMLToRTF(html, tdoc, child, imageDecorator);
+    ConvertHTMLToRTF(html, tdoc, child, base);
   }
 }
 } // namespace
@@ -125,7 +194,7 @@ FString UMyScreenCreditsBase::ConvertCreditToRTF(
   err = tidyParseBuffer(tdoc, &docbuf);
 
   std::string output;
-  ConvertHTMLToRTF(output, tdoc, tidyGetRoot(tdoc), _imageDecorator);
+  ConvertHTMLToRTF(output, tdoc, tidyGetRoot(tdoc), this);
 
   tidyBufFree(&docbuf);
   tidyBufFree(&tidy_errbuf);

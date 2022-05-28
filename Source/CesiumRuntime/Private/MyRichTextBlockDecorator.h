@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -13,11 +13,11 @@
 #include "Styling/SlateTypes.h"
 #include "UObject/Object.h"
 #include "UObject/ObjectMacros.h"
-#include <string>
 #include "MyRichTextBlockDecorator.generated.h"
 
 class ISlateStyle;
 struct FRichImageRow;
+struct FSlateDynamicImageBrush;
 
 /**
  *
@@ -29,33 +29,13 @@ class UMyRichTextBlockDecorator : public URichTextBlockDecorator {
 public:
   UMyRichTextBlockDecorator(const FObjectInitializer& ObjectInitializer);
 
-  std::string LoadImage(const std::string& url);
-
   virtual TSharedPtr<ITextDecorator>
   CreateDecorator(URichTextBlock* InOwner) override;
 
-  virtual const FSlateBrush* FindImageBrush(FName TagOrId, bool bWarnIfMissing);
-
-protected:
-  FRichImageRow* FindImageRow(FName TagOrId, bool bWarnIfMissing);
-
-  UFUNCTION()
-  void OnImageSuccess(UTexture2DDynamic* Texture);
-
-  UFUNCTION()
-  void OnImageFailure(UTexture2DDynamic* Texture);
-
-  UPROPERTY(
-      EditAnywhere,
-      Category = Appearance,
-      meta = (RequiredAssetDataTags = "RowStructure=RichImageRow"))
-  class UDataTable* ImageSet;
+  virtual const FSlateBrush* FindImageBrush(int32 id);
 
 private:
-  int _textureCount;
-  int _textureCountGenerated;
-  void HandleImageRequest(
-      FHttpRequestPtr HttpRequest,
-      FHttpResponsePtr HttpResponse,
-      bool bSucceeded);
+  TArray<FSlateDynamicImageBrush*> _textureResources;
+
+  friend class UMyScreenCreditsBase;
 };

@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #pragma once
 
 #include "Blueprint/UserWidget.h"
-#include "CesiumCreditSystem.h"
 #include "CoreMinimal.h"
-#include "Engine/Texture2DDynamic.h"
+#include <memory>
+#include <string>
 #include "MyScreenCreditsBase.generated.h"
 
 namespace Cesium3DTilesSelection {
@@ -16,7 +16,10 @@ struct Credit;
 UCLASS()
 class UMyScreenCreditsBase : public UUserWidget {
   GENERATED_BODY()
+public:
+  std::string LoadImage(const std::string& url);
 
+private:
   UMyScreenCreditsBase(const FObjectInitializer& ObjectInitializer);
   virtual void NativeConstruct() override;
   UFUNCTION(BlueprintCallable)
@@ -25,9 +28,12 @@ class UMyScreenCreditsBase : public UUserWidget {
   UPROPERTY(meta = (BindWidget))
   class URichTextBlock* RichTextBlock_127;
 
-private:
   FString ConvertCreditToRTF(const Cesium3DTilesSelection::Credit* credit);
-
+  void HandleImageRequest(
+      FHttpRequestPtr HttpRequest,
+      FHttpResponsePtr HttpResponse,
+      bool bSucceeded,
+      int32 id);
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
   size_t _lastCreditsCount;
   TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
