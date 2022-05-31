@@ -577,8 +577,7 @@ public:
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContent& content =
-        tile.getContent();
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
     if (pRenderContent && pRenderContent->model) {
