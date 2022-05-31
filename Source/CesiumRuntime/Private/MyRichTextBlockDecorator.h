@@ -22,6 +22,5 @@ public:
 
 private:
   TArray<FSlateDynamicImageBrush*> _textureResources;
-
   friend class UMyScreenCreditsBase;
 };

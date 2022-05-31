@@ -126,7 +126,8 @@ void UMyScreenCreditsBase::Update() {
 
 namespace {
 void ConvertHTMLToRTF(
-    std::string& html,
+    std::string& output,
+    std::string& parentUrl,
     TidyDoc tdoc,
     TidyNode tnod,
     UMyScreenCreditsBase* base) {
@@ -137,7 +138,17 @@ void ConvertHTMLToRTF(
       tidyBufInit(&buf);
       tidyNodeGetText(tdoc, child, &buf);
       if (buf.bp) {
-        html += reinterpret_cast<const char*>(buf.bp);
+        std::string text = reinterpret_cast<const char*>(buf.bp);
+        // could not find correct option in tidy html to not add new lines
+        if (text.size() != 0 && text[text.size() - 1] == '\n') {
+          text.pop_back();
+        }
+        if (!parentUrl.empty()) {
+          output +=
+              "<img url=\"" + parentUrl + "\"" + " text=\"" + text + "\"/>";
+        } else {
+          output += text;
+        }
       }
       tidyBufFree(&buf);
     } else if (tidyNodeGetId(child) == TidyTagId::TidyTag_IMG) {
@@ -145,14 +156,23 @@ void ConvertHTMLToRTF(
       if (srcAttr) {
         auto srcValue = tidyAttrValue(srcAttr);
         if (srcValue) {
-          html += "<img id=\"" +
-                  base->LoadImage(
-                      std::string(reinterpret_cast<const char*>(srcValue))) +
-                  "\"/>";
+          output += "<img id=\"" +
+                    base->LoadImage(
+                        std::string(reinterpret_cast<const char*>(srcValue))) +
+                    "\"";
+          if (!parentUrl.empty()) {
+            output += " url=\"" + parentUrl + "\"";
+          }
+          output += "/>";
         }
       }
     }
-    ConvertHTMLToRTF(html, tdoc, child, base);
+    auto hrefAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_HREF);
+    if (hrefAttr) {
+      auto hrefValue = tidyAttrValue(hrefAttr);
+      parentUrl = std::string(reinterpret_cast<const char*>(hrefValue));
+    }
+    ConvertHTMLToRTF(output, parentUrl, tdoc, child, base);
   }
 }
 } // namespace
@@ -184,16 +204,11 @@ FString UMyScreenCreditsBase::ConvertCreditToRTF(
 
   err = tidyParseBuffer(tdoc, &docbuf);
 
-  std::string output;
-  ConvertHTMLToRTF(output, tdoc, tidyGetRoot(tdoc), this);
+  std::string output, url;
+  ConvertHTMLToRTF(output, url, tdoc, tidyGetRoot(tdoc), this);
 
   tidyBufFree(&docbuf);
   tidyBufFree(&tidy_errbuf);
   tidyRelease(tdoc);
-
-  // could not find correct option in tidy html to not add new lines
-  if (output.size() != 0 && output[output.size() - 1] == '\n') {
-    output.pop_back();
-  }
   return UTF8_TO_TCHAR(output.c_str());
 }
