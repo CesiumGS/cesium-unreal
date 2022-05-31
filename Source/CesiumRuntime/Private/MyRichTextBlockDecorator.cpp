@@ -1,23 +1,15 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "MyRichTextBlockDecorator.h"
+#include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Framework/Text/SlateTextLayout.h"
-#include "Framework/Text/SlateTextRun.h"
-#include "IImageWrapper.h"
-#include "IImageWrapperModule.h"
 #include "Math/UnrealMathUtility.h"
-#include "Misc/DefaultValueHelper.h"
-#include "Modules/ModuleManager.h"
 #include "Rendering/DrawElements.h"
-#include "Runtime/Engine/Public/ImageUtils.h"
-#include "Runtime/Online/HTTP/Public/HttpModule.h"
 #include "Slate/SlateGameResources.h"
-#include "UObject/Package.h"
-#include "UObject/SoftObjectPtr.h"
-#include "UObject/UObjectGlobals.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SCompoundWidget.h"
 
 class SRichInlineImage : public SCompoundWidget {
@@ -26,9 +18,22 @@ public:
   SLATE_END_ARGS()
 
 public:
-  void Construct(const FArguments& InArgs, const FSlateBrush* Brush) {
+  void Construct(
+      const FArguments& InArgs,
+      const FSlateBrush* Brush,
+      const FTextBlockStyle& TextStyle) {
     if (ensure(Brush)) {
-      ChildSlot[SNew(SImage).Image(Brush)];
+      const TSharedRef<FSlateFontMeasure> FontMeasure =
+          FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+      float IconHeight = FMath::Min(
+          (float)FontMeasure->GetMaxCharacterHeight(TextStyle.Font, 1.5f),
+          Brush->ImageSize.Y);
+      float IconWidth =
+          IconHeight / (float)Brush->ImageSize.Y * Brush->ImageSize.X;
+      ChildSlot[SNew(SBox)
+                    .HeightOverride(IconHeight)
+                    .WidthOverride(IconWidth)
+                    .VAlign(VAlign_Center)[SNew(SImage).Image(Brush)]];
     }
   }
 };
@@ -59,7 +64,7 @@ protected:
     const FSlateBrush* Brush = Decorator->FindImageBrush(id);
 
     if (Brush) {
-      return SNew(SRichInlineImage, Brush);
+      return SNew(SRichInlineImage, Brush, TextStyle);
     }
     return TSharedPtr<SWidget>();
   }

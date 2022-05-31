@@ -4,24 +4,10 @@
 
 #include "Components/RichTextBlockDecorator.h"
 #include "CoreMinimal.h"
-#include "Engine/DataTable.h"
-#include "Fonts/SlateFontInfo.h"
-#include "Framework/Text/ISlateRun.h"
-#include "Framework/Text/ITextDecorator.h"
-#include "Framework/Text/TextLayout.h"
-#include "Interfaces/IHttpRequest.h"
-#include "Styling/SlateTypes.h"
-#include "UObject/Object.h"
-#include "UObject/ObjectMacros.h"
 #include "MyRichTextBlockDecorator.generated.h"
 
-class ISlateStyle;
-struct FRichImageRow;
 struct FSlateDynamicImageBrush;
 
-/**
- *
- */
 UCLASS()
 class UMyRichTextBlockDecorator : public URichTextBlockDecorator {
   GENERATED_BODY()

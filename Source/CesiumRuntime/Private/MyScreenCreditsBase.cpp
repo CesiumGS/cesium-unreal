@@ -2,16 +2,16 @@
 
 #include "MyScreenCreditsBase.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
+#include "CesiumCreditSystem.h"
 #include "Components/RichTextBlock.h"
-#include "Misc/Base64.h"
 #include "Engine/Texture2D.h"
-#include "Interfaces/IHttpResponse.h"
 #include "HttpModule.h"
 #include "ImageUtils.h"
+#include "Interfaces/IHttpResponse.h"
+#include "Misc/Base64.h"
 #include "MyRichTextBlockDecorator.h"
 #include <tidybuffio.h>
 #include <vector>
-#include "CesiumCreditSystem.h"
 
 using namespace Cesium3DTilesSelection;
 
@@ -41,19 +41,16 @@ void UMyScreenCreditsBase::HandleImageRequest(
       HttpResponse->GetContentLength() > 0) {
     UTexture2D* Texture =
         FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
-    Texture->MipGenSettings = TMGS_NoMipmaps;
-    Texture->CompressionSettings =
-        TextureCompressionSettings::TC_VectorDisplacementmap;
-    Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-    Texture->SRGB = false;
-    Texture->Filter = TextureFilter::TF_Nearest;
+    Texture->SRGB = true;
     Texture->UpdateResource();
 
     _imageDecorator->_textureResources[id] = new FSlateDynamicImageBrush(
         Texture,
         FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
-        "Untitled");
-    RebuildWidget();
+        FName(HttpRequest->GetURL()));
+    Invalidate(EInvalidateWidgetReason::Layout);
+    _output += TEXT('\u200B');
+    RichTextBlock_127->SetText(FText::FromString(_output));
     return;
   }
 }
@@ -67,12 +64,7 @@ std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
     FString base64 = UTF8_TO_TCHAR(url.c_str() + base_64_prefix.length());
     if (FBase64::Decode(base64, data_buffer)) {
       UTexture2D* Texture = FImageUtils::ImportBufferAsTexture2D(data_buffer);
-      Texture->MipGenSettings = TMGS_NoMipmaps;
-      Texture->CompressionSettings =
-          TextureCompressionSettings::TC_VectorDisplacementmap;
-      Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-      Texture->SRGB = false;
-      Texture->Filter = TextureFilter::TF_Nearest;
+      Texture->SRGB = true;
       Texture->UpdateResource();
       _imageDecorator->_textureResources.Add(new FSlateDynamicImageBrush(
           Texture,
@@ -110,24 +102,23 @@ void UMyScreenCreditsBase::Update() {
 
   if (CreditsUpdated) {
     _lastCreditsCount = creditsToShowThisFrame.size();
-
-    FString output;
+    _output.Reset();
 
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
       if (i != 0) {
-        output += " ";
+        _output += " ";
       }
       const Credit* credit = &creditsToShowThisFrame[i];
       if (_creditToRTF.Contains(credit)) {
-        output += _creditToRTF[credit];
+        _output += _creditToRTF[credit];
       } else {
         FString convert = ConvertCreditToRTF(credit);
         _creditToRTF.Add(credit, convert);
-        output += convert;
+        _output += convert;
       }
     }
     if (RichTextBlock_127) {
-      RichTextBlock_127->SetText(FText::FromString(output));
+      RichTextBlock_127->SetText(FText::FromString(_output));
     }
   }
   _pCreditSystem->startNextFrame();

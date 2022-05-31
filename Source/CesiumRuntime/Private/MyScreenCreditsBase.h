@@ -4,6 +4,7 @@
 
 #include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "Interfaces/IHttpRequest.h"
 #include <memory>
 #include <string>
 #include "MyScreenCreditsBase.generated.h"
@@ -38,4 +39,5 @@ private:
   size_t _lastCreditsCount;
   TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
   UMyRichTextBlockDecorator* _imageDecorator;
+  FString _output;
 };
