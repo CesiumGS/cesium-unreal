@@ -49,9 +49,13 @@ private:
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
   size_t _lastCreditsCount;
   TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
-  class UMyRichTextBlockDecorator* _imageDecorator;
+  class UMyRichTextBlockDecorator* _imageDecoratorOnScreen;
+  class UMyRichTextBlockDecorator* _imageDecoratorPopup;
   FString _output;
   bool _showPopup;
+  TArray<FSlateDynamicImageBrush*> _textureResources;
+
+  friend class UMyRichTextBlockDecorator;
 };
 
 UCLASS()
@@ -67,8 +71,8 @@ public:
   virtual const FSlateBrush* FindImageBrush(int32 id);
 
 private:
-  TArray<FSlateDynamicImageBrush*> _textureResources;
+  UMyScreenCreditsBase* ScreenBase;
   FOnPopupClicked EventHandler;
-  friend class UMyScreenCreditsBase;
   friend class FRichInlineImage;
+  friend class UMyScreenCreditsBase;
 };

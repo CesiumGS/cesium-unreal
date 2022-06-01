@@ -135,8 +135,8 @@ UMyRichTextBlockDecorator::CreateDecorator(URichTextBlock* InOwner) {
 }
 
 const FSlateBrush* UMyRichTextBlockDecorator::FindImageBrush(int32 id) {
-  if (_textureResources.Num() > id) {
-    return _textureResources[id];
+  if (ScreenBase->_textureResources.Num() > id) {
+    return ScreenBase->_textureResources[id];
   }
   return nullptr;
 }
@@ -178,13 +178,21 @@ void UMyScreenCreditsBase::OnPopupClicked() {
 
 void UMyScreenCreditsBase::NativeConstruct() {
   if (RichTextOnScreen) {
-    _imageDecorator = static_cast<UMyRichTextBlockDecorator*>(
+    _imageDecoratorOnScreen = static_cast<UMyRichTextBlockDecorator*>(
         RichTextOnScreen->GetDecoratorByClass(
             UMyRichTextBlockDecorator::StaticClass()));
 
-    _imageDecorator->EventHandler.BindUObject(
+    _imageDecoratorOnScreen->EventHandler.BindUObject(
         this,
         &UMyScreenCreditsBase::OnPopupClicked);
+    _imageDecoratorOnScreen->ScreenBase = this;
+  }
+  if (RichTextPopup) {
+    _imageDecoratorPopup = static_cast<UMyRichTextBlockDecorator*>(
+        RichTextPopup->GetDecoratorByClass(
+            UMyRichTextBlockDecorator::StaticClass()));
+
+    _imageDecoratorPopup->ScreenBase = this;
   }
   UWorld* world = GetWorld();
   if (world) {
@@ -205,7 +213,7 @@ void UMyScreenCreditsBase::HandleImageRequest(
     Texture->SRGB = true;
     Texture->UpdateResource();
     Texture->AddToRoot();
-    _imageDecorator->_textureResources[id] = new FSlateDynamicImageBrush(
+    _textureResources[id] = new FSlateDynamicImageBrush(
         Texture,
         FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
         FName(HttpRequest->GetURL()));
@@ -228,7 +236,7 @@ std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
       Texture->SRGB = true;
       Texture->UpdateResource();
       Texture->AddToRoot();
-      _imageDecorator->_textureResources.Add(new FSlateDynamicImageBrush(
+      _textureResources.Add(new FSlateDynamicImageBrush(
           Texture,
           FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
           "Untitled"));
@@ -237,17 +245,17 @@ std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
         FHttpModule::Get().CreateRequest();
 
-    _imageDecorator->_textureResources.Add(nullptr);
+    _textureResources.Add(nullptr);
     HttpRequest->OnProcessRequestComplete().BindUObject(
         this,
         &UMyScreenCreditsBase::HandleImageRequest,
-        _imageDecorator->_textureResources.Num() - 1);
+        _textureResources.Num() - 1);
 
     HttpRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
     HttpRequest->SetVerb(TEXT("GET"));
     HttpRequest->ProcessRequest();
   }
-  return std::to_string(_imageDecorator->_textureResources.Num() - 1);
+  return std::to_string(_textureResources.Num() - 1);
 }
 
 namespace {
