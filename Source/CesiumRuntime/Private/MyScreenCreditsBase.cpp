@@ -39,16 +39,20 @@ public:
       const FString& url,
       const FString& text,
       const FTextBlockStyle& TextStyle,
-      FOnPopupClicked* InEventHandler) {
+      UMyRichTextBlockDecorator* InDecorator) {
     if (Brush) {
-      const TSharedRef<FSlateFontMeasure> FontMeasure =
-          FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
-      float IconHeight = FMath::Min(
-          (float)FontMeasure->GetMaxCharacterHeight(TextStyle.Font, 2.0f),
-          Brush->ImageSize.Y);
-
-      float IconWidth =
-          IconHeight / (float)Brush->ImageSize.Y * Brush->ImageSize.X;
+      float IconHeight, IconWidth;
+      if (InDecorator->_shrinkImageSize) {
+        const TSharedRef<FSlateFontMeasure> FontMeasure =
+            FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+        IconHeight = FMath::Min(
+            (float)FontMeasure->GetMaxCharacterHeight(TextStyle.Font, 2.0f),
+            Brush->ImageSize.Y);
+        IconWidth = IconHeight / (float)Brush->ImageSize.Y * Brush->ImageSize.X;
+      } else {
+        IconHeight = Brush->ImageSize.Y;
+        IconWidth = Brush->ImageSize.X;
+      }
       ChildSlot
           [SNew(SBox)
                .HeightOverride(IconHeight)
@@ -65,9 +69,9 @@ public:
 
       ChildSlot[SNew(SRichTextHyperlink, model.ToSharedRef())
                     .Text(FText::FromString(text))
-                    .OnNavigate_Lambda([url, InEventHandler]() {
+                    .OnNavigate_Lambda([url, InDecorator]() {
                       if (url.Equals("popup")) {
-                        InEventHandler->Execute();
+                        InDecorator->EventHandler.Execute();
                       } else {
                         FPlatformProcess::LaunchURL(*url, NULL, NULL);
                       }
@@ -111,13 +115,8 @@ protected:
       int32 id = FCString::Atoi(*RunInfo.MetaData[TEXT("id")]);
       Brush = Decorator->FindImageBrush(id);
     }
-    TSharedPtr<SWidget> ret = SNew(
-        SRichInlineImage,
-        Brush,
-        url,
-        text,
-        TextStyle,
-        &Decorator->EventHandler);
+    TSharedPtr<SWidget> ret =
+        SNew(SRichInlineImage, Brush, url, text, TextStyle, Decorator);
     return ret;
   }
 
@@ -186,6 +185,7 @@ void UMyScreenCreditsBase::NativeConstruct() {
         this,
         &UMyScreenCreditsBase::OnPopupClicked);
     _imageDecoratorOnScreen->ScreenBase = this;
+    _imageDecoratorOnScreen->_shrinkImageSize = true;
   }
   if (RichTextPopup) {
     _imageDecoratorPopup = static_cast<UMyRichTextBlockDecorator*>(
@@ -193,6 +193,7 @@ void UMyScreenCreditsBase::NativeConstruct() {
             UMyRichTextBlockDecorator::StaticClass()));
 
     _imageDecoratorPopup->ScreenBase = this;
+    _imageDecoratorPopup->_shrinkImageSize = false;
   }
   UWorld* world = GetWorld();
   if (world) {

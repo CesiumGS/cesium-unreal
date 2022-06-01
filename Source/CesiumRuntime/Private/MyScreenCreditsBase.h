@@ -71,8 +71,10 @@ public:
   virtual const FSlateBrush* FindImageBrush(int32 id);
 
 private:
+  bool _shrinkImageSize;
   UMyScreenCreditsBase* ScreenBase;
   FOnPopupClicked EventHandler;
   friend class FRichInlineImage;
   friend class UMyScreenCreditsBase;
+  friend class SRichInlineImage;
 };
