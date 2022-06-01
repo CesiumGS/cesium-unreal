@@ -2,7 +2,7 @@
 
 ### v1.14.0 - 2022-06-01
 
-##### Breading Changes :mega:
+##### Breaking Changes :mega:
 
 - Renamed `ExcludeTilesInside` to `ExcludeSelectedTiles` on the `CesiumPolygonRasterOverlay`. A core redirect was added to remap the property value in existing projects.
 
