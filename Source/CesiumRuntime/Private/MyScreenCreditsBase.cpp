@@ -5,25 +5,156 @@
 #include "CesiumCreditSystem.h"
 #include "Components/RichTextBlock.h"
 #include "Engine/Texture2D.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
 #include "HttpModule.h"
 #include "ImageUtils.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Math/UnrealMathUtility.h"
 #include "Misc/Base64.h"
-#include "MyRichTextBlockDecorator.h"
+#include "Rendering/DrawElements.h"
+#include "Slate/SlateGameResources.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SRichTextHyperlink.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/SCompoundWidget.h"
+#include <string>
 #include <tidybuffio.h>
 #include <vector>
 
 using namespace Cesium3DTilesSelection;
 
+class SRichInlineImage : public SCompoundWidget {
+public:
+  SLATE_BEGIN_ARGS(SRichInlineImage) {}
+  SLATE_END_ARGS()
+
+public:
+  void Construct(
+      const FArguments& InArgs,
+      const FSlateBrush* Brush,
+      const FString& url,
+      const FString& text,
+      const FTextBlockStyle& TextStyle,
+      FOnPopupClicked* InEventHandler) {
+    if (Brush) {
+      const TSharedRef<FSlateFontMeasure> FontMeasure =
+          FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
+      float IconHeight = FMath::Min(
+          (float)FontMeasure->GetMaxCharacterHeight(TextStyle.Font, 2.0f),
+          Brush->ImageSize.Y);
+
+      float IconWidth =
+          IconHeight / (float)Brush->ImageSize.Y * Brush->ImageSize.X;
+      ChildSlot
+          [SNew(SBox)
+               .HeightOverride(IconHeight)
+               .WidthOverride(IconWidth)
+               .VAlign(VAlign_Center)
+                   [SNew(SImage).Image(Brush).OnMouseButtonDown_Lambda(
+                       [url](const FGeometry&, const FPointerEvent&) -> FReply {
+                         FPlatformProcess::LaunchURL(*url, NULL, NULL);
+                         return FReply::Handled();
+                       })]];
+    } else {
+      TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> model =
+          MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
+
+      ChildSlot[SNew(SRichTextHyperlink, model.ToSharedRef())
+                    .Text(FText::FromString(text))
+                    .OnNavigate_Lambda([url, InEventHandler]() {
+                      if (url.Equals("popup")) {
+                        InEventHandler->Execute();
+                      } else {
+                        FPlatformProcess::LaunchURL(*url, NULL, NULL);
+                      }
+                    })];
+    }
+  }
+};
+
+class FRichInlineImage : public FRichTextDecorator {
+public:
+  FRichInlineImage(
+      URichTextBlock* InOwner,
+      UMyRichTextBlockDecorator* InDecorator)
+      : FRichTextDecorator(InOwner), Decorator(InDecorator) {}
+
+  virtual bool Supports(
+      const FTextRunParseResults& RunParseResult,
+      const FString& Text) const override {
+    if (RunParseResult.Name == TEXT("img") &&
+            RunParseResult.MetaData.Contains(TEXT("id")) ||
+        RunParseResult.MetaData.Contains(TEXT("url"))) {
+      return true;
+    }
+    return false;
+  }
+
+protected:
+  virtual TSharedPtr<SWidget> CreateDecoratorWidget(
+      const FTextRunInfo& RunInfo,
+      const FTextBlockStyle& TextStyle) const override {
+    FString url;
+    FString text;
+    const FSlateBrush* Brush = nullptr;
+    if (RunInfo.MetaData.Contains(TEXT("url"))) {
+      url = *RunInfo.MetaData[TEXT("url")];
+    }
+    if (RunInfo.MetaData.Contains(TEXT("text"))) {
+      text = *RunInfo.MetaData[TEXT("text")];
+    }
+    if (RunInfo.MetaData.Contains(TEXT("id"))) {
+      int32 id = FCString::Atoi(*RunInfo.MetaData[TEXT("id")]);
+      Brush = Decorator->FindImageBrush(id);
+    }
+    TSharedPtr<SWidget> ret = SNew(
+        SRichInlineImage,
+        Brush,
+        url,
+        text,
+        TextStyle,
+        &Decorator->EventHandler);
+    return ret;
+  }
+
+private:
+  UMyRichTextBlockDecorator* Decorator;
+};
+
+UMyRichTextBlockDecorator::UMyRichTextBlockDecorator(
+    const FObjectInitializer& ObjectInitializer)
+    : URichTextBlockDecorator(ObjectInitializer) {}
+
+TSharedPtr<ITextDecorator>
+UMyRichTextBlockDecorator::CreateDecorator(URichTextBlock* InOwner) {
+  return MakeShareable(new FRichInlineImage(InOwner, this));
+}
+
+const FSlateBrush* UMyRichTextBlockDecorator::FindImageBrush(int32 id) {
+  if (_textureResources.Num() > id) {
+    return _textureResources[id];
+  }
+  return nullptr;
+}
+
 UMyScreenCreditsBase::UMyScreenCreditsBase(
     const FObjectInitializer& ObjectInitializer)
     : UUserWidget(ObjectInitializer) {}
+
+void UMyScreenCreditsBase::OnPopupClicked() { _showPopup ^= _showPopup; }
 
 void UMyScreenCreditsBase::NativeConstruct() {
   if (RichTextBlock_127) {
     _imageDecorator = static_cast<UMyRichTextBlockDecorator*>(
         RichTextBlock_127->GetDecoratorByClass(
             UMyRichTextBlockDecorator::StaticClass()));
+
+    _imageDecorator->EventHandler.BindUObject(
+        this,
+        &UMyScreenCreditsBase::OnPopupClicked);
   }
   UWorld* world = GetWorld();
   if (world) {
@@ -43,7 +174,7 @@ void UMyScreenCreditsBase::HandleImageRequest(
         FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
     Texture->SRGB = true;
     Texture->UpdateResource();
-
+    Texture->AddToRoot();
     _imageDecorator->_textureResources[id] = new FSlateDynamicImageBrush(
         Texture,
         FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
@@ -66,6 +197,7 @@ std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
       UTexture2D* Texture = FImageUtils::ImportBufferAsTexture2D(data_buffer);
       Texture->SRGB = true;
       Texture->UpdateResource();
+      Texture->AddToRoot();
       _imageDecorator->_textureResources.Add(new FSlateDynamicImageBrush(
           Texture,
           FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
@@ -86,42 +218,6 @@ std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
     HttpRequest->ProcessRequest();
   }
   return std::to_string(_imageDecorator->_textureResources.Num() - 1);
-}
-
-void UMyScreenCreditsBase::Update() {
-  if (!_pCreditSystem) {
-    return;
-  }
-
-  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
-      _pCreditSystem->getCreditsToShowThisFrame();
-
-  bool CreditsUpdated =
-      creditsToShowThisFrame.size() != _lastCreditsCount ||
-      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
-
-  if (CreditsUpdated) {
-    _lastCreditsCount = creditsToShowThisFrame.size();
-    _output.Reset();
-
-    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      if (i != 0) {
-        _output += " ";
-      }
-      const Credit* credit = &creditsToShowThisFrame[i];
-      if (_creditToRTF.Contains(credit)) {
-        _output += _creditToRTF[credit];
-      } else {
-        FString convert = ConvertCreditToRTF(credit);
-        _creditToRTF.Add(credit, convert);
-        _output += convert;
-      }
-    }
-    if (RichTextBlock_127) {
-      RichTextBlock_127->SetText(FText::FromString(_output));
-    }
-  }
-  _pCreditSystem->startNextFrame();
 }
 
 namespace {
@@ -211,4 +307,41 @@ FString UMyScreenCreditsBase::ConvertCreditToRTF(
   tidyBufFree(&tidy_errbuf);
   tidyRelease(tdoc);
   return UTF8_TO_TCHAR(output.c_str());
+}
+
+void UMyScreenCreditsBase::Update() {
+  if (!_pCreditSystem) {
+    return;
+  }
+
+  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
+      _pCreditSystem->getCreditsToShowThisFrame();
+
+  bool CreditsUpdated =
+      creditsToShowThisFrame.size() != _lastCreditsCount ||
+      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
+
+  if (CreditsUpdated) {
+    _lastCreditsCount = creditsToShowThisFrame.size();
+    _output.Reset();
+
+    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
+      if (i != 0) {
+        _output += " ";
+      }
+      const Credit* credit = &creditsToShowThisFrame[i];
+      if (_creditToRTF.Contains(credit)) {
+        _output += _creditToRTF[credit];
+      } else {
+        FString convert = ConvertCreditToRTF(credit);
+        _creditToRTF.Add(credit, convert);
+        _output += convert;
+      }
+    }
+    if (RichTextBlock_127) {
+      _output += "<img url=\"popup\" text=\" Data attribution\"/>";
+      RichTextBlock_127->SetText(FText::FromString(_output));
+    }
+  }
+  _pCreditSystem->startNextFrame();
 }
