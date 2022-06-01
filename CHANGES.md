@@ -1,5 +1,15 @@
 # Change Log
 
+### v1.14.0 - ????
+
+##### Breading Changes :mega:
+
+- Renamed `ExcludeTilesInside` to `ExcludeSelectedTiles` on the `CesiumPolygonRasterOverlay`. A core redirect was added to remap the property value in existing projects.
+
+##### Additions :tada:
+
+- Added the `InvertSelection` option on `CesiumPolygonRasterOverlay` to rasterize outside the selection instead of inside. When used in conjunction with the `ExcludeSelectedTiles` option, tiles completely outside the polygon selection will be culled, instead of the tiles inside.
+
 ### v1.13.2 - 2022-05-13
 
 ##### Additions :tada:
