@@ -32,7 +32,13 @@ private:
   void OnPopupClicked();
 
   UPROPERTY(meta = (BindWidget))
-  class URichTextBlock* RichTextBlock_127;
+  class URichTextBlock* RichTextOnScreen;
+
+  UPROPERTY(meta = (BindWidget))
+  class URichTextBlock* RichTextPopup;
+
+  UPROPERTY(meta = (BindWidget))
+  class UBackgroundBlur* BackgroundBlur;
 
   FString ConvertCreditToRTF(const Cesium3DTilesSelection::Credit* credit);
   void HandleImageRequest(

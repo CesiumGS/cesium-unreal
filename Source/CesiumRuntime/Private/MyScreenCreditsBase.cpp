@@ -3,6 +3,7 @@
 #include "MyScreenCreditsBase.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "CesiumCreditSystem.h"
+#include "Components/BackgroundBlur.h"
 #include "Components/RichTextBlock.h"
 #include "Engine/Texture2D.h"
 #include "Fonts/FontMeasure.h"
@@ -144,12 +145,41 @@ UMyScreenCreditsBase::UMyScreenCreditsBase(
     const FObjectInitializer& ObjectInitializer)
     : UUserWidget(ObjectInitializer) {}
 
-void UMyScreenCreditsBase::OnPopupClicked() { _showPopup ^= _showPopup; }
+void UMyScreenCreditsBase::OnPopupClicked() {
+  _showPopup = !_showPopup;
+  if (_showPopup) {
+    BackgroundBlur->SetVisibility(ESlateVisibility::Visible);
+
+    const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
+        _pCreditSystem->getCreditsToShowThisFrame();
+
+    FString output;
+
+    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
+      const Credit* credit = &creditsToShowThisFrame[i];
+      if (i != 0) {
+        output += "\n";
+      }
+      if (_creditToRTF.Contains(credit)) {
+        output += _creditToRTF[credit];
+      } else {
+        FString convert = ConvertCreditToRTF(credit);
+        _creditToRTF.Add(credit, convert);
+        output += convert;
+      }
+    }
+    if (RichTextOnScreen) {
+      RichTextPopup->SetText(FText::FromString(output));
+    }
+  } else {
+    BackgroundBlur->SetVisibility(ESlateVisibility::Collapsed);
+  }
+}
 
 void UMyScreenCreditsBase::NativeConstruct() {
-  if (RichTextBlock_127) {
+  if (RichTextOnScreen) {
     _imageDecorator = static_cast<UMyRichTextBlockDecorator*>(
-        RichTextBlock_127->GetDecoratorByClass(
+        RichTextOnScreen->GetDecoratorByClass(
             UMyRichTextBlockDecorator::StaticClass()));
 
     _imageDecorator->EventHandler.BindUObject(
@@ -181,7 +211,7 @@ void UMyScreenCreditsBase::HandleImageRequest(
         FName(HttpRequest->GetURL()));
     Invalidate(EInvalidateWidgetReason::Layout);
     _output += TEXT('\u200B');
-    RichTextBlock_127->SetText(FText::FromString(_output));
+    RichTextOnScreen->SetText(FText::FromString(_output));
     return;
   }
 }
@@ -325,11 +355,17 @@ void UMyScreenCreditsBase::Update() {
     _lastCreditsCount = creditsToShowThisFrame.size();
     _output.Reset();
 
+    bool first = true;
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      if (i != 0) {
+      const Credit* credit = &creditsToShowThisFrame[i];
+      if (!_pCreditSystem->shouldBeShownOnScreen(*credit)) {
+        continue;
+      }
+      if (first) {
+        first = false;
+      } else {
         _output += " ";
       }
-      const Credit* credit = &creditsToShowThisFrame[i];
       if (_creditToRTF.Contains(credit)) {
         _output += _creditToRTF[credit];
       } else {
@@ -338,9 +374,9 @@ void UMyScreenCreditsBase::Update() {
         _output += convert;
       }
     }
-    if (RichTextBlock_127) {
+    if (RichTextOnScreen) {
       _output += "<img url=\"popup\" text=\" Data attribution\"/>";
-      RichTextBlock_127->SetText(FText::FromString(_output));
+      RichTextOnScreen->SetText(FText::FromString(_output));
     }
   }
   _pCreditSystem->startNextFrame();
