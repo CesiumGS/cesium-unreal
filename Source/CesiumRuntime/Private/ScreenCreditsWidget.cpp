@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "MyScreenCreditsBase.h"
+#include "ScreenCreditsWidget.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "CesiumCreditSystem.h"
 #include "Components/BackgroundBlur.h"
@@ -140,7 +140,7 @@ const FSlateBrush* UMyRichTextBlockDecorator::FindImageBrush(int32 id) {
   return nullptr;
 }
 
-UMyScreenCreditsBase::UMyScreenCreditsBase(
+UScreenCreditsWidget::UScreenCreditsWidget(
     const FObjectInitializer& ObjectInitializer)
     : UUserWidget(ObjectInitializer) {
   static ConstructorHelpers::FObjectFinder<UFont> RobotoFontObj(
@@ -148,7 +148,7 @@ UMyScreenCreditsBase::UMyScreenCreditsBase(
   Font = FSlateFontInfo(RobotoFontObj.Object, 8);
 }
 
-void UMyScreenCreditsBase::OnPopupClicked() {
+void UScreenCreditsWidget::OnPopupClicked() {
   _showPopup = !_showPopup;
   if (_showPopup) {
     BackgroundBlur->SetVisibility(ESlateVisibility::Visible);
@@ -179,7 +179,7 @@ void UMyScreenCreditsBase::OnPopupClicked() {
   }
 }
 
-void UMyScreenCreditsBase::NativeConstruct() {
+void UScreenCreditsWidget::NativeConstruct() {
 
   auto white = FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f));
 
@@ -193,7 +193,7 @@ void UMyScreenCreditsBase::NativeConstruct() {
 
     _imageDecoratorOnScreen->EventHandler.BindUObject(
         this,
-        &UMyScreenCreditsBase::OnPopupClicked);
+        &UScreenCreditsWidget::OnPopupClicked);
     _imageDecoratorOnScreen->ScreenBase = this;
     _imageDecoratorOnScreen->_shrinkImageSize = true;
   }
@@ -215,7 +215,7 @@ void UMyScreenCreditsBase::NativeConstruct() {
   }
 }
 
-void UMyScreenCreditsBase::HandleImageRequest(
+void UScreenCreditsWidget::HandleImageRequest(
     FHttpRequestPtr HttpRequest,
     FHttpResponsePtr HttpResponse,
     bool bSucceeded,
@@ -238,7 +238,7 @@ void UMyScreenCreditsBase::HandleImageRequest(
   }
 }
 
-std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
+std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
 
   const std::string base_64_prefix = "data:image/png;base64,";
 
@@ -262,7 +262,7 @@ std::string UMyScreenCreditsBase::LoadImage(const std::string& url) {
     _textureResources.Add(nullptr);
     HttpRequest->OnProcessRequestComplete().BindUObject(
         this,
-        &UMyScreenCreditsBase::HandleImageRequest,
+        &UScreenCreditsWidget::HandleImageRequest,
         _textureResources.Num() - 1);
 
     HttpRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
@@ -278,7 +278,7 @@ void ConvertHTMLToRTF(
     std::string& parentUrl,
     TidyDoc tdoc,
     TidyNode tnod,
-    UMyScreenCreditsBase* base) {
+    UScreenCreditsWidget* base) {
   TidyNode child;
   for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
     if (tidyNodeIsText(child)) {
@@ -325,7 +325,7 @@ void ConvertHTMLToRTF(
 }
 } // namespace
 
-FString UMyScreenCreditsBase::ConvertCreditToRTF(
+FString UScreenCreditsWidget::ConvertCreditToRTF(
     const Cesium3DTilesSelection::Credit* credit) {
 
   std::string html = _pCreditSystem->getHtml(*credit);
@@ -361,7 +361,7 @@ FString UMyScreenCreditsBase::ConvertCreditToRTF(
   return UTF8_TO_TCHAR(output.c_str());
 }
 
-void UMyScreenCreditsBase::Update() {
+void UScreenCreditsWidget::Update() {
   if (!_pCreditSystem) {
     return;
   }

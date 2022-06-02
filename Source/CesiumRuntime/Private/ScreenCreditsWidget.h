@@ -8,7 +8,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include <memory>
 #include <string>
-#include "MyScreenCreditsBase.generated.h"
+#include "ScreenCreditsWidget.generated.h"
 
 namespace Cesium3DTilesSelection {
 class CreditSystem;
@@ -20,13 +20,13 @@ struct FSlateDynamicImageBrush;
 DECLARE_DELEGATE(FOnPopupClicked)
 
 UCLASS()
-class UMyScreenCreditsBase : public UUserWidget {
+class UScreenCreditsWidget : public UUserWidget {
   GENERATED_BODY()
 public:
   std::string LoadImage(const std::string& url);
 
 private:
-  UMyScreenCreditsBase(const FObjectInitializer& ObjectInitializer);
+  UScreenCreditsWidget(const FObjectInitializer& ObjectInitializer);
   virtual void NativeConstruct() override;
   UFUNCTION(BlueprintCallable)
   void Update();
@@ -74,9 +74,9 @@ public:
 
 private:
   bool _shrinkImageSize;
-  UMyScreenCreditsBase* ScreenBase;
+  UScreenCreditsWidget* ScreenBase;
   FOnPopupClicked EventHandler;
   friend class FRichInlineImage;
-  friend class UMyScreenCreditsBase;
+  friend class UScreenCreditsWidget;
   friend class SRichInlineImage;
 };
