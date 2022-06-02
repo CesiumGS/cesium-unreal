@@ -1649,8 +1649,34 @@ void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
                         pBoundingVolume->ComponentId,
                         0));
             if (pHistory) {
-              isDefinite &= pHistory->OcclusionStateWasDefiniteLastFrame;
-              isOccluded |= pHistory->WasOccludedLastFrame;
+              if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
+                isDefinite = false;
+                break;
+              }
+
+              isDefinite = true;
+
+              if (pBoundingVolume->isOccluded()) {
+                if (pHistory->LastPixelsPercentage > 0.1f) {
+                  isOccluded = false;
+                  break;
+                }
+              } else {
+                if (pHistory->LastPixelsPercentage > 0.0f) {
+                // if (pHistory->LastPixelsPercentage == 0.0f) {
+                  isOccluded = false;
+                  break;
+                }
+              }
+
+              //isOccluded = true;
+
+              //if (!pHistory->WasOccludedLastFrame) {
+              //  isOccluded = false;
+              //  break;
+              //}
+
+              isOccluded = true;
             }
           }
         }
@@ -1702,7 +1728,9 @@ void ACesium3DTileset::TickOcclusionHandling() {
       TArray<FEditorViewportClient*> viewports =
           GEditor->GetAllViewportClients();
       for (FEditorViewportClient* viewport : viewports) {
-        views.Add((FSceneViewState*)viewport->ViewState.GetReference());
+        if (viewport->IsVisible()) {
+          views.Add((FSceneViewState*)viewport->ViewState.GetReference());
+        }
       }
     }
 #endif
