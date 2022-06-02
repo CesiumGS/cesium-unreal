@@ -90,7 +90,6 @@ public class CesiumRuntime : ModuleRules
             "s2geometry",
             "spdlog",
             "sqlite3",
-            "tidy_static",
             "tinyxml2",
             "uriparser",
             "ktx_read"
@@ -101,6 +100,15 @@ public class CesiumRuntime : ModuleRules
         {
             libs = libs.Concat(new string[] { "MikkTSpace" }).ToArray();
             PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
+        }
+
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            libs = libs.Concat(new string[] { "tidy_static" }).ToArray();
+        }
+        else
+        {
+            libs = libs.Concat(new string[] { "tidy_static" }).ToArray();
         }
 
         if (preferDebug)
