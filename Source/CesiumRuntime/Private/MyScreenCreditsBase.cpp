@@ -5,6 +5,7 @@
 #include "CesiumCreditSystem.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/RichTextBlock.h"
+#include "Engine/Font.h"
 #include "Engine/Texture2D.h"
 #include "Fonts/FontMeasure.h"
 #include "Framework/Application/SlateApplication.h"
@@ -66,7 +67,6 @@ public:
     } else {
       TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> model =
           MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
-
       ChildSlot[SNew(SRichTextHyperlink, model.ToSharedRef())
                     .Text(FText::FromString(text))
                     .OnNavigate_Lambda([url, InDecorator]() {
@@ -142,7 +142,11 @@ const FSlateBrush* UMyRichTextBlockDecorator::FindImageBrush(int32 id) {
 
 UMyScreenCreditsBase::UMyScreenCreditsBase(
     const FObjectInitializer& ObjectInitializer)
-    : UUserWidget(ObjectInitializer) {}
+    : UUserWidget(ObjectInitializer) {
+  static ConstructorHelpers::FObjectFinder<UFont> RobotoFontObj(
+      *UWidget::GetDefaultFontName());
+  Font = FSlateFontInfo(RobotoFontObj.Object, 8);
+}
 
 void UMyScreenCreditsBase::OnPopupClicked() {
   _showPopup = !_showPopup;
@@ -176,7 +180,13 @@ void UMyScreenCreditsBase::OnPopupClicked() {
 }
 
 void UMyScreenCreditsBase::NativeConstruct() {
+
+  auto white = FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f));
+
   if (RichTextOnScreen) {
+    RichTextOnScreen->SetDefaultFont(Font);
+    RichTextOnScreen->SetDefaultColorAndOpacity(
+        FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f)));
     _imageDecoratorOnScreen = static_cast<UMyRichTextBlockDecorator*>(
         RichTextOnScreen->GetDecoratorByClass(
             UMyRichTextBlockDecorator::StaticClass()));
@@ -188,6 +198,9 @@ void UMyScreenCreditsBase::NativeConstruct() {
     _imageDecoratorOnScreen->_shrinkImageSize = true;
   }
   if (RichTextPopup) {
+    RichTextPopup->SetDefaultFont(Font);
+    RichTextPopup->SetDefaultColorAndOpacity(
+        FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f)));
     _imageDecoratorPopup = static_cast<UMyRichTextBlockDecorator*>(
         RichTextPopup->GetDecoratorByClass(
             UMyRichTextBlockDecorator::StaticClass()));

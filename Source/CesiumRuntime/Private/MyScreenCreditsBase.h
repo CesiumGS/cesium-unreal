@@ -54,7 +54,7 @@ private:
   FString _output;
   bool _showPopup;
   TArray<FSlateDynamicImageBrush*> _textureResources;
-
+  FSlateFontInfo Font;
   friend class UMyRichTextBlockDecorator;
 };
 
