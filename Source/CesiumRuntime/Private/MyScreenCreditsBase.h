@@ -15,6 +15,8 @@ class CreditSystem;
 struct Credit;
 } // namespace Cesium3DTilesSelection
 
+struct FSlateDynamicImageBrush;
+
 DECLARE_DELEGATE(FOnPopupClicked)
 
 UCLASS()
