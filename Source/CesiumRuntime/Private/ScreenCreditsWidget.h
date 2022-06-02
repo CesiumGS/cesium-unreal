@@ -42,6 +42,8 @@ private:
   UPROPERTY(meta = (BindWidget))
   class UBackgroundBlur* BackgroundBlur;
 
+  ~UScreenCreditsWidget();
+
   FString ConvertCreditToRTF(const Cesium3DTilesSelection::Credit* credit);
   void HandleImageRequest(
       FHttpRequestPtr HttpRequest,

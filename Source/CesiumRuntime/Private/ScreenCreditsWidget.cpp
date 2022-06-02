@@ -325,6 +325,14 @@ void ConvertHTMLToRTF(
 }
 } // namespace
 
+UScreenCreditsWidget::~UScreenCreditsWidget() {
+  for (int i = 0; i < _textureResources.Num(); i++) {
+    if (_textureResources[i]) {
+      _textureResources[i]->ReleaseResource();
+    }
+  }
+}
+
 FString UScreenCreditsWidget::ConvertCreditToRTF(
     const Cesium3DTilesSelection::Credit* credit) {
 
