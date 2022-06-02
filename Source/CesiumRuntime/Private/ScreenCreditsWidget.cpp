@@ -386,7 +386,7 @@ void UScreenCreditsWidget::Update() {
       if (first) {
         first = false;
       } else {
-        _output += " ";
+        _output += TEXT(" \u2022 ");
       }
       if (_creditToRTF.Contains(credit)) {
         _output += _creditToRTF[credit];
