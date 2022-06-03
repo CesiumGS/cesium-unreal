@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include "Components/WidgetComponent.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
 #include "UObject/Class.h"
 #include "UObject/ConstructorHelpers.h"
-#include "Components/WidgetComponent.h"
 #include <memory>
 
 #include "CesiumCreditSystem.generated.h"
@@ -31,7 +31,6 @@ public:
   ACesiumCreditSystem();
 
   void BeginPlay() override;
-
 
   /**
    * The credits text to display.

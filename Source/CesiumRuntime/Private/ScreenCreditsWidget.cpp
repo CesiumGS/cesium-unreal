@@ -90,9 +90,9 @@ public:
   virtual bool Supports(
       const FTextRunParseResults& RunParseResult,
       const FString& Text) const override {
-    if (RunParseResult.Name == TEXT("img") &&
-            RunParseResult.MetaData.Contains(TEXT("id")) ||
-        RunParseResult.MetaData.Contains(TEXT("url"))) {
+    if (RunParseResult.Name == TEXT("credits") &&
+        (RunParseResult.MetaData.Contains(TEXT("id")) ||
+         RunParseResult.MetaData.Contains(TEXT("url")))) {
       return true;
     }
     return false;
@@ -297,7 +297,7 @@ void ConvertHTMLToRTF(
         }
         if (!parentUrl.empty()) {
           output +=
-              "<img url=\"" + parentUrl + "\"" + " text=\"" + text + "\"/>";
+              "<credits url=\"" + parentUrl + "\"" + " text=\"" + text + "\"/>";
         } else {
           output += text;
         }
@@ -308,7 +308,7 @@ void ConvertHTMLToRTF(
       if (srcAttr) {
         auto srcValue = tidyAttrValue(srcAttr);
         if (srcValue) {
-          output += "<img id=\"" +
+          output += "<credits id=\"" +
                     base->LoadImage(
                         std::string(reinterpret_cast<const char*>(srcValue))) +
                     "\"";
@@ -409,7 +409,7 @@ void UScreenCreditsWidget::Update() {
       }
     }
     if (RichTextOnScreen) {
-      _output += "<img url=\"popup\" text=\" Data attribution\"/>";
+      _output += "<credits url=\"popup\" text=\" Data attribution\"/>";
       RichTextOnScreen->SetText(FText::FromString(_output));
     }
   }

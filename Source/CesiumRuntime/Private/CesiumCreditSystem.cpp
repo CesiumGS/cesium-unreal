@@ -149,7 +149,8 @@ ACesiumCreditSystem::ACesiumCreditSystem()
 void ACesiumCreditSystem::BeginPlay() {
   Super::BeginPlay();
   if (!CreditsWidget) {
-    CreditsWidget = CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
+    CreditsWidget =
+        CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
   }
   if (CreditsWidget) {
     CreditsWidget->AddToViewport();
@@ -164,5 +165,4 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
   if (CreditsWidget) {
     CreditsWidget->Update();
   }
-
 }
