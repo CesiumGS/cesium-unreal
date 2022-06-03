@@ -307,9 +307,43 @@ public:
 
   /**
    * Whether to cull tiles that are occluded.
+   *
+   * When enabled, this feature will use Unreal's occlusion system to determine
+   * if tiles are actually visible on the screen. For tiles found to be
+   * occluded, the tile will not refine to show descendants, but it will still
+   * be rendered to avoid holes. This results in less tile loads and less GPU
+   * resource usage for dense, high-occlusion scenes like ground-level views in
+   * cities.
+   *
+   * This will not work for tilesets with poorly fit bounding volumes and cause
+   * more draw calls with very few extra culled tiles. When there is minimal
+   * occlusion in a scene, such as with terrain tilesets and applications
+   * focused on top-down views, this feature will yield minimal benefit and
+   * potentially cause needless overhead.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableOcclusionCulling,
+      BlueprintSetter = SetEnableOcclusionCulling,
+      Category = "Cesium|Tile Culling")
   bool EnableOcclusionCulling = true;
+
+  /**
+   * The number of CesiumBoundingVolumeComponents to use for querying the
+   * occlusion state of traversed tiles.
+   *
+   * Only applicable when EnableOcclusionCulling is enabled.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetOcclusionPoolSize,
+      BlueprintSetter = SetOcclusionPoolSize,
+      Category = "Cesium|Tile Culling",
+      meta =
+          (EditCondition = "EnableOcclusionCulling",
+           ClampMin = "0",
+           ClampMax = "1000"))
+  int32 OcclusionPoolSize = 500;
 
   /**
    * Whether to cull tiles that are occluded by fog.
@@ -460,7 +494,7 @@ private:
       BlueprintSetter = SetUrl,
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
-  FString Url = "file:///d:/Documents/Tilesets/YemenNext3/tileset.json";
+  FString Url = "";
 
   /**
    * The ID of the Cesium ion asset to use.
@@ -648,6 +682,18 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling")
+  bool GetEnableOcclusionCulling() const { return EnableOcclusionCulling; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling")
+  void SetEnableOcclusionCulling(bool bEnableOcclusionCulling);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling")
+  int32 GetOcclusionPoolSize() const { return OcclusionPoolSize; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling")
+  void SetOcclusionPoolSize(int32 newOcclusionPoolSize);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
   bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }

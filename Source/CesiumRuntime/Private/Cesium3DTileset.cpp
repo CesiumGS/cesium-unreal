@@ -260,6 +260,20 @@ void ACesium3DTileset::SetIonAssetEndpointUrl(
   }
 }
 
+void ACesium3DTileset::SetEnableOcclusionCulling(bool bEnableOcclusionCulling) {
+  if (this->EnableOcclusionCulling != bEnableOcclusionCulling) {
+    this->EnableOcclusionCulling = bEnableOcclusionCulling;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetOcclusionPoolSize(int32 newOcclusionPoolSize) {
+  if (this->OcclusionPoolSize != newOcclusionPoolSize) {
+    this->OcclusionPoolSize = newOcclusionPoolSize;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
   if (this->CreatePhysicsMeshes != bCreatePhysicsMeshes) {
     this->CreatePhysicsMeshes = bCreatePhysicsMeshes;
@@ -821,7 +835,7 @@ void ACesium3DTileset::LoadTileset() {
 
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
       this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
-  if (!pBoundingVolumePool) {
+  if (this->EnableOcclusionCulling && !pBoundingVolumePool) {
     const glm::dmat4& cesiumToUnreal =
         GetCesiumTilesetToUnrealRelativeWorldTransform();
     pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
@@ -844,6 +858,9 @@ void ACesium3DTileset::LoadTileset() {
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.enableOcclusionCulling = this->EnableOcclusionCulling;
+  options.occlusionPoolSize = static_cast<uint32_t>(this->OcclusionPoolSize);
 
   options.showCreditsOnScreen = ShowCreditsOnScreen;
 
@@ -1495,6 +1512,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableOcclusionCulling = this->EnableOcclusionCulling;
+  options.occlusionPoolSize = static_cast<uint32_t>(this->OcclusionPoolSize);
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
@@ -1662,19 +1680,12 @@ void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
                   break;
                 }
               } else {
-                if (pHistory->LastPixelsPercentage > 0.0f) {
-                // if (pHistory->LastPixelsPercentage == 0.0f) {
+                if (!pHistory->WasOccludedLastFrame) {
+                  // pHistory->LastPixelsPercentage > 0.0f) {
                   isOccluded = false;
                   break;
                 }
               }
-
-              //isOccluded = true;
-
-              //if (!pHistory->WasOccludedLastFrame) {
-              //  isOccluded = false;
-              //  break;
-              //}
 
               isOccluded = true;
             }
@@ -1857,6 +1868,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

@@ -15,7 +15,7 @@ UCesiumBoundingVolumePoolComponent::UCesiumBoundingVolumePoolComponent()
     : _cesiumToUnreal(1.0) {
   this->_pPool = std::make_shared<UCesiumBoundingVolumePool>(this);
   SetMobility(EComponentMobility::Static);
-  //SetMobility(EComponentMobility::Movable);
+  // SetMobility(EComponentMobility::Movable);
 }
 
 TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
@@ -29,7 +29,7 @@ TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
   // the scene proxy when georeference changes, reassigned to a different tile,
   // etc.
   pBoundingVolume->SetMobility(EComponentMobility::Static);
-  //pBoundingVolume->SetMobility(EComponentMobility::Movable);
+  // pBoundingVolume->SetMobility(EComponentMobility::Movable);
   pBoundingVolume->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pBoundingVolume->SetupAttachment(this);
@@ -82,34 +82,34 @@ public:
   FCesiumBoundingVolumeSceneProxy(UCesiumBoundingVolumeComponent* pComponent)
       : FPrimitiveSceneProxy(pComponent /*, name?*/) {}
 
-  //bool AllowApproximateOcclusion() const override {
+  // bool AllowApproximateOcclusion() const override {
   //  return true;
   //}
-/*
-  void GetDynamicMeshElements(
-      const TArray<const FSceneView*>& Views,
-      const FSceneViewFamily& ViewFamily,
-      uint32 VisibilityMap,
-      FMeshElementCollector& Collector) const override {
-    for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
-      const ESceneDepthPriorityGroup DrawBoundsDPG = SDPG_World;
-      DrawWireBox(
-          Collector.GetPDI(ViewIndex),
-          GetBounds().GetBox(),
-          FColor(72, 72, 255),
-          DrawBoundsDPG);
-      /*!Owner || IsSelected()* /
+  /*
+    void GetDynamicMeshElements(
+        const TArray<const FSceneView*>& Views,
+        const FSceneViewFamily& ViewFamily,
+        uint32 VisibilityMap,
+        FMeshElementCollector& Collector) const override {
+      for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
+        const ESceneDepthPriorityGroup DrawBoundsDPG = SDPG_World;
+        DrawWireBox(
+            Collector.GetPDI(ViewIndex),
+            GetBounds().GetBox(),
+            FColor(72, 72, 255),
+            DrawBoundsDPG);
+        /*!Owner || IsSelected()* /
+      }
     }
-  }
 
-  FPrimitiveViewRelevance
-  GetViewRelevance(const FSceneView* View) const override {
-    FPrimitiveViewRelevance Result;
-    Result.bDrawRelevance = true;
-    Result.bDynamicRelevance = true;
-    // Result.bEditorPrimitiveRelevance = true;
-    return Result;
-  }*/
+    FPrimitiveViewRelevance
+    GetViewRelevance(const FSceneView* View) const override {
+      FPrimitiveViewRelevance Result;
+      Result.bDrawRelevance = true;
+      Result.bDynamicRelevance = true;
+      // Result.bEditorPrimitiveRelevance = true;
+      return Result;
+    }*/
 
   SIZE_T GetTypeHash() const override {
     static size_t UniquePointer;
@@ -124,7 +124,7 @@ public:
 
 FPrimitiveSceneProxy* UCesiumBoundingVolumeComponent::CreateSceneProxy() {
   this->_isOccluded_RenderThread = std::nullopt;
-  //this->_isOccluded = false;
+  // this->_isOccluded = false;
   return (FPrimitiveSceneProxy*)new FCesiumBoundingVolumeSceneProxy(this);
 }
 
