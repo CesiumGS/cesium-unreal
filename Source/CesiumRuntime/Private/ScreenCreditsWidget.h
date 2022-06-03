@@ -24,12 +24,12 @@ class UScreenCreditsWidget : public UUserWidget {
   GENERATED_BODY()
 public:
   std::string LoadImage(const std::string& url);
+  void Update();
 
 private:
   UScreenCreditsWidget(const FObjectInitializer& ObjectInitializer);
   virtual void NativeConstruct() override;
   UFUNCTION(BlueprintCallable)
-  void Update();
 
   void OnPopupClicked();
 

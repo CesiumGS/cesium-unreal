@@ -181,6 +181,8 @@ void UScreenCreditsWidget::OnPopupClicked() {
 
 void UScreenCreditsWidget::NativeConstruct() {
 
+  Super::NativeConstruct();
+
   auto white = FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f));
 
   if (RichTextOnScreen) {
@@ -233,7 +235,9 @@ void UScreenCreditsWidget::HandleImageRequest(
         FName(HttpRequest->GetURL()));
     Invalidate(EInvalidateWidgetReason::Layout);
     _output += TEXT('\u200B');
-    RichTextOnScreen->SetText(FText::FromString(_output));
+    if (RichTextOnScreen) {
+      RichTextOnScreen->SetText(FText::FromString(_output));
+    }
     return;
   }
 }

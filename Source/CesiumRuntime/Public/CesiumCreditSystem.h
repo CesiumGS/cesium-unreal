@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "UObject/Class.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Components/WidgetComponent.h"
 #include <memory>
 
 #include "CesiumCreditSystem.generated.h"
@@ -29,6 +30,9 @@ public:
 
   ACesiumCreditSystem();
 
+  void BeginPlay() override;
+
+
   /**
    * The credits text to display.
    */
@@ -37,6 +41,9 @@ public:
 
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   FString OnScreenCredits = "";
+
+  UPROPERTY(EditDefaultsOnly, Category = "Cesium")
+  TSubclassOf<UUserWidget> CreditsWidgetClass;
 
   /**
    * Whether the credit string has changed since last frame.
@@ -61,6 +68,7 @@ public:
 
 private:
   static UClass* CesiumCreditSystemBP;
+  class UScreenCreditsWidget* CreditsWidget;
 
   /**
    * A tag that is assigned to Credit Systems when they are created
