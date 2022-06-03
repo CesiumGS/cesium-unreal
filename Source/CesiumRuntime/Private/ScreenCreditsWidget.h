@@ -29,7 +29,6 @@ public:
 private:
   UScreenCreditsWidget(const FObjectInitializer& ObjectInitializer);
   virtual void NativeConstruct() override;
-  UFUNCTION(BlueprintCallable)
 
   void OnPopupClicked();
 
@@ -53,21 +52,21 @@ private:
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
   size_t _lastCreditsCount;
   TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
-  class UMyRichTextBlockDecorator* _imageDecoratorOnScreen;
-  class UMyRichTextBlockDecorator* _imageDecoratorPopup;
+  class UCreditsDecorator* _imageDecoratorOnScreen;
+  class UCreditsDecorator* _imageDecoratorPopup;
   FString _output;
   bool _showPopup;
   TArray<FSlateDynamicImageBrush*> _textureResources;
   FSlateFontInfo Font;
-  friend class UMyRichTextBlockDecorator;
+  friend class UCreditsDecorator;
 };
 
 UCLASS()
-class UMyRichTextBlockDecorator : public URichTextBlockDecorator {
+class UCreditsDecorator : public URichTextBlockDecorator {
   GENERATED_BODY()
 
 public:
-  UMyRichTextBlockDecorator(const FObjectInitializer& ObjectInitializer);
+  UCreditsDecorator(const FObjectInitializer& ObjectInitializer);
 
   virtual TSharedPtr<ITextDecorator>
   CreateDecorator(URichTextBlock* InOwner) override;

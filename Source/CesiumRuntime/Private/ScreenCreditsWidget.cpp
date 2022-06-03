@@ -40,7 +40,7 @@ public:
       const FString& url,
       const FString& text,
       const FTextBlockStyle& TextStyle,
-      UMyRichTextBlockDecorator* InDecorator) {
+      UCreditsDecorator* InDecorator) {
     if (Brush) {
       float IconHeight, IconWidth;
       if (InDecorator->_shrinkImageSize) {
@@ -82,9 +82,7 @@ public:
 
 class FRichInlineImage : public FRichTextDecorator {
 public:
-  FRichInlineImage(
-      URichTextBlock* InOwner,
-      UMyRichTextBlockDecorator* InDecorator)
+  FRichInlineImage(URichTextBlock* InOwner, UCreditsDecorator* InDecorator)
       : FRichTextDecorator(InOwner), Decorator(InDecorator) {}
 
   virtual bool Supports(
@@ -121,19 +119,19 @@ protected:
   }
 
 private:
-  UMyRichTextBlockDecorator* Decorator;
+  UCreditsDecorator* Decorator;
 };
 
-UMyRichTextBlockDecorator::UMyRichTextBlockDecorator(
+UCreditsDecorator::UCreditsDecorator(
     const FObjectInitializer& ObjectInitializer)
     : URichTextBlockDecorator(ObjectInitializer) {}
 
 TSharedPtr<ITextDecorator>
-UMyRichTextBlockDecorator::CreateDecorator(URichTextBlock* InOwner) {
+UCreditsDecorator::CreateDecorator(URichTextBlock* InOwner) {
   return MakeShareable(new FRichInlineImage(InOwner, this));
 }
 
-const FSlateBrush* UMyRichTextBlockDecorator::FindImageBrush(int32 id) {
+const FSlateBrush* UCreditsDecorator::FindImageBrush(int32 id) {
   if (ScreenBase->_textureResources.Num() > id) {
     return ScreenBase->_textureResources[id];
   }
@@ -189,9 +187,9 @@ void UScreenCreditsWidget::NativeConstruct() {
     RichTextOnScreen->SetDefaultFont(Font);
     RichTextOnScreen->SetDefaultColorAndOpacity(
         FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f)));
-    _imageDecoratorOnScreen = static_cast<UMyRichTextBlockDecorator*>(
-        RichTextOnScreen->GetDecoratorByClass(
-            UMyRichTextBlockDecorator::StaticClass()));
+    _imageDecoratorOnScreen =
+        static_cast<UCreditsDecorator*>(RichTextOnScreen->GetDecoratorByClass(
+            UCreditsDecorator::StaticClass()));
 
     _imageDecoratorOnScreen->EventHandler.BindUObject(
         this,
@@ -203,9 +201,8 @@ void UScreenCreditsWidget::NativeConstruct() {
     RichTextPopup->SetDefaultFont(Font);
     RichTextPopup->SetDefaultColorAndOpacity(
         FSlateColor(FLinearColor(1.f, 1.f, 1.f, 1.f)));
-    _imageDecoratorPopup = static_cast<UMyRichTextBlockDecorator*>(
-        RichTextPopup->GetDecoratorByClass(
-            UMyRichTextBlockDecorator::StaticClass()));
+    _imageDecoratorPopup = static_cast<UCreditsDecorator*>(
+        RichTextPopup->GetDecoratorByClass(UCreditsDecorator::StaticClass()));
 
     _imageDecoratorPopup->ScreenBase = this;
     _imageDecoratorPopup->_shrinkImageSize = false;
