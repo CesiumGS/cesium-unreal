@@ -53,9 +53,7 @@ public:
 
 private:
   static UClass* CesiumCreditSystemBP;
-  class UScreenCreditsWidget* CreditsWidget;
-
-  FString ConvertHtmlToRtf(std::string html);
+  class UScreenCreditsWidget* _creditsWidget;
 
   /**
    * A tag that is assigned to Credit Systems when they are created
@@ -68,5 +66,6 @@ private:
 
   size_t _lastCreditsCount;
 
+  FString ConvertHtmlToRtf(std::string html);
   std::unordered_map<std::string, FString> _htmlToRtf;
 };

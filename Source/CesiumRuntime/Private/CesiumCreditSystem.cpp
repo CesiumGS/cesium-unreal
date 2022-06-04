@@ -11,8 +11,6 @@
 #include <tidybuffio.h>
 #include <vector>
 
-using namespace Cesium3DTilesSelection;
-
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 namespace {
 
@@ -151,12 +149,12 @@ ACesiumCreditSystem::ACesiumCreditSystem()
 
 void ACesiumCreditSystem::BeginPlay() {
   Super::BeginPlay();
-  if (!CreditsWidget) {
-    CreditsWidget =
+  if (!_creditsWidget) {
+    _creditsWidget =
         CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
   }
-  if (CreditsWidget) {
-    CreditsWidget->AddToViewport();
+  if (_creditsWidget) {
+    _creditsWidget->AddToViewport();
   }
 }
 
@@ -164,17 +162,18 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 
 void ACesiumCreditSystem::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
-  if (!_pCreditSystem || !CreditsWidget) {
+
+  if (!_pCreditSystem || !_creditsWidget) {
     return;
   }
 
   const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
       _pCreditSystem->getCreditsToShowThisFrame();
 
+  // if the credit list has changed, we want to reformat the credits
   CreditsUpdated =
       creditsToShowThisFrame.size() != _lastCreditsCount ||
       _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
-
   if (CreditsUpdated) {
     FString OnScreenCredits;
     FString Credits;
@@ -183,34 +182,32 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
 
     bool first = true;
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      const Credit& credit = creditsToShowThisFrame[i];
+      const Cesium3DTilesSelection::Credit& credit = creditsToShowThisFrame[i];
       if (i != 0) {
         Credits += "\n";
       }
-      FString CreditRTF;
+      FString CreditRtf;
       const std::string& html = _pCreditSystem->getHtml(credit);
 
       auto htmlFind = _htmlToRtf.find(html);
       if (htmlFind != _htmlToRtf.end()) {
-        CreditRTF = htmlFind->second;
+        CreditRtf = htmlFind->second;
       } else {
-        CreditRTF = ConvertHtmlToRtf(html);
-        _htmlToRtf.insert({html, CreditRTF});
+        CreditRtf = ConvertHtmlToRtf(html);
+        _htmlToRtf.insert({html, CreditRtf});
       }
-      Credits += CreditRTF;
+      Credits += CreditRtf;
       if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
         if (first) {
           first = false;
         } else {
           OnScreenCredits += TEXT(" \u2022 ");
         }
-        OnScreenCredits += CreditRTF;
+        OnScreenCredits += CreditRtf;
       }
     }
     OnScreenCredits += "<credits url=\"popup\" text=\" Data attribution\"/>";
-    CreditsWidget->SetOnScreenCredits(OnScreenCredits);
-    CreditsWidget->SetPopupCredits(Credits);
-    UE_LOG(LogCesium, Warning, TEXT("%s"), *OnScreenCredits);
+    _creditsWidget->SetCredits(Credits, OnScreenCredits);
   }
   _pCreditSystem->startNextFrame();
 }
@@ -221,7 +218,7 @@ void convertHtmlToRtf(
     std::string& parentUrl,
     TidyDoc tdoc,
     TidyNode tnod,
-    UScreenCreditsWidget* base) {
+    UScreenCreditsWidget* CreditsWidget) {
   TidyNode child;
   for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
     if (tidyNodeIsText(child)) {
@@ -248,7 +245,7 @@ void convertHtmlToRtf(
         auto srcValue = tidyAttrValue(srcAttr);
         if (srcValue) {
           output += "<credits id=\"" +
-                    base->LoadImage(
+                    CreditsWidget->LoadImage(
                         std::string(reinterpret_cast<const char*>(srcValue))) +
                     "\"";
           if (!parentUrl.empty()) {
@@ -263,7 +260,7 @@ void convertHtmlToRtf(
       auto hrefValue = tidyAttrValue(hrefAttr);
       parentUrl = std::string(reinterpret_cast<const char*>(hrefValue));
     }
-    convertHtmlToRtf(output, parentUrl, tdoc, child, base);
+    convertHtmlToRtf(output, parentUrl, tdoc, child, CreditsWidget);
   }
 }
 } // namespace
@@ -290,11 +287,11 @@ FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
       reinterpret_cast<void*>(const_cast<char*>(html.c_str())),
       static_cast<uint>(html.size()));
 
-  err = tidyParseBuffer(tdoc, &docbuf);
-
   std::string output, url;
-  convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), CreditsWidget);
-
+  err = tidyParseBuffer(tdoc, &docbuf);
+  if (err >= 0) {
+    convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), _creditsWidget);
+  }
   tidyBufFree(&docbuf);
   tidyBufFree(&tidy_errbuf);
   tidyRelease(tdoc);

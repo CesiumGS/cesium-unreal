@@ -10,11 +10,6 @@
 #include <string>
 #include "ScreenCreditsWidget.generated.h"
 
-namespace Cesium3DTilesSelection {
-class CreditSystem;
-struct Credit;
-} // namespace Cesium3DTilesSelection
-
 struct FSlateDynamicImageBrush;
 
 DECLARE_DELEGATE(FOnPopupClicked)
@@ -29,30 +24,21 @@ public:
    */
   std::string LoadImage(const std::string& url);
 
-  void SetOnScreenCredits(const FString& credits);
-
-  void SetPopupCredits(const FString& credits);
-
-  /**
-   * Whether the popup button is displayed.
-   */
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  bool ShowPopup = false;
-
-  /**
-   * The credits text to display.
-   */
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  FString Credits = "";
-
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  FString OnScreenCredits = "";
+  void SetCredits(const FString& InCredits, const FString& InOnScreenCredits);
 
 private:
   UScreenCreditsWidget(const FObjectInitializer& ObjectInitializer);
   virtual void NativeConstruct() override;
 
   void OnPopupClicked();
+
+  ~UScreenCreditsWidget();
+
+  void HandleImageRequest(
+      FHttpRequestPtr HttpRequest,
+      FHttpResponsePtr HttpResponse,
+      bool bSucceeded,
+      int32 id);
 
   UPROPERTY(meta = (BindWidget))
   class URichTextBlock* RichTextOnScreen;
@@ -63,21 +49,14 @@ private:
   UPROPERTY(meta = (BindWidget))
   class UBackgroundBlur* BackgroundBlur;
 
-  ~UScreenCreditsWidget();
-
-  void HandleImageRequest(
-      FHttpRequestPtr HttpRequest,
-      FHttpResponsePtr HttpResponse,
-      bool bSucceeded,
-      int32 id);
-  std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
-  size_t _lastCreditsCount;
-  class UCreditsDecorator* _imageDecoratorOnScreen;
-  class UCreditsDecorator* _imageDecoratorPopup;
-  FString _output;
+  FString _credits = "";
+  FString _onScreenCredits = "";
+  bool _showPopup = false;
+  class UCreditsDecorator* _decoratorOnScreen;
+  class UCreditsDecorator* _decoratorPopup;
+  TArray<FSlateDynamicImageBrush*> _creditImages;
   int32 _numImagesLoading;
-  TArray<FSlateDynamicImageBrush*> CreditImages;
-  FSlateFontInfo Font;
+  FSlateFontInfo _font;
   friend class UCreditsDecorator;
 };
 
@@ -93,11 +72,6 @@ public:
 
   virtual const FSlateBrush* FindImageBrush(int32 id);
 
-private:
-  bool _shrinkImageSize;
-  UScreenCreditsWidget* ScreenBase;
-  FOnPopupClicked EventHandler;
-  friend class FRichInlineImage;
-  friend class UScreenCreditsWidget;
-  friend class SRichInlineImage;
+  UScreenCreditsWidget* CreditsWidget;
+  FOnPopupClicked PopupClicked;
 };
