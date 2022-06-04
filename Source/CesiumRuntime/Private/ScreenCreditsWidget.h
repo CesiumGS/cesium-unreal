@@ -23,8 +23,30 @@ UCLASS()
 class UScreenCreditsWidget : public UUserWidget {
   GENERATED_BODY()
 public:
+  /**
+   * Attempts to load an image from the given URL and returns the name of the
+   * image to be referenced in RTF.
+   */
   std::string LoadImage(const std::string& url);
-  void Update();
+
+  void SetOnScreenCredits(const FString& credits);
+
+  void SetPopupCredits(const FString& credits);
+
+  /**
+   * Whether the popup button is displayed.
+   */
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  bool ShowPopup = false;
+
+  /**
+   * The credits text to display.
+   */
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  FString Credits = "";
+
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  FString OnScreenCredits = "";
 
 private:
   UScreenCreditsWidget(const FObjectInitializer& ObjectInitializer);
@@ -43,7 +65,6 @@ private:
 
   ~UScreenCreditsWidget();
 
-  FString ConvertCreditToRTF(const Cesium3DTilesSelection::Credit* credit);
   void HandleImageRequest(
       FHttpRequestPtr HttpRequest,
       FHttpResponsePtr HttpResponse,
@@ -51,12 +72,11 @@ private:
       int32 id);
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
   size_t _lastCreditsCount;
-  TMap<const Cesium3DTilesSelection::Credit*, FString> _creditToRTF;
   class UCreditsDecorator* _imageDecoratorOnScreen;
   class UCreditsDecorator* _imageDecoratorPopup;
   FString _output;
-  bool _showPopup;
-  TArray<FSlateDynamicImageBrush*> _textureResources;
+  int32 _numImagesLoading;
+  TArray<FSlateDynamicImageBrush*> CreditImages;
   FSlateFontInfo Font;
   friend class UCreditsDecorator;
 };

@@ -8,7 +8,10 @@
 #include "EngineUtils.h"
 #include "ScreenCreditsWidget.h"
 #include <string>
+#include <tidybuffio.h>
 #include <vector>
+
+using namespace Cesium3DTilesSelection;
 
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 namespace {
@@ -161,8 +164,139 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 
 void ACesiumCreditSystem::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
-
-  if (CreditsWidget) {
-    CreditsWidget->Update();
+  if (!_pCreditSystem || !CreditsWidget) {
+    return;
   }
+
+  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
+      _pCreditSystem->getCreditsToShowThisFrame();
+
+  CreditsUpdated =
+      creditsToShowThisFrame.size() != _lastCreditsCount ||
+      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
+
+  if (CreditsUpdated) {
+    FString OnScreenCredits;
+    FString Credits;
+
+    _lastCreditsCount = creditsToShowThisFrame.size();
+
+    bool first = true;
+    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
+      const Credit& credit = creditsToShowThisFrame[i];
+      if (i != 0) {
+        Credits += "\n";
+      }
+      FString CreditRTF;
+      const std::string& html = _pCreditSystem->getHtml(credit);
+
+      auto htmlFind = _htmlToRtf.find(html);
+      if (htmlFind != _htmlToRtf.end()) {
+        CreditRTF = htmlFind->second;
+      } else {
+        CreditRTF = ConvertHtmlToRtf(html);
+        _htmlToRtf.insert({html, CreditRTF});
+      }
+      Credits += CreditRTF;
+      if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
+        if (first) {
+          first = false;
+        } else {
+          OnScreenCredits += TEXT(" \u2022 ");
+        }
+        OnScreenCredits += CreditRTF;
+      }
+    }
+    OnScreenCredits += "<credits url=\"popup\" text=\" Data attribution\"/>";
+    CreditsWidget->SetOnScreenCredits(OnScreenCredits);
+    CreditsWidget->SetPopupCredits(Credits);
+    UE_LOG(LogCesium, Warning, TEXT("%s"), *OnScreenCredits);
+  }
+  _pCreditSystem->startNextFrame();
+}
+
+namespace {
+void convertHtmlToRtf(
+    std::string& output,
+    std::string& parentUrl,
+    TidyDoc tdoc,
+    TidyNode tnod,
+    UScreenCreditsWidget* base) {
+  TidyNode child;
+  for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
+    if (tidyNodeIsText(child)) {
+      TidyBuffer buf;
+      tidyBufInit(&buf);
+      tidyNodeGetText(tdoc, child, &buf);
+      if (buf.bp) {
+        std::string text = reinterpret_cast<const char*>(buf.bp);
+        // could not find correct option in tidy html to not add new lines
+        if (text.size() != 0 && text[text.size() - 1] == '\n') {
+          text.pop_back();
+        }
+        if (!parentUrl.empty()) {
+          output +=
+              "<credits url=\"" + parentUrl + "\"" + " text=\"" + text + "\"/>";
+        } else {
+          output += text;
+        }
+      }
+      tidyBufFree(&buf);
+    } else if (tidyNodeGetId(child) == TidyTagId::TidyTag_IMG) {
+      auto srcAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_SRC);
+      if (srcAttr) {
+        auto srcValue = tidyAttrValue(srcAttr);
+        if (srcValue) {
+          output += "<credits id=\"" +
+                    base->LoadImage(
+                        std::string(reinterpret_cast<const char*>(srcValue))) +
+                    "\"";
+          if (!parentUrl.empty()) {
+            output += " url=\"" + parentUrl + "\"";
+          }
+          output += "/>";
+        }
+      }
+    }
+    auto hrefAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_HREF);
+    if (hrefAttr) {
+      auto hrefValue = tidyAttrValue(hrefAttr);
+      parentUrl = std::string(reinterpret_cast<const char*>(hrefValue));
+    }
+    convertHtmlToRtf(output, parentUrl, tdoc, child, base);
+  }
+}
+} // namespace
+
+FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
+  TidyDoc tdoc;
+  TidyBuffer docbuf = {0};
+  TidyBuffer tidy_errbuf = {0};
+  int err;
+
+  tdoc = tidyCreate();
+  tidyOptSetBool(tdoc, TidyForceOutput, yes);
+  tidyOptSetInt(tdoc, TidyWrapLen, 0);
+  tidyOptSetInt(tdoc, TidyNewline, TidyLF);
+
+  tidySetErrorBuffer(tdoc, &tidy_errbuf);
+  tidyBufInit(&docbuf);
+
+  // avoid buffer overflow by wrapping with html tags
+  html = "<span>" + html + "</span>";
+
+  tidyBufAppend(
+      &docbuf,
+      reinterpret_cast<void*>(const_cast<char*>(html.c_str())),
+      static_cast<uint>(html.size()));
+
+  err = tidyParseBuffer(tdoc, &docbuf);
+
+  std::string output, url;
+  convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), CreditsWidget);
+
+  tidyBufFree(&docbuf);
+  tidyBufFree(&tidy_errbuf);
+  tidyRelease(tdoc);
+  return UTF8_TO_TCHAR(output.c_str());
 }

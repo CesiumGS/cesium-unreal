@@ -8,6 +8,7 @@
 #include "UObject/Class.h"
 #include "UObject/ConstructorHelpers.h"
 #include <memory>
+#include <unordered_map>
 
 #include "CesiumCreditSystem.generated.h"
 
@@ -32,15 +33,6 @@ public:
 
   void BeginPlay() override;
 
-  /**
-   * The credits text to display.
-   */
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  FString Credits = "";
-
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  FString OnScreenCredits = "";
-
   UPROPERTY(EditDefaultsOnly, Category = "Cesium")
   TSubclassOf<UUserWidget> CreditsWidgetClass;
 
@@ -49,12 +41,6 @@ public:
    */
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
-
-  /**
-   * Whether any credits are part of the frame.
-   */
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  bool DisplayCredits = false;
 
   // Called every frame
   virtual bool ShouldTickIfViewportsOnly() const override;
@@ -69,6 +55,8 @@ private:
   static UClass* CesiumCreditSystemBP;
   class UScreenCreditsWidget* CreditsWidget;
 
+  FString ConvertHtmlToRtf(std::string html);
+
   /**
    * A tag that is assigned to Credit Systems when they are created
    * as the "default" Credit System for a certain world.
@@ -79,4 +67,6 @@ private:
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
 
   size_t _lastCreditsCount;
+
+  std::unordered_map<std::string, FString> _htmlToRtf;
 };

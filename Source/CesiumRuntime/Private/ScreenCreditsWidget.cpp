@@ -23,10 +23,7 @@
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/SCompoundWidget.h"
 #include <string>
-#include <tidybuffio.h>
 #include <vector>
-
-using namespace Cesium3DTilesSelection;
 
 class SRichInlineImage : public SCompoundWidget {
 public:
@@ -132,8 +129,8 @@ UCreditsDecorator::CreateDecorator(URichTextBlock* InOwner) {
 }
 
 const FSlateBrush* UCreditsDecorator::FindImageBrush(int32 id) {
-  if (ScreenBase->_textureResources.Num() > id) {
-    return ScreenBase->_textureResources[id];
+  if (ScreenBase->CreditImages.Num() > id) {
+    return ScreenBase->CreditImages[id];
   }
   return nullptr;
 }
@@ -147,34 +144,9 @@ UScreenCreditsWidget::UScreenCreditsWidget(
 }
 
 void UScreenCreditsWidget::OnPopupClicked() {
-  _showPopup = !_showPopup;
-  if (_showPopup) {
-    BackgroundBlur->SetVisibility(ESlateVisibility::Visible);
-
-    const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
-        _pCreditSystem->getCreditsToShowThisFrame();
-
-    FString output;
-
-    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      const Credit* credit = &creditsToShowThisFrame[i];
-      if (i != 0) {
-        output += "\n";
-      }
-      if (_creditToRTF.Contains(credit)) {
-        output += _creditToRTF[credit];
-      } else {
-        FString convert = ConvertCreditToRTF(credit);
-        _creditToRTF.Add(credit, convert);
-        output += convert;
-      }
-    }
-    if (RichTextOnScreen) {
-      RichTextPopup->SetText(FText::FromString(output));
-    }
-  } else {
-    BackgroundBlur->SetVisibility(ESlateVisibility::Collapsed);
-  }
+  ShowPopup = !ShowPopup;
+  BackgroundBlur->SetVisibility(
+      ShowPopup ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 }
 
 void UScreenCreditsWidget::NativeConstruct() {
@@ -226,21 +198,24 @@ void UScreenCreditsWidget::HandleImageRequest(
     Texture->SRGB = true;
     Texture->UpdateResource();
     Texture->AddToRoot();
-    _textureResources[id] = new FSlateDynamicImageBrush(
+    CreditImages[id] = new FSlateDynamicImageBrush(
         Texture,
         FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
         FName(HttpRequest->GetURL()));
-    Invalidate(EInvalidateWidgetReason::Layout);
-    _output += TEXT('\u200B');
-    if (RichTextOnScreen) {
-      RichTextOnScreen->SetText(FText::FromString(_output));
+    --_numImagesLoading;
+    if (_numImagesLoading == 0) {
+      if (RichTextOnScreen) {
+        SetOnScreenCredits(OnScreenCredits);
+      }
+      if (RichTextPopup) {
+        SetPopupCredits(Credits);
+      }
     }
     return;
   }
 }
 
 std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
-
   const std::string base_64_prefix = "data:image/png;base64,";
 
   if (url.rfind(base_64_prefix, 0) == 0) {
@@ -251,164 +226,53 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
       Texture->SRGB = true;
       Texture->UpdateResource();
       Texture->AddToRoot();
-      _textureResources.Add(new FSlateDynamicImageBrush(
+      CreditImages.Add(new FSlateDynamicImageBrush(
           Texture,
           FVector2D(Texture->PlatformData->SizeX, Texture->PlatformData->SizeY),
           "Untitled"));
     }
   } else {
+    ++_numImagesLoading;
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
         FHttpModule::Get().CreateRequest();
 
-    _textureResources.Add(nullptr);
+    CreditImages.Add(nullptr);
     HttpRequest->OnProcessRequestComplete().BindUObject(
         this,
         &UScreenCreditsWidget::HandleImageRequest,
-        _textureResources.Num() - 1);
+        CreditImages.Num() - 1);
 
     HttpRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
     HttpRequest->SetVerb(TEXT("GET"));
     HttpRequest->ProcessRequest();
   }
-  return std::to_string(_textureResources.Num() - 1);
+  return std::to_string(CreditImages.Num() - 1);
 }
 
-namespace {
-void ConvertHTMLToRTF(
-    std::string& output,
-    std::string& parentUrl,
-    TidyDoc tdoc,
-    TidyNode tnod,
-    UScreenCreditsWidget* base) {
-  TidyNode child;
-  for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
-    if (tidyNodeIsText(child)) {
-      TidyBuffer buf;
-      tidyBufInit(&buf);
-      tidyNodeGetText(tdoc, child, &buf);
-      if (buf.bp) {
-        std::string text = reinterpret_cast<const char*>(buf.bp);
-        // could not find correct option in tidy html to not add new lines
-        if (text.size() != 0 && text[text.size() - 1] == '\n') {
-          text.pop_back();
-        }
-        if (!parentUrl.empty()) {
-          output +=
-              "<credits url=\"" + parentUrl + "\"" + " text=\"" + text + "\"/>";
-        } else {
-          output += text;
-        }
-      }
-      tidyBufFree(&buf);
-    } else if (tidyNodeGetId(child) == TidyTagId::TidyTag_IMG) {
-      auto srcAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_SRC);
-      if (srcAttr) {
-        auto srcValue = tidyAttrValue(srcAttr);
-        if (srcValue) {
-          output += "<credits id=\"" +
-                    base->LoadImage(
-                        std::string(reinterpret_cast<const char*>(srcValue))) +
-                    "\"";
-          if (!parentUrl.empty()) {
-            output += " url=\"" + parentUrl + "\"";
-          }
-          output += "/>";
-        }
-      }
-    }
-    auto hrefAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_HREF);
-    if (hrefAttr) {
-      auto hrefValue = tidyAttrValue(hrefAttr);
-      parentUrl = std::string(reinterpret_cast<const char*>(hrefValue));
-    }
-    ConvertHTMLToRTF(output, parentUrl, tdoc, child, base);
-  }
-}
-} // namespace
-
-UScreenCreditsWidget::~UScreenCreditsWidget() {
-  for (int i = 0; i < _textureResources.Num(); i++) {
-    if (_textureResources[i]) {
-      _textureResources[i]->ReleaseResource();
-    }
-  }
-}
-
-FString UScreenCreditsWidget::ConvertCreditToRTF(
-    const Cesium3DTilesSelection::Credit* credit) {
-
-  std::string html = _pCreditSystem->getHtml(*credit);
-  TidyDoc tdoc;
-  TidyBuffer docbuf = {0};
-  TidyBuffer tidy_errbuf = {0};
-  int err;
-
-  tdoc = tidyCreate();
-  tidyOptSetBool(tdoc, TidyForceOutput, yes);
-  tidyOptSetInt(tdoc, TidyWrapLen, 0);
-  tidyOptSetInt(tdoc, TidyNewline, TidyLF);
-
-  tidySetErrorBuffer(tdoc, &tidy_errbuf);
-  tidyBufInit(&docbuf);
-
-  // avoid buffer overflow by wrapping with html tags
-  html = "<span>" + html + "</span>";
-
-  tidyBufAppend(
-      &docbuf,
-      reinterpret_cast<void*>(const_cast<char*>(html.c_str())),
-      static_cast<uint>(html.size()));
-
-  err = tidyParseBuffer(tdoc, &docbuf);
-
-  std::string output, url;
-  ConvertHTMLToRTF(output, url, tdoc, tidyGetRoot(tdoc), this);
-
-  tidyBufFree(&docbuf);
-  tidyBufFree(&tidy_errbuf);
-  tidyRelease(tdoc);
-  return UTF8_TO_TCHAR(output.c_str());
-}
-
-void UScreenCreditsWidget::Update() {
-  if (!_pCreditSystem) {
+void UScreenCreditsWidget::SetPopupCredits(const FString& credits) {
+  if (_numImagesLoading != 0) {
+    Credits = credits;
     return;
   }
+  if (RichTextPopup) {
+    RichTextPopup->SetText(FText::FromString(credits));
+  }
+}
 
-  const std::vector<Cesium3DTilesSelection::Credit>& creditsToShowThisFrame =
-      _pCreditSystem->getCreditsToShowThisFrame();
+void UScreenCreditsWidget::SetOnScreenCredits(const FString& credits) {
+  if (_numImagesLoading != 0) {
+    OnScreenCredits = credits;
+    return;
+  }
+  if (RichTextOnScreen) {
+    RichTextOnScreen->SetText(FText::FromString(credits));
+  }
+}
 
-  bool CreditsUpdated =
-      creditsToShowThisFrame.size() != _lastCreditsCount ||
-      _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
-
-  if (CreditsUpdated) {
-    _lastCreditsCount = creditsToShowThisFrame.size();
-    _output.Reset();
-
-    bool first = true;
-    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
-      const Credit* credit = &creditsToShowThisFrame[i];
-      if (!_pCreditSystem->shouldBeShownOnScreen(*credit)) {
-        continue;
-      }
-      if (first) {
-        first = false;
-      } else {
-        _output += TEXT(" \u2022 ");
-      }
-      if (_creditToRTF.Contains(credit)) {
-        _output += _creditToRTF[credit];
-      } else {
-        FString convert = ConvertCreditToRTF(credit);
-        _creditToRTF.Add(credit, convert);
-        _output += convert;
-      }
-    }
-    if (RichTextOnScreen) {
-      _output += "<credits url=\"popup\" text=\" Data attribution\"/>";
-      RichTextOnScreen->SetText(FText::FromString(_output));
+UScreenCreditsWidget::~UScreenCreditsWidget() {
+  for (int i = 0; i < CreditImages.Num(); i++) {
+    if (CreditImages[i]) {
+      CreditImages[i]->ReleaseResource();
     }
   }
-  _pCreditSystem->startNextFrame();
 }
