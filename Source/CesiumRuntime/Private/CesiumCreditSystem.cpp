@@ -277,8 +277,7 @@ FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
 
   tidySetErrorBuffer(tdoc, &tidy_errbuf);
 
-  // avoid buffer overflow by wrapping with html tags
-  html = "<span>" + html + "</span>";
+  html = "<!DOCTYPE html><html><body>" + html + "</body></html>";
 
   std::string output, url;
   err = tidyParseString(tdoc, html.c_str());

@@ -10,8 +10,6 @@
 #include <string>
 #include "ScreenCreditsWidget.generated.h"
 
-struct FSlateDynamicImageBrush;
-
 DECLARE_DELEGATE(FOnPopupClicked)
 
 UCLASS()
@@ -32,8 +30,6 @@ private:
 
   void OnPopupClicked();
 
-  ~UScreenCreditsWidget();
-
   void HandleImageRequest(
       FHttpRequestPtr HttpRequest,
       FHttpResponsePtr HttpResponse,
@@ -49,12 +45,14 @@ private:
   UPROPERTY(meta = (BindWidget))
   class UBackgroundBlur* BackgroundBlur;
 
+  UPROPERTY()
+  TArray<FSlateBrush> _creditImages;
+
   FString _credits = "";
   FString _onScreenCredits = "";
   bool _showPopup = false;
   class UCreditsDecorator* _decoratorOnScreen;
   class UCreditsDecorator* _decoratorPopup;
-  TArray<FSlateDynamicImageBrush*> _creditImages;
   int32 _numImagesLoading;
   FSlateFontInfo _font;
   friend class UCreditsDecorator;

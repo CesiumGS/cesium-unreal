@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "ScreenCreditsWidget.h"
+#include "Brushes/SlateImageBrush.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/RichTextBlock.h"
 #include "Engine/Font.h"
@@ -109,7 +110,7 @@ UCreditsDecorator::CreateDecorator(URichTextBlock* InOwner) {
 
 const FSlateBrush* UCreditsDecorator::FindImageBrush(int32 id) {
   if (CreditsWidget->_creditImages.Num() > id) {
-    return CreditsWidget->_creditImages[id];
+    return &CreditsWidget->_creditImages[id];
   }
   return nullptr;
 }
@@ -167,11 +168,9 @@ void UScreenCreditsWidget::HandleImageRequest(
         FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
     texture->SRGB = true;
     texture->UpdateResource();
-    texture->AddToRoot();
-    _creditImages[id] = new FSlateDynamicImageBrush(
+    _creditImages[id] = FSlateImageBrush(
         texture,
-        FVector2D(texture->PlatformData->SizeX, texture->PlatformData->SizeY),
-        FName(HttpRequest->GetURL()));
+        FVector2D(texture->PlatformData->SizeX, texture->PlatformData->SizeY));
     // Only update credits after all of the images are done loading.
     --_numImagesLoading;
     if (_numImagesLoading == 0) {
@@ -192,18 +191,18 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
       UTexture2D* texture = FImageUtils::ImportBufferAsTexture2D(dataBuffer);
       texture->SRGB = true;
       texture->UpdateResource();
-      texture->AddToRoot();
-      _creditImages.Add(new FSlateDynamicImageBrush(
+      _creditImages.Add(FSlateImageBrush(
           texture,
-          FVector2D(texture->PlatformData->SizeX, texture->PlatformData->SizeY),
-          "Untitled"));
+          FVector2D(
+              texture->PlatformData->SizeX,
+              texture->PlatformData->SizeY)));
     }
   } else {
     ++_numImagesLoading;
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
         FHttpModule::Get().CreateRequest();
 
-    _creditImages.Add(nullptr);
+    _creditImages.AddUninitialized();
     HttpRequest->OnProcessRequestComplete().BindUObject(
         this,
         &UScreenCreditsWidget::HandleImageRequest,
@@ -229,13 +228,5 @@ void UScreenCreditsWidget::SetCredits(
   }
   if (RichTextOnScreen) {
     RichTextOnScreen->SetText(FText::FromString(InOnScreenCredits));
-  }
-}
-
-UScreenCreditsWidget::~UScreenCreditsWidget() {
-  for (int i = 0; i < _creditImages.Num(); i++) {
-    if (_creditImages[i]) {
-      _creditImages[i]->ReleaseResource();
-    }
   }
 }
