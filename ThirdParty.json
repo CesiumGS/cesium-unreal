@@ -20,6 +20,6 @@
   {
     "name": "HTML Tidy",
     "url": "https://github.com/htacg/tidy-html5",
-    "license": ["W3C Software License"]
+    "license": ["HTML Tidy License"]
   }
 ]
