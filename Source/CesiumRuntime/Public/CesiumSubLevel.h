@@ -48,7 +48,7 @@ struct FCesiumSubLevel {
       meta = (ClampMin = -90.0, ClampMax = 90.0, EditCondition = "Enabled"))
   double LevelLatitude = 0.0;
 
-    /**
+  /**
    * The WGS84 longitude in degrees of where this level should sit on the
    * globe, in the range [-180, 180]
    */

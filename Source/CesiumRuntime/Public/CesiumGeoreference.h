@@ -101,7 +101,9 @@ public:
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium|Cesium Sublevels",
-      Meta = (TitleProperty = "LevelName", DisplayName = "Georeferenced Sublevels"))
+      Meta =
+          (TitleProperty = "LevelName",
+           DisplayName = "Georeferenced Sublevels"))
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
