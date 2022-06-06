@@ -220,13 +220,14 @@ void convertHtmlToRtf(
     TidyNode tnod,
     UScreenCreditsWidget* CreditsWidget) {
   TidyNode child;
+  TidyBuffer buf;
+  tidyBufInit(&buf);
   for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
     if (tidyNodeIsText(child)) {
-      TidyBuffer buf;
-      tidyBufInit(&buf);
       tidyNodeGetText(tdoc, child, &buf);
       if (buf.bp) {
         std::string text = reinterpret_cast<const char*>(buf.bp);
+        tidyBufClear(&buf);
         // could not find correct option in tidy html to not add new lines
         if (text.size() != 0 && text[text.size() - 1] == '\n') {
           text.pop_back();
@@ -238,7 +239,6 @@ void convertHtmlToRtf(
           output += text;
         }
       }
-      tidyBufFree(&buf);
     } else if (tidyNodeGetId(child) == TidyTagId::TidyTag_IMG) {
       auto srcAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_SRC);
       if (srcAttr) {
@@ -262,6 +262,7 @@ void convertHtmlToRtf(
     }
     convertHtmlToRtf(output, parentUrl, tdoc, child, CreditsWidget);
   }
+  tidyBufFree(&buf);
 }
 } // namespace
 
@@ -281,7 +282,7 @@ FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
 
   std::string output, url;
   err = tidyParseString(tdoc, html.c_str());
-  if (err >= 0) {
+  if (err < 2) {
     convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), _creditsWidget);
   }
   tidyBufFree(&tidy_errbuf);

@@ -1,7 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "ScreenCreditsWidget.h"
-#include "Brushes/SlateImageBrush.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/RichTextBlock.h"
 #include "Engine/Font.h"
