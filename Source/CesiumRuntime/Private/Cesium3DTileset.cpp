@@ -89,6 +89,7 @@ ACesium3DTileset::ACesium3DTileset()
 
       _lastTilesVisited(0),
       _lastTilesCulled(0),
+      _lastTilesOccluded(0),
       _lastMaxDepthVisited(0),
 
       _captureMovieMode{false},
@@ -270,6 +271,14 @@ void ACesium3DTileset::SetEnableOcclusionCulling(bool bEnableOcclusionCulling) {
 void ACesium3DTileset::SetOcclusionPoolSize(int32 newOcclusionPoolSize) {
   if (this->OcclusionPoolSize != newOcclusionPoolSize) {
     this->OcclusionPoolSize = newOcclusionPoolSize;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetDelayRefinementForOcclusion(
+    bool bDelayRefinementForOcclusion) {
+  if (this->DelayRefinementForOcclusion != bDelayRefinementForOcclusion) {
+    this->DelayRefinementForOcclusion = bDelayRefinementForOcclusion;
     this->DestroyTileset();
   }
 }
@@ -853,7 +862,9 @@ void ACesium3DTileset::LoadTileset() {
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),
-      pBoundingVolumePool->getPool()};
+      (this->EnableOcclusionCulling && pBoundingVolumePool)
+          ? pBoundingVolumePool->getPool()
+          : nullptr};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
@@ -861,6 +872,7 @@ void ACesium3DTileset::LoadTileset() {
 
   options.enableOcclusionCulling = this->EnableOcclusionCulling;
   options.occlusionPoolSize = static_cast<uint32_t>(this->OcclusionPoolSize);
+  options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
 
   options.showCreditsOnScreen = ShowCreditsOnScreen;
 
@@ -1512,7 +1524,9 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableOcclusionCulling = this->EnableOcclusionCulling;
+
   options.occlusionPoolSize = static_cast<uint32_t>(this->OcclusionPoolSize);
+  options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
@@ -1533,6 +1547,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.tilesVisited != this->_lastTilesVisited ||
       result.culledTilesVisited != this->_lastCulledTilesVisited ||
       result.tilesCulled != this->_lastTilesCulled ||
+      result.tilesOccluded != this->_lastTilesOccluded ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
@@ -1543,13 +1558,14 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     this->_lastTilesVisited = result.tilesVisited;
     this->_lastCulledTilesVisited = result.culledTilesVisited;
     this->_lastTilesCulled = result.tilesCulled;
+    this->_lastTilesOccluded = result.tilesOccluded;
     this->_lastMaxDepthVisited = result.maxDepthVisited;
 
     UE_LOG(
         LogCesium,
         Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,
@@ -1557,6 +1573,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.culledTilesVisited,
         result.tilesToRenderThisFrame.size(),
         result.tilesCulled,
+        result.tilesOccluded,
         result.maxDepthVisited,
         result.tilesLoadingLowPriority,
         result.tilesLoadingMediumPriority,

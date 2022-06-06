@@ -306,6 +306,17 @@ public:
   bool EnableFrustumCulling = true;
 
   /**
+   * Whether to cull tiles that are occluded by fog.
+   *
+   * This does not refer to the atmospheric fog of the Unreal Engine,
+   * but to an internal representation of fog: Depending on the height
+   * of the camera above the ground, tiles that are far away (close to
+   * the horizon) will be culled when this flag is enabled.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  bool EnableFogCulling = true;
+
+  /**
    * Whether to cull tiles that are occluded.
    *
    * When enabled, this feature will use Unreal's occlusion system to determine
@@ -325,7 +336,7 @@ public:
       EditAnywhere,
       BlueprintGetter = GetEnableOcclusionCulling,
       BlueprintSetter = SetEnableOcclusionCulling,
-      Category = "Cesium|Tile Culling")
+      Category = "Cesium|Tile Culling|Experimental")
   bool EnableOcclusionCulling = true;
 
   /**
@@ -338,7 +349,7 @@ public:
       EditAnywhere,
       BlueprintGetter = GetOcclusionPoolSize,
       BlueprintSetter = SetOcclusionPoolSize,
-      Category = "Cesium|Tile Culling",
+      Category = "Cesium|Tile Culling|Experimental",
       meta =
           (EditCondition = "EnableOcclusionCulling",
            ClampMin = "0",
@@ -346,15 +357,20 @@ public:
   int32 OcclusionPoolSize = 500;
 
   /**
-   * Whether to cull tiles that are occluded by fog.
+   * Whether to wait for valid occlusion results before refining tiles.
    *
-   * This does not refer to the atmospheric fog of the Unreal Engine,
-   * but to an internal representation of fog: Depending on the height
-   * of the camera above the ground, tiles that are far away (close to
-   * the horizon) will be culled when this flag is enabled.
+   * Only applicable when EnableOcclusionCulling is enabled. When this option
+   * is enabled, there may be small delays before tiles are refined, but there
+   * may be an overall performance advantage by avoiding loads of descendants
+   * that will be found to be occluded.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
-  bool EnableFogCulling = true;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetDelayRefinementForOcclusion,
+      BlueprintSetter = SetDelayRefinementForOcclusion,
+      Category = "Cesium|Tile Culling|Experimental",
+      meta = (EditCondition = "EnableOcclusionCulling"))
+  bool DelayRefinementForOcclusion = true;
 
   /**
    * Whether a specified screen-space error should be enforced for tiles that
@@ -683,17 +699,25 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
 
-  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling")
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   bool GetEnableOcclusionCulling() const { return EnableOcclusionCulling; }
 
-  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling")
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
   void SetEnableOcclusionCulling(bool bEnableOcclusionCulling);
 
-  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling")
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   int32 GetOcclusionPoolSize() const { return OcclusionPoolSize; }
 
-  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling")
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
   void SetOcclusionPoolSize(int32 newOcclusionPoolSize);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
+  bool GetDelayRefinementForOcclusion() const {
+    return DelayRefinementForOcclusion;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
+  void SetDelayRefinementForOcclusion(bool bDelayRefinementForOcclusion);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
   bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
@@ -901,6 +925,7 @@ private:
   uint32_t _lastTilesVisited;
   uint32_t _lastCulledTilesVisited;
   uint32_t _lastTilesCulled;
+  uint32_t _lastTilesOccluded;
   uint32_t _lastMaxDepthVisited;
 
   std::chrono::high_resolution_clock::time_point _startTime;

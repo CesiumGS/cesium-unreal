@@ -85,7 +85,7 @@ public:
   // bool AllowApproximateOcclusion() const override {
   //  return true;
   //}
-  /*
+  /** /
     void GetDynamicMeshElements(
         const TArray<const FSceneView*>& Views,
         const FSceneViewFamily& ViewFamily,
@@ -98,7 +98,7 @@ public:
             GetBounds().GetBox(),
             FColor(72, 72, 255),
             DrawBoundsDPG);
-        /*!Owner || IsSelected()* /
+        //!Owner || IsSelected()
       }
     }
 
@@ -109,7 +109,7 @@ public:
       Result.bDynamicRelevance = true;
       // Result.bEditorPrimitiveRelevance = true;
       return Result;
-    }*/
+    }/**/
 
   SIZE_T GetTypeHash() const override {
     static size_t UniquePointer;
