@@ -26,6 +26,7 @@ public:
 
 private:
   UScreenCreditsWidget(const FObjectInitializer& ObjectInitializer);
+  ~UScreenCreditsWidget();
   virtual void NativeConstruct() override;
 
   void OnPopupClicked();
@@ -45,9 +46,6 @@ private:
   UPROPERTY(meta = (BindWidget))
   class UBackgroundBlur* BackgroundBlur;
 
-  UPROPERTY()
-  TArray<FSlateBrush> _creditImages;
-
   FString _credits = "";
   FString _onScreenCredits = "";
   bool _showPopup = false;
@@ -55,6 +53,7 @@ private:
   class UCreditsDecorator* _decoratorPopup;
   int32 _numImagesLoading;
   FSlateFontInfo _font;
+  TArray<FSlateBrush*> _creditImages;
   friend class UCreditsDecorator;
 };
 

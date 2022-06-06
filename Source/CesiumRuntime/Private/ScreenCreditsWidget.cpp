@@ -109,7 +109,7 @@ UCreditsDecorator::CreateDecorator(URichTextBlock* InOwner) {
 
 const FSlateBrush* UCreditsDecorator::FindImageBrush(int32 id) {
   if (CreditsWidget->_creditImages.Num() > id) {
-    return &CreditsWidget->_creditImages[id];
+    return CreditsWidget->_creditImages[id];
   }
   return nullptr;
 }
@@ -120,6 +120,14 @@ UScreenCreditsWidget::UScreenCreditsWidget(
   static ConstructorHelpers::FObjectFinder<UFont> RobotoFontObj(
       *UWidget::GetDefaultFontName());
   _font = FSlateFontInfo(RobotoFontObj.Object, 8);
+}
+
+UScreenCreditsWidget::~UScreenCreditsWidget() {
+  for (int i = 0; i < _creditImages.Num(); i++) {
+    if (_creditImages[i]) {
+      delete _creditImages[i];
+    }
+  }
 }
 
 void UScreenCreditsWidget::OnPopupClicked() {
@@ -167,7 +175,8 @@ void UScreenCreditsWidget::HandleImageRequest(
         FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
     texture->SRGB = true;
     texture->UpdateResource();
-    _creditImages[id] = FSlateImageBrush(
+    texture->AddToRoot();
+    _creditImages[id] = new FSlateImageBrush(
         texture,
         FVector2D(texture->PlatformData->SizeX, texture->PlatformData->SizeY));
     // Only update credits after all of the images are done loading.
@@ -190,7 +199,8 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
       UTexture2D* texture = FImageUtils::ImportBufferAsTexture2D(dataBuffer);
       texture->SRGB = true;
       texture->UpdateResource();
-      _creditImages.Add(FSlateImageBrush(
+      texture->AddToRoot();
+      _creditImages.Add(new FSlateImageBrush(
           texture,
           FVector2D(
               texture->PlatformData->SizeX,
