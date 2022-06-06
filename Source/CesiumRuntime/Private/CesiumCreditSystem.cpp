@@ -267,7 +267,6 @@ void convertHtmlToRtf(
 
 FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
   TidyDoc tdoc;
-  TidyBuffer docbuf = {0};
   TidyBuffer tidy_errbuf = {0};
   int err;
 
@@ -277,22 +276,15 @@ FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
   tidyOptSetInt(tdoc, TidyNewline, TidyLF);
 
   tidySetErrorBuffer(tdoc, &tidy_errbuf);
-  tidyBufInit(&docbuf);
 
   // avoid buffer overflow by wrapping with html tags
   html = "<span>" + html + "</span>";
 
-  tidyBufAppend(
-      &docbuf,
-      reinterpret_cast<void*>(const_cast<char*>(html.c_str())),
-      static_cast<uint>(html.size()));
-
   std::string output, url;
-  err = tidyParseBuffer(tdoc, &docbuf);
+  err = tidyParseString(tdoc, html.c_str());
   if (err >= 0) {
     convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), _creditsWidget);
   }
-  tidyBufFree(&docbuf);
   tidyBufFree(&tidy_errbuf);
   tidyRelease(tdoc);
   return UTF8_TO_TCHAR(output.c_str());
