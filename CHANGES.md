@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.???
+
+##### Fixes :wrench:
+- Swapped latitude and longitude parameters on georeferenced sublevels to match with the main georeference.
+- Adjusted the presentation of sublevels in the Cesium Georeference details panel.
+
 ### v1.14.0 - 2022-06-01
 
 ##### Breaking Changes :mega:
