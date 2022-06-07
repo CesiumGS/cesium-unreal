@@ -1692,7 +1692,7 @@ void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
               isDefinite = true;
 
               if (pBoundingVolume->isOccluded()) {
-                if (pHistory->LastPixelsPercentage > 0.1f) {
+                if (pHistory->LastPixelsPercentage > 0.01f) {
                   isOccluded = false;
                   break;
                 }

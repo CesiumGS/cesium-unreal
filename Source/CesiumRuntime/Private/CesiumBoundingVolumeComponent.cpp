@@ -14,8 +14,8 @@ using namespace Cesium3DTilesSelection;
 UCesiumBoundingVolumePoolComponent::UCesiumBoundingVolumePoolComponent()
     : _cesiumToUnreal(1.0) {
   this->_pPool = std::make_shared<UCesiumBoundingVolumePool>(this);
-  SetMobility(EComponentMobility::Static);
-  // SetMobility(EComponentMobility::Movable);
+  // SetMobility(EComponentMobility::Static);
+  SetMobility(EComponentMobility::Movable);
 }
 
 TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
@@ -28,8 +28,8 @@ TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
   // TODO: check if we can get away with this, may need to explicitly recreate
   // the scene proxy when georeference changes, reassigned to a different tile,
   // etc.
-  pBoundingVolume->SetMobility(EComponentMobility::Static);
-  // pBoundingVolume->SetMobility(EComponentMobility::Movable);
+  // pBoundingVolume->SetMobility(EComponentMobility::Static);
+  pBoundingVolume->SetMobility(EComponentMobility::Movable);
   pBoundingVolume->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pBoundingVolume->SetupAttachment(this);

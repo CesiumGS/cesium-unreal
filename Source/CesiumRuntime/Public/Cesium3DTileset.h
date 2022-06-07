@@ -16,6 +16,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
 #include <PhysicsEngine/BodyInstance.h>
+#include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
@@ -838,9 +839,8 @@ private:
   std::vector<FCesiumCamera> GetPlayerCameras() const;
   std::vector<FCesiumCamera> GetSceneCaptures() const;
 
-  // TODO: Does this need to be atomic? Is it already atomic?
   // Whether we are waiting for occlusion results from the render thread.
-  bool WaitingForOcclusion = false;
+  std::atomic<bool> WaitingForOcclusion = false;
 
   // Dispatches a render thread task to retrieves occlusion information.
   void RetrieveOccludedBoundingVolumes(
