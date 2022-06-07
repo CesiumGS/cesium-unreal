@@ -46,6 +46,9 @@ private:
   UPROPERTY(meta = (BindWidget))
   class UBackgroundBlur* BackgroundBlur;
 
+  UPROPERTY()
+  TArray<UTexture2D*> _textures;
+
   FString _credits = "";
   FString _onScreenCredits = "";
   bool _showPopup = false;

@@ -175,7 +175,7 @@ void UScreenCreditsWidget::HandleImageRequest(
         FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
     texture->SRGB = true;
     texture->UpdateResource();
-    texture->AddToRoot();
+    _textures.Add(texture);
     _creditImages[id] = new FSlateImageBrush(
         texture,
         FVector2D(texture->PlatformData->SizeX, texture->PlatformData->SizeY));
@@ -199,7 +199,7 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
       UTexture2D* texture = FImageUtils::ImportBufferAsTexture2D(dataBuffer);
       texture->SRGB = true;
       texture->UpdateResource();
-      texture->AddToRoot();
+      _textures.Add(texture);
       _creditImages.Add(new FSlateImageBrush(
           texture,
           FVector2D(
