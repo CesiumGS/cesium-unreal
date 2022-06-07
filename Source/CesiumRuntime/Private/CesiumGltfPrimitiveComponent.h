@@ -51,8 +51,6 @@ public:
    */
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
-  FPrimitiveSceneProxy* CreateSceneProxy() override;
-
   virtual void BeginDestroy() override;
 
   virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const;
