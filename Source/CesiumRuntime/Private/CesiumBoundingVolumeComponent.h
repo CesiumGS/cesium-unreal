@@ -81,20 +81,11 @@ public:
   FPrimitiveSceneProxy* CreateSceneProxy() override;
 
   /**
-   * Set the occlusion result for this bounding volume, or nullopt if there
-   * was not a definitive occlusion result this frame.
+   * Set the occlusion result for this bounding volume.
    *
    * @param isOccluded The occlusion result.
    */
-  void SetOcclusionResult_RenderThread(const std::optional<bool>& isOccluded);
-
-  /**
-   * Notifies that the render thread occlusion retrieval task is complete and
-   * has not been re-queued up yet. Upon receiving this notification, the
-   * component will save the render thread result onto a game thread
-   * reflection. Called on the game thread.
-   */
-  void SyncOcclusionResult();
+  void SetOcclusionResult(bool isOccluded);
 
   /**
    * Updates this component's transform from a new double-precision
@@ -110,32 +101,27 @@ public:
 
   bool ShouldRecreateProxyOnUpdateTransform() const override { return true; }
 
+  bool IsMappedToTile() const { return this->_isMapped; }
+
   // virtual void BeginDestroy() override;
 
   // TileOcclusionRendererProxy implementation
   bool isOccluded() const override;
 
-  int32_t getLastUpdatedFrame() const override;
+  bool isOcclusionAvailable() const override;
 
 protected:
   void reset(const Cesium3DTilesSelection::Tile* pTile) override;
 
-  void update(int32_t currentFrame) override;
-
 private:
   void _updateTransform();
 
-  // Updated in render thread
-  std::optional<bool> _isOccluded_RenderThread;
-
-  // Game thread safe information. Synced from the render thread result
   bool _isOccluded = false;
-  bool _occlusionUpdatedThisFrame = false;
-  int32_t _lastUpdatedFrame = -1000;
+  bool _isOcclusionAvailable = false;
 
-  // TODO:
-  // Do these need to be accessed on the game thread, render thread?
-  // Do they get reloaded on render state reload?
+  // Whether this proxy is currently mapped to a tile.
+  bool _isMapped = false;
+
   Cesium3DTilesSelection::BoundingVolume _tileBounds =
       CesiumGeometry::OrientedBoundingBox(glm::dvec3(0.0), glm::dmat3(1.0));
   glm::dmat4 _tileTransform;

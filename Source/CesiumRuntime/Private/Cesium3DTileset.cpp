@@ -1658,60 +1658,57 @@ public:
 template struct Rob<ULocalPlayer_Hack, &ULocalPlayer::ViewStates>;
 } // namespace
 
-void ACesium3DTileset::RetrieveOccludedBoundingVolumes(
-    TArray<FSceneViewState*>&& views,
-    TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes) {
-  // I think passing UPrimitiveComponent to render thread is safe, UE4 uses
-  // some sort of fencing to make sure primitive components don't get GC'd
-  // during the render thread. I'm less sure if it's thread safe with how we
-  // manually destroy resources from the component.
+void ACesium3DTileset::RetrieveOcclusionResults(
+    TArray<FSceneViewState*>&& views) {
+  this->OcclusionResults.clear();
+  this->OcclusionResults.reserve(this->OcclusionRequests.size());
   this->WaitingForOcclusion = true;
   ENQUEUE_RENDER_COMMAND(RetrieveOccludedPrimitives)
   ([views = std::move(views),
-    boundingVolumes = std::move(boundingVolumes),
-    &WaitingForOcclusion =
-        this->WaitingForOcclusion](FRHICommandList& RHICmdList) {
-    for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
-      if (pBoundingVolume) {
-        // Check that the primitive is definitely occluded in every view.
-        bool isOccluded = false;
-        bool isDefinite = true;
-        for (FSceneViewState* pViewState : views) {
-          if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
-            FPrimitiveOcclusionHistory* pHistory =
-                pViewState->PrimitiveOcclusionHistorySet.Find(
-                    FPrimitiveOcclusionHistoryKey(
-                        pBoundingVolume->ComponentId,
-                        0));
-            if (pHistory) {
-              if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
-                isDefinite = false;
+    &WaitingForOcclusion = this->WaitingForOcclusion,
+    &OcclusionRequests = this->OcclusionRequests,
+    &OcclusionResults = this->OcclusionResults](FRHICommandList& RHICmdList) {
+    for (const OcclusionRequest& occlusionRequest : OcclusionRequests) {
+      // Check that the primitive is definitely occluded in every view.
+      bool isOccluded = false;
+      bool isDefinite = true;
+      for (FSceneViewState* pViewState : views) {
+        if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
+          FPrimitiveOcclusionHistory* pHistory =
+              pViewState->PrimitiveOcclusionHistorySet.Find(
+                  FPrimitiveOcclusionHistoryKey(
+                      occlusionRequest.primitiveId,
+                      0));
+          if (pHistory) {
+            if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
+              isDefinite = false;
+              break;
+            }
+
+            isDefinite = true;
+
+            if (occlusionRequest.currentOcclusionState) {
+              if (pHistory->LastPixelsPercentage > 0.01f) {
+                isOccluded = false;
                 break;
               }
-
-              isDefinite = true;
-
-              if (pBoundingVolume->isOccluded()) {
-                if (pHistory->LastPixelsPercentage > 0.01f) {
-                  isOccluded = false;
-                  break;
-                }
-              } else {
-                if (!pHistory->WasOccludedLastFrame) {
-                  // pHistory->LastPixelsPercentage > 0.0f) {
-                  isOccluded = false;
-                  break;
-                }
+            } else {
+              if (!pHistory->WasOccludedLastFrame) {
+                // pHistory->LastPixelsPercentage > 0.0f) {
+                isOccluded = false;
+                break;
               }
-
-              isOccluded = true;
             }
+
+            isOccluded = true;
           }
         }
+      }
 
-        if (isDefinite) {
-          pBoundingVolume->SetOcclusionResult_RenderThread(isOccluded);
-        }
+      if (isDefinite) {
+        OcclusionResults.emplace(
+            occlusionRequest.primitiveId.PrimIDValue,
+            isOccluded);
       }
     }
 
@@ -1724,11 +1721,24 @@ void ACesium3DTileset::TickOcclusionHandling() {
     TArray<UCesiumBoundingVolumeComponent*> boundingVolumes;
     this->GetComponents<UCesiumBoundingVolumeComponent>(boundingVolumes, false);
 
+    this->OcclusionRequests.clear();
+    this->OcclusionRequests.reserve(boundingVolumes.Num());
+
     // We are not waiting on the render thread, we can let the primitives know
     // about the last-received occlusion info.
     for (UCesiumBoundingVolumeComponent* pBoundingVolume : boundingVolumes) {
-      if (pBoundingVolume) {
-        pBoundingVolume->SyncOcclusionResult();
+      if (pBoundingVolume && pBoundingVolume->IsMappedToTile()) {
+        // Pass on occlusion result for this bounding volume, if one exists.
+        auto occlusionResultIt = this->OcclusionResults.find(
+            pBoundingVolume->ComponentId.PrimIDValue);
+        if (occlusionResultIt != this->OcclusionResults.end()) {
+          pBoundingVolume->SetOcclusionResult(occlusionResultIt->second);
+        }
+
+        // Create new occlusion request for this bounding volume.
+        this->OcclusionRequests.push_back(OcclusionRequest{
+            pBoundingVolume->ComponentId,
+            pBoundingVolume->isOccluded()});
       }
     }
 
@@ -1763,9 +1773,7 @@ void ACesium3DTileset::TickOcclusionHandling() {
     }
 #endif
 
-    this->RetrieveOccludedBoundingVolumes(
-        std::move(views),
-        std::move(boundingVolumes));
+    this->RetrieveOcclusionResults(std::move(views));
   }
 }
 

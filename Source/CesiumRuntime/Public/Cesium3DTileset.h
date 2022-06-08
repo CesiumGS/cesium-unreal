@@ -842,10 +842,22 @@ private:
   // Whether we are waiting for occlusion results from the render thread.
   std::atomic<bool> WaitingForOcclusion = false;
 
+  struct OcclusionRequest {
+    FPrimitiveComponentId primitiveId;
+    bool currentOcclusionState;
+  };
+
+  // The bounding volume primitive IDs to retrieve occlusion for along with
+  // their current states. Only safe to modify on the game thread when
+  // WaitingForOcclusion is false.
+  std::vector<OcclusionRequest> OcclusionRequests;
+
+  // The results of the occlusion retrieval, only safe to access on the game
+  // thread when WaitingForOcclusion is false.
+  std::unordered_map<uint32_t, bool> OcclusionResults;
+
   // Dispatches a render thread task to retrieves occlusion information.
-  void RetrieveOccludedBoundingVolumes(
-      TArray<FSceneViewState*>&& views,
-      TArray<UCesiumBoundingVolumeComponent*>&& boundingVolumes);
+  void RetrieveOcclusionResults(TArray<FSceneViewState*>&& views);
 
   // Polls to check whether the render thread occlusion retrieval task is done,
   // syncs render thread results to the game thread, and dispatches a new
