@@ -254,7 +254,7 @@ std::string UScreenCreditsWidget::LoadImage(const std::string& url) {
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest =
         FHttpModule::Get().CreateRequest();
 
-    _creditImages.AddUninitialized();
+    _creditImages.AddDefaulted();
     HttpRequest->OnProcessRequestComplete().BindUObject(
         this,
         &UScreenCreditsWidget::HandleImageRequest,
