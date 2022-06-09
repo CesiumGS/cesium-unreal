@@ -28,33 +28,69 @@ public:
   SLATE_END_ARGS()
 
 public:
+  void Construct(const FArguments& InArgs, const FSlateBrush* Brush) {
+    if (ensure(Brush)) {
+      ChildSlot[SNew(SBox).VAlign(VAlign_Center)[SNew(SImage).Image(Brush)]];
+    }
+  }
+};
+
+class SInlineHyperlinkImage : public SCompoundWidget {
+public:
+  SLATE_BEGIN_ARGS(SRichInlineImage) {}
+  SLATE_END_ARGS()
+
+public:
   void Construct(
       const FArguments& InArgs,
       const FSlateBrush* Brush,
-      const FString& url,
-      const FString& text,
-      const FTextBlockStyle& TextStyle,
-      UCreditsDecorator* InDecorator) {
-    if (Brush) {
-      ChildSlot[SNew(SBox).VAlign(
-          VAlign_Center)[SNew(SImage).Image(Brush).OnMouseButtonDown_Lambda(
-          [url](const FGeometry&, const FPointerEvent&) -> FReply {
-            FPlatformProcess::LaunchURL(*url, NULL, NULL);
-            return FReply::Handled();
-          })]];
-    } else {
+      const FString& Url) {
+    if (ensure(Brush)) {
+      ButtonStyle.SetNormal(*Brush);
+      ButtonStyle.SetHovered(*Brush);
+      ButtonStyle.SetPressed(*Brush);
+      HyperlinkStyle.SetUnderlineStyle(ButtonStyle);
+
       TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> model =
           MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
+
       ChildSlot[SNew(SRichTextHyperlink, model.ToSharedRef())
-                    .Text(FText::FromString(text))
-                    .OnNavigate_Lambda([url, InDecorator]() {
-                      if (url.Equals("popup")) {
-                        InDecorator->PopupClicked.Execute();
-                      } else {
-                        FPlatformProcess::LaunchURL(*url, NULL, NULL);
-                      }
+                    .Style(&HyperlinkStyle)
+                    .OnNavigate_Lambda([Url]() {
+                      FPlatformProcess::LaunchURL(*Url, NULL, NULL);
                     })];
     }
+  }
+
+private:
+  FButtonStyle ButtonStyle;
+  FHyperlinkStyle HyperlinkStyle;
+};
+
+class SInlineHyperlinkText : public SCompoundWidget {
+public:
+  SLATE_BEGIN_ARGS(SRichInlineImage) {}
+  SLATE_END_ARGS()
+
+public:
+  void Construct(
+      const FArguments& InArgs,
+      const FString& Text,
+      const FString& Url,
+      const UCreditsDecorator* InDecorator) {
+
+    TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> model =
+        MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
+
+    ChildSlot[SNew(SRichTextHyperlink, model.ToSharedRef())
+                  .Text(FText::FromString(Text))
+                  .OnNavigate_Lambda([Url, InDecorator]() {
+                    if (Url.Equals("popup")) {
+                      InDecorator->PopupClicked.Execute();
+                    } else {
+                      FPlatformProcess::LaunchURL(*Url, NULL, NULL);
+                    }
+                  })];
   }
 };
 
@@ -77,21 +113,28 @@ public:
 protected:
   virtual TSharedPtr<SWidget> CreateDecoratorWidget(
       const FTextRunInfo& RunInfo,
-      const FTextBlockStyle& TextStyle) const override {
-    FString url;
-    FString text;
+      const FTextBlockStyle&) const override {
+    FString Text;
+    FString Url;
     const FSlateBrush* Brush = nullptr;
     if (RunInfo.MetaData.Contains(TEXT("url"))) {
-      url = *RunInfo.MetaData[TEXT("url")];
+      Url = *RunInfo.MetaData[TEXT("url")];
     }
     if (RunInfo.MetaData.Contains(TEXT("text"))) {
-      text = *RunInfo.MetaData[TEXT("text")];
+      Text = *RunInfo.MetaData[TEXT("text")];
     }
     if (RunInfo.MetaData.Contains(TEXT("id"))) {
       int32 id = FCString::Atoi(*RunInfo.MetaData[TEXT("id")]);
       Brush = Decorator->FindImageBrush(id);
     }
-    return SNew(SRichInlineImage, Brush, url, text, TextStyle, Decorator);
+    if (Brush) {
+      if (Url.IsEmpty()) {
+        return SNew(SRichInlineImage, Brush);
+      } else {
+        return SNew(SInlineHyperlinkImage, Brush, Url);
+      }
+    } else
+      return SNew(SInlineHyperlinkText, Text, Url, Decorator);
   }
 
 private:
