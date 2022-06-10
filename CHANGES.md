@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
+
 ### v1.14.0 - 2022-06-01
 
 ##### Breaking Changes :mega:
