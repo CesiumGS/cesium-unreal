@@ -105,6 +105,10 @@
 
   UBodySetup* pBodySetup = Cast<UBodySetup>(pObject);
   if (pBodySetup) {
+    pBodySetup->UVInfo.IndexBuffer.Empty();
+    pBodySetup->UVInfo.VertPositions.Empty();
+    pBodySetup->UVInfo.VertUVs.Empty();
+    pBodySetup->FaceRemap.Empty();
     pBodySetup->ClearPhysicsMeshes();
   }
 }
