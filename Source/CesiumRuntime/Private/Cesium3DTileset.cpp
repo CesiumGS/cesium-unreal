@@ -40,6 +40,7 @@
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/UserInterfaceSettings.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
@@ -1224,7 +1225,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
-    const glm::dmat4& unrealWorldToTileset) {
+    const glm::dmat4& unrealWorldToTileset,
+    EDPIScaling DPIScaling) {
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
@@ -1256,6 +1258,29 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   double verticalFieldOfView =
       atan(tan(horizontalFieldOfView * 0.5) / actualAspectRatio) * 2.0;
 
+  bool scaleUsingDPI;
+  switch (DPIScaling) {
+  case (EDPIScaling::UseProjectDefault):
+    scaleUsingDPI =
+        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
+    break;
+  case (EDPIScaling::Yes):
+    scaleUsingDPI = true;
+    break;
+  case (EDPIScaling::No):
+    scaleUsingDPI = false;
+    break;
+  default:
+    scaleUsingDPI = true;
+  }
+
+  float dpiScale = scaleUsingDPI
+                       ? GetDefault<UUserInterfaceSettings>(
+                             UUserInterfaceSettings::StaticClass())
+                             ->GetDPIScaleBasedOnSize(
+                                 FIntPoint((int32)size.x, (int32)size.y))
+                       : 1.0;
+
   FVector direction = camera.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
   FVector up = camera.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
@@ -1274,7 +1299,8 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       tilesetCameraUp,
       size,
       horizontalFieldOfView,
-      verticalFieldOfView);
+      verticalFieldOfView,
+      dpiScale);
 }
 
 #if WITH_EDITOR
@@ -1617,8 +1643,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(
-        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+    frustums.push_back(CreateViewStateFromViewParameters(
+        camera,
+        unrealWorldToTileset,
+        DPIScaling));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
