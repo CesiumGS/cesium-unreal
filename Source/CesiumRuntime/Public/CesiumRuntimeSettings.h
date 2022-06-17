@@ -37,10 +37,4 @@ public:
       Category = "Cesium ion",
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
-
-  UPROPERTY(
-      Config,
-      EditAnywhere,
-      meta = (DisplayName = "Scale Level-of-Detail by Display DPI"))
-  bool ScaleLevelOfDetailByDPI;
 };

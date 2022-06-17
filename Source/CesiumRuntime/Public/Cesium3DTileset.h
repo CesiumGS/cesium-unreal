@@ -54,9 +54,6 @@ enum class ETilesetSource : uint8 {
   FromUrl UMETA(DisplayName = "From Url")
 };
 
-UENUM(BlueprintType)
-enum class EDPIScaling : uint8 { Yes, No, UseProjectDefault };
-
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
   GENERATED_BODY()
@@ -211,12 +208,6 @@ public:
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
   float MaximumScreenSpaceError = 16.0;
-
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium|Level of Detail")
-  EDPIScaling DPIScaling = EDPIScaling::UseProjectDefault;
 
   /**
    * Whether to preload ancestor tiles.
@@ -761,8 +752,7 @@ private:
 
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const FCesiumCamera& camera,
-      const glm::dmat4& unrealWorldToTileset,
-      EDPIScaling DPIScaling);
+      const glm::dmat4& unrealWorldToTileset);
 
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
