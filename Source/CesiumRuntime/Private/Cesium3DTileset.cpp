@@ -1224,7 +1224,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
-    const glm::dmat4& unrealWorldToTileset) {
+    const glm::dmat4& unrealWorldToTileset,
+    float dpiScaleFactor) {
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
@@ -1267,6 +1268,8 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
+
+  size /= dpiScaleFactor;
 
   return Cesium3DTilesSelection::ViewState::create(
       tilesetCameraLocation,
@@ -1615,10 +1618,18 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   glm::dmat4 unrealWorldToTileset = glm::affineInverse(
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
+  float dpiScaleFactor = 1.0f;
+  if (this->GetWorld() && this->GetWorld()->GetGameViewport()) {
+    dpiScaleFactor =
+        this->GetWorld()->GetGameViewport()->GetWindow()->GetDPIScaleFactor();
+  }
+
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(
-        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+    frustums.push_back(CreateViewStateFromViewParameters(
+        camera,
+        unrealWorldToTileset,
+        dpiScaleFactor));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
