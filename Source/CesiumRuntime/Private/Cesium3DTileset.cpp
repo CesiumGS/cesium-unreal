@@ -44,6 +44,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
+#include "GenericPlatform/GenericPlatformApplicationMisc.h"
 #include "HAL/FileManager.h"
 #include "HttpModule.h"
 #include "IPhysXCookingModule.h"
@@ -1224,7 +1225,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
-    const glm::dmat4& unrealWorldToTileset) {
+    const glm::dmat4& unrealWorldToTileset,
+    float dpiScaleFactor) {
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
@@ -1615,10 +1617,16 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   glm::dmat4 unrealWorldToTileset = glm::affineInverse(
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
+  int32 screenDensity;
+  FGenericPlatformApplicationMisc::GetPhysicalScreenDensity(screenDensity);
+  float dpiScaleFactor = screenDensity / 96.0f;
+
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(
-        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+    frustums.push_back(CreateViewStateFromViewParameters(
+        camera,
+        unrealWorldToTileset,
+        dpiScaleFactor));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
