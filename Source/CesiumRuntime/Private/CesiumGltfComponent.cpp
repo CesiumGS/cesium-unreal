@@ -2116,7 +2116,7 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
 #if ENGINE_MAJOR_VERSION >= 5
       if (!IsValid(pMaterial)) {
 #else
-      if (pMaterial->IsPendingKillOrUnreachable()) {
+      if (!IsValid(pMaterial) || pMaterial->IsPendingKillOrUnreachable()) {
 #endif
         // Don't try to update the material while it's in the process of being
         // destroyed. This can lead to the render thread freaking out when

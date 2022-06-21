@@ -1,10 +1,38 @@
 # Change Log
 
-### ? - ?
+### ? - ????
+
+##### Additions :tada:
+
+- Display credits using Rich Text Block instead of the Web Browser Widget.
 
 ##### Fixes :wrench:
 
+- Swapped latitude and longitude parameters on georeferenced sublevels to match with the main georeference.
+- Adjusted the presentation of sublevels in the Cesium Georeference details panel.
+- We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
+
+### v1.14.0 - 2022-06-01
+
+##### Breaking Changes :mega:
+
+- Renamed `ExcludeTilesInside` to `ExcludeSelectedTiles` on the `CesiumPolygonRasterOverlay`. A core redirect was added to remap the property value in existing projects.
+
+##### Additions :tada:
+
+- Added the `InvertSelection` option on `CesiumPolygonRasterOverlay` to rasterize outside the selection instead of inside. When used in conjunction with the `ExcludeSelectedTiles` option, tiles completely outside the polygon selection will be culled, instead of the tiles inside.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.1 to v0.16.0, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.13.2 - 2022-05-13
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause a crash after applying a non-UMaterialInstanceDynamic material to a tileset.
 - Fixed a bug introduced in v1.13.0 that could lead to incorrect axis-aligned bounding boxes.
+- Gave initial values to some fields in UStructs that did not have them, including two `UObject` pointers.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.1 to v0.15.2, fixing an important bug and updating some third-party libraries. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.13.1 - 2022-05-05
 

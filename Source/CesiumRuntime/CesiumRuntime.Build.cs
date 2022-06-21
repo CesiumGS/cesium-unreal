@@ -102,6 +102,15 @@ public class CesiumRuntime : ModuleRules
             PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
         }
 
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            libs = libs.Concat(new string[] { "tidy_static" }).ToArray();
+        }
+        else
+        {
+            libs = libs.Concat(new string[] { "tidy" }).ToArray();
+        }
+
         if (preferDebug)
         {
             // We prefer Debug, but might still use Release if that's all that's available.
@@ -143,6 +152,7 @@ public class CesiumRuntime : ModuleRules
                 "RenderCore",
                 "SunPosition",
                 "DeveloperSettings",
+                "UMG",
                 "RenderCore",
                 "Renderer"
             }
@@ -163,6 +173,7 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_XYZW_ONLY",
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
+                "TIDY_STATIC"
                 //"CESIUM_TRACING_ENABLED"
             }
         );
