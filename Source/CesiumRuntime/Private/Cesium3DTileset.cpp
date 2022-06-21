@@ -90,6 +90,7 @@ ACesium3DTileset::ACesium3DTileset()
       _lastTilesVisited(0),
       _lastTilesCulled(0),
       _lastTilesOccluded(0),
+      _lastTilesWaitingForOcclusionResults(0),
       _lastMaxDepthVisited(0),
 
       _captureMovieMode{false},
@@ -1548,6 +1549,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.culledTilesVisited != this->_lastCulledTilesVisited ||
       result.tilesCulled != this->_lastTilesCulled ||
       result.tilesOccluded != this->_lastTilesOccluded ||
+      result.tilesWaitingForOcclusionResults != this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
@@ -1559,13 +1561,15 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     this->_lastCulledTilesVisited = result.culledTilesVisited;
     this->_lastTilesCulled = result.tilesCulled;
     this->_lastTilesOccluded = result.tilesOccluded;
+    this->_lastTilesWaitingForOcclusionResults =
+        result.tilesWaitingForOcclusionResults;
     this->_lastMaxDepthVisited = result.maxDepthVisited;
 
     UE_LOG(
         LogCesium,
         Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,
@@ -1574,6 +1578,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.tilesToRenderThisFrame.size(),
         result.tilesCulled,
         result.tilesOccluded,
+        result.tilesWaitingForOcclusionResults,
         result.maxDepthVisited,
         result.tilesLoadingLowPriority,
         result.tilesLoadingMediumPriority,

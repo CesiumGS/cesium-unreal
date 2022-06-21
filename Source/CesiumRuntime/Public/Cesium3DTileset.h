@@ -938,6 +938,7 @@ private:
   uint32_t _lastCulledTilesVisited;
   uint32_t _lastTilesCulled;
   uint32_t _lastTilesOccluded;
+  uint32_t _lastTilesWaitingForOcclusionResults;
   uint32_t _lastMaxDepthVisited;
 
   std::chrono::high_resolution_clock::time_point _startTime;
