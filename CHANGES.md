@@ -1,8 +1,13 @@
 # Change Log
 
-### v1.14.0 - ????
+### ? - ????
+
+##### Additions :tada:
+
+- Display credits using Rich Text Block instead of the Web Browser Widget.
 
 ##### Fixes :wrench:
+
 - Swapped latitude and longitude parameters on georeferenced sublevels to match with the main georeference.
 - Adjusted the presentation of sublevels in the Cesium Georeference details panel.
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
