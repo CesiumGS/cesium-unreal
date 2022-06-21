@@ -1,6 +1,10 @@
 # Change Log
 
-### v1.14.0 - ????
+### ? - ????
+
+##### Additions :tada:
+
+- Display credits using Rich Text Block instead of the Web Browser Widget.
 
 ##### Fixes :wrench:
 
@@ -17,7 +21,6 @@
 ##### Additions :tada:
 
 - Added the `InvertSelection` option on `CesiumPolygonRasterOverlay` to rasterize outside the selection instead of inside. When used in conjunction with the `ExcludeSelectedTiles` option, tiles completely outside the polygon selection will be culled, instead of the tiles inside.
-- Display credits using Rich Text Block instead of the Web Browser Widget.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.1 to v0.16.0, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
