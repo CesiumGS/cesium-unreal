@@ -1581,6 +1581,20 @@ void ACesium3DTileset::showTilesToRender(
   }
 }
 
+static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
+  if (!pTile || !pTile->getContent()) {
+    return;
+  }
+
+  UCesiumGltfComponent* pGltf =
+      reinterpret_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+  if (!pGltf) {
+    return;
+  }
+
+  pGltf->UpdateFade(pTile->getContent()->ditherFadePercentage);
+}
+
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
@@ -1623,14 +1637,25 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
       this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
-                              : this->_pTileset->updateView(frustums);
+                              : this->_pTileset->updateView(frustums, DeltaTime);
   updateLastViewUpdateResultState(result);
 
-  removeVisibleTilesFromList(
-      this->_tilesToNoLongerRenderNextFrame,
-      result.tilesToRenderThisFrame);
-  hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
-  this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+    updateTileFade(pTile);
+  }
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    updateTileFade(pTile);
+  }
+  
+  //result.tilesToNoLongerRenderThisFrame
+
+  //removeVisibleTilesFromList(
+      //this->_tilesToNoLongerRenderNextFrame,
+  //    tilesToRemove,
+  //    result.tilesToRenderThisFrame);
+  hideTilesToNoLongerRender(result.tilesToHideThisFrame);
+  //this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
 }
 

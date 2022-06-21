@@ -112,6 +112,8 @@ public:
 
   virtual void BeginDestroy() override;
 
+  void UpdateFade(float fadePercentage);
+
 private:
   UPROPERTY()
   UTexture2D* Transparent1x1;

@@ -18,6 +18,7 @@
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
+#include <unordered_map>
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -767,7 +768,7 @@ public:
    * the root component has changed since the previous Tick.
    */
   void UpdateTransformFromCesium();
-
+  
 private:
   /**
    * Writes the values of all properties of this actor into the
@@ -854,6 +855,6 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToNoLongerRenderThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
-
+  
   friend class UnrealResourcePreparer;
 };
