@@ -132,7 +132,6 @@ public class CesiumRuntime : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "ApplicationCore",
                 "RHI",
                 "CoreUObject",
                 "Engine",
