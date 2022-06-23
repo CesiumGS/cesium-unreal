@@ -69,7 +69,7 @@ void UCesiumRasterOverlay::AddToTileset() {
                 Cesium3DTilesSelection::RasterOverlayLoadType::TilesetJson));
         assert(this->_pTileset == details.pTileset);
 
-        FCesiumRasterOverlayLoadFailureDetails ueDetails;
+        FCesiumRasterOverlayLoadFailureDetails ueDetails{};
         ueDetails.Overlay = this;
         ueDetails.Type = ECesiumRasterOverlayLoadType(typeValue);
         ueDetails.HttpStatusCode =
