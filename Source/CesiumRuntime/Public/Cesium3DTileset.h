@@ -55,7 +55,7 @@ enum class ETilesetSource : uint8 {
 };
 
 UENUM(BlueprintType)
-enum class EDPIScaling : uint8 { Yes, No, UseProjectDefault };
+enum class EUseDPIScaling : uint8 { Yes, No, UseProjectDefault };
 
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
@@ -216,7 +216,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Level of Detail")
-  EDPIScaling DPIScaling = EDPIScaling::UseProjectDefault;
+  EUseDPIScaling DPIScaling = EUseDPIScaling::UseProjectDefault;
 
   /**
    * Whether to preload ancestor tiles.
@@ -762,7 +762,7 @@ private:
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const FCesiumCamera& camera,
       const glm::dmat4& unrealWorldToTileset,
-      EDPIScaling DPIScaling);
+      float dpiScalingFactor);
 
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
@@ -850,6 +850,8 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  float _dpiScalingFactor;
 
   // This is used as a workaround for cesium-native#186
   //

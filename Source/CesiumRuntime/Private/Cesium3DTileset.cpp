@@ -1226,7 +1226,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset,
-    EDPIScaling DPIScaling) {
+    float dpiScalingFactor) {
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
@@ -1258,29 +1258,6 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   double verticalFieldOfView =
       atan(tan(horizontalFieldOfView * 0.5) / actualAspectRatio) * 2.0;
 
-  bool scaleUsingDPI;
-  switch (DPIScaling) {
-  case (EDPIScaling::UseProjectDefault):
-    scaleUsingDPI =
-        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
-    break;
-  case (EDPIScaling::Yes):
-    scaleUsingDPI = true;
-    break;
-  case (EDPIScaling::No):
-    scaleUsingDPI = false;
-    break;
-  default:
-    scaleUsingDPI = true;
-  }
-
-  float dpiScale = scaleUsingDPI
-                       ? GetDefault<UUserInterfaceSettings>(
-                             UUserInterfaceSettings::StaticClass())
-                             ->GetDPIScaleBasedOnSize(
-                                 FIntPoint((int32)size.x, (int32)size.y))
-                       : 1.0;
-
   FVector direction = camera.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
   FVector up = camera.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
@@ -1293,14 +1270,15 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
+  size /= dpiScalingFactor;
+
   return Cesium3DTilesSelection::ViewState::create(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
       size,
       horizontalFieldOfView,
-      verticalFieldOfView,
-      dpiScale);
+      verticalFieldOfView);
 }
 
 #if WITH_EDITOR
@@ -1481,6 +1459,34 @@ void applyActorCollisionSettings(
     }
   }
 }
+
+float getDevicePixelRatio(const UObject* WorldContextObject) {
+#if PLATFORM_IOS
+  FDisplayMetrics DisplayMetrics;
+  FDisplayMetrics::RebuildDisplayMetrics(FDisplayMetrics);
+
+  float LogicalWidth = DisplayMetrics.IosUiWindowAreaRect.Right -
+                       DisplayMetrics.IosUiWindowAreaRect.Left;
+  float LogicalHeight = DisplayMetrics.IosUiWindowAreaRect.Bottom -
+                        DisplayMetrics.IosUiWindowAreaRect.Top;
+
+  return FMath::Min(
+      DisplayMetrics.PrimaryDisplayWidth / LogicalWidth,
+      PrimaryDisplayHeight / LogicalHeight);
+#elif PLATFORM_ANDROID
+  int32 screenDensity;
+  FGenericPlatformApplicationMisc::GetPhysicalScreenDensity(screenDensity);
+  return screenDensity / 160.0f;
+#else
+  UWorld* world = WorldContextObject->GetWorld();
+  if (IsValid(world) && world->GetGameViewport()) {
+    return world->GetGameViewport()->GetDPIScale();
+  } else {
+    return 1.0f;
+  }
+#endif
+}
+
 } // namespace
 
 void ACesium3DTileset::updateTilesetOptionsFromProperties() {
@@ -1641,12 +1647,34 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   glm::dmat4 unrealWorldToTileset = glm::affineInverse(
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
+  bool scaleUsingDPI;
+  switch (DPIScaling) {
+  case (EUseDPIScaling::UseProjectDefault):
+    scaleUsingDPI =
+        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
+    break;
+  case (EUseDPIScaling::Yes):
+    scaleUsingDPI = true;
+    break;
+  case (EUseDPIScaling::No):
+    scaleUsingDPI = false;
+    break;
+  default:
+    scaleUsingDPI = false;
+  }
+
+  float dpiScalingFactor = 1.0f;
+
+  if (scaleUsingDPI) {
+    dpiScalingFactor = getDevicePixelRatio(GetWorld());
+  }
+
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(CreateViewStateFromViewParameters(
         camera,
         unrealWorldToTileset,
-        DPIScaling));
+        dpiScalingFactor));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
