@@ -58,7 +58,7 @@ public:
    * Whether to visualize the level loading radii in the editor. Helpful for
    * initially positioning the level and choosing a load radius.
    */
-  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Cesium Sublevels")
   bool ShowLoadRadii = true;
 
   /*
@@ -74,7 +74,7 @@ public:
    * @returns true if a new sub-level is active, or false if the Index was
    * outside the valid range and so no sub-level is active.
    */
-  UFUNCTION(BlueprintCallable, Category = "CesiumSublevels")
+  UFUNCTION(BlueprintCallable, Category = "Cesium|Cesium Sublevels")
   bool SwitchToLevel(int32 Index);
 
   /*
@@ -89,8 +89,10 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "CesiumSublevels",
-      Meta = (TitleProperty = "LevelName"))
+      Category = "Cesium|Cesium Sublevels",
+      Meta =
+          (TitleProperty = "LevelName",
+           DisplayName = "Georeferenced Sublevels"))
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
