@@ -40,7 +40,6 @@
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
-#include "Engine/UserInterfaceSettings.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
@@ -963,6 +962,27 @@ void ACesium3DTileset::LoadTileset() {
         TEXT("Loading tileset for asset ID %d done"),
         this->IonAssetID);
   }
+
+  bool scaleUsingDPI;
+  switch (DPIScaling) {
+  case (EUseDPIScaling::UseProjectDefault):
+    scaleUsingDPI =
+        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
+    break;
+  case (EUseDPIScaling::Yes):
+    scaleUsingDPI = true;
+    break;
+  case (EUseDPIScaling::No):
+    scaleUsingDPI = false;
+    break;
+  default:
+    scaleUsingDPI = false;
+  }
+  if (scaleUsingDPI) {
+    _dpiScalingFactor = getDevicePixelRatio(GetWorld());
+  } else {
+    _dpiScalingFactor = 1.0f;
+  }
 }
 
 void ACesium3DTileset::DestroyTileset() {
@@ -1638,34 +1658,12 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   glm::dmat4 unrealWorldToTileset = glm::affineInverse(
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
-  bool scaleUsingDPI;
-  switch (DPIScaling) {
-  case (EUseDPIScaling::UseProjectDefault):
-    scaleUsingDPI =
-        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
-    break;
-  case (EUseDPIScaling::Yes):
-    scaleUsingDPI = true;
-    break;
-  case (EUseDPIScaling::No):
-    scaleUsingDPI = false;
-    break;
-  default:
-    scaleUsingDPI = false;
-  }
-
-  float dpiScalingFactor = 1.0f;
-
-  if (scaleUsingDPI) {
-    dpiScalingFactor = getDevicePixelRatio(GetWorld());
-  }
-
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(CreateViewStateFromViewParameters(
         camera,
         unrealWorldToTileset,
-        dpiScalingFactor));
+        _dpiScalingFactor));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
@@ -1738,6 +1736,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, DPIScaling) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
