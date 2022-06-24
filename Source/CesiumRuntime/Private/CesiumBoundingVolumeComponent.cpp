@@ -67,7 +67,7 @@ void UCesiumBoundingVolumePoolComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
   this->_cesiumToUnreal = CesiumToUnrealTransform;
 
-  TArray<USceneComponent*> children = this->GetAttachChildren();
+  const TArray<USceneComponent*>& children = this->GetAttachChildren();
   for (USceneComponent* pChild : children) {
     UCesiumBoundingVolumeComponent* pBoundingVolume =
         Cast<UCesiumBoundingVolumeComponent>(pChild);

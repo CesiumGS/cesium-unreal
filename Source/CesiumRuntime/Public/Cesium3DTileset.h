@@ -20,6 +20,9 @@
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
+#include <unordered_set>
+#include "SceneViewExtension.h"
+#include "RenderCommandFence.h"
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -828,6 +831,33 @@ protected:
       const FHitResult& Hit) override;
 
 private:
+  class CesiumViewExtension : public FSceneViewExtensionBase {
+  private:
+    std::unordered_set<ACesium3DTileset*> _registeredTilesets;
+
+  public:
+    CesiumViewExtension(const FAutoRegister& autoRegister);
+    ~CesiumViewExtension();
+
+    void RegisterTileset(ACesium3DTileset* pTileset);
+    void UnregisterTileset(ACesium3DTileset* pTileset);
+
+    void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
+    void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
+    void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override;
+    void PreRenderViewFamily_RenderThread(
+        FRHICommandListImmediate& RHICmdList,
+        FSceneViewFamily& InViewFamily) override;
+    void PreRenderView_RenderThread(
+        FRHICommandListImmediate& RHICmdList,
+        FSceneView& InView) override;    
+	  void PostRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override;
+  };
+
+  TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension = nullptr;
+
+  void UpdateView(FSceneViewFamily& ViewFamily);
+
   void LoadTileset();
   void DestroyTileset();
 
@@ -838,31 +868,6 @@ private:
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
   std::vector<FCesiumCamera> GetSceneCaptures() const;
-
-  // Whether we are waiting for occlusion results from the render thread.
-  std::atomic<bool> WaitingForOcclusion = false;
-
-  struct OcclusionRequest {
-    FPrimitiveComponentId primitiveId;
-    bool currentOcclusionState;
-  };
-
-  // The bounding volume primitive IDs to retrieve occlusion for along with
-  // their current states. Only safe to modify on the game thread when
-  // WaitingForOcclusion is false.
-  std::vector<OcclusionRequest> OcclusionRequests;
-
-  // The results of the occlusion retrieval, only safe to access on the game
-  // thread when WaitingForOcclusion is false.
-  std::unordered_map<uint32_t, bool> OcclusionResults;
-
-  // Dispatches a render thread task to retrieves occlusion information.
-  void RetrieveOcclusionResults(TArray<FSceneViewState*>&& views);
-
-  // Polls to check whether the render thread occlusion retrieval task is done,
-  // syncs render thread results to the game thread, and dispatches a new
-  // render thread occlusion task.
-  void TickOcclusionHandling();
 
 public:
   /**
