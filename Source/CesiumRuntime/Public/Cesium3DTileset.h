@@ -15,7 +15,6 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
-#include "RenderCommandFence.h"
 #include "SceneViewExtension.h"
 #include <PhysicsEngine/BodyInstance.h>
 #include <atomic>
