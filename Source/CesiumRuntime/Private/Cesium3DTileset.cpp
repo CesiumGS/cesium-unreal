@@ -830,40 +830,38 @@ void ACesium3DTileset::CesiumViewExtension::UnregisterTileset(
 
 void ACesium3DTileset::CesiumViewExtension::SetupViewFamily(
     FSceneViewFamily& InViewFamily) {
-  //UE_LOG(LogCesium, Warning, TEXT("SetupViewFamily"));
+  // UE_LOG(LogCesium, Warning, TEXT("SetupViewFamily"));
 }
 
 void ACesium3DTileset::CesiumViewExtension::SetupView(
     FSceneViewFamily& InViewFamily,
     FSceneView& InView) {
-  //UE_LOG(LogCesium, Warning, TEXT("SetupView"));
+  // UE_LOG(LogCesium, Warning, TEXT("SetupView"));
 }
 
 void ACesium3DTileset::CesiumViewExtension::BeginRenderViewFamily(
     FSceneViewFamily& InViewFamily) {
   for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
     pTileset->UpdateView(InViewFamily);
-  } 
+  }
 }
 
 void ACesium3DTileset::CesiumViewExtension::PreRenderViewFamily_RenderThread(
     FRHICommandListImmediate& RHICmdList,
     FSceneViewFamily& InViewFamily) {
-  //UE_LOG(LogCesium, Warning, TEXT("PreRenderViewFamily_RenderThread"));
+  // UE_LOG(LogCesium, Warning, TEXT("PreRenderViewFamily_RenderThread"));
 }
 
 void ACesium3DTileset::CesiumViewExtension::PreRenderView_RenderThread(
     FRHICommandListImmediate& RHICmdList,
-    FSceneView& InView) {
-  
-}
+    FSceneView& InView) {}
 
 void ACesium3DTileset::CesiumViewExtension::PostRenderViewFamily_RenderThread(
-    FRHICommandListImmediate& RHICmdList, 
+    FRHICommandListImmediate& RHICmdList,
     FSceneViewFamily& InViewFamily) {
-  //for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
+  // for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
   //  pTileset->RetrieveOcclusionResults_RenderThread(InViewFamily);
-  //} 
+  //}
 }
 
 void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
@@ -871,15 +869,16 @@ void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
       this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
 
-  const TArray<USceneComponent*>& children = pBoundingVolumePool->GetAttachChildren();
+  const TArray<USceneComponent*>& children =
+      pBoundingVolumePool->GetAttachChildren();
   for (USceneComponent* pChild : children) {
     UCesiumBoundingVolumeComponent* pBoundingVolume =
         Cast<UCesiumBoundingVolumeComponent>(pChild);
-    
+
     if (!pBoundingVolume) {
       continue;
     }
-    
+
     // Check that the primitive is definitely occluded in every view.
     bool isOccluded = false;
     bool isDefinite = true;
@@ -888,9 +887,7 @@ void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
       if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
         const FPrimitiveOcclusionHistory* pHistory =
             pViewState->PrimitiveOcclusionHistorySet.Find(
-                FPrimitiveOcclusionHistoryKey(
-                    pBoundingVolume->ComponentId,
-                    0));
+                FPrimitiveOcclusionHistoryKey(pBoundingVolume->ComponentId, 0));
         if (pHistory) {
           if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
             isDefinite = false;
@@ -933,8 +930,9 @@ void ACesium3DTileset::LoadTileset() {
               getCacheDatabaseName()));
   static CesiumAsync::AsyncSystem asyncSystem(
       std::make_shared<UnrealTaskProcessor>());
-  static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe> cesiumViewExtension =
-      GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
+  static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
+      cesiumViewExtension =
+          GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
   this->_cesiumViewExtension = cesiumViewExtension;
   this->_cesiumViewExtension->RegisterTileset(this);
 
@@ -1667,7 +1665,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.culledTilesVisited != this->_lastCulledTilesVisited ||
       result.tilesCulled != this->_lastTilesCulled ||
       result.tilesOccluded != this->_lastTilesOccluded ||
-      result.tilesWaitingForOcclusionResults != this->_lastTilesWaitingForOcclusionResults ||
+      result.tilesWaitingForOcclusionResults !=
+          this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();

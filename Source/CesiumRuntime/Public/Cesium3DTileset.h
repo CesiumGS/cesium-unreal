@@ -15,14 +15,14 @@
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
+#include "RenderCommandFence.h"
+#include "SceneViewExtension.h"
 #include <PhysicsEngine/BodyInstance.h>
 #include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
-#include <vector>
 #include <unordered_set>
-#include "SceneViewExtension.h"
-#include "RenderCommandFence.h"
+#include <vector>
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -850,11 +850,14 @@ private:
         FSceneViewFamily& InViewFamily) override;
     void PreRenderView_RenderThread(
         FRHICommandListImmediate& RHICmdList,
-        FSceneView& InView) override;    
-	  void PostRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override;
+        FSceneView& InView) override;
+    void PostRenderViewFamily_RenderThread(
+        FRHICommandListImmediate& RHICmdList,
+        FSceneViewFamily& InViewFamily) override;
   };
 
-  TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension = nullptr;
+  TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension =
+      nullptr;
 
   void UpdateView(FSceneViewFamily& ViewFamily);
 
