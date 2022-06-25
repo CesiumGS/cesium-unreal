@@ -41,6 +41,7 @@ public:
   UPROPERTY(
       Config,
       EditAnywhere,
+      Category = "Level of Detail",
       meta = (DisplayName = "Scale Level-of-Detail by Display DPI"))
   bool ScaleLevelOfDetailByDPI;
 };

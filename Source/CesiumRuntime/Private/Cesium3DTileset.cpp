@@ -964,19 +964,19 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   bool scaleUsingDPI;
-  switch (DPIScaling) {
-  case (EUseDPIScaling::UseProjectDefault):
+  switch (ApplyDpiScaling) {
+  case (EApplyDpiScaling::UseProjectDefault):
     scaleUsingDPI =
         GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
     break;
-  case (EUseDPIScaling::Yes):
+  case (EApplyDpiScaling::Yes):
     scaleUsingDPI = true;
     break;
-  case (EUseDPIScaling::No):
+  case (EApplyDpiScaling::No):
     scaleUsingDPI = false;
     break;
   default:
-    scaleUsingDPI = false;
+    scaleUsingDPI = true;
   }
   if (scaleUsingDPI) {
     _dpiScalingFactor = getDevicePixelRatio(GetWorld());
@@ -1736,7 +1736,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, DPIScaling) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

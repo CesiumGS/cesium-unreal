@@ -55,7 +55,7 @@ enum class ETilesetSource : uint8 {
 };
 
 UENUM(BlueprintType)
-enum class EUseDPIScaling : uint8 { Yes, No, UseProjectDefault };
+enum class EApplyDpiScaling : uint8 { Yes, No, UseProjectDefault };
 
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
@@ -212,11 +212,15 @@ public:
       meta = (ClampMin = 0.0))
   float MaximumScreenSpaceError = 16.0;
 
+  /**
+   * Scale Level-of-Detail by Display DPI. This increases the performance for
+   * mobile devices and high DPI screens.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Level of Detail")
-  EUseDPIScaling DPIScaling = EUseDPIScaling::UseProjectDefault;
+  EApplyDpiScaling ApplyDpiScaling = EApplyDpiScaling::UseProjectDefault;
 
   /**
    * Whether to preload ancestor tiles.
