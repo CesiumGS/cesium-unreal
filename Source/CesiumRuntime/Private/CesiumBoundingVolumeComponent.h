@@ -43,29 +43,28 @@ private:
   // TileOcclusionRendererProxyPool, but we can't use multiple inheritance with
   // UObjects. Instead use the CesiumBoundingVolumePool and forward virtual
   // calls to the implementations.
-  friend class UCesiumBoundingVolumePool;
 
   Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy();
 
   void destroyProxy(Cesium3DTilesSelection::TileOcclusionRendererProxy* pProxy);
 
+  class CesiumBoundingVolumePool
+      : public Cesium3DTilesSelection::TileOcclusionRendererProxyPool {
+  public:
+    CesiumBoundingVolumePool(UCesiumBoundingVolumePoolComponent* pOutter);
+
+  protected:
+    Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy() override;
+
+    void destroyProxy(
+        Cesium3DTilesSelection::TileOcclusionRendererProxy* pProxy) override;
+
+  private:
+    UCesiumBoundingVolumePoolComponent* _pOutter;
+  };
+
   std::shared_ptr<Cesium3DTilesSelection::TileOcclusionRendererProxyPool>
       _pPool;
-};
-
-class UCesiumBoundingVolumePool
-    : public Cesium3DTilesSelection::TileOcclusionRendererProxyPool {
-public:
-  UCesiumBoundingVolumePool(UCesiumBoundingVolumePoolComponent* pOutter);
-
-protected:
-  Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy() override;
-
-  void destroyProxy(
-      Cesium3DTilesSelection::TileOcclusionRendererProxy* pProxy) override;
-
-private:
-  UCesiumBoundingVolumePoolComponent* _pOutter;
 };
 
 UCLASS()
