@@ -7,7 +7,7 @@
 - Adjusted the presentation of sublevels in the Cesium Georeference details panel.
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
 
-##### Additions :tada:
+##### Breaking Changes :mega:
 - Add option to scale the viewport by pixel density to increase performance for mobile devices.
 
 ### v1.14.0 - 2022-06-01
