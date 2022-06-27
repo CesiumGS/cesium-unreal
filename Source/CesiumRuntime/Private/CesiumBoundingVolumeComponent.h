@@ -114,10 +114,7 @@ public:
 
   // virtual void BeginDestroy() override;
 
-  // TileOcclusionRendererProxy implementation
-  bool isOccluded() const override;
-
-  bool isOcclusionAvailable() const override;
+  Cesium3DTilesSelection::TileOcclusionState getOcclusionState() const override;
 
 protected:
   void reset(const Cesium3DTilesSelection::Tile* pTile) override;

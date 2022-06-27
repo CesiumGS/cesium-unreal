@@ -170,12 +170,15 @@ void UCesiumBoundingVolumeComponent::UpdateTransformFromCesium(
   this->_updateTransform();
 }
 
-bool UCesiumBoundingVolumeComponent::isOccluded() const {
-  return this->_isOccluded;
-}
-
-bool UCesiumBoundingVolumeComponent::isOcclusionAvailable() const {
-  return this->_isOcclusionAvailable;
+Cesium3DTilesSelection::TileOcclusionState
+UCesiumBoundingVolumeComponent::getOcclusionState() const {
+  if (!this->_isOcclusionAvailable) {
+    return Cesium3DTilesSelection::TileOcclusionState::OcclusionUnavailable;
+  } else if (this->_isOccluded) {
+    return Cesium3DTilesSelection::TileOcclusionState::Occluded;
+  } else {
+    return Cesium3DTilesSelection::TileOcclusionState::NotOccluded;
+  }
 }
 
 void UCesiumBoundingVolumeComponent::reset(const Tile* pTile) {
