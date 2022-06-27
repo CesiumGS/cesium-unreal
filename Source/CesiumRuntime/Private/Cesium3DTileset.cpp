@@ -818,19 +818,21 @@ void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
       this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
 
-  const TArray<USceneComponent*>& children =
-      pBoundingVolumePool->GetAttachChildren();
-  for (USceneComponent* pChild : children) {
-    UCesiumBoundingVolumeComponent* pBoundingVolume =
-        Cast<UCesiumBoundingVolumeComponent>(pChild);
+  if (pBoundingVolumePool) {
+    const TArray<USceneComponent*>& children =
+        pBoundingVolumePool->GetAttachChildren();
+    for (USceneComponent* pChild : children) {
+      UCesiumBoundingVolumeComponent* pBoundingVolume =
+          Cast<UCesiumBoundingVolumeComponent>(pChild);
 
-    if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
-      continue;
-    }
+      if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
+        continue;
+      }
 
-    // Check that the primitive is definitely occluded in every view.
-    for (const FSceneView* View : ViewFamily.Views) {
-      pBoundingVolume->UpdateOcclusionFromView(View);
+      // Check that the primitive is definitely occluded in every view.
+      for (const FSceneView* View : ViewFamily.Views) {
+        pBoundingVolume->UpdateOcclusionFromView(View);
+      }
     }
   }
 }
@@ -1704,17 +1706,19 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
       this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
 
-  const TArray<USceneComponent*>& children =
-      pBoundingVolumePool->GetAttachChildren();
-  for (USceneComponent* pChild : children) {
-    UCesiumBoundingVolumeComponent* pBoundingVolume =
-        Cast<UCesiumBoundingVolumeComponent>(pChild);
+  if (pBoundingVolumePool) {
+    const TArray<USceneComponent*>& children =
+        pBoundingVolumePool->GetAttachChildren();
+    for (USceneComponent* pChild : children) {
+      UCesiumBoundingVolumeComponent* pBoundingVolume =
+          Cast<UCesiumBoundingVolumeComponent>(pChild);
 
-    if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
-      continue;
+      if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
+        continue;
+      }
+
+      pBoundingVolume->FinalizeOcclusionResultForFrame();
     }
-
-    pBoundingVolume->FinalizeOcclusionResultForFrame();
   }
 
   updateTilesetOptionsFromProperties();
