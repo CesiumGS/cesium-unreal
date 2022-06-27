@@ -214,26 +214,34 @@ void ACesium3DTileset::PostInitProperties() {
 
 void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   if (InSource != this->TilesetSource) {
-    this->TilesetSource = InSource;
     this->DestroyTileset();
+    this->TilesetSource = InSource;
   }
 }
 
 void ACesium3DTileset::SetUrl(const FString& InUrl) {
+  UE_LOG(
+    LogCesium,
+    Log,
+    TEXT("In set URL"));
   if (InUrl != this->Url) {
-    this->Url = InUrl;
     if (this->TilesetSource == ETilesetSource::FromUrl) {
       this->DestroyTileset();
     }
+    UE_LOG(
+      LogCesium,
+      Log,
+      TEXT("After destroy tile"));
+    this->Url = InUrl;
   }
 }
 
 void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
   if (InAssetID >= 0 && InAssetID != this->IonAssetID) {
-    this->IonAssetID = InAssetID;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
+    this->IonAssetID = InAssetID;
   }
 }
 
@@ -930,35 +938,41 @@ void ACesium3DTileset::LoadTileset() {
     }
   }
 
-  if (this->Url.Len() > 0) {
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(
-        LogCesium,
-        Log,
-        TEXT("Loading tileset from URL %s done"),
-        *this->Url);
-  } else {
+      LogCesium,
+      Log,
+      TEXT("Loading tileset from URL %s done"),
+      *this->Url);
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
-        LogCesium,
-        Log,
-        TEXT("Loading tileset for asset ID %d done"),
-        this->IonAssetID);
+      LogCesium,
+      Log,
+      TEXT("Loading tileset for asset ID %d done"),
+      this->IonAssetID);
+    break;
   }
 }
 
 void ACesium3DTileset::DestroyTileset() {
 
-  if (this->Url.Len() > 0) {
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Destroying tileset from URL %s"),
-        *this->Url);
-  } else {
+      LogCesium,
+      Log, //Verbose,
+      TEXT("Destroying tileset from URL %s"),
+      *this->Url);
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Destroying tileset for asset ID %d"),
-        this->IonAssetID);
+      LogCesium,
+      Log, //Verbose,
+      TEXT("Destroying tileset for asset ID %d"),
+      this->IonAssetID);
+    break;
   }
 
   // The way CesiumRasterOverlay::add is currently implemented, destroying the
@@ -979,18 +993,21 @@ void ACesium3DTileset::DestroyTileset() {
 
   this->_pTileset.Reset();
 
-  if (this->Url.Len() > 0) {
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Destroying tileset from URL %s done"),
-        *this->Url);
-  } else {
+      LogCesium,
+      Log,// Verbose,
+      TEXT("Destroying tileset from URL %s done"),
+      *this->Url);
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Destroying tileset for asset ID %d done"),
-        this->IonAssetID);
+      LogCesium,
+      Log, //Verbose,
+      TEXT("Destroying tileset for asset ID %d done"),
+      this->IonAssetID);
+    break;
   }
 }
 
