@@ -5,6 +5,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Install Visual Studio 2017 v15.6+ or Visual Studio 2019 v16.5+.
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
+- Install [.NET Core 3.1 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/3.1/runtime?cid=getdotnetcore) and [.NET SDKs for Visual Studio](https://dotnet.microsoft.com/en-us/download/visual-studio-sdks).
 
 ## For Cross Compiling Android on Windows
 
