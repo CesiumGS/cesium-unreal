@@ -25,7 +25,7 @@ void CesiumViewExtension::SetupView(
 void CesiumViewExtension::BeginRenderViewFamily(
     FSceneViewFamily& InViewFamily) {
   for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
-    pTileset->UpdateView(InViewFamily);
+    pTileset->UpdateFromView(InViewFamily);
   }
 }
 

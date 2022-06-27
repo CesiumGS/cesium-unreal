@@ -812,7 +812,7 @@ static std::string getCacheDatabaseName() {
   return TCHAR_TO_UTF8(*PlatformAbsolutePath);
 }
 
-void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
+void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
   // TODO: save reference? How expensive is this?
   // This is called separately for each view, may need to optimize this
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =

@@ -799,7 +799,7 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
-  void UpdateView(FSceneViewFamily& ViewFamily);
+  void UpdateFromView(FSceneViewFamily& ViewFamily);
 
   // UObject overrides
 #if WITH_EDITOR
