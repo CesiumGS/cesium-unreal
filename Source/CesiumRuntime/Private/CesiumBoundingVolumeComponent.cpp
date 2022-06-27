@@ -89,14 +89,12 @@ public:
   }
 
   uint32 GetMemoryFootprint(void) const override {
-    // Is this reasonable??
-    return sizeof(FCesiumBoundingVolumeSceneProxy);
+    return sizeof(FCesiumBoundingVolumeSceneProxy) + GetAllocatedSize();
   }
 };
 
 FPrimitiveSceneProxy* UCesiumBoundingVolumeComponent::CreateSceneProxy() {
-  // this->_isOccluded = false;
-  return (FPrimitiveSceneProxy*)new FCesiumBoundingVolumeSceneProxy(this);
+  return new FCesiumBoundingVolumeSceneProxy(this);
 }
 
 UCesiumBoundingVolumeComponent::UCesiumBoundingVolumeComponent()

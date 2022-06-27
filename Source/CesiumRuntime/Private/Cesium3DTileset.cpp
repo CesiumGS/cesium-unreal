@@ -877,7 +877,6 @@ void ACesium3DTileset::LoadTileset() {
     const glm::dmat4& cesiumToUnreal =
         GetCesiumTilesetToUnrealRelativeWorldTransform();
     pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
-    pBoundingVolumePool->RegisterComponent();
     pBoundingVolumePool->SetUsingAbsoluteLocation(true);
     pBoundingVolumePool->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
