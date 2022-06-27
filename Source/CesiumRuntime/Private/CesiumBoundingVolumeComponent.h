@@ -6,6 +6,7 @@
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
 #include "PrimitiveSceneProxy.h"
+#include "SceneView.h"
 #include <Cesium3DTilesSelection/BoundingVolume.h>
 #include <Cesium3DTilesSelection/TileOcclusionRendererProxy.h>
 #include <glm/mat4x4.hpp>
@@ -81,11 +82,20 @@ public:
   FPrimitiveSceneProxy* CreateSceneProxy() override;
 
   /**
-   * Set the occlusion result for this bounding volume.
+   * Add an active view for this frame. Occlusion results for this bounding
+   * volume will be pulled from the view and aggregated with the results from
+   * other views. Call FinalizeOcclusionResultsForFrame after adding all the
+   * relevant views.
    *
-   * @param isOccluded The occlusion result.
+   * @param View An active view to retrieve occlusion results from.
    */
-  void SetOcclusionResult(bool isOccluded);
+  void UpdateOcclusionFromView(const FSceneView* View);
+
+  /**
+   * Finalizes a collective occlusion result for this bounding volume from all
+   * the views sent to UpdateOcclusionFromView.
+   */
+  void FinalizeOcclusionResultForFrame();
 
   /**
    * Updates this component's transform from a new double-precision
@@ -115,6 +125,10 @@ protected:
 
 private:
   void _updateTransform();
+
+  bool _isOccludedThisFrame = false;
+  bool _isDefiniteThisFrame = true;
+  bool _ignoreRemainingViews = false;
 
   bool _isOccluded = false;
   bool _isOcclusionAvailable = false;

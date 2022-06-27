@@ -4,6 +4,8 @@
 #include "CalcBounds.h"
 #include "CesiumGeoreference.h"
 #include "CesiumLifetime.h"
+#include "Runtime/Renderer/Private/ScenePrivate.h"
+#include "SceneTypes.h"
 #include "UObject/UObjectGlobals.h"
 #include "VecMath.h"
 #include <optional>
@@ -104,9 +106,55 @@ UCesiumBoundingVolumeComponent::UCesiumBoundingVolumeComponent()
       _tileTransform(1.0),
       _cesiumToUnreal(1.0) {}
 
-void UCesiumBoundingVolumeComponent::SetOcclusionResult(bool isOccluded) {
-  this->_isOccluded = isOccluded;
-  this->_isOcclusionAvailable = true;
+void UCesiumBoundingVolumeComponent::UpdateOcclusionFromView(
+    const FSceneView* View) {
+  if (_ignoreRemainingViews) {
+    return;
+  }
+
+  const FSceneViewState* pViewState = View->State->GetConcreteViewState();
+  if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
+    const FPrimitiveOcclusionHistory* pHistory =
+        pViewState->PrimitiveOcclusionHistorySet.Find(
+            FPrimitiveOcclusionHistoryKey(this->ComponentId, 0));
+    if (pHistory) {
+      if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
+        _isDefiniteThisFrame = false;
+        _ignoreRemainingViews = true;
+        return;
+      }
+
+      _isDefiniteThisFrame = true;
+
+      if (_isOccluded) {
+        if (pHistory->LastPixelsPercentage > 0.01f) {
+          _isOccludedThisFrame = false;
+          _ignoreRemainingViews = true;
+          return;
+        }
+      } else {
+        if (!pHistory->WasOccludedLastFrame) {
+          // pHistory->LastPixelsPercentage > 0.0f) {
+          _isOccludedThisFrame = false;
+          _ignoreRemainingViews = true;
+          return;
+        }
+      }
+
+      _isOccludedThisFrame = true;
+    }
+  }
+}
+
+void UCesiumBoundingVolumeComponent::FinalizeOcclusionResultForFrame() {
+  if (_isDefiniteThisFrame) {
+    _isOccluded = _isOccludedThisFrame;
+    _isOcclusionAvailable = true;
+  }
+
+  _isOccludedThisFrame = false;
+  _isDefiniteThisFrame = true;
+  _ignoreRemainingViews = false;
 }
 
 void UCesiumBoundingVolumeComponent::_updateTransform() {

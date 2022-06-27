@@ -812,60 +812,9 @@ static std::string getCacheDatabaseName() {
   return TCHAR_TO_UTF8(*PlatformAbsolutePath);
 }
 
-ACesium3DTileset::CesiumViewExtension::CesiumViewExtension(
-    const FAutoRegister& autoRegister)
-    : FSceneViewExtensionBase(autoRegister) {}
-
-ACesium3DTileset::CesiumViewExtension::~CesiumViewExtension() {}
-
-void ACesium3DTileset::CesiumViewExtension::RegisterTileset(
-    ACesium3DTileset* pTileset) {
-  this->_registeredTilesets.insert(pTileset);
-}
-
-void ACesium3DTileset::CesiumViewExtension::UnregisterTileset(
-    ACesium3DTileset* pTileset) {
-  this->_registeredTilesets.erase(pTileset);
-}
-
-void ACesium3DTileset::CesiumViewExtension::SetupViewFamily(
-    FSceneViewFamily& InViewFamily) {
-  // UE_LOG(LogCesium, Warning, TEXT("SetupViewFamily"));
-}
-
-void ACesium3DTileset::CesiumViewExtension::SetupView(
-    FSceneViewFamily& InViewFamily,
-    FSceneView& InView) {
-  // UE_LOG(LogCesium, Warning, TEXT("SetupView"));
-}
-
-void ACesium3DTileset::CesiumViewExtension::BeginRenderViewFamily(
-    FSceneViewFamily& InViewFamily) {
-  for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
-    pTileset->UpdateView(InViewFamily);
-  }
-}
-
-void ACesium3DTileset::CesiumViewExtension::PreRenderViewFamily_RenderThread(
-    FRHICommandListImmediate& RHICmdList,
-    FSceneViewFamily& InViewFamily) {
-  // UE_LOG(LogCesium, Warning, TEXT("PreRenderViewFamily_RenderThread"));
-}
-
-void ACesium3DTileset::CesiumViewExtension::PreRenderView_RenderThread(
-    FRHICommandListImmediate& RHICmdList,
-    FSceneView& InView) {}
-
-void ACesium3DTileset::CesiumViewExtension::PostRenderViewFamily_RenderThread(
-    FRHICommandListImmediate& RHICmdList,
-    FSceneViewFamily& InViewFamily) {
-  // for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
-  //  pTileset->RetrieveOcclusionResults_RenderThread(InViewFamily);
-  //}
-}
-
 void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
   // TODO: save reference? How expensive is this?
+  // This is called separately for each view, may need to optimize this
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
       this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
 
@@ -875,47 +824,13 @@ void ACesium3DTileset::UpdateView(FSceneViewFamily& ViewFamily) {
     UCesiumBoundingVolumeComponent* pBoundingVolume =
         Cast<UCesiumBoundingVolumeComponent>(pChild);
 
-    if (!pBoundingVolume) {
+    if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
       continue;
     }
 
     // Check that the primitive is definitely occluded in every view.
-    bool isOccluded = false;
-    bool isDefinite = true;
     for (const FSceneView* View : ViewFamily.Views) {
-      const FSceneViewState* pViewState = View->State->GetConcreteViewState();
-      if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
-        const FPrimitiveOcclusionHistory* pHistory =
-            pViewState->PrimitiveOcclusionHistorySet.Find(
-                FPrimitiveOcclusionHistoryKey(pBoundingVolume->ComponentId, 0));
-        if (pHistory) {
-          if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
-            isDefinite = false;
-            break;
-          }
-
-          isDefinite = true;
-
-          if (pBoundingVolume->isOccluded()) {
-            if (pHistory->LastPixelsPercentage > 0.01f) {
-              isOccluded = false;
-              break;
-            }
-          } else {
-            if (!pHistory->WasOccludedLastFrame) {
-              // pHistory->LastPixelsPercentage > 0.0f) {
-              isOccluded = false;
-              break;
-            }
-          }
-
-          isOccluded = true;
-        }
-      }
-    }
-
-    if (isDefinite) {
-      pBoundingVolume->SetOcclusionResult(isOccluded);
+      pBoundingVolume->UpdateOcclusionFromView(View);
     }
   }
 }
@@ -1785,6 +1700,22 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       assert(false);
       return;
     }
+  }
+
+  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
+      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
+
+  const TArray<USceneComponent*>& children =
+      pBoundingVolumePool->GetAttachChildren();
+  for (USceneComponent* pChild : children) {
+    UCesiumBoundingVolumeComponent* pBoundingVolume =
+        Cast<UCesiumBoundingVolumeComponent>(pChild);
+
+    if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
+      continue;
+    }
+
+    pBoundingVolume->FinalizeOcclusionResultForFrame();
   }
 
   updateTilesetOptionsFromProperties();

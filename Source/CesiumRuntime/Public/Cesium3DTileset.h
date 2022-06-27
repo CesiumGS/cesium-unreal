@@ -10,17 +10,16 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
+#include "CesiumViewExtension.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
-#include "SceneViewExtension.h"
 #include <PhysicsEngine/BodyInstance.h>
 #include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
-#include <unordered_set>
 #include <vector>
 #include "Cesium3DTileset.generated.h"
 
@@ -800,6 +799,8 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
+  void UpdateView(FSceneViewFamily& ViewFamily);
+
   // UObject overrides
 #if WITH_EDITOR
   virtual void
@@ -830,35 +831,8 @@ protected:
       const FHitResult& Hit) override;
 
 private:
-  class CesiumViewExtension : public FSceneViewExtensionBase {
-  private:
-    std::unordered_set<ACesium3DTileset*> _registeredTilesets;
-
-  public:
-    CesiumViewExtension(const FAutoRegister& autoRegister);
-    ~CesiumViewExtension();
-
-    void RegisterTileset(ACesium3DTileset* pTileset);
-    void UnregisterTileset(ACesium3DTileset* pTileset);
-
-    void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
-    void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
-    void BeginRenderViewFamily(FSceneViewFamily& InViewFamily) override;
-    void PreRenderViewFamily_RenderThread(
-        FRHICommandListImmediate& RHICmdList,
-        FSceneViewFamily& InViewFamily) override;
-    void PreRenderView_RenderThread(
-        FRHICommandListImmediate& RHICmdList,
-        FSceneView& InView) override;
-    void PostRenderViewFamily_RenderThread(
-        FRHICommandListImmediate& RHICmdList,
-        FSceneViewFamily& InViewFamily) override;
-  };
-
   TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension =
       nullptr;
-
-  void UpdateView(FSceneViewFamily& ViewFamily);
 
   void LoadTileset();
   void DestroyTileset();
