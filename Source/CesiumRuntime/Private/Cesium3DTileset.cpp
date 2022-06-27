@@ -850,8 +850,6 @@ void ACesium3DTileset::LoadTileset() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
       cesiumViewExtension =
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
-  this->_cesiumViewExtension = cesiumViewExtension;
-  this->_cesiumViewExtension->RegisterTileset(this);
 
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
@@ -872,6 +870,9 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
+
+  this->_cesiumViewExtension = cesiumViewExtension;
+  this->_cesiumViewExtension->RegisterTileset(this);
 
   UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
       this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
