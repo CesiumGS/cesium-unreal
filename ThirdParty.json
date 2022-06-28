@@ -16,5 +16,10 @@
     "name": "MikkTSpace",
     "url": "https://github.com/mmikk/MikkTSpace",
     "license": ["Zlib"]
+  },
+  {
+    "name": "HTML Tidy",
+    "url": "https://github.com/htacg/tidy-html5",
+    "license": ["HTML Tidy License"]
   }
 ]

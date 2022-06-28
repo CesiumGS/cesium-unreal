@@ -33,6 +33,7 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
   return std::make_unique<Cesium3DTilesSelection::RasterizedPolygonsOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
+      this->InvertSelection,
       CesiumGeospatial::Ellipsoid::WGS84,
       CesiumGeospatial::GeographicProjection(),
       options);
@@ -43,7 +44,7 @@ void UCesiumPolygonRasterOverlay::OnAdd(
     RasterOverlay* pOverlay) {
   // If this overlay is used for culling, add it as an excluder too for
   // efficiency.
-  if (pTileset && this->ExcludeTilesInside) {
+  if (pTileset && this->ExcludeSelectedTiles) {
     RasterizedPolygonsOverlay* pPolygons =
         static_cast<RasterizedPolygonsOverlay*>(pOverlay);
     assert(this->_pExcluder == nullptr);

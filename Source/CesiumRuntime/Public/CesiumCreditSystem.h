@@ -2,11 +2,13 @@
 
 #pragma once
 
+#include "Components/WidgetComponent.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
 #include "UObject/Class.h"
 #include "UObject/ConstructorHelpers.h"
 #include <memory>
+#include <unordered_map>
 
 #include "CesiumCreditSystem.generated.h"
 
@@ -29,26 +31,16 @@ public:
 
   ACesiumCreditSystem();
 
-  /**
-   * The credits text to display.
-   */
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  FString Credits = "";
+  void BeginPlay() override;
 
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  FString OnScreenCredits = "";
+  UPROPERTY(EditDefaultsOnly, Category = "Cesium")
+  TSubclassOf<UUserWidget> CreditsWidgetClass;
 
   /**
    * Whether the credit string has changed since last frame.
    */
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
-
-  /**
-   * Whether any credits are part of the frame.
-   */
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
-  bool DisplayCredits = false;
 
   // Called every frame
   virtual bool ShouldTickIfViewportsOnly() const override;
@@ -61,6 +53,7 @@ public:
 
 private:
   static UClass* CesiumCreditSystemBP;
+  class UScreenCreditsWidget* _creditsWidget;
 
   /**
    * A tag that is assigned to Credit Systems when they are created
@@ -72,4 +65,7 @@ private:
   std::shared_ptr<Cesium3DTilesSelection::CreditSystem> _pCreditSystem;
 
   size_t _lastCreditsCount;
+
+  FString ConvertHtmlToRtf(std::string html);
+  std::unordered_map<std::string, FString> _htmlToRtf;
 };
