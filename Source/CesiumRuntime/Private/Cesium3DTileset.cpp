@@ -933,17 +933,17 @@ void ACesium3DTileset::LoadTileset() {
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(
-      LogCesium,
-      Log,
-      TEXT("Loading tileset from URL %s done"),
-      *this->Url);
+        LogCesium,
+        Log,
+        TEXT("Loading tileset from URL %s done"),
+        *this->Url);
     break;
   case ETilesetSource::FromCesiumIon:
     UE_LOG(
-      LogCesium,
-      Log,
-      TEXT("Loading tileset for asset ID %d done"),
-      this->IonAssetID);
+        LogCesium,
+        Log,
+        TEXT("Loading tileset for asset ID %d done"),
+        this->IonAssetID);
     break;
   }
 }
@@ -953,17 +953,17 @@ void ACesium3DTileset::DestroyTileset() {
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Destroying tileset from URL %s"),
-      *this->Url);
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset from URL %s"),
+        *this->Url);
     break;
   case ETilesetSource::FromCesiumIon:
     UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Destroying tileset for asset ID %d"),
-      this->IonAssetID);
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset for asset ID %d"),
+        this->IonAssetID);
     break;
   }
 
@@ -988,17 +988,17 @@ void ACesium3DTileset::DestroyTileset() {
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Destroying tileset from URL %s done"),
-      *this->Url);
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset from URL %s done"),
+        *this->Url);
     break;
   case ETilesetSource::FromCesiumIon:
     UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("Destroying tileset for asset ID %d done"),
-      this->IonAssetID);
+        LogCesium,
+        Verbose,
+        TEXT("Destroying tileset for asset ID %d done"),
+        this->IonAssetID);
     break;
   }
 }
