@@ -62,10 +62,6 @@
 #include <memory>
 #include <spdlog/spdlog.h>
 
-#if PLATFORM_ANDROID || PLATFORM_IOS
-#include "GenericPlatform/GenericPlatformApplicationMisc.h"
-#endif
-
 FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
 #if WITH_EDITOR
@@ -755,18 +751,12 @@ private:
 };
 
 static float getDevicePixelRatio(const UObject* WorldContextObject) {
-#if PLATFORM_ANDROID || PLATFORM_IOS
-  int32 screenDensity;
-  FGenericPlatformApplicationMisc::GetPhysicalScreenDensity(screenDensity);
-  return screenDensity / 160.0f;
-#else
   UWorld* world = WorldContextObject->GetWorld();
   if (IsValid(world) && world->GetGameViewport()) {
     return world->GetGameViewport()->GetDPIScale();
   } else {
     return 1.0f;
   }
-#endif
 }
 
 static std::string getCacheDatabaseName() {
