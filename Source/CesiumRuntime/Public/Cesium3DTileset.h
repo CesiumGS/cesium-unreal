@@ -10,7 +10,6 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
-#include "CesiumViewExtension.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "GameFramework/Actor.h"
@@ -25,8 +24,8 @@
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
-class UCesiumBoundingVolumeComponent;
 class UCesiumBoundingVolumePoolComponent;
+class CesiumViewExtension;
 struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
@@ -833,6 +832,7 @@ protected:
 private:
   TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension =
       nullptr;
+  UCesiumBoundingVolumePoolComponent* BoundingVolumePoolComponent = nullptr;
 
   void LoadTileset();
   void DestroyTileset();

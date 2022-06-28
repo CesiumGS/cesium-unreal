@@ -33,6 +33,7 @@
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
+#include "CesiumViewExtension.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "CreateGltfOptions.h"
 #include "Engine/Engine.h"
@@ -499,10 +500,9 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
     pGltf->UpdateTransformFromCesium(CesiumToUnreal);
   }
 
-  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
-      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
-  if (pBoundingVolumePool) {
-    pBoundingVolumePool->UpdateTransformFromCesium(CesiumToUnreal);
+  if (this->BoundingVolumePoolComponent) {
+    this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
+        CesiumToUnreal);
   }
 }
 
@@ -813,14 +813,9 @@ static std::string getCacheDatabaseName() {
 }
 
 void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
-  // TODO: save reference? How expensive is this?
-  // This is called separately for each view, may need to optimize this
-  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
-      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
-
-  if (pBoundingVolumePool) {
+  if (this->BoundingVolumePoolComponent) {
     const TArray<USceneComponent*>& children =
-        pBoundingVolumePool->GetAttachChildren();
+        this->BoundingVolumePoolComponent->GetAttachChildren();
     for (USceneComponent* pChild : children) {
       UCesiumBoundingVolumeComponent* pBoundingVolume =
           Cast<UCesiumBoundingVolumeComponent>(pChild);
@@ -874,17 +869,17 @@ void ACesium3DTileset::LoadTileset() {
   this->_cesiumViewExtension = cesiumViewExtension;
   this->_cesiumViewExtension->RegisterTileset(this);
 
-  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
-      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
-  if (this->EnableOcclusionCulling && !pBoundingVolumePool) {
+  if (this->EnableOcclusionCulling && !this->BoundingVolumePoolComponent) {
     const glm::dmat4& cesiumToUnreal =
         GetCesiumTilesetToUnrealRelativeWorldTransform();
-    pBoundingVolumePool = NewObject<UCesiumBoundingVolumePoolComponent>(this);
-    pBoundingVolumePool->SetUsingAbsoluteLocation(true);
-    pBoundingVolumePool->SetFlags(
+    this->BoundingVolumePoolComponent =
+        NewObject<UCesiumBoundingVolumePoolComponent>(this);
+    this->BoundingVolumePoolComponent->SetUsingAbsoluteLocation(true);
+    this->BoundingVolumePoolComponent->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-    pBoundingVolumePool->RegisterComponent();
-    pBoundingVolumePool->UpdateTransformFromCesium(cesiumToUnreal);
+    this->BoundingVolumePoolComponent->RegisterComponent();
+    this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
+        cesiumToUnreal);
   }
 
   Cesium3DTilesSelection::TilesetExternals externals{
@@ -893,8 +888,8 @@ void ACesium3DTileset::LoadTileset() {
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),
-      (this->EnableOcclusionCulling && pBoundingVolumePool)
-          ? pBoundingVolumePool->getPool()
+      (this->EnableOcclusionCulling && this->BoundingVolumePoolComponent)
+          ? this->BoundingVolumePoolComponent->getPool()
           : nullptr};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
@@ -1704,12 +1699,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
   }
 
-  UCesiumBoundingVolumePoolComponent* pBoundingVolumePool =
-      this->FindComponentByClass<UCesiumBoundingVolumePoolComponent>();
-
-  if (pBoundingVolumePool) {
+  if (this->BoundingVolumePoolComponent) {
     const TArray<USceneComponent*>& children =
-        pBoundingVolumePool->GetAttachChildren();
+        this->BoundingVolumePoolComponent->GetAttachChildren();
     for (USceneComponent* pChild : children) {
       UCesiumBoundingVolumeComponent* pBoundingVolume =
           Cast<UCesiumBoundingVolumeComponent>(pChild);
