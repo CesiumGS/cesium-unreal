@@ -39,11 +39,10 @@ TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
 
 void UCesiumBoundingVolumePoolComponent::destroyProxy(
     TileOcclusionRendererProxy* pProxy) {
-  // TODO: verify correctness of destruction
   UCesiumBoundingVolumeComponent* pBoundingVolumeComponent =
       (UCesiumBoundingVolumeComponent*)pProxy;
   if (pBoundingVolumeComponent) {
-    CesiumLifetime::destroy(pBoundingVolumeComponent);
+    CesiumLifetime::destroyComponentRecursively(pBoundingVolumeComponent);
   }
 }
 

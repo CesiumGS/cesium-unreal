@@ -643,7 +643,7 @@ public:
     } else if (pMainThreadResult) {
       UCesiumGltfComponent* pGltf =
           reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
-      this->destroyRecursively(pGltf);
+      CesiumLifetime::destroyComponentRecursively(pGltf);
     }
   }
 
@@ -751,33 +751,6 @@ public:
   }
 
 private:
-  void destroyRecursively(USceneComponent* pComponent) {
-
-    UE_LOG(
-        LogCesium,
-        VeryVerbose,
-        TEXT("Destroying scene component recursively"));
-
-    if (!pComponent) {
-      return;
-    }
-
-    if (pComponent->IsRegistered()) {
-      pComponent->UnregisterComponent();
-    }
-
-    TArray<USceneComponent*> children = pComponent->GetAttachChildren();
-    for (USceneComponent* pChild : children) {
-      this->destroyRecursively(pChild);
-    }
-
-    pComponent->DestroyPhysicsState();
-    pComponent->DestroyComponent();
-    pComponent->ConditionalBeginDestroy();
-
-    UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
-  }
-
   ACesium3DTileset* _pActor;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCookingModule* _pPhysXCookingModule;
