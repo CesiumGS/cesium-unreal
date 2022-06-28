@@ -765,8 +765,7 @@ private:
 
   static Cesium3DTilesSelection::ViewState CreateViewStateFromViewParameters(
       const FCesiumCamera& camera,
-      const glm::dmat4& unrealWorldToTileset,
-      float dpiScalingFactor);
+      const glm::dmat4& unrealWorldToTileset);
 
   std::vector<FCesiumCamera> GetCameras() const;
   std::vector<FCesiumCamera> GetPlayerCameras() const;
@@ -855,7 +854,7 @@ private:
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
 
-  float _dpiScalingFactor;
+  bool _scaleUsingDPI;
 
   // This is used as a workaround for cesium-native#186
   //

@@ -36,6 +36,7 @@
 #include "CreateGltfOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/SceneCapture2D.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
@@ -750,15 +751,6 @@ private:
 #endif
 };
 
-static float getDevicePixelRatio(const UObject* WorldContextObject) {
-  UWorld* world = WorldContextObject->GetWorld();
-  if (IsValid(world) && world->GetGameViewport()) {
-    return world->GetGameViewport()->GetDPIScale();
-  } else {
-    return 1.0f;
-  }
-}
-
 static std::string getCacheDatabaseName() {
 #if PLATFORM_ANDROID
   FString BaseDirectory = FPaths::ProjectPersistentDownloadDir();
@@ -953,25 +945,19 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
   }
 
-  bool scaleUsingDPI;
   switch (ApplyDpiScaling) {
   case (EApplyDpiScaling::UseProjectDefault):
-    scaleUsingDPI =
+    _scaleUsingDPI =
         GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
     break;
   case (EApplyDpiScaling::Yes):
-    scaleUsingDPI = true;
+    _scaleUsingDPI = true;
     break;
   case (EApplyDpiScaling::No):
-    scaleUsingDPI = false;
+    _scaleUsingDPI = false;
     break;
   default:
-    scaleUsingDPI = true;
-  }
-  if (scaleUsingDPI) {
-    _dpiScalingFactor = getDevicePixelRatio(GetWorld());
-  } else {
-    _dpiScalingFactor = 1.0f;
+    _scaleUsingDPI = true;
   }
 }
 
@@ -1109,6 +1095,14 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
+    float dpiScalingFactor = 1.0f;
+    if (this->_scaleUsingDPI) {
+      ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+      if (LocPlayer && LocPlayer->ViewportClient) {
+        dpiScalingFactor = LocPlayer->ViewportClient->GetDPIScale();
+      }
+    }
+
     if (useStereoRendering) {
 #if ENGINE_MAJOR_VERSION >= 5
       const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
@@ -1189,7 +1183,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             hfov);
       }
     } else {
-      cameras.emplace_back(FVector2D(sizeX, sizeY), location, rotation, fov);
+      cameras.emplace_back(
+          FVector2D(sizeX / dpiScalingFactor, sizeY / dpiScalingFactor),
+          location,
+          rotation,
+          fov);
     }
   }
 
@@ -1254,8 +1252,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
     const FCesiumCamera& camera,
-    const glm::dmat4& unrealWorldToTileset,
-    float dpiScalingFactor) {
+    const glm::dmat4& unrealWorldToTileset) {
 
   double horizontalFieldOfView =
       FMath::DegreesToRadians(camera.FieldOfViewDegrees);
@@ -1298,8 +1295,6 @@ ACesium3DTileset::CreateViewStateFromViewParameters(
       glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
   glm::dvec3 tilesetCameraUp = glm::normalize(
       glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
-
-  size /= dpiScalingFactor;
 
   return Cesium3DTilesSelection::ViewState::create(
       tilesetCameraLocation,
@@ -1347,6 +1342,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     if (size.X < 1 || size.Y < 1) {
       continue;
+    }
+
+    if (this->_scaleUsingDPI) {
+      float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
+      size /= dpiScalingFactor;
     }
 
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
@@ -1650,10 +1650,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
-    frustums.push_back(CreateViewStateFromViewParameters(
-        camera,
-        unrealWorldToTileset,
-        _dpiScalingFactor));
+    frustums.push_back(
+        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
