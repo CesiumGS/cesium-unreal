@@ -160,6 +160,24 @@ private:
       Meta = (AllowPrivateAccess))
   ACesiumCreditSystem* ResolvedCreditSystem = nullptr;
 
+  /**
+   * The bounding volume pool component that manages occlusion bounding volume
+   * proxies.
+   */
+  UPROPERTY(
+      Transient,
+      BlueprintReadOnly,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  UCesiumBoundingVolumePoolComponent* BoundingVolumePoolComponent = nullptr;
+
+  /**
+   * The custom view extension this tileset uses to pull renderer view
+   * information.
+   */
+  TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension =
+      nullptr;
+
 public:
   /** @copydoc ACesium3DTileset::CreditSystem */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
@@ -830,10 +848,6 @@ protected:
       const FHitResult& Hit) override;
 
 private:
-  TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension =
-      nullptr;
-  UCesiumBoundingVolumePoolComponent* BoundingVolumePoolComponent = nullptr;
-
   void LoadTileset();
   void DestroyTileset();
 
