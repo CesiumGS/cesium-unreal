@@ -220,18 +220,10 @@ void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
 }
 
 void ACesium3DTileset::SetUrl(const FString& InUrl) {
-  UE_LOG(
-    LogCesium,
-    Log,
-    TEXT("In set URL"));
   if (InUrl != this->Url) {
     if (this->TilesetSource == ETilesetSource::FromUrl) {
       this->DestroyTileset();
     }
-    UE_LOG(
-      LogCesium,
-      Log,
-      TEXT("After destroy tile"));
     this->Url = InUrl;
   }
 }
@@ -247,20 +239,20 @@ void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
 
 void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   if (this->IonAccessToken != InAccessToken) {
-    this->IonAccessToken = InAccessToken;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
+    this->IonAccessToken = InAccessToken;
   }
 }
 
 void ACesium3DTileset::SetIonAssetEndpointUrl(
     const FString& InIonAssetEndpointUrl) {
   if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
-    this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
+    this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
   }
 }
 
@@ -962,14 +954,14 @@ void ACesium3DTileset::DestroyTileset() {
   case ETilesetSource::FromUrl:
     UE_LOG(
       LogCesium,
-      Log, //Verbose,
+      Verbose,
       TEXT("Destroying tileset from URL %s"),
       *this->Url);
     break;
   case ETilesetSource::FromCesiumIon:
     UE_LOG(
       LogCesium,
-      Log, //Verbose,
+      Verbose,
       TEXT("Destroying tileset for asset ID %d"),
       this->IonAssetID);
     break;
@@ -997,14 +989,14 @@ void ACesium3DTileset::DestroyTileset() {
   case ETilesetSource::FromUrl:
     UE_LOG(
       LogCesium,
-      Log,// Verbose,
+      Verbose,
       TEXT("Destroying tileset from URL %s done"),
       *this->Url);
     break;
   case ETilesetSource::FromCesiumIon:
     UE_LOG(
       LogCesium,
-      Log, //Verbose,
+      Verbose,
       TEXT("Destroying tileset for asset ID %d done"),
       this->IonAssetID);
     break;
