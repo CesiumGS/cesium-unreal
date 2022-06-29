@@ -18,6 +18,7 @@ struct CreateModelOptions {
   const CesiumGltf::Model* pModel = nullptr;
   const FMetadataDescription* pEncodedMetadataDescription = nullptr;
   bool alwaysIncludeTangents = false;
+  bool createPhysicsMeshes = true;
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCookingModule* pPhysXCookingModule = nullptr;
 #endif

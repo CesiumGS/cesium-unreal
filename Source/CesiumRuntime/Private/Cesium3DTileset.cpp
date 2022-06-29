@@ -550,6 +550,7 @@ public:
     CreateGltfOptions::CreateModelOptions options;
     options.pModel = &model;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
+    options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
 
 #if PHYSICS_INTERFACE_PHYSX
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
