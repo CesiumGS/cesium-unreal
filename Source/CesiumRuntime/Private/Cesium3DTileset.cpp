@@ -91,7 +91,6 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _beforeMovieKeepWorldOriginNearCamera{true},
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
@@ -310,18 +309,11 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->_beforeMovieKeepWorldOriginNearCamera =
-        this->ResolveGeoreference()->KeepWorldOriginNearCamera;
-  }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
-  }
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
@@ -329,10 +321,6 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->ResolveGeoreference()->KeepWorldOriginNearCamera =
-        this->_beforeMovieKeepWorldOriginNearCamera;
-  }
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
@@ -562,6 +550,7 @@ public:
     CreateGltfOptions::CreateModelOptions options;
     options.pModel = &model;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
+    options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
 
 #if PHYSICS_INTERFACE_PHYSX
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
@@ -792,6 +781,22 @@ void ACesium3DTileset::LoadTileset() {
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
     return;
+  }
+
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    return;
+  }
+
+  AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
+  if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
+    pWorldSettings->bEnableLargeWorlds = true;
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Cesium for Unreal has enabled the \"Enable Large Worlds\" option in this world's settings, as it is required in order to avoid serious culling problems with Cesium3DTilesets in Unreal Engine 5."),
+        *this->Url);
   }
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
@@ -1040,7 +1045,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     return {};
   }
 
-  float worldToMeters = 100.0f;
+  double worldToMeters = 100.0;
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings) {
     worldToMeters = pWorldSettings->WorldToMeters;
@@ -1076,7 +1081,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    float fov = pPlayerCameraManager->GetFOVAngle();
+    double fov = pPlayerCameraManager->GetFOVAngle();
 
     FVector location;
     FRotator rotation;
@@ -1218,7 +1223,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 
     FVector captureLocation = pSceneCaptureComponent->GetComponentLocation();
     FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
-    float captureFov = pSceneCaptureComponent->FOVAngle;
+    double captureFov = pSceneCaptureComponent->FOVAngle;
 
     cameras.emplace_back(
         renderTargetSize,
@@ -1316,7 +1321,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-    float fov = pEditorViewportClient->ViewFOV;
+    double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);

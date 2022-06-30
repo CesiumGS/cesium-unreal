@@ -239,7 +239,7 @@ public:
    * Retrieves an element from the array and attempts to convert it to a 32-bit
    * floating-point value.
    *
-   * If the element is a singe-precision floating-point number, is is returned.
+   * If the element is a single-precision floating-point number, is is returned.
    *
    * If the element is an integer or double-precision floating-point number,
    * it is converted to the closest representable single-precision
@@ -267,6 +267,39 @@ public:
       UPARAM(ref) const FCesiumMetadataArray& array,
       int64 index,
       float DefaultValue = 0.0f);
+
+  /**
+   * Retrieves an element from the array and attempts to convert it to a 64-bit
+   * floating-point value.
+   *
+   * If the element is a single- or double-precision floating-point number, is
+   * is returned.
+   *
+   * If the element is an integer, it is converted to the closest representable
+   * double-precision floating-point number.
+   *
+   * If the element is a boolean, 0.0 is returned for false and 1.0 for true.
+   *
+   * If the element is a string and the entire string can be parsed as a
+   * number, the parsed value is returned. The string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param Index The index of the array element to retrieve.
+   * @param DefaultValue The default value to use if the index is invalid
+   * or the element's value cannot be converted.
+   * @return The element value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static double GetFloat64(
+      UPARAM(ref) const FCesiumMetadataArray& array,
+      int64 index,
+      double DefaultValue);
 
   /**
    * Retrieves an element from the array and attempts to convert it to a string

@@ -42,7 +42,7 @@ public:
    * @brief The horizontal field of view of the camera in degrees.
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
-  float FieldOfViewDegrees;
+  double FieldOfViewDegrees;
 
   /**
    * @brief The overriden aspect ratio for this camera.
@@ -54,7 +54,7 @@ public:
    * within a larger viewport.
    */
   UPROPERTY(BlueprintReadWrite, Category = "Cesium")
-  float OverrideAspectRatio = 0.0f;
+  double OverrideAspectRatio = 0.0;
 
   /**
    * @brief Construct an uninitialized FCesiumCamera object.
@@ -73,7 +73,7 @@ public:
       const FVector2D& ViewportSize,
       const FVector& Location,
       const FRotator& Rotation,
-      float FieldOfViewDegrees);
+      double FieldOfViewDegrees);
 
   /**
    * @brief Construct a new FCesiumCamera object.
@@ -88,6 +88,6 @@ public:
       const FVector2D& ViewportSize,
       const FVector& Location,
       const FRotator& Rotation,
-      float FieldOfViewDegrees,
-      float OverrideAspectRatio);
+      double FieldOfViewDegrees,
+      double OverrideAspectRatio);
 };

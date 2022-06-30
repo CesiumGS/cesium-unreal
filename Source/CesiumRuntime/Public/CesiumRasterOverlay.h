@@ -102,10 +102,10 @@ public:
   void Refresh();
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  float GetMaximumScreenSpaceError() const;
+  double GetMaximumScreenSpaceError() const;
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetMaximumScreenSpaceError(float Value);
+  void SetMaximumScreenSpaceError(double Value);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   int32 GetMaximumTextureSize() const;
@@ -144,7 +144,7 @@ protected:
       BlueprintGetter = GetMaximumScreenSpaceError,
       BlueprintSetter = SetMaximumScreenSpaceError,
       Category = "Cesium")
-  float MaximumScreenSpaceError = 2.0;
+  double MaximumScreenSpaceError = 2.0;
 
   /**
    * The maximum texel size of raster overlay textures, in either

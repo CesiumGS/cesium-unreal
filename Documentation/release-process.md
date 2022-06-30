@@ -5,10 +5,12 @@ This is the process we follow when releasing a new version of Cesium for Unreal 
 ## Test the release candidate
 
 * Verify that the cesium-native submodule in the `extern` directory references the expected commit of cesium-native. Update it if necessary. Verify that CI has completed successfully for that commit of cesium-native.
-* Wait for CI to complete for the main branch. Verify that it does so successfully.
-* Remove any existing copy of the Cesium for Unreal plugin from the engine plugins directory on your system. On Windows this is usually `C:\Program Files\Epic Games\UE_4.26\Engine\Plugins\Marketplace`.
-* Download the `UE4.27-AllPlatforms` or `UE4.26-AllPlatforms` for the `main` branch of cesium-unreal. Extract it to your Unreal Engine installation's engine plugins directory. 
-* Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory. Launch the Unreal Editor and open `CesiumForUnrealSamples.uproject` from the new cesium-unreal-samples directory.
+* Merge `ue4-main` into `ue5-main`.
+* Wait for CI to complete for the `ue4-main` and `ue5-main` branches. Verify that it does so successfully.
+* Remove all existing copies of the Cesium for Unreal plugin from the engine plugin directories on your system. On Windows this is usually `C:\Program Files\Epic Games\UE_4.26\Engine\Plugins\Marketplace`, `C:\Program Files\Epic Games\UE_4.27\Engine\Plugins\Marketplace`, and `C:\Program Files\Epic Games\UE_5.0\Engine\Plugins\Marketplace`.
+* Download the `UE4.27-AllPlatforms` or `UE4.26-AllPlatforms` for the `ue4-main` branch of cesium-unreal. Extract it to the appropriate Unreal Engine installation's engine plugins directory.
+* In the `ue5-main` branch, go to https://github.com/CesiumGS/cesium-unreal/actions and click the most recent build of the branch  (it should be near the top). Scroll down to "Artifcats" and download the artifact that doesn't have an operating system in its name. It will also be the largest artifact. Extract it to `C:\Program Files\Epic Games\UE_5.0\Engine\Plugins\Marketplace` or equivalent.
+* Clone a fresh copy of [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples) to a new directory. To test in a different version, right-click on the `CesiumForUnrealSamples.uproject` file and select "Switch Unreal Engine Version". Double-click that same file to open it in the Editor.
 * Open each level in Content -> CesiumSamples -> Maps and verify it works correctly:
   * Does it open without crashing?
   * Does it look correct?
@@ -33,18 +35,20 @@ While doing the steps below, make sure no new changes are going into either cesi
 * Verify again that cesium-unreal CI has completed successfully on all platforms.
 * Tag the cesium-native release, e.g., `git tag -a v0.2.0 -m "0.2.0 release"`
 * Push the tag to github: `git push origin v0.2.0`
-* Tag the cesium-unreal release, e.g., `git tag -a v1.1.0 -m "1.1.0 release"`
-* Push the tag to github: `git push origin v1.1.0`
+* Tag the cesium-unreal UE4 release, e.g., switch to the `ue4-main` branch and then: `git tag -a v1.1.0-ue4 -m "1.1.0-ue4 release"`
+* Push the tag to github: `git push origin v1.1.0-ue4`
+* Tag the cesium-unreal UE5 release, e.g., switch the `ue5-main` branch and then: `git tag -a v1.1.0-ue5 -m "1.1.0-ue5 release"`
+* Push the tag to github: `git push origin v1.1.0-ue5`
 
 # Publish the release on GitHub
 
 * Wait for the release tag CI build to complete.
-* Download the tag's `plugin-package-combined`. You can find it by switching to the tag in the GitHub UI, clicking the green tick in the header, and then clicking the Details button next to `plugin-package-combined`. While you're here, copy the download URL because you'll need it later.
-* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Copy the changelog into it. Follow the format used in previous release. Upload the release ZIP that you downloaded above.
+* Download the built plugin packages for the tags, as you did above for the main branches.
+* Create a new release on GitHub: https://github.com/CesiumGS/cesium-unreal/releases/new. Copy the changelog into it. Follow the format used in previous release. Upload the release ZIPs that you downloaded above.
 
 ## Publish the Release on Marketplace
 
-1. Open https://publish.unrealengine.com/v2/products. Login with the admin credentials.
+1. Open https://publish.unrealengine.com/. Login with the unreal@cesium.com credentials.
 2. Navigate to **Products -> Published**.
     ![image](https://user-images.githubusercontent.com/2288659/115271431-58b68180-a10b-11eb-9819-a0bb10c54714.png)
 3. Select **Cesium for Unreal**, then scroll all the way to the bottom to the **Product Files** section.
@@ -56,8 +60,8 @@ While doing the steps below, make sure no new changes are going into either cesi
     1. Update the Version Title to match the release version.
     2. Confirm the supported Unreal Engine versions.
     3. Confirm the supported platforms.
-    4. Update the version notes with information from [CHANGES.md](https://github.com/CesiumGS/cesium-unreal/blob/main/CHANGES.md).
-    5. Copy the CI-generated combined package URL into the **Project File Link** field.
+    4. Update the version notes to reference the appropriate version of [CHANGES.md](https://github.com/CesiumGS/cesium-unreal/blob/main/CHANGES.md).
+    5. Copy download URLs from the GitHub release pages you created above into the **Project File Link** field.
         ![image](https://user-images.githubusercontent.com/2288659/115272024-f0b46b00-a10b-11eb-98ec-c01e40b5e3fb.png)
 6. Click **Submit**.
 7. This should take you back to the product page, and the **Product Files** section should show **View Pending File Update**. The admin will also recieve an email confirming the submission. The release is now pending Epic's review. If the Marketplace Team reaches out about any issues, those may need resolving, and follow this process again to submit a new zip file for the release.
@@ -74,22 +78,21 @@ Assuming you tested the release candidate as described above, you should have [c
 ## Update ion Access Tokens and Project
 
 1. Create a new branch of cesium-unreal-samples. 
-2. Delete the Cesium for Unreal Samples token for the release before last, which should expire close to the present date.
-3. Create a new access token using the CesiumJS ion account. 
+2. Create a new access token using the CesiumJS ion account. 
    * The name of the token should match "Cesium for Unreal Samples x.x.x - Delete on September 1st, 2021". The expiry date should be two months later than present. 
    * The scope of the token should be "assets:read" for all assets.
-4. Copy the access token you just created. 
-5. Paste the new token into the `DefaultIonAccessToken` property in [Config/DefaultEngine.ini](https://github.com/CesiumGS/cesium-unreal-samples/blob/main/Config/DefaultEngine.ini).
-6. Open cesium-unreal-samples in Unreal Engine.
-7. If the plugin update has replaced any Cesium blueprints that may already exist in one of the scenes, such as DynamicPawn, CesiumSunSky, or similar, replace the old version of the blueprint with the new version, and test the scene with the play button to make sure everything is working. If you're unsure whether the plugin update has resulted in anything that needs to be changed in the Samples, ask the team. 
-8. Visit every scene again to make sure that the view is correct and that nothing appears to be missing. 
-9. For 04_MAIN_CesiumSublevels, play the scene in editor to test for the following. 
+3. Copy the access token you just created. 
+4. Paste the new token into the `DefaultIonAccessToken` property in [Config/DefaultEngine.ini](https://github.com/CesiumGS/cesium-unreal-samples/blob/main/Config/DefaultEngine.ini).
+5. Open cesium-unreal-samples in Unreal Engine.
+6. If the plugin update has replaced any Cesium blueprints that may already exist in one of the scenes, such as DynamicPawn, CesiumSunSky, or similar, replace the old version of the blueprint with the new version, and test the scene with the play button to make sure everything is working. If you're unsure whether the plugin update has resulted in anything that needs to be changed in the Samples, ask the team. 
+7. Visit every scene again to make sure that the view is correct and that nothing appears to be missing. 
+8. For 04_MAIN_CesiumSublevels, play the scene in editor to test for the following. 
    1. You'll start in Denver. Make sure the Denver Photogrammetry and CWT are showing and that there are no unexpected tilesets.
    2. Press "2". Make sure you fly to the Grand Canyon, you should see CWT only. Make sure there are no other unexpected tilesets.
    3. Press "3". Make sure you fly to Boston and CWT and the Boston Photogrammetry are showing. Make sure there are no other unexpected tilesets.
    4. Press "4". Make sure you fly to Paris, and CWT and OSM buildings are showing. Make sure there are no other unexpected tilesets.
    5. If no errors, return the camera to the starting view with the "1" key and close the scene without saving. 
-10. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
+9. Commit and push your changes. Create a PR to merge to `main` and tag a reviewer.
 
 ## Publish the Cesium for Unreal Samples release on GitHub
 
@@ -106,7 +109,7 @@ After the update has been merged to `main`, do the following:
 
 ## Publish Cesium for Unreal Samples on Marketplace
 
-1. Open https://publish.unrealengine.com/v2/products. Login with the admin credentials.
+1. Open https://publish.unrealengine.com/. Login with the admin credentials.
 2. Navigate to **Products -> Published**.
 3. Select **Cesium for Unreal Samples**, then scroll all the way to the bottom to the **Product Files** section.
 4. Click the **Submit File Update** button. Confirm the prompts, and you will be directed to this page below.
@@ -122,3 +125,4 @@ After the update has been merged to `main`, do the following:
 7. This should take you back to the product page, and the **Product Files** section should show **View Pending File Update**. The admin will also recieve an email confirming the submission. The release is now pending Epic's review. If the Marketplace Team reaches out about any issues, those may need resolving, and follow this process again to submit a new zip file for the release.
 8. Once the new release is approved, it does not automatically go live. Take this opportunity to update the product description, images, and other content as needed (product page changes do not require Epic's review).
 9. To release it to the marketplace, navigate back to the product page and click **Publish**.
+10. After the new release is accepted by Epic, delete the Cesium for Unreal Samples token in Cesium ion for the release before last, which should expire close to the present date.

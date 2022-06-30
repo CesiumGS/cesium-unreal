@@ -282,6 +282,37 @@ public:
       float DefaultValue);
 
   /**
+   * Gets the value and attempts to convert it to a 64-bit floating-point
+   * value.
+   *
+   * If the value is a single- or double-precision floating-point number, is is
+   * returned.
+   *
+   * If the value is an integer, it is converted to the closest representable
+   * double-precision floating-point number.
+   *
+   * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
+   *
+   * If the value is a string and the entire string can be parsed as a
+   * number, the parsed value is returned. The string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static double GetFloat64(
+      UPARAM(ref) const FCesiumMetadataGenericValue& Value,
+      double DefaultValue);
+
+  /**
    * Gets the value and attempts to convert it to a string value.
    *
    * A numeric value is converted to a string with `FString::Format`, which uses
