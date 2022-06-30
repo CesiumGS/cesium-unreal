@@ -1166,21 +1166,25 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
+    if (options.pMeshOptions->pNodeOptions->pModelOptions
+            ->createPhysicsMeshes) {
 #if PHYSICS_INTERFACE_PHYSX
-    CESIUM_TRACE("PhysX cook");
-    PxTriangleMesh* createdCollisionMesh = nullptr;
-    BuildPhysXTriangleMeshes(
-        createdCollisionMesh,
-        primitiveResult.uvInfo,
-        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
-        StaticMeshBuildVertices,
-        indices);
-    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
+      CESIUM_TRACE("PhysX cook");
+      PxTriangleMesh* createdCollisionMesh = nullptr;
+      BuildPhysXTriangleMeshes(
+          createdCollisionMesh,
+          primitiveResult.uvInfo,
+          options.pMeshOptions->pNodeOptions->pModelOptions
+              ->pPhysXCookingModule,
+          StaticMeshBuildVertices,
+          indices);
+      primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
-    CESIUM_TRACE("Chaos cook");
-    primitiveResult.pCollisionMesh =
-        BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+      CESIUM_TRACE("Chaos cook");
+      primitiveResult.pCollisionMesh =
+          BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
+    }
   }
 
   // load primitive metadata
