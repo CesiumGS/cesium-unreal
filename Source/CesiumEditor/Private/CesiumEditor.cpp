@@ -365,9 +365,13 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
 
 void FCesiumEditorModule::OnTilesetLoadFailure(
     const FCesium3DTilesetLoadFailureDetails& details) {
+  if (!details.Tileset.IsValid()) {
+    return;
+  }
+
   // Don't pop a troubleshooting panel over a game world (including
   // Play-In-Editor).
-  if (details.Tileset && details.Tileset->GetWorld()->IsGameWorld()) {
+  if (details.Tileset->GetWorld()->IsGameWorld()) {
     return;
   }
 
@@ -382,17 +386,21 @@ void FCesiumEditorModule::OnTilesetLoadFailure(
   // Check for a 401 connecting to Cesium ion, which means the token is invalid
   // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
   // when the token is valid but not authorized for the asset.
-  if (details.Tileset && details.Type == ECesium3DTilesetLoadType::CesiumIon &&
+  if (details.Type == ECesium3DTilesetLoadType::CesiumIon &&
       (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
-    CesiumIonTokenTroubleshooting::Open(details.Tileset, true);
+    CesiumIonTokenTroubleshooting::Open(details.Tileset.Get(), true);
   }
 }
 
 void FCesiumEditorModule::OnRasterOverlayLoadFailure(
     const FCesiumRasterOverlayLoadFailureDetails& details) {
+  if (!details.Overlay.IsValid()) {
+    return;
+  }
+
   // Don't pop a troubleshooting panel over a game world (including
   // Play-In-Editor).
-  if (details.Overlay && details.Overlay->GetWorld()->IsGameWorld()) {
+  if (details.Overlay->GetWorld()->IsGameWorld()) {
     return;
   }
 
@@ -407,10 +415,9 @@ void FCesiumEditorModule::OnRasterOverlayLoadFailure(
   // Check for a 401 connecting to Cesium ion, which means the token is invalid
   // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
   // when the token is valid but not authorized for the asset.
-  if (details.Overlay &&
-      details.Type == ECesiumRasterOverlayLoadType::CesiumIon &&
+  if (details.Type == ECesiumRasterOverlayLoadType::CesiumIon &&
       (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
-    CesiumIonTokenTroubleshooting::Open(details.Overlay, true);
+    CesiumIonTokenTroubleshooting::Open(details.Overlay.Get(), true);
   }
 }
 
