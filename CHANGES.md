@@ -11,6 +11,7 @@
 - Swapped latitude and longitude parameters on georeferenced sublevels to match with the main georeference.
 - Adjusted the presentation of sublevels in the Cesium Georeference details panel.
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
+- Fixed a bug that could cause a crash when reporting tileset or raster overlay load errors, particularly while switching levels.
 - We now Log the correct asset source when loading a new tileset from either URL or Ion. 
 
 ### v1.14.0 - 2022-06-01

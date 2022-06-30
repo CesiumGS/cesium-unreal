@@ -840,7 +840,7 @@ void ACesium3DTileset::LoadTileset() {
             uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
         assert(this->_pTileset == details.pTileset);
 
-        FCesium3DTilesetLoadFailureDetails ueDetails;
+        FCesium3DTilesetLoadFailureDetails ueDetails{};
         ueDetails.Tileset = this;
         ueDetails.Type = ECesium3DTilesetLoadType(typeValue);
         ueDetails.HttpStatusCode =

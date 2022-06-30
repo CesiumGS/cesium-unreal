@@ -33,7 +33,7 @@ struct CESIUMRUNTIME_API FCesiumRasterOverlayLoadFailureDetails {
    * The overlay that encountered the load failure.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  UCesiumRasterOverlay* Overlay = nullptr;
+  TWeakObjectPtr<UCesiumRasterOverlay> Overlay = nullptr;
 
   /**
    * The type of request that failed to load.
