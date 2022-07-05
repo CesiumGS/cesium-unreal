@@ -15,8 +15,11 @@ using namespace Cesium3DTilesSelection;
 
 UCesiumBoundingVolumePoolComponent::UCesiumBoundingVolumePoolComponent()
     : _cesiumToUnreal(1.0) {
-  this->_pPool = std::make_shared<CesiumBoundingVolumePool>(this);
   SetMobility(EComponentMobility::Movable);
+}
+
+void UCesiumBoundingVolumePoolComponent::initPool(int32 maxPoolSize) {
+  this->_pPool = std::make_shared<CesiumBoundingVolumePool>(this, maxPoolSize);
 }
 
 TileOcclusionRendererProxy* UCesiumBoundingVolumePoolComponent::createProxy() {
@@ -47,8 +50,10 @@ void UCesiumBoundingVolumePoolComponent::destroyProxy(
 }
 
 UCesiumBoundingVolumePoolComponent::CesiumBoundingVolumePool::
-    CesiumBoundingVolumePool(UCesiumBoundingVolumePoolComponent* pOutter)
-    : _pOutter(pOutter) {}
+    CesiumBoundingVolumePool(
+        UCesiumBoundingVolumePoolComponent* pOutter,
+        int32 maxPoolSize)
+    : TileOcclusionRendererProxyPool(maxPoolSize), _pOutter(pOutter) {}
 
 TileOcclusionRendererProxy*
 UCesiumBoundingVolumePoolComponent::CesiumBoundingVolumePool::createProxy() {

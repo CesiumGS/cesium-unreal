@@ -24,6 +24,11 @@ public:
   UCesiumBoundingVolumePoolComponent();
 
   /**
+   * Initialize the TileOcclusionRendererProxyPool implementation.
+   */
+  void initPool(int32 maxPoolSize);
+
+  /**
    * Updates bounding volume transforms from a new double-precision
    * transformation from the Cesium world to the Unreal Engine world.
    *
@@ -51,7 +56,9 @@ private:
   class CesiumBoundingVolumePool
       : public Cesium3DTilesSelection::TileOcclusionRendererProxyPool {
   public:
-    CesiumBoundingVolumePool(UCesiumBoundingVolumePoolComponent* pOutter);
+    CesiumBoundingVolumePool(
+        UCesiumBoundingVolumePoolComponent* pOutter,
+        int32 maxPoolSize);
 
   protected:
     Cesium3DTilesSelection::TileOcclusionRendererProxy* createProxy() override;

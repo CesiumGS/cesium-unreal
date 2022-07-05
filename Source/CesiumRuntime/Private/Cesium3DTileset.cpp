@@ -855,6 +855,10 @@ void ACesium3DTileset::LoadTileset() {
         cesiumToUnreal);
   }
 
+  if (this->BoundingVolumePoolComponent) {
+    this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
+  }
+
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),

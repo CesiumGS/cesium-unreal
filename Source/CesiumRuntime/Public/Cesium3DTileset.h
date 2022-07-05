@@ -336,62 +336,6 @@ public:
   bool EnableFogCulling = true;
 
   /**
-   * Whether to cull tiles that are occluded.
-   *
-   * When enabled, this feature will use Unreal's occlusion system to determine
-   * if tiles are actually visible on the screen. For tiles found to be
-   * occluded, the tile will not refine to show descendants, but it will still
-   * be rendered to avoid holes. This results in less tile loads and less GPU
-   * resource usage for dense, high-occlusion scenes like ground-level views in
-   * cities.
-   *
-   * This will not work for tilesets with poorly fit bounding volumes and cause
-   * more draw calls with very few extra culled tiles. When there is minimal
-   * occlusion in a scene, such as with terrain tilesets and applications
-   * focused on top-down views, this feature will yield minimal benefit and
-   * potentially cause needless overhead.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetEnableOcclusionCulling,
-      BlueprintSetter = SetEnableOcclusionCulling,
-      Category = "Cesium|Tile Culling|Experimental")
-  bool EnableOcclusionCulling = true;
-
-  /**
-   * The number of CesiumBoundingVolumeComponents to use for querying the
-   * occlusion state of traversed tiles.
-   *
-   * Only applicable when EnableOcclusionCulling is enabled.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetOcclusionPoolSize,
-      BlueprintSetter = SetOcclusionPoolSize,
-      Category = "Cesium|Tile Culling|Experimental",
-      meta =
-          (EditCondition = "EnableOcclusionCulling",
-           ClampMin = "0",
-           ClampMax = "1000"))
-  int32 OcclusionPoolSize = 500;
-
-  /**
-   * Whether to wait for valid occlusion results before refining tiles.
-   *
-   * Only applicable when EnableOcclusionCulling is enabled. When this option
-   * is enabled, there may be small delays before tiles are refined, but there
-   * may be an overall performance advantage by avoiding loads of descendants
-   * that will be found to be occluded.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintGetter = GetDelayRefinementForOcclusion,
-      BlueprintSetter = SetDelayRefinementForOcclusion,
-      Category = "Cesium|Tile Culling|Experimental",
-      meta = (EditCondition = "EnableOcclusionCulling"))
-  bool DelayRefinementForOcclusion = true;
-
-  /**
    * Whether a specified screen-space error should be enforced for tiles that
    * are outside the frustum or hidden in fog.
    *
@@ -466,6 +410,62 @@ public:
       Category = "Cesium|Tile Culling",
       meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
   float CulledScreenSpaceError = 64.0;
+
+  /**
+   * Whether to cull tiles that are occluded.
+   *
+   * When enabled, this feature will use Unreal's occlusion system to determine
+   * if tiles are actually visible on the screen. For tiles found to be
+   * occluded, the tile will not refine to show descendants, but it will still
+   * be rendered to avoid holes. This results in less tile loads and less GPU
+   * resource usage for dense, high-occlusion scenes like ground-level views in
+   * cities.
+   *
+   * This will not work for tilesets with poorly fit bounding volumes and cause
+   * more draw calls with very few extra culled tiles. When there is minimal
+   * occlusion in a scene, such as with terrain tilesets and applications
+   * focused on top-down views, this feature will yield minimal benefit and
+   * potentially cause needless overhead.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableOcclusionCulling,
+      BlueprintSetter = SetEnableOcclusionCulling,
+      Category = "Cesium|Tile Occlusion")
+  bool EnableOcclusionCulling = true;
+
+  /**
+   * The number of CesiumBoundingVolumeComponents to use for querying the
+   * occlusion state of traversed tiles.
+   *
+   * Only applicable when EnableOcclusionCulling is enabled.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetOcclusionPoolSize,
+      BlueprintSetter = SetOcclusionPoolSize,
+      Category = "Cesium|Tile Occlusion",
+      meta =
+          (EditCondition = "EnableOcclusionCulling",
+           ClampMin = "0",
+           ClampMax = "1000"))
+  int32 OcclusionPoolSize = 500;
+
+  /**
+   * Whether to wait for valid occlusion results before refining tiles.
+   *
+   * Only applicable when EnableOcclusionCulling is enabled. When this option
+   * is enabled, there may be small delays before tiles are refined, but there
+   * may be an overall performance advantage by avoiding loads of descendants
+   * that will be found to be occluded.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetDelayRefinementForOcclusion,
+      BlueprintSetter = SetDelayRefinementForOcclusion,
+      Category = "Cesium|Tile Occlusion",
+      meta = (EditCondition = "EnableOcclusionCulling"))
+  bool DelayRefinementForOcclusion = true;
 
   /**
    * Refreshes this tileset, ensuring that all materials and other settings are
