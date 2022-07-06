@@ -33,7 +33,7 @@ struct CESIUMRUNTIME_API FCesium3DTilesetLoadFailureDetails {
    * The tileset that encountered the load failure.
    */
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
-  ACesium3DTileset* Tileset = nullptr;
+  TWeakObjectPtr<ACesium3DTileset> Tileset = nullptr;
 
   /**
    * The type of request that failed to load.
