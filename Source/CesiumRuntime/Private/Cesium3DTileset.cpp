@@ -874,7 +874,6 @@ void ACesium3DTileset::LoadTileset() {
   Cesium3DTilesSelection::TilesetOptions options;
 
   options.enableOcclusionCulling = this->EnableOcclusionCulling;
-  options.occlusionPoolSize = static_cast<uint32_t>(this->OcclusionPoolSize);
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
 
   options.showCreditsOnScreen = ShowCreditsOnScreen;
@@ -1531,7 +1530,6 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableOcclusionCulling = this->EnableOcclusionCulling;
 
-  options.occlusionPoolSize = static_cast<uint32_t>(this->OcclusionPoolSize);
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
