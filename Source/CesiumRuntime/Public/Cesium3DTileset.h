@@ -230,7 +230,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
-  float MaximumScreenSpaceError = 16.0;
+  double MaximumScreenSpaceError = 16.0;
 
   /**
    * Whether to preload ancestor tiles.
@@ -409,7 +409,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
       meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
-  float CulledScreenSpaceError = 64.0;
+  double CulledScreenSpaceError = 64.0;
 
   /**
    * Whether to cull tiles that are occluded.
@@ -942,7 +942,6 @@ private:
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
-  bool _beforeMovieKeepWorldOriginNearCamera;
 
   // This is used as a workaround for cesium-native#186
   //

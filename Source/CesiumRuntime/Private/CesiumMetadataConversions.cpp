@@ -20,8 +20,9 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
     return ECesiumMetadataBlueprintType::Integer64;
   case ECesiumMetadataTrueType::Float32:
     return ECesiumMetadataBlueprintType::Float;
-  case ECesiumMetadataTrueType::Uint64:
   case ECesiumMetadataTrueType::Float64:
+    return ECesiumMetadataBlueprintType::Float64;
+  case ECesiumMetadataTrueType::Uint64:
   case ECesiumMetadataTrueType::String:
     return ECesiumMetadataBlueprintType::String;
   case ECesiumMetadataTrueType::Array:
