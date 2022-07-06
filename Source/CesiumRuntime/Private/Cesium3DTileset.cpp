@@ -291,6 +291,13 @@ void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
   }
 }
 
+void ACesium3DTileset::SetTranslucentMaterial(UMaterialInterface* InMaterial) {
+  if (this->TranslucentMaterial != InMaterial) {
+    this->TranslucentMaterial = InMaterial;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   if (this->WaterMaterial != InMaterial) {
     this->WaterMaterial = InMaterial;
@@ -589,6 +596,7 @@ public:
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
+          this->_pActor->GetTranslucentMaterial(),
           this->_pActor->GetWaterMaterial(),
           this->_pActor->GetCustomDepthParameters(),
           tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()));
@@ -1699,6 +1707,7 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.

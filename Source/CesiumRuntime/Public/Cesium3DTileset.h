@@ -565,7 +565,7 @@ private:
   bool EnableWaterMask = false;
 
   /**
-   * A custom Material to use to render this tileset, in order to implement
+   * A custom Material to use to render opaque elements in this tileset, in order to implement
    * custom visual effects.
    *
    * The custom material should generally be created by copying the
@@ -577,6 +577,20 @@ private:
       BlueprintSetter = SetMaterial,
       Category = "Cesium|Rendering")
   UMaterialInterface* Material = nullptr;
+
+  /**
+   * A custom Material to use to render translucent elements of the tileset, in order to implement
+   * custom visual effects.
+   *
+   * The custom material should generally be created by copying the
+   * "M_CesiumOverlay" material, changing blend mode to translucent, and customizing it as desired.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetTranslucentMaterial,
+      BlueprintSetter = SetTranslucentMaterial,
+      Category = "Cesium|Rendering")
+  UMaterialInterface* TranslucentMaterial = nullptr;
 
   /**
    * A custom Material to use to render this tileset in areas where the
@@ -668,6 +682,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetMaterial(UMaterialInterface* InMaterial);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  UMaterialInterface* GetTranslucentMaterial() const { return TranslucentMaterial; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetTranslucentMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetWaterMaterial() const { return WaterMaterial; }

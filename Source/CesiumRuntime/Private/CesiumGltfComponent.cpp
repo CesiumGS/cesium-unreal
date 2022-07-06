@@ -1558,13 +1558,30 @@ static void SetGltfParameterValues(
         static_cast<float>(textureCoordinateSet.second));
   }
 
-  if (pbr.baseColorFactor.size() >= 3) {
+  if (pbr.baseColorFactor.size() > 3) {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
-        FVector(
+        FLinearColor(
             pbr.baseColorFactor[0],
             pbr.baseColorFactor[1],
-            pbr.baseColorFactor[2]));
+            pbr.baseColorFactor[2],
+            pbr.baseColorFactor[3]));
+  } else if (pbr.baseColorFactor.size() == 3) {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("baseColorFactor", association, index),
+        FLinearColor(
+            pbr.baseColorFactor[0],
+            pbr.baseColorFactor[1],
+            pbr.baseColorFactor[2],
+            1.));
+  } else {
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo("baseColorFactor", association, index),
+        FLinearColor(
+            1.,
+            1.,
+            1.,
+            1.));
   }
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", association, index),
@@ -1856,7 +1873,9 @@ static void loadPrimitiveGameThreadPart(
   UMaterialInterface* pBaseMaterial =
       (loadResult.onlyWater || !loadResult.onlyLand)
           ? pGltf->BaseMaterialWithWater
-          : pGltf->BaseMaterial;
+          : (pbr.baseColorFactor.size() > 3 && pbr.baseColorFactor[3] < 0.996)	//1. - 1. / 256.
+             ? pGltf->BaseMaterialWithTranslcency
+             : pGltf->BaseMaterial;
 #endif
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
@@ -2014,6 +2033,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
+    UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
@@ -2035,6 +2055,10 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   if (pBaseMaterial) {
     Gltf->BaseMaterial = pBaseMaterial;
+  }
+
+  if (pBaseTranslucentMaterial) {
+    Gltf->BaseMaterialWithTranslcency = pBaseTranslucentMaterial;
   }
 
   if (pBaseWaterMaterial) {
@@ -2065,10 +2089,13 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithTranslcency;
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
     ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
         : BaseMaterial(TEXT(
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClipping.MI_CesiumThreeOverlaysAndClipping")),
+          BaseMaterialWithTranslcency(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClipping.MI_CesiumThreeOverlaysAndClipping")),
           BaseMaterialWithWater(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingAndWater.MI_CesiumThreeOverlaysAndClippingAndWater")),
@@ -2079,6 +2106,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
+  this->BaseMaterialWithTranslcency = ConstructorStatics.BaseMaterialWithTranslcency.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
