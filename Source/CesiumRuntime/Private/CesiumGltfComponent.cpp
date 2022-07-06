@@ -1870,12 +1870,18 @@ static void loadPrimitiveGameThreadPart(
   // TODO: figure out why water material crashes mac
   UMaterialInterface* pBaseMaterial = pGltf->BaseMaterial;
 #else
+  const auto is_in_blend_mode = [](auto &result) {
+    return !!result.pMaterial && result.pMaterial->alphaMode == CesiumGltf::Material::AlphaMode::BLEND;
+  };
+
   UMaterialInterface* pBaseMaterial =
       (loadResult.onlyWater || !loadResult.onlyLand)
           ? pGltf->BaseMaterialWithWater
-          : (pbr.baseColorFactor.size() > 3 && pbr.baseColorFactor[3] < 0.996)	//1. - 1. / 256.
-             ? pGltf->BaseMaterialWithTranslcency
-             : pGltf->BaseMaterial;
+          : (is_in_blend_mode(loadResult)
+             && pbr.baseColorFactor.size() > 3
+             && pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+                 ? pGltf->BaseMaterialWithTranslcency
+                 : pGltf->BaseMaterial;
 #endif
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
