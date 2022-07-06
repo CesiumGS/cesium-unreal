@@ -19,6 +19,33 @@
   }
 }
 
+/*static*/ void
+CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
+  UE_LOG(
+      LogCesium,
+      VeryVerbose,
+      TEXT("Destroying scene component recursively"));
+
+  if (!pComponent) {
+    return;
+  }
+
+  if (pComponent->IsRegistered()) {
+    pComponent->UnregisterComponent();
+  }
+
+  TArray<USceneComponent*> children = pComponent->GetAttachChildren();
+  for (USceneComponent* pChild : children) {
+    destroyComponentRecursively(pChild);
+  }
+
+  pComponent->DestroyPhysicsState();
+  pComponent->DestroyComponent();
+  pComponent->ConditionalBeginDestroy();
+
+  UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
+}
+
 /*static*/ bool CesiumLifetime::runDestruction(UObject* pObject) {
   if (!pObject) {
     return true;

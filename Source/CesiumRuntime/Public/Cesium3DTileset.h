@@ -14,7 +14,9 @@
 #include "CustomDepthParameters.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
+#include "PrimitiveSceneProxy.h"
 #include <PhysicsEngine/BodyInstance.h>
+#include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
 #include <vector>
@@ -22,11 +24,14 @@
 
 class UMaterialInterface;
 class ACesiumCartographicSelection;
+class UCesiumBoundingVolumePoolComponent;
+class CesiumViewExtension;
 struct FCesiumCamera;
 
 namespace Cesium3DTilesSelection {
 class Tileset;
 class TilesetView;
+class TileOcclusionRendererProxyPool;
 } // namespace Cesium3DTilesSelection
 
 /**
@@ -154,6 +159,24 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   ACesiumCreditSystem* ResolvedCreditSystem = nullptr;
+
+  /**
+   * The bounding volume pool component that manages occlusion bounding volume
+   * proxies.
+   */
+  UPROPERTY(
+      Transient,
+      BlueprintReadOnly,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  UCesiumBoundingVolumePoolComponent* BoundingVolumePoolComponent = nullptr;
+
+  /**
+   * The custom view extension this tileset uses to pull renderer view
+   * information.
+   */
+  TSharedPtr<CesiumViewExtension, ESPMode::ThreadSafe> _cesiumViewExtension =
+      nullptr;
 
 public:
   /** @copydoc ACesium3DTileset::CreditSystem */
@@ -389,6 +412,62 @@ public:
   double CulledScreenSpaceError = 64.0;
 
   /**
+   * Whether to cull tiles that are occluded.
+   *
+   * When enabled, this feature will use Unreal's occlusion system to determine
+   * if tiles are actually visible on the screen. For tiles found to be
+   * occluded, the tile will not refine to show descendants, but it will still
+   * be rendered to avoid holes. This results in less tile loads and less GPU
+   * resource usage for dense, high-occlusion scenes like ground-level views in
+   * cities.
+   *
+   * This will not work for tilesets with poorly fit bounding volumes and cause
+   * more draw calls with very few extra culled tiles. When there is minimal
+   * occlusion in a scene, such as with terrain tilesets and applications
+   * focused on top-down views, this feature will yield minimal benefit and
+   * potentially cause needless overhead.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetEnableOcclusionCulling,
+      BlueprintSetter = SetEnableOcclusionCulling,
+      Category = "Cesium|Tile Occlusion")
+  bool EnableOcclusionCulling = true;
+
+  /**
+   * The number of CesiumBoundingVolumeComponents to use for querying the
+   * occlusion state of traversed tiles.
+   *
+   * Only applicable when EnableOcclusionCulling is enabled.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetOcclusionPoolSize,
+      BlueprintSetter = SetOcclusionPoolSize,
+      Category = "Cesium|Tile Occlusion",
+      meta =
+          (EditCondition = "EnableOcclusionCulling",
+           ClampMin = "0",
+           ClampMax = "1000"))
+  int32 OcclusionPoolSize = 500;
+
+  /**
+   * Whether to wait for valid occlusion results before refining tiles.
+   *
+   * Only applicable when EnableOcclusionCulling is enabled. When this option
+   * is enabled, there may be small delays before tiles are refined, but there
+   * may be an overall performance advantage by avoiding loads of descendants
+   * that will be found to be occluded.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetDelayRefinementForOcclusion,
+      BlueprintSetter = SetDelayRefinementForOcclusion,
+      Category = "Cesium|Tile Occlusion",
+      meta = (EditCondition = "EnableOcclusionCulling"))
+  bool DelayRefinementForOcclusion = true;
+
+  /**
    * Refreshes this tileset, ensuring that all materials and other settings are
    * applied. It is not usually necessary to invoke this, but when
    * behind-the-scenes changes are made and not reflected in the tileset, this
@@ -450,7 +529,7 @@ private:
       BlueprintSetter = SetUrl,
       Category = "Cesium",
       meta = (EditCondition = "TilesetSource==ETilesetSource::FromUrl"))
-  FString Url;
+  FString Url = "";
 
   /**
    * The ID of the Cesium ion asset to use.
@@ -639,6 +718,26 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
+  bool GetEnableOcclusionCulling() const { return EnableOcclusionCulling; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
+  void SetEnableOcclusionCulling(bool bEnableOcclusionCulling);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
+  int32 GetOcclusionPoolSize() const { return OcclusionPoolSize; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
+  void SetOcclusionPoolSize(int32 newOcclusionPoolSize);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
+  bool GetDelayRefinementForOcclusion() const {
+    return DelayRefinementForOcclusion;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
+  void SetDelayRefinementForOcclusion(bool bDelayRefinementForOcclusion);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Physics")
   bool GetCreatePhysicsMeshes() const { return CreatePhysicsMeshes; }
 
@@ -716,6 +815,8 @@ public:
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
+
+  void UpdateFromView(FSceneViewFamily& ViewFamily);
 
   // UObject overrides
 #if WITH_EDITOR
@@ -831,6 +932,8 @@ private:
   uint32_t _lastTilesVisited;
   uint32_t _lastCulledTilesVisited;
   uint32_t _lastTilesCulled;
+  uint32_t _lastTilesOccluded;
+  uint32_t _lastTilesWaitingForOcclusionResults;
   uint32_t _lastMaxDepthVisited;
 
   std::chrono::high_resolution_clock::time_point _startTime;
