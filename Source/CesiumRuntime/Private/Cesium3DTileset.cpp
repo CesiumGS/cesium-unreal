@@ -805,6 +805,13 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
   }
 }
 
+void ACesium3DTileset::GetLoadingStatus() {
+  int32_t loadNum = this->_pTileset->getTilesetLoadingStatus();
+  if (loadNum) { 
+      UE_LOG(LogCesium, Log, TEXT("LOADING TILES %ld"), loadNum);
+  }
+}
+
 void ACesium3DTileset::LoadTileset() {
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
@@ -1725,6 +1732,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
   this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
+
+  this->GetLoadingStatus();
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
