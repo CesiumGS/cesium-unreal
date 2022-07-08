@@ -805,10 +805,10 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
   }
 }
 
-void ACesium3DTileset::GetLoadingStatus() {
-  int32_t loadNum = this->_pTileset->getTilesetLoadingStatus();
-  if (loadNum) { 
-      UE_LOG(LogCesium, Log, TEXT("LOADING TILES %ld"), loadNum);
+void ACesium3DTileset::GetLoadingPercentage() {
+  size_t loadPercent = this->_pTileset->getTilesetLoadingStatus();
+  if (loadPercent) {
+    UE_LOG(LogCesium, Log, TEXT("LOADING TILES %ld"), loadPercent);
   }
 }
 
@@ -1733,7 +1733,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
 
-  this->GetLoadingStatus();
+  this->GetLoadingPercentage();
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {

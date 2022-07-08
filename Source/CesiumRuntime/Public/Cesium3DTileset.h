@@ -817,7 +817,7 @@ public:
   virtual void Serialize(FArchive& Ar) override;
 
   void UpdateFromView(FSceneViewFamily& ViewFamily);
-  void GetLoadingStatus();
+  void GetLoadingPercentage();
 
   // UObject overrides
 #if WITH_EDITOR
