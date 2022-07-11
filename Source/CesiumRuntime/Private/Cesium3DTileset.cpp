@@ -807,11 +807,10 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
 
 void ACesium3DTileset::GetLoadingPercentage() {
   uint32_t loadPercent = this->_pTileset->computeLoadProgress();
+  this->_loadProgress = loadPercent;
   if (loadPercent < 100) {
-    UE_LOG(LogCesium, Log, TEXT("%ld%% Tiles loaded."), loadPercent);
     this->_activeLoading = true;
   } else if (this->_activeLoading && loadPercent == 100) {
-    UE_LOG(LogCesium, Log, TEXT("All tiles are loaded. "));
     this->_activeLoading = false;
   }
 }
@@ -1593,7 +1592,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         LogCesium,
         Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d, Loaded tiles %d%%"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,
@@ -1606,7 +1605,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.maxDepthVisited,
         result.tilesLoadingLowPriority,
         result.tilesLoadingMediumPriority,
-        result.tilesLoadingHighPriority);
+        result.tilesLoadingHighPriority,
+        this->_loadProgress);
   }
 }
 
