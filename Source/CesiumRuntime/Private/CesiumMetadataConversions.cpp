@@ -46,6 +46,7 @@ CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType) {
   case ECesiumMetadataTrueType::Uint32: // lossy or reinterpreted
   case ECesiumMetadataTrueType::Int64:  // lossy
   case ECesiumMetadataTrueType::Uint64: // lossy
+  case ECesiumMetadataTrueType::String: // parsed if number, otherwise fnv1a hashed, u32 hash bits stored in float via memcpy(*char, *char, 4);
     return ECesiumMetadataPackedGpuType::Float;
   default:
     return ECesiumMetadataPackedGpuType::None;

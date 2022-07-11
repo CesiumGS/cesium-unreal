@@ -266,6 +266,25 @@ template <> struct CesiumMetadataConversions<float, std::string_view> {
     if (pLastUsed == temp.c_str() + temp.size()) {
       // Successfully parsed the entire string as a float.
       return parsedValue;
+    } else {
+      // Not a number, calculate and return fnv1a hash
+      const auto fnv1a = [](auto str) {
+        const uint32_t fnv32Prime = 0x01000193;
+        const uint32_t fnv32Offset = 0x811c9dc5;
+
+        uint32_t hash = fnv32Offset;
+        for (char c : str) {
+          hash ^= (uint32_t)c;
+          hash *= fnv32Prime;
+        }
+
+        return hash;
+      };
+
+      uint32_t hash = fnv1a(temp);
+      float bits;
+      memcpy((char*)&bits, (char*)&hash, sizeof(hash));
+      return bits;
     }
 
     return defaultValue;
