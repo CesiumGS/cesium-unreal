@@ -806,9 +806,13 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
 }
 
 void ACesium3DTileset::GetLoadingPercentage() {
-  size_t loadPercent = this->_pTileset->getTilesetLoadingStatus();
-  if (loadPercent) {
-    UE_LOG(LogCesium, Log, TEXT("LOADING TILES %ld"), loadPercent);
+  uint32_t loadPercent = this->_pTileset->computeLoadProgress();
+  if (loadPercent < 100) {
+    UE_LOG(LogCesium, Log, TEXT("%ld%% Tiles loaded."), loadPercent);
+    this->_activeLoading = true;
+  } else if (this->_activeLoading && loadPercent == 100) {
+    UE_LOG(LogCesium, Log, TEXT("All tiles are loaded. "));
+    this->_activeLoading = false;
   }
 }
 
