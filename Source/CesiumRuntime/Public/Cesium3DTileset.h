@@ -42,6 +42,12 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetLoadFailure,
     const FCesium3DTilesetLoadFailureDetails&);
 
+/**
+ * The delegate for the Acesium3DTileset::OnTilesetLoaded,
+ * which is triggered from UpdateLoadStatus
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedLoadTrigger);
+
 CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
     OnCesium3DTilesetLoadFailure;
 
@@ -506,6 +512,17 @@ public:
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
+  /**
+   * A delegate that will be called whenever the tileset is fully loaded.
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium");
+  FCompletedLoadTrigger OnTilesetLoaded;
+
+  /**
+   * Updates the current loading progress in percentage of the tileset.
+   */
+  void UpdateLoadStatus();
+
 private:
   /**
    * The type of source from which to load this tileset.
@@ -817,7 +834,7 @@ public:
   virtual void Serialize(FArchive& Ar) override;
 
   void UpdateFromView(FSceneViewFamily& ViewFamily);
-  void GetLoadingPercentage();
+  uint32_t GetLoadedPercentage();
 
   // UObject overrides
 #if WITH_EDITOR

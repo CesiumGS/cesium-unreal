@@ -805,12 +805,23 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
   }
 }
 
-void ACesium3DTileset::GetLoadingPercentage() {
-  uint32_t loadPercent = this->_pTileset->computeLoadProgress();
-  this->_loadProgress = loadPercent;
-  if (loadPercent < 100) {
-    this->_activeLoading = true;
-  } else if (this->_activeLoading && loadPercent == 100) {
+uint32_t ACesium3DTileset::GetLoadedPercentage() {
+  this->_loadProgress = this->_pTileset->computeLoadProgress();
+  return this->_loadProgress;
+}
+
+void ACesium3DTileset::UpdateLoadStatus() {
+  this->_loadProgress = this->_pTileset->computeLoadProgress();
+  this->_activeLoading = this->_loadProgress < 100;
+
+  if (this->_activeLoading && this->_loadProgress == 100) {
+
+    // Tileset just finished loading, we broadcast the update
+    UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
+    OnTilesetLoaded.Broadcast();
+
+    // Tileset remains 100% loaded if we don't have to reload it
+    // so we don't want to keep on sending finished loading updates
     this->_activeLoading = false;
   }
 }
@@ -1736,8 +1747,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
   this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
-
-  this->GetLoadingPercentage();
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
