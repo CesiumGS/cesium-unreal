@@ -518,11 +518,6 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium");
   FCompletedLoadTrigger OnTilesetLoaded;
 
-  /**
-   * Updates the current loading progress in percentage of the tileset.
-   */
-  void UpdateLoadStatus();
-
 private:
   /**
    * The type of source from which to load this tileset.
@@ -834,7 +829,7 @@ public:
   virtual void Serialize(FArchive& Ar) override;
 
   void UpdateFromView(FSceneViewFamily& ViewFamily);
-  uint32_t GetLoadedPercentage();
+  void UpdateLoadStatus();
 
   // UObject overrides
 #if WITH_EDITOR

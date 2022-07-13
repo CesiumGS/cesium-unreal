@@ -805,16 +805,12 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
   }
 }
 
-uint32_t ACesium3DTileset::GetLoadedPercentage() {
-  this->_loadProgress = this->_pTileset->computeLoadProgress();
-  return this->_loadProgress;
-}
-
 void ACesium3DTileset::UpdateLoadStatus() {
   this->_loadProgress = this->_pTileset->computeLoadProgress();
-  this->_activeLoading = this->_loadProgress < 100;
 
-  if (this->_activeLoading && this->_loadProgress == 100) {
+  if (this->_loadProgress < 100) {
+    this->_activeLoading = true;
+  } else if (this->_activeLoading && this->_loadProgress == 100) {
 
     // Tileset just finished loading, we broadcast the update
     UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
@@ -1740,6 +1736,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
                               : this->_pTileset->updateView(frustums);
   updateLastViewUpdateResultState(result);
+  this->UpdateLoadStatus();
 
   removeVisibleTilesFromList(
       this->_tilesToNoLongerRenderNextFrame,
