@@ -808,17 +808,24 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
 void ACesium3DTileset::UpdateLoadStatus() {
   this->_loadProgress = this->_pTileset->computeLoadProgress();
 
-  if (this->_loadProgress < 100) {
+  if (this->_loadProgress < 100 ||
+      this->_lastTilesWaitingForOcclusionResults > 0) {
     this->_activeLoading = true;
   } else if (this->_activeLoading && this->_loadProgress == 100) {
 
-    // Tileset just finished loading, we broadcast the update
-    UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
-    OnTilesetLoaded.Broadcast();
+    // There might be a few frames where nothing needs to be loaded as we
+    // are waiting for occlusion results to come back, which means we are not
+    // done with loading all the tiles in the tileset yet.
+    if (this->_lastTilesWaitingForOcclusionResults == 0) {
 
-    // Tileset remains 100% loaded if we don't have to reload it
-    // so we don't want to keep on sending finished loading updates
-    this->_activeLoading = false;
+      // Tileset just finished loading, we broadcast the update
+      UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
+      OnTilesetLoaded.Broadcast();
+
+      // Tileset remains 100% loaded if we don't have to reload it
+      // so we don't want to keep on sending finished loading updates
+      this->_activeLoading = false;
+    }
   }
 }
 
