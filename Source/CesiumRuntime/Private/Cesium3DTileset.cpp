@@ -785,7 +785,9 @@ static std::string getCacheDatabaseName() {
   return TCHAR_TO_UTF8(*PlatformAbsolutePath);
 }
 
-void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
+void ACesium3DTileset::AggregateViews_RenderThread(FSceneViewFamily& ViewFamily) {
+  // This is precarious, but should be safe since ACesium3DTileset::DestroyTileset
+  // waits on a render fence that is placed after the aggregation commands.
   if (this->BoundingVolumePoolComponent) {
     const TArray<USceneComponent*>& children =
         this->BoundingVolumePoolComponent->GetAttachChildren();
@@ -799,8 +801,25 @@ void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
 
       // Check that the primitive is definitely occluded in every view.
       for (const FSceneView* View : ViewFamily.Views) {
-        pBoundingVolume->UpdateOcclusionFromView(View);
+        pBoundingVolume->AggregateOcclusionFromView_RenderThread(View);
       }
+    }
+  }
+}
+
+void ACesium3DTileset::CompleteViewsAggregation() {
+  if (this->BoundingVolumePoolComponent) {
+    const TArray<USceneComponent*>& children =
+        this->BoundingVolumePoolComponent->GetAttachChildren();
+    for (USceneComponent* pChild : children) {
+      UCesiumBoundingVolumeComponent* pBoundingVolume =
+          Cast<UCesiumBoundingVolumeComponent>(pChild);
+
+      if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
+        continue;
+      }
+
+      pBoundingVolume->FinalizeOcclusionResultForFrame();
     }
   }
 }
@@ -839,8 +858,10 @@ void ACesium3DTileset::LoadTileset() {
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
-  this->_cesiumViewExtension = cesiumViewExtension;
-  this->_cesiumViewExtension->RegisterTileset(this);
+  if (!this->_cesiumViewExtension) {
+    this->_cesiumViewExtension = cesiumViewExtension;
+    this->_cesiumViewExtension->RegisterTileset(this);
+  }
 
   if (this->EnableOcclusionCulling && !this->BoundingVolumePoolComponent) {
     const glm::dmat4& cesiumToUnreal =
@@ -1007,6 +1028,7 @@ void ACesium3DTileset::LoadTileset() {
 void ACesium3DTileset::DestroyTileset() {
   if (this->_cesiumViewExtension) {
     this->_cesiumViewExtension->UnregisterTileset(this);
+    this->_cesiumViewExtension = nullptr;
   }
 
   switch (this->TilesetSource) {
@@ -1680,21 +1702,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     if (!this->_pTileset) {
       assert(false);
       return;
-    }
-  }
-
-  if (this->BoundingVolumePoolComponent) {
-    const TArray<USceneComponent*>& children =
-        this->BoundingVolumePoolComponent->GetAttachChildren();
-    for (USceneComponent* pChild : children) {
-      UCesiumBoundingVolumeComponent* pBoundingVolume =
-          Cast<UCesiumBoundingVolumeComponent>(pChild);
-
-      if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
-        continue;
-      }
-
-      pBoundingVolume->FinalizeOcclusionResultForFrame();
     }
   }
 

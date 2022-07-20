@@ -6,6 +6,7 @@
 #include "SpdlogUnrealLoggerSink.h"
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
+#include "GenericPlatform/GenericPlatformProcess.h"
 
 #if CESIUM_TRACING_ENABLED
 #include <chrono>

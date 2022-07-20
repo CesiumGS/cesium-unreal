@@ -104,9 +104,13 @@ UCesiumBoundingVolumeComponent::UCesiumBoundingVolumeComponent()
       _tileTransform(1.0),
       _cesiumToUnreal(1.0) {}
 
-void UCesiumBoundingVolumeComponent::UpdateOcclusionFromView(
+void UCesiumBoundingVolumeComponent::AggregateOcclusionFromView_RenderThread(
     const FSceneView* View) {
-  if (_ignoreRemainingViews) {
+  if (_ignoreRemainingViews_RenderThread) {
+    return;
+  }
+
+  if (!View->State) {
     return;
   }
 
@@ -117,42 +121,42 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusionFromView(
             FPrimitiveOcclusionHistoryKey(this->ComponentId, 0));
     if (pHistory) {
       if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
-        _isDefiniteThisFrame = false;
-        _ignoreRemainingViews = true;
+        _isDefiniteThisFrame_RenderThread = false;
+        _ignoreRemainingViews_RenderThread = true;
         return;
       }
 
-      _isDefiniteThisFrame = true;
+      _isDefiniteThisFrame_RenderThread = true;
 
       if (_isOccluded) {
         if (pHistory->LastPixelsPercentage > 0.01f) {
-          _isOccludedThisFrame = false;
-          _ignoreRemainingViews = true;
+          _isOccludedThisFrame_RenderThread = false;
+          _ignoreRemainingViews_RenderThread = true;
           return;
         }
       } else {
         if (!pHistory->WasOccludedLastFrame) {
           // pHistory->LastPixelsPercentage > 0.0f) {
-          _isOccludedThisFrame = false;
-          _ignoreRemainingViews = true;
+          _isOccludedThisFrame_RenderThread = false;
+          _ignoreRemainingViews_RenderThread = true;
           return;
         }
       }
 
-      _isOccludedThisFrame = true;
+      _isOccludedThisFrame_RenderThread = true;
     }
   }
 }
 
 void UCesiumBoundingVolumeComponent::FinalizeOcclusionResultForFrame() {
-  if (_isDefiniteThisFrame) {
-    _isOccluded = _isOccludedThisFrame;
+  if (_isDefiniteThisFrame_RenderThread) {
+    _isOccluded = _isOccludedThisFrame_RenderThread;
     _isOcclusionAvailable = true;
   }
 
-  _isOccludedThisFrame = false;
-  _isDefiniteThisFrame = true;
-  _ignoreRemainingViews = false;
+  _isOccludedThisFrame_RenderThread = false;
+  _isDefiniteThisFrame_RenderThread = true;
+  _ignoreRemainingViews_RenderThread = false;
 }
 
 void UCesiumBoundingVolumeComponent::_updateTransform() {

@@ -88,14 +88,14 @@ public:
   FPrimitiveSceneProxy* CreateSceneProxy() override;
 
   /**
-   * Add an active view for this frame. Occlusion results for this bounding
-   * volume will be pulled from the view and aggregated with the results from
-   * other views. Call FinalizeOcclusionResultsForFrame after adding all the
-   * relevant views.
+   * Aggregates an active view for this frame. Occlusion results for this 
+   * bounding volume will be pulled from the view and aggregated with the 
+   * results from other views. Call FinalizeOcclusionResultsForFrame after 
+   * aggregating all the relevant views.
    *
    * @param View An active view to retrieve occlusion results from.
    */
-  void UpdateOcclusionFromView(const FSceneView* View);
+  void AggregateOcclusionFromView_RenderThread(const FSceneView* View);
 
   /**
    * Finalizes a collective occlusion result for this bounding volume from all
@@ -129,9 +129,11 @@ protected:
 private:
   void _updateTransform();
 
-  bool _isOccludedThisFrame = false;
-  bool _isDefiniteThisFrame = true;
-  bool _ignoreRemainingViews = false;
+  // The only game-thread-safe place to access these is
+  // FinalizeOcclusionResultForFrame
+  bool _isOccludedThisFrame_RenderThread = false;
+  bool _isDefiniteThisFrame_RenderThread = true;
+  bool _ignoreRemainingViews_RenderThread = false;
 
   bool _isOccluded = false;
   bool _isOcclusionAvailable = false;

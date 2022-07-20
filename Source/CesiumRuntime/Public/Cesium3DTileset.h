@@ -816,7 +816,8 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
-  void UpdateFromView(FSceneViewFamily& ViewFamily);
+  void AggregateViews_RenderThread(FSceneViewFamily& ViewFamily);
+  void CompleteViewsAggregation();
 
   // UObject overrides
 #if WITH_EDITOR
