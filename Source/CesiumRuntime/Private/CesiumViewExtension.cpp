@@ -3,17 +3,49 @@
 
 #include "Cesium3DTileset.h"
 
+using namespace Cesium3DTilesSelection;
+
 CesiumViewExtension::CesiumViewExtension(const FAutoRegister& autoRegister)
     : FSceneViewExtensionBase(autoRegister) {}
 
 CesiumViewExtension::~CesiumViewExtension() {}
 
-void CesiumViewExtension::RegisterTileset(ACesium3DTileset* pTileset) {
-  this->_registeredTilesets.insert(pTileset);
-}
+TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
+    const FPrimitiveComponentId& id,
+    bool previouslyOccluded) const {
+  if (_currentOcclusionResults.occlusionResultsByView.size() == 0) {
+    return TileOcclusionState::OcclusionUnavailable;
+  }
 
-void CesiumViewExtension::UnregisterTileset(ACesium3DTileset* pTileset) {
-  this->_registeredTilesets.erase(pTileset);
+  bool isOccluded = false;
+
+  for (const SceneViewOcclusionResults& viewOcclusionResults : 
+        _currentOcclusionResults.occlusionResultsByView) {
+    const FPrimitiveOcclusionHistory* pHistory = 
+        viewOcclusionResults.PrimitiveOcclusionHistorySet.Find(
+          FPrimitiveOcclusionHistoryKey(id, 0));
+    
+    if (pHistory) {
+      if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
+        // TODO: make sure this is handled correctly in BoundingVolumeComponent
+        // e.g., if an object previously had definite occlusion results and now doesn't,
+        // keep using old result.
+        return TileOcclusionState::OcclusionUnavailable;
+      }
+
+      if (previouslyOccluded) {
+        if (pHistory->LastPixelsPercentage > 0.01f) {
+          return TileOcclusionState::NotOccluded;
+        }
+      } else if (!pHistory->WasOccludedLastFrame) {
+        return TileOcclusionState::NotOccluded;
+      }
+
+      isOccluded = true;
+    }
+  }
+
+  return isOccluded ? TileOcclusionState::Occluded : TileOcclusionState::NotOccluded;
 }
 
 void CesiumViewExtension::SetupViewFamily(FSceneViewFamily& InViewFamily) {}
@@ -24,8 +56,9 @@ void CesiumViewExtension::SetupView(
 
 void CesiumViewExtension::BeginRenderViewFamily(
     FSceneViewFamily& InViewFamily) {
-  for (ACesium3DTileset* pTileset : this->_registeredTilesets) {
-    pTileset->UpdateFromView(InViewFamily);
+  if (!_occlusionResultsQueue.IsEmpty()) {
+    _currentOcclusionResults = std::move(*_occlusionResultsQueue.Peek());
+    _occlusionResultsQueue.Pop();
   }
 }
 
@@ -39,4 +72,26 @@ void CesiumViewExtension::PreRenderView_RenderThread(
 
 void CesiumViewExtension::PostRenderViewFamily_RenderThread(
     FRHICommandListImmediate& RHICmdList,
-    FSceneViewFamily& InViewFamily) {}
+    FSceneViewFamily& InViewFamily) {
+  if (_frameNumber_renderThread != InViewFamily.FrameNumber) {
+    if (_frameNumber_renderThread != -1) {
+      _occlusionResultsQueue.Enqueue(std::move(_currentAggregation_renderThread));
+      _currentAggregation_renderThread = {};
+    }
+
+    _frameNumber_renderThread = InViewFamily.FrameNumber;
+  }
+
+  for (const FSceneView* pView : InViewFamily.Views) {
+    const FSceneViewState* pViewState = pView->State->GetConcreteViewState();
+    if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
+      SceneViewOcclusionResults& occlusionResults =
+          _currentAggregation_renderThread.occlusionResultsByView
+              .emplace_back();
+      // Do we actually need the view?
+      occlusionResults.pView = pView;
+      occlusionResults.PrimitiveOcclusionHistorySet =
+          pViewState->PrimitiveOcclusionHistorySet;
+    }
+  }
+}

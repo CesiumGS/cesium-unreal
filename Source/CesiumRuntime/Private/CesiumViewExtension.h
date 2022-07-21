@@ -4,20 +4,39 @@
 #include "SceneTypes.h"
 #include "SceneView.h"
 #include "SceneViewExtension.h"
+#include "Runtime/Renderer/Private/ScenePrivate.h"
+#include "Containers/Queue.h"
+#include "Containers/Set.h"
+#include "SceneTypes.h"
+#include <Cesium3DTilesSelection/TileOcclusionRendererProxy.h>
 #include <unordered_set>
+#include <cstdint>
 
 class ACesium3DTileset;
 
 class CesiumViewExtension : public FSceneViewExtensionBase {
 private:
-  std::unordered_set<ACesium3DTileset*> _registeredTilesets;
+  struct SceneViewOcclusionResults {
+    const FSceneView* pView = nullptr;
+    TSet<FPrimitiveOcclusionHistory,FPrimitiveOcclusionHistoryKeyFuncs> PrimitiveOcclusionHistorySet{};
+  };
+
+  struct AggregatedOcclusionUpdate {
+    std::vector<SceneViewOcclusionResults> occlusionResultsByView{};
+  };
+
+  AggregatedOcclusionUpdate _currentAggregation_renderThread{};
+  AggregatedOcclusionUpdate _currentOcclusionResults{};
+
+  TQueue<AggregatedOcclusionUpdate, EQueueMode::Spsc> _occlusionResultsQueue;
+  int64_t _frameNumber_renderThread = -1;
 
 public:
   CesiumViewExtension(const FAutoRegister& autoRegister);
   ~CesiumViewExtension();
 
-  void RegisterTileset(ACesium3DTileset* pTileset);
-  void UnregisterTileset(ACesium3DTileset* pTileset);
+  Cesium3DTilesSelection::TileOcclusionState getPrimitiveOcclusionState(
+      const FPrimitiveComponentId& id, bool previouslyOccluded) const;
 
   void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
   void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;

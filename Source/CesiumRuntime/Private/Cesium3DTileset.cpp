@@ -785,26 +785,6 @@ static std::string getCacheDatabaseName() {
   return TCHAR_TO_UTF8(*PlatformAbsolutePath);
 }
 
-void ACesium3DTileset::UpdateFromView(FSceneViewFamily& ViewFamily) {
-  if (this->BoundingVolumePoolComponent) {
-    const TArray<USceneComponent*>& children =
-        this->BoundingVolumePoolComponent->GetAttachChildren();
-    for (USceneComponent* pChild : children) {
-      UCesiumBoundingVolumeComponent* pBoundingVolume =
-          Cast<UCesiumBoundingVolumeComponent>(pChild);
-
-      if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
-        continue;
-      }
-
-      // Check that the primitive is definitely occluded in every view.
-      for (const FSceneView* View : ViewFamily.Views) {
-        pBoundingVolume->UpdateOcclusionFromView(View);
-      }
-    }
-  }
-}
-
 void ACesium3DTileset::LoadTileset() {
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
@@ -840,7 +820,6 @@ void ACesium3DTileset::LoadTileset() {
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
   this->_cesiumViewExtension = cesiumViewExtension;
-  this->_cesiumViewExtension->RegisterTileset(this);
 
   if (this->EnableOcclusionCulling && !this->BoundingVolumePoolComponent) {
     const glm::dmat4& cesiumToUnreal =
@@ -1006,7 +985,7 @@ void ACesium3DTileset::LoadTileset() {
 
 void ACesium3DTileset::DestroyTileset() {
   if (this->_cesiumViewExtension) {
-    this->_cesiumViewExtension->UnregisterTileset(this);
+    this->_cesiumViewExtension = nullptr;
   }
 
   switch (this->TilesetSource) {
@@ -1683,18 +1662,18 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
   }
 
-  if (this->BoundingVolumePoolComponent) {
+  if (this->BoundingVolumePoolComponent && this->_cesiumViewExtension) {
     const TArray<USceneComponent*>& children =
         this->BoundingVolumePoolComponent->GetAttachChildren();
     for (USceneComponent* pChild : children) {
       UCesiumBoundingVolumeComponent* pBoundingVolume =
           Cast<UCesiumBoundingVolumeComponent>(pChild);
 
-      if (!pBoundingVolume || !pBoundingVolume->IsMappedToTile()) {
+      if (!pBoundingVolume) {
         continue;
       }
 
-      pBoundingVolume->FinalizeOcclusionResultForFrame();
+      pBoundingVolume->UpdateOcclusion(*this->_cesiumViewExtension.Get());
     }
   }
 
