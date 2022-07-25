@@ -101,11 +101,11 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusion(
     return;
   }
 
-  TileOcclusionState occlusionState = 
+  TileOcclusionState occlusionState =
       cesiumViewExtension.getPrimitiveOcclusionState(
           this->ComponentId,
-          _occlusionState == TileOcclusionState::Occluded); 
-  
+          _occlusionState == TileOcclusionState::Occluded);
+
   // If the occlusion result is unavailable, continue using the previous result.
   if (occlusionState != TileOcclusionState::OcclusionUnavailable) {
     _occlusionState = occlusionState;

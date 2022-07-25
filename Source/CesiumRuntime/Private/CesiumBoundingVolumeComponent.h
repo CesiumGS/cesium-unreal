@@ -83,13 +83,13 @@ class UCesiumBoundingVolumeComponent
 
 public:
   // Sets default values for this component's properties
-  UCesiumBoundingVolumeComponent() {};
+  UCesiumBoundingVolumeComponent(){};
   virtual ~UCesiumBoundingVolumeComponent() = default;
 
   FPrimitiveSceneProxy* CreateSceneProxy() override;
 
   /**
-   * Update the occlusion state for this bounding volume from the 
+   * Update the occlusion state for this bounding volume from the
    * CesiumViewExtension.
    */
   void UpdateOcclusion(const CesiumViewExtension& cesiumViewExtension);
@@ -110,7 +110,8 @@ public:
 
   // virtual void BeginDestroy() override;
 
-  Cesium3DTilesSelection::TileOcclusionState getOcclusionState() const override {
+  Cesium3DTilesSelection::TileOcclusionState
+  getOcclusionState() const override {
     return _occlusionState;
   }
 
