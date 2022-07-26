@@ -7,6 +7,10 @@
 - Added `UCesiumBoundingVolumePoolComponent` and `UCesiumBoundingVolumeComponent` to track the occlusion state of prospective tiles before they are loaded. This allows tile loads to be avoided if they will be occluded anyways.
 - Added options in `ACesium3DTileset` to control occlusion culling and turn it off if necessary. 
 
+##### Fixes :wrench:
+- Fixed credit images not appearing in UE5.
+- Added `UPROPERTY` to the Credit Widget to prevent it from being deleted by the garbage collector. 
+
 ### v1.15.0 - 2022-07-01
 
 ##### Additions :tada:
