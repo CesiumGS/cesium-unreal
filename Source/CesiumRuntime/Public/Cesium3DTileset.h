@@ -828,7 +828,6 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
-  void UpdateFromView(FSceneViewFamily& ViewFamily);
   void UpdateLoadStatus();
 
   // UObject overrides

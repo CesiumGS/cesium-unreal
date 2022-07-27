@@ -53,6 +53,8 @@ public:
 
 private:
   static UClass* CesiumCreditSystemBP;
+
+  UPROPERTY()
   class UScreenCreditsWidget* _creditsWidget;
 
   /**

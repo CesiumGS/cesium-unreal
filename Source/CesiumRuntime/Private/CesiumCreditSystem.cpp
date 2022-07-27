@@ -153,7 +153,7 @@ void ACesiumCreditSystem::BeginPlay() {
     _creditsWidget =
         CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
   }
-  if (_creditsWidget) {
+  if (IsValid(_creditsWidget)) {
     _creditsWidget->AddToViewport();
   }
 }
@@ -163,7 +163,7 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 void ACesiumCreditSystem::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
-  if (!_pCreditSystem || !_creditsWidget) {
+  if (!_pCreditSystem || !IsValid(_creditsWidget)) {
     return;
   }
 
