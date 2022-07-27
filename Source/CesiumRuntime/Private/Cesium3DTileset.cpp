@@ -1585,7 +1585,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         LogCesium,
         Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d, Loaded tiles %d%%"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d, Loaded tiles %g%%"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,

@@ -940,7 +940,7 @@ private:
   uint32_t _lastTilesLoadingLowPriority;
   uint32_t _lastTilesLoadingMediumPriority;
   uint32_t _lastTilesLoadingHighPriority;
-  uint32_t _loadProgress;
+  float_t _loadProgress;
   bool _activeLoading;
 
   uint32_t _lastTilesVisited;
