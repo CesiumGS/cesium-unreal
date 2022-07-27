@@ -786,12 +786,12 @@ static std::string getCacheDatabaseName() {
 }
 
 void ACesium3DTileset::UpdateLoadStatus() {
-  this->_loadProgress = this->_pTileset->computeLoadProgress();
+  this->LoadProgress = this->_pTileset->computeLoadProgress();
 
-  if (this->_loadProgress < 100 ||
+  if (this->LoadProgress < 100 ||
       this->_lastTilesWaitingForOcclusionResults > 0) {
     this->_activeLoading = true;
-  } else if (this->_activeLoading && this->_loadProgress == 100) {
+  } else if (this->_activeLoading && this->LoadProgress == 100) {
 
     // There might be a few frames where nothing needs to be loaded as we
     // are waiting for occlusion results to come back, which means we are not
@@ -1599,7 +1599,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.tilesLoadingLowPriority,
         result.tilesLoadingMediumPriority,
         result.tilesLoadingHighPriority,
-        this->_loadProgress);
+        this->LoadProgress);
   }
 }
 

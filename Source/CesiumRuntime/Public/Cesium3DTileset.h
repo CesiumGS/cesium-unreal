@@ -519,6 +519,9 @@ public:
   FCompletedLoadTrigger OnTilesetLoaded;
 
 private:
+  UPROPERTY(BlueprintGetter = GetLoadProgress, Category = "Cesium")
+  float LoadProgress = 0.0f;
+
   /**
    * The type of source from which to load this tileset.
    */
@@ -700,6 +703,9 @@ protected:
   FString PlatformName;
 
 public:
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  float GetLoadProgress() const { return LoadProgress; }
+
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
 
@@ -940,7 +946,6 @@ private:
   uint32_t _lastTilesLoadingLowPriority;
   uint32_t _lastTilesLoadingMediumPriority;
   uint32_t _lastTilesLoadingHighPriority;
-  float_t _loadProgress;
   bool _activeLoading;
 
   uint32_t _lastTilesVisited;
