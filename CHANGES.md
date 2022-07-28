@@ -2,6 +2,10 @@
 
 ### ???? - ????
 
+##### Fixes :wrench:
+
+- Perforce marks files read only if not checked out. To save access tokens, it now asks to check out the necessary config files from source control.
+
 ##### Additions :tada:
 - `UCesiumGltfPrimitiveComponent` now has static mobility, allowing it to finally take advantage of several rendering optimizations only available for static objects.
 - Added `UCesiumBoundingVolumePoolComponent` and `UCesiumBoundingVolumeComponent` to track the occlusion state of prospective tiles before they are loaded. This allows tile loads to be avoided if they will be occluded anyways.
