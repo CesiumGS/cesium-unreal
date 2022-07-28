@@ -10,13 +10,20 @@
 #include "EditorStyleSet.h"
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "HAL/PlatformFilemanager.h"
+#include "ISourceControlModule.h"
+#include "ISourceControlProvider.h"
 #include "Misc/App.h"
+#include "Misc/MessageDialog.h"
 #include "ScopedTransaction.h"
+#include "SourceControlOperations.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Notifications/SNotificationList.h"
 #include "Widgets/Text/STextBlock.h"
 
 using namespace CesiumAsync;
@@ -439,60 +446,107 @@ FReply SelectCesiumIonToken::UseOrCreate() {
     }
   };
 
-  getToken().thenInMainThread(
-      [pPanel, promise = std::move(promise)](Response<Token>&& response) {
-        if (response.value) {
-          FCesiumEditorModule::ion().invalidateProjectDefaultTokenDetails();
+  getToken().thenInMainThread([pPanel, promise = std::move(promise)](
+                                  Response<Token>&& response) {
+    if (response.value) {
+      FCesiumEditorModule::ion().invalidateProjectDefaultTokenDetails();
 
-          UCesiumRuntimeSettings* pSettings =
-              GetMutableDefault<UCesiumRuntimeSettings>();
+      UCesiumRuntimeSettings* pSettings =
+          GetMutableDefault<UCesiumRuntimeSettings>();
+      if (ISourceControlModule::Get().IsEnabled()) {
+        FString RelativeConfigFilePath = pSettings->GetDefaultConfigFilename();
+        FString ConfigFilePath =
+            FPaths::ConvertRelativePathToFull(RelativeConfigFilePath);
+        FText ConfigFilename =
+            FText::FromString(FPaths::GetCleanFilename(ConfigFilePath));
 
-          FScopedTransaction transaction(
-              FText::FromString("Set Project Default Token"));
-          pSettings->DefaultIonAccessTokenId =
-              UTF8_TO_TCHAR(response.value->id.c_str());
-          pSettings->DefaultIonAccessToken =
-              UTF8_TO_TCHAR(response.value->token.c_str());
-          pSettings->Modify();
+        ISourceControlProvider& SourceControlProvider =
+            ISourceControlModule::Get().GetProvider();
+        FSourceControlStatePtr SourceControlState =
+            SourceControlProvider.GetState(
+                ConfigFilePath,
+                EStateCacheUsage::Use);
 
-#if ENGINE_MAJOR_VERSION >= 5
-          pSettings->TryUpdateDefaultConfigFile();
-#else
-          pSettings->UpdateDefaultConfigFile();
-#endif
+        if (SourceControlState.IsValid() &&
+            SourceControlState->IsSourceControlled() &&
+            SourceControlState->CanCheckout()) {
 
-          // Refresh all tilesets and overlays that are using the project
-          // default token.
-          UWorld* pWorld = GEditor->GetEditorWorldContext().World();
-          for (auto it = TActorIterator<ACesium3DTileset>(pWorld); it; ++it) {
-            if (it->GetTilesetSource() == ETilesetSource::FromCesiumIon &&
-                it->GetIonAccessToken().IsEmpty()) {
-              it->RefreshTileset();
-            } else {
-              // Tileset itself does not need to be refreshed, but maybe some
-              // overlays do.
-              TArray<UCesiumIonRasterOverlay*> rasterOverlays;
-              it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
+          FString Message = FString::Format(
+              TEXT(
+                  "The default access token is saved in {0} which is currently not checked out. Would you like to check it out from source control?"),
+              {ConfigFilename.ToString()});
 
-              for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
-                if (pOverlay->IonAccessToken.IsEmpty()) {
-                  pOverlay->Refresh();
-                }
+          if (FMessageDialog::Open(
+                  EAppMsgType::YesNo,
+                  FText::FromString(Message)) == EAppReturnType::Yes) {
+            TArray<FString> FilesToBeCheckedOut;
+            FilesToBeCheckedOut.Add(ConfigFilePath);
+            if (SourceControlState->CanCheckout() ||
+                SourceControlState->IsCheckedOutOther() ||
+                FPlatformFileManager::Get().GetPlatformFile().IsReadOnly(
+                    *ConfigFilePath)) {
+              ECommandResult::Type CommandResult =
+                  SourceControlProvider.Execute(
+                      ISourceControlOperation::Create<FCheckOut>(),
+                      FilesToBeCheckedOut);
+
+              if (CommandResult != ECommandResult::Succeeded) {
+                // Show a notification that the file could not be checked out
+                FNotificationInfo CheckOutError(FText::FromString(TEXT(
+                    "Error: Failed to check out the configuration file.")));
+                CheckOutError.ExpireDuration = 3.0f;
+                FSlateNotificationManager::Get().AddNotification(CheckOutError);
               }
             }
           }
-        } else {
-          UE_LOG(
-              LogCesiumEditor,
-              Error,
-              TEXT("An error occurred while selecting a token: %s"),
-              UTF8_TO_TCHAR(response.errorMessage.c_str()));
         }
+      }
+      FScopedTransaction transaction(
+          FText::FromString("Set Project Default Token"));
+      pSettings->DefaultIonAccessTokenId =
+          UTF8_TO_TCHAR(response.value->id.c_str());
+      pSettings->DefaultIonAccessToken =
+          UTF8_TO_TCHAR(response.value->token.c_str());
+      pSettings->Modify();
 
-        promise.resolve(std::move(response.value));
+#if ENGINE_MAJOR_VERSION >= 5
+      pSettings->TryUpdateDefaultConfigFile();
+#else
+      pSettings->UpdateDefaultConfigFile();
+#endif
 
-        pPanel->RequestDestroyWindow();
-      });
+      // Refresh all tilesets and overlays that are using the project
+      // default token.
+      UWorld* pWorld = GEditor->GetEditorWorldContext().World();
+      for (auto it = TActorIterator<ACesium3DTileset>(pWorld); it; ++it) {
+        if (it->GetTilesetSource() == ETilesetSource::FromCesiumIon &&
+            it->GetIonAccessToken().IsEmpty()) {
+          it->RefreshTileset();
+        } else {
+          // Tileset itself does not need to be refreshed, but maybe some
+          // overlays do.
+          TArray<UCesiumIonRasterOverlay*> rasterOverlays;
+          it->GetComponents<UCesiumIonRasterOverlay>(rasterOverlays);
+
+          for (UCesiumIonRasterOverlay* pOverlay : rasterOverlays) {
+            if (pOverlay->IonAccessToken.IsEmpty()) {
+              pOverlay->Refresh();
+            }
+          }
+        }
+      }
+    } else {
+      UE_LOG(
+          LogCesiumEditor,
+          Error,
+          TEXT("An error occurred while selecting a token: %s"),
+          UTF8_TO_TCHAR(response.errorMessage.c_str()));
+    }
+
+    promise.resolve(std::move(response.value));
+
+    pPanel->RequestDestroyWindow();
+  });
 
   return FReply::Handled();
 }
