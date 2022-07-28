@@ -468,23 +468,22 @@ FReply SelectCesiumIonToken::UseOrCreate() {
                 EStateCacheUsage::Use);
 
         if (SourceControlState.IsValid() &&
-            SourceControlState->IsSourceControlled() &&
-            SourceControlState->CanCheckout()) {
+            SourceControlState->IsSourceControlled()) {
 
-          FString Message = FString::Format(
-              TEXT(
-                  "The default access token is saved in {0} which is currently not checked out. Would you like to check it out from source control?"),
-              {ConfigFilename.ToString()});
+          TArray<FString> FilesToBeCheckedOut;
+          FilesToBeCheckedOut.Add(ConfigFilePath);
+          if (SourceControlState->CanCheckout() ||
+              SourceControlState->IsCheckedOutOther() ||
+              FPlatformFileManager::Get().GetPlatformFile().IsReadOnly(
+                  *ConfigFilePath)) {
+            FString Message = FString::Format(
+                TEXT(
+                    "The default access token is saved in {0} which is currently not checked out. Would you like to check it out from source control?"),
+                {ConfigFilename.ToString()});
 
-          if (FMessageDialog::Open(
-                  EAppMsgType::YesNo,
-                  FText::FromString(Message)) == EAppReturnType::Yes) {
-            TArray<FString> FilesToBeCheckedOut;
-            FilesToBeCheckedOut.Add(ConfigFilePath);
-            if (SourceControlState->CanCheckout() ||
-                SourceControlState->IsCheckedOutOther() ||
-                FPlatformFileManager::Get().GetPlatformFile().IsReadOnly(
-                    *ConfigFilePath)) {
+            if (FMessageDialog::Open(
+                    EAppMsgType::YesNo,
+                    FText::FromString(Message)) == EAppReturnType::Yes) {
               ECommandResult::Type CommandResult =
                   SourceControlProvider.Execute(
                       ISourceControlOperation::Create<FCheckOut>(),
