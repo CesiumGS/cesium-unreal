@@ -42,6 +42,12 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetLoadFailure,
     const FCesium3DTilesetLoadFailureDetails&);
 
+/**
+ * The delegate for the Acesium3DTileset::OnTilesetLoaded,
+ * which is triggered from UpdateLoadStatus
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedLoadTrigger);
+
 CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
     OnCesium3DTilesetLoadFailure;
 
@@ -506,7 +512,16 @@ public:
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
+  /**
+   * A delegate that will be called whenever the tileset is fully loaded.
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium");
+  FCompletedLoadTrigger OnTilesetLoaded;
+
 private:
+  UPROPERTY(BlueprintGetter = GetLoadProgress, Category = "Cesium")
+  float LoadProgress = 0.0f;
+
   /**
    * The type of source from which to load this tileset.
    */
@@ -689,6 +704,9 @@ protected:
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
+  float GetLoadProgress() const { return LoadProgress; }
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
@@ -816,6 +834,8 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
+  void UpdateLoadStatus();
+
   // UObject overrides
 #if WITH_EDITOR
   virtual void
@@ -926,6 +946,7 @@ private:
   uint32_t _lastTilesLoadingLowPriority;
   uint32_t _lastTilesLoadingMediumPriority;
   uint32_t _lastTilesLoadingHighPriority;
+  bool _activeLoading;
 
   uint32_t _lastTilesVisited;
   uint32_t _lastCulledTilesVisited;
