@@ -104,7 +104,8 @@ void UCesiumBoundingVolumeComponent::UpdateOcclusion(
   TileOcclusionState occlusionState =
       cesiumViewExtension.getPrimitiveOcclusionState(
           this->ComponentId,
-          _occlusionState == TileOcclusionState::Occluded);
+          _occlusionState == TileOcclusionState::Occluded,
+          _mappedFrameTime);
 
   // If the occlusion result is unavailable, continue using the previous result.
   if (occlusionState != TileOcclusionState::OcclusionUnavailable) {
@@ -136,6 +137,7 @@ void UCesiumBoundingVolumeComponent::reset(const Tile* pTile) {
     this->_tileTransform = pTile->getTransform();
     this->_tileBounds = pTile->getBoundingVolume();
     this->_isMapped = true;
+    this->_mappedFrameTime = GetWorld()->GetRealTimeSeconds();
     this->_updateTransform();
     this->SetVisibility(true);
   } else {

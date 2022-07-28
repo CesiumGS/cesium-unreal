@@ -127,6 +127,9 @@ private:
   // Whether this proxy is currently mapped to a tile.
   bool _isMapped = false;
 
+  // The time when this bounding volume was mapped to the tile.
+  float _mappedFrameTime = 0.0f;
+
   Cesium3DTilesSelection::BoundingVolume _tileBounds =
       CesiumGeometry::OrientedBoundingBox(glm::dvec3(0.0), glm::dmat3(1.0));
   glm::dmat4 _tileTransform = glm::dmat4(1.0);

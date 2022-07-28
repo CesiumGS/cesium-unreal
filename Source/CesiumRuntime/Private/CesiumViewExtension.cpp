@@ -12,12 +12,14 @@ CesiumViewExtension::~CesiumViewExtension() {}
 
 TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
     const FPrimitiveComponentId& id,
-    bool previouslyOccluded) const {
+    bool previouslyOccluded,
+    float frameTimeCutoff) const {
   if (_currentOcclusionResults.occlusionResultsByView.size() == 0) {
     return TileOcclusionState::OcclusionUnavailable;
   }
 
   bool isOccluded = false;
+  bool historyMissing = false;
 
   for (const SceneViewOcclusionResults& viewOcclusionResults :
        _currentOcclusionResults.occlusionResultsByView) {
@@ -25,7 +27,7 @@ TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
         viewOcclusionResults.PrimitiveOcclusionHistorySet.Find(
             FPrimitiveOcclusionHistoryKey(id, 0));
 
-    if (pHistory) {
+    if (pHistory && pHistory->LastConsideredTime >= frameTimeCutoff) {
       if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
         return TileOcclusionState::OcclusionUnavailable;
       }
@@ -39,11 +41,18 @@ TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
       }
 
       isOccluded = true;
+    } else {
+      historyMissing = true;
     }
   }
 
-  return isOccluded ? TileOcclusionState::Occluded
-                    : TileOcclusionState::NotOccluded;
+  if (!isOccluded) {
+    return TileOcclusionState::NotOccluded;
+  } else if (historyMissing) {
+    return TileOcclusionState::OcclusionUnavailable;
+  } else {
+    return TileOcclusionState::Occluded;
+  }
 }
 
 void CesiumViewExtension::SetupViewFamily(FSceneViewFamily& InViewFamily) {}
