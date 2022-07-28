@@ -10,8 +10,6 @@
 #include "EditorStyleSet.h"
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
-#include "HAL/FileManager.h"
-#include "HAL/PlatformFileManager.h"
 #include "Misc/App.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SThrobber.h"
@@ -34,7 +32,6 @@ SelectCesiumIonToken::SelectNewToken() {
     SelectCesiumIonToken::_pExistingPanel->BringToFront();
   } else {
     TSharedRef<SelectCesiumIonToken> Panel = SNew(SelectCesiumIonToken);
-    Panel->SetCanTick(true);
     SelectCesiumIonToken::_pExistingPanel = Panel;
 
     Panel->_promise = FCesiumEditorModule::ion()
@@ -177,52 +174,6 @@ SelectCesiumIonToken::~SelectCesiumIonToken() {
 
 void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
   TSharedRef<SVerticalBox> pLoaderOrContent = SNew(SVerticalBox);
-
-  UCesiumRuntimeSettings* pSettings =
-      GetMutableDefault<UCesiumRuntimeSettings>();
-
-  FString RelativeConfigFilePath = pSettings->GetDefaultConfigFilename();
-  ConfigFilePath = FPaths::ConvertRelativePathToFull(RelativeConfigFilePath);
-
-  FText ConfigFilename =
-      FText::FromString(FPaths::GetCleanFilename(ConfigFilePath.Get()));
-
-  static const FText TitleFmt = FText::FromString(TEXT(
-      "The Cesium ion token is saved in {0}, which is currently NOT writable."));
-
-  pLoaderOrContent->AddSlot().AutoHeight()
-      [SNew(SHorizontalBox).Visibility_Lambda([this, ConfigFilename]() {
-        return !DefaultConfigCheckOutNeeded && !DefaultConfigQueryInProgress
-                   ? EVisibility::Collapsed
-                   : EVisibility::Visible;
-      }) +
-       SHorizontalBox::Slot()
-           .AutoWidth()
-           .Padding(FMargin(8))
-           .VAlign(VAlign_Center)
-               [SNew(STextBlock)
-                    .AutoWrapText(true)
-                    .ColorAndOpacity(FColor::Yellow)
-                    .Text(FText::Format(TitleFmt, ConfigFilename))] +
-       SHorizontalBox::Slot()
-           .Padding(FMargin(0))
-           .AutoWidth()
-           .VAlign(VAlign_Center)[SNew(SButton)
-                                      .Text(FText::FromString(
-                                          TEXT("Make Writable")))
-                                      .OnClicked_Lambda([this]() {
-                                        if (FPlatformFileManager::Get()
-                                                .GetPlatformFile()
-                                                .FileExists(
-                                                    *ConfigFilePath.Get())) {
-                                          FPlatformFileManager::Get()
-                                              .GetPlatformFile()
-                                              .SetReadOnly(
-                                                  *ConfigFilePath.Get(),
-                                                  false);
-                                        }
-                                        return FReply::Handled();
-                                      })]];
 
   pLoaderOrContent->AddSlot().AutoHeight()
       [SNew(STextBlock)
@@ -395,27 +346,6 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pLoaderOrContent]]);
 
   FCesiumEditorModule::ion().refreshTokens();
-}
-
-void SelectCesiumIonToken::Tick(
-    const FGeometry& AllottedGeometry,
-    const double InCurrentTime,
-    const float InDeltaTime) {
-  if (InCurrentTime - LastDefaultConfigCheckOutTime >= 1.0f) {
-    bool NewCheckOutNeeded = false;
-
-    DefaultConfigQueryInProgress = true;
-    FString CachedConfigFileName = ConfigFilePath.Get();
-    if (!CachedConfigFileName.IsEmpty()) {
-      NewCheckOutNeeded =
-          (FPaths::FileExists(CachedConfigFileName) &&
-           IFileManager::Get().IsReadOnly(*CachedConfigFileName));
-      DefaultConfigQueryInProgress = false;
-    }
-
-    DefaultConfigCheckOutNeeded = NewCheckOutNeeded;
-    LastDefaultConfigCheckOutTime = InCurrentTime;
-  }
 }
 
 void SelectCesiumIonToken::createRadioButton(

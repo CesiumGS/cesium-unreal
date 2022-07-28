@@ -56,10 +56,6 @@ public:
   SelectCesiumIonToken();
   virtual ~SelectCesiumIonToken();
   void Construct(const FArguments& InArgs);
-  virtual void Tick(
-      const FGeometry& AllottedGeometry,
-      const double InCurrentTime,
-      const float InDeltaTime) override;
 
 private:
   enum class TokenSource { Create, UseExisting, Specify };
@@ -110,8 +106,4 @@ private:
   FDelegateHandle _tokensUpdatedDelegateHandle;
   TArray<TSharedPtr<CesiumIonClient::Token>> _tokens;
   TSharedPtr<SComboBox<TSharedPtr<CesiumIonClient::Token>>> _pTokensCombo;
-  double LastDefaultConfigCheckOutTime;
-  bool DefaultConfigQueryInProgress;
-  bool DefaultConfigCheckOutNeeded;
-  TAttribute<FString> ConfigFilePath;
 };
