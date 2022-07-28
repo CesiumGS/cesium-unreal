@@ -46,12 +46,12 @@ TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
     }
   }
 
-  if (!isOccluded) {
-    return TileOcclusionState::NotOccluded;
-  } else if (historyMissing) {
+  if (historyMissing) {
     return TileOcclusionState::OcclusionUnavailable;
-  } else {
+  } else if (isOccluded) {
     return TileOcclusionState::Occluded;
+  } else {
+    return TileOcclusionState::NotOccluded;
   }
 }
 
