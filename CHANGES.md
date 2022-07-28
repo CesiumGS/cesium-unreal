@@ -6,6 +6,8 @@
 - `UCesiumGltfPrimitiveComponent` now has static mobility, allowing it to finally take advantage of several rendering optimizations only available for static objects.
 - Added `UCesiumBoundingVolumePoolComponent` and `UCesiumBoundingVolumeComponent` to track the occlusion state of prospective tiles before they are loaded. This allows tile loads to be avoided if they will be occluded anyways.
 - Added options in `ACesium3DTileset` to control occlusion culling and turn it off if necessary. 
+- Added a new delegate `OnTilesetLoaded` that is exposed to the blueprint, which is invoked when the current tileset has finished loading.
+- Added a getter `GetLoadProgress` exposed to blueprint, which returns the current loaded percentage of the tileset. 
 - Added BP accessible callback `OnFlightComplete` for when Dynamic Pawn completes flight. 
 - Added BP accessible callback `OnFlightInterrupt` for when Dynamic Pawn's flying is interrupted. 
 
