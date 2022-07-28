@@ -14,6 +14,12 @@ class UCesiumGlobeAnchorComponent;
 class UCurveFloat;
 
 /**
+ * The delegate for when the pawn finishes flying
+ * which is triggered from _handleFlightStep
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedFlight);
+
+/**
  * This pawn can be used to easily move around the globe while maintaining a
  * sensible orientation. As the pawn moves across the horizon, it automatically
  * changes its own up direction such that the world always looks right-side up.
@@ -97,6 +103,13 @@ public:
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
   double FlyToGranularityDegrees = 0.01;
+
+  /**
+   * A delegate that will be called whenver the pawn finishes flying
+   *
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium");
+  FCompletedFlight onFlightComplete;
 
   /**
    * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed

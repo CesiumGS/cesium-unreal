@@ -272,6 +272,11 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0;
+
+    // Trigger callback accessible from BP
+    UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnFlightComplete"));
+    onFlightComplete.Broadcast();
+
     return;
   }
 
