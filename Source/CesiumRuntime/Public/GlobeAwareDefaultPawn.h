@@ -20,6 +20,12 @@ class UCurveFloat;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedFlight);
 
 /**
+ * The delegate for when the pawn's flying is interrupted
+ * which is triggered from _interruptFlight
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FInterruptedFlight);
+
+/**
  * This pawn can be used to easily move around the globe while maintaining a
  * sensible orientation. As the pawn moves across the horizon, it automatically
  * changes its own up direction such that the world always looks right-side up.
@@ -105,11 +111,18 @@ public:
   double FlyToGranularityDegrees = 0.01;
 
   /**
-   * A delegate that will be called whenver the pawn finishes flying
+   * A delegate that will be called whenever the pawn finishes flying
    *
    */
   UPROPERTY(BlueprintAssignable, Category = "Cesium");
-  FCompletedFlight onFlightComplete;
+  FCompletedFlight OnFlightComplete;
+
+  /**
+   * A delegate that will be called when a pawn's flying is interrupted
+   *
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium");
+  FInterruptedFlight OnFlightInterrupt;
 
   /**
    * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed
