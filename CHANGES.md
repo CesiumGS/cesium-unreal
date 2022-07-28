@@ -1,11 +1,31 @@
 # Change Log
 
-### v1.14.0 - ????
+### ???? - ????
+
+##### Additions :tada:
+- `UCesiumGltfPrimitiveComponent` now has static mobility, allowing it to finally take advantage of several rendering optimizations only available for static objects.
+- Added `UCesiumBoundingVolumePoolComponent` and `UCesiumBoundingVolumeComponent` to track the occlusion state of prospective tiles before they are loaded. This allows tile loads to be avoided if they will be occluded anyways.
+- Added options in `ACesium3DTileset` to control occlusion culling and turn it off if necessary. 
+- Added a new delegate `OnTilesetLoaded` that is exposed to the blueprint, which is invoked when the current tileset has finished loading.
+- Added a getter `GetLoadProgress` exposed to blueprint, which returns the current loaded percentage of the tileset. 
 
 ##### Fixes :wrench:
+- Fixed credit images not appearing in UE5.
+- Added `UPROPERTY` to the Credit Widget to prevent it from being deleted by the garbage collector. 
+
+### v1.15.0 - 2022-07-01
+
+##### Additions :tada:
+
+- Display credits using Rich Text Block instead of the Web Browser Widget.
+
+##### Fixes :wrench:
+
 - Swapped latitude and longitude parameters on georeferenced sublevels to match with the main georeference.
 - Adjusted the presentation of sublevels in the Cesium Georeference details panel.
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
+- Fixed a bug that could cause a crash when reporting tileset or raster overlay load errors, particularly while switching levels.
+- We now Log the correct asset source when loading a new tileset from either URL or Ion. 
 
 ##### Breaking Changes :mega:
 - Add option to scale the viewport by pixel density to increase performance for mobile devices.
