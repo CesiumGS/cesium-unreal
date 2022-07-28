@@ -1005,6 +1005,21 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
     break;
   }
+
+  switch (ApplyDpiScaling) {
+  case (EApplyDpiScaling::UseProjectDefault):
+    _scaleUsingDPI =
+        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
+    break;
+  case (EApplyDpiScaling::Yes):
+    _scaleUsingDPI = true;
+    break;
+  case (EApplyDpiScaling::No):
+    _scaleUsingDPI = false;
+    break;
+  default:
+    _scaleUsingDPI = true;
+  }
 }
 
 void ACesium3DTileset::DestroyTileset() {
@@ -1150,6 +1165,14 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
+    float dpiScalingFactor = 1.0f;
+    if (this->_scaleUsingDPI) {
+      ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+      if (LocPlayer && LocPlayer->ViewportClient) {
+        dpiScalingFactor = LocPlayer->ViewportClient->GetDPIScale();
+      }
+    }
+
     if (useStereoRendering) {
 #if ENGINE_MAJOR_VERSION >= 5
       const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
@@ -1230,7 +1253,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             hfov);
       }
     } else {
-      cameras.emplace_back(FVector2D(sizeX, sizeY), location, rotation, fov);
+      cameras.emplace_back(
+          FVector2D(sizeX / dpiScalingFactor, sizeY / dpiScalingFactor),
+          location,
+          rotation,
+          fov);
     }
   }
 
@@ -1385,6 +1412,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     if (size.X < 1 || size.Y < 1) {
       continue;
+    }
+
+    if (this->_scaleUsingDPI) {
+      float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
+      size /= dpiScalingFactor;
     }
 
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
@@ -1789,6 +1821,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix

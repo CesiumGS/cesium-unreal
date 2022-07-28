@@ -27,6 +27,9 @@
 - Fixed a bug that could cause a crash when reporting tileset or raster overlay load errors, particularly while switching levels.
 - We now Log the correct asset source when loading a new tileset from either URL or Ion. 
 
+##### Breaking Changes :mega:
+- Add option to scale the viewport by pixel density to increase performance for mobile devices.
+
 ### v1.14.0 - 2022-06-01
 
 ##### Breaking Changes :mega:

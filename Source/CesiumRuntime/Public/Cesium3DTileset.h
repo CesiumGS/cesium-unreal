@@ -65,6 +65,9 @@ enum class ETilesetSource : uint8 {
   FromUrl UMETA(DisplayName = "From Url")
 };
 
+UENUM(BlueprintType)
+enum class EApplyDpiScaling : uint8 { Yes, No, UseProjectDefault };
+
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
   GENERATED_BODY()
@@ -237,6 +240,16 @@ public:
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
   float MaximumScreenSpaceError = 16.0;
+
+  /**
+   * Scale Level-of-Detail by Display DPI. This increases the performance for
+   * mobile devices and high DPI screens.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Level of Detail")
+  EApplyDpiScaling ApplyDpiScaling = EApplyDpiScaling::UseProjectDefault;
 
   /**
    * Whether to preload ancestor tiles.
@@ -962,6 +975,8 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+
+  bool _scaleUsingDPI;
 
   // This is used as a workaround for cesium-native#186
   //
