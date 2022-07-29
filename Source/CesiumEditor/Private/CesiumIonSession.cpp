@@ -4,15 +4,8 @@
 #include "CesiumEditorSettings.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumSourceControl.h"
-#include "Framework/Notifications/NotificationManager.h"
-#include "HAL/PlatformFilemanager.h"
 #include "HAL/PlatformProcess.h"
-#include "ISourceControlModule.h"
-#include "ISourceControlProvider.h"
 #include "Misc/App.h"
-#include "Misc/MessageDialog.h"
-#include "SourceControlOperations.h"
-#include "Widgets/Notifications/SNotificationList.h"
 
 using namespace CesiumAsync;
 using namespace CesiumIonClient;
