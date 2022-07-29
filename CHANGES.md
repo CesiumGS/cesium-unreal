@@ -3,6 +3,7 @@
 ### ???? - ????
 
 ##### Additions :tada:
+
 - `UCesiumGltfPrimitiveComponent` now has static mobility, allowing it to finally take advantage of several rendering optimizations only available for static objects.
 - Added `UCesiumBoundingVolumePoolComponent` and `UCesiumBoundingVolumeComponent` to track the occlusion state of prospective tiles before they are loaded. This allows tile loads to be avoided if they will be occluded anyways.
 - Added options in `ACesium3DTileset` to control occlusion culling and turn it off if necessary. 
@@ -12,6 +13,8 @@
 - Added BP accessible callback `OnFlightInterrupt` for when Dynamic Pawn's flying is interrupted. 
 
 ##### Fixes :wrench:
+
+- Perforce marks files read only if not checked out. To save access tokens, it now asks to check out the necessary config files from source control.
 - Fixed credit images not appearing in UE5.
 - Added `UPROPERTY` to the Credit Widget to prevent it from being deleted by the garbage collector. 
 
@@ -28,6 +31,9 @@
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
 - Fixed a bug that could cause a crash when reporting tileset or raster overlay load errors, particularly while switching levels.
 - We now Log the correct asset source when loading a new tileset from either URL or Ion. 
+
+##### Breaking Changes :mega:
+- Add option to scale the viewport by pixel density to increase performance for mobile devices.
 
 ### v1.14.0 - 2022-06-01
 

@@ -3,6 +3,7 @@
 #include "CesiumIonSession.h"
 #include "CesiumEditorSettings.h"
 #include "CesiumRuntimeSettings.h"
+#include "CesiumSourceControl.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/App.h"
 
@@ -62,6 +63,10 @@ void CesiumIonSession::connect() {
             GetMutableDefault<UCesiumEditorSettings>();
         pSettings->UserAccessToken =
             UTF8_TO_TCHAR(this->_connection.value().getAccessToken().c_str());
+
+        CesiumSourceControl::PromptToCheckoutConfigFile(
+            pSettings->GetClass()->GetConfigName());
+
         pSettings->SaveConfig();
 
         this->ConnectionUpdated.Broadcast();
@@ -115,6 +120,9 @@ void CesiumIonSession::disconnect() {
 
   UCesiumEditorSettings* pSettings = GetMutableDefault<UCesiumEditorSettings>();
   pSettings->UserAccessToken.Empty();
+
+  CesiumSourceControl::PromptToCheckoutConfigFile(
+      pSettings->GetClass()->GetConfigName());
   pSettings->SaveConfig();
 
   this->ConnectionUpdated.Broadcast();

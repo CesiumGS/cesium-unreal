@@ -8,3 +8,4 @@ Intermediate
 ThirdParty/build
 Source/ThirdParty
 node_modules
+extern/build-helper.sh
