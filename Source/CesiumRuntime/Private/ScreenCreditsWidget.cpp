@@ -49,22 +49,19 @@ public:
       ButtonStyle.SetNormal(*Brush);
       ButtonStyle.SetHovered(*Brush);
       ButtonStyle.SetPressed(*Brush);
-      HyperlinkStyle.SetUnderlineStyle(ButtonStyle);
 
-      TSharedPtr<FSlateHyperlinkRun::FWidgetViewModel> model =
-          MakeShareable(new FSlateHyperlinkRun::FWidgetViewModel);
+      ChildSlot
+          [SNew(SButton).ButtonStyle(&ButtonStyle).OnClicked_Lambda([Url]() {
+            FPlatformProcess::LaunchURL(*Url, NULL, NULL);
+            return FReply::Handled();
+          })];
 
-      ChildSlot[SNew(SRichTextHyperlink, model.ToSharedRef())
-                    .Style(&HyperlinkStyle)
-                    .OnNavigate_Lambda([Url]() {
-                      FPlatformProcess::LaunchURL(*Url, NULL, NULL);
-                    })];
+      this->SetCursor(EMouseCursor::Hand);
     }
   }
 
 private:
   FButtonStyle ButtonStyle;
-  FHyperlinkStyle HyperlinkStyle;
 };
 
 class SInlineHyperlinkText : public SCompoundWidget {
