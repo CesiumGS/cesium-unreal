@@ -63,6 +63,8 @@ void CesiumViewExtension::SetupView(
 
 void CesiumViewExtension::BeginRenderViewFamily(
     FSceneViewFamily& InViewFamily) {
+  if (!this->_isEnabled)
+    return;
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DequeueOcclusionResults)
   if (!_occlusionResultsQueue.IsEmpty()) {
@@ -92,6 +94,9 @@ void CesiumViewExtension::PreRenderView_RenderThread(
 void CesiumViewExtension::PostRenderViewFamily_RenderThread(
     FRHICommandListImmediate& RHICmdList,
     FSceneViewFamily& InViewFamily) {
+  if (!this->_isEnabled)
+    return;
+
   if (_frameNumber_renderThread != InViewFamily.FrameNumber) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EnqueueAggregatedOcclusion)
     if (_frameNumber_renderThread != -1) {
@@ -105,6 +110,9 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::AggregateOcclusionForViewFamily)
   for (const FSceneView* pView : InViewFamily.Views) {
+    if (pView == nullptr || pView->State == nullptr)
+      continue;
+
     const FSceneViewState* pViewState = pView->State->GetConcreteViewState();
     if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
       SceneViewOcclusionResults& occlusionResults =
@@ -171,4 +179,8 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
       }
     }
   }
+}
+
+void CesiumViewExtension::SetEnabled(bool enabled) {
+  this->_isEnabled = enabled;
 }

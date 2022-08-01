@@ -846,6 +846,12 @@ void ACesium3DTileset::LoadTileset() {
     return;
   }
 
+  // Both the feature flag and the CesiumViewExtension are global, not owned by
+  // the Tileset. We're just applying one to the other here out of convenience.
+  cesiumViewExtension->SetEnabled(
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature);
+
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
