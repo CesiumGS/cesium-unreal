@@ -1,5 +1,12 @@
 # Change Log
 
+### v1.16.1 - 2022-08-01
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause a crash when using thumbnail rendering, notably on the Project Settings panel in UE5.
+- More fully disabled the occlusion culling system when the project-level feature flag is disabled.
+
 ### v1.16.0 - 2022-08-01
 
 ##### Breaking Changes :mega:
