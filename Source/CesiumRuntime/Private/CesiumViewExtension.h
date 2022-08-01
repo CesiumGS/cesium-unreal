@@ -53,7 +53,8 @@ public:
 
   Cesium3DTilesSelection::TileOcclusionState getPrimitiveOcclusionState(
       const FPrimitiveComponentId& id,
-      bool previouslyOccluded) const;
+      bool previouslyOccluded,
+      float frameTimeCutoff) const;
 
   void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
   void SetupView(FSceneViewFamily& InViewFamily, FSceneView& InView) override;
