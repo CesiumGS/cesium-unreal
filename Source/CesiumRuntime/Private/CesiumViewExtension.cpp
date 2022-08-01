@@ -129,12 +129,12 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
       }
 
       // Unreal will not execute occlusion queries that get frustum culled in a
-      // particular view, leaving the occlusion results indefinite. And by just looking
-      // at the PrimitiveOcclusionHistorySet, we can't distinguish occlusion
-      // queries that haven't completed "yet" from occlusion queries that were
-      // culled. So here we detect primitives that have been conclusively proven
-      // to be not visible (outside the view frustum) and also mark them
-      // definitely occluded.
+      // particular view, leaving the occlusion results indefinite. And by just
+      // looking at the PrimitiveOcclusionHistorySet, we can't distinguish
+      // occlusion queries that haven't completed "yet" from occlusion queries
+      // that were culled. So here we detect primitives that have been
+      // conclusively proven to be not visible (outside the view frustum) and
+      // also mark them definitely occluded.
       FScene* pScene = InViewFamily.Scene->GetRenderScene();
       if (pView->bIsViewInfo && pScene != nullptr) {
         const FViewInfo* pViewInfo = static_cast<const FViewInfo*>(pView);
@@ -142,8 +142,7 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
         auto& occlusion = occlusionResults.PrimitiveOcclusionHistorySet;
 
         const uint32 PrimitiveCount = pScene->Primitives.Num();
-        for (uint32 i = 0; i < PrimitiveCount;
-             ++i) {
+        for (uint32 i = 0; i < PrimitiveCount; ++i) {
           // We're only concerned with primitives that are not visible
           if (visibility[i])
             continue;
@@ -158,7 +157,8 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
                   0));
           if (!pHistory ||
               pHistory->LastConsideredTime < pViewState->LastRenderTime) {
-            // No valid occlusion history for this culled primitive, so create it.
+            // No valid occlusion history for this culled primitive, so create
+            // it.
             FPrimitiveOcclusionHistory historyEntry{};
             historyEntry.PrimitiveId = pSceneInfo->PrimitiveComponentId;
             historyEntry.LastConsideredTime = pViewState->LastRenderTime;
