@@ -47,6 +47,8 @@ private:
   // results aggregation is complete.
   int64_t _frameNumber_renderThread = -1;
 
+  std::atomic<bool> _isEnabled = false;
+
 public:
   CesiumViewExtension(const FAutoRegister& autoRegister);
   ~CesiumViewExtension();
@@ -68,4 +70,6 @@ public:
   void PostRenderViewFamily_RenderThread(
       FRHICommandListImmediate& RHICmdList,
       FSceneViewFamily& InViewFamily) override;
+
+  void SetEnabled(bool enabled);
 };
