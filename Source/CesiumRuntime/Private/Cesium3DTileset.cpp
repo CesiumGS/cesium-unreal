@@ -1906,6 +1906,7 @@ void ACesium3DTileset::Destroyed() {
   AActor::Destroyed();
 }
 
+#if WITH_EDITOR
 void ACesium3DTileset::RuntimeSettingsChanged(
     UObject* pObject,
     struct FPropertyChangedEvent& changed) {
@@ -1917,3 +1918,4 @@ void ACesium3DTileset::RuntimeSettingsChanged(
     this->RefreshTileset();
   }
 }
+#endif
