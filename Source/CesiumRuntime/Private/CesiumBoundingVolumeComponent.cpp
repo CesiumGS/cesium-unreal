@@ -4,8 +4,6 @@
 #include "CalcBounds.h"
 #include "CesiumGeoreference.h"
 #include "CesiumLifetime.h"
-#include "Runtime/Renderer/Private/ScenePrivate.h"
-#include "SceneTypes.h"
 #include "UObject/UObjectGlobals.h"
 #include "VecMath.h"
 #include <optional>
@@ -97,62 +95,22 @@ FPrimitiveSceneProxy* UCesiumBoundingVolumeComponent::CreateSceneProxy() {
   return new FCesiumBoundingVolumeSceneProxy(this);
 }
 
-UCesiumBoundingVolumeComponent::UCesiumBoundingVolumeComponent()
-    : _tileBounds(CesiumGeometry::OrientedBoundingBox(
-          glm::dvec3(0.0),
-          glm::dmat3(1.0))),
-      _tileTransform(1.0),
-      _cesiumToUnreal(1.0) {}
-
-void UCesiumBoundingVolumeComponent::UpdateOcclusionFromView(
-    const FSceneView* View) {
-  if (_ignoreRemainingViews) {
+void UCesiumBoundingVolumeComponent::UpdateOcclusion(
+    const CesiumViewExtension& cesiumViewExtension) {
+  if (!_isMapped) {
     return;
   }
 
-  const FSceneViewState* pViewState = View->State->GetConcreteViewState();
-  if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
-    const FPrimitiveOcclusionHistory* pHistory =
-        pViewState->PrimitiveOcclusionHistorySet.Find(
-            FPrimitiveOcclusionHistoryKey(this->ComponentId, 0));
-    if (pHistory) {
-      if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
-        _isDefiniteThisFrame = false;
-        _ignoreRemainingViews = true;
-        return;
-      }
+  TileOcclusionState occlusionState =
+      cesiumViewExtension.getPrimitiveOcclusionState(
+          this->ComponentId,
+          _occlusionState == TileOcclusionState::Occluded,
+          _mappedFrameTime);
 
-      _isDefiniteThisFrame = true;
-
-      if (_isOccluded) {
-        if (pHistory->LastPixelsPercentage > 0.01f) {
-          _isOccludedThisFrame = false;
-          _ignoreRemainingViews = true;
-          return;
-        }
-      } else {
-        if (!pHistory->WasOccludedLastFrame) {
-          // pHistory->LastPixelsPercentage > 0.0f) {
-          _isOccludedThisFrame = false;
-          _ignoreRemainingViews = true;
-          return;
-        }
-      }
-
-      _isOccludedThisFrame = true;
-    }
+  // If the occlusion result is unavailable, continue using the previous result.
+  if (occlusionState != TileOcclusionState::OcclusionUnavailable) {
+    _occlusionState = occlusionState;
   }
-}
-
-void UCesiumBoundingVolumeComponent::FinalizeOcclusionResultForFrame() {
-  if (_isDefiniteThisFrame) {
-    _isOccluded = _isOccludedThisFrame;
-    _isOcclusionAvailable = true;
-  }
-
-  _isOccludedThisFrame = false;
-  _isDefiniteThisFrame = true;
-  _ignoreRemainingViews = false;
 }
 
 void UCesiumBoundingVolumeComponent::_updateTransform() {
@@ -174,27 +132,16 @@ void UCesiumBoundingVolumeComponent::UpdateTransformFromCesium(
   this->_updateTransform();
 }
 
-Cesium3DTilesSelection::TileOcclusionState
-UCesiumBoundingVolumeComponent::getOcclusionState() const {
-  if (!this->_isOcclusionAvailable) {
-    return Cesium3DTilesSelection::TileOcclusionState::OcclusionUnavailable;
-  } else if (this->_isOccluded) {
-    return Cesium3DTilesSelection::TileOcclusionState::Occluded;
-  } else {
-    return Cesium3DTilesSelection::TileOcclusionState::NotOccluded;
-  }
-}
-
 void UCesiumBoundingVolumeComponent::reset(const Tile* pTile) {
   if (pTile) {
     this->_tileTransform = pTile->getTransform();
     this->_tileBounds = pTile->getBoundingVolume();
     this->_isMapped = true;
+    this->_mappedFrameTime = GetWorld()->GetRealTimeSeconds();
     this->_updateTransform();
     this->SetVisibility(true);
   } else {
-    this->_isOccluded = false;
-    this->_isOcclusionAvailable = false;
+    this->_occlusionState = TileOcclusionState::OcclusionUnavailable;
     this->_isMapped = false;
     this->SetVisibility(false);
   }

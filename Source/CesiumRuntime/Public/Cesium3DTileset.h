@@ -42,6 +42,12 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
     FCesium3DTilesetLoadFailure,
     const FCesium3DTilesetLoadFailureDetails&);
 
+/**
+ * The delegate for the Acesium3DTileset::OnTilesetLoaded,
+ * which is triggered from UpdateLoadStatus
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCompletedLoadTrigger);
+
 CESIUMRUNTIME_API extern FCesium3DTilesetLoadFailure
     OnCesium3DTilesetLoadFailure;
 
@@ -58,6 +64,9 @@ enum class ETilesetSource : uint8 {
    */
   FromUrl UMETA(DisplayName = "From Url")
 };
+
+UENUM(BlueprintType)
+enum class EApplyDpiScaling : uint8 { Yes, No, UseProjectDefault };
 
 UCLASS()
 class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
@@ -231,6 +240,16 @@ public:
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
   double MaximumScreenSpaceError = 16.0;
+
+  /**
+   * Scale Level-of-Detail by Display DPI. This increases the performance for
+   * mobile devices and high DPI screens.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Level of Detail")
+  EApplyDpiScaling ApplyDpiScaling = EApplyDpiScaling::UseProjectDefault;
 
   /**
    * Whether to preload ancestor tiles.
@@ -506,7 +525,16 @@ public:
       meta = (ShowOnlyInnerProperties, SkipUCSModifiedProperties))
   FBodyInstance BodyInstance;
 
+  /**
+   * A delegate that will be called whenever the tileset is fully loaded.
+   */
+  UPROPERTY(BlueprintAssignable, Category = "Cesium");
+  FCompletedLoadTrigger OnTilesetLoaded;
+
 private:
+  UPROPERTY(BlueprintGetter = GetLoadProgress, Category = "Cesium")
+  float LoadProgress = 0.0f;
+
   /**
    * The type of source from which to load this tileset.
    */
@@ -689,6 +717,9 @@ protected:
 
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
+  float GetLoadProgress() const { return LoadProgress; }
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
@@ -816,7 +847,7 @@ public:
   virtual void PostLoad() override;
   virtual void Serialize(FArchive& Ar) override;
 
-  void UpdateFromView(FSceneViewFamily& ViewFamily);
+  void UpdateLoadStatus();
 
   // UObject overrides
 #if WITH_EDITOR
@@ -928,6 +959,7 @@ private:
   uint32_t _lastTilesLoadingLowPriority;
   uint32_t _lastTilesLoadingMediumPriority;
   uint32_t _lastTilesLoadingHighPriority;
+  bool _activeLoading;
 
   uint32_t _lastTilesVisited;
   uint32_t _lastCulledTilesVisited;
@@ -942,6 +974,8 @@ private:
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
+
+  bool _scaleUsingDPI;
 
   // This is used as a workaround for cesium-native#186
   //

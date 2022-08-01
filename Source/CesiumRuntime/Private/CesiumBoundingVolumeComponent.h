@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumViewExtension.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
@@ -82,26 +83,16 @@ class UCesiumBoundingVolumeComponent
 
 public:
   // Sets default values for this component's properties
-  UCesiumBoundingVolumeComponent();
+  UCesiumBoundingVolumeComponent(){};
   virtual ~UCesiumBoundingVolumeComponent() = default;
 
   FPrimitiveSceneProxy* CreateSceneProxy() override;
 
   /**
-   * Add an active view for this frame. Occlusion results for this bounding
-   * volume will be pulled from the view and aggregated with the results from
-   * other views. Call FinalizeOcclusionResultsForFrame after adding all the
-   * relevant views.
-   *
-   * @param View An active view to retrieve occlusion results from.
+   * Update the occlusion state for this bounding volume from the
+   * CesiumViewExtension.
    */
-  void UpdateOcclusionFromView(const FSceneView* View);
-
-  /**
-   * Finalizes a collective occlusion result for this bounding volume from all
-   * the views sent to UpdateOcclusionFromView.
-   */
-  void FinalizeOcclusionResultForFrame();
+  void UpdateOcclusion(const CesiumViewExtension& cesiumViewExtension);
 
   /**
    * Updates this component's transform from a new double-precision
@@ -117,11 +108,12 @@ public:
 
   bool ShouldRecreateProxyOnUpdateTransform() const override { return true; }
 
-  bool IsMappedToTile() const { return this->_isMapped; }
-
   // virtual void BeginDestroy() override;
 
-  Cesium3DTilesSelection::TileOcclusionState getOcclusionState() const override;
+  Cesium3DTilesSelection::TileOcclusionState
+  getOcclusionState() const override {
+    return _occlusionState;
+  }
 
 protected:
   void reset(const Cesium3DTilesSelection::Tile* pTile) override;
@@ -129,18 +121,17 @@ protected:
 private:
   void _updateTransform();
 
-  bool _isOccludedThisFrame = false;
-  bool _isDefiniteThisFrame = true;
-  bool _ignoreRemainingViews = false;
-
-  bool _isOccluded = false;
-  bool _isOcclusionAvailable = false;
+  Cesium3DTilesSelection::TileOcclusionState _occlusionState =
+      Cesium3DTilesSelection::TileOcclusionState::OcclusionUnavailable;
 
   // Whether this proxy is currently mapped to a tile.
   bool _isMapped = false;
 
+  // The time when this bounding volume was mapped to the tile.
+  float _mappedFrameTime = 0.0f;
+
   Cesium3DTilesSelection::BoundingVolume _tileBounds =
       CesiumGeometry::OrientedBoundingBox(glm::dvec3(0.0), glm::dmat3(1.0));
-  glm::dmat4 _tileTransform;
-  glm::dmat4 _cesiumToUnreal;
+  glm::dmat4 _tileTransform = glm::dmat4(1.0);
+  glm::dmat4 _cesiumToUnreal = glm::dmat4(1.0);
 };

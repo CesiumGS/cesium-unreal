@@ -272,6 +272,11 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0;
+
+    // Trigger callback accessible from BP
+    UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnFlightComplete"));
+    OnFlightComplete.Broadcast();
+
     return;
   }
 
@@ -386,4 +391,8 @@ void AGlobeAwareDefaultPawn::_interruptFlight() {
   FRotator currentRotator = Controller->GetControlRotation();
   currentRotator.Roll = 0.0;
   Controller->SetControlRotation(currentRotator);
+
+  // Trigger callback accessible from BP
+  UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnFlightInterrupt"));
+  OnFlightInterrupt.Broadcast();
 }
