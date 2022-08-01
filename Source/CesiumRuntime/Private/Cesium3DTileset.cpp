@@ -785,6 +785,30 @@ static std::string getCacheDatabaseName() {
   return TCHAR_TO_UTF8(*PlatformAbsolutePath);
 }
 
+void ACesium3DTileset::UpdateLoadStatus() {
+  this->LoadProgress = this->_pTileset->computeLoadProgress();
+
+  if (this->LoadProgress < 100 ||
+      this->_lastTilesWaitingForOcclusionResults > 0) {
+    this->_activeLoading = true;
+  } else if (this->_activeLoading && this->LoadProgress == 100) {
+
+    // There might be a few frames where nothing needs to be loaded as we
+    // are waiting for occlusion results to come back, which means we are not
+    // done with loading all the tiles in the tileset yet.
+    if (this->_lastTilesWaitingForOcclusionResults == 0) {
+
+      // Tileset just finished loading, we broadcast the update
+      UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
+      OnTilesetLoaded.Broadcast();
+
+      // Tileset remains 100% loaded if we don't have to reload it
+      // so we don't want to keep on sending finished loading updates
+      this->_activeLoading = false;
+    }
+  }
+}
+
 void ACesium3DTileset::LoadTileset() {
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
@@ -981,6 +1005,21 @@ void ACesium3DTileset::LoadTileset() {
         this->IonAssetID);
     break;
   }
+
+  switch (ApplyDpiScaling) {
+  case (EApplyDpiScaling::UseProjectDefault):
+    _scaleUsingDPI =
+        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
+    break;
+  case (EApplyDpiScaling::Yes):
+    _scaleUsingDPI = true;
+    break;
+  case (EApplyDpiScaling::No):
+    _scaleUsingDPI = false;
+    break;
+  default:
+    _scaleUsingDPI = true;
+  }
 }
 
 void ACesium3DTileset::DestroyTileset() {
@@ -1126,6 +1165,14 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
+    float dpiScalingFactor = 1.0f;
+    if (this->_scaleUsingDPI) {
+      ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+      if (LocPlayer && LocPlayer->ViewportClient) {
+        dpiScalingFactor = LocPlayer->ViewportClient->GetDPIScale();
+      }
+    }
+
     if (useStereoRendering) {
 #if ENGINE_MAJOR_VERSION >= 5
       const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
@@ -1206,7 +1253,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
             hfov);
       }
     } else {
-      cameras.emplace_back(FVector2D(sizeX, sizeY), location, rotation, fov);
+      cameras.emplace_back(
+          FVector2D(sizeX / dpiScalingFactor, sizeY / dpiScalingFactor),
+          location,
+          rotation,
+          fov);
     }
   }
 
@@ -1361,6 +1412,11 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     if (size.X < 1 || size.Y < 1) {
       continue;
+    }
+
+    if (this->_scaleUsingDPI) {
+      float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
+      size /= dpiScalingFactor;
     }
 
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
@@ -1561,7 +1617,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         LogCesium,
         Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d, Loaded tiles %g%%"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,
@@ -1574,7 +1630,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.maxDepthVisited,
         result.tilesLoadingLowPriority,
         result.tilesLoadingMediumPriority,
-        result.tilesLoadingHighPriority);
+        result.tilesLoadingHighPriority,
+        this->LoadProgress);
   }
 }
 
@@ -1697,6 +1754,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
                               : this->_pTileset->updateView(frustums);
   updateLastViewUpdateResultState(result);
+  this->UpdateLoadStatus();
 
   removeVisibleTilesFromList(
       this->_tilesToNoLongerRenderNextFrame,
@@ -1763,6 +1821,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
