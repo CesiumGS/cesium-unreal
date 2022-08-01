@@ -430,7 +430,10 @@ public:
       meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
   double CulledScreenSpaceError = 64.0;
 
-  UPROPERTY(Transient, VisibleDefaultsOnly)
+  // This mirrors
+  // UCesiumRuntimeSettings::EnableExperimentalOcclusionCullingFeature so that
+  // it can be used as an EditCondition.
+  UPROPERTY(Transient, VisibleDefaultsOnly, Category = "Cesium|Tile Occlusion")
   bool CanEnableOcclusionCulling = false;
 
   /**
