@@ -430,8 +430,15 @@ public:
       meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
   double CulledScreenSpaceError = 64.0;
 
+  UPROPERTY(Transient, VisibleDefaultsOnly)
+  bool CanEnableOcclusionCulling = false;
+
   /**
    * Whether to cull tiles that are occluded.
+   *
+   * If this option is disabled, check that "Enable Experimental Occlusion
+   * Culling Feature" is enabled in the Plugins -> Cesium section of the Project
+   * Settings.
    *
    * When enabled, this feature will use Unreal's occlusion system to determine
    * if tiles are actually visible on the screen. For tiles found to be
@@ -450,7 +457,8 @@ public:
       EditAnywhere,
       BlueprintGetter = GetEnableOcclusionCulling,
       BlueprintSetter = SetEnableOcclusionCulling,
-      Category = "Cesium|Tile Occlusion")
+      Category = "Cesium|Tile Occlusion",
+      meta = (EditCondition = "CanEnableOcclusionCulling"))
   bool EnableOcclusionCulling = true;
 
   /**
@@ -465,7 +473,8 @@ public:
       BlueprintSetter = SetOcclusionPoolSize,
       Category = "Cesium|Tile Occlusion",
       meta =
-          (EditCondition = "EnableOcclusionCulling",
+          (EditCondition =
+               "EnableOcclusionCulling && CanEnableOcclusionCulling",
            ClampMin = "0",
            ClampMax = "1000"))
   int32 OcclusionPoolSize = 500;
@@ -483,7 +492,9 @@ public:
       BlueprintGetter = GetDelayRefinementForOcclusion,
       BlueprintSetter = SetDelayRefinementForOcclusion,
       Category = "Cesium|Tile Occlusion",
-      meta = (EditCondition = "EnableOcclusionCulling"))
+      meta =
+          (EditCondition =
+               "EnableOcclusionCulling && CanEnableOcclusionCulling"))
   bool DelayRefinementForOcclusion = true;
 
   /**
@@ -750,7 +761,7 @@ public:
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
-  bool GetEnableOcclusionCulling() const { return EnableOcclusionCulling; }
+  bool GetEnableOcclusionCulling() const;
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Tile Culling|Experimental")
   void SetEnableOcclusionCulling(bool bEnableOcclusionCulling);
@@ -947,6 +958,10 @@ private:
    * was given in the root tile.
    */
   void OnFocusEditorViewportOnThis();
+
+  void RuntimeSettingsChanged(
+      UObject* pObject,
+      struct FPropertyChangedEvent& changed);
 #endif
 
 private:

@@ -216,6 +216,18 @@ void ACesium3DTileset::PostInitProperties() {
   Super::PostInitProperties();
 
   AddFocusViewportDelegate();
+
+  UCesiumRuntimeSettings* pSettings =
+      GetMutableDefault<UCesiumRuntimeSettings>();
+  if (pSettings) {
+    CanEnableOcclusionCulling =
+        pSettings->EnableExperimentalOcclusionCullingFeature;
+#if WITH_EDITOR
+    pSettings->OnSettingChanged().AddUObject(
+        this,
+        &ACesium3DTileset::RuntimeSettingsChanged);
+#endif
+  }
 }
 
 void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
@@ -260,6 +272,12 @@ void ACesium3DTileset::SetIonAssetEndpointUrl(
     }
     this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
   }
+}
+
+bool ACesium3DTileset::GetEnableOcclusionCulling() const {
+  return GetDefault<UCesiumRuntimeSettings>()
+             ->EnableExperimentalOcclusionCullingFeature &&
+         EnableOcclusionCulling;
 }
 
 void ACesium3DTileset::SetEnableOcclusionCulling(bool bEnableOcclusionCulling) {
@@ -850,7 +868,9 @@ void ACesium3DTileset::LoadTileset() {
 
   this->_cesiumViewExtension = cesiumViewExtension;
 
-  if (this->EnableOcclusionCulling && !this->BoundingVolumePoolComponent) {
+  if (GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature &&
+      this->EnableOcclusionCulling && !this->BoundingVolumePoolComponent) {
     const glm::dmat4& cesiumToUnreal =
         GetCesiumTilesetToUnrealRelativeWorldTransform();
     this->BoundingVolumePoolComponent =
@@ -873,7 +893,9 @@ void ACesium3DTileset::LoadTileset() {
       asyncSystem,
       pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
       spdlog::default_logger(),
-      (this->EnableOcclusionCulling && this->BoundingVolumePoolComponent)
+      (GetDefault<UCesiumRuntimeSettings>()
+           ->EnableExperimentalOcclusionCullingFeature &&
+       this->EnableOcclusionCulling && this->BoundingVolumePoolComponent)
           ? this->BoundingVolumePoolComponent->getPool()
           : nullptr};
 
@@ -881,7 +903,10 @@ void ACesium3DTileset::LoadTileset() {
 
   Cesium3DTilesSelection::TilesetOptions options;
 
-  options.enableOcclusionCulling = this->EnableOcclusionCulling;
+  options.enableOcclusionCulling =
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature &&
+      this->EnableOcclusionCulling;
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
 
   options.showCreditsOnScreen = ShowCreditsOnScreen;
@@ -1577,7 +1602,10 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
   options.enableFrustumCulling = this->EnableFrustumCulling;
-  options.enableOcclusionCulling = this->EnableOcclusionCulling;
+  options.enableOcclusionCulling =
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature &&
+      this->EnableOcclusionCulling;
 
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
   options.enableFogCulling = this->EnableFogCulling;
@@ -1882,3 +1910,17 @@ void ACesium3DTileset::Destroyed() {
 
   AActor::Destroyed();
 }
+
+#if WITH_EDITOR
+void ACesium3DTileset::RuntimeSettingsChanged(
+    UObject* pObject,
+    struct FPropertyChangedEvent& changed) {
+  bool occlusionCullingAvailable =
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature;
+  if (occlusionCullingAvailable != this->CanEnableOcclusionCulling) {
+    this->CanEnableOcclusionCulling = occlusionCullingAvailable;
+    this->RefreshTileset();
+  }
+}
+#endif
