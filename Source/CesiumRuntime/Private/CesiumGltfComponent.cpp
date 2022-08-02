@@ -1577,11 +1577,7 @@ static void SetGltfParameterValues(
   } else {
     pMaterial->SetVectorParameterValueByInfo(
         FMaterialParameterInfo("baseColorFactor", association, index),
-        FLinearColor(
-            1.,
-            1.,
-            1.,
-            1.));
+        FLinearColor(1., 1., 1., 1.));
   }
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", association, index),
@@ -1866,22 +1862,26 @@ static void loadPrimitiveGameThreadPart(
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
 
-#if PLATFORM_MAC
-  // TODO: figure out why water material crashes mac
-  UMaterialInterface* pBaseMaterial = pGltf->BaseMaterial;
-#else
-  const auto is_in_blend_mode = [](auto &result) {
-    return !!result.pMaterial && result.pMaterial->alphaMode == CesiumGltf::Material::AlphaMode::BLEND;
+  const auto is_in_blend_mode = [](auto& result) {
+    return !!result.pMaterial && result.pMaterial->alphaMode ==
+                                     CesiumGltf::Material::AlphaMode::BLEND;
   };
 
+#if PLATFORM_MAC
+  // TODO: figure out why water material crashes mac
+  UMaterialInterface* pBaseMaterial =
+      (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
+       pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+          ? pGltf->BaseMaterialWithTranslucency
+          : pGltf->BaseMaterial;
+#else
   UMaterialInterface* pBaseMaterial =
       (loadResult.onlyWater || !loadResult.onlyLand)
           ? pGltf->BaseMaterialWithWater
-          : (is_in_blend_mode(loadResult)
-             && pbr.baseColorFactor.size() > 3
-             && pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
-                 ? pGltf->BaseMaterialWithTranslucency
-                 : pGltf->BaseMaterial;
+          : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
+             pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+                ? pGltf->BaseMaterialWithTranslucency
+                : pGltf->BaseMaterial;
 #endif
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
@@ -2097,7 +2097,8 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
-    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithTranslucency;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance>
+        BaseMaterialWithTranslucency;
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
     ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
@@ -2114,7 +2115,8 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
-  this->BaseMaterialWithTranslucency = ConstructorStatics.BaseMaterialWithTranslucency.Object;
+  this->BaseMaterialWithTranslucency =
+      ConstructorStatics.BaseMaterialWithTranslucency.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 
