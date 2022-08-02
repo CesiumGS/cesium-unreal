@@ -37,4 +37,19 @@ public:
       Category = "Cesium ion",
       meta = (DisplayName = "Default Cesium ion Access Token"))
   FString DefaultIonAccessToken;
+
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Level of Detail",
+      meta = (DisplayName = "Scale Level-of-Detail by Display DPI"))
+  bool ScaleLevelOfDetailByDPI = true;
+
+  /**
+   * Uses Unreal's occlusion culling engine to drive Cesium 3D Tiles selection,
+   * reducing the detail of tiles that are occluded by other objects in the
+   * scene so that less data overall needs to be loaded and rendered.
+   */
+  UPROPERTY(Config, EditAnywhere, Category = "Experimental Feature Flags")
+  bool EnableExperimentalOcclusionCullingFeature = false;
 };
