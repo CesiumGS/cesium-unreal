@@ -1880,7 +1880,7 @@ static void loadPrimitiveGameThreadPart(
           : (is_in_blend_mode(loadResult)
              && pbr.baseColorFactor.size() > 3
              && pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
-                 ? pGltf->BaseMaterialWithTranslcency
+                 ? pGltf->BaseMaterialWithTranslucency
                  : pGltf->BaseMaterial;
 #endif
 
@@ -2066,7 +2066,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   }
 
   if (pBaseTranslucentMaterial) {
-    Gltf->BaseMaterialWithTranslcency = pBaseTranslucentMaterial;
+    Gltf->BaseMaterialWithTranslucency = pBaseTranslucentMaterial;
   }
 
   if (pBaseWaterMaterial) {
@@ -2097,14 +2097,14 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   // Structure to hold one-time initialization
   struct FConstructorStatics {
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterial;
-    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithTranslcency;
+    ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithTranslucency;
     ConstructorHelpers::FObjectFinder<UMaterialInstance> BaseMaterialWithWater;
     ConstructorHelpers::FObjectFinder<UTexture2D> Transparent1x1;
     FConstructorStatics()
         : BaseMaterial(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClipping.MI_CesiumThreeOverlaysAndClipping")),
-          BaseMaterialWithTranslcency(TEXT(
-              "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClipping.MI_CesiumThreeOverlaysAndClipping")),
+          BaseMaterialWithTranslucency(TEXT(
+              "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingTranslucent.MI_CesiumThreeOverlaysAndClippingTranslucent")),
           BaseMaterialWithWater(TEXT(
               "/CesiumForUnreal/Materials/Instances/MI_CesiumThreeOverlaysAndClippingAndWater.MI_CesiumThreeOverlaysAndClippingAndWater")),
           Transparent1x1(
@@ -2114,7 +2114,7 @@ UCesiumGltfComponent::UCesiumGltfComponent() : USceneComponent() {
   static FConstructorStatics ConstructorStatics;
 
   this->BaseMaterial = ConstructorStatics.BaseMaterial.Object;
-  this->BaseMaterialWithTranslcency = ConstructorStatics.BaseMaterialWithTranslcency.Object;
+  this->BaseMaterialWithTranslucency = ConstructorStatics.BaseMaterialWithTranslucency.Object;
   this->BaseMaterialWithWater = ConstructorStatics.BaseMaterialWithWater.Object;
   this->Transparent1x1 = ConstructorStatics.Transparent1x1.Object;
 

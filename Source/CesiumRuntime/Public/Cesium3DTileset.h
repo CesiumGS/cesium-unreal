@@ -686,11 +686,12 @@ private:
   bool EnableWaterMask = false;
 
   /**
-   * A custom Material to use to render opaque elements in this tileset, in order to implement
-   * custom visual effects.
+   * A custom Material to use to render opaque elements in this tileset, in
+   * order to implement custom visual effects.
    *
-   * The custom material should generally be created by copying the
-   * "M_CesiumOverlay" material and customizing it as desired.
+   * The custom material should generally be created by copying the Material
+   * Instance "MI_CesiumThreeOverlaysAndClipping" and customizing the copy as
+   * desired.
    */
   UPROPERTY(
       EditAnywhere,
@@ -700,11 +701,13 @@ private:
   UMaterialInterface* Material = nullptr;
 
   /**
-   * A custom Material to use to render translucent elements of the tileset, in order to implement
-   * custom visual effects.
+   * A custom Material to use to render translucent elements of the tileset, in
+   * order to implement custom visual effects.
    *
-   * The custom material should generally be created by copying the
-   * "M_CesiumOverlay" material, changing blend mode to translucent, and customizing it as desired.
+   * The custom material should generally be created by copying the Material
+   * Instance "MI_CesiumThreeOverlaysAndClippingTranslucent" and customizing the
+   * copy as desired. Make sure that its Material Property Overrides -> Blend
+   * Mode is set to "Translucent".
    */
   UPROPERTY(
       EditAnywhere,
@@ -719,10 +722,9 @@ private:
    * Currently only applicable for quantized-mesh tilesets that support the
    * water mask extension.
    *
-   * The custom material should generally be created by copying the
-   * "M_CesiumOverlayWater" material and customizing it as desired. For best
-   * results, any changes to the above material should also be duplicated in the
-   * Water Material.
+   * The custom material should generally be created by copying the Material
+   * Instance "MI_CesiumThreeOverlaysAndClippingAndWater" and customizing the
+   * copy as desired.
    */
   UPROPERTY(
       EditAnywhere,
@@ -828,7 +830,9 @@ public:
   void SetMaterial(UMaterialInterface* InMaterial);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
-  UMaterialInterface* GetTranslucentMaterial() const { return TranslucentMaterial; }
+  UMaterialInterface* GetTranslucentMaterial() const {
+    return TranslucentMaterial;
+  }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetTranslucentMaterial(UMaterialInterface* InMaterial);

@@ -84,7 +84,7 @@ public:
   UMaterialInterface* BaseMaterial;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* BaseMaterialWithTranslcency;
+  UMaterialInterface* BaseMaterialWithTranslucency;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
