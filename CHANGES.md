@@ -2,6 +2,11 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- The translucent parts of 3D Tiles are now correctly rendered as translucent.
+- Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
+
 ##### Fixes :wrench:
 
 - Fixed a bug that caused a crash in Unreal Engine 4.26 when enabling the experimental tileset occlusion culling feature.
