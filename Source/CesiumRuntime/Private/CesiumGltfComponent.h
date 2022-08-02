@@ -72,6 +72,7 @@ public:
       TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
+      UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
       const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
@@ -81,6 +82,9 @@ public:
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterial;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterialInterface* BaseMaterialWithTranslucency;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
