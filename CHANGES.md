@@ -7,6 +7,10 @@
 - The translucent parts of 3D Tiles are now correctly rendered as translucent.
 - Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
 
+##### Fixes :wrench:
+
+- Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
+
 ### v1.16.1 - 2022-08-01
 
 ##### Fixes :wrench:

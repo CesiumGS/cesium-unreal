@@ -1442,6 +1442,12 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
+    if (!pEditorViewportClient->IsVisible() ||
+        !pEditorViewportClient->IsRealtime() ||
+        !pEditorViewportClient->IsPerspective()) {
+      continue;
+    }
+
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
     float fov = pEditorViewportClient->ViewFOV;
