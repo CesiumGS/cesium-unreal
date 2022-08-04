@@ -23,20 +23,20 @@ TileOcclusionState CesiumViewExtension::getPrimitiveOcclusionState(
 
   for (const SceneViewOcclusionResults& viewOcclusionResults :
        _currentOcclusionResults.occlusionResultsByView) {
-    const FPrimitiveOcclusionHistory* pHistory =
-        viewOcclusionResults.PrimitiveOcclusionHistorySet.Find(
-            FPrimitiveOcclusionHistoryKey(id, 0));
+    const PrimitiveOcclusionResult* pOcclusionResult =
+        viewOcclusionResults.PrimitiveOcclusionResults.Find(id);
 
-    if (pHistory && pHistory->LastConsideredTime >= frameTimeCutoff) {
-      if (!pHistory->OcclusionStateWasDefiniteLastFrame) {
+    if (pOcclusionResult &&
+        pOcclusionResult->LastConsideredTime >= frameTimeCutoff) {
+      if (!pOcclusionResult->OcclusionStateWasDefiniteLastFrame) {
         return TileOcclusionState::OcclusionUnavailable;
       }
 
       if (previouslyOccluded) {
-        if (pHistory->LastPixelsPercentage > 0.01f) {
+        if (pOcclusionResult->LastPixelsPercentage > 0.01f) {
           return TileOcclusionState::NotOccluded;
         }
-      } else if (!pHistory->WasOccludedLastFrame) {
+      } else if (!pOcclusionResult->WasOccludedLastFrame) {
         return TileOcclusionState::NotOccluded;
       }
 
@@ -71,9 +71,9 @@ void CesiumViewExtension::BeginRenderViewFamily(
     // Recycle the current occlusion results.
     for (SceneViewOcclusionResults& occlusionResults :
          _currentOcclusionResults.occlusionResultsByView) {
-      occlusionResults.PrimitiveOcclusionHistorySet.Reset();
-      _recycledOcclusionHistorySets.Enqueue(
-          std::move(occlusionResults.PrimitiveOcclusionHistorySet));
+      occlusionResults.PrimitiveOcclusionResults.Reset();
+      _recycledOcclusionResultSets.Enqueue(
+          std::move(occlusionResults.PrimitiveOcclusionResults));
     }
     _currentOcclusionResults = {};
 
@@ -121,19 +121,21 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
       // Do we actually need the view?
       occlusionResults.pView = pView;
 
-      if (!_recycledOcclusionHistorySets.IsEmpty()) {
+      if (!_recycledOcclusionResultSets.IsEmpty()) {
         // Recycle a previously allocated occlusion history set, if one is
         // available.
-        occlusionResults.PrimitiveOcclusionHistorySet =
-            std::move(*_recycledOcclusionHistorySets.Peek());
-        _recycledOcclusionHistorySets.Pop();
-        occlusionResults.PrimitiveOcclusionHistorySet.Append(
-            pViewState->PrimitiveOcclusionHistorySet);
+        occlusionResults.PrimitiveOcclusionResults =
+            std::move(*_recycledOcclusionResultSets.Peek());
+        _recycledOcclusionResultSets.Pop();
       } else {
         // If no previously-allocated set exists, just allocate a new one. It
         // will be recycled later.
-        occlusionResults.PrimitiveOcclusionHistorySet =
-            pViewState->PrimitiveOcclusionHistorySet;
+      }
+
+      occlusionResults.PrimitiveOcclusionResults.Reserve(
+          pViewState->PrimitiveOcclusionHistorySet.Num());
+      for (const auto& element : pViewState->PrimitiveOcclusionHistorySet) {
+        occlusionResults.PrimitiveOcclusionResults.Emplace(element);
       }
 
       // Unreal will not execute occlusion queries that get frustum culled in a
@@ -147,7 +149,7 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
       if (pView->bIsViewInfo && pScene != nullptr) {
         const FViewInfo* pViewInfo = static_cast<const FViewInfo*>(pView);
         const FSceneBitArray& visibility = pViewInfo->PrimitiveVisibilityMap;
-        auto& occlusion = occlusionResults.PrimitiveOcclusionHistorySet;
+        auto& occlusion = occlusionResults.PrimitiveOcclusionResults;
 
         const uint32 PrimitiveCount = pScene->Primitives.Num();
         for (uint32 i = 0; i < PrimitiveCount; ++i) {
@@ -159,21 +161,18 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
           if (pSceneInfo == nullptr)
             continue;
 
-          const FPrimitiveOcclusionHistory* pHistory =
-              occlusion.Find(FPrimitiveOcclusionHistoryKey(
-                  pSceneInfo->PrimitiveComponentId,
-                  0));
-          if (!pHistory ||
-              pHistory->LastConsideredTime < pViewState->LastRenderTime) {
+          const PrimitiveOcclusionResult* pOcclusionResult =
+              occlusion.Find(pSceneInfo->PrimitiveComponentId);
+          if (!pOcclusionResult || pOcclusionResult->LastConsideredTime <
+                                       pViewState->LastRenderTime) {
             // No valid occlusion history for this culled primitive, so create
             // it.
-            FPrimitiveOcclusionHistory historyEntry{};
-            historyEntry.PrimitiveId = pSceneInfo->PrimitiveComponentId;
-            historyEntry.LastConsideredTime = pViewState->LastRenderTime;
-            historyEntry.LastPixelsPercentage = 0.0f;
-            historyEntry.WasOccludedLastFrame = true;
-            historyEntry.OcclusionStateWasDefiniteLastFrame = true;
-            occlusion.Add(std::move(historyEntry));
+            occlusion.Emplace(PrimitiveOcclusionResult(
+                pSceneInfo->PrimitiveComponentId,
+                pViewState->LastRenderTime,
+                0.0f,
+                true,
+                true));
           }
         }
       }
