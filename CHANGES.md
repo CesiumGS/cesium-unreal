@@ -1,10 +1,12 @@
 # Change Log
 
-### ? - ?
+### v1.16.2 - 2022-08-04
 
 ##### Fixes :wrench:
 
 - Fixed a bug that caused a crash in Unreal Engine 4.26 when enabling the experimental tileset occlusion culling feature.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.18.0 to v0.18.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.16.1 - 2022-08-01
 
