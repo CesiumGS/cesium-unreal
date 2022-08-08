@@ -580,7 +580,7 @@ public:
     const Cesium3DTilesSelection::TileContent& content = tile.getContent();
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
-    if (pRenderContent && pRenderContent->model) {
+    if (pRenderContent) {
       TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
