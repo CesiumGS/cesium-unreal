@@ -7,6 +7,10 @@
 - The translucent parts of 3D Tiles are now correctly rendered as translucent.
 - Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
 
+##### Fixes :wrench:
+
+- Fixed dividing the viewport by an integer which prevented fractional DPI scaling.
+
 ### v1.16.2 - 2022-08-04
 
 ##### Fixes :wrench:
