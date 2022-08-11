@@ -681,16 +681,19 @@ public:
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
     const Cesium3DTilesSelection::TileContent& content = tile.getContent();
-    UCesiumGltfComponent* pGltfContent =
-        reinterpret_cast<UCesiumGltfComponent*>(content.getRenderResources());
-    if (pGltfContent) {
-      pGltfContent->AttachRasterTile(
-          tile,
-          rasterTile,
-          static_cast<UTexture2D*>(pMainThreadRendererResources),
-          translation,
-          scale,
-          overlayTextureCoordinateID);
+    if (content.isRenderContent()) {
+      UCesiumGltfComponent* pGltfContent =
+          reinterpret_cast<UCesiumGltfComponent*>(
+              content.getRenderContent()->getRenderResources());
+      if (pGltfContent) {
+        pGltfContent->AttachRasterTile(
+            tile,
+            rasterTile,
+            static_cast<UTexture2D*>(pMainThreadRendererResources),
+            translation,
+            scale,
+            overlayTextureCoordinateID);
+      }
     }
   }
 
@@ -700,13 +703,16 @@ public:
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources) noexcept override {
     const Cesium3DTilesSelection::TileContent& content = tile.getContent();
-    UCesiumGltfComponent* pGltfContent =
-        reinterpret_cast<UCesiumGltfComponent*>(content.getRenderResources());
-    if (pGltfContent) {
-      pGltfContent->DetachRasterTile(
-          tile,
-          rasterTile,
-          static_cast<UTexture2D*>(pMainThreadRendererResources));
+    if (content.isRenderContent()) {
+      UCesiumGltfComponent* pGltfContent =
+          reinterpret_cast<UCesiumGltfComponent*>(
+              content.getRenderContent()->getRenderResources());
+      if (pGltfContent) {
+        pGltfContent->DetachRasterTile(
+            tile,
+            rasterTile,
+            static_cast<UTexture2D*>(pMainThreadRendererResources));
+      }
     }
   }
 
@@ -1409,9 +1415,12 @@ void hideTilesToNoLongerRender(
     }
 
     const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    if (!content.isRenderContent()) {
+      continue;
+    }
 
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(content.getRenderResources());
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        content.getRenderContent()->getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetVisibility(false, true);
       Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -1538,8 +1547,12 @@ void ACesium3DTileset::showTilesToRender(
     // 11626) { 	continue;
     //}
     const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(content.getRenderResources());
+    if (!content.isRenderContent()) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        content.getRenderContent()->getRenderResources());
     if (!Gltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
