@@ -436,7 +436,7 @@ ACesium3DTileset* FCesiumEditorModule::FindFirstTilesetSupportingOverlays() {
 
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); it; ++it) {
     const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
-    if (pTileset && pTileset->supportsRasterOverlays()) {
+    if (pTileset) {
       return *it;
     }
   }
