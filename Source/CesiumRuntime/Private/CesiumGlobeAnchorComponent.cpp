@@ -388,11 +388,10 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
     pOwnerRoot->TransformUpdated.RemoveAll(this);
-    _onTransformChangedWhileUnregistered =
-        pOwnerRoot->TransformUpdated.AddLambda(
-            [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) {
-              this->_actorToECEFIsValid = false;
-            });
+    _onTransformChangedWhileUnregistered = pOwnerRoot->TransformUpdated.AddLambda(
+        [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) {
+          this->_actorToECEFIsValid = false;
+        });
   }
 }
 
