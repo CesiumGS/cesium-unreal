@@ -386,7 +386,7 @@ private:
       EUpdateTransformFlags UpdateTransformFlags,
       ETeleportType Teleport);
 
-  FDelegateHandle ToBeNamedLater;
+  FDelegateHandle _onTransformChangedWhileUnregistered;
 
   /**
    * Called when the Component switches to a new Georeference Actor or the

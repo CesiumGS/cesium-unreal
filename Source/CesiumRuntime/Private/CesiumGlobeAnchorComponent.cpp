@@ -397,7 +397,7 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
     pOwnerRoot->TransformUpdated.RemoveAll(this);
-    ToBeNamedLater = pOwnerRoot->TransformUpdated.AddLambda(
+    _onTransformChangedWhileUnregistered = pOwnerRoot->TransformUpdated.AddLambda(
         [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) {
           this->_actorToECEFIsValid = false;
         });
