@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
+#include "Delegates/IDelegateInstance.h"
 #include <glm/gtx/quaternion.hpp>
 #include <glm/vec3.hpp>
 #include <optional>
@@ -384,6 +385,8 @@ private:
       USceneComponent* InRootComponent,
       EUpdateTransformFlags UpdateTransformFlags,
       ETeleportType Teleport);
+
+  FDelegateHandle ToBeNamedLater;
 
   /**
    * Called when the Component switches to a new Georeference Actor or the

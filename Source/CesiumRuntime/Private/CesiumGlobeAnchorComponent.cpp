@@ -356,6 +356,9 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
+    if (_onTransformChangedWhileUnregistered.IsValid()) {
+      pOwnerRoot->TransformUpdated.Remove(_onTransformChangedWhileUnregistered);
+    }
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
@@ -394,6 +397,10 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
     pOwnerRoot->TransformUpdated.RemoveAll(this);
+    ToBeNamedLater = pOwnerRoot->TransformUpdated.AddLambda(
+        [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) {
+          this->_actorToECEFIsValid = false;
+        });
   }
 }
 
