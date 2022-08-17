@@ -1,5 +1,31 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- The translucent parts of 3D Tiles are now correctly rendered as translucent.
+- Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
+
+##### Fixes :wrench:
+
+- Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
+
+### v1.16.2 - 2022-08-04
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused a crash in Unreal Engine 4.26 when enabling the experimental tileset occlusion culling feature.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.18.0 to v0.18.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.16.1 - 2022-08-01
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause a crash when using thumbnail rendering, notably on the Project Settings panel in UE5.
+- More fully disabled the occlusion culling system when the project-level feature flag is disabled.
+
 ### v1.16.0 - 2022-08-01
 
 ##### Breaking Changes :mega:

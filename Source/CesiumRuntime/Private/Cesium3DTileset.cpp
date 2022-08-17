@@ -338,6 +338,13 @@ void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
   }
 }
 
+void ACesium3DTileset::SetTranslucentMaterial(UMaterialInterface* InMaterial) {
+  if (this->TranslucentMaterial != InMaterial) {
+    this->TranslucentMaterial = InMaterial;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   if (this->WaterMaterial != InMaterial) {
     this->WaterMaterial = InMaterial;
@@ -640,6 +647,7 @@ public:
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
+          this->_pActor->GetTranslucentMaterial(),
           this->_pActor->GetWaterMaterial(),
           this->_pActor->GetCustomDepthParameters(),
           tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()));
@@ -848,6 +856,12 @@ void ACesium3DTileset::LoadTileset() {
     // Tileset already loaded, do nothing.
     return;
   }
+
+  // Both the feature flag and the CesiumViewExtension are global, not owned by
+  // the Tileset. We're just applying one to the other here out of convenience.
+  cesiumViewExtension->SetEnabled(
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature);
 
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
@@ -1431,6 +1445,12 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
+    if (!pEditorViewportClient->IsVisible() ||
+        !pEditorViewportClient->IsRealtime() ||
+        !pEditorViewportClient->IsPerspective()) {
+      continue;
+    }
+
     const FVector& location = pEditorViewportClient->GetViewLocation();
     const FRotator& rotation = pEditorViewportClient->GetViewRotation();
     float fov = pEditorViewportClient->ViewFOV;
@@ -1866,6 +1886,8 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
