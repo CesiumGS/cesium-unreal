@@ -85,7 +85,6 @@ public class CesiumRuntime : ModuleRules
             "CesiumUtility",
             "draco",
             "ktx_read",
-            "libwebp",
             "libwebpdecoder",
             //"MikkTSpace",
             "modp_b64",
