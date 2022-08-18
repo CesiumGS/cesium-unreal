@@ -1447,18 +1447,17 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
         !pEditorViewportClient->IsPerspective()) {
       continue;
     }
-    auto GetViewRotation = [pEditorViewportClient]() {
-      if (pEditorViewportClient->bUsingOrbitCamera) {
 
-        return (pEditorViewportClient->GetLookAtLocation() -
-                pEditorViewportClient->GetViewLocation())
-            .Rotation();
-      } else {
-        return pEditorViewportClient->GetViewRotation();
-      }
-    };
+    FRotator rotation;
+    if (pEditorViewportClient->bUsingOrbitCamera) {
+      rotation = (pEditorViewportClient->GetLookAtLocation() -
+                  pEditorViewportClient->GetViewLocation())
+                     .Rotation();
+    } else {
+      rotation = pEditorViewportClient->GetViewRotation();
+    }
+
     const FVector& location = pEditorViewportClient->GetViewLocation();
-    const FRotator& rotation = GetViewRotation();
     float fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
