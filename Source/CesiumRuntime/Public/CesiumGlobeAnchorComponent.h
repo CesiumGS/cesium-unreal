@@ -250,6 +250,13 @@ public:
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
 
+  /**
+   * Sets the rotation offset to be applied when snapping to east/south/up or
+   * ellipsoid normal.
+   */
+  UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
+  void SetRotationOffset(const FRotator& rotationOffset);
+
 public:
   /**
    * Using the teleport flag will move objects to the updated transform
@@ -458,4 +465,9 @@ private:
    * globe transform.
    */
   void _updateCartographicProperties();
+
+  /**
+   * Rotation offset applied to the Actor.
+   */
+  glm::dmat3 _rotationOffset;
 };
