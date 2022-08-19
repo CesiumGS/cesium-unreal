@@ -85,7 +85,6 @@ public class CesiumRuntime : ModuleRules
             "CesiumUtility",
             "draco",
             "ktx_read",
-            "libwebpdecoder",
             //"MikkTSpace",
             "modp_b64",
             "s2geometry",
@@ -93,7 +92,8 @@ public class CesiumRuntime : ModuleRules
             "sqlite3",
             "tinyxml2",
             "uriparser",
-            "ktx_read"
+            "ktx_read",
+            "webpdecoder"
         };
 
         // Use our own copy of MikkTSpace on Android.
