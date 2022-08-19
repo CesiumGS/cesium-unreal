@@ -93,7 +93,6 @@ public class CesiumRuntime : ModuleRules
             "tinyxml2",
             "uriparser",
             "ktx_read",
-            "webpdecoder"
         };
 
         // Use our own copy of MikkTSpace on Android.
@@ -110,6 +109,15 @@ public class CesiumRuntime : ModuleRules
         else
         {
             libs = libs.Concat(new string[] { "tidy" }).ToArray();
+        }
+
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            libs = libs.Concat(new string[] { "libwebpdecoder" }).ToArray();
+        }
+        else
+        {
+            libs = libs.Concat(new string[] { "webpdecoder" }).ToArray();
         }
 
         if (preferDebug)
