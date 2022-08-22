@@ -17,8 +17,8 @@
 #include <PhysicsEngine/BodyInstance.h>
 #include <chrono>
 #include <glm/mat4x4.hpp>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 #include "Cesium3DTileset.generated.h"
 
 class UMaterialInterface;
@@ -514,6 +514,24 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
+   * Use a dithering effect when transitioning between tiles of different LODs.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  bool UseLodTransitions = true;
+
+  /**
+   * How long dithered LOD transitions between different tiles should take, in
+   * seconds.
+   *
+   * Only relevant if UseLodTransitions is true.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "UseLodTransitions"))
+  float LodTransitionLength = 1.0f;
+
+  /**
    * Whether to always generate a correct tangent space basis for tiles that
    * don't have them.
    *
@@ -768,7 +786,7 @@ public:
    * the root component has changed since the previous Tick.
    */
   void UpdateTransformFromCesium();
-  
+
 private:
   /**
    * Writes the values of all properties of this actor into the
@@ -855,6 +873,6 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToNoLongerRenderThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
-  
+
   friend class UnrealResourcePreparer;
 };

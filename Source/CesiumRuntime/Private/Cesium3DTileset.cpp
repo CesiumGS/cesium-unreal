@@ -1474,6 +1474,8 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
+  options.enableLodTransitionPeriod = this->UseLodTransitions;
+  options.lodTransitionLength = this->LodTransitionLength;
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
@@ -1586,13 +1588,17 @@ static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
     return;
   }
 
+  if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+    return;
+  }
+
   UCesiumGltfComponent* pGltf =
       reinterpret_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
   if (!pGltf) {
     return;
   }
 
-  pGltf->UpdateFade(pTile->getContent()->ditherFadePercentage);
+  pGltf->UpdateFade(pTile->getContent()->lodTransitionFadePercentage);
 }
 
 // Called every frame
@@ -1636,8 +1642,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
-                              : this->_pTileset->updateView(frustums, DeltaTime);
+      this->_captureMovieMode
+          ? this->_pTileset->updateViewOffline(frustums)
+          : this->_pTileset->updateView(frustums, DeltaTime);
   updateLastViewUpdateResultState(result);
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
@@ -1647,15 +1654,16 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
     updateTileFade(pTile);
   }
-  
-  //result.tilesToNoLongerRenderThisFrame
 
-  //removeVisibleTilesFromList(
-      //this->_tilesToNoLongerRenderNextFrame,
+  // result.tilesToNoLongerRenderThisFrame
+
+  // removeVisibleTilesFromList(
+  // this->_tilesToNoLongerRenderNextFrame,
   //    tilesToRemove,
   //    result.tilesToRenderThisFrame);
   hideTilesToNoLongerRender(result.tilesToHideThisFrame);
-  //this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  // this->_tilesToNoLongerRenderNextFrame =
+  // result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
 }
 

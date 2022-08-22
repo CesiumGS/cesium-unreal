@@ -2270,14 +2270,14 @@ void UCesiumGltfComponent::BeginDestroy() {
 
 void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
   fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
-  
+
   UCesiumMaterialUserData* pCesiumData =
       BaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
 
   if (!pCesiumData) {
     return;
   }
-    
+
   int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
   if (fadeLayerIndex < 0) {
     return;
@@ -2290,14 +2290,18 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
       continue;
     }
 
-    UMaterialInstanceDynamic* pMaterial = Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterials()[0]);
+    UMaterialInstanceDynamic* pMaterial =
+        Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterials()[0]);
     if (!pMaterial) {
       continue;
     }
 
     pMaterial->SetScalarParameterValueByInfo(
-      FMaterialParameterInfo("FadePercentage", EMaterialParameterAssociation::LayerParameter, fadeLayerIndex),
-      fadePercentage);
+        FMaterialParameterInfo(
+            "FadePercentage",
+            EMaterialParameterAssociation::LayerParameter,
+            fadeLayerIndex),
+        fadePercentage);
   }
 }
 
