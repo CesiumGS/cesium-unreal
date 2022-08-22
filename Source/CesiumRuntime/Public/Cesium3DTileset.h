@@ -341,7 +341,11 @@ public:
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Culling",
+      Meta = (EditCondition = "!UseLodTransitions"))
   bool EnableFrustumCulling = true;
 
   /**
@@ -352,7 +356,11 @@ public:
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Culling",
+      Meta = (EditCondition = "!UseLodTransitions"))
   bool EnableFogCulling = true;
 
   /**

@@ -1616,14 +1616,15 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.forbidHoles = this->ForbidHoles;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
-  options.enableFrustumCulling = this->EnableFrustumCulling;
+  options.enableFrustumCulling =
+      this->EnableFrustumCulling && !this->UseLodTransitions;
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()
           ->EnableExperimentalOcclusionCullingFeature &&
       this->EnableOcclusionCulling;
 
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
-  options.enableFogCulling = this->EnableFogCulling;
+  options.enableFogCulling = this->EnableFogCulling && !this->UseLodTransitions;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
@@ -1825,14 +1826,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   updateLastViewUpdateResultState(result);
   this->UpdateLoadStatus();
 
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
-    updateTileFade(pTile);
-  }
-
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
-    updateTileFade(pTile);
-  }
-
   // result.tilesToNoLongerRenderThisFrame
 
   // removeVisibleTilesFromList(
@@ -1843,6 +1836,14 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   // this->_tilesToNoLongerRenderNextFrame =
   // result.tilesToNoLongerRenderThisFrame;
   showTilesToRender(result.tilesToRenderThisFrame);
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+    updateTileFade(pTile);
+  }
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    updateTileFade(pTile);
+  }
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
