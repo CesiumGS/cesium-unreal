@@ -1,11 +1,69 @@
 # Change Log
 
-### v1.14.0 - ????
+### ? - ?
+
+##### Additions :tada:
+
+- The translucent parts of 3D Tiles are now correctly rendered as translucent.
+- Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
 
 ##### Fixes :wrench:
+
+- Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
+- Fixed a bug in the Globe Anchor Component that prevented changing/resetting the actor transform in the details panel.
+
+### v1.16.2 - 2022-08-04
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused a crash in Unreal Engine 4.26 when enabling the experimental tileset occlusion culling feature.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.18.0 to v0.18.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.16.1 - 2022-08-01
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause a crash when using thumbnail rendering, notably on the Project Settings panel in UE5.
+- More fully disabled the occlusion culling system when the project-level feature flag is disabled.
+
+### v1.16.0 - 2022-08-01
+
+##### Breaking Changes :mega:
+
+- Cesium for Unreal now automatically scales the selected 3D Tiles level-of-detail by the viewport client's `GetDPIScale`, meaning that devices with high-DPI displays will get less detail and higher performance than they did in previous versions. This can be disabled - and the previous behavior restored - by disabling the "Scale Level Of Detail By DPI" in Project Settings under Plugins -> Cesium, or by changing the "Apply Dpi Scaling" property on individual Tileset Actors.
+
+##### Additions :tada:
+
+- Added an experimental feature that uses Occlusion Culling to avoid refining tiles that are occluded by other content in the level. Currently this must be explicitly enabled from the Plugins -> Cesium section of Project Settings. We expect to enable it by default in a future release.
+- Added options in `ACesium3DTileset` to control occlusion culling and turn it off if necessary.
+- `UCesiumGltfPrimitiveComponent` now has static mobility, allowing it to take advantage of several rendering optimizations only available for static objects.
+- Added an `OnTilesetLoaded` even that is invoked when the current tileset has finished loading. It is available from C++ and Blueprints.
+- Added a `GetLoadProgress` method that returns the current load percentage of the tileset. It is available from C++ and Blueprints.
+- Added Blueprint-accessible callback `OnFlightComplete` for when Dynamic Pawn completes flight.
+- Added Blueprint-accessible callback `OnFlightInterrupt` for when Dynamic Pawn's flying is interrupted.
+
+##### Fixes :wrench:
+
+- When the Cesium ion access or login token is modified and stored in a config file that is under source code control, it will now be checked out before it is saved. Previously, token changes could be silently ignores with a source code control system that marks files read-only, such as Perforce.
+- Fixed a bug that prevented credit images from appearing in UE5.
+- Fixed a credit-related crash that occur when switching levels.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.17.0 to v0.18.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.15.0 - 2022-07-01
+
+##### Additions :tada:
+
+- Display credits using Rich Text Block instead of the Web Browser Widget.
+
+##### Fixes :wrench:
+
 - Swapped latitude and longitude parameters on georeferenced sublevels to match with the main georeference.
 - Adjusted the presentation of sublevels in the Cesium Georeference details panel.
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
+- Fixed a bug that could cause a crash when reporting tileset or raster overlay load errors, particularly while switching levels.
+- We now Log the correct asset source when loading a new tileset from either URL or Ion.
 
 ### v1.14.0 - 2022-06-01
 

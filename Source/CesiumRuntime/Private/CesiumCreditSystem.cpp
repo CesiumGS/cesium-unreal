@@ -6,11 +6,12 @@
 #include "CesiumRuntime.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "ScreenCreditsWidget.h"
 #include <string>
+#include <tidybuffio.h>
 #include <vector>
 
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
-
 namespace {
 
 /**
@@ -146,12 +147,23 @@ ACesiumCreditSystem::ACesiumCreditSystem()
   PrimaryActorTick.bCanEverTick = true;
 }
 
+void ACesiumCreditSystem::BeginPlay() {
+  Super::BeginPlay();
+  if (!_creditsWidget) {
+    _creditsWidget =
+        CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
+  }
+  if (IsValid(_creditsWidget)) {
+    _creditsWidget->AddToViewport();
+  }
+}
+
 bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 
 void ACesiumCreditSystem::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
-  if (!_pCreditSystem) {
+  if (!_pCreditSystem || !IsValid(_creditsWidget)) {
     return;
   }
 
@@ -163,45 +175,117 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
       creditsToShowThisFrame.size() != _lastCreditsCount ||
       _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
   if (CreditsUpdated) {
-    bool firstScreenCredit = false;
-    std::string onScreenCreditString =
-        "document.write('<!DOCTYPE html><head><base target=\"_blank\">"
-        "<style>body{position:fixed;bottom:0;color:white;font-size:10px;font-family:sans-serif;}"
-        "div{display:inline;}a{color:white}</style>"
-        "<meta charset=\"utf-8\"/></head><body>";
-    std::string creditString =
-        "<head>\n<meta charset=\"utf-16\"/>\n</head>\n<body style=\"color:white\"><ul>";
-    bool hasPopupCredits = false;
-    for (size_t i = 0; i < creditsToShowThisFrame.size(); ++i) {
-      if (_pCreditSystem->shouldBeShownOnScreen(creditsToShowThisFrame[i])) {
-        if (!firstScreenCredit) {
-          firstScreenCredit = true;
-        } else {
-          onScreenCreditString += "<span> &bull; </span>";
-        }
-        onScreenCreditString +=
-            "<div>" + _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
-            "</div>";
-      } else {
-        creditString += "<li>" +
-                        _pCreditSystem->getHtml(creditsToShowThisFrame[i]) +
-                        "</li>";
-        hasPopupCredits = true;
-      }
-    }
-    creditString += "</ul></body>";
-    Credits = UTF8_TO_TCHAR(creditString.c_str());
-    if (hasPopupCredits) {
-      // create phony url to detect when to open popup menu
-      onScreenCreditString +=
-          "<span> </span><a href=\"cesium-unreal://data-attribution-popup\">Data attribution</a>";
-    }
-    onScreenCreditString += "</body>')";
-    OnScreenCredits = UTF8_TO_TCHAR(onScreenCreditString.c_str());
+    FString OnScreenCredits;
+    FString Credits;
+
     _lastCreditsCount = creditsToShowThisFrame.size();
 
-    DisplayCredits = hasPopupCredits || firstScreenCredit;
-  }
+    bool first = true;
+    for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
+      const Cesium3DTilesSelection::Credit& credit = creditsToShowThisFrame[i];
+      if (i != 0) {
+        Credits += "\n";
+      }
+      FString CreditRtf;
+      const std::string& html = _pCreditSystem->getHtml(credit);
 
+      auto htmlFind = _htmlToRtf.find(html);
+      if (htmlFind != _htmlToRtf.end()) {
+        CreditRtf = htmlFind->second;
+      } else {
+        CreditRtf = ConvertHtmlToRtf(html);
+        _htmlToRtf.insert({html, CreditRtf});
+      }
+      Credits += CreditRtf;
+      if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
+        if (first) {
+          first = false;
+        } else {
+          OnScreenCredits += TEXT(" \u2022 ");
+        }
+        OnScreenCredits += CreditRtf;
+      }
+    }
+    OnScreenCredits += "<credits url=\"popup\" text=\" Data attribution\"/>";
+    _creditsWidget->SetCredits(Credits, OnScreenCredits);
+  }
   _pCreditSystem->startNextFrame();
+}
+
+namespace {
+void convertHtmlToRtf(
+    std::string& output,
+    std::string& parentUrl,
+    TidyDoc tdoc,
+    TidyNode tnod,
+    UScreenCreditsWidget* CreditsWidget) {
+  TidyNode child;
+  TidyBuffer buf;
+  tidyBufInit(&buf);
+  for (child = tidyGetChild(tnod); child; child = tidyGetNext(child)) {
+    if (tidyNodeIsText(child)) {
+      tidyNodeGetText(tdoc, child, &buf);
+      if (buf.bp) {
+        std::string text = reinterpret_cast<const char*>(buf.bp);
+        tidyBufClear(&buf);
+        // could not find correct option in tidy html to not add new lines
+        if (text.size() != 0 && text[text.size() - 1] == '\n') {
+          text.pop_back();
+        }
+        if (!parentUrl.empty()) {
+          output +=
+              "<credits url=\"" + parentUrl + "\"" + " text=\"" + text + "\"/>";
+        } else {
+          output += text;
+        }
+      }
+    } else if (tidyNodeGetId(child) == TidyTagId::TidyTag_IMG) {
+      auto srcAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_SRC);
+      if (srcAttr) {
+        auto srcValue = tidyAttrValue(srcAttr);
+        if (srcValue) {
+          output += "<credits id=\"" +
+                    CreditsWidget->LoadImage(
+                        std::string(reinterpret_cast<const char*>(srcValue))) +
+                    "\"";
+          if (!parentUrl.empty()) {
+            output += " url=\"" + parentUrl + "\"";
+          }
+          output += "/>";
+        }
+      }
+    }
+    auto hrefAttr = tidyAttrGetById(child, TidyAttrId::TidyAttr_HREF);
+    if (hrefAttr) {
+      auto hrefValue = tidyAttrValue(hrefAttr);
+      parentUrl = std::string(reinterpret_cast<const char*>(hrefValue));
+    }
+    convertHtmlToRtf(output, parentUrl, tdoc, child, CreditsWidget);
+  }
+  tidyBufFree(&buf);
+}
+} // namespace
+
+FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
+  TidyDoc tdoc;
+  TidyBuffer tidy_errbuf = {0};
+  int err;
+
+  tdoc = tidyCreate();
+  tidyOptSetBool(tdoc, TidyForceOutput, yes);
+  tidyOptSetInt(tdoc, TidyWrapLen, 0);
+  tidyOptSetInt(tdoc, TidyNewline, TidyLF);
+
+  tidySetErrorBuffer(tdoc, &tidy_errbuf);
+
+  html = "<!DOCTYPE html><html><body>" + html + "</body></html>";
+
+  std::string output, url;
+  err = tidyParseString(tdoc, html.c_str());
+  if (err < 2) {
+    convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), _creditsWidget);
+  }
+  tidyBufFree(&tidy_errbuf);
+  tidyRelease(tdoc);
+  return UTF8_TO_TCHAR(output.c_str());
 }

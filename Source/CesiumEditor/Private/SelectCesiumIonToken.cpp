@@ -5,6 +5,7 @@
 #include "CesiumEditor.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumRuntimeSettings.h"
+#include "CesiumSourceControl.h"
 #include "CesiumUtility/joinToString.h"
 #include "Editor.h"
 #include "EditorStyleSet.h"
@@ -446,6 +447,8 @@ FReply SelectCesiumIonToken::UseOrCreate() {
 
           UCesiumRuntimeSettings* pSettings =
               GetMutableDefault<UCesiumRuntimeSettings>();
+          CesiumSourceControl::PromptToCheckoutConfigFile(
+              pSettings->GetDefaultConfigFilename());
 
           FScopedTransaction transaction(
               FText::FromString("Set Project Default Token"));

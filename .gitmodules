@@ -4,3 +4,6 @@
 [submodule "extern/MikkTSpace"]
 	path = extern/MikkTSpace
 	url = https://github.com/mmikk/MikkTSpace.git
+[submodule "extern/tidy-html5"]
+	path = extern/tidy-html5
+	url = https://github.com/htacg/tidy-html5

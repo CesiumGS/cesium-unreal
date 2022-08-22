@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 28,
-	"VersionName": "1.14.0",
+	"Version": 32,
+	"VersionName": "1.16.2",
 	"FriendlyName": "Cesium for Unreal",
 	"Description": "Unlock the 3D geospatial ecosystem in Unreal Engine with real-world 3D content and a high accuracy full-scale WGS84 globe.",
 	"Category": "Geospatial",
@@ -31,10 +31,6 @@
 		}
 	],
 	"Plugins": [
-		{
-			"Name": "WebBrowserWidget",
-			"Enabled": true
-		},
 		{
 			"Name": "SunPosition",
 			"Enabled": true
