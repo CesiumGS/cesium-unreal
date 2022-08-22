@@ -1627,6 +1627,17 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
+  options.enableDynamicScreenSpaceError = EnableDynamicScreenSpaceError;
+  options.dynamicScreenSpaceErrorFactor = DynamicScreenSpaceErrorFactor;
+  options.dynamicScreenSpaceErrorNearDistance =
+      DynamicScreenSpaceErrorNearDistance;
+  options.dynamicScreenSpaceErrorFarDistance =
+      DynamicScreenSpaceErrorFarDistance;
+  options.dynamicScreenSpaceErrorCloseHeight =
+      DynamicScreenSpaceErrorCloseHeight;
+  options.dynamicScreenSpaceErrorFarHeight =
+      DynamicScreenSpaceErrorFarHeight;
+
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(

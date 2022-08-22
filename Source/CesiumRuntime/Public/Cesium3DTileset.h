@@ -283,6 +283,24 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
   bool ForbidHoles = false;
 
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  bool EnableDynamicScreenSpaceError = true;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  float DynamicScreenSpaceErrorFactor = 100.0;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  float DynamicScreenSpaceErrorNearDistance = 1500.0;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  float DynamicScreenSpaceErrorFarDistance = 10000.0;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  float DynamicScreenSpaceErrorCloseHeight = 0.0;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Loading")
+  float DynamicScreenSpaceErrorFarHeight = 4000.0;
+
   /**
    * The maximum number of tiles that may be loaded at once.
    *
