@@ -1638,15 +1638,14 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.forbidHoles = this->ForbidHoles;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
-  options.enableFrustumCulling =
-      this->EnableFrustumCulling && !this->UseLodTransitions;
+  options.enableFrustumCulling = this->EnableFrustumCulling;
   options.enableOcclusionCulling =
       GetDefault<UCesiumRuntimeSettings>()
           ->EnableExperimentalOcclusionCullingFeature &&
       this->EnableOcclusionCulling;
 
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
-  options.enableFogCulling = this->EnableFogCulling && !this->UseLodTransitions;
+  options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
