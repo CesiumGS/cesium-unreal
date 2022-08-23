@@ -38,6 +38,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "PhysicsEngine/PhysicsSettings.h"
 #include "PixelFormat.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "StaticMeshOperations.h"
@@ -2014,7 +2015,11 @@ static void loadPrimitiveGameThreadPart(
   // mesh or not. We don't want the editor creating collision meshes itself in
   // the game thread, because that would be slow.
   pBodySetup->bCreatedPhysicsMeshes = true;
-  pBodySetup->bSupportUVsAndFaceRemap = true;
+  pBodySetup->bSupportUVsAndFaceRemap =
+      UPhysicsSettings::Get()->bSupportUVFromHitResults &&
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
+          loadResult.Metadata)
+          .Num();
 
   // pMesh->SetMobility(EComponentMobility::Movable);
   pMesh->SetMobility(EComponentMobility::Static);

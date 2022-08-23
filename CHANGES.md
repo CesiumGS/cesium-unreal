@@ -11,6 +11,8 @@
 
 - Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
 - Fixed a bug in the Globe Anchor Component that prevented changing/resetting the actor transform in the details panel.
+- To reduce unnecessarily copying UV data to physics meshes, will only copy if the model contains feature textures to save on memory.coordinates to the physics mesh.
+- Reduce the size of physics meshes by only copying UV data if "Support UV from Hit Results" is enabled and if the model uses feature ID textures.
 
 ### v1.16.2 - 2022-08-04
 
