@@ -658,7 +658,7 @@ private:
       EditAnywhere,
       Category = "Cesium|Rendering",
       meta = (EditCondition = "UseLodTransitions"))
-  float LodTransitionLength = 1.0f;
+  float LodTransitionLength = 2.0f;
 
   /**
    * Whether to always generate a correct tangent space basis for tiles that
