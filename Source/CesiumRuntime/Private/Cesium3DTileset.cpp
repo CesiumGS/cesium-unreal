@@ -1569,7 +1569,6 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
     }
 
     const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
     if (!pRenderContent) {
@@ -1598,12 +1597,19 @@ void removeCollisionForTiles(
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
 
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
     if (Gltf) {
       Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
@@ -1780,27 +1786,38 @@ void ACesium3DTileset::showTilesToRender(
 
     if (!Gltf->IsVisible()) {
       Gltf->SetVisibility(true, true);
+    }
+
+    if (Gltf->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics) {
       Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     }
   }
 }
 
 static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
-  if (!pTile || !pTile->getContent()) {
+  if (!pTile || !pTile->getContent().isRenderContent()) {
     return;
   }
 
-  if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
     return;
   }
 
-  UCesiumGltfComponent* pGltf =
-      reinterpret_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+  const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+      content.getRenderContent();
+  if (!pRenderContent) {
+    return;
+  }
+
+  UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(
+      pRenderContent->getRenderResources());
   if (!pGltf) {
     return;
   }
 
-  pGltf->UpdateFade(pTile->getContent()->lodTransitionFadePercentage);
+  pGltf->UpdateFade(
+      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage());
 }
 
 // Called every frame
