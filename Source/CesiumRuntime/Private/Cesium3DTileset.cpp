@@ -1848,17 +1848,19 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   updateLastViewUpdateResultState(result);
   this->UpdateLoadStatus();
 
-  // result.tilesToNoLongerRenderThisFrame
+  removeVisibleTilesFromList(
+      this->_tilesToNoLongerRenderNextFrame,
+      result.tilesToRenderThisFrame);
+  removeVisibleTilesFromList(
+      this->_tilesToHideNextFrame,
+      result.tilesToRenderThisFrame);
 
-  // removeVisibleTilesFromList(
-  // this->_tilesToNoLongerRenderNextFrame,
-  //    tilesToRemove,
-  //    result.tilesToRenderThisFrame);
-  removeCollisionForTiles(result.tilesToNoLongerRenderThisFrame);
-  // removeCollisionForTiles(result.tilesToHideThisFrame);
-  hideTiles(result.tilesToHideThisFrame);
-  // result.tilesToNoLongerRenderThisFrame;
-  // this->_tilesToNoLongerRenderNextFrame
+  removeCollisionForTiles(_tilesToNoLongerRenderNextFrame);
+  hideTiles(_tilesToHideNextFrame);
+
+  _tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  _tilesToHideNextFrame = result.tilesToHideThisFrame;
+
   showTilesToRender(result.tilesToRenderThisFrame);
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {

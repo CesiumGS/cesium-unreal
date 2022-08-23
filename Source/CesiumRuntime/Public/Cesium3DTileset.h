@@ -1061,6 +1061,7 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToNoLongerRenderThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
+  std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
 
   friend class UnrealResourcePreparer;
 };
