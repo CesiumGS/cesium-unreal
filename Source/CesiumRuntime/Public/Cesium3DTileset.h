@@ -1044,6 +1044,7 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+  bool _beforeMovieUseLodTransitions;
 
   bool _scaleUsingDPI;
 

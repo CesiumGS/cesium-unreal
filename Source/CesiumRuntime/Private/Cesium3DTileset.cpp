@@ -99,6 +99,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
+      _beforeMovieUseLodTransitions{true},
       _tilesToNoLongerRenderNextFrame{} {
 
   PrimaryActorTick.bCanEverTick = true;
@@ -364,6 +365,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
+  this->_beforeMovieUseLodTransitions = this->UseLodTransitions;
   if (IsValid(this->ResolveGeoreference())) {
     this->_beforeMovieKeepWorldOriginNearCamera =
         this->ResolveGeoreference()->KeepWorldOriginNearCamera;
@@ -373,6 +375,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
+  this->UseLodTransitions = false;
   if (IsValid(this->ResolveGeoreference())) {
     this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
   }
@@ -383,6 +386,7 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
+  this->UseLodTransitions = this->_beforeMovieUseLodTransitions;
   if (IsValid(this->ResolveGeoreference())) {
     this->ResolveGeoreference()->KeepWorldOriginNearCamera =
         this->_beforeMovieKeepWorldOriginNearCamera;
@@ -1555,8 +1559,7 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTilesToNoLongerRender(
-    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
       continue;
@@ -1566,13 +1569,32 @@ void hideTilesToNoLongerRender(
         static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetVisibility(false, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     } else {
-      // TODO: why is this happening?
+      // TODO: why is this happenings
       UE_LOG(
           LogCesium,
           Verbose,
           TEXT("Tile to no longer render does not have a visible Gltf"));
+    }
+  }
+}
+
+/**
+ * @brief Removes collision for tiles that have been removed from the render
+ * list. This includes tiles that are fading out.
+ */
+void removeCollisionForTiles(
+    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf =
+        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    if (Gltf) {
+      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
 }
@@ -1832,9 +1854,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   // this->_tilesToNoLongerRenderNextFrame,
   //    tilesToRemove,
   //    result.tilesToRenderThisFrame);
-  hideTilesToNoLongerRender(result.tilesToHideThisFrame);
-  // this->_tilesToNoLongerRenderNextFrame =
+  removeCollisionForTiles(result.tilesToNoLongerRenderThisFrame);
+  // removeCollisionForTiles(result.tilesToHideThisFrame);
+  hideTiles(result.tilesToHideThisFrame);
   // result.tilesToNoLongerRenderThisFrame;
+  // this->_tilesToNoLongerRenderNextFrame
   showTilesToRender(result.tilesToRenderThisFrame);
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
