@@ -286,6 +286,7 @@ static void computeFlatNormals(
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
     FBodySetupUVInfo& uvInfo,
+    const TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     IPhysXCookingModule* pPhysXCooking,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
@@ -1173,6 +1174,7 @@ static void loadPrimitive(
     BuildPhysXTriangleMeshes(
         createdCollisionMesh,
         primitiveResult.uvInfo,
+        primitiveResult.metadataTextureCoordinateParameters,
         options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
         StaticMeshBuildVertices,
         indices);
@@ -2017,9 +2019,7 @@ static void loadPrimitiveGameThreadPart(
   pBodySetup->bCreatedPhysicsMeshes = true;
   pBodySetup->bSupportUVsAndFaceRemap =
       UPhysicsSettings::Get()->bSupportUVFromHitResults &&
-      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
-          loadResult.Metadata)
-          .Num();
+      loadResult.metadataTextureCoordinateParameters.Num();
 
   // pMesh->SetMobility(EComponentMobility::Movable);
   pMesh->SetMobility(EComponentMobility::Static);
@@ -2315,6 +2315,7 @@ void UCesiumGltfComponent::BeginDestroy() {
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
     FBodySetupUVInfo& uvInfo,
+    const TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     IPhysXCookingModule* pPhysXCookingModule,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
@@ -2326,27 +2327,33 @@ static void BuildPhysXTriangleMeshes(
 
     FPhysXCookHelper cookHelper(pPhysXCookingModule);
 
+    bool copyUVs = UPhysicsSettings::Get()->bSupportUVFromHitResults &&
+                   metadataTextureCoordinateParameters.Num();
+
     cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
     cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
     cookHelper.CookInfo.TriangleMeshDesc.bFlipNormals = true;
     cookHelper.CookInfo.bCookTriMesh = true;
-    cookHelper.CookInfo.bSupportUVFromHitResults = true;
     cookHelper.CookInfo.bSupportFaceRemap = true;
+    cookHelper.CookInfo.bSupportUVFromHitResults = copyUVs;
 
     TArray<FVector>& vertices = cookHelper.CookInfo.TriangleMeshDesc.Vertices;
     vertices.SetNum(vertexData.Num());
-
-    TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
-    uvs.SetNum(8);
-
-    for (size_t i = 0; i < 8; ++i) {
-      uvs[i].SetNum(vertices.Num());
-    }
-
     for (size_t i = 0; i < vertexData.Num(); ++i) {
       vertices[i] = vertexData[i].Position;
-      for (size_t j = 0; j < 8; ++j) {
-        uvs[j][i] = vertexData[i].UVs[j];
+    }
+
+    if (copyUVs) {
+      TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
+      uvs.SetNum(8);
+
+      for (size_t i = 0; i < 8; ++i) {
+        uvs[i].SetNum(vertices.Num());
+      }
+      for (size_t i = 0; i < vertexData.Num(); ++i) {
+        for (size_t j = 0; j < 8; ++j) {
+          uvs[j][i] = vertexData[i].UVs[j];
+        }
       }
     }
 
@@ -2364,7 +2371,9 @@ static void BuildPhysXTriangleMeshes(
     if (cookHelper.OutTriangleMeshes.Num() > 0) {
       pCollisionMesh = cookHelper.OutTriangleMeshes[0];
     }
-    uvInfo = std::move(cookHelper.OutUVInfo);
+    if (copyUVs) {
+      uvInfo = std::move(cookHelper.OutUVInfo);
+    }
   }
 }
 
