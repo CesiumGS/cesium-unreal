@@ -245,14 +245,19 @@ public:
   /**
    * Rotates the Actor so that its +X axis points in the local East direction,
    * its +Y axis points in the local South direction, and its +Z axis points in
-   * the local Up direction.
+   * the local Up direction. Rotation offset is then applied to all three axes.
    */
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
 
   /**
-   * Sets the rotation offset to be applied when snapping to east/south/up or
-   * ellipsoid normal.
+   * Gets the rotation offset applied when snapping to east/south/up.
+   */
+  UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
+  FRotator GetRotationOffset();
+
+  /**
+   * Sets the rotation offset applied when snapping to east/south/up.
    */
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SetRotationOffset(const FRotator& rotationOffset);
@@ -467,7 +472,7 @@ private:
   void _updateCartographicProperties();
 
   /**
-   * Rotation offset applied to the Actor.
+   * Rotation offset applied to the Actor when snapping to east/south/up.
    */
-  glm::dmat3 _rotationOffset;
+  FRotator _rotationOffset;
 };

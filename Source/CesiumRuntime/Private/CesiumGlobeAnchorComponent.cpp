@@ -115,8 +115,7 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   const glm::dmat3 alignmentRotation = glm::mat3_cast(R);
 
   // Compute the new actor rotation and apply it
-  const glm::dmat3 newRotation =
-      alignmentRotation * currentRotation * _rotationOffset;
+  const glm::dmat3 newRotation = alignmentRotation * currentRotation;
   this->_actorToECEF = glm::dmat4(
       glm::dvec4(newRotation[0], 0.0),
       glm::dvec4(newRotation[1], 0.0),
@@ -125,7 +124,6 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
 
 #if WITH_EDITOR
   // In the Editor, mark this component modified so Undo works properly.
-  this->Modify();
   this->Modify();
 #endif
 
@@ -151,11 +149,15 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
       glm::length(this->_actorToECEF[1]),
       glm::length(this->_actorToECEF[2]));
 
+  // Convert rotation offset to matrix.
+  const glm::dmat3 offset =
+      glm::dmat3(VecMath::createRotationMatrix4D(_rotationOffset));
+
   // Compute the desired new orientation.
   glm::dmat3 newOrientation =
       this->ResolvedGeoreference->GetGeoTransforms().ComputeEastNorthUpToEcef(
           glm::dvec3(translation)) *
-      glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * _rotationOffset;
+      glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * offset;
 
   // Scale the new orientation
   newOrientation[0] *= scale.x;
@@ -178,11 +180,13 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
   this->_updateActorTransformFromGlobeTransform();
 }
 
+FRotator UCesiumGlobeAnchorComponent::GetRotationOffset() {
+  return this->_rotationOffset;
+}
+
 void UCesiumGlobeAnchorComponent::SetRotationOffset(
     const FRotator& rotationOffset) {
-  const FQuat& q = rotationOffset.Quaternion();
-  const glm::dquat r = glm::dquat(q.X, q.Y, q.Z, q.W);
-  _rotationOffset = glm::mat3_cast(glm::normalize(r));
+  this->_rotationOffset = rotationOffset;
 }
 
 ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
