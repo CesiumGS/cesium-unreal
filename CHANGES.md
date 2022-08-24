@@ -6,7 +6,7 @@
 
 - The translucent parts of 3D Tiles are now correctly rendered as translucent.
 - Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
-- Added in 'SetRotationOffset' function to the 'CesiumGlobeAnchorComponent' so that 'SnapLocalUpToEllipsoidNormal' applies a rotational offset instead of matching the normal ellipsoid rotation.
+- Added in 'SetRotationOffset' function to the 'CesiumGlobeAnchorComponent' so that 'SnapToEastSouthUp' applies a rotational offset.
 
 ##### Fixes :wrench:
 
