@@ -1668,6 +1668,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
       static_cast<double>(this->CulledScreenSpaceError);
   options.enableLodTransitionPeriod = this->UseLodTransitions;
   options.lodTransitionLength = this->LodTransitionLength;
+  // options.kickDescendantsWhileFadingIn = false;
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
@@ -1676,7 +1677,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     return;
   }
 
-  if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
+  if (result.tilesSelectedThisFrame.size() != this->_lastTilesRendered ||
       result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
       result.tilesLoadingMediumPriority !=
           this->_lastTilesLoadingMediumPriority ||
@@ -1689,7 +1690,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
-    this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
+    this->_lastTilesRendered = result.tilesSelectedThisFrame.size();
     this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
     this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
     this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
@@ -1712,7 +1713,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
             1000000,
         result.tilesVisited,
         result.culledTilesVisited,
-        result.tilesToRenderThisFrame.size(),
+        result.tilesSelectedThisFrame.size(),
         result.tilesCulled,
         result.tilesOccluded,
         result.tilesWaitingForOcclusionResults,
@@ -1884,20 +1885,20 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   removeVisibleTilesFromList(
       this->_tilesToNoLongerRenderNextFrame,
-      result.tilesToRenderThisFrame);
+      result.tilesSelectedThisFrame);
   removeVisibleTilesFromList(
       this->_tilesToHideNextFrame,
-      result.tilesToRenderThisFrame);
+      result.tilesSelectedThisFrame);
 
   removeCollisionForTiles(_tilesToNoLongerRenderNextFrame);
   hideTiles(_tilesToHideNextFrame);
 
-  _tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  _tilesToNoLongerRenderNextFrame = result.tilesNoLongerSelectedThisFrame;
   _tilesToHideNextFrame = result.tilesToHideThisFrame;
 
-  showTilesToRender(result.tilesToRenderThisFrame);
+  showTilesToRender(result.tilesSelectedThisFrame);
 
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesSelectedThisFrame) {
     updateTileFade(pTile);
   }
 

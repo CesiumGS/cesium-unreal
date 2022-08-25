@@ -554,6 +554,25 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium");
   FCompletedLoadTrigger OnTilesetLoaded;
 
+  /**
+   * Use a dithering effect when transitioning between tiles of different LODs.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Rendering")
+  bool UseLodTransitions = true;
+
+  /**
+   * How long dithered LOD transitions between different tiles should take, in
+   * seconds.
+   *
+   * Only relevant if UseLodTransitions is true.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "UseLodTransitions"))
+  float LodTransitionLength = 1.0f;
+
 private:
   UPROPERTY(BlueprintGetter = GetLoadProgress, Category = "Cesium")
   float LoadProgress = 0.0f;
@@ -641,24 +660,6 @@ private:
       BlueprintSetter = SetCreatePhysicsMeshes,
       Category = "Cesium|Physics")
   bool CreatePhysicsMeshes = true;
-
-  /**
-   * Use a dithering effect when transitioning between tiles of different LODs.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
-  bool UseLodTransitions = true;
-
-  /**
-   * How long dithered LOD transitions between different tiles should take, in
-   * seconds.
-   *
-   * Only relevant if UseLodTransitions is true.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Rendering",
-      meta = (EditCondition = "UseLodTransitions"))
-  float LodTransitionLength = 2.0f;
 
   /**
    * Whether to always generate a correct tangent space basis for tiles that
