@@ -1052,7 +1052,7 @@ private:
   // This is used as a workaround for cesium-native#186
   //
   // The tiles that are no longer supposed to be rendered in the current
-  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // frame, according to ViewUpdateResult::tilesToHideThisFrame,
   // are kept in this list, and hidden in the NEXT frame, because some
   // internal occlusion culling information from Unreal might prevent
   // the tiles that are supposed to be rendered instead from appearing
@@ -1060,8 +1060,7 @@ private:
   //
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
-  // tilesToNoLongerRenderThisFrame may be hidden immediately.
-  std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
+  // tilesToHideThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
 
   friend class UnrealResourcePreparer;

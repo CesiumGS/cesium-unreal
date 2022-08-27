@@ -99,8 +99,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
-      _beforeMovieUseLodTransitions{true},
-      _tilesToNoLongerRenderNextFrame{} {
+      _beforeMovieUseLodTransitions{true} {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -1883,17 +1882,14 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   updateLastViewUpdateResultState(result);
   this->UpdateLoadStatus();
 
-  removeVisibleTilesFromList(
-      this->_tilesToNoLongerRenderNextFrame,
-      result.tilesSelectedThisFrame);
+  removeCollisionForTiles(result.tilesNoLongerSelectedThisFrame);
+
   removeVisibleTilesFromList(
       this->_tilesToHideNextFrame,
       result.tilesSelectedThisFrame);
 
-  removeCollisionForTiles(_tilesToNoLongerRenderNextFrame);
   hideTiles(_tilesToHideNextFrame);
 
-  _tilesToNoLongerRenderNextFrame = result.tilesNoLongerSelectedThisFrame;
   _tilesToHideNextFrame = result.tilesToHideThisFrame;
 
   showTilesToRender(result.tilesSelectedThisFrame);
