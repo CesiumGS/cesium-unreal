@@ -1593,7 +1593,7 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
  * list. This includes tiles that are fading out.
  */
 void removeCollisionForTiles(
-    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+    const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
 
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
@@ -1676,7 +1676,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     return;
   }
 
-  if (result.tilesSelectedThisFrame.size() != this->_lastTilesRendered ||
+  if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
       result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
       result.tilesLoadingMediumPriority !=
           this->_lastTilesLoadingMediumPriority ||
@@ -1689,7 +1689,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
           this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
-    this->_lastTilesRendered = result.tilesSelectedThisFrame.size();
+    this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
     this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
     this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
     this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
@@ -1712,7 +1712,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
             1000000,
         result.tilesVisited,
         result.culledTilesVisited,
-        result.tilesSelectedThisFrame.size(),
+        result.tilesToRenderThisFrame.size(),
         result.tilesCulled,
         result.tilesOccluded,
         result.tilesWaitingForOcclusionResults,
@@ -1788,9 +1788,7 @@ void ACesium3DTileset::showTilesToRender(
       Gltf->SetVisibility(true, true);
     }
 
-    if (Gltf->GetCollisionEnabled() != ECollisionEnabled::QueryAndPhysics) {
-      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    }
+    Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
   }
 }
 
@@ -1816,8 +1814,15 @@ static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
     return;
   }
 
-  pGltf->UpdateFade(
-      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage());
+  // Remap the fade percentage so that [0,0.5] --> [0,1] and [0.5,1] --> [1].
+  // This forces fading out tiles to stay opaque until the new tiles have fully
+  // faded in. This is needed for dithered fading, otherwise you will be able
+  // to partially see straight through both tiles during a transition.
+  float percentage =
+      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
+  percentage = glm::clamp(2.0f * percentage, 0.0f, 1.0f);
+
+  pGltf->UpdateFade(percentage);
 }
 
 // Called every frame
@@ -1882,19 +1887,26 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   updateLastViewUpdateResultState(result);
   this->UpdateLoadStatus();
 
-  removeCollisionForTiles(result.tilesNoLongerSelectedThisFrame);
+  removeCollisionForTiles(result.tilesFadingOut);
 
   removeVisibleTilesFromList(
-      this->_tilesToHideNextFrame,
-      result.tilesSelectedThisFrame);
-
+      _tilesToHideNextFrame,
+      result.tilesToRenderThisFrame);
   hideTiles(_tilesToHideNextFrame);
 
-  _tilesToHideNextFrame = result.tilesToHideThisFrame;
+  _tilesToHideNextFrame.clear();
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        pTile->getContent().getRenderContent();
+    if (pRenderContent &&
+        pRenderContent->getLodTransitionFadePercentage() <= 0.0f) {
+      _tilesToHideNextFrame.push_back(pTile);
+    }
+  }
 
-  showTilesToRender(result.tilesSelectedThisFrame);
+  showTilesToRender(result.tilesToRenderThisFrame);
 
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesSelectedThisFrame) {
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
     updateTileFade(pTile);
   }
 
