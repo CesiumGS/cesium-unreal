@@ -11,6 +11,7 @@
 
 - Fixed dividing the viewport by an integer which prevented fractional DPI scaling.
 - Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
+- Fixed a bug that causes tiles to dissapear when the Editor viewport is in Orbit mode.
 - Fixed a bug in the Globe Anchor Component that prevented changing/resetting the actor transform in the details panel.
 - Fixed a bug in UE5 where LineTrace occasionally failed to collide with tiles at a certain LOD.
 
