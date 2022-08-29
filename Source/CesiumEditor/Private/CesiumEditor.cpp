@@ -461,7 +461,7 @@ FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !pTilesetActor && it;
        ++it) {
     const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
-    if (pTileset && pTileset->getIonAssetID() == assetID) {
+    if (pTileset && it->GetIonAssetID() == assetID) {
       return *it;
     }
   }

@@ -2,7 +2,7 @@
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
-#include "Cesium3DTilesSelection/GltfContent.h"
+#include "Cesium3DTilesSelection/GltfUtilities.h"
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
@@ -1489,7 +1489,7 @@ static void loadModelAnyThreadPart(
 
   {
     CESIUM_TRACE("Apply transforms");
-    rootTransform = Cesium3DTilesSelection::GltfContent::applyRtcCenter(
+    rootTransform = Cesium3DTilesSelection::GltfUtilities::applyRtcCenter(
         model,
         rootTransform);
     applyGltfUpAxisTransform(model, rootTransform);
@@ -2373,12 +2373,12 @@ static void fillTriangles(
 
   triangles.Reserve(triangleCount);
 
-  for (TIndex i = 0; i < static_cast<TIndex>(triangleCount); ++i) {
-    TIndex index0 = 3 * i;
-    triangles.Add(Chaos::TVector<TIndex, 3>(
-        static_cast<TIndex>(indices[index0 + 1]),
-        static_cast<TIndex>(indices[index0]),
-        static_cast<TIndex>(indices[index0 + 2])));
+  for (int32 i = 0; i < triangleCount; ++i) {
+    const int32 index0 = 3 * i;
+    triangles.Add(Chaos::TVector<int32, 3>(
+        indices[index0 + 1],
+        indices[index0],
+        indices[index0 + 2]));
   }
 }
 
