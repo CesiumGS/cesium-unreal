@@ -1464,7 +1464,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     if (this->_scaleUsingDPI) {
       float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
-      size /= dpiScalingFactor;
+      size.X = static_cast<float>(size.X) / dpiScalingFactor;
+      size.Y = static_cast<float>(size.Y) / dpiScalingFactor;
     }
 
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
