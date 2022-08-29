@@ -92,6 +92,7 @@ public class CesiumRuntime : ModuleRules
             "sqlite3",
             "tinyxml2",
             "uriparser",
+            "webpdecoder",
             "ktx_read",
         };
 
@@ -109,15 +110,6 @@ public class CesiumRuntime : ModuleRules
         else
         {
             libs = libs.Concat(new string[] { "tidy" }).ToArray();
-        }
-
-        if (Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            libs = libs.Concat(new string[] { "libwebpdecoder" }).ToArray();
-        }
-        else
-        {
-            libs = libs.Concat(new string[] { "webpdecoder" }).ToArray();
         }
 
         if (preferDebug)
