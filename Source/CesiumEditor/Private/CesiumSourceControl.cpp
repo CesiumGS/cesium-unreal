@@ -1,6 +1,6 @@
 #include "CesiumSourceControl.h"
 #include "Framework/Notifications/NotificationManager.h"
-#include "HAL/PlatformFilemanager.h"
+#include "HAL/PlatformFileManager.h"
 #include "ISourceControlModule.h"
 #include "ISourceControlProvider.h"
 #include "Misc/MessageDialog.h"
