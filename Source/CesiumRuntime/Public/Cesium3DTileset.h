@@ -556,6 +556,8 @@ public:
 
   /**
    * Use a dithering effect when transitioning between tiles of different LODs.
+   * 
+   * When this is set to true, Frustrum Culling and Fog Culling are always disabled.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Rendering")
   bool UseLodTransitions = true;
