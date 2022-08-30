@@ -572,7 +572,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Rendering",
-      meta = (EditCondition = "UseLodTransitions"))
+      meta = (EditCondition = "UseLodTransitions", EditConditionHides))
   float LodTransitionLength = 1.0f;
 
 private:
