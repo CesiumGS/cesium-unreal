@@ -2307,6 +2307,10 @@ void UCesiumGltfComponent::BeginDestroy() {
 }
 
 void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
+  if (!this->IsVisible()) {
+    return;
+  }
+
   fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
 
   UCesiumMaterialUserData* pCesiumData =
