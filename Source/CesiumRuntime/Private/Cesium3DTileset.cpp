@@ -1588,7 +1588,7 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetVisibility(false, true);
     } else {
-      // TODO: why is this happenings
+      // TODO: why is this happening?
       UE_LOG(
           LogCesium,
           Verbose,
