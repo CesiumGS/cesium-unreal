@@ -153,7 +153,7 @@ void ACesiumCreditSystem::BeginPlay() {
     _creditsWidget =
         CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
   }
-  if (IsValid(_creditsWidget)) {
+  if (IsValid(_creditsWidget) && !IsRunningDedicatedServer()) {
     _creditsWidget->AddToViewport();
   }
 }
