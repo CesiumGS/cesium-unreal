@@ -565,7 +565,7 @@ public:
    * disabled.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Rendering")
-  bool UseLodTransitions = true;
+  bool UseLodTransitions = false;
 
   /**
    * How long dithered LOD transitions between different tiles should take, in
