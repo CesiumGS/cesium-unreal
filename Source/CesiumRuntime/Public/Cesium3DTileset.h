@@ -347,7 +347,7 @@ public:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      Meta = (EditCondition = "!UseLodTransitions"))
+      Meta = (EditCondition = "!UseLodTransitions", EditConditionHides))
   bool EnableFrustumCulling = true;
 
   /**
@@ -357,12 +357,14 @@ public:
    * but to an internal representation of fog: Depending on the height
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
+   * 
+   * Note that this will always be disabled if UseLodTransitions is set to true.
    */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
-      Meta = (EditCondition = "!UseLodTransitions"))
+      Meta = (EditCondition = "!UseLodTransitions", EditConditionHides))
   bool EnableFogCulling = true;
 
   /**
