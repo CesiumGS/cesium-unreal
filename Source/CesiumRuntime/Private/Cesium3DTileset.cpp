@@ -1454,8 +1454,16 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
+    FRotator rotation;
+    if (pEditorViewportClient->bUsingOrbitCamera) {
+      rotation = (pEditorViewportClient->GetLookAtLocation() -
+                  pEditorViewportClient->GetViewLocation())
+                     .Rotation();
+    } else {
+      rotation = pEditorViewportClient->GetViewRotation();
+    }
+
     const FVector& location = pEditorViewportClient->GetViewLocation();
-    const FRotator& rotation = pEditorViewportClient->GetViewRotation();
     float fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
@@ -1467,7 +1475,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     if (this->_scaleUsingDPI) {
       float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
-      size /= dpiScalingFactor;
+      size.X = static_cast<float>(size.X) / dpiScalingFactor;
+      size.Y = static_cast<float>(size.Y) / dpiScalingFactor;
     }
 
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
