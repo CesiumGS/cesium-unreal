@@ -2382,12 +2382,12 @@ static void fillTriangles(
 
   triangles.Reserve(triangleCount);
 
-  for (TIndex i = 0; i < static_cast<TIndex>(triangleCount); ++i) {
-    TIndex index0 = 3 * i;
-    triangles.Add(Chaos::TVector<TIndex, 3>(
-        static_cast<TIndex>(indices[index0 + 1]),
-        static_cast<TIndex>(indices[index0]),
-        static_cast<TIndex>(indices[index0 + 2])));
+  for (int32 i = 0; i < triangleCount; ++i) {
+    const int32 index0 = 3 * i;
+    triangles.Add(Chaos::TVector<int32, 3>(
+        indices[index0 + 1],
+        indices[index0],
+        indices[index0 + 2]));
   }
 }
 
