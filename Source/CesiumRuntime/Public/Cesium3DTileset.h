@@ -578,7 +578,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Rendering",
       meta = (EditCondition = "UseLodTransitions", EditConditionHides))
-  float LodTransitionLength = 1.0f;
+  float LodTransitionLength = 0.5f;
 
 private:
   UPROPERTY(BlueprintGetter = GetLoadProgress, Category = "Cesium")
