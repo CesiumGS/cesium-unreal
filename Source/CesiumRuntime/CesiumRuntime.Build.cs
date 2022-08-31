@@ -92,7 +92,8 @@ public class CesiumRuntime : ModuleRules
             "sqlite3",
             "tinyxml2",
             "uriparser",
-            "ktx_read"
+            "webpdecoder",
+            "ktx_read",
         };
 
         // Use our own copy of MikkTSpace on Android.
