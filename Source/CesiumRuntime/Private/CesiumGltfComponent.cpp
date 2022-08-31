@@ -286,7 +286,6 @@ static void computeFlatNormals(
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
     FBodySetupUVInfo& uvInfo,
-    const TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     IPhysXCookingModule* pPhysXCooking,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
@@ -1174,7 +1173,6 @@ static void loadPrimitive(
     BuildPhysXTriangleMeshes(
         createdCollisionMesh,
         primitiveResult.uvInfo,
-        primitiveResult.metadataTextureCoordinateParameters,
         options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
         StaticMeshBuildVertices,
         indices);
@@ -2018,8 +2016,7 @@ static void loadPrimitiveGameThreadPart(
   // the game thread, because that would be slow.
   pBodySetup->bCreatedPhysicsMeshes = true;
   pBodySetup->bSupportUVsAndFaceRemap =
-      UPhysicsSettings::Get()->bSupportUVFromHitResults &&
-      loadResult.metadataTextureCoordinateParameters.Num();
+      UPhysicsSettings::Get()->bSupportUVFromHitResults;
 
   // pMesh->SetMobility(EComponentMobility::Movable);
   pMesh->SetMobility(EComponentMobility::Static);
@@ -2315,7 +2312,6 @@ void UCesiumGltfComponent::BeginDestroy() {
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
     FBodySetupUVInfo& uvInfo,
-    const TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     IPhysXCookingModule* pPhysXCookingModule,
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
@@ -2327,8 +2323,7 @@ static void BuildPhysXTriangleMeshes(
 
     FPhysXCookHelper cookHelper(pPhysXCookingModule);
 
-    bool copyUVs = UPhysicsSettings::Get()->bSupportUVFromHitResults &&
-                   metadataTextureCoordinateParameters.Num();
+    bool copyUVs = UPhysicsSettings::Get()->bSupportUVFromHitResults;
 
     cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
     cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
