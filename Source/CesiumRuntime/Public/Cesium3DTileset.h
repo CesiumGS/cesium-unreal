@@ -340,6 +340,8 @@ public:
    *
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
+   * 
+   * Note that this will always be disabled if UseLodTransitions is set to true.
    */
   UPROPERTY(
       EditAnywhere,
