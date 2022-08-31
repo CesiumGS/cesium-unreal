@@ -340,7 +340,7 @@ public:
    *
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
-   * 
+   *
    * Note that this will always be disabled if UseLodTransitions is set to true.
    */
   UPROPERTY(
@@ -357,7 +357,7 @@ public:
    * but to an internal representation of fog: Depending on the height
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
-   * 
+   *
    * Note that this will always be disabled if UseLodTransitions is set to true.
    */
   UPROPERTY(
