@@ -1908,8 +1908,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         pTile->getContent().getRenderContent();
     if (!this->UseLodTransitions ||
-        pRenderContent &&
-            pRenderContent->getLodTransitionFadePercentage() <= 0.0f) {
+        (pRenderContent &&
+         pRenderContent->getLodTransitionFadePercentage() <= 0.0f)) {
       _tilesToHideNextFrame.push_back(pTile);
     }
   }
