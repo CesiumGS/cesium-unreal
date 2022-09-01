@@ -106,6 +106,8 @@ After the update has been merged to `main`, do the following:
 
 ## Publish Cesium for Unreal Samples on Marketplace
 
+DO NOT do this step until Epic has accepted the updated plugin! Because if you do, Epic may end up releasing this update on the Marketplace before the plugin itself is updated. Because the updated Samples project is not guaranteed to work with old versions of the plugin, this can leave users in a broken state. On the other hand, the plugin is usually backward compatible, so that old Samples will work fine with the new plugin. Thus, we should always make sure the plugin is published to the Marketplace first.
+
 1. Open https://publish.unrealengine.com/v2/products. Login with the admin credentials.
 2. Navigate to **Products -> Published**.
 3. Select **Cesium for Unreal Samples**, then scroll all the way to the bottom to the **Product Files** section.
