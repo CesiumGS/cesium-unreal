@@ -1,22 +1,23 @@
 # Change Log
 
-### ? - ?
+### v1.17.0 - 2022-09-01
 
 ##### Additions :tada:
 
-- The translucent parts of 3D Tiles are now correctly rendered as translucent.
-- Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
-- Added dithered LOD transitions between tiles in the default tileset materials. The details panel for `Cesium3DTileset` now contains options to enable / disable the feature as well as adjust the LOD transition length in seconds.
-- Added support for loading WebP images inside glTFs and raster overlays. WebP textures can be provided directly in a glTF texture or in the `EXT_texture_webp` extension. 
+- The translucent parts of 3D Tiles are now correctly rendered as translucent. In addition, a new `TranslucentMaterial` property on `Cesium3DTileset` allows a custom material to be used to render these translucent portions.
+- Added a `Rendering -> Use Lod Transitions` option on `Cesium3DTileset` to smoothly dither between levels-of-detail rather than switching abruptly.
+- Added support for loading WebP images inside glTFs and raster overlays. WebP textures can be provided directly in a glTF texture or in the `EXT_texture_webp` extension.
 
 ##### Fixes :wrench:
 
-- Fixed dividing the viewport by an integer which prevented fractional DPI scaling.
+- Fixed a bug that prevented fractional DPI scaling from being properly taken into account. Instead, it would scale by the next-smallest integer.
 - Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
-- Fixed a bug that causes tiles to dissapear when the Editor viewport is in Orbit mode.
+- Fixed a bug that caused tiles to dissapear when the Editor viewport was in Orbit mode.
 - Fixed a bug in the Globe Anchor Component that prevented changing/resetting the actor transform in the details panel.
-- Reduce the size of physics meshes by only copying UV data if "Support UV from Hit Results" is enabled.
-- Fixed a bug in UE5 where LineTrace occasionally failed to collide with tiles at a certain LOD.
+- Reduced the size of physics meshes by only copying UV data if "Support UV from Hit Results" is enabled in the project settings.
+- Fixed a bug - in Unreal Engine 5 only - where a LineTrace would occasionally fail to collide with tiles at certain levels-of-detail.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.18.1 to v0.19.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.16.2 - 2022-08-04
 
