@@ -6,10 +6,25 @@
 
 - The translucent parts of 3D Tiles are now correctly rendered as translucent.
 - Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
+- Added dithered LOD transitions between tiles in the default tileset materials. The details panel for `Cesium3DTileset` now contains options to enable / disable the feature as well as adjust the LOD transition length in seconds.
+- Added support for loading WebP images inside glTFs and raster overlays. WebP textures can be provided directly in a glTF texture or in the `EXT_texture_webp` extension. 
+
+##### Fixes :wrench:
+
+- Fixed dividing the viewport by an integer which prevented fractional DPI scaling.
+- Cesium for Unreal now only uses Editor viewports for tile selection if they are visible, real-time, and use a perspective projection. Previously, any viewport with a valid size was used, which could lead to tiles being loaded and rendered unnecessarily.
+- Fixed a bug that causes tiles to dissapear when the Editor viewport is in Orbit mode.
+- Fixed a bug in the Globe Anchor Component that prevented changing/resetting the actor transform in the details panel.
+- Reduce the size of physics meshes by only copying UV data if "Support UV from Hit Results" is enabled.
+- Fixed a bug in UE5 where LineTrace occasionally failed to collide with tiles at a certain LOD.
+
+### v1.16.2 - 2022-08-04
 
 ##### Fixes :wrench:
 
 - Fixed a bug that caused a crash in Unreal Engine 4.26 when enabling the experimental tileset occlusion culling feature.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.18.0 to v0.18.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.16.1 - 2022-08-01
 

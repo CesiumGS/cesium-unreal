@@ -5,6 +5,7 @@
 #include "PixelFormat.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
+#include <CesiumGltf/ExtensionTextureWebp.h>
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumUtility/Tracing.h>
@@ -242,7 +243,10 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 
   const CesiumGltf::ExtensionKhrTextureBasisu* pKtxExtension =
       texture.getExtension<CesiumGltf::ExtensionKhrTextureBasisu>();
+  const CesiumGltf::ExtensionTextureWebp* pWebpExtension =
+      texture.getExtension<CesiumGltf::ExtensionTextureWebp>();
 
+  int32_t source = -1;
   if (pKtxExtension) {
     if (pKtxExtension->source < 0 ||
         pKtxExtension->source >= model.images.size()) {
@@ -252,23 +256,38 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
           TEXT(
               "KTX texture source index must be non-negative and less than %d, but is %d"),
           model.images.size(),
+          pKtxExtension->source);
+      return nullptr;
+    }
+    source = pKtxExtension->source;
+  } else if (pWebpExtension) {
+    if (pWebpExtension->source < 0 ||
+        pWebpExtension->source >= model.images.size()) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "WebP texture source index must be non-negative and less than %d, but is %d"),
+          model.images.size(),
+          pWebpExtension->source);
+      return nullptr;
+    }
+    source = pWebpExtension->source;
+  } else {
+    if (texture.source < 0 || texture.source >= model.images.size()) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "Texture source index must be non-negative and less than %d, but is %d"),
+          model.images.size(),
           texture.source);
       return nullptr;
     }
-  } else if (texture.source < 0 || texture.source >= model.images.size()) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "Texture source index must be non-negative and less than %d, but is %d"),
-        model.images.size(),
-        texture.source);
-    return nullptr;
+    source = texture.source;
   }
 
-  const CesiumGltf::ImageCesium& image =
-      model.images[pKtxExtension ? pKtxExtension->source : texture.source]
-          .cesium;
+  const CesiumGltf::ImageCesium& image = model.images[source].cesium;
   const CesiumGltf::Sampler* pSampler =
       CesiumGltf::Model::getSafe(&model.samplers, texture.sampler);
 

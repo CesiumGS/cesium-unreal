@@ -5,8 +5,8 @@
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
-#include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
@@ -98,7 +98,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _tilesToNoLongerRenderNextFrame{} {
+      _beforeMovieUseLodTransitions{true} {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -363,11 +363,13 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
+  this->_beforeMovieUseLodTransitions = this->UseLodTransitions;
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
+  this->UseLodTransitions = false;
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
@@ -375,6 +377,7 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
+  this->UseLodTransitions = this->_beforeMovieUseLodTransitions;
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
@@ -626,9 +629,8 @@ public:
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
-        tile.getContent();
-    if (pContent && pContent->model) {
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    if (content.isRenderContent()) {
       TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
@@ -729,11 +731,13 @@ public:
       void* pMainThreadRendererResources,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
-        tile.getContent();
-    if (pContent && pContent->model) {
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (pRenderContent) {
       UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
+          reinterpret_cast<UCesiumGltfComponent*>(
+              pRenderContent->getRenderResources());
       if (pGltfContent) {
         pGltfContent->AttachRasterTile(
             tile,
@@ -751,11 +755,13 @@ public:
       int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources) noexcept override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
-        tile.getContent();
-    if (pContent && pContent->model) {
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (pRenderContent) {
       UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
+          reinterpret_cast<UCesiumGltfComponent*>(
+              pRenderContent->getRenderResources());
       if (pGltfContent) {
         pGltfContent->DetachRasterTile(
             tile,
@@ -1447,8 +1453,22 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
+    if (!pEditorViewportClient->IsVisible() ||
+        !pEditorViewportClient->IsRealtime() ||
+        !pEditorViewportClient->IsPerspective()) {
+      continue;
+    }
+
+    FRotator rotation;
+    if (pEditorViewportClient->bUsingOrbitCamera) {
+      rotation = (pEditorViewportClient->GetLookAtLocation() -
+                  pEditorViewportClient->GetViewLocation())
+                     .Rotation();
+    } else {
+      rotation = pEditorViewportClient->GetViewRotation();
+    }
+
     const FVector& location = pEditorViewportClient->GetViewLocation();
-    const FRotator& rotation = pEditorViewportClient->GetViewRotation();
     double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
@@ -1460,7 +1480,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
 
     if (this->_scaleUsingDPI) {
       float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
-      size /= dpiScalingFactor;
+      size.X = static_cast<float>(size.X) / dpiScalingFactor;
+      size.Y = static_cast<float>(size.Y) / dpiScalingFactor;
     }
 
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
@@ -1554,24 +1575,56 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTilesToNoLongerRender(
-    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetVisibility(false, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     } else {
       // TODO: why is this happening?
       UE_LOG(
           LogCesium,
           Verbose,
           TEXT("Tile to no longer render does not have a visible Gltf"));
+    }
+  }
+}
+
+/**
+ * @brief Removes collision for tiles that have been removed from the render
+ * list. This includes tiles that are fading out.
+ */
+void removeCollisionForTiles(
+    const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
+
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+      continue;
+    }
+
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
+    if (Gltf) {
+      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
 }
@@ -1626,6 +1679,9 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
+  options.enableLodTransitionPeriod = this->UseLodTransitions;
+  options.lodTransitionLength = this->LodTransitionLength;
+  // options.kickDescendantsWhileFadingIn = false;
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
@@ -1685,7 +1741,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 void ACesium3DTileset::showTilesToRender(
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
@@ -1703,8 +1759,15 @@ void ACesium3DTileset::showTilesToRender(
     // 11626) { 	continue;
     //}
 
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
     if (!Gltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
@@ -1737,9 +1800,43 @@ void ACesium3DTileset::showTilesToRender(
 
     if (!Gltf->IsVisible()) {
       Gltf->SetVisibility(true, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     }
+
+    Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
   }
+}
+
+static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
+  if (!pTile || !pTile->getContent().isRenderContent()) {
+    return;
+  }
+
+  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+    return;
+  }
+
+  const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+      content.getRenderContent();
+  if (!pRenderContent) {
+    return;
+  }
+
+  UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(
+      pRenderContent->getRenderResources());
+  if (!pGltf) {
+    return;
+  }
+
+  // Remap the fade percentage so that [0,0.5] --> [0,1] and [0.5,1] --> [1].
+  // This forces fading out tiles to stay opaque until the new tiles have fully
+  // faded in. This is needed for dithered fading, otherwise you will be able
+  // to partially see straight through both tiles during a transition.
+  float percentage =
+      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
+  percentage = glm::clamp(2.0f * percentage, 0.0f, 1.0f);
+
+  pGltf->UpdateFade(percentage);
 }
 
 // Called every frame
@@ -1798,17 +1895,39 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
-                              : this->_pTileset->updateView(frustums);
+      this->_captureMovieMode
+          ? this->_pTileset->updateViewOffline(frustums)
+          : this->_pTileset->updateView(frustums, DeltaTime);
   updateLastViewUpdateResultState(result);
   this->UpdateLoadStatus();
 
+  removeCollisionForTiles(result.tilesFadingOut);
+
   removeVisibleTilesFromList(
-      this->_tilesToNoLongerRenderNextFrame,
+      _tilesToHideNextFrame,
       result.tilesToRenderThisFrame);
-  hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
-  this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  hideTiles(_tilesToHideNextFrame);
+
+  _tilesToHideNextFrame.clear();
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        pTile->getContent().getRenderContent();
+    if (!this->UseLodTransitions ||
+        (pRenderContent &&
+         pRenderContent->getLodTransitionFadePercentage() <= 0.0f)) {
+      _tilesToHideNextFrame.push_back(pTile);
+    }
+  }
+
   showTilesToRender(result.tilesToRenderThisFrame);
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+    updateTileFade(pTile);
+  }
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    updateTileFade(pTile);
+  }
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
