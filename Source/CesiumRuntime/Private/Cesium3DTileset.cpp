@@ -1635,11 +1635,12 @@ void removeCollisionForTiles(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
-  const TArray<USceneComponent*>& ChildrenComponents = Gltf->GetAttachChildren();
+  const TArray<USceneComponent*>& ChildrenComponents =
+      Gltf->GetAttachChildren();
 
-  for (USceneComponent* ChildrenComponent : ChildrenComponents) {
+  for (USceneComponent* ChildComponent : ChildrenComponents) {
     UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-        static_cast<UCesiumGltfPrimitiveComponent*>(ChildrenComponent);
+        static_cast<UCesiumGltfPrimitiveComponent*>(ChildComponent);
     if (PrimitiveComponent != nullptr) {
       if (PrimitiveComponent->GetCollisionObjectType() !=
           BodyInstance.GetObjectType()) {
