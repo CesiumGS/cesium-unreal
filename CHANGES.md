@@ -16,6 +16,7 @@
 - Fixed a bug in the Globe Anchor Component that prevented changing/resetting the actor transform in the details panel.
 - Reduced the size of physics meshes by only copying UV data if "Support UV from Hit Results" is enabled in the project settings.
 - Fixed a bug - in Unreal Engine 5 only - where a LineTrace would occasionally fail to collide with tiles at certain levels-of-detail.
+- Fixed a crash that could occur while running on a dedicated server, caused by attempting to add the credits widget to the viewport.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.18.1 to v0.19.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
