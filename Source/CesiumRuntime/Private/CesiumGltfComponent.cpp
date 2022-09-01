@@ -2308,6 +2308,47 @@ void UCesiumGltfComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
+void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
+  if (!this->IsVisible()) {
+    return;
+  }
+
+  fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
+
+  UCesiumMaterialUserData* pCesiumData =
+      BaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
+
+  if (!pCesiumData) {
+    return;
+  }
+
+  int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
+  if (fadeLayerIndex < 0) {
+    return;
+  }
+
+  for (USceneComponent* pChild : this->GetAttachChildren()) {
+    UCesiumGltfPrimitiveComponent* pPrimitive =
+        Cast<UCesiumGltfPrimitiveComponent>(pChild);
+    if (!pPrimitive || !pPrimitive->GetMaterials().Num()) {
+      continue;
+    }
+
+    UMaterialInstanceDynamic* pMaterial =
+        Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterials()[0]);
+    if (!pMaterial) {
+      continue;
+    }
+
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            "FadePercentage",
+            EMaterialParameterAssociation::LayerParameter,
+            fadeLayerIndex),
+        fadePercentage);
+  }
+}
+
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,

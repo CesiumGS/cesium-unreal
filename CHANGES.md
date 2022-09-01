@@ -6,6 +6,7 @@
 
 - The translucent parts of 3D Tiles are now correctly rendered as translucent.
 - Added a `TranslucentMaterial` property to `Cesium3DTileset`, allowing a custom material to be used to render the translucent portions of a tileset.
+- Added dithered LOD transitions between tiles in the default tileset materials. The details panel for `Cesium3DTileset` now contains options to enable / disable the feature as well as adjust the LOD transition length in seconds.
 - Added support for loading WebP images inside glTFs and raster overlays. WebP textures can be provided directly in a glTF texture or in the `EXT_texture_webp` extension. 
 
 ##### Fixes :wrench:
