@@ -1640,7 +1640,7 @@ void applyActorCollisionSettings(
 
   for (USceneComponent* ChildComponent : ChildrenComponents) {
     UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-        static_cast<UCesiumGltfPrimitiveComponent*>(ChildComponent);
+        Cast<UCesiumGltfPrimitiveComponent, USceneComponent>(ChildComponent);
     if (PrimitiveComponent != nullptr) {
       if (PrimitiveComponent->GetCollisionObjectType() !=
           BodyInstance.GetObjectType()) {
