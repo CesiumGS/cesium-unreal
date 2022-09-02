@@ -2308,7 +2308,7 @@ void UCesiumGltfComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
-void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
+void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   if (!this->IsVisible()) {
     return;
   }
@@ -2346,6 +2346,12 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
             EMaterialParameterAssociation::LayerParameter,
             fadeLayerIndex),
         fadePercentage);
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            "FadingType",
+            EMaterialParameterAssociation::LayerParameter,
+            fadeLayerIndex),
+        fadingIn ? 0.0f : 1.0f);
   }
 }
 
