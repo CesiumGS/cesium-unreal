@@ -2,6 +2,8 @@
 
 #include "CesiumTextureUtility.h"
 #include "CesiumRuntime.h"
+#include "Containers/ResourceArray.h"
+#include "DynamicRHI.h"
 #include "PixelFormat.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
@@ -31,6 +33,26 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
     return nullptr;
   }
 }
+
+class FCesiumTextureData : public FResourceBulkDataInterface {
+public:
+  FCesiumTextureData(const CesiumGltf::ImageCesium& image)
+      : _textureData(image.pixelData.data()),
+        _textureDataSize(static_cast<uint32>(image.pixelData.size())) {}
+
+  const void* GetResourceBulkData() const override {
+    return (void*)_textureData;
+  }
+
+  uint32 GetResourceBulkDataSize() const override { return _textureDataSize; }
+
+  // TODO: eventually this can be used to clear out the original gltf buffers
+  void Discard() override {}
+
+private:
+  const std::byte* _textureData;
+  uint32 _textureDataSize;
+};
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
@@ -155,77 +177,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       }
     }
   } else {
-    int32_t width = image.width;
-    int32_t height = image.height;
-    int32_t channels = image.channels;
-
-    void* pLastMipData = nullptr;
-    {
-      CESIUM_TRACE("Copying image.");
-
-      // Create level 0 mip (full res image)
-      FTexture2DMipMap* pLevel0 = new FTexture2DMipMap();
-      pResult->pTextureData->Mips.Add(pLevel0);
-      pLevel0->SizeX = width;
-      pLevel0->SizeY = height;
-      pLevel0->BulkData.Lock(LOCK_READ_WRITE);
-
-      pLastMipData = pLevel0->BulkData.Realloc(image.pixelData.size());
-      FMemory::Memcpy(
-          pLastMipData,
-          image.pixelData.data(),
-          image.pixelData.size());
-    }
-
-    if (generateMipMaps) {
-      CESIUM_TRACE("Generate new mips.");
-
-      // Generate mip levels.
-      // TODO: do this on the GPU?
-      while (width > 1 || height > 1) {
-        FTexture2DMipMap* pLevel = new FTexture2DMipMap();
-        pResult->pTextureData->Mips.Add(pLevel);
-
-        pLevel->SizeX = width >> 1;
-        if (pLevel->SizeX < 1)
-          pLevel->SizeX = 1;
-        pLevel->SizeY = height >> 1;
-        if (pLevel->SizeY < 1)
-          pLevel->SizeY = 1;
-
-        pLevel->BulkData.Lock(LOCK_READ_WRITE);
-
-        void* pMipData =
-            pLevel->BulkData.Realloc(pLevel->SizeX * pLevel->SizeY * channels);
-
-        // TODO: Premultiplied alpha? Cases with more than one byte per channel?
-        // Non-normalzied pixel formats?
-        if (!stbir_resize_uint8(
-                static_cast<const unsigned char*>(pLastMipData),
-                width,
-                height,
-                0,
-                static_cast<unsigned char*>(pMipData),
-                pLevel->SizeX,
-                pLevel->SizeY,
-                0,
-                channels)) {
-          // Failed to generate mip level, use bilinear filtering instead.
-          pResult->filter = TextureFilter::TF_Bilinear;
-          for (int32_t i = 1; i < pResult->pTextureData->Mips.Num(); ++i) {
-            pResult->pTextureData->Mips[i].BulkData.Unlock();
-          }
-          pResult->pTextureData->Mips.RemoveAt(
-              1,
-              pResult->pTextureData->Mips.Num() - 1);
-          break;
-        }
-
-        width = pLevel->SizeX;
-        height = pLevel->SizeY;
-        pLastMipData = pMipData;
-      }
-    }
+    UE_LOG(LogCesium, Warning, TEXT("No mipmap found in glTF."));
   }
 
   // Unlock all levels
