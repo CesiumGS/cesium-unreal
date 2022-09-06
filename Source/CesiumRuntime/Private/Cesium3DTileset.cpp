@@ -1635,18 +1635,24 @@ void removeCollisionForTiles(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
-  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
-  if (PrimitiveComponent != nullptr) {
-    if (PrimitiveComponent->GetCollisionObjectType() !=
-        BodyInstance.GetObjectType()) {
-      PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
-    }
-    const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
-    if (ChannelEnum) {
-      FCollisionResponseContainer responseContainer =
-          BodyInstance.GetResponseToChannels();
-      PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+  const TArray<USceneComponent*>& ChildrenComponents =
+      Gltf->GetAttachChildren();
+
+  for (USceneComponent* ChildComponent : ChildrenComponents) {
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        Cast<UCesiumGltfPrimitiveComponent>(ChildComponent);
+    if (PrimitiveComponent != nullptr) {
+      if (PrimitiveComponent->GetCollisionObjectType() !=
+          BodyInstance.GetObjectType()) {
+        PrimitiveComponent->SetCollisionObjectType(
+            BodyInstance.GetObjectType());
+      }
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        FCollisionResponseContainer responseContainer =
+            BodyInstance.GetResponseToChannels();
+        PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+      }
     }
   }
 }
