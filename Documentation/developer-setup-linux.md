@@ -9,11 +9,11 @@ After compiling Unreal Engine, set the following environment variables in your `
 
 ```bash
 export UNREAL_ENGINE_DIR=<path_to_unreal_engine>
-export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v19_clang-11.0.1-centos7/x86_64-unknown-linux-gnu
-export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Linux/LibCxx
+export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v20_clang-13.0.1-centos7/x86_64-unknown-linux-gnu
+export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Unix/LibCxx
 ```
 
-> Note: `v19_clang-11.0.1-centos7` is correct for Unreal Engine v4.27 and v5.0.0. It may be different for other versions of Unreal Engine. See https://docs.unrealengine.com/4.27/en-US/SharingAndReleasing/Linux/GettingStarted/ or the equivalent for your version of Unreal Engine.
+> Note: `v20_clang-13.0.1-centos7` is correct for Unreal Engine v5.0.3. It may be different for other versions of Unreal Engine. See [https://docs.unrealengine.com/5.0/en-US/SharingAndReleasing/Linux/GettingStarted/](https://docs.unrealengine.com/5.0/en-US/linux-development-requirements-for-unreal-engine/) or the equivalent for your version of Unreal Engine.
 
 # Cloning the git repos
 
@@ -28,7 +28,7 @@ In this setup, we will build the Cesium for Unreal plugin separately from any pr
 
 First, let's clone the Cesium for Unreal repo by issuing the following command in the `~/dev` directory:
 
-    git clone -b ue4-main --recursive https://github.com/CesiumGS/cesium-unreal.git
+    git clone -b ue5-main --recursive https://github.com/CesiumGS/cesium-unreal.git
 
 > Note: The last line will also check out the `cesium-native` submodule and its dependencies. If you forget the `--recursive` option, you will see many compiler errors later in this process. If this happens to you, run the following in the `Plugins\cesium-unreal` directory to update the submodules in the existing clone:
 
@@ -54,6 +54,17 @@ To build a Release version, do the following:
     cmake --build build --target install
 
 > To build faster by using multiple CPU cores, add `-j14` to the build/install command above, i.e. `cmake --build build --target install -j14`. "14" is the number of threads to use, and a higher or lower number may be more suitable for your system.
+
+## KTX-Software workaround
+
+You may encounter an issue with the Unreal Build tool generating errors with symlinks in the KTX-Software submodule. This directory is no longer needed after cesium-native is built, therefore it can safely be removed.
+
+Delete the entire 'cesium-unreal/extern' directory:
+
+    cd ..
+    rm -rf extern
+    
+Alternatively, this directory could be moved elsewhere and brought back in the case of a rebuild.
 
 # Build and package the Cesium for Unreal plugin
 
@@ -82,3 +93,4 @@ The Cesium for Unreal Samples project demonstrates a bunch of features of Cesium
     
 Then, launch the Unreal Editor and open `~/dev/cesium-unreal-samples/CesiumForUnrealSamples.uproject`. Because we've already installed the plugin to the Engine Plugins directory, the samples project should pick it up automatically.
 
+> Note: These samples were built with UE v4.26. They can be converted to open in UE v5, but they may not have full functionality.
