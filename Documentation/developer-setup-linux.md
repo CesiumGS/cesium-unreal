@@ -93,4 +93,4 @@ The Cesium for Unreal Samples project demonstrates a bunch of features of Cesium
     
 Then, launch the Unreal Editor and open `~/dev/cesium-unreal-samples/CesiumForUnrealSamples.uproject`. Because we've already installed the plugin to the Engine Plugins directory, the samples project should pick it up automatically.
 
-> Note: These samples were built with UE v4.26. They can be converted to open in UE v5, but they may not have full functionality.
+> Note: These samples were built with UE v4.26. They can be converted to open in UE v5.
