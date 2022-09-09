@@ -22,9 +22,9 @@
 #include <string>
 #include <vector>
 
-class SRichInlineImage : public SCompoundWidget {
+class SCreditImage : public SCompoundWidget {
 public:
-  SLATE_BEGIN_ARGS(SRichInlineImage) {}
+  SLATE_BEGIN_ARGS(SCreditImage) {}
   SLATE_END_ARGS()
 
 public:
@@ -35,9 +35,9 @@ public:
   }
 };
 
-class SInlineHyperlinkImage : public SCompoundWidget {
+class SCreditHyperlinkImage : public SCompoundWidget {
 public:
-  SLATE_BEGIN_ARGS(SRichInlineImage) {}
+  SLATE_BEGIN_ARGS(SCreditImage) {}
   SLATE_END_ARGS()
 
 public:
@@ -64,9 +64,9 @@ private:
   FButtonStyle ButtonStyle;
 };
 
-class SInlineHyperlinkText : public SCompoundWidget {
+class SCreditHyperlink : public SCompoundWidget {
 public:
-  SLATE_BEGIN_ARGS(SRichInlineImage) {}
+  SLATE_BEGIN_ARGS(SCreditImage) {}
   SLATE_END_ARGS()
 
 public:
@@ -91,9 +91,11 @@ public:
   }
 };
 
-class FRichInlineImage : public FRichTextDecorator {
+class FScreenCreditsDecorator : public FRichTextDecorator {
 public:
-  FRichInlineImage(URichTextBlock* InOwner, UCreditsDecorator* InDecorator)
+  FScreenCreditsDecorator(
+      URichTextBlock* InOwner,
+      UCreditsDecorator* InDecorator)
       : FRichTextDecorator(InOwner), Decorator(InDecorator) {}
 
   virtual bool Supports(
@@ -126,12 +128,12 @@ protected:
     }
     if (Brush) {
       if (Url.IsEmpty()) {
-        return SNew(SRichInlineImage, Brush);
+        return SNew(SCreditImage, Brush);
       } else {
-        return SNew(SInlineHyperlinkImage, Brush, Url);
+        return SNew(SCreditHyperlinkImage, Brush, Url);
       }
     } else
-      return SNew(SInlineHyperlinkText, Text, Url, Decorator);
+      return SNew(SCreditHyperlink, Text, Url, Decorator);
   }
 
 private:
@@ -144,7 +146,7 @@ UCreditsDecorator::UCreditsDecorator(
 
 TSharedPtr<ITextDecorator>
 UCreditsDecorator::CreateDecorator(URichTextBlock* InOwner) {
-  return MakeShareable(new FRichInlineImage(InOwner, this));
+  return MakeShareable(new FScreenCreditsDecorator(InOwner, this));
 }
 
 const FSlateBrush* UCreditsDecorator::FindImageBrush(int32 id) {
