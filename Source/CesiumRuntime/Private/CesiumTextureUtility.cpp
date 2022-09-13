@@ -98,7 +98,9 @@ public:
   }
 
   ~FCesiumTextureResource() {
-    _pTexture->SetResource(nullptr);
+    if (_pTexture.IsValid()) {
+      _pTexture->SetResource(nullptr);
+    }
   }
 
   uint32 GetSizeX() const override {
@@ -128,14 +130,16 @@ public:
   }
 
   virtual void ReleaseRHI() override {
-    RHIUpdateTextureReference(
-        _pTexture->TextureReference.TextureReferenceRHI,
-        nullptr);
+    if (_pTexture.IsValid()) {
+      RHIUpdateTextureReference(
+          _pTexture->TextureReference.TextureReferenceRHI,
+          nullptr);
+    }
     FTextureResource::ReleaseRHI();
   }
 
 private:
-  UTexture* _pTexture;
+  TWeakObjectPtr<UTexture> _pTexture;
   uint32 _sizeX;
   uint32 _sizeY;
 };
@@ -251,58 +255,26 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->group = group;
   pResult->sRGB = sRGB;
 
-  FTexture2DRHIRef rhiTextureRef;
-  if (image.mipPositions.empty()) {
-    rhiTextureRef = CreateRHITexture2D(image, pixelFormat, 1);
-  } else {
-    rhiTextureRef = CreateRHITexture2D(
-        image,
-        pixelFormat,
-        static_cast<uint32>(image.mipPositions.size()));
+  {
+    std::string scopeName =
+        "Cesium::CreateRHITexture2D" + std::to_string(image.width) + "x" +
+        std::to_string(image.height) + "x" + std::to_string(image.channels) +
+        "x" + std::to_string(image.bytesPerChannel);
+    TRACE_CPUPROFILER_EVENT_SCOPE_TEXT(scopeName.c_str())
+
+    if (image.mipPositions.empty()) {
+      pResult->rhiTextureRef = CreateRHITexture2D(image, pixelFormat, 1);
+    } else {
+      pResult->rhiTextureRef = CreateRHITexture2D(
+          image,
+          pixelFormat,
+          static_cast<uint32>(image.mipPositions.size()));
+    }
   }
 
-  if (!rhiTextureRef) {
+  if (!pResult->rhiTextureRef) {
     return nullptr;
   }
-
-  TFuture<bool> mainThreadTask = Async(
-      EAsyncExecution::TaskGraphMainThread,
-      [pHalfLoadedTexture = pResult.Get()]() {
-        return !!CreateTexture2D(pHalfLoadedTexture);        
-      });
-
-  mainThreadTask.Wait();
-  if (!mainThreadTask.Get()) {
-    return nullptr;
-  }
-
-  FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
-      pResult->pTexture.Get(),
-      static_cast<uint32>(image.width),
-      static_cast<uint32>(image.height),
-      rhiTextureRef);
-
-  pResult->pTexture->SetResource(pCesiumTextureResource);
-
-  FGraphEventRef updateResourceTask =
-      FFunctionGraphTask::CreateAndDispatchWhenReady(
-          [pTexture = pResult->pTexture.Get(), &pCesiumTextureResource]() {
-            pCesiumTextureResource->InitResource();
-            RHIUpdateTextureReference(
-                pTexture->TextureReference.TextureReferenceRHI,
-                pCesiumTextureResource->GetTexture2DRHI());
-            pCesiumTextureResource->SetTextureReference(pTexture->TextureReference.TextureReferenceRHI);
-          },
-          TStatId(),
-          nullptr,
-          ENamedThreads::ActualRenderingThread);
-
-  updateResourceTask->SetGatherThreadForDontCompleteUntil(
-      ENamedThreads::AnyThread);
-
-  FGenericPlatformProcess::ConditionalSleep(
-      [&updateResourceTask]() { return updateResourceTask->IsComplete(); },
-      0.03);
 
   return pResult;
 }
@@ -311,6 +283,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::Model& model,
     const CesiumGltf::Texture& texture,
     bool sRGB) {
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
 
   const CesiumGltf::ExtensionKhrTextureBasisu* pKtxExtension =
       texture.getExtension<CesiumGltf::ExtensionKhrTextureBasisu>();
@@ -463,27 +437,26 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return nullptr;
   }
 
-  UTexture2D* pTexture = pHalfLoadedTexture->pTexture.Get();
-  if (!pTexture && pHalfLoadedTexture->pTextureData) {
-    pTexture = NewObject<UTexture2D>(
-        GetTransientPackage(),
-        NAME_None,
-        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
+  FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
+      pTexture,
+      static_cast<uint32>(pTexture->GetSizeX()),
+      static_cast<uint32>(pTexture->GetSizeY()),
+      pHalfLoadedTexture->rhiTextureRef);
 
-#if ENGINE_MAJOR_VERSION >= 5
-    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
-#else
-    pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
-#endif
-    pTexture->AddressX = pHalfLoadedTexture->addressX;
-    pTexture->AddressY = pHalfLoadedTexture->addressY;
-    pTexture->Filter = pHalfLoadedTexture->filter;
-    pTexture->LODGroup = pHalfLoadedTexture->group;
-    pTexture->SRGB = pHalfLoadedTexture->sRGB;
-    //pTexture->UpdateResource();
+  pTexture->SetResource(pCesiumTextureResource);
 
-    pHalfLoadedTexture->pTexture = pTexture;
-  }
+  ENQUEUE_RENDER_COMMAND(Cesium_SetTextureReference)
+  ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetTextureReference)
+
+    pCesiumTextureResource->InitResource();
+    RHIUpdateTextureReference(
+        pTexture->TextureReference.TextureReferenceRHI,
+        pCesiumTextureResource->GetTexture2DRHI());
+    pCesiumTextureResource->SetTextureReference(
+        pTexture->TextureReference.TextureReferenceRHI);
+  });
 
   return pTexture;
 }

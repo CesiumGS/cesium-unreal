@@ -24,6 +24,7 @@ struct LoadedTextureResult {
   TextureGroup group;
   bool sRGB{true};
   TWeakObjectPtr<UTexture2D> pTexture;
+  FTexture2DRHIRef rhiTextureRef{};
 };
 
 TUniquePtr<FTexturePlatformData>
