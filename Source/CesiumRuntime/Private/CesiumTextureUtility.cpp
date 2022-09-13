@@ -4,7 +4,11 @@
 #include "CesiumRuntime.h"
 #include "Containers/ResourceArray.h"
 #include "DynamicRHI.h"
+#include "TextureResource.h"
+#include "RHIResources.h"
+#include "RHIDefinitions.h"
 #include "PixelFormat.h"
+#include "Async/TaskGraphInterfaces.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ExtensionTextureWebp.h>
@@ -12,8 +16,31 @@
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumUtility/Tracing.h>
 #include <stb_image_resize.h>
+#include "Async/Future.h"
+#include "Async/Async.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
 
 using namespace CesiumGltf;
+
+static FTexture2DRHIRef CreateRHITexture2D(const CesiumGltf::ImageCesium& image, EPixelFormat format, uint32 initialMips) {
+  void* pTextureData = (void*)image.pixelData.data();
+  uint32_t mipCount =
+      glm::log2<uint32_t>(glm::max(
+        static_cast<uint32_t>(image.width),
+        static_cast<uint32_t>(image.height)));
+  if (GRHISupportsAsyncTextureCreation) {
+    return RHIAsyncCreateTexture2D(
+        static_cast<uint32>(image.width),
+        static_cast<uint32>(image.height),
+        format,
+        1,
+        ETextureCreateFlags::TexCreate_ShaderResource | ETextureCreateFlags::TexCreate_SRGB,
+        &pTextureData,
+        initialMips);
+  }
+
+  return nullptr;
+}
 
 namespace CesiumTextureUtility {
 
@@ -27,6 +54,11 @@ createTexturePlatformData(int32 sizeX, int32 sizeY, EPixelFormat format) {
     pTexturePlatformData->SizeX = sizeX;
     pTexturePlatformData->SizeY = sizeY;
     pTexturePlatformData->PixelFormat = format;
+
+    FTexture2DMipMap* Mip = new FTexture2DMipMap();
+    pTexturePlatformData->Mips.Add(Mip);
+    Mip->SizeX = sizeX;
+    Mip->SizeY = sizeY;
 
     return pTexturePlatformData;
   } else {
@@ -53,6 +85,92 @@ private:
   const std::byte* _textureData;
   uint32 _textureDataSize;
 };
+
+class FCesiumTextureResource : public FTextureResource {
+public:
+  FCesiumTextureResource(UTexture* pTexture, uint32 sizeX, uint32 sizeY, FTexture2DRHIRef pRHITexture)
+     : _pTexture(pTexture),
+       _sizeX(sizeX),
+       _sizeY(sizeY) {
+    TextureRHI = pRHITexture;
+    bGreyScaleFormat = (TextureRHI->GetFormat() == PF_G8) ||
+                       (TextureRHI->GetFormat() == PF_BC4);
+  }
+
+  ~FCesiumTextureResource() {
+    _pTexture->SetResource(nullptr);
+  }
+
+  uint32 GetSizeX() const override {
+    return _sizeX;
+  }
+
+  uint32 GetSizeY() const override {
+    return _sizeY;
+  }
+
+  virtual void InitRHI() override {
+    FSamplerStateInitializerRHI samplerStateInitializer(SF_Trilinear);
+    this->SamplerStateRHI = GetOrCreateSamplerState(samplerStateInitializer);
+
+    // TODO: revisit assumptions here
+    FSamplerStateInitializerRHI deferredSamplerStateInitializer(
+        SF_Trilinear,
+        AM_Wrap,
+        AM_Wrap,
+        AM_Wrap,
+        0.0f,
+        1,
+        0.0f,
+        2.0f);        
+    this->DeferredPassSamplerStateRHI =
+        GetOrCreateSamplerState(deferredSamplerStateInitializer);
+  }
+
+  virtual void ReleaseRHI() override {
+    RHIUpdateTextureReference(
+        _pTexture->TextureReference.TextureReferenceRHI,
+        nullptr);
+    FTextureResource::ReleaseRHI();
+  }
+
+private:
+  UTexture* _pTexture;
+  uint32 _sizeX;
+  uint32 _sizeY;
+};
+
+static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
+  if (!pHalfLoadedTexture) {
+    return nullptr;
+  }
+
+  UTexture2D* pTexture = pHalfLoadedTexture->pTexture.Get();
+  if (!pTexture && pHalfLoadedTexture->pTextureData) {
+    pTexture = NewObject<UTexture2D>(
+        GetTransientPackage(),
+        MakeUniqueObjectName(GetTransientPackage(), UTexture2D::StaticClass(), "CesiumRuntimeTexture"),
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+
+#if ENGINE_MAJOR_VERSION >= 5
+    pTexture->SetPlatformData(pHalfLoadedTexture->pTextureData.Release());
+#else
+    pTexture->PlatformData = pHalfLoadedTexture->pTextureData.Release();
+#endif
+    pTexture->AddressX = pHalfLoadedTexture->addressX;
+    pTexture->AddressY = pHalfLoadedTexture->addressY;
+    pTexture->Filter = pHalfLoadedTexture->filter;
+    pTexture->LODGroup = pHalfLoadedTexture->group;
+    pTexture->SRGB = pHalfLoadedTexture->sRGB;
+
+    pTexture->NeverStream = true;
+    // pTexture->UpdateResource();
+
+    pHalfLoadedTexture->pTexture = pTexture;
+  }
+
+  return pTexture;
+}
 
 TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     const CesiumGltf::ImageCesium& image,
@@ -133,57 +251,58 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->group = group;
   pResult->sRGB = sRGB;
 
-  if (!image.mipPositions.empty()) {
-    int32_t width = image.width;
-    int32_t height = image.height;
-
-    CESIUM_TRACE("Copying existing mips.");
-
-    for (const CesiumGltf::ImageCesiumMipPosition& mip : image.mipPositions) {
-      if (mip.byteOffset >= image.pixelData.size() ||
-          mip.byteOffset + mip.byteSize > image.pixelData.size()) {
-        UE_LOG(
-            LogCesium,
-            Warning,
-            TEXT(
-                "Invalid mip in glTF; it has a byteOffset of %d and a byteSize of %d but only %d bytes of pixel data are available."),
-            mip.byteOffset,
-            mip.byteSize,
-            image.pixelData.size());
-        continue;
-      }
-
-      FTexture2DMipMap* pLevel = new FTexture2DMipMap();
-      pResult->pTextureData->Mips.Add(pLevel);
-
-      pLevel->SizeX = width;
-      pLevel->SizeY = height;
-      pLevel->BulkData.Lock(LOCK_READ_WRITE);
-
-      void* pMipData = pLevel->BulkData.Realloc(mip.byteSize);
-      FMemory::Memcpy(
-          pMipData,
-          image.pixelData.data() + mip.byteOffset,
-          mip.byteSize);
-
-      width >>= 1;
-      if (width == 0) {
-        width = 1;
-      }
-
-      height >>= 1;
-      if (height == 0) {
-        height = 1;
-      }
-    }
+  FTexture2DRHIRef rhiTextureRef;
+  if (image.mipPositions.empty()) {
+    rhiTextureRef = CreateRHITexture2D(image, pixelFormat, 1);
   } else {
-    UE_LOG(LogCesium, Warning, TEXT("No mipmap found in glTF."));
+    rhiTextureRef = CreateRHITexture2D(
+        image,
+        pixelFormat,
+        static_cast<uint32>(image.mipPositions.size()));
   }
 
-  // Unlock all levels
-  for (int32_t i = 0; i < pResult->pTextureData->Mips.Num(); ++i) {
-    pResult->pTextureData->Mips[i].BulkData.Unlock();
+  if (!rhiTextureRef) {
+    return nullptr;
   }
+
+  TFuture<bool> mainThreadTask = Async(
+      EAsyncExecution::TaskGraphMainThread,
+      [pHalfLoadedTexture = pResult.Get()]() {
+        return !!CreateTexture2D(pHalfLoadedTexture);        
+      });
+
+  mainThreadTask.Wait();
+  if (!mainThreadTask.Get()) {
+    return nullptr;
+  }
+
+  FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
+      pResult->pTexture.Get(),
+      static_cast<uint32>(image.width),
+      static_cast<uint32>(image.height),
+      rhiTextureRef);
+
+  pResult->pTexture->SetResource(pCesiumTextureResource);
+
+  FGraphEventRef updateResourceTask =
+      FFunctionGraphTask::CreateAndDispatchWhenReady(
+          [pTexture = pResult->pTexture.Get(), &pCesiumTextureResource]() {
+            pCesiumTextureResource->InitResource();
+            RHIUpdateTextureReference(
+                pTexture->TextureReference.TextureReferenceRHI,
+                pCesiumTextureResource->GetTexture2DRHI());
+            pCesiumTextureResource->SetTextureReference(pTexture->TextureReference.TextureReferenceRHI);
+          },
+          TStatId(),
+          nullptr,
+          ENamedThreads::ActualRenderingThread);
+
+  updateResourceTask->SetGatherThreadForDontCompleteUntil(
+      ENamedThreads::AnyThread);
+
+  FGenericPlatformProcess::ConditionalSleep(
+      [&updateResourceTask]() { return updateResourceTask->IsComplete(); },
+      0.03);
 
   return pResult;
 }
@@ -361,7 +480,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->Filter = pHalfLoadedTexture->filter;
     pTexture->LODGroup = pHalfLoadedTexture->group;
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
-    pTexture->UpdateResource();
+    //pTexture->UpdateResource();
 
     pHalfLoadedTexture->pTexture = pTexture;
   }

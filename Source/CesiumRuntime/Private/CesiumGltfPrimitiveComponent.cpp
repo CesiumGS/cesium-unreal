@@ -48,7 +48,7 @@ void destroyMaterialTexture(
           FMaterialParameterInfo(name, assocation, index),
           pTexture,
           true)) {
-    CesiumLifetime::destroy(pTexture);
+    //CesiumLifetime::destroy(pTexture);
   }
 }
 
