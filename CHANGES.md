@@ -1,5 +1,12 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug where collision settings were only being applied to the first primitive in a glTF.
+- Fixed a bug where the Screen Credits Decorator prevented the Rich Text Block Image Decorator from working.
+
 ### v1.17.0 - 2022-09-01
 
 ##### Additions :tada:

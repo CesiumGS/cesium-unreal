@@ -1635,18 +1635,24 @@ void removeCollisionForTiles(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
-  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
-  if (PrimitiveComponent != nullptr) {
-    if (PrimitiveComponent->GetCollisionObjectType() !=
-        BodyInstance.GetObjectType()) {
-      PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
-    }
-    const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
-    if (ChannelEnum) {
-      FCollisionResponseContainer responseContainer =
-          BodyInstance.GetResponseToChannels();
-      PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+  const TArray<USceneComponent*>& ChildrenComponents =
+      Gltf->GetAttachChildren();
+
+  for (USceneComponent* ChildComponent : ChildrenComponents) {
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        Cast<UCesiumGltfPrimitiveComponent>(ChildComponent);
+    if (PrimitiveComponent != nullptr) {
+      if (PrimitiveComponent->GetCollisionObjectType() !=
+          BodyInstance.GetObjectType()) {
+        PrimitiveComponent->SetCollisionObjectType(
+            BodyInstance.GetObjectType());
+      }
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        FCollisionResponseContainer responseContainer =
+            BodyInstance.GetResponseToChannels();
+        PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+      }
     }
   }
 }
@@ -1801,7 +1807,7 @@ void ACesium3DTileset::showTilesToRender(
   }
 }
 
-static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
+static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
   if (!pTile || !pTile->getContent().isRenderContent()) {
     return;
   }
@@ -1823,15 +1829,10 @@ static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
     return;
   }
 
-  // Remap the fade percentage so that [0,0.5] --> [0,1] and [0.5,1] --> [1].
-  // This forces fading out tiles to stay opaque until the new tiles have fully
-  // faded in. This is needed for dithered fading, otherwise you will be able
-  // to partially see straight through both tiles during a transition.
   float percentage =
       pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
-  percentage = glm::clamp(2.0f * percentage, 0.0f, 1.0f);
 
-  pGltf->UpdateFade(percentage);
+  pGltf->UpdateFade(percentage, fadingIn);
 }
 
 // Called every frame
@@ -1909,7 +1910,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         pTile->getContent().getRenderContent();
     if (!this->UseLodTransitions ||
         (pRenderContent &&
-         pRenderContent->getLodTransitionFadePercentage() <= 0.0f)) {
+         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
       _tilesToHideNextFrame.push_back(pTile);
     }
   }
@@ -1917,11 +1918,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   showTilesToRender(result.tilesToRenderThisFrame);
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
-    updateTileFade(pTile);
+    updateTileFade(pTile, true);
   }
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
-    updateTileFade(pTile);
+    updateTileFade(pTile, false);
   }
 }
 
