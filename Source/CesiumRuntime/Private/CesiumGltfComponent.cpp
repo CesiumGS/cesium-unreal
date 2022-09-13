@@ -875,7 +875,7 @@ static void loadPrimitive(
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     } else {
@@ -886,7 +886,7 @@ static void loadPrimitive(
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
-            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            (FVector(vertex.Position) - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
       }
     }
@@ -1167,21 +1167,25 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
+    if (options.pMeshOptions->pNodeOptions->pModelOptions
+            ->createPhysicsMeshes) {
 #if PHYSICS_INTERFACE_PHYSX
-    CESIUM_TRACE("PhysX cook");
-    PxTriangleMesh* createdCollisionMesh = nullptr;
-    BuildPhysXTriangleMeshes(
-        createdCollisionMesh,
-        primitiveResult.uvInfo,
-        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
-        StaticMeshBuildVertices,
-        indices);
-    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
+      CESIUM_TRACE("PhysX cook");
+      PxTriangleMesh* createdCollisionMesh = nullptr;
+      BuildPhysXTriangleMeshes(
+          createdCollisionMesh,
+          primitiveResult.uvInfo,
+          options.pMeshOptions->pNodeOptions->pModelOptions
+              ->pPhysXCookingModule,
+          StaticMeshBuildVertices,
+          indices);
+      primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
-    CESIUM_TRACE("Chaos cook");
-    primitiveResult.pCollisionMesh =
-        BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+      CESIUM_TRACE("Chaos cook");
+      primitiveResult.pCollisionMesh =
+          BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
+    }
   }
 
   // load primitive metadata
@@ -2151,11 +2155,7 @@ void forEachPrimitiveComponent(UCesiumGltfComponent* pGltf, Func&& f) {
       UMaterialInstanceDynamic* pMaterial =
           Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterial(0));
 
-#if ENGINE_MAJOR_VERSION >= 5
-      if (!IsValid(pMaterial)) {
-#else
-      if (!IsValid(pMaterial) || pMaterial->IsPendingKillOrUnreachable()) {
-#endif
+      if (!IsValid(pMaterial) || pMaterial->IsUnreachable()) {
         // Don't try to update the material while it's in the process of being
         // destroyed. This can lead to the render thread freaking out when
         // it's asked to update a parameter for a material that has been

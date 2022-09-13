@@ -240,7 +240,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
-  float MaximumScreenSpaceError = 16.0;
+  double MaximumScreenSpaceError = 16.0;
 
   /**
    * Scale Level-of-Detail by Display DPI. This increases the performance for
@@ -441,7 +441,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Tile Culling",
       meta = (EditCondition = "EnforceCulledScreenSpaceError", ClampMin = 0.0))
-  float CulledScreenSpaceError = 64.0;
+  double CulledScreenSpaceError = 64.0;
 
   // This mirrors
   // UCesiumRuntimeSettings::EnableExperimentalOcclusionCullingFeature so that
@@ -1051,7 +1051,6 @@ private:
   bool _beforeMoviePreloadAncestors;
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
-  bool _beforeMovieKeepWorldOriginNearCamera;
   bool _beforeMovieUseLodTransitions;
 
   bool _scaleUsingDPI;

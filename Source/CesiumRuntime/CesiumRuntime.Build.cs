@@ -214,28 +214,5 @@ public class CesiumRuntime : ModuleRules
         PrivatePCHHeaderFile = "Private/PCH.h";
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
-
-        if (Target.Platform == UnrealTargetPlatform.IOS ||
-            (Target.Platform == UnrealTargetPlatform.Android &&
-            Target.Version.MajorVersion == 4 &&
-            Target.Version.MinorVersion == 26 &&
-            Target.Version.PatchVersion < 2))
-        {
-            // In UE versions prior to 4.26.2, the Unreal Build Tool on Android
-            // (AndroidToolChain.cs) ignores the CppStandard property and just
-            // always uses C++14. Our plugin can't be compiled with C++14.
-            //
-            // So this hack uses reflection to add an additional argument to
-            // the compiler command-line to force C++17 mode. Clang ignores all
-            // but the last `-std=` argument, so the `-std=c++14` added by the
-            // UBT is ignored.
-            //
-            // This is also needed for iOS builds on all engine versions as Unreal
-            // defaults to c++14 regardless of the CppStandard setting
-            Type type = Target.GetType();
-            FieldInfo innerField = type.GetField("Inner", BindingFlags.Instance | BindingFlags.NonPublic);
-            TargetRules inner = (TargetRules)innerField.GetValue(Target);
-            inner.AdditionalCompilerArguments += " -std=c++17";
-        }
     }
 }
