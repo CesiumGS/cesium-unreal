@@ -1,40 +1,43 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumTextureUtility.h"
+#include "Async/Async.h"
+#include "Async/Future.h"
+#include "Async/TaskGraphInterfaces.h"
 #include "CesiumRuntime.h"
 #include "Containers/ResourceArray.h"
 #include "DynamicRHI.h"
-#include "TextureResource.h"
-#include "RHIResources.h"
-#include "RHIDefinitions.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
 #include "PixelFormat.h"
-#include "Async/TaskGraphInterfaces.h"
+#include "RHIDefinitions.h"
+#include "RHIResources.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "TextureResource.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ExtensionTextureWebp.h>
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumUtility/Tracing.h>
 #include <stb_image_resize.h>
-#include "Async/Future.h"
-#include "Async/Async.h"
-#include "GenericPlatform/GenericPlatformProcess.h"
 
 using namespace CesiumGltf;
 
-static FTexture2DRHIRef CreateRHITexture2D(const CesiumGltf::ImageCesium& image, EPixelFormat format, uint32 initialMips) {
+static FTexture2DRHIRef CreateRHITexture2D(
+    const CesiumGltf::ImageCesium& image,
+    EPixelFormat format,
+    uint32 initialMips) {
   void* pTextureData = (void*)image.pixelData.data();
-  uint32_t mipCount =
-      glm::log2<uint32_t>(glm::max(
-        static_cast<uint32_t>(image.width),
-        static_cast<uint32_t>(image.height)));
+  uint32_t mipCount = glm::log2<uint32_t>(glm::max(
+      static_cast<uint32_t>(image.width),
+      static_cast<uint32_t>(image.height)));
   if (GRHISupportsAsyncTextureCreation) {
     return RHIAsyncCreateTexture2D(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
         format,
         1,
-        ETextureCreateFlags::TexCreate_ShaderResource | ETextureCreateFlags::TexCreate_SRGB,
+        ETextureCreateFlags::TexCreate_ShaderResource |
+            ETextureCreateFlags::TexCreate_SRGB,
         &pTextureData,
         initialMips);
   }
@@ -88,10 +91,12 @@ private:
 
 class FCesiumTextureResource : public FTextureResource {
 public:
-  FCesiumTextureResource(UTexture* pTexture, uint32 sizeX, uint32 sizeY, FTexture2DRHIRef pRHITexture)
-     : _pTexture(pTexture),
-       _sizeX(sizeX),
-       _sizeY(sizeY) {
+  FCesiumTextureResource(
+      UTexture* pTexture,
+      uint32 sizeX,
+      uint32 sizeY,
+      FTexture2DRHIRef pRHITexture)
+      : _pTexture(pTexture), _sizeX(sizeX), _sizeY(sizeY) {
     TextureRHI = pRHITexture;
     bGreyScaleFormat = (TextureRHI->GetFormat() == PF_G8) ||
                        (TextureRHI->GetFormat() == PF_BC4);
@@ -103,13 +108,9 @@ public:
     }
   }
 
-  uint32 GetSizeX() const override {
-    return _sizeX;
-  }
+  uint32 GetSizeX() const override { return _sizeX; }
 
-  uint32 GetSizeY() const override {
-    return _sizeY;
-  }
+  uint32 GetSizeY() const override { return _sizeY; }
 
   virtual void InitRHI() override {
     FSamplerStateInitializerRHI samplerStateInitializer(SF_Trilinear);
@@ -124,7 +125,7 @@ public:
         0.0f,
         1,
         0.0f,
-        2.0f);        
+        2.0f);
     this->DeferredPassSamplerStateRHI =
         GetOrCreateSamplerState(deferredSamplerStateInitializer);
   }
@@ -153,7 +154,10 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
   if (!pTexture && pHalfLoadedTexture->pTextureData) {
     pTexture = NewObject<UTexture2D>(
         GetTransientPackage(),
-        MakeUniqueObjectName(GetTransientPackage(), UTexture2D::StaticClass(), "CesiumRuntimeTexture"),
+        MakeUniqueObjectName(
+            GetTransientPackage(),
+            UTexture2D::StaticClass(),
+            "CesiumRuntimeTexture"),
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
 #if ENGINE_MAJOR_VERSION >= 5
