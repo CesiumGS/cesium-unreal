@@ -68,6 +68,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
 endif()
 
+list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.
