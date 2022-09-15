@@ -23,6 +23,7 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
+#include "CesiumStaticMesh.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
@@ -495,6 +496,8 @@ static void updateTextureCoordinatesForMetadata(
     TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
 
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinatesForMetadata)
+
   for (const EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
     metadataTextureCoordinateParameters.Emplace(
@@ -791,6 +794,7 @@ static void loadPrimitive(
 
   {
     CESIUM_TRACE("compute AA bounding box");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
 
     const std::vector<double>& min = positionAccessor.min;
     const std::vector<double>& max = positionAccessor.max;
@@ -830,6 +834,7 @@ static void loadPrimitive(
   TArray<uint32> indices;
   if (primitive.mode == MeshPrimitive::Mode::TRIANGLES) {
     CESIUM_TRACE("copy TRIANGLE indices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
     for (int32 i = 0; i < indicesView.size(); ++i) {
@@ -838,6 +843,7 @@ static void loadPrimitive(
   } else {
     // assume TRIANGLE_STRIP because all others are rejected earlier.
     CESIUM_TRACE("copy TRIANGLE_STRIP indices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
@@ -868,6 +874,7 @@ static void loadPrimitive(
   {
     if (duplicateVertices) {
       CESIUM_TRACE("copy duplicated positions");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -880,6 +887,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy positions");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.Position = positionView[i];
@@ -897,6 +905,7 @@ static void loadPrimitive(
   auto colorAccessorIt = primitive.attributes.find("COLOR_0");
   if (colorAccessorIt != primitive.attributes.end()) {
     CESIUM_TRACE("copy colors");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
     int colorAccessorID = colorAccessorIt->second;
     hasVertexColors = createAccessorView(
         model,
@@ -930,6 +939,8 @@ static void loadPrimitive(
 
   {
     CESIUM_TRACE("updateTextureCoordinates");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinates)
+
     primitiveResult
         .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
         updateTextureCoordinates(
@@ -1033,6 +1044,7 @@ static void loadPrimitive(
   if (hasNormals) {
     if (duplicateVertices) {
       CESIUM_TRACE("copy normals for duplicated vertices");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormalsForDuplicatedVertices)
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -1042,6 +1054,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy normals");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
@@ -1051,12 +1064,14 @@ static void loadPrimitive(
     }
   } else {
     CESIUM_TRACE("compute flat normals");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
     computeFlatNormals(indices, StaticMeshBuildVertices);
   }
 
   if (hasTangents) {
     if (duplicateVertices) {
       CESIUM_TRACE("copy tangents for duplicated vertices");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangentsForDuplicatedVertices)
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -1068,6 +1083,7 @@ static void loadPrimitive(
       }
     } else {
       CESIUM_TRACE("copy tangents");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector4& tangent = tangentAccessor[i];
@@ -1083,11 +1099,13 @@ static void loadPrimitive(
     // Use mikktspace to calculate the tangents.
     // Note that this assumes normals and UVs are already populated.
     CESIUM_TRACE("compute tangents");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeTangents)
     computeTangentSpace(StaticMeshBuildVertices);
   }
 
   {
     CESIUM_TRACE("init buffers");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
         false);
@@ -1128,6 +1146,7 @@ static void loadPrimitive(
   // will change the order of the faces.
   if (duplicateVertices) {
     CESIUM_TRACE("reverse winding order of duplicated vertices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
     for (int32 i = 2; i < indices.Num(); i += 3) {
       indices[i - 2] = i;
       indices[i - 1] = i - 1;
@@ -1135,6 +1154,7 @@ static void loadPrimitive(
     }
   } else {
     CESIUM_TRACE("reverse winding order");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
     for (int32 i = 2; i < indices.Num(); i += 3) {
       std::swap(indices[i - 2], indices[i]);
     }
@@ -1142,6 +1162,7 @@ static void loadPrimitive(
 
   {
     CESIUM_TRACE("SetIndices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
     LODResources.IndexBuffer.SetIndices(
         indices,
         StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()
@@ -1168,19 +1189,22 @@ static void loadPrimitive(
 
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
-    CESIUM_TRACE("PhysX cook");
-    PxTriangleMesh* createdCollisionMesh = nullptr;
-    BuildPhysXTriangleMeshes(
-        createdCollisionMesh,
-        primitiveResult.uvInfo,
-        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
-        StaticMeshBuildVertices,
-        indices);
-    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
+      CESIUM_TRACE("PhysX cook");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
+      PxTriangleMesh* createdCollisionMesh = nullptr;
+      BuildPhysXTriangleMeshes(
+          createdCollisionMesh,
+          primitiveResult.uvInfo,
+          options.pMeshOptions->pNodeOptions->pModelOptions
+              ->pPhysXCookingModule,
+          StaticMeshBuildVertices,
+          indices);
+      primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
-    CESIUM_TRACE("Chaos cook");
-    primitiveResult.pCollisionMesh =
-        BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+      CESIUM_TRACE("Chaos cook");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
+      primitiveResult.pCollisionMesh =
+          BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
   }
 
@@ -1260,6 +1284,7 @@ static void loadPrimitive(
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options) {
   CESIUM_TRACE("loadPrimitive");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
@@ -1310,6 +1335,7 @@ static void loadMesh(
     const CreateMeshOptions& options) {
 
   CESIUM_TRACE("loadMesh");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
   const Model& model = *options.pNodeOptions->pModelOptions->pModel;
   const Mesh& mesh = *options.pMesh;
@@ -1332,6 +1358,9 @@ static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options) {
+  
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
+
   static constexpr std::array<double, 16> identityMatrix = {
       1.0,
       0.0,
@@ -1471,6 +1500,7 @@ static void loadModelAnyThreadPart(
     const glm::dmat4x4& transform,
     const CreateModelOptions& options) {
   CESIUM_TRACE("loadModelAnyThreadPart");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
   const Model& model = *options.pModel;
 
@@ -1832,7 +1862,7 @@ static void loadPrimitiveGameThreadPart(
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
-  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
+  UCesiumStaticMesh* pStaticMesh = NewObject<UCesiumStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(

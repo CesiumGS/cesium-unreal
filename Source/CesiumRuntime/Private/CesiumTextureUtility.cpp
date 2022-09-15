@@ -36,8 +36,7 @@ static FTexture2DRHIRef CreateRHITexture2D(
         static_cast<uint32>(image.height),
         format,
         1,
-        ETextureCreateFlags::TexCreate_ShaderResource |
-            ETextureCreateFlags::TexCreate_SRGB,
+        TexCreate_ShaderResource | TexCreate_SRGB,
         &pTextureData,
         initialMips);
   }
