@@ -74,6 +74,8 @@ EncodedPixelFormat getPixelFormat(
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
     const FCesiumFeatureTable& featureTable) {
+  
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTable)
 
   EncodedMetadataFeatureTable encodedFeatureTable;
 
@@ -288,6 +290,9 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
     const FCesiumFeatureTexture& featureTexture) {
+  
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTexture)
+
   EncodedFeatureTexture encodedFeatureTexture;
 
   const CesiumGltf::FeatureTextureView& featureTextureView =
@@ -430,6 +435,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const FCesiumMetadataPrimitive& primitive) {
 
   CESIUM_TRACE("Encode Metadata Primitive");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadataPrimitive)
 
   EncodedMetadataPrimitive result;
 
@@ -580,6 +586,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
     const FCesiumMetadataModel& metadata) {
 
   CESIUM_TRACE("Encode Metadata Model");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadataModel)
 
   EncodedMetadata result;
 
