@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Improved the dithered transition between levels-of-detail, making it faster and eliminating depth fighting.
+
 ##### Fixes :wrench:
 
 - Fixed a bug where collision settings were only being applied to the first primitive in a glTF.
