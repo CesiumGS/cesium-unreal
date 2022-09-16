@@ -619,7 +619,8 @@ public:
 
   virtual void* prepareInLoadThread(
       const CesiumGltf::Model& model,
-      const glm::dmat4& transform) override {
+      const glm::dmat4& transform,
+      const std::any& rendererOptions) override {
 
     CreateGltfOptions::CreateModelOptions options;
     options.pModel = &model;
