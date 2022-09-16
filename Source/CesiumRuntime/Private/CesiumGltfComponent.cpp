@@ -1189,22 +1189,21 @@ static void loadPrimitive(
 
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
-      CESIUM_TRACE("PhysX cook");
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
-      PxTriangleMesh* createdCollisionMesh = nullptr;
-      BuildPhysXTriangleMeshes(
-          createdCollisionMesh,
-          primitiveResult.uvInfo,
-          options.pMeshOptions->pNodeOptions->pModelOptions
-              ->pPhysXCookingModule,
-          StaticMeshBuildVertices,
-          indices);
-      primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
+    CESIUM_TRACE("PhysX cook");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
+    PxTriangleMesh* createdCollisionMesh = nullptr;
+    BuildPhysXTriangleMeshes(
+        createdCollisionMesh,
+        primitiveResult.uvInfo,
+        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
+        StaticMeshBuildVertices,
+        indices);
+    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
-      CESIUM_TRACE("Chaos cook");
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
-      primitiveResult.pCollisionMesh =
-          BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+    CESIUM_TRACE("Chaos cook");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
+    primitiveResult.pCollisionMesh =
+        BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
   }
 
