@@ -5,10 +5,10 @@
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/Texture.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "VecMath.h"
-#include "Engine/Texture.h"
 #include <variant>
 
 // Sets default values for this component's properties
@@ -49,7 +49,8 @@ void destroyMaterialTexture(
           FMaterialParameterInfo(name, assocation, index),
           pTexture,
           true)) {
-    FTexturePlatformData** RunningPlatformDataPtr = pTexture->GetRunningPlatformData();
+    FTexturePlatformData** RunningPlatformDataPtr =
+        pTexture->GetRunningPlatformData();
 
     if (RunningPlatformDataPtr) {
       FTexturePlatformData*& RunningPlatformData = *RunningPlatformDataPtr;

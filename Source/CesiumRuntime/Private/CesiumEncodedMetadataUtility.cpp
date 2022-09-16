@@ -74,7 +74,7 @@ EncodedPixelFormat getPixelFormat(
 EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
     const FCesiumFeatureTable& featureTable) {
-  
+
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTable)
 
   EncodedMetadataFeatureTable encodedFeatureTable;
@@ -290,7 +290,7 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     const FFeatureTextureDescription& featureTextureDescription,
     const FString& featureTextureName,
     const FCesiumFeatureTexture& featureTexture) {
-  
+
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTexture)
 
   EncodedFeatureTexture encodedFeatureTexture;
@@ -650,6 +650,8 @@ EncodedMetadata encodeMetadataAnyThreadPart(
 
 bool encodeMetadataFeatureTableGameThreadPart(
     EncodedMetadataFeatureTable& encodedFeatureTable) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTable)
+
   bool success = true;
 
   for (EncodedMetadataProperty& encodedProperty :
@@ -699,6 +701,8 @@ bool encodeMetadataPrimitiveGameThreadPart(
 }
 
 bool encodeMetadataGameThreadPart(EncodedMetadata& encodedMetadata) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadata)
+
   bool success = true;
 
   TArray<LoadedTextureResult*> uniqueTextures;

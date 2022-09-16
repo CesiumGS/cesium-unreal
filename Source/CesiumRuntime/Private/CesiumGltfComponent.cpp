@@ -23,8 +23,8 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
-#include "CesiumStaticMesh.h"
 #include "CesiumRuntime.h"
+#include "CesiumStaticMesh.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -1358,7 +1358,7 @@ static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options) {
-  
+
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
 
   static constexpr std::array<double, 16> identityMatrix = {
@@ -1840,6 +1840,8 @@ static void loadPrimitiveGameThreadPart(
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
+
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
@@ -1862,7 +1864,8 @@ static void loadPrimitiveGameThreadPart(
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
-  UCesiumStaticMesh* pStaticMesh = NewObject<UCesiumStaticMesh>(pMesh, meshName);
+  UCesiumStaticMesh* pStaticMesh =
+      NewObject<UCesiumStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(
@@ -2076,6 +2079,9 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
+
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
