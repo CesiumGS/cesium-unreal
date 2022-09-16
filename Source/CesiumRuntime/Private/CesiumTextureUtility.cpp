@@ -436,6 +436,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 }
 
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTexture)
+
   if (!pHalfLoadedTexture) {
     return nullptr;
   }
@@ -451,8 +453,6 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
 
   ENQUEUE_RENDER_COMMAND(Cesium_SetTextureReference)
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetTextureReference)
-
     pCesiumTextureResource->InitResource();
     RHIUpdateTextureReference(
         pTexture->TextureReference.TextureReferenceRHI,

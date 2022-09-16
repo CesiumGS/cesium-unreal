@@ -1577,6 +1577,7 @@ void removeVisibleTilesFromList(
  * @param tiles The tiles to hide
  */
 void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1592,6 +1593,7 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
     UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
         pRenderContent->getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
       Gltf->SetVisibility(false, true);
     } else {
       // TODO: why is this happening?
@@ -1609,7 +1611,7 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
  */
 void removeCollisionForTiles(
     const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
-
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RemoveCollisionForTiles)
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1625,6 +1627,7 @@ void removeCollisionForTiles(
     UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
         pRenderContent->getRenderResources());
     if (Gltf) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
       Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
@@ -1641,6 +1644,8 @@ void removeCollisionForTiles(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ApplyActorCollisionSettings)
+
   const TArray<USceneComponent*>& ChildrenComponents =
       Gltf->GetAttachChildren();
 
@@ -1747,6 +1752,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 
 void ACesium3DTileset::showTilesToRender(
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
+
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1806,10 +1813,14 @@ void ACesium3DTileset::showTilesToRender(
     }
 
     if (!Gltf->IsVisible()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
       Gltf->SetVisibility(true, true);
     }
 
-    Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
+      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
   }
 }
 

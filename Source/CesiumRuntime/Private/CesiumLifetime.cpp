@@ -1,26 +1,22 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumLifetime.h"
-#include "Async/Async.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "UObject/Object.h"
 #include <algorithm>
 
-/*static*/ TArray<TWeakObjectPtr<UObject>> CesiumLifetime::_pending;
-/*static*/ TArray<TWeakObjectPtr<UObject>> CesiumLifetime::_nextPending;
-/*static*/ bool CesiumLifetime::_isScheduled = false;
+/*static*/
+AmortizedDestructor CesiumLifetime::amortizedDestructor = AmortizedDestructor();
 
 /*static*/ void CesiumLifetime::destroy(UObject* pObject) {
-  if (!runDestruction(pObject)) {
-    // Object is not finished being destroyed, so add it to the pending list.
-    addToPending(pObject);
-  }
+  amortizedDestructor.destroy(pObject);
 }
 
 /*static*/ void
 CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DestroyComponent)
   UE_LOG(
       LogCesium,
       VeryVerbose,
@@ -46,7 +42,27 @@ CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
   UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
 }
 
-/*static*/ bool CesiumLifetime::runDestruction(UObject* pObject) {
+void AmortizedDestructor::Tick(float DeltaTime) { processPending(); }
+
+ETickableTickType AmortizedDestructor::GetTickableTickType() const {
+  return ETickableTickType::Always;
+}
+
+bool AmortizedDestructor::IsTickableWhenPaused() const { return true; }
+
+bool AmortizedDestructor::IsTickableInEditor() const { return true; }
+
+TStatId AmortizedDestructor::GetStatId() const { return TStatId(); }
+
+void AmortizedDestructor::destroy(UObject* pObject) {
+  if (!runDestruction(pObject)) {
+    addToPending(pObject);
+  }
+}
+
+bool AmortizedDestructor::runDestruction(UObject* pObject) const {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RunDestruction)
+
   if (!pObject) {
     return true;
   }
@@ -81,19 +97,11 @@ CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
   return false;
 }
 
-/*static*/ void CesiumLifetime::addToPending(UObject* pObject) {
+void AmortizedDestructor::addToPending(UObject* pObject) {
   _pending.Add(pObject);
-  if (!_isScheduled) {
-    _isScheduled = true;
-    AsyncTask(ENamedThreads::GameThread, []() {
-      CesiumLifetime::processPending();
-    });
-  }
 }
 
-/*static*/ void CesiumLifetime::processPending() {
-  _isScheduled = false;
-
+void AmortizedDestructor::processPending() {
   std::swap(_nextPending, _pending);
   _pending.Empty();
 
@@ -102,7 +110,7 @@ CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
   }
 }
 
-/*static*/ void CesiumLifetime::finalizeDestroy(UObject* pObject) {
+void AmortizedDestructor::finalizeDestroy(UObject* pObject) const {
   // The freeing/clearing/destroying done here is normally done in these
   // objects' FinishDestroy method, but unfortunately we can't call that
   // directly without confusing the garbage collector if and when it _does_
