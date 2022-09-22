@@ -49,18 +49,7 @@ void destroyMaterialTexture(
           FMaterialParameterInfo(name, assocation, index),
           pTexture,
           true)) {
-    FTexturePlatformData** RunningPlatformDataPtr =
-        pTexture->GetRunningPlatformData();
-
-    if (RunningPlatformDataPtr) {
-      FTexturePlatformData*& RunningPlatformData = *RunningPlatformDataPtr;
-
-      if (RunningPlatformData != NULL) {
-        delete RunningPlatformData;
-        RunningPlatformData = NULL;
-      }
-    }
-    CesiumLifetime::destroy(pTexture);
+    CesiumTextureUtility::destroyTexture(pTexture);
   }
 }
 

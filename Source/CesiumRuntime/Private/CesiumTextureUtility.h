@@ -46,4 +46,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool sRGB);
 
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
+
+void destroyTexture(UTexture* pTexture);
 } // namespace CesiumTextureUtility

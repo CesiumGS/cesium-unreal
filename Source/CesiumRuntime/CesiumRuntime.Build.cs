@@ -155,7 +155,8 @@ public class CesiumRuntime : ModuleRules
                 "DeveloperSettings",
                 "UMG",
                 "RenderCore",
-                "Renderer"
+                "Renderer",
+                "Engine"
             }
         );
 

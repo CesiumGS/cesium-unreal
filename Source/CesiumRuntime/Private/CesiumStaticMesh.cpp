@@ -7,11 +7,13 @@ UCesiumStaticMesh::UCesiumStaticMesh(
     : UStaticMesh(ObjectInitializer) {}
 
 bool UCesiumStaticMesh::IsReadyForFinishDestroy() {
+#if ENGINE_MAJOR_VERSION == 5
 #if WITH_EDITOR
   // We're being garbage collected and might still have async tasks pending
   if (!TryCancelAsyncTasks()) {
     return false;
   }
+#endif
 #endif
 
   // Tick base class to make progress on the streaming before calling
