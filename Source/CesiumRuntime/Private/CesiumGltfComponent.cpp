@@ -94,7 +94,10 @@ static uint32_t nextMaterialId = 0;
 namespace {
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
-  virtual ~HalfConstructedReal() {}
+  virtual ~HalfConstructedReal() {
+    // TODO: free async-allocated textures
+  }
+
   LoadModelResult loadModelResult;
 };
 } // namespace

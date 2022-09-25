@@ -24,7 +24,16 @@ struct LoadedTextureResult {
   TextureGroup group;
   bool sRGB{true};
   TWeakObjectPtr<UTexture2D> pTexture;
+
+  // If GRHISupportsAsyncTextureCreation is true, this will contain an
+  // asynchronously created RHI texture.
   FTexture2DRHIRef rhiTextureRef{};
+
+  // If GRHISupportsAsyncTextureCreation is false, the in-memory glTF mips will
+  // be copied directly into GPU memory on the render thread.
+  // WARNING: Ensure that this pointer is kept valid for the duration of the
+  // render thread resource creation.
+  const CesiumGltf::ImageCesium* pCesiumImage{};
 };
 
 TUniquePtr<FTexturePlatformData>

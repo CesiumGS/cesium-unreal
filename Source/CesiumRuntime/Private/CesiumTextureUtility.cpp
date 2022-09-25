@@ -44,99 +44,29 @@ private:
   uint32 _textureDataSize;
 };
 
-class FCesiumTextureMem : public FTexture2DResourceMem {
-public:
-  FCesiumTextureMem(const CesiumGltf::ImageCesium& image)
-      : _pImage(&image) {}
-  
-  const void* GetResourceBulkData() const override {
-    return (void*)_pImage->pixelData.data();
-  }
-
-  uint32 GetResourceBulkDataSize() const override {
-    return static_cast<uint32>(_pImage->pixelData.size());
-  }
-
-	/**
-   * @param MipIdx index for mip to retrieve
-   * @return ptr to the offset in bulk memory for the given mip
-   */
-  virtual void* GetMipData(int32 MipIdx) override {
-    size_t byteOffset =
-        _pImage->mipPositions[static_cast<uint32_t>(MipIdx)].byteOffset;
-    return (void*)&_pImage->pixelData[byteOffset];
-  }
-
-  /**
-   * @return total number of mips stored in this resource
-   */
-  virtual int32 GetNumMips() override {
-    return static_cast<int32>(_pImage->mipPositions.size());
-  }
-
-  /**
-   * @return width of texture stored in this resource
-   */
-  virtual int32 GetSizeX() override {
-    return _pImage->width;
-  }
-
-  /**
-   * @return height of texture stored in this resource
-   */
-  virtual int32 GetSizeY() override {
-    return _pImage->height;
-  }
-
-  /**
-   * @return Whether the resource memory is properly allocated or not.
-   */
-  virtual bool IsValid() {
-    return true;
-  }
-
-  /**
-   * @return Whether the resource memory has an async allocation request and
-   * it's been completed.
-   */
-  virtual bool HasAsyncAllocationCompleted() const {
-    return true;
-  }
-
-  /** Blocks the calling thread until the allocation has been completed. */
-  virtual void FinishAsyncAllocation() {}
-
-  /** Cancels any async allocation. */
-  virtual void CancelAsyncAllocation() {}
-
-  // Can free in-memory glTF here.
-  void Discard() override {}
-
-private:
-  const CesiumGltf::ImageCesium* _pImage;
-};
-
 class FCesiumTextureResource : public FTextureResource {
 public:
   FCesiumTextureResource(
-      UTexture* pTexture,
-      uint32 sizeX,
-      uint32 sizeY,
-      FTexture2DRHIRef pRHITexture)
-      : _pTexture(pTexture), _sizeX(sizeX), _sizeY(sizeY) {
-    TextureRHI = pRHITexture;
-    bGreyScaleFormat = (TextureRHI->GetFormat() == PF_G8) ||
-                       (TextureRHI->GetFormat() == PF_BC4);
+      const CesiumGltf::ImageCesium* pCesiumImage,
+      FTexture2DRHIRef rhiTextureRef,
+      EPixelFormat format,
+      uint32 extData)
+      : _pCesiumImage(pCesiumImage), _format(format), _platformExtData(extData) {
+    this->bGreyScaleFormat = (_format == PF_G8) ||
+                             (_format == PF_BC4);
+
+    // Will be null if async texture creation was unavailable.
+    this->TextureRHI = rhiTextureRef;
   }
 
-  ~FCesiumTextureResource() {
+  virtual ~FCesiumTextureResource() {
     check(_pTexture != nullptr);
     _pTexture->SetResource(nullptr);
   }
 
-  uint32 GetSizeX() const override { return _sizeX; }
+  uint32 GetSizeX() const override { return static_cast<uint32>(_pCesiumImage->width); }
 
-  uint32 GetSizeY() const override { return _sizeY; }
+  uint32 GetSizeY() const override { return static_cast<uint32>(_pCesiumImage->height); }
 
   virtual void InitRHI() override {
     // TODO: anisotropy
@@ -151,7 +81,6 @@ public:
         FLT_MAX);
     this->SamplerStateRHI = GetOrCreateSamplerState(samplerStateInitializer);
 
-    // TODO: revisit assumptions here
     FSamplerStateInitializerRHI deferredSamplerStateInitializer(
         SF_Trilinear,
         AM_Wrap,
@@ -163,123 +92,68 @@ public:
         2.0f);
     this->DeferredPassSamplerStateRHI =
         GetOrCreateSamplerState(deferredSamplerStateInitializer);
+
+    if (!this->TextureRHI) {
+      // Asynchronous RHI texture creation was not available. So create it now
+      // directly from the in-memory cesium mips.
+
+      FCesiumTextureData bulkData(*_pCesiumImage);
+
+      FRHIResourceCreateInfo createInfo{};
+      createInfo.BulkData = &bulkData;
+      createInfo.ExtData = _platformExtData;
+
+      // TODO: don't hardcode srgb?
+      ETextureCreateFlags textureFlags =
+          TexCreate_ShaderResource | TexCreate_SRGB;
+
+      FTexture2DRHIRef rhiTexture;
+      rhiTexture = RHICreateTexture2D(
+          static_cast<uint32>(_pCesiumImage->width),
+          static_cast<uint32>(_pCesiumImage->height),
+          _format,
+          static_cast<uint32>(_pCesiumImage->mipPositions.size()),
+          1,
+          textureFlags,
+          createInfo);
+
+      for (uint32 i = 0;
+           i < static_cast<uint32>(_pCesiumImage->mipPositions.size());
+           ++i) {
+        uint32 DestPitch;
+        void* pDestination =
+            RHILockTexture2D(rhiTexture, i, RLM_WriteOnly, DestPitch, false);
+        // TODO: 
+        //check(DestPitch == 0); ??
+        size_t mipByteOffset = _pCesiumImage->mipPositions[i].byteOffset;
+        size_t mipByteSize = _pCesiumImage->mipPositions[i].byteSize;
+        std::memcpy(
+            pDestination,
+            &_pCesiumImage->pixelData[mipByteOffset],
+            mipByteSize);
+        RHIUnlockTexture2D(rhiTexture, i, false);
+      }
+      
+      this->TextureRHI = rhiTexture;
+      rhiTexture.SafeRelease();
+    }
+
+    RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
   }
 
   virtual void ReleaseRHI() override {
-    check(_pTexture != nullptr);
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::Texture_ReleaseRHI)
-
-    if (IsValid(_pTexture)) {
-      RHIUpdateTextureReference(
-          _pTexture->TextureReference.TextureReferenceRHI,
-          nullptr);
-    }
-
-    _pTexture->TextureReference.ReleaseResource();
-
-    FTextureResource::ReleaseRHI();
+    RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
+    TextureReferenceRHI.SafeRelease();
     TextureRHI.SafeRelease();
+  
+    FTextureResource::ReleaseRHI();
   }
 
 private:
-  UTexture* _pTexture;
-  uint32 _sizeX;
-  uint32 _sizeY;
+  const CesiumGltf::ImageCesium* _pCesiumImage;
+  EPixelFormat _format;
+  uint32 _platformExtData;
 };
-
-
-/**
- * @brief TODO
- */
-FTexture2DRHIRef CreateRHITexture2D_WaitForRenderThread(
-    CesiumTextureUtility::LoadedTextureResult& result,
-    const CesiumGltf::ImageCesium& image,
-    EPixelFormat format) {
-  check(!image.mipPositions.empty());
-  check(result.pTextureData != nullptr);
-
-  CESIUM_TRACE("Create texture on render thread.");
-
-  // Move this to createPlatformData
-  int32_t width = image.width;
-  int32_t height = image.height;
-
-  for (const CesiumGltf::ImageCesiumMipPosition& mip : image.mipPositions) {
-    if (mip.byteOffset >= image.pixelData.size() ||
-        mip.byteOffset + mip.byteSize > image.pixelData.size()) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "Invalid mip in glTF; it has a byteOffset of %d and a byteSize of %d but only %d bytes of pixel data are available."),
-          mip.byteOffset,
-          mip.byteSize,
-          image.pixelData.size());
-      continue;
-    }
-
-    FTexture2DMipMap* pLevel = new FTexture2DMipMap();
-    result.pTextureData->Mips.Add(pLevel);
-
-    pLevel->SizeX = width;
-    pLevel->SizeY = height;
-
-    width >>= 1;
-    if (width == 0) {
-      width = 1;
-    }
-
-    height >>= 1;
-    if (height == 0) {
-      height = 1;
-    }
-  }
-
-  FCesiumTextureMem bulkData(image);
-
-  FRHIResourceCreateInfo createInfo{};
-  createInfo.BulkData = &bulkData;
-  createInfo.ExtData = result.pTextureData->GetExtData();
-
-  ETextureCreateFlags textureFlags = TexCreate_ShaderResource | TexCreate_SRGB;
-
-  FTexture2DRHIRef rhiTexture;
-
-  FGraphEventRef createTextureTask =
-      FFunctionGraphTask::CreateAndDispatchWhenReady(
-          [&rhiTexture, &createInfo, &image, textureFlags, format]() {
-            TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateTextureTask)
-
-            rhiTexture = RHICreateTexture2D(
-                static_cast<uint32>(image.width),
-                static_cast<uint32>(image.height),
-                format,
-                static_cast<uint32>(image.mipPositions.size()),
-                1,
-                textureFlags,
-                createInfo);
-
-            for (uint32 i = 0; i < static_cast<uint32>(image.mipPositions.size());
-                 ++i) {
-              uint32 DestPitch; // ??
-              void* pDestination = RHILockTexture2D(
-                  rhiTexture,
-                  i,
-                  RLM_WriteOnly,
-                  DestPitch,
-                  false);
-              std::memcpy(
-                  pDestination,
-                  &image.pixelData[image.mipPositions[i].byteOffset],
-                  image.mipPositions[i].byteSize);
-              RHIUnlockTexture2D(rhiTexture, i, false);
-            }
-      }, TStatId(), nullptr, ENamedThreads::ActualRenderingThread);
-
-  createTextureTask->Wait();
-
-  return rhiTexture;
-}
 
 /**
  * @brief Create an RHI texture on this thread. Generates mip maps if 
@@ -296,11 +170,6 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
     EPixelFormat format) {
   check(GRHISupportsAsyncTextureCreation);
   check(result.pTextureData);
-
-  FTexture2DMipMap* mip0 = new FTexture2DMipMap();
-  result.pTextureData->Mips.Add(mip0);
-  mip0->SizeX = static_cast<uint32>(image.width);
-  mip0->SizeY = static_cast<uint32>(image.height);
 
   void* pTextureData = (void*)image.pixelData.data();
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource | TexCreate_SRGB;
@@ -453,6 +322,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   }
 
   TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
+  // TODO: Keeping around a reference to the gltf image seems a bit precarious...
+  pResult->pCesiumImage = &image;
   pResult->pTextureData =
       createTexturePlatformData(
         image.width,
@@ -481,15 +352,7 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
       // creation is supported, since the async creation can do that on the 
       // GPU. 
       pResult->rhiTextureRef = CreateRHITexture2D_Async(*pResult, image, pixelFormat);
-    } else {
-      // Otherwise, Cesium Native should have already generated mip maps.
-      pResult->rhiTextureRef = 
-          CreateRHITexture2D_WaitForRenderThread(*pResult, image, pixelFormat);
     }
-  }
-
-  if (!pResult->rhiTextureRef) {
-    return nullptr;
   }
 
   return pResult;
@@ -655,26 +518,32 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     return nullptr;
   }
 
+  if (pHalfLoadedTexture->pTexture.Get()) {
+    return pHalfLoadedTexture->pTexture.Get();
+  }
+
   UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
 
   FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
       pTexture,
-      static_cast<uint32>(pTexture->GetSizeX()),
-      static_cast<uint32>(pTexture->GetSizeY()),
-      pHalfLoadedTexture->rhiTextureRef);
+      pHalfLoadedTexture->pCesiumImage,
+      pHalfLoadedTexture->rhiTextureRef,
+      pTexture->GetPixelFormat(),
+      pTexture->PlatformData->GetExtData());
+
+  if (pHalfLoadedTexture->rhiTextureRef) {
+    pHalfLoadedTexture->rhiTextureRef.SafeRelease();
+    pHalfLoadedTexture->rhiTextureRef = nullptr;
+  }
 
   pTexture->SetResource(pCesiumTextureResource);
 
   ENQUEUE_RENDER_COMMAND(Cesium_SetTextureReference)
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
-    pCesiumTextureResource->InitResource();
-    RHIUpdateTextureReference(
-        pTexture->TextureReference.TextureReferenceRHI,
-        pCesiumTextureResource->GetTexture2DRHI());
     pCesiumTextureResource->SetTextureReference(
         pTexture->TextureReference.TextureReferenceRHI);
+    pCesiumTextureResource->InitResource();
   });
-  pTexture->LinkStreaming(); // ???
 
   return pTexture;
 }
