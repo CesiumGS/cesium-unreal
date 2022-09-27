@@ -15,4 +15,3 @@ public:
 private:
   FQueuedThreadPool* _pThreadPool = nullptr;
 };
-

@@ -4,8 +4,8 @@
 #include "Async/Async.h"
 #include "Async/Future.h"
 #include "Async/TaskGraphInterfaces.h"
-#include "CesiumRuntime.h"
 #include "CesiumLifetime.h"
+#include "CesiumRuntime.h"
 #include "Containers/ResourceArray.h"
 #include "DynamicRHI.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
@@ -19,8 +19,8 @@
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
 #include <CesiumUtility/Tracing.h>
-#include <stb_image_resize.h>
 #include <memory>
+#include <stb_image_resize.h>
 
 #define LEGACY_TEXTURE_CREATION 0
 
@@ -28,15 +28,15 @@ using namespace CesiumGltf;
 
 namespace {
 #if LEGACY_TEXTURE_CREATION
-// Legacy texture creation code path. Only for testing, no safety checks are done.
+// Legacy texture creation code path. Only for testing, no safety checks are
+// done.
 
 void legacy_populateMips(
     FTexturePlatformData& platformData,
     const CesiumGltf::ImageCesium& image) {
   uint32 width = static_cast<uint32>(image.width);
   uint32 height = static_cast<uint32>(image.height);
-  for (const CesiumGltf::ImageCesiumMipPosition& mipPos :
-          image.mipPositions) {
+  for (const CesiumGltf::ImageCesiumMipPosition& mipPos : image.mipPositions) {
     FTexture2DMipMap* pMip = new FTexture2DMipMap();
     platformData.Mips.Add(pMip);
     pMip->SizeX = width;
@@ -90,9 +90,11 @@ public:
       FTexture2DRHIRef rhiTextureRef,
       EPixelFormat format,
       uint32 extData)
-      : _pTexture(pTexture), _pCesiumImage(pCesiumImage), _format(format), _platformExtData(extData) {
-    this->bGreyScaleFormat = (_format == PF_G8) ||
-                             (_format == PF_BC4);
+      : _pTexture(pTexture),
+        _pCesiumImage(pCesiumImage),
+        _format(format),
+        _platformExtData(extData) {
+    this->bGreyScaleFormat = (_format == PF_G8) || (_format == PF_BC4);
 
     // Will be null if async texture creation was unavailable.
     this->TextureRHI = rhiTextureRef;
@@ -103,9 +105,13 @@ public:
     _pTexture->SetResource(nullptr);
   }
 
-  uint32 GetSizeX() const override { return static_cast<uint32>(_pCesiumImage->width); }
+  uint32 GetSizeX() const override {
+    return static_cast<uint32>(_pCesiumImage->width);
+  }
 
-  uint32 GetSizeY() const override { return static_cast<uint32>(_pCesiumImage->height); }
+  uint32 GetSizeY() const override {
+    return static_cast<uint32>(_pCesiumImage->height);
+  }
 
   virtual void InitRHI() override {
     // TODO: anisotropy
@@ -162,8 +168,8 @@ public:
         uint32 DestPitch;
         void* pDestination =
             RHILockTexture2D(rhiTexture, i, RLM_WriteOnly, DestPitch, false);
-        // TODO: 
-        //check(DestPitch == 0); ??
+        // TODO:
+        // check(DestPitch == 0); ??
         size_t mipByteOffset = _pCesiumImage->mipPositions[i].byteOffset;
         size_t mipByteSize = _pCesiumImage->mipPositions[i].byteSize;
         std::memcpy(
@@ -172,7 +178,7 @@ public:
             mipByteSize);
         RHIUnlockTexture2D(rhiTexture, i, false);
       }
-      
+
       this->TextureRHI = rhiTexture;
       rhiTexture.SafeRelease();
     }
@@ -184,7 +190,7 @@ public:
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
     TextureReferenceRHI.SafeRelease();
     TextureRHI.SafeRelease();
-  
+
     FTextureResource::ReleaseRHI();
   }
 
@@ -196,10 +202,10 @@ private:
 };
 
 /**
- * @brief Create an RHI texture on this thread. Generates mip maps if 
- * image.mipPositions is empty. This requires GRHISupportsAsyncTextureCreation 
+ * @brief Create an RHI texture on this thread. Generates mip maps if
+ * image.mipPositions is empty. This requires GRHISupportsAsyncTextureCreation
  * to be true.
- * 
+ *
  * @param image The CPU image to create on the GPU.
  * @param format The pixel format of the image.
  * @return The RHI texture reference.
@@ -219,7 +225,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
         static_cast<uint32_t>(image.width),
         static_cast<uint32_t>(image.height));
     uint32_t mipCount = glm::log2(longerDimension - 1) + 1;
-  
+
     return RHIAsyncCreateTexture2D(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
@@ -287,7 +293,7 @@ static UTexture2D* CreateTexture2D(LoadedTextureResult* pHalfLoadedTexture) {
     pTexture->SRGB = pHalfLoadedTexture->sRGB;
 
     pTexture->NeverStream = true;
-    //pTexture->UpdateResource();
+    // pTexture->UpdateResource();
 
     pHalfLoadedTexture->pTexture = pTexture;
   }
@@ -362,13 +368,11 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   }
 
   TUniquePtr<LoadedTextureResult> pResult = MakeUnique<LoadedTextureResult>();
-  // TODO: Keeping around a reference to the gltf image seems a bit precarious...
+  // TODO: Keeping around a reference to the gltf image seems a bit
+  // precarious...
   pResult->pCesiumImage = &image;
   pResult->pTextureData =
-      createTexturePlatformData(
-        image.width,
-        image.height,
-        pixelFormat);
+      createTexturePlatformData(image.width, image.height, pixelFormat);
 
   if (!pResult->pTextureData) {
     return nullptr;
