@@ -6,7 +6,7 @@
 
 UnrealTaskProcessor::UnrealTaskProcessor()
     : _pThreadPool(FQueuedThreadPool::Allocate()) {
-  _pThreadPool->Create(5, 5 * 1024 * 1024, TPri_SlightlyBelowNormal, TEXT("CesiumThreadPool"));
+  _pThreadPool->Create(12, 5 * 1024 * 1024, TPri_SlightlyBelowNormal, TEXT("CesiumThreadPool"));
 }
 
 UnrealTaskProcessor::~UnrealTaskProcessor() {

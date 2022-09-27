@@ -22,9 +22,47 @@
 #include <stb_image_resize.h>
 #include <memory>
 
+#define LEGACY_TEXTURE_CREATION 0
+
 using namespace CesiumGltf;
 
 namespace {
+#if LEGACY_TEXTURE_CREATION
+// Legacy texture creation code path. Only for testing, no safety checks are done.
+
+void legacy_populateMips(
+    FTexturePlatformData& platformData,
+    const CesiumGltf::ImageCesium& image) {
+  uint32 width = static_cast<uint32>(image.width);
+  uint32 height = static_cast<uint32>(image.height);
+  for (const CesiumGltf::ImageCesiumMipPosition& mipPos :
+          image.mipPositions) {
+    FTexture2DMipMap* pMip = new FTexture2DMipMap();
+    platformData.Mips.Add(pMip);
+    pMip->SizeX = width;
+    pMip->SizeY = height;
+
+    pMip->BulkData.Lock(LOCK_READ_WRITE);
+    void* pDest = pMip->BulkData.Realloc(static_cast<int64>(mipPos.byteSize));
+
+    FMemory::Memcpy(
+        pDest,
+        &image.pixelData[mipPos.byteOffset],
+        mipPos.byteSize);
+
+    pMip->BulkData.Unlock();
+
+    if (width > 1) {
+      width >>= 1;
+    }
+
+    if (height > 1) {
+      height >>= 1;
+    }
+  }
+}
+#endif
+
 class FCesiumTextureData : public FResourceBulkDataInterface {
 public:
   FCesiumTextureData(const CesiumGltf::ImageCesium& image)
@@ -47,11 +85,12 @@ private:
 class FCesiumTextureResource : public FTextureResource {
 public:
   FCesiumTextureResource(
+      UTexture* pTexture,
       const CesiumGltf::ImageCesium* pCesiumImage,
       FTexture2DRHIRef rhiTextureRef,
       EPixelFormat format,
       uint32 extData)
-      : _pCesiumImage(pCesiumImage), _format(format), _platformExtData(extData) {
+      : _pTexture(pTexture), _pCesiumImage(pCesiumImage), _format(format), _platformExtData(extData) {
     this->bGreyScaleFormat = (_format == PF_G8) ||
                              (_format == PF_BC4);
 
@@ -150,6 +189,7 @@ public:
   }
 
 private:
+  UTexture* _pTexture;
   const CesiumGltf::ImageCesium* _pCesiumImage;
   EPixelFormat _format;
   uint32 _platformExtData;
@@ -348,10 +388,16 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     TRACE_CPUPROFILER_EVENT_SCOPE_TEXT(scopeName.c_str())
 
     if (GRHISupportsAsyncTextureCreation) {
-      // Cesium Native doesn't need to generate mip maps if async texture 
-      // creation is supported, since the async creation can do that on the 
-      // GPU. 
-      pResult->rhiTextureRef = CreateRHITexture2D_Async(*pResult, image, pixelFormat);
+      // Cesium Native doesn't need to generate mip maps if async texture
+      // creation is supported, since the async creation can do that on the
+      // GPU.
+      pResult->rhiTextureRef =
+          CreateRHITexture2D_Async(*pResult, image, pixelFormat);
+#if LEGACY_TEXTURE_CREATION
+    } else {
+      // Only use legacy texture creation in the non-async texture creation case
+      legacy_populateMips(*pResult->pTextureData, image);
+#endif
     }
   }
 
@@ -524,6 +570,10 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
 
   UTexture2D* pTexture = CreateTexture2D(pHalfLoadedTexture);
 
+#if LEGACY_TEXTURE_CREATION
+  pTexture->UpdateResource();
+  return pTexture;
+#else
   FCesiumTextureResource* pCesiumTextureResource = new FCesiumTextureResource(
       pTexture,
       pHalfLoadedTexture->pCesiumImage,
@@ -546,6 +596,7 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   });
 
   return pTexture;
+#endif
 }
 
 void destroyTexture(UTexture* pTexture) {
