@@ -1866,8 +1866,8 @@ static void loadPrimitiveGameThreadPart(
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
-  UCesiumStaticMesh* pStaticMesh =
-      NewObject<UCesiumStaticMesh>(pMesh, meshName);
+  UStaticMesh* pStaticMesh =
+      NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(
