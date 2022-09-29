@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Improved the dithered transition between levels-of-detail, making it faster and eliminating depth fighting.
+- `ACesiumCreditSystem` now has a Blueprint-accessible property for the `CreditsWidget`. This is useful to, for example, move the credits to an in-game billboard rather than a 2D overlay.
 
 ##### Fixes :wrench:
 
