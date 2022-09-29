@@ -5,6 +5,7 @@
 ##### Additions :tada:
 
 - Improved the dithered transition between levels-of-detail, making it faster and eliminating depth fighting.
+- Add an option on the `Cesium3DTileset` to change the tileset's mobility. This allows users to make tileset movable at runtime, if needed.  
 
 ##### Fixes :wrench:
 
