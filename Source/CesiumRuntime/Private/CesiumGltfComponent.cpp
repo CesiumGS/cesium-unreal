@@ -92,13 +92,32 @@ using TMeshVector4 = FVector4;
 static uint32_t nextMaterialId = 0;
 
 namespace {
+void destroyHalfLoadedTexture(
+    TUniquePtr<CesiumTextureUtility::LoadedTextureResult>& pHalfLoadedTexture) {
+  if (pHalfLoadedTexture) {
+    CesiumTextureUtility::destroyHalfLoadedTexture(*pHalfLoadedTexture.Get());
+  }
+}
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
-  virtual ~HalfConstructedReal() {
-    // TODO: free async-allocated textures
-  }
-
   LoadModelResult loadModelResult;
+
+  virtual ~HalfConstructedReal() {
+    // TODO: deal with metadata case
+    for (LoadNodeResult& node : loadModelResult.nodeResults) {
+      if (node.meshResult) {
+        for (LoadPrimitiveResult& primitive :
+             node.meshResult->primitiveResults) {
+          destroyHalfLoadedTexture(primitive.baseColorTexture);
+          destroyHalfLoadedTexture(primitive.metallicRoughnessTexture);
+          destroyHalfLoadedTexture(primitive.normalTexture);
+          destroyHalfLoadedTexture(primitive.emissiveTexture);
+          destroyHalfLoadedTexture(primitive.occlusionTexture);
+          destroyHalfLoadedTexture(primitive.waterMaskTexture);
+        }
+      }
+    }
+  }
 };
 } // namespace
 
@@ -1866,8 +1885,7 @@ static void loadPrimitiveGameThreadPart(
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
-  UStaticMesh* pStaticMesh =
-      NewObject<UStaticMesh>(pMesh, meshName);
+  UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
   pStaticMesh->SetFlags(
@@ -1927,19 +1945,21 @@ static void loadPrimitiveGameThreadPart(
 
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-
-  SetGltfParameterValues(
-      loadResult,
-      material,
-      pbr,
-      pMaterial,
-      EMaterialParameterAssociation::GlobalParameter,
-      INDEX_NONE);
-  SetWaterParameterValues(
-      loadResult,
-      pMaterial,
-      EMaterialParameterAssociation::GlobalParameter,
-      INDEX_NONE);
+  // TODO: is this needed, caues applyTexture to run multiple times for same
+  // texture.
+  /*
+    SetGltfParameterValues(
+        loadResult,
+        material,
+        pbr,
+        pMaterial,
+        EMaterialParameterAssociation::GlobalParameter,
+        INDEX_NONE);
+    SetWaterParameterValues(
+        loadResult,
+        pMaterial,
+        EMaterialParameterAssociation::GlobalParameter,
+        INDEX_NONE);*/
 
   UMaterialInstance* pBaseAsMaterialInstance =
       Cast<UMaterialInstance>(pBaseMaterial);

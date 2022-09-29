@@ -973,10 +973,7 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 #endif
 
-  // The async RHI texture creation can generate mip maps itself, presumably on
-  // the GPU. So if it is supported, we dont need to generate mip maps in
-  // Cesium Native.
-  options.contentOptions.generateMipMaps = !GRHISupportsAsyncTextureCreation;
+  options.contentOptions.generateMipMaps = true;
 
   CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
   supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;

@@ -22,6 +22,7 @@ struct LoadedTextureResult {
   TextureAddress addressY;
   TextureFilter filter;
   TextureGroup group;
+  bool generateMipMaps;
   bool sRGB{true};
   TWeakObjectPtr<UTexture2D> pTexture;
 
@@ -56,5 +57,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 
 UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture);
 
+void destroyHalfLoadedTexture(LoadedTextureResult& halfLoaded);
 void destroyTexture(UTexture* pTexture);
 } // namespace CesiumTextureUtility

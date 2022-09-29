@@ -88,10 +88,7 @@ void UCesiumRasterOverlay::AddToTileset() {
             });
       };
 
-  // The async RHI texture creation can generate mip maps itself, presumably on
-  // the GPU. So if it is supported, we dont need to generate mip maps in
-  // Cesium Native.
-  options.generateMipMaps = !GRHISupportsAsyncTextureCreation;
+  options.generateMipMaps = true;
 
   std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
       this->CreateOverlay(options);
