@@ -31,9 +31,27 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
   const FTransform transform = FTransform(VecMath::createMatrix(
       CesiumToUnrealTransform * this->HighPrecisionNodeTransform));
 
-  this->SetRelativeTransform_Direct(transform);
-  this->SetComponentToWorld(transform);
-  this->MarkRenderTransformDirty();
+  if (this->Mobility == EComponentMobility::Movable) {
+    // For movable objects, move the component in the normal way, but don't
+    // generate collisions along the way. Teleporting physics is imperfect, but
+    // it's the best available option.
+    this->SetRelativeTransform(
+        transform,
+        false,
+        nullptr,
+        ETeleportType::TeleportPhysics);
+  } else {
+    // Unreall will yell at us for calling SetRelativeTransform on a static
+    // object, but we still need to adjust (accurately!) for origin rebasing and
+    // georeference changes. It's "ok" to move a static object in this way
+    // because, we assume, the globe and globe-oriented lights, etc. are moving
+    // too, so in a relative sense the object isn't actually moving. This isn't
+    // a perfect assumption, of course.
+    this->SetRelativeTransform_Direct(transform);
+    this->SetComponentToWorld(transform);
+    this->MarkRenderTransformDirty();
+    this->SendPhysicsTransform(ETeleportType::ResetPhysics);
+  }
 }
 
 namespace {
