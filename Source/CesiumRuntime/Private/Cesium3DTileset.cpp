@@ -726,6 +726,7 @@ public:
       CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
           static_cast<CesiumTextureUtility::LoadedTextureResult*>(
               pLoadThreadResult);
+      CesiumTextureUtility::destroyHalfLoadedTexture(*pLoadedTexture);
       delete pLoadedTexture;
     }
 

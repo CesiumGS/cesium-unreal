@@ -171,12 +171,14 @@ public:
       EPixelFormat format,
       bool sRGB,
       bool generateMipMaps,
-      uint32 extData)
+      uint32 extData,
+      uint32 width,
+      uint32 height)
       : _pTexture(pTexture),
         // TODO: ImageCesium is copied for debugging purposes,
         // why is keeping around a pointer not working?
-        _image(*pCesiumImage),
-        _pCesiumImage(&_image),
+        //_image(*pCesiumImage),
+        //_pCesiumImage(&_image),
         _format(format),
         _generateMipMaps(generateMipMaps),
         _platformExtData(extData) {
@@ -184,6 +186,11 @@ public:
     this->bSRGB = sRGB;
     // Will be null if async texture creation was unavailable.
     this->TextureRHI = rhiTextureRef;
+
+    // TEMPORARY WORKAROUND
+    // The cesium image pointer is causing issues...
+    this->width = width;
+    this->height = height;
   }
 
   virtual ~FCesiumTextureResource() {
@@ -192,11 +199,13 @@ public:
   }
 
   uint32 GetSizeX() const override {
-    return static_cast<uint32>(_pCesiumImage->width);
+    //return static_cast<uint32>(_pCesiumImage->width);
+    return width;
   }
 
   uint32 GetSizeY() const override {
-    return static_cast<uint32>(_pCesiumImage->height);
+    //return static_cast<uint32>(_pCesiumImage->height);
+    return height;
   }
 
   virtual void InitRHI() override {
@@ -276,11 +285,17 @@ public:
     }
 
     RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
+
+    // TODO: investigate if we can / should do this!
+    // this->TextureRHI->DoNoDeferDelete();
+    // this->TextureReferenceRHI->DoNoDeferDelete();
   }
 
   virtual void ReleaseRHI() override {
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
+    // TextureReferenceRHI->Release();
     TextureReferenceRHI.SafeRelease();
+    // TextureRHI->Release();
     TextureRHI.SafeRelease();
 
     FTextureResource::ReleaseRHI();
@@ -294,6 +309,10 @@ private:
   EPixelFormat _format;
   bool _generateMipMaps;
   uint32 _platformExtData;
+
+  // TEMPORARY WORKAROUND
+  uint32 width;
+  uint32 height;
 };
 
 /**
@@ -685,7 +704,9 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
       pTexture->GetPixelFormat(),
       pHalfLoadedTexture->sRGB,
       pHalfLoadedTexture->generateMipMaps,
-      pTexture->PlatformData->GetExtData());
+      pTexture->PlatformData->GetExtData(),
+      pTexture->GetSizeX(),
+      pTexture->GetSizeY());
 
   if (pHalfLoadedTexture->rhiTextureRef) {
     pHalfLoadedTexture->rhiTextureRef.SafeRelease();
