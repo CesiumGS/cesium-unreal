@@ -692,7 +692,11 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
     pHalfLoadedTexture->rhiTextureRef = nullptr;
   }
 
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
+  pTexture->Resource = pCesiumTextureResource;
+#else
   pTexture->SetResource(pCesiumTextureResource);
+#endif
 
   ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {
