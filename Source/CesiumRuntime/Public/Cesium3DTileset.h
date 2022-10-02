@@ -12,6 +12,7 @@
 #include "CesiumGeoreference.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
+#include "Engine/EngineTypes.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
@@ -76,6 +77,34 @@ class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
 public:
   ACesium3DTileset();
   virtual ~ACesium3DTileset();
+
+private:
+  /**
+   * The component mobility to use for the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = "GetMobility",
+      BlueprintSetter = "SetMobility",
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  TEnumAsByte<EComponentMobility::Type> Mobility = EComponentMobility::Static;
+
+public:
+  /**
+   * Set a component mobility to use for this tileset.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  EComponentMobility::Type GetMobility() const {
+    return (EComponentMobility::Type)Mobility;
+  }
+
+  /**
+   * Set a component mobility to use for this tileset.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetMobility(EComponentMobility::Type NewMobility);
 
 private:
   /**

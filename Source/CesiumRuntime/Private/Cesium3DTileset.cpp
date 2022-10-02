@@ -107,7 +107,6 @@ ACesium3DTileset::ACesium3DTileset()
 
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
-  this->RootComponent->SetMobility(EComponentMobility::Static);
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -116,6 +115,13 @@ ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
 ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
   return this->Georeference;
+}
+
+void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
+  if (NewMobility != this->Mobility) {
+    this->Mobility = NewMobility;
+    DestroyTileset();
+  }
 }
 
 void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
@@ -607,7 +613,8 @@ public:
 
   virtual void* prepareInLoadThread(
       const CesiumGltf::Model& model,
-      const glm::dmat4& transform) override {
+      const glm::dmat4& transform,
+      const std::any& rendererOptions) override {
 
     CreateGltfOptions::CreateModelOptions options;
     options.pModel = &model;
@@ -843,6 +850,8 @@ void ACesium3DTileset::LoadTileset() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
       cesiumViewExtension =
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
+
+  this->RootComponent->SetMobility(Mobility);
 
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
@@ -1640,18 +1649,24 @@ void removeCollisionForTiles(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
-  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
-  if (PrimitiveComponent != nullptr) {
-    if (PrimitiveComponent->GetCollisionObjectType() !=
-        BodyInstance.GetObjectType()) {
-      PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
-    }
-    const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
-    if (ChannelEnum) {
-      FCollisionResponseContainer responseContainer =
-          BodyInstance.GetResponseToChannels();
-      PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+  const TArray<USceneComponent*>& ChildrenComponents =
+      Gltf->GetAttachChildren();
+
+  for (USceneComponent* ChildComponent : ChildrenComponents) {
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        Cast<UCesiumGltfPrimitiveComponent>(ChildComponent);
+    if (PrimitiveComponent != nullptr) {
+      if (PrimitiveComponent->GetCollisionObjectType() !=
+          BodyInstance.GetObjectType()) {
+        PrimitiveComponent->SetCollisionObjectType(
+            BodyInstance.GetObjectType());
+      }
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        FCollisionResponseContainer responseContainer =
+            BodyInstance.GetResponseToChannels();
+        PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+      }
     }
   }
 }
@@ -1806,7 +1821,7 @@ void ACesium3DTileset::showTilesToRender(
   }
 }
 
-static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
+static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
   if (!pTile || !pTile->getContent().isRenderContent()) {
     return;
   }
@@ -1828,15 +1843,10 @@ static void updateTileFade(Cesium3DTilesSelection::Tile* pTile) {
     return;
   }
 
-  // Remap the fade percentage so that [0,0.5] --> [0,1] and [0.5,1] --> [1].
-  // This forces fading out tiles to stay opaque until the new tiles have fully
-  // faded in. This is needed for dithered fading, otherwise you will be able
-  // to partially see straight through both tiles during a transition.
   float percentage =
       pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
-  percentage = glm::clamp(2.0f * percentage, 0.0f, 1.0f);
 
-  pGltf->UpdateFade(percentage);
+  pGltf->UpdateFade(percentage, fadingIn);
 }
 
 // Called every frame
@@ -1914,7 +1924,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         pTile->getContent().getRenderContent();
     if (!this->UseLodTransitions ||
         (pRenderContent &&
-         pRenderContent->getLodTransitionFadePercentage() <= 0.0f)) {
+         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
       _tilesToHideNextFrame.push_back(pTile);
     }
   }
@@ -1922,11 +1932,11 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   showTilesToRender(result.tilesToRenderThisFrame);
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
-    updateTileFade(pTile);
+    updateTileFade(pTile, true);
   }
 
   for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
-    updateTileFade(pTile);
+    updateTileFade(pTile, false);
   }
 }
 
@@ -1992,6 +2002,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

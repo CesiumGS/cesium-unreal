@@ -2022,8 +2022,7 @@ static void loadPrimitiveGameThreadPart(
   pBodySetup->bSupportUVsAndFaceRemap =
       UPhysicsSettings::Get()->bSupportUVFromHitResults;
 
-  // pMesh->SetMobility(EComponentMobility::Movable);
-  pMesh->SetMobility(EComponentMobility::Static);
+  pMesh->SetMobility(pGltf->Mobility);
 
   // pMesh->bDrawMeshCollisionIfComplex = true;
   // pMesh->bDrawMeshCollisionIfSimple = true;
@@ -2061,7 +2060,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
   Gltf->SetUsingAbsoluteLocation(true);
-  Gltf->SetMobility(EComponentMobility::Static);
+  Gltf->SetMobility(pParentActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
@@ -2308,7 +2307,7 @@ void UCesiumGltfComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
-void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
+void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   if (!this->IsVisible()) {
     return;
   }
@@ -2346,6 +2345,12 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage) {
             EMaterialParameterAssociation::LayerParameter,
             fadeLayerIndex),
         fadePercentage);
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            "FadingType",
+            EMaterialParameterAssociation::LayerParameter,
+            fadeLayerIndex),
+        fadingIn ? 0.0f : 1.0f);
   }
 }
 

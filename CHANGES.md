@@ -1,5 +1,20 @@
 # Change Log
 
+### v1.18.0 - 2022-10-03
+
+##### Additions :tada:
+
+- Improved the dithered transition between levels-of-detail, making it faster and eliminating depth fighting.
+- Added an option to `Cesium3DTileset` to change the tileset's mobility, rather than always using Static mobility. This allows users to make a tileset movable at runtime, if needed.
+- `ACesiumCreditSystem` now has a Blueprint-accessible property for the `CreditsWidget`. This is useful to, for example, move the credits to an in-game billboard rather than a 2D overlay.
+
+##### Fixes :wrench:
+
+- Fixed a bug where collision settings were only applied to the first primitive in a glTF.
+- Fixed a bug where the Screen Credits Decorator prevented the Rich Text Block Image Decorator from working.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.19.0 to v0.20.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.17.0 - 2022-09-01
 
 ##### Additions :tada:

@@ -116,7 +116,7 @@ public:
 
   virtual void BeginDestroy() override;
 
-  void UpdateFade(float fadePercentage);
+  void UpdateFade(float fadePercentage, bool fadingIn);
 
 private:
   UPROPERTY()
