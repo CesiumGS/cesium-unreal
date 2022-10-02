@@ -149,12 +149,12 @@ ACesiumCreditSystem::ACesiumCreditSystem()
 
 void ACesiumCreditSystem::BeginPlay() {
   Super::BeginPlay();
-  if (!_creditsWidget) {
-    _creditsWidget =
+  if (!CreditsWidget) {
+    CreditsWidget =
         CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
   }
-  if (IsValid(_creditsWidget) && !IsRunningDedicatedServer()) {
-    _creditsWidget->AddToViewport();
+  if (IsValid(CreditsWidget) && !IsRunningDedicatedServer()) {
+    CreditsWidget->AddToViewport();
   }
 }
 
@@ -163,7 +163,7 @@ bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 void ACesiumCreditSystem::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
-  if (!_pCreditSystem || !IsValid(_creditsWidget)) {
+  if (!_pCreditSystem || !IsValid(CreditsWidget)) {
     return;
   }
 
@@ -207,7 +207,7 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
       }
     }
     OnScreenCredits += "<credits url=\"popup\" text=\" Data attribution\"/>";
-    _creditsWidget->SetCredits(Credits, OnScreenCredits);
+    CreditsWidget->SetCredits(Credits, OnScreenCredits);
   }
   _pCreditSystem->startNextFrame();
 }
@@ -283,7 +283,7 @@ FString ACesiumCreditSystem::ConvertHtmlToRtf(std::string html) {
   std::string output, url;
   err = tidyParseString(tdoc, html.c_str());
   if (err < 2) {
-    convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), _creditsWidget);
+    convertHtmlToRtf(output, url, tdoc, tidyGetRoot(tdoc), CreditsWidget);
   }
   tidyBufFree(&tidy_errbuf);
   tidyRelease(tdoc);
