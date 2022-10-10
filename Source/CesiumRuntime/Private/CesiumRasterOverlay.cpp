@@ -88,8 +88,6 @@ void UCesiumRasterOverlay::AddToTileset() {
             });
       };
 
-  options.generateMipMaps = true;
-
   std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> pOverlay =
       this->CreateOverlay(options);
 

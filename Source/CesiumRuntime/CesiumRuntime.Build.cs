@@ -176,7 +176,6 @@ public class CesiumRuntime : ModuleRules
                 "GLM_FORCE_EXPLICIT_CTOR",
                 "GLM_FORCE_SIZE_T_LENGTH",
                 "TIDY_STATIC"
-                //"CESIUM_TRACING_ENABLED"
             }
         );
 

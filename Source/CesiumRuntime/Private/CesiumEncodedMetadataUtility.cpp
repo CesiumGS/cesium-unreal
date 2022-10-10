@@ -184,8 +184,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
       continue;
     }
 
-    CESIUM_TRACE(TCHAR_TO_UTF8(
-        *("Encode Property Array: " + featureTableDescription.Name)));
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodePropertyArray)
 
     EncodedMetadataProperty& encodedProperty =
         encodedFeatureTable.encodedProperties.Emplace_GetRef();
@@ -198,6 +197,8 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
             ? floorSqrtFeatureCount
             : (floorSqrtFeatureCount + 1);
     encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
+    // TODO: upgrade to new texture creation path.
+    encodedProperty.pTexture->textureSource = LegacyTextureSource{};
     encodedProperty.pTexture->pTextureData = createTexturePlatformData(
         ceilSqrtFeatureCount,
         ceilSqrtFeatureCount,
@@ -355,8 +356,7 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
       continue;
     }
 
-    CESIUM_TRACE(TCHAR_TO_UTF8(
-        *("Encode Feature Texture Property: " + pPropertyDescription->Name)));
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTextureProperty)
 
     EncodedFeatureTextureProperty& encodedFeatureTextureProperty =
         encodedFeatureTexture.properties.Emplace_GetRef();
@@ -380,6 +380,9 @@ EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
     } else {
       encodedFeatureTextureProperty.pTexture =
           MakeShared<LoadedTextureResult>();
+      // TODO: upgrade to new texture creation path.
+      encodedFeatureTextureProperty.pTexture->textureSource =
+          LegacyTextureSource{};
       featureTexturePropertyMap.Emplace(
           pImage,
           encodedFeatureTextureProperty.pTexture);
@@ -434,7 +437,6 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const FMetadataDescription& metadataDescription,
     const FCesiumMetadataPrimitive& primitive) {
 
-  CESIUM_TRACE("Encode Metadata Primitive");
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadataPrimitive)
 
   EncodedMetadataPrimitive result;
@@ -496,7 +498,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           continue;
         }
 
-        CESIUM_TRACE("Encode Feature Id Texture");
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureIdTexture)
 
         EncodedFeatureIdTexture& encodedFeatureIdTexture =
             result.encodedFeatureIdTextures.Emplace_GetRef();
@@ -512,6 +514,9 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
           encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
         } else {
           encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
+          // TODO: upgrade to new texture creation path
+          encodedFeatureIdTexture.pTexture->textureSource =
+              LegacyTextureSource{};
           featureIdTextureMap.Emplace(
               pFeatureIdImage,
               encodedFeatureIdTexture.pTexture);
@@ -585,7 +590,6 @@ EncodedMetadata encodeMetadataAnyThreadPart(
     const FMetadataDescription& metadataDescription,
     const FCesiumMetadataModel& metadata) {
 
-  CESIUM_TRACE("Encode Metadata Model");
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeMetadataModel)
 
   EncodedMetadata result;
@@ -604,8 +608,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
             });
 
     if (pExpectedFeatureTable) {
-      CESIUM_TRACE(
-          TCHAR_TO_UTF8(*("Encode Feature Table: " + featureTableName)));
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTable)
 
       result.encodedFeatureTables.Emplace(
           featureTableName,
@@ -632,8 +635,7 @@ EncodedMetadata encodeMetadataAnyThreadPart(
             });
 
     if (pExpectedFeatureTexture) {
-      CESIUM_TRACE(
-          TCHAR_TO_UTF8(*("Encode Feature Texture: " + featureTextureName)));
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureTexture)
 
       result.encodedFeatureTextures.Emplace(
           featureTextureName,
