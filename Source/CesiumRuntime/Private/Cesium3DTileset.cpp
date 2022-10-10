@@ -724,7 +724,8 @@ public:
       pImageSource->pImage = &rasterTile.getImage();
     }
 
-    UTexture2D* pTexture = CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
+    UTexture2D* pTexture =
+        CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
     if (!pTexture) {
       return nullptr;
     }
@@ -863,7 +864,7 @@ void ACesium3DTileset::UpdateLoadStatus() {
 
 void ACesium3DTileset::LoadTileset() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
-  
+
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),

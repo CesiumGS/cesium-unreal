@@ -680,8 +680,7 @@ static void loadPrimitive(
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
-  Model& model =
-      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  Model& model = *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const Mesh& mesh = *options.pMeshOptions->pMesh;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
@@ -2006,15 +2005,14 @@ static void loadPrimitiveGameThreadPart(
               "FadePercentage",
               EMaterialParameterAssociation::LayerParameter,
               fadeLayerIndex),
-              1.0f);
+          1.0f);
       pMaterial->SetScalarParameterValueByInfo(
           FMaterialParameterInfo(
               "FadingType",
               EMaterialParameterAssociation::LayerParameter,
               fadeLayerIndex),
-              0.0f);
+          0.0f);
     }
-
 
     // If there's a "Water" layer, set its parameters
     int32 waterIndex = pCesiumData->LayerNames.Find("Water");

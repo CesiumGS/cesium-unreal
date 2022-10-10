@@ -19,8 +19,8 @@
 #include <CesiumGltf/ExtensionTextureWebp.h>
 #include <CesiumGltf/ImageCesium.h>
 #include <CesiumGltf/Ktx2TranscodeTargets.h>
-#include <CesiumUtility/Tracing.h>
 #include <CesiumGltfReader/GltfReader.h>
+#include <CesiumUtility/Tracing.h>
 #include <memory>
 #include <stb_image_resize.h>
 #include <variant>
@@ -73,7 +73,8 @@ void legacy_populateMips(
 #endif
 
 struct GetImageFromSource {
-  CesiumGltf::ImageCesium* operator()(CesiumTextureUtility::GltfImagePtr& imagePtr) {
+  CesiumGltf::ImageCesium*
+  operator()(CesiumTextureUtility::GltfImagePtr& imagePtr) {
     return imagePtr.pImage;
   }
 
@@ -178,9 +179,9 @@ ESamplerFilter convertFilter(TextureFilter filter) {
   case TF_Bilinear:
     return ESamplerFilter::SF_Bilinear;
   default:
-  // case TF_Trilinear:
-  // case TF_Default:
-  // case TF_MAX:
+    // case TF_Trilinear:
+    // case TF_Default:
+    // case TF_MAX:
     return ESamplerFilter::SF_AnisotropicLinear;
   }
 }
@@ -192,8 +193,8 @@ ESamplerAddressMode convertAddressMode(TextureAddress address) {
   case TA_Mirror:
     return ESamplerAddressMode::AM_Mirror;
   default:
-  // case TA_Clamp:
-  // case TA_MAX:
+    // case TA_Clamp:
+    // case TA_MAX:
     return ESamplerAddressMode::AM_Clamp;
   }
 }
@@ -242,13 +243,9 @@ public:
     this->_pTexture->SetResource(nullptr);
   }
 
-  uint32 GetSizeX() const override {
-    return this->_width;
-  }
+  uint32 GetSizeX() const override { return this->_width; }
 
-  uint32 GetSizeY() const override {
-    return this->_height;
-  }
+  uint32 GetSizeY() const override { return this->_height; }
 
   virtual void InitRHI() override {
     // TODO: does anisotropy work?
@@ -285,7 +282,6 @@ public:
 
       // Wrap mip0 as a bulk data source.
       FCesiumTextureData bulkData(*pImage);
-      
 
       FRHIResourceCreateInfo createInfo{};
       createInfo.BulkData = &bulkData;
@@ -379,7 +375,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
 
   if (generateMipMaps) {
     uint32 mipCount = static_cast<uint32>(image.mipPositions.size());
-    
+
     // TODO
     // find way to reuse this heap allocation, static thread local??
     std::vector<void*> mipsData(mipCount);
@@ -412,7 +408,8 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
 
 namespace CesiumTextureUtility {
 
-GltfImagePtr GltfImageIndex::resolveImage(const CesiumGltf::Model& model) const {
+GltfImagePtr
+GltfImageIndex::resolveImage(const CesiumGltf::Model& model) const {
   // Almost certainly a developer error otherwise.
   assert(this->imageIndex >= 0 && this->imageIndex < model.images.size());
 
@@ -484,7 +481,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     bool generateMipMaps,
     bool sRGB) {
 
-  CesiumGltf::ImageCesium* pImage = std::visit(GetImageFromSource{}, imageSource);
+  CesiumGltf::ImageCesium* pImage =
+      std::visit(GetImageFromSource{}, imageSource);
 
   assert(pImage != nullptr);
   CesiumGltf::ImageCesium& image = *pImage;
@@ -494,10 +492,14 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   }
 
   if (generateMipMaps) {
-    std::optional<std::string> errorMessage = 
+    std::optional<std::string> errorMessage =
         CesiumGltfReader::GltfReader::generateMipMaps(image);
     if (errorMessage) {
-      UE_LOG(LogCesium, Warning, TEXT("%s"), UTF8_TO_TCHAR(errorMessage->c_str()));
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s"),
+          UTF8_TO_TCHAR(errorMessage->c_str()));
     }
   }
 
@@ -586,9 +588,8 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
         "x" + std::to_string(image.bytesPerChannel);
     TRACE_CPUPROFILER_EVENT_SCOPE_TEXT(scopeName.c_str())
 
-    pResult->textureSource =
-        AsyncCreatedTexture{
-            CreateRHITexture2D_Async(image, pixelFormat, generateMipMaps)};
+    pResult->textureSource = AsyncCreatedTexture{
+        CreateRHITexture2D_Async(image, pixelFormat, generateMipMaps)};
   } else {
     // The RHI texture will be created later on the render thread, directly
     // from this texture source.
@@ -806,12 +807,15 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
   return pTexture;
 }
 
-UTexture2D* loadTextureGameThreadPart(const CesiumGltf::Model& model, LoadedTextureResult* pHalfLoadedTexture) {
+UTexture2D* loadTextureGameThreadPart(
+    const CesiumGltf::Model& model,
+    LoadedTextureResult* pHalfLoadedTexture) {
   if (!pHalfLoadedTexture) {
     return nullptr;
   }
 
-  GltfImageIndex* pImageIndex = std::get_if<GltfImageIndex>(&pHalfLoadedTexture->textureSource);
+  GltfImageIndex* pImageIndex =
+      std::get_if<GltfImageIndex>(&pHalfLoadedTexture->textureSource);
   if (pImageIndex) {
     pHalfLoadedTexture->textureSource = pImageIndex->resolveImage(model);
   }
