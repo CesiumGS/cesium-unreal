@@ -1779,8 +1779,7 @@ void ACesium3DTileset::showTilesToRender(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
 
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done ||
-        !pTile->isRenderable()) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
