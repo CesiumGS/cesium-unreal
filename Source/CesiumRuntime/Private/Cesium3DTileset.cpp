@@ -99,7 +99,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
-      _tilesToNoLongerRenderNextFrame{} {
+      _beforeMovieUseLodTransitions{true} {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -108,7 +108,6 @@ ACesium3DTileset::ACesium3DTileset()
 
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
-  this->RootComponent->SetMobility(EComponentMobility::Static);
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -117,6 +116,13 @@ ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
 ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
   return this->Georeference;
+}
+
+void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
+  if (NewMobility != this->Mobility) {
+    this->Mobility = NewMobility;
+    DestroyTileset();
+  }
 }
 
 void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
@@ -364,6 +370,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
+  this->_beforeMovieUseLodTransitions = this->UseLodTransitions;
   if (IsValid(this->ResolveGeoreference())) {
     this->_beforeMovieKeepWorldOriginNearCamera =
         this->ResolveGeoreference()->KeepWorldOriginNearCamera;
@@ -373,6 +380,7 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
+  this->UseLodTransitions = false;
   if (IsValid(this->ResolveGeoreference())) {
     this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
   }
@@ -383,6 +391,7 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
+  this->UseLodTransitions = this->_beforeMovieUseLodTransitions;
   if (IsValid(this->ResolveGeoreference())) {
     this->ResolveGeoreference()->KeepWorldOriginNearCamera =
         this->_beforeMovieKeepWorldOriginNearCamera;
@@ -614,12 +623,23 @@ public:
   {
   }
 
-  virtual void* prepareInLoadThread(
-      const CesiumGltf::Model& model,
-      const glm::dmat4& transform) override {
+  virtual CesiumAsync::Future<
+      Cesium3DTilesSelection::TileLoadResultAndRenderResources>
+  prepareInLoadThread(
+      const CesiumAsync::AsyncSystem& asyncSystem,
+      Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
+      const glm::dmat4& transform,
+      const std::any& rendererOptions) override {
+    const CesiumGltf::Model* pModel =
+        std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
+    if (!pModel)
+      return asyncSystem.createResolvedFuture(
+          Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+              std::move(tileLoadResult),
+              nullptr});
 
     CreateGltfOptions::CreateModelOptions options;
-    options.pModel = &model;
+    options.pModel = pModel;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
@@ -631,7 +651,10 @@ public:
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
-    return pHalf.Release();
+    return asyncSystem.createResolvedFuture(
+        Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+            std::move(tileLoadResult),
+            pHalf.Release()});
   }
 
   virtual void* prepareInMainThread(
@@ -851,6 +874,8 @@ void ACesium3DTileset::LoadTileset() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
       cesiumViewExtension =
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
+
+  this->RootComponent->SetMobility(Mobility);
 
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
@@ -1567,15 +1592,13 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTilesToNoLongerRender(
-    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
     const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
-
     const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
         content.getRenderContent();
     if (!pRenderContent) {
@@ -1586,13 +1609,39 @@ void hideTilesToNoLongerRender(
         pRenderContent->getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
       Gltf->SetVisibility(false, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     } else {
       // TODO: why is this happening?
       UE_LOG(
           LogCesium,
           Verbose,
           TEXT("Tile to no longer render does not have a visible Gltf"));
+    }
+  }
+}
+
+/**
+ * @brief Removes collision for tiles that have been removed from the render
+ * list. This includes tiles that are fading out.
+ */
+void removeCollisionForTiles(
+    const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
+
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+      continue;
+    }
+
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
+    if (Gltf) {
+      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
 }
@@ -1608,18 +1657,24 @@ void hideTilesToNoLongerRender(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
-  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      static_cast<UCesiumGltfPrimitiveComponent*>(Gltf->GetChildComponent(0));
-  if (PrimitiveComponent != nullptr) {
-    if (PrimitiveComponent->GetCollisionObjectType() !=
-        BodyInstance.GetObjectType()) {
-      PrimitiveComponent->SetCollisionObjectType(BodyInstance.GetObjectType());
-    }
-    const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
-    if (ChannelEnum) {
-      FCollisionResponseContainer responseContainer =
-          BodyInstance.GetResponseToChannels();
-      PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+  const TArray<USceneComponent*>& ChildrenComponents =
+      Gltf->GetAttachChildren();
+
+  for (USceneComponent* ChildComponent : ChildrenComponents) {
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        Cast<UCesiumGltfPrimitiveComponent>(ChildComponent);
+    if (PrimitiveComponent != nullptr) {
+      if (PrimitiveComponent->GetCollisionObjectType() !=
+          BodyInstance.GetObjectType()) {
+        PrimitiveComponent->SetCollisionObjectType(
+            BodyInstance.GetObjectType());
+      }
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        FCollisionResponseContainer responseContainer =
+            BodyInstance.GetResponseToChannels();
+        PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
+      }
     }
   }
 }
@@ -1647,6 +1702,9 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
+  options.enableLodTransitionPeriod = this->UseLodTransitions;
+  options.lodTransitionLength = this->LodTransitionLength;
+  // options.kickDescendantsWhileFadingIn = false;
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
@@ -1765,9 +1823,38 @@ void ACesium3DTileset::showTilesToRender(
 
     if (!Gltf->IsVisible()) {
       Gltf->SetVisibility(true, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     }
+
+    Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
   }
+}
+
+static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
+  if (!pTile || !pTile->getContent().isRenderContent()) {
+    return;
+  }
+
+  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+    return;
+  }
+
+  const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+      content.getRenderContent();
+  if (!pRenderContent) {
+    return;
+  }
+
+  UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(
+      pRenderContent->getRenderResources());
+  if (!pGltf) {
+    return;
+  }
+
+  float percentage =
+      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
+
+  pGltf->UpdateFade(percentage, fadingIn);
 }
 
 // Called every frame
@@ -1826,17 +1913,39 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
-                              : this->_pTileset->updateView(frustums);
+      this->_captureMovieMode
+          ? this->_pTileset->updateViewOffline(frustums)
+          : this->_pTileset->updateView(frustums, DeltaTime);
   updateLastViewUpdateResultState(result);
   this->UpdateLoadStatus();
 
+  removeCollisionForTiles(result.tilesFadingOut);
+
   removeVisibleTilesFromList(
-      this->_tilesToNoLongerRenderNextFrame,
+      _tilesToHideNextFrame,
       result.tilesToRenderThisFrame);
-  hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
-  this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  hideTiles(_tilesToHideNextFrame);
+
+  _tilesToHideNextFrame.clear();
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        pTile->getContent().getRenderContent();
+    if (!this->UseLodTransitions ||
+        (pRenderContent &&
+         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
+      _tilesToHideNextFrame.push_back(pTile);
+    }
+  }
+
   showTilesToRender(result.tilesToRenderThisFrame);
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+    updateTileFade(pTile, true);
+  }
+
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    updateTileFade(pTile, false);
+  }
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -1901,6 +2010,7 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||

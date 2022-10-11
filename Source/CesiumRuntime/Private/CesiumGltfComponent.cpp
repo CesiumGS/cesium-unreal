@@ -38,6 +38,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "MeshTypes.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "PhysicsEngine/PhysicsSettings.h"
 #include "PixelFormat.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "StaticMeshOperations.h"
@@ -2014,10 +2015,10 @@ static void loadPrimitiveGameThreadPart(
   // mesh or not. We don't want the editor creating collision meshes itself in
   // the game thread, because that would be slow.
   pBodySetup->bCreatedPhysicsMeshes = true;
-  pBodySetup->bSupportUVsAndFaceRemap = true;
+  pBodySetup->bSupportUVsAndFaceRemap =
+      UPhysicsSettings::Get()->bSupportUVFromHitResults;
 
-  // pMesh->SetMobility(EComponentMobility::Movable);
-  pMesh->SetMobility(EComponentMobility::Static);
+  pMesh->SetMobility(pGltf->Mobility);
 
   // pMesh->bDrawMeshCollisionIfComplex = true;
   // pMesh->bDrawMeshCollisionIfSimple = true;
@@ -2055,7 +2056,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
   Gltf->SetUsingAbsoluteLocation(true);
-  Gltf->SetMobility(EComponentMobility::Static);
+  Gltf->SetMobility(pParentActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
@@ -2306,6 +2307,53 @@ void UCesiumGltfComponent::BeginDestroy() {
   Super::BeginDestroy();
 }
 
+void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
+  if (!this->IsVisible()) {
+    return;
+  }
+
+  fadePercentage = glm::clamp(fadePercentage, 0.0f, 1.0f);
+
+  UCesiumMaterialUserData* pCesiumData =
+      BaseMaterial->GetAssetUserData<UCesiumMaterialUserData>();
+
+  if (!pCesiumData) {
+    return;
+  }
+
+  int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
+  if (fadeLayerIndex < 0) {
+    return;
+  }
+
+  for (USceneComponent* pChild : this->GetAttachChildren()) {
+    UCesiumGltfPrimitiveComponent* pPrimitive =
+        Cast<UCesiumGltfPrimitiveComponent>(pChild);
+    if (!pPrimitive || !pPrimitive->GetMaterials().Num()) {
+      continue;
+    }
+
+    UMaterialInstanceDynamic* pMaterial =
+        Cast<UMaterialInstanceDynamic>(pPrimitive->GetMaterials()[0]);
+    if (!pMaterial) {
+      continue;
+    }
+
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            "FadePercentage",
+            EMaterialParameterAssociation::LayerParameter,
+            fadeLayerIndex),
+        fadePercentage);
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            "FadingType",
+            EMaterialParameterAssociation::LayerParameter,
+            fadeLayerIndex),
+        fadingIn ? 0.0f : 1.0f);
+  }
+}
+
 #if PHYSICS_INTERFACE_PHYSX
 static void BuildPhysXTriangleMeshes(
     PxTriangleMesh*& pCollisionMesh,
@@ -2321,27 +2369,32 @@ static void BuildPhysXTriangleMeshes(
 
     FPhysXCookHelper cookHelper(pPhysXCookingModule);
 
+    bool copyUVs = UPhysicsSettings::Get()->bSupportUVFromHitResults;
+
     cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
     cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
     cookHelper.CookInfo.TriangleMeshDesc.bFlipNormals = true;
     cookHelper.CookInfo.bCookTriMesh = true;
-    cookHelper.CookInfo.bSupportUVFromHitResults = true;
     cookHelper.CookInfo.bSupportFaceRemap = true;
+    cookHelper.CookInfo.bSupportUVFromHitResults = copyUVs;
 
     TArray<FVector>& vertices = cookHelper.CookInfo.TriangleMeshDesc.Vertices;
     vertices.SetNum(vertexData.Num());
-
-    TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
-    uvs.SetNum(8);
-
-    for (size_t i = 0; i < 8; ++i) {
-      uvs[i].SetNum(vertices.Num());
-    }
-
     for (size_t i = 0; i < vertexData.Num(); ++i) {
       vertices[i] = vertexData[i].Position;
-      for (size_t j = 0; j < 8; ++j) {
-        uvs[j][i] = vertexData[i].UVs[j];
+    }
+
+    if (copyUVs) {
+      TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
+      uvs.SetNum(8);
+
+      for (size_t i = 0; i < 8; ++i) {
+        uvs[i].SetNum(vertices.Num());
+      }
+      for (size_t i = 0; i < vertexData.Num(); ++i) {
+        for (size_t j = 0; j < 8; ++j) {
+          uvs[j][i] = vertexData[i].UVs[j];
+        }
       }
     }
 
@@ -2359,7 +2412,9 @@ static void BuildPhysXTriangleMeshes(
     if (cookHelper.OutTriangleMeshes.Num() > 0) {
       pCollisionMesh = cookHelper.OutTriangleMeshes[0];
     }
-    uvInfo = std::move(cookHelper.OutUVInfo);
+    if (copyUVs) {
+      uvInfo = std::move(cookHelper.OutUVInfo);
+    }
   }
 }
 

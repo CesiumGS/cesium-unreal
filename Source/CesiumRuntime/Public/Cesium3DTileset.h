@@ -12,6 +12,7 @@
 #include "CesiumGeoreference.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
+#include "Engine/EngineTypes.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/IHttpRequest.h"
 #include "PrimitiveSceneProxy.h"
@@ -19,6 +20,7 @@
 #include <atomic>
 #include <chrono>
 #include <glm/mat4x4.hpp>
+#include <unordered_map>
 #include <vector>
 #include "Cesium3DTileset.generated.h"
 
@@ -75,6 +77,34 @@ class CESIUMRUNTIME_API ACesium3DTileset : public AActor {
 public:
   ACesium3DTileset();
   virtual ~ACesium3DTileset();
+
+private:
+  /**
+   * The component mobility to use for the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = "GetMobility",
+      BlueprintSetter = "SetMobility",
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  TEnumAsByte<EComponentMobility::Type> Mobility = EComponentMobility::Static;
+
+public:
+  /**
+   * Set a component mobility to use for this tileset.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  EComponentMobility::Type GetMobility() const {
+    return (EComponentMobility::Type)Mobility;
+  }
+
+  /**
+   * Set a component mobility to use for this tileset.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetMobility(EComponentMobility::Type NewMobility);
 
 private:
   /**
@@ -339,8 +369,14 @@ public:
    *
    * This will cause more tiles to be loaded, but helps to avoid holes and
    * provides a more consistent mesh, which may be helpful for physics.
+   *
+   * Note that this will always be disabled if UseLodTransitions is set to true.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Culling",
+      Meta = (EditCondition = "!UseLodTransitions", EditConditionHides))
   bool EnableFrustumCulling = true;
 
   /**
@@ -350,8 +386,14 @@ public:
    * but to an internal representation of fog: Depending on the height
    * of the camera above the ground, tiles that are far away (close to
    * the horizon) will be culled when this flag is enabled.
+   *
+   * Note that this will always be disabled if UseLodTransitions is set to true.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Tile Culling")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Tile Culling",
+      Meta = (EditCondition = "!UseLodTransitions", EditConditionHides))
   bool EnableFogCulling = true;
 
   /**
@@ -544,6 +586,28 @@ public:
    */
   UPROPERTY(BlueprintAssignable, Category = "Cesium");
   FCompletedLoadTrigger OnTilesetLoaded;
+
+  /**
+   * Use a dithering effect when transitioning between tiles of different LODs.
+   *
+   * When this is set to true, Frustrum Culling and Fog Culling are always
+   * disabled.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Rendering")
+  bool UseLodTransitions = false;
+
+  /**
+   * How long dithered LOD transitions between different tiles should take, in
+   * seconds.
+   *
+   * Only relevant if UseLodTransitions is true.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium|Rendering",
+      meta = (EditCondition = "UseLodTransitions", EditConditionHides))
+  float LodTransitionLength = 0.5f;
 
 private:
   UPROPERTY(BlueprintGetter = GetLoadProgress, Category = "Cesium")
@@ -1017,13 +1081,14 @@ private:
   bool _beforeMoviePreloadSiblings;
   int32_t _beforeMovieLoadingDescendantLimit;
   bool _beforeMovieKeepWorldOriginNearCamera;
+  bool _beforeMovieUseLodTransitions;
 
   bool _scaleUsingDPI;
 
   // This is used as a workaround for cesium-native#186
   //
   // The tiles that are no longer supposed to be rendered in the current
-  // frame, according to ViewUpdateResult::tilesToNoLongerRenderThisFrame,
+  // frame, according to ViewUpdateResult::tilesToHideThisFrame,
   // are kept in this list, and hidden in the NEXT frame, because some
   // internal occlusion culling information from Unreal might prevent
   // the tiles that are supposed to be rendered instead from appearing
@@ -1031,8 +1096,8 @@ private:
   //
   // If we find a way to clear the wrong occlusion information in the
   // Unreal Engine, then this field may be removed, and the
-  // tilesToNoLongerRenderThisFrame may be hidden immediately.
-  std::vector<Cesium3DTilesSelection::Tile*> _tilesToNoLongerRenderNextFrame;
+  // tilesToHideThisFrame may be hidden immediately.
+  std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
 
   friend class UnrealResourcePreparer;
 };

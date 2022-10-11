@@ -42,6 +42,9 @@ public:
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
 
+  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  class UScreenCreditsWidget* CreditsWidget;
+
   // Called every frame
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
@@ -53,9 +56,6 @@ public:
 
 private:
   static UClass* CesiumCreditSystemBP;
-
-  UPROPERTY()
-  class UScreenCreditsWidget* _creditsWidget;
 
   /**
    * A tag that is assigned to Credit Systems when they are created
