@@ -986,6 +986,10 @@ void ACesium3DTileset::LoadTileset() {
             });
       };
 
+  // Generous per-frame time limits for loading / unloading on main thread.
+  options.mainThreadLoadingTimeLimit = 5.0;
+  options.tileCacheUnloadTimeLimit = 5.0;
+
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
 
@@ -1775,7 +1779,8 @@ void ACesium3DTileset::showTilesToRender(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
 
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done ||
+        !pTile->isRenderable()) {
       continue;
     }
 
