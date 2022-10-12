@@ -248,7 +248,6 @@ public:
   uint32 GetSizeY() const override { return this->_height; }
 
   virtual void InitRHI() override {
-    // TODO: does anisotropy work?
     FSamplerStateInitializerRHI samplerStateInitializer(
         this->_filter,
         this->_addressX,
@@ -334,9 +333,7 @@ public:
 
   virtual void ReleaseRHI() override {
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
-    // TextureReferenceRHI->Release();
     TextureReferenceRHI.SafeRelease();
-    // TextureRHI->Release();
     TextureRHI.SafeRelease();
 
     FTextureResource::ReleaseRHI();
@@ -374,11 +371,9 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
   ETextureCreateFlags textureFlags = TexCreate_ShaderResource | TexCreate_SRGB;
 
   if (generateMipMaps) {
-    uint32 mipCount = static_cast<uint32>(image.mipPositions.size());
-
-    // TODO
-    // find way to reuse this heap allocation, static thread local??
-    std::vector<void*> mipsData(mipCount);
+    // Here 16 is a generously large (but arbitrary) hard limit for number of mips.
+    uint32 mipCount = FMath::Min(static_cast<uint32>(image.mipPositions.size(), 16);
+    void* mipsData[16];
     for (size_t i = 0; i < mipCount; ++i) {
       const CesiumGltf::ImageCesiumMipPosition& mipPos = image.mipPositions[i];
       mipsData[i] = (void*)&image.pixelData[mipPos.byteOffset];
