@@ -374,7 +374,11 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
   if (generateMipMaps) {
     // Here 16 is a generously large (but arbitrary) hard limit for number of
     // mips.
-    uint32 mipCount = FMath::Min(static_cast<uint32>(image.mipPositions.size(), 16);
+    uint32 mipCount = static_cast<uint32>(image.mipPositions.size());
+    if (mipCount > 16) {
+      mipCount = 16;
+    }
+
     void* mipsData[16];
     for (size_t i = 0; i < mipCount; ++i) {
       const CesiumGltf::ImageCesiumMipPosition& mipPos = image.mipPositions[i];
@@ -387,7 +391,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
         format,
         mipCount,
         textureFlags,
-        mipsData.data(),
+        mipsData,
         mipCount);
   } else {
     void* pTextureData = (void*)image.pixelData.data();
