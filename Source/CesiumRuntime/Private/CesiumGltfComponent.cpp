@@ -103,7 +103,8 @@ public:
   LoadModelResult loadModelResult;
 
   virtual ~HalfConstructedReal() {
-    // TODO: deal with metadata case
+    // TODO: deal with metadata case, when metadata uses async texture creation
+    // path See: https://github.com/CesiumGS/cesium-unreal/issues/979
     for (LoadNodeResult& node : loadModelResult.nodeResults) {
       if (node.meshResult) {
         for (LoadPrimitiveResult& primitive :
@@ -1500,7 +1501,6 @@ static void loadModelAnyThreadPart(
 
   const Model& model = *options.pModel;
 
-  // TODO: add tracing for metadata and encoded metadata preparation
   const ExtensionModelExtFeatureMetadata* pMetadataExtension =
       model.getExtension<ExtensionModelExtFeatureMetadata>();
   if (pMetadataExtension) {
