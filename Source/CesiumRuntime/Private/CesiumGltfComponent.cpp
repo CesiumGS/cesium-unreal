@@ -24,7 +24,6 @@
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
-#include "CesiumStaticMesh.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
