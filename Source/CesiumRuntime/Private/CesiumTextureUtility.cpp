@@ -327,6 +327,7 @@ public:
     RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
 
     // TODO: investigate if we can / should do this!
+    // related to: https://github.com/CesiumGS/cesium-unreal/issues/980
     // this->TextureRHI->DoNoDeferDelete();
     // this->TextureReferenceRHI->DoNoDeferDelete();
   }
