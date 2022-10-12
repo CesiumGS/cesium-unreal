@@ -221,6 +221,8 @@ public:
       uint32 extData)
       : _pTexture(pTexture),
         _textureSource(std::move(textureSource)),
+        _width(width),
+        _height(height),
         _format(format),
         _filter(convertFilter(filter)),
         _addressX(convertAddressMode(addressX)),
