@@ -564,7 +564,11 @@ public:
    * When this is set to true, Frustrum Culling and Fog Culling are always
    * disabled.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Rendering")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetUseLodTransitions,
+      BlueprintSetter = SetUseLodTransitions,
+      Category = "Cesium|Rendering")
   bool UseLodTransitions = false;
 
   /**
@@ -783,6 +787,12 @@ protected:
 public:
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   float GetLoadProgress() const { return LoadProgress; }
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetUseLodTransitions() const { return UseLodTransitions; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetUseLodTransitions(bool InUseLodTransitions);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }

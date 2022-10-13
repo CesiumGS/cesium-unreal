@@ -154,9 +154,7 @@ public class CesiumRuntime : ModuleRules
                 "SunPosition",
                 "DeveloperSettings",
                 "UMG",
-                "RenderCore",
-                "Renderer",
-                "Engine"
+                "Renderer"
             }
         );
 

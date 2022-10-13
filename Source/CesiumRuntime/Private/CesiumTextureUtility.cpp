@@ -112,7 +112,8 @@ void CopyMip(
   uint32 mipHeight =
       FMath::Max<uint32>(static_cast<uint32>(src.height) >> mipIndex, 1);
 
-  const void* pSrcData = (void*)&src.pixelData[mipPos.byteOffset];
+  const void* pSrcData =
+      static_cast<const void*>(&src.pixelData[mipPos.byteOffset]);
 
   // for platforms that returned 0 pitch from Lock, we need to just use the bulk
   // data directly, never do runtime block size checking, conversion, or the
@@ -160,10 +161,12 @@ public:
                 : static_cast<uint32>(image.pixelData.size())) {}
 
   const void* GetResourceBulkData() const override {
-    return (void*)_textureData;
+    return static_cast<const void*>(this->_textureData);
   }
 
-  uint32 GetResourceBulkDataSize() const override { return _textureDataSize; }
+  uint32 GetResourceBulkDataSize() const override {
+    return this->_textureDataSize;
+  }
 
   void Discard() override {}
 
@@ -256,7 +259,7 @@ public:
         this->_addressY,
         AM_Wrap,
         0.0f,
-        4,
+        0,
         0.0f,
         FLT_MAX);
     this->SamplerStateRHI = GetOrCreateSamplerState(samplerStateInitializer);
@@ -322,22 +325,15 @@ public:
         RHIUnlockTexture2D(rhiTexture, i, false);
       }
 
-      this->TextureRHI = rhiTexture;
-      rhiTexture.SafeRelease();
+      this->TextureRHI = std::move(rhiTexture);
     }
 
     RHIUpdateTextureReference(TextureReferenceRHI, this->TextureRHI);
-
-    // TODO: investigate if we can / should do this!
-    // related to: https://github.com/CesiumGS/cesium-unreal/issues/980
-    // this->TextureRHI->DoNoDeferDelete();
-    // this->TextureReferenceRHI->DoNoDeferDelete();
   }
 
   virtual void ReleaseRHI() override {
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
     TextureReferenceRHI.SafeRelease();
-    TextureRHI.SafeRelease();
 
     FTextureResource::ReleaseRHI();
   }
@@ -363,15 +359,20 @@ private:
  * @param image The CPU image to create on the GPU.
  * @param format The pixel format of the image.
  * @param generateMipMaps Whether the RHI texture should have a mipmap.
+ * @param Whether to use a sRGB color-space.
  * @return The RHI texture reference.
  */
 FTexture2DRHIRef CreateRHITexture2D_Async(
     const CesiumGltf::ImageCesium& image,
     EPixelFormat format,
-    bool generateMipMaps) {
+    bool generateMipMaps,
+    bool sRGB) {
   check(GRHISupportsAsyncTextureCreation);
 
-  ETextureCreateFlags textureFlags = TexCreate_ShaderResource | TexCreate_SRGB;
+  ETextureCreateFlags textureFlags = TexCreate_ShaderResource;
+  if (sRGB) {
+    textureFlags |= TexCreate_SRGB;
+  }
 
   if (generateMipMaps) {
     // Here 16 is a generously large (but arbitrary) hard limit for number of
@@ -384,7 +385,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
     void* mipsData[16];
     for (size_t i = 0; i < mipCount; ++i) {
       const CesiumGltf::ImageCesiumMipPosition& mipPos = image.mipPositions[i];
-      mipsData[i] = (void*)&image.pixelData[mipPos.byteOffset];
+      mipsData[i] = (void*)(&image.pixelData[mipPos.byteOffset]);
     }
 
     return RHIAsyncCreateTexture2D(
@@ -396,7 +397,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
         mipsData,
         mipCount);
   } else {
-    void* pTextureData = (void*)image.pixelData.data();
+    void* pTextureData = (void*)(image.pixelData.data());
     return RHIAsyncCreateTexture2D(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
@@ -585,14 +586,10 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
 #else
   if (GRHISupportsAsyncTextureCreation) {
     // Create RHI texture resource asynchronously.
-    std::string scopeName =
-        "Cesium::CreateRHITexture2D" + std::to_string(image.width) + "x" +
-        std::to_string(image.height) + "x" + std::to_string(image.channels) +
-        "x" + std::to_string(image.bytesPerChannel);
-    TRACE_CPUPROFILER_EVENT_SCOPE_TEXT(scopeName.c_str())
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
 
     pResult->textureSource = AsyncCreatedTexture{
-        CreateRHITexture2D_Async(image, pixelFormat, generateMipMaps)};
+        CreateRHITexture2D_Async(image, pixelFormat, generateMipMaps, sRGB)};
   } else {
     // The RHI texture will be created later on the render thread, directly
     // from this texture source.

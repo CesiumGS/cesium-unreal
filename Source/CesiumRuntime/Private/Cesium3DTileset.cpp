@@ -231,6 +231,13 @@ void ACesium3DTileset::PostInitProperties() {
   }
 }
 
+void ACesium3DTileset::SetUseLodTransitions(bool InUseLodTransitions) {
+  if (InUseLodTransitions != this->UseLodTransitions) {
+    this->UseLodTransitions = InUseLodTransitions;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   if (InSource != this->TilesetSource) {
     this->DestroyTileset();
@@ -1878,7 +1885,7 @@ static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
 
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
-  TRACE_CPUPROFILER_EVENT_SCOPE("Cesium::TilesetTick")
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::TilesetTick)
 
   Super::Tick(DeltaTime);
 
@@ -2036,6 +2043,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
