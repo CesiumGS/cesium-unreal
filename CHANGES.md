@@ -1,5 +1,20 @@
 # Change Log
 
+### v1.19.0 - 2022-11-01
+
+##### Additions :tada:
+
+- Added asynchronous texture creation where supported by the graphics API. This offloads a frequent render thread bottleneck to background loading threads.
+- Improved synchronous texture creation by eliminating a main-thread memcpy, for cases where asynchronous texture creation is not supported.
+- Added throttling of the main thread part of loading for glTFs.
+- Added throttling for tile cache unloads on the main thread.
+- Bonus: Added a prototype developer feature enabling Unreal Insights tracing into Cesium Native. This helps us investigate end-to-end performance in a deeper and more precise manner.
+
+##### Fixes :wrench:
+
+- Significantly reduced frame-rate dips during asynchronous tile loading by eliminating thread pool monopilaztion by Cesium tasks.
+- Improved the tile destruction sequence by allowing it to defer being destroyed to future frames if it is waiting on asynchronous work to finish. Previously we would essentially block the main thread waiting for tiles to become ready for destruction.
+
 ### v1.18.0 - 2022-10-03
 
 ##### Additions :tada:
