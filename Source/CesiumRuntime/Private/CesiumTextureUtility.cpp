@@ -333,7 +333,6 @@ public:
 
   virtual void ReleaseRHI() override {
     RHIUpdateTextureReference(TextureReferenceRHI, nullptr);
-    TextureReferenceRHI.SafeRelease();
 
     FTextureResource::ReleaseRHI();
   }
