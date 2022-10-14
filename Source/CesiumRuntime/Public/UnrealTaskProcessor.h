@@ -4,6 +4,7 @@
 
 #include "CesiumAsync/ITaskProcessor.h"
 #include "HAL/Platform.h"
+
 class CESIUMRUNTIME_API UnrealTaskProcessor
     : public CesiumAsync::ITaskProcessor {
 public:

@@ -237,6 +237,13 @@ void ACesium3DTileset::PostInitProperties() {
   }
 }
 
+void ACesium3DTileset::SetUseLodTransitions(bool InUseLodTransitions) {
+  if (InUseLodTransitions != this->UseLodTransitions) {
+    this->UseLodTransitions = InUseLodTransitions;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
   if (InSource != this->TilesetSource) {
     this->DestroyTileset();
@@ -630,7 +637,7 @@ public:
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
-    const CesiumGltf::Model* pModel =
+    CesiumGltf::Model* pModel =
         std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
     if (!pModel)
       return asyncSystem.createResolvedFuture(
@@ -665,7 +672,10 @@ public:
       TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
+      const Cesium3DTilesSelection::TileRenderContent& renderContent =
+          *content.getRenderContent();
       return UCesiumGltfComponent::CreateOnGameThread(
+          renderContent.getModel(),
           this->_pActor,
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
@@ -696,7 +706,7 @@ public:
   }
 
   virtual void* prepareRasterInLoadThread(
-      const CesiumGltf::ImageCesium& image,
+      CesiumGltf::ImageCesium& image,
       const std::any& rendererOptions) override {
     auto ppOptions =
         std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
@@ -708,7 +718,7 @@ public:
     auto pOptions = *ppOptions;
 
     auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
-        image,
+        CesiumTextureUtility::GltfImagePtr{&image},
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
         pOptions->filter,
@@ -720,16 +730,29 @@ public:
   }
 
   virtual void* prepareRasterInMainThread(
-      const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
+      Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult) override {
 
     TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
         static_cast<CesiumTextureUtility::LoadedTextureResult*>(
             pLoadThreadResult)};
 
+    if (!pLoadedTexture) {
+      return nullptr;
+    }
+
+    // The image source pointer during loading may have been invalidated,
+    // so replace it.
+    CesiumTextureUtility::GltfImagePtr* pImageSource =
+        std::get_if<CesiumTextureUtility::GltfImagePtr>(
+            &pLoadedTexture->textureSource);
+    if (pImageSource) {
+      pImageSource->pImage = &rasterTile.getImage();
+    }
+
     UTexture2D* pTexture =
         CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
-    if (!pLoadedTexture || !pTexture) {
+    if (!pTexture) {
       return nullptr;
     }
 
@@ -745,13 +768,14 @@ public:
       CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
           static_cast<CesiumTextureUtility::LoadedTextureResult*>(
               pLoadThreadResult);
+      CesiumTextureUtility::destroyHalfLoadedTexture(*pLoadedTexture);
       delete pLoadedTexture;
     }
 
     if (pMainThreadResult) {
-      UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+      UTexture* pTexture = static_cast<UTexture*>(pMainThreadResult);
       pTexture->RemoveFromRoot();
-      CesiumLifetime::destroy(pTexture);
+      CesiumTextureUtility::destroyTexture(pTexture);
     }
   }
 
@@ -838,6 +862,8 @@ static std::string getCacheDatabaseName() {
 }
 
 void ACesium3DTileset::UpdateLoadStatus() {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateLoadStatus)
+
   this->LoadProgress = this->_pTileset->computeLoadProgress();
 
   if (this->LoadProgress < 100 ||
@@ -849,6 +875,7 @@ void ACesium3DTileset::UpdateLoadStatus() {
     // are waiting for occlusion results to come back, which means we are not
     // done with loading all the tiles in the tileset yet.
     if (this->_lastTilesWaitingForOcclusionResults == 0) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BroadcastOnTilesetLoaded)
 
       // Tileset just finished loading, we broadcast the update
       UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
@@ -862,6 +889,8 @@ void ACesium3DTileset::UpdateLoadStatus() {
 }
 
 void ACesium3DTileset::LoadTileset() {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
+
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),
@@ -984,6 +1013,10 @@ void ACesium3DTileset::LoadTileset() {
               OnCesium3DTilesetLoadFailure.Broadcast(ueDetails);
             });
       };
+
+  // Generous per-frame time limits for loading / unloading on main thread.
+  options.mainThreadLoadingTimeLimit = 5.0;
+  options.tileCacheUnloadTimeLimit = 5.0;
 
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
@@ -1148,6 +1181,7 @@ void ACesium3DTileset::DestroyTileset() {
 }
 
 std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
   std::vector<FCesiumCamera> cameras = this->GetPlayerCameras();
 
   std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
@@ -1593,6 +1627,7 @@ void removeVisibleTilesFromList(
  * @param tiles The tiles to hide
  */
 void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1608,6 +1643,7 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
     UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
         pRenderContent->getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
       Gltf->SetVisibility(false, true);
     } else {
       // TODO: why is this happening?
@@ -1625,7 +1661,7 @@ void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
  */
 void removeCollisionForTiles(
     const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
-
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RemoveCollisionForTiles)
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1641,6 +1677,7 @@ void removeCollisionForTiles(
     UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
         pRenderContent->getRenderResources());
     if (Gltf) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
       Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
@@ -1657,6 +1694,8 @@ void removeCollisionForTiles(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ApplyActorCollisionSettings)
+
   const TArray<USceneComponent*>& ChildrenComponents =
       Gltf->GetAttachChildren();
 
@@ -1709,6 +1748,8 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
     const Cesium3DTilesSelection::ViewUpdateResult& result) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateLastViewUpdateResultState)
+
   if (!this->LogSelectionStats) {
     return;
   }
@@ -1763,6 +1804,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
 
 void ACesium3DTileset::showTilesToRender(
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
+
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
     if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
@@ -1822,10 +1865,14 @@ void ACesium3DTileset::showTilesToRender(
     }
 
     if (!Gltf->IsVisible()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
       Gltf->SetVisibility(true, true);
     }
 
-    Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
+      Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
   }
 }
 
@@ -1859,6 +1906,8 @@ static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
 
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::TilesetTick)
+
   Super::Tick(DeltaTime);
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
@@ -1882,6 +1931,7 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   if (this->BoundingVolumePoolComponent && this->_cesiumViewExtension) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateOcclusion)
     const TArray<USceneComponent*>& children =
         this->BoundingVolumePoolComponent->GetAttachChildren();
     for (USceneComponent* pChild : children) {
@@ -1939,12 +1989,16 @@ void ACesium3DTileset::Tick(float DeltaTime) {
 
   showTilesToRender(result.tilesToRenderThisFrame);
 
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
-    updateTileFade(pTile, true);
-  }
+  if (this->UseLodTransitions) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
 
-  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
-    updateTileFade(pTile, false);
+    for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+      updateTileFade(pTile, true);
+    }
+
+    for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+      updateTileFade(pTile, false);
+    }
   }
 }
 
@@ -2010,6 +2064,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
