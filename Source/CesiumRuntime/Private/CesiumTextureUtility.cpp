@@ -245,7 +245,11 @@ public:
 
   virtual ~FCesiumTextureResource() {
     check(this->_pTexture != nullptr);
-    this->_pTexture->SetResource(nullptr);
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
+    this->_pTexture->Resource = pCesiumTextureResource;
+#else
+    this->_pTexture->SetResource(pCesiumTextureResource);
+#endif
   }
 
   uint32 GetSizeX() const override { return this->_width; }
