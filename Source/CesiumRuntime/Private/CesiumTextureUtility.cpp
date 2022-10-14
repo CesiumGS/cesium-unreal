@@ -246,9 +246,9 @@ public:
   virtual ~FCesiumTextureResource() {
     check(this->_pTexture != nullptr);
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-    this->_pTexture->Resource = pCesiumTextureResource;
+    this->_pTexture->Resource = nullptr;
 #else
-    this->_pTexture->SetResource(pCesiumTextureResource);
+    this->_pTexture->SetResource(nullptr);
 #endif
   }
 
@@ -268,14 +268,21 @@ public:
         FLT_MAX);
     this->SamplerStateRHI = GetOrCreateSamplerState(samplerStateInitializer);
 
+    // Create a custom sampler state for using this texture in a deferred pass,
+    // where ddx / ddy are discontinuous
     FSamplerStateInitializerRHI deferredSamplerStateInitializer(
         this->_filter,
         this->_addressX,
         this->_addressY,
         AM_Wrap,
         0.0f,
+        // Disable anisotropic filtering, since aniso doesn't respect MaxLOD
         1,
         0.0f,
+        // Prevent the less detailed mip levels from being used, which hides
+        // artifacts on silhouettes due to ddx / ddy being very large This has
+        // the side effect that it increases minification aliasing on light
+        // functions
         2.0f);
     this->DeferredPassSamplerStateRHI =
         GetOrCreateSamplerState(deferredSamplerStateInitializer);
