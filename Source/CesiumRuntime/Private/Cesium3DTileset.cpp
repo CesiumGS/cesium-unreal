@@ -108,7 +108,6 @@ ACesium3DTileset::ACesium3DTileset()
 
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
-  this->RootComponent->SetMobility(EComponentMobility::Static);
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -117,6 +116,13 @@ ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
 ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
   return this->Georeference;
+}
+
+void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
+  if (NewMobility != this->Mobility) {
+    this->Mobility = NewMobility;
+    DestroyTileset();
+  }
 }
 
 void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
@@ -884,6 +890,8 @@ void ACesium3DTileset::LoadTileset() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
       cesiumViewExtension =
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
+
+  this->RootComponent->SetMobility(Mobility);
 
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
@@ -2045,6 +2053,7 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
