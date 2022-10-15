@@ -639,6 +639,7 @@ public:
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
+    FPlatformProcess::Sleep(5.0f);
     CesiumGltf::Model* pModel =
         std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
     if (!pModel)
@@ -909,7 +910,8 @@ CesiumAsync::AsyncSystem& getAsyncSystem() {
   return asyncSystem;
 }
 
-const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>& getCesiumViewExtension() {
+const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
+getCesiumViewExtension() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
       cesiumViewExtension =
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
