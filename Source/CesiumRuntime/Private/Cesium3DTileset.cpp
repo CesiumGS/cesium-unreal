@@ -99,7 +99,9 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
-      _beforeMovieUseLodTransitions{true} {
+      _beforeMovieUseLodTransitions{true},
+
+      _tilesetsBeingDestroyed(0) {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -833,34 +835,6 @@ private:
 #endif
 };
 
-static std::string getCacheDatabaseName() {
-#if PLATFORM_ANDROID
-  FString BaseDirectory = FPaths::ProjectPersistentDownloadDir();
-#elif PLATFORM_IOS
-  FString BaseDirectory =
-      FPaths::Combine(*FPaths::ProjectSavedDir(), TEXT("Cesium"));
-  if (!IFileManager::Get().DirectoryExists(*BaseDirectory)) {
-    IFileManager::Get().MakeDirectory(*BaseDirectory, true);
-  }
-#else
-  FString BaseDirectory = FPaths::EngineUserDir();
-#endif
-
-  FString CesiumDBFile =
-      FPaths::Combine(*BaseDirectory, TEXT("cesium-request-cache.sqlite"));
-  FString PlatformAbsolutePath =
-      IFileManager::Get().ConvertToAbsolutePathForExternalAppForWrite(
-          *CesiumDBFile);
-
-  UE_LOG(
-      LogCesium,
-      Display,
-      TEXT("Caching Cesium requests in %s"),
-      *PlatformAbsolutePath);
-
-  return TCHAR_TO_UTF8(*PlatformAbsolutePath);
-}
-
 void ACesium3DTileset::UpdateLoadStatus() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateLoadStatus)
 
@@ -888,9 +862,37 @@ void ACesium3DTileset::UpdateLoadStatus() {
   }
 }
 
-void ACesium3DTileset::LoadTileset() {
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
+namespace {
 
+std::string getCacheDatabaseName() {
+#if PLATFORM_ANDROID
+  FString BaseDirectory = FPaths::ProjectPersistentDownloadDir();
+#elif PLATFORM_IOS
+  FString BaseDirectory =
+      FPaths::Combine(*FPaths::ProjectSavedDir(), TEXT("Cesium"));
+  if (!IFileManager::Get().DirectoryExists(*BaseDirectory)) {
+    IFileManager::Get().MakeDirectory(*BaseDirectory, true);
+  }
+#else
+  FString BaseDirectory = FPaths::EngineUserDir();
+#endif
+
+  FString CesiumDBFile =
+      FPaths::Combine(*BaseDirectory, TEXT("cesium-request-cache.sqlite"));
+  FString PlatformAbsolutePath =
+      IFileManager::Get().ConvertToAbsolutePathForExternalAppForWrite(
+          *CesiumDBFile);
+
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Caching Cesium requests in %s"),
+      *PlatformAbsolutePath);
+
+  return TCHAR_TO_UTF8(*PlatformAbsolutePath);
+}
+
+const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),
@@ -898,11 +900,26 @@ void ACesium3DTileset::LoadTileset() {
           std::make_shared<CesiumAsync::SqliteCache>(
               spdlog::default_logger(),
               getCacheDatabaseName()));
+  return pAssetAccessor;
+}
+
+CesiumAsync::AsyncSystem& getAsyncSystem() {
   static CesiumAsync::AsyncSystem asyncSystem(
       std::make_shared<UnrealTaskProcessor>());
+  return asyncSystem;
+}
+
+const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>& getCesiumViewExtension() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
       cesiumViewExtension =
           GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
+  return cesiumViewExtension;
+}
+
+} // namespace
+
+void ACesium3DTileset::LoadTileset() {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
 
   this->RootComponent->SetMobility(Mobility);
 
@@ -910,6 +927,12 @@ void ACesium3DTileset::LoadTileset() {
     // Tileset already loaded, do nothing.
     return;
   }
+
+  const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
+      cesiumViewExtension = getCesiumViewExtension();
+  const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor =
+      getAssetAccessor();
+  CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
 
   // Both the feature flag and the CesiumViewExtension are global, not owned by
   // the Tileset. We're just applying one to the other here out of convenience.
@@ -1160,6 +1183,9 @@ void ACesium3DTileset::DestroyTileset() {
     return;
   }
 
+  ++this->_tilesetsBeingDestroyed;
+  this->_pTileset->GetAsyncDestructionCompleteEvent().thenInMainThread(
+      [this]() { --this->_tilesetsBeingDestroyed; });
   this->_pTileset.Reset();
 
   switch (this->TilesetSource) {
@@ -2113,6 +2139,17 @@ void ACesium3DTileset::BeginDestroy() {
   this->DestroyTileset();
 
   AActor::BeginDestroy();
+}
+
+bool ACesium3DTileset::IsReadyForFinishDestroy() {
+  bool ready = AActor::IsReadyForFinishDestroy();
+  ready &= this->_tilesetsBeingDestroyed == 0;
+
+  if (!ready) {
+    getAsyncSystem().dispatchMainThreadTasks();
+  }
+
+  return ready;
 }
 
 void ACesium3DTileset::Destroyed() {
