@@ -92,9 +92,9 @@ void UCesiumRasterOverlay::AddToTileset() {
       this->CreateOverlay(options);
 
   if (pOverlay) {
-    this->_pOverlay = pOverlay.get();
+    this->_pOverlay = pOverlay.release();
 
-    pTileset->getOverlays().add(std::move(pOverlay));
+    pTileset->getOverlays().add(this->_pOverlay);
 
     this->OnAdd(pTileset, this->_pOverlay);
   }
