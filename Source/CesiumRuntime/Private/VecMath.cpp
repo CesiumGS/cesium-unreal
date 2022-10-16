@@ -157,18 +157,29 @@ FVector VecMath::createVector(const glm::dvec3& v) noexcept {
 FRotator VecMath::createRotator(const glm::dmat4& m) noexcept {
   // Avoid converting to Unreal single-precision types until the very end, so
   // that all intermediate conversions are performed in double-precision.
+  // TODO: does handedness affect this?
   return VecMath::createRotator(quat_cast(m));
 }
 
 FRotator VecMath::createRotator(const glm::dmat3& m) noexcept {
+  // TODO: does handedness affect this?
   return VecMath::createRotator(quat_cast(m));
 }
 
 FRotator VecMath::createRotator(const glm::dquat& q) noexcept {
-  return FRotator(
+  // TODO: I think this is wrong - this uses glm's pitch, yaw, roll.
+  // GLM is usually agnostic of what "world" directions each axis represents,
+  // but here pitch, yaw, and roll assume a particular interpretation of
+  // the axes as forward, left, and up. In addition to all of this, glm is
+  // right-handed and Unreal is left-handed!
+  /*return FRotator(
       CesiumUtility::Math::radiansToDegrees(pitch(q)),
       CesiumUtility::Math::radiansToDegrees(yaw(q)),
-      CesiumUtility::Math::radiansToDegrees(roll(q)));
+      CesiumUtility::Math::radiansToDegrees(roll(q)));*/
+
+  // This assumes that this quaternion is associated with the left-handed UE
+  // coordinate system.
+  return FRotator(FQuat(q.x, q.y, q.z, q.w));
 }
 
 FQuat VecMath::createQuaternion(const glm::dquat& q) noexcept {

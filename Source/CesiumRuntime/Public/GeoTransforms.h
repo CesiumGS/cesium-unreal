@@ -120,30 +120,30 @@ public:
       const glm::dvec3& Ue) const noexcept;
 
   /**
-   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Transforms a rotator from Unreal world to East-South-Up at the given
    * Unreal relative world location (relative to the floating origin).
    */
-  glm::dquat TransformRotatorUnrealToEastNorthUp(
+  glm::dquat TransformRotatorUnrealToEastSouthUp(
       const glm::dvec3& origin,
       const glm::dquat& UeRotator,
       const glm::dvec3& UeLocation) const noexcept;
 
   /**
-   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Transforms a rotator from East-South-Up to Unreal world at the given
    * Unreal world location (relative to the floating origin).
    */
-  glm::dquat TransformRotatorEastNorthUpToUnreal(
+  glm::dquat TransformRotatorEastSouthUpToUnreal(
       const glm::dvec3& origin,
       const glm::dquat& EnuRotator,
       const glm::dvec3& UeLocation) const noexcept;
 
   /**
-   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * Computes the rotation matrix from the local East-South-Up to Unreal at the
    * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    */
-  glm::dmat3 ComputeEastNorthUpToUnreal(
+  glm::dmat3 ComputeEastSouthUpToUnreal(
       const glm::dvec3& origin,
       const glm::dvec3& Ue) const noexcept;
 
