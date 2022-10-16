@@ -68,7 +68,7 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
 endif()
 
-option(CESIUM_USE_UNREAL_TRACING "Whether to trace cesium-native events using Unreal's tracing framework.")
+option(CESIUM_USE_UNREAL_TRACING "Whether to trace cesium-native events using Unreal's tracing framework." OFF)
 if (CESIUM_USE_UNREAL_TRACING)
   # Trace Cesium Native with Unreal Insights. Need to include Unreal Engine headers when building 
   # Cesium Native.
