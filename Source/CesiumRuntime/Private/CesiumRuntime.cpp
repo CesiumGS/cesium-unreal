@@ -4,6 +4,8 @@
 #include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
 #include "CesiumUtility/Tracing.h"
 #include "SpdlogUnrealLoggerSink.h"
+#include "UnrealTaskProcessor.h"
+#include <CesiumAsync/AsyncSystem.h>
 #include <Modules/ModuleManager.h>
 #include <spdlog/spdlog.h>
 
@@ -41,3 +43,9 @@ IMPLEMENT_MODULE(FCesiumRuntimeModule, CesiumRuntime)
 FCesium3DTilesetIonTroubleshooting OnCesium3DTilesetIonTroubleshooting{};
 FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting{};
+
+CesiumAsync::AsyncSystem& getAsyncSystem() noexcept {
+  static CesiumAsync::AsyncSystem asyncSystem(
+      std::make_shared<UnrealTaskProcessor>());
+  return asyncSystem;
+}

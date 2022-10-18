@@ -128,6 +128,7 @@ public:
   virtual void Activate(bool bReset) override;
   virtual void Deactivate() override;
   virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
+  virtual bool IsReadyForFinishDestroy() override;
 
 protected:
   /**
@@ -219,4 +220,5 @@ protected:
 
 private:
   Cesium3DTilesSelection::RasterOverlay* _pOverlay;
+  int32 _overlaysBeingDestroyed;
 };

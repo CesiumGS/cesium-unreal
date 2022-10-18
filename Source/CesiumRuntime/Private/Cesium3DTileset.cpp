@@ -639,7 +639,6 @@ public:
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
-    FPlatformProcess::Sleep(5.0f);
     CesiumGltf::Model* pModel =
         std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
     if (!pModel)
@@ -904,12 +903,6 @@ const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   return pAssetAccessor;
 }
 
-CesiumAsync::AsyncSystem& getAsyncSystem() {
-  static CesiumAsync::AsyncSystem asyncSystem(
-      std::make_shared<UnrealTaskProcessor>());
-  return asyncSystem;
-}
-
 const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
 getCesiumViewExtension() {
   static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
@@ -934,7 +927,7 @@ void ACesium3DTileset::LoadTileset() {
       cesiumViewExtension = getCesiumViewExtension();
   const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor =
       getAssetAccessor();
-  CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
+  const CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
 
   // Both the feature flag and the CesiumViewExtension are global, not owned by
   // the Tileset. We're just applying one to the other here out of convenience.
@@ -1185,8 +1178,12 @@ void ACesium3DTileset::DestroyTileset() {
     return;
   }
 
+  // Don't allow this Cesium3DTileset to be fully destroyed until
+  // any cesium-native Tilesets it created have wrapped up any async
+  // operations in progress and have been fully destroyed.
+  // See IsReadyForFinishDestroy.
   ++this->_tilesetsBeingDestroyed;
-  this->_pTileset->GetAsyncDestructionCompleteEvent().thenInMainThread(
+  this->_pTileset->getAsyncDestructionCompleteEvent().thenInMainThread(
       [this]() { --this->_tilesetsBeingDestroyed; });
   this->_pTileset.Reset();
 

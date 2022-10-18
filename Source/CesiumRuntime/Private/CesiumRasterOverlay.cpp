@@ -10,7 +10,8 @@
 FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
 
 // Sets default values for this component's properties
-UCesiumRasterOverlay::UCesiumRasterOverlay() {
+UCesiumRasterOverlay::UCesiumRasterOverlay()
+    : _pOverlay(nullptr), _overlaysBeingDestroyed(0) {
   this->bAutoActivate = true;
 
   // Set this component to be initialized when the game starts, and to be ticked
@@ -110,6 +111,14 @@ void UCesiumRasterOverlay::RemoveFromTileset() {
     return;
   }
 
+  // Don't allow this RasterOverlay to be fully destroyed until
+  // any cesium-native RasterOverlays it created have wrapped up any async
+  // operations in progress and have been fully destroyed.
+  // See IsReadyForFinishDestroy.
+  ++this->_overlaysBeingDestroyed;
+  this->_pOverlay->getAsyncDestructionCompleteEvent(getAsyncSystem())
+      .thenInMainThread([this]() { --this->_overlaysBeingDestroyed; });
+
   this->OnRemove(pTileset, this->_pOverlay);
   pTileset->getOverlays().remove(this->_pOverlay);
   this->_pOverlay = nullptr;
@@ -175,6 +184,17 @@ void UCesiumRasterOverlay::Deactivate() {
 void UCesiumRasterOverlay::OnComponentDestroyed(bool bDestroyingHierarchy) {
   this->RemoveFromTileset();
   Super::OnComponentDestroyed(bDestroyingHierarchy);
+}
+
+bool UCesiumRasterOverlay::IsReadyForFinishDestroy() {
+  bool ready = Super::IsReadyForFinishDestroy();
+  ready &= this->_overlaysBeingDestroyed == 0;
+
+  if (!ready) {
+    getAsyncSystem().dispatchMainThreadTasks();
+  }
+
+  return ready;
 }
 
 Cesium3DTilesSelection::Tileset* UCesiumRasterOverlay::FindTileset() const {

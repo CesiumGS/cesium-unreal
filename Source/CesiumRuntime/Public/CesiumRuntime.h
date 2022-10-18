@@ -38,3 +38,5 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 
 CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting;
+
+CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
