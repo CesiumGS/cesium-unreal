@@ -12,9 +12,7 @@
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
-#include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/IAssetResponse.h"
-#include "CesiumAsync/SqliteCache.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
 #include "CesiumCameraManager.h"
@@ -47,8 +45,6 @@
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
-#include "HAL/FileManager.h"
-#include "HttpModule.h"
 #include "IPhysXCookingModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
@@ -56,11 +52,8 @@
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
 #include "PixelFormat.h"
-#include "Runtime/Renderer/Private/ScenePrivate.h"
 #include "SceneTypes.h"
 #include "StereoRendering.h"
-#include "UnrealAssetAccessor.h"
-#include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/trigonometric.hpp>
@@ -863,45 +856,6 @@ void ACesium3DTileset::UpdateLoadStatus() {
 }
 
 namespace {
-
-std::string getCacheDatabaseName() {
-#if PLATFORM_ANDROID
-  FString BaseDirectory = FPaths::ProjectPersistentDownloadDir();
-#elif PLATFORM_IOS
-  FString BaseDirectory =
-      FPaths::Combine(*FPaths::ProjectSavedDir(), TEXT("Cesium"));
-  if (!IFileManager::Get().DirectoryExists(*BaseDirectory)) {
-    IFileManager::Get().MakeDirectory(*BaseDirectory, true);
-  }
-#else
-  FString BaseDirectory = FPaths::EngineUserDir();
-#endif
-
-  FString CesiumDBFile =
-      FPaths::Combine(*BaseDirectory, TEXT("cesium-request-cache.sqlite"));
-  FString PlatformAbsolutePath =
-      IFileManager::Get().ConvertToAbsolutePathForExternalAppForWrite(
-          *CesiumDBFile);
-
-  UE_LOG(
-      LogCesium,
-      Display,
-      TEXT("Caching Cesium requests in %s"),
-      *PlatformAbsolutePath);
-
-  return TCHAR_TO_UTF8(*PlatformAbsolutePath);
-}
-
-const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
-  static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
-      std::make_shared<CesiumAsync::CachingAssetAccessor>(
-          spdlog::default_logger(),
-          std::make_shared<UnrealAssetAccessor>(),
-          std::make_shared<CesiumAsync::SqliteCache>(
-              spdlog::default_logger(),
-              getCacheDatabaseName()));
-  return pAssetAccessor;
-}
 
 const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
 getCesiumViewExtension() {
@@ -2145,6 +2099,7 @@ bool ACesium3DTileset::IsReadyForFinishDestroy() {
   ready &= this->_tilesetsBeingDestroyed == 0;
 
   if (!ready) {
+    getAssetAccessor()->tick();
     getAsyncSystem().dispatchMainThreadTasks();
   }
 

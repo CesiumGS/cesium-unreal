@@ -8,6 +8,11 @@
 class ACesium3DTileset;
 class UCesiumRasterOverlay;
 
+namespace CesiumAsync {
+class AsyncSystem;
+class IAssetAccessor;
+} // namespace CesiumAsync
+
 DECLARE_LOG_CATEGORY_EXTERN(LogCesium, Log, All);
 
 class FCesiumRuntimeModule : public IModuleInterface {
@@ -40,3 +45,4 @@ CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting;
 
 CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
+const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor();

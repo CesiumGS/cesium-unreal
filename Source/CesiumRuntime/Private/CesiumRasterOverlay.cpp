@@ -191,6 +191,7 @@ bool UCesiumRasterOverlay::IsReadyForFinishDestroy() {
   ready &= this->_overlaysBeingDestroyed == 0;
 
   if (!ready) {
+    getAssetAccessor()->tick();
     getAsyncSystem().dispatchMainThreadTasks();
   }
 
