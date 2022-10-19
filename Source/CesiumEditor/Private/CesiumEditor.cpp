@@ -96,17 +96,12 @@ createButtonBoxBrush(const FString& name, const FLinearColor& color) {
 } // namespace
 
 void FCesiumEditorModule::StartupModule() {
-  static CesiumAsync::AsyncSystem asyncSystem(
-      std::make_shared<UnrealTaskProcessor>());
-
   _pModule = this;
 
   IModuleInterface::StartupModule();
 
-  auto pAssetAccessor = std::make_shared<UnrealAssetAccessor>();
-
   this->_pIonSession =
-      std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
+      std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
   this->_pIonSession->resume();
 
   // Only register style once
