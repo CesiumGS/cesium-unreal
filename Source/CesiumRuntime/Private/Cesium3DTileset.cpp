@@ -970,10 +970,7 @@ void ACesium3DTileset::LoadTileset() {
         FCesium3DTilesetLoadFailureDetails ueDetails{};
         ueDetails.Tileset = this;
         ueDetails.Type = ECesium3DTilesetLoadType(typeValue);
-        ueDetails.HttpStatusCode =
-            details.pRequest && details.pRequest->response()
-                ? details.pRequest->response()->statusCode()
-                : 0;
+        ueDetails.HttpStatusCode = details.statusCode;
         ueDetails.Message = UTF8_TO_TCHAR(details.message.c_str());
 
         // Broadcast the event from the game thread.

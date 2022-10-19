@@ -44,5 +44,6 @@ DECLARE_MULTICAST_DELEGATE_OneParam(
 CESIUMRUNTIME_API extern FCesiumRasterOverlayIonTroubleshooting
     OnCesiumRasterOverlayIonTroubleshooting;
 
-CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
-const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor();
+CESIUMRUNTIME_API CesiumAsync::AsyncSystem& getAsyncSystem() noexcept;
+CESIUMRUNTIME_API const std::shared_ptr<CesiumAsync::IAssetAccessor>&
+getAssetAccessor();
