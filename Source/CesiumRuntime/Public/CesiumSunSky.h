@@ -163,7 +163,7 @@ protected:
    */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
   ACesiumGeoreference* GetGeoreference() const;
-  
+
   /**
    * Set the Date at which DST starts in the current year.
    *
