@@ -79,7 +79,7 @@ if (CESIUM_USE_UNREAL_TRACING)
   list(APPEND CESIUM_EXTRA_INCLUDES "${UNREAL_ENGINE_DIR}/Engine/Source/Runtime/TraceLog/Public")
   list(APPEND CESIUM_EXTRA_INCLUDES "${UNREAL_ENGINE_DIR}/Engine/Source/Runtime/Core/Public")
   # Change this line depending on where your project's PCH is. 
-  list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/../Intermediate/Build/Win64/UnrealEditor/Development/CesiumRuntime")
+  list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/../Intermediate/Build/Win64/UE4Editor/Development/CesiumRuntime")
   # Let Cesium Native know that we are tracing and overriding the default tracing macros.
   add_compile_definitions(CESIUM_TRACING_ENABLED)
   add_compile_definitions(CESIUM_OVERRIDE_TRACING)
