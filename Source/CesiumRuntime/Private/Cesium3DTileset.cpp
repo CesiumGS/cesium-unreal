@@ -56,6 +56,7 @@
 #include "PixelFormat.h"
 #include "SceneTypes.h"
 #include "StereoRendering.h"
+//#include "Compression/lz4.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/trigonometric.hpp>
@@ -657,6 +658,14 @@ deserializeGltf(const gsl::span<const std::byte>& cachedGltf) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DeserializeGltf)
 
+  // TODO: should be static thread-local?
+  //std::vector<std::byte> cachedGltf;
+  //{
+  //  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LZ4_Decompress)
+  //  cachedGltf.resize(4096);
+
+  //}
+
   PROCEED_IF(cachedGltf.size() >= sizeof(CachedGltfHeader))
 
   size_t readPos = 0;
@@ -861,7 +870,25 @@ std::vector<std::byte> serializeGltf(const CesiumGltf::Model& model) {
   // allocation.
   check(binaryChunkWritePos == totalAllocation);
 
+  // TODO: if we are returning a separate compressed vector of bytes, then the
+  // "result" vector is just a scratch vector. So we should keep around the
+  // allocation. Maybe result should be static thread-local?
+  /*/ std::vector<std::byte> lz4CompressedBuffer;
+
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LZ4_Compress)
+
+    lz4CompressedBuffer.resize(LZ4_compressBound(result.size()));
+
+    LZ4_compress_default(
+        (const char*)result.data(),
+        (char*)lz4CompressedBuffer.data(),
+        result.size(),
+        lz4CompressedBuffer.size());
+  }*/
+
   return result;
+  //return lz4CompressedBuffer;
 }
 } // namespace
 
@@ -898,6 +925,8 @@ public:
         const CesiumAsync::IAssetResponse* pResponse =
             tileLoadResult.pCompletedRequest->response();
         if (pResponse) {
+          // TODO: physics!!
+          // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Source/Runtime/Engine/Private/PhysicsEngine/BodySetup.cpp#L531
           std::optional<CesiumGltf::Model> cachedGltf =
               deserializeGltf(pResponse->clientData());
 
