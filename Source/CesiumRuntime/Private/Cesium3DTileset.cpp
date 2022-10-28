@@ -648,7 +648,6 @@ struct CachedImageDescription {
 };
 
 // Convenient macro for runtime "asserting" - fails the function otherwise.
-// Similar to an error monad.
 #define PROCEED_IF(stmt)                                                       \
   if (!(stmt)) {                                                               \
     return std::nullopt;                                                       \
@@ -659,7 +658,7 @@ deserializeGltf(const gsl::span<const std::byte>& cachedGltf) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DeserializeGltf)
 
   // TODO: should be static thread-local?
-  //std::vector<std::byte> cachedGltf;
+  // std::vector<std::byte> cachedGltf;
   //{
   //  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LZ4_Decompress)
   //  cachedGltf.resize(4096);
@@ -888,7 +887,7 @@ std::vector<std::byte> serializeGltf(const CesiumGltf::Model& model) {
   }*/
 
   return result;
-  //return lz4CompressedBuffer;
+  // return lz4CompressedBuffer;
 }
 } // namespace
 
