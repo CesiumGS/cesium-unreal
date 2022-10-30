@@ -12,6 +12,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
+#include <vector>
 #include "CesiumGltfComponent.generated.h"
 
 class UMaterialInterface;
@@ -60,12 +61,15 @@ class UCesiumGltfComponent : public USceneComponent {
 public:
   class HalfConstructed {
   public:
+    std::vector<std::byte> derivedDataToCache{};
+    bool invalidateDerivedDataCache = false;
+
     virtual ~HalfConstructed() = default;
   };
 
   static TUniquePtr<HalfConstructed> CreateOffGameThread(
       const glm::dmat4x4& Transform,
-      const CreateGltfOptions::CreateModelOptions& Options);
+      CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
       const CesiumGltf::Model& model,

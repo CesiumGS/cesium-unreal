@@ -56,7 +56,6 @@
 #include "PixelFormat.h"
 #include "SceneTypes.h"
 #include "StereoRendering.h"
-//#include "Compression/lz4.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/trigonometric.hpp>
@@ -614,282 +613,7 @@ void ACesium3DTileset::NotifyHit(
   // std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
 
-namespace {
-/*
-  Format Outline:
-  1. CachedGltfHeader
-  2. glTF JSON
-  3. CachedBufferDescription 1, 2, 3...
-  4. CachedImageDescription 1, 2, 3...
-  5. Binary Chunk with decoded buffers / images
- */
-// TODO: NOT PERMANENT
-struct CachedGltfHeader {
-  unsigned char magic[4];
-  uint32_t version;
-  uint32_t gltfJsonSize;
-  uint32_t cachedBuffersCount;
-  uint32_t cachedImagesCount;
-};
-
-struct CachedBufferDescription {
-  uint32_t byteOffset;
-  uint32_t byteSize;
-};
-
-struct CachedImageDescription {
-  uint32_t width;
-  uint32_t height;
-  uint32_t channels;
-  uint32_t bytesPerChannel;
-  uint32_t mipCount;
-  uint32_t byteOffset;
-  uint32_t byteSize;
-};
-
-// Convenient macro for runtime "asserting" - fails the function otherwise.
-#define PROCEED_IF(stmt)                                                       \
-  if (!(stmt)) {                                                               \
-    return std::nullopt;                                                       \
-  }
-std::optional<CesiumGltf::Model>
-deserializeGltf(const gsl::span<const std::byte>& cachedGltf) {
-
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::DeserializeGltf)
-
-  // TODO: should be static thread-local?
-  // std::vector<std::byte> cachedGltf;
-  //{
-  //  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LZ4_Decompress)
-  //  cachedGltf.resize(4096);
-
-  //}
-
-  PROCEED_IF(cachedGltf.size() >= sizeof(CachedGltfHeader))
-
-  size_t readPos = 0;
-
-  const CachedGltfHeader& header =
-      *reinterpret_cast<const CachedGltfHeader*>(&cachedGltf[readPos]);
-  readPos += sizeof(CachedGltfHeader);
-
-  // TODO: look for a more elegant magic check!
-  PROCEED_IF(header.magic[0] == 'C')
-  PROCEED_IF(header.magic[1] == '4')
-  PROCEED_IF(header.magic[2] == 'U')
-  PROCEED_IF(header.magic[3] == 'E')
-  PROCEED_IF(header.version == 1)
-
-  PROCEED_IF(cachedGltf.size() >= readPos + header.gltfJsonSize);
-
-  gsl::span<const std::byte> gltfJsonBytes(
-      &cachedGltf[readPos],
-      header.gltfJsonSize);
-  readPos += header.gltfJsonSize;
-
-  CesiumGltfReader::GltfReader reader;
-  CesiumGltfReader::GltfReaderResult gltfJsonResult =
-      reader.readGltf(gltfJsonBytes);
-
-  PROCEED_IF(gltfJsonResult.errors.empty() && gltfJsonResult.model)
-  PROCEED_IF(
-      gltfJsonResult.model->buffers.size() == header.cachedBuffersCount &&
-      gltfJsonResult.model->images.size() == header.cachedImagesCount)
-
-  size_t bufferDescriptionsSize =
-      header.cachedBuffersCount * sizeof(CachedBufferDescription) +
-      header.cachedImagesCount * sizeof(CachedImageDescription);
-
-  PROCEED_IF(cachedGltf.size() >= readPos + bufferDescriptionsSize);
-
-  for (CesiumGltf::Buffer& buffer : gltfJsonResult.model->buffers) {
-    const CachedBufferDescription& description =
-        *reinterpret_cast<const CachedBufferDescription*>(&cachedGltf[readPos]);
-    readPos += sizeof(CachedBufferDescription);
-
-    PROCEED_IF(
-        cachedGltf.size() >= description.byteOffset + description.byteSize)
-    buffer.cesium.data.resize(description.byteSize);
-    std::memcpy(
-        buffer.cesium.data.data(),
-        &cachedGltf[description.byteOffset],
-        description.byteSize);
-  }
-
-  for (CesiumGltf::Image& image : gltfJsonResult.model->images) {
-    const CachedImageDescription& description =
-        *reinterpret_cast<const CachedImageDescription*>(&cachedGltf[readPos]);
-    readPos += sizeof(CachedImageDescription);
-
-    PROCEED_IF(
-        cachedGltf.size() >= description.byteOffset + description.byteSize)
-    image.cesium.pixelData.resize(description.byteSize);
-    std::memcpy(
-        image.cesium.pixelData.data(),
-        &cachedGltf[description.byteOffset],
-        description.byteSize);
-
-    image.cesium.width = static_cast<int32_t>(description.width);
-    image.cesium.height = static_cast<int32_t>(description.height);
-    image.cesium.channels = static_cast<int32_t>(description.channels);
-    image.cesium.bytesPerChannel =
-        static_cast<int32_t>(description.bytesPerChannel);
-
-    image.cesium.mipPositions.resize(description.mipCount);
-
-    size_t mipByteOffset = 0;
-
-    // A mip count of 0 indicates there is only one mip and it is within the
-    // pixelData.
-    if (description.mipCount != 0) {
-      CesiumGltf::ImageCesiumMipPosition& mip0 = image.cesium.mipPositions[0];
-      mip0.byteOffset = mipByteOffset;
-      mip0.byteSize = description.width * description.height *
-                      description.channels * description.bytesPerChannel;
-
-      mipByteOffset += mip0.byteSize;
-    }
-
-    for (uint32_t mipIndex = 1; mipIndex < description.mipCount; ++mipIndex) {
-      uint32_t mipWidth = description.width >> mipIndex;
-      uint32_t mipHeight = description.height >> mipIndex;
-
-      if (mipWidth < 1) {
-        mipWidth = 1;
-      }
-
-      if (mipHeight < 1) {
-        mipHeight = 1;
-      }
-
-      CesiumGltf::ImageCesiumMipPosition& mip =
-          image.cesium.mipPositions[mipIndex];
-      mip.byteOffset = mipByteOffset;
-      mip.byteSize = mipWidth * mipHeight * description.channels *
-                     description.bytesPerChannel;
-
-      mipByteOffset += mip.byteSize;
-    }
-  }
-
-  return std::move(gltfJsonResult.model);
-}
-#undef PROCEED_IF
-
-std::vector<std::byte> serializeGltf(const CesiumGltf::Model& model) {
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::serializeGltf)
-
-  uint32_t bufferCount = static_cast<uint32_t>(model.buffers.size());
-  uint32_t imageCount = static_cast<uint32_t>(model.images.size());
-
-  CesiumGltfWriter::GltfWriter writer;
-  CesiumGltfWriter::GltfWriterResult gltfJsonResult = writer.writeGltf(model);
-
-  if (!gltfJsonResult.errors.empty()) {
-    return {};
-  }
-
-  size_t gltfJsonSize = gltfJsonResult.gltfBytes.size();
-
-  uint32_t binaryChunkSize = 0;
-  for (uint32_t i = 0; i < bufferCount; ++i) {
-    binaryChunkSize += model.buffers[i].cesium.data.size();
-  }
-
-  for (uint32_t i = 0; i < imageCount; ++i) {
-    binaryChunkSize += model.images[i].cesium.pixelData.size();
-  }
-
-  // TODO: alignment?
-  size_t binaryChunkOffset = sizeof(CachedGltfHeader) + gltfJsonSize +
-                             bufferCount * sizeof(CachedBufferDescription) +
-                             imageCount * sizeof(CachedImageDescription);
-  size_t totalAllocation = binaryChunkOffset + binaryChunkSize;
-
-  std::vector<std::byte> result(totalAllocation);
-  std::byte* pWritePos = result.data();
-
-  CachedGltfHeader& header = *reinterpret_cast<CachedGltfHeader*>(pWritePos);
-  header.magic[0] = 'C';
-  header.magic[1] = '4';
-  header.magic[2] = 'U';
-  header.magic[3] = 'E';
-  header.version = 1;
-  header.gltfJsonSize = static_cast<uint32_t>(gltfJsonSize);
-  header.cachedBuffersCount = bufferCount;
-  header.cachedImagesCount = imageCount;
-  pWritePos += sizeof(CachedGltfHeader);
-
-  // Copy gltf json
-  std::memcpy(pWritePos, gltfJsonResult.gltfBytes.data(), gltfJsonSize);
-  pWritePos += gltfJsonSize;
-
-  size_t binaryChunkWritePos = binaryChunkOffset;
-
-  for (const CesiumGltf::Buffer& buffer : model.buffers) {
-    CachedBufferDescription& description =
-        *reinterpret_cast<CachedBufferDescription*>(pWritePos);
-    description.byteOffset = static_cast<uint32_t>(binaryChunkWritePos);
-    description.byteSize = static_cast<uint32_t>(buffer.cesium.data.size());
-    pWritePos += sizeof(CachedBufferDescription);
-
-    std::memcpy(
-        &result[binaryChunkWritePos],
-        buffer.cesium.data.data(),
-        description.byteSize);
-    binaryChunkWritePos += description.byteSize;
-  }
-
-  for (const CesiumGltf::Image& image : model.images) {
-    CachedImageDescription& description =
-        *reinterpret_cast<CachedImageDescription*>(pWritePos);
-    description.width = static_cast<uint32_t>(image.cesium.width);
-    description.height = static_cast<uint32_t>(image.cesium.height);
-    description.channels = static_cast<uint32_t>(image.cesium.channels);
-    description.bytesPerChannel =
-        static_cast<uint32_t>(image.cesium.bytesPerChannel);
-    description.mipCount =
-        static_cast<uint32_t>(image.cesium.mipPositions.size());
-    description.byteOffset = binaryChunkWritePos;
-    description.byteSize = static_cast<uint32_t>(image.cesium.pixelData.size());
-    pWritePos += sizeof(CachedImageDescription);
-
-    std::memcpy(
-        &result[binaryChunkWritePos],
-        image.cesium.pixelData.data(),
-        description.byteSize);
-    binaryChunkWritePos += description.byteSize;
-  }
-
-  // The description and json writing should end at the start of the binary
-  // chunk.
-  check(pWritePos == &result[binaryChunkOffset]);
-
-  // The written binary chunk should end at the expected at the very end of the
-  // allocation.
-  check(binaryChunkWritePos == totalAllocation);
-
-  // TODO: if we are returning a separate compressed vector of bytes, then the
-  // "result" vector is just a scratch vector. So we should keep around the
-  // allocation. Maybe result should be static thread-local?
-  /*/ std::vector<std::byte> lz4CompressedBuffer;
-
-  {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LZ4_Compress)
-
-    lz4CompressedBuffer.resize(LZ4_compressBound(result.size()));
-
-    LZ4_compress_default(
-        (const char*)result.data(),
-        (char*)lz4CompressedBuffer.data(),
-        result.size(),
-        lz4CompressedBuffer.size());
-  }*/
-
-  return result;
-  // return lz4CompressedBuffer;
-}
-} // namespace
+namespace {} // namespace
 
 class UnrealResourcePreparer
     : public Cesium3DTilesSelection::IPrepareRendererResources {
@@ -910,37 +634,34 @@ public:
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
-    CesiumGltf::Model* pModel =
+    // TODO: serialize model options into DDC so we can check cache hits
+    // to see if they used the same options. If the cached derived content
+    // used different options, we may need to invalidate or update the cache.
+    CreateGltfOptions::CreateModelOptions options;
+    options.pModel =
         std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
-    std::vector<std::byte> derivedBufferToCache;
 
-    if (pModel) {
-      // Freshly loaded model, serialize it into cache.
-      derivedBufferToCache = serializeGltf(*pModel);
-    } else {
+    if (!options.pModel) {
       if (std::get_if<Cesium3DTilesSelection::TileCachedRenderContent>(
               &tileLoadResult.contentKind)) {
         // Custom serialized data was found in the cache.
         const CesiumAsync::IAssetResponse* pResponse =
             tileLoadResult.pCompletedRequest->response();
-        if (pResponse) {
-          // TODO: physics!!
-          // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Source/Runtime/Engine/Private/PhysicsEngine/BodySetup.cpp#L531
-          std::optional<CesiumGltf::Model> cachedGltf =
-              deserializeGltf(pResponse->clientData());
+        if (pResponse && !pResponse->clientData().empty()) {
+          // We have cached derived data
+          options.derivedDataCache = pResponse->clientData();
 
-          if (cachedGltf) {
-            tileLoadResult.contentKind = std::move(*cachedGltf);
-            pModel =
-                std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
-          } else {
-            UE_LOG(LogCesium, Warning, TEXT("Could not parse cached glTF"));
-          }
+          // Add empty model in the tile content, the gltf loader may populate
+          // it when deserializing the DDC.
+          tileLoadResult.contentKind = CesiumGltf::Model();
+          options.pModel =
+              std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
         }
       }
 
-      if (!pModel) {
-        // Write back the original response data.
+      if (!options.pModel) {
+        // We have no model and no derived content, just write
+        // back the original response data.
         return asyncSystem.createResolvedFuture(
             Cesium3DTilesSelection::ClientTileLoadResult{
                 std::move(tileLoadResult),
@@ -950,8 +671,6 @@ public:
       }
     }
 
-    CreateGltfOptions::CreateModelOptions options;
-    options.pModel = pModel;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
@@ -961,14 +680,14 @@ public:
     options.pEncodedMetadataDescription =
         &this->_pActor->_encodedMetadataDescription;
 
-    TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(transform, options);
+    UCesiumGltfComponent::HalfConstructed* pHalf =
+        UCesiumGltfComponent::CreateOffGameThread(transform, options).Release();
     return asyncSystem.createResolvedFuture(
         Cesium3DTilesSelection::ClientTileLoadResult{
             std::move(tileLoadResult),
-            pHalf.Release(),
+            pHalf,
             false,
-            std::move(derivedBufferToCache)});
+            std::move(pHalf->derivedDataToCache)});
   }
 
   virtual void* prepareInMainThread(
