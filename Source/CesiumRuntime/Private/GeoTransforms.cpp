@@ -137,8 +137,6 @@ glm::dquat GeoTransforms::TransformRotatorUnrealToEastSouthUp(
     const glm::dvec3& ueLocation) const noexcept {
   glm::dmat3 esuToUe = this->ComputeEastSouthUpToUnreal(origin, ueLocation);
   glm::dmat3 ueToEsu = glm::affineInverse(esuToUe);
-  // TODO: check this mat-->quat conversion isn't affected by handedness
-  // (needs to work in left-handed system)
   glm::dquat ueToEsuQuat = glm::quat_cast(ueToEsu);
   return ueToEsuQuat * UERotator;
 }
@@ -149,9 +147,6 @@ glm::dquat GeoTransforms::TransformRotatorEastSouthUpToUnreal(
     const glm::dvec3& ueLocation) const noexcept {
 
   glm::dmat3 esuToUe = this->ComputeEastSouthUpToUnreal(origin, ueLocation);
-  // TODO: is this matrix to quaternion conversion affected by handedness?
-  // Remember we are in Unreal's left-handedness. In fact that's why we use
-  // ESU instead of ENU.
   glm::dquat esuToUeQuat = glm::quat_cast(esuToUe);
   return esuToUeQuat * ESURotator;
 }

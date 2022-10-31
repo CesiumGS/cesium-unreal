@@ -15,6 +15,11 @@
 - Significantly reduced frame-rate dips during asynchronous tile loading by eliminating thread pool monopilaztion by Cesium tasks.
 - Improved the tile destruction sequence by allowing it to defer being destroyed to future frames if it is waiting on asynchronous work to finish. Previously we would essentially block the main thread waiting for tiles to become ready for destruction.
 
+
+##### Breaking Changes :mega:
+
+- Removed a number of buggy funnctions on the `CesiumGeoreference`: `ComputeEastNorthUp`, `TransformRotatorEastNorthUpToUnreal`, and `TransformRotatorUnrealToEastNorthUp`. These functions were replaced with "EastSouthUp" counterparts.
+
 ### v1.18.0 - 2022-10-03
 
 ##### Additions :tada:
