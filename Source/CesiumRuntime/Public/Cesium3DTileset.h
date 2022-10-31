@@ -954,6 +954,7 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
   virtual void BeginDestroy() override;
+  virtual bool IsReadyForFinishDestroy() override;
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void PostLoad() override;
@@ -1108,6 +1109,8 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToHideThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
+
+  int32 _tilesetsBeingDestroyed;
 
   friend class UnrealResourcePreparer;
 };
