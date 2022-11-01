@@ -70,11 +70,11 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FRotator localRotation = Controller->GetControlRotation();
 
   // Transform the rotation in the ESU frame to the Unreal world frame.
-  FMatrix enuAdjustmentMatrix =
-      this->GetGeoreference()->ComputeEastNorthUpToUnreal(
+  FMatrix esuAdjustmentMatrix =
+      this->GetGeoreference()->ComputeEastSouthUpToUnreal(
           this->GetPawnViewLocation());
 
-  return FRotator(enuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
+  return FRotator(esuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
 }
 
 FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {

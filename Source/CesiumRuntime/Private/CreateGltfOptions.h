@@ -15,7 +15,7 @@
 // TODO: internal documentation
 namespace CreateGltfOptions {
 struct CreateModelOptions {
-  const CesiumGltf::Model* pModel = nullptr;
+  CesiumGltf::Model* pModel = nullptr;
   const FMetadataDescription* pEncodedMetadataDescription = nullptr;
   bool alwaysIncludeTangents = false;
   bool createPhysicsMeshes = true;

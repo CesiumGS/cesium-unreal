@@ -68,6 +68,7 @@ public:
       const CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
+      const CesiumGltf::Model& model,
       AActor* ParentActor,
       TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,

@@ -165,10 +165,7 @@ FRotator VecMath::createRotator(const glm::dmat3& m) noexcept {
 }
 
 FRotator VecMath::createRotator(const glm::dquat& q) noexcept {
-  return FRotator(
-      CesiumUtility::Math::radiansToDegrees(pitch(q)),
-      CesiumUtility::Math::radiansToDegrees(yaw(q)),
-      CesiumUtility::Math::radiansToDegrees(roll(q)));
+  return FRotator(FQuat(q.x, q.y, q.z, q.w));
 }
 
 FQuat VecMath::createQuaternion(const glm::dquat& q) noexcept {

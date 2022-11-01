@@ -131,36 +131,32 @@ glm::dvec3 GeoTransforms::TransformUnrealToEcef(
   return glm::dvec3(this->_ueAbsToEcef * glm::dvec4(ueAbs, 1.0));
 }
 
-glm::dquat GeoTransforms::TransformRotatorUnrealToEastNorthUp(
+glm::dquat GeoTransforms::TransformRotatorUnrealToEastSouthUp(
     const glm::dvec3& origin,
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
-  glm::dmat3 enuToFixedUE =
-      this->ComputeEastNorthUpToUnreal(origin, ueLocation);
-  glm::dquat enuAdjustmentQuat = glm::quat_cast(enuToFixedUE);
-  return enuAdjustmentQuat * UERotator;
+  glm::dmat3 esuToUe = this->ComputeEastSouthUpToUnreal(origin, ueLocation);
+  glm::dmat3 ueToEsu = glm::affineInverse(esuToUe);
+  glm::dquat ueToEsuQuat = glm::quat_cast(ueToEsu);
+  return ueToEsuQuat * UERotator;
 }
 
-glm::dquat GeoTransforms::TransformRotatorEastNorthUpToUnreal(
+glm::dquat GeoTransforms::TransformRotatorEastSouthUpToUnreal(
     const glm::dvec3& origin,
-    const glm::dquat& ENURotator,
+    const glm::dquat& ESURotator,
     const glm::dvec3& ueLocation) const noexcept {
 
-  glm::dmat3 enuToFixedUE =
-      this->ComputeEastNorthUpToUnreal(origin, ueLocation);
-  glm::dmat3 fixedUeToEnu = glm::affineInverse(enuToFixedUE);
-  glm::dquat fixedUeToEnuQuat = glm::quat_cast(fixedUeToEnu);
-  return fixedUeToEnuQuat * ENURotator;
+  glm::dmat3 esuToUe = this->ComputeEastSouthUpToUnreal(origin, ueLocation);
+  glm::dquat esuToUeQuat = glm::quat_cast(esuToUe);
+  return esuToUeQuat * ESURotator;
 }
 
-glm::dmat3 GeoTransforms::ComputeEastNorthUpToUnreal(
+glm::dmat3 GeoTransforms::ComputeEastSouthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
   glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
 
-  // Camera Axes = ENU
-  // Unreal Axes = controlled by Georeference
   glm::dmat3 rotationCesium =
       glm::dmat3(this->_ecefToGeoreferenced) * enuToEcef;
 

@@ -864,55 +864,55 @@ FVector ACesiumGeoreference::TransformUnrealToEcef(const FVector& ue) const {
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
-glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
+glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastSouthUp(
     const glm::dquat& UeRotator,
     const glm::dvec3& UeLocation) const {
-  return this->_geoTransforms.TransformRotatorUnrealToEastNorthUp(
+  return this->_geoTransforms.TransformRotatorUnrealToEastSouthUp(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       UeRotator,
       UeLocation);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorUnrealToEastNorthUp(
+FRotator ACesiumGeoreference::TransformRotatorUnrealToEastSouthUp(
     const FRotator& UERotator,
     const FVector& ueLocation) const {
-  glm::dquat q = TransformRotatorUnrealToEastNorthUp(
+  glm::dquat q = TransformRotatorUnrealToEastSouthUp(
       VecMath::createQuaternion(UERotator.Quaternion()),
       VecMath::createVector3D(ueLocation));
   return VecMath::createRotator(q);
 }
 
-glm::dquat ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
-    const glm::dquat& EnuRotator,
+glm::dquat ACesiumGeoreference::TransformRotatorEastSouthUpToUnreal(
+    const glm::dquat& EsuRotator,
     const glm::dvec3& UeLocation) const {
-  return this->_geoTransforms.TransformRotatorEastNorthUpToUnreal(
+  return this->_geoTransforms.TransformRotatorEastSouthUpToUnreal(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      EnuRotator,
+      EsuRotator,
       UeLocation);
 }
 
-FRotator ACesiumGeoreference::TransformRotatorEastNorthUpToUnreal(
-    const FRotator& ENURotator,
+FRotator ACesiumGeoreference::TransformRotatorEastSouthUpToUnreal(
+    const FRotator& EsuRotator,
     const FVector& ueLocation) const {
-  glm::dquat q = TransformRotatorEastNorthUpToUnreal(
-      VecMath::createQuaternion(ENURotator.Quaternion()),
+  glm::dquat q = TransformRotatorEastSouthUpToUnreal(
+      VecMath::createQuaternion(EsuRotator.Quaternion()),
       VecMath::createVector3D(ueLocation));
   return VecMath::createRotator(q);
 }
 
 glm::dmat3
-ACesiumGeoreference::ComputeEastNorthUpToUnreal(const glm::dvec3& ue) const {
-  return _geoTransforms.ComputeEastNorthUpToUnreal(
+ACesiumGeoreference::ComputeEastSouthUpToUnreal(const glm::dvec3& ue) const {
+  return _geoTransforms.ComputeEastSouthUpToUnreal(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       ue);
 }
 
-FMatrix
-ACesiumGeoreference::ComputeEastNorthUpToUnreal(const FVector& ue) const {
-  glm::dmat3 enuToUnreal = this->_geoTransforms.ComputeEastNorthUpToUnreal(
+FMatrix ACesiumGeoreference::ComputeEastSouthUpToUnreal(
+    const FVector& ue) const {
+  glm::dmat3 esuToUe = this->_geoTransforms.ComputeEastSouthUpToUnreal(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       glm::dvec3(ue.X, ue.Y, ue.Z));
-  return VecMath::createMatrix(enuToUnreal);
+  return VecMath::createMatrix(esuToUe);
 }
 
 glm::dmat3

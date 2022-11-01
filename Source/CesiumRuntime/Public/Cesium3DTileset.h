@@ -593,7 +593,11 @@ public:
    * When this is set to true, Frustrum Culling and Fog Culling are always
    * disabled.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Rendering")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetUseLodTransitions,
+      BlueprintSetter = SetUseLodTransitions,
+      Category = "Cesium|Rendering")
   bool UseLodTransitions = false;
 
   /**
@@ -814,6 +818,12 @@ public:
   float GetLoadProgress() const { return LoadProgress; }
 
   UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetUseLodTransitions() const { return UseLodTransitions; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetUseLodTransitions(bool InUseLodTransitions);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ETilesetSource GetTilesetSource() const { return TilesetSource; }
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
@@ -944,6 +954,7 @@ public:
   virtual bool ShouldTickIfViewportsOnly() const override;
   virtual void Tick(float DeltaTime) override;
   virtual void BeginDestroy() override;
+  virtual bool IsReadyForFinishDestroy() override;
   virtual void Destroyed() override;
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void PostLoad() override;
@@ -1097,6 +1108,8 @@ private:
   // Unreal Engine, then this field may be removed, and the
   // tilesToHideThisFrame may be hidden immediately.
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
+
+  int32 _tilesetsBeingDestroyed;
 
   friend class UnrealResourcePreparer;
 };

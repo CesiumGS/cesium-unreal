@@ -183,6 +183,9 @@ public:
    * The result will be an `FRotator`. Note that any translation and scaling
    * information will be lost.
    *
+   * This method assumes that `m` is already associated with the left-handed UE
+   * coordinate system.
+   *
    * @param m The `gl` matrix.
    * @return The `FRotator`.
    */
@@ -191,6 +194,9 @@ public:
   /**
    * @brief Create a `FRotator` from the given `glm` matrix.
    *
+   * This method assumes that `m` is already associated with the left-handed UE
+   * coordinate system.
+   *
    * @param m The `glm` matrix.
    * @return The `FRotator`.
    */
@@ -198,6 +204,9 @@ public:
 
   /**
    * @brief Create a `FRotator` from the given `glm` quaternion.
+   *
+   * This method assumes that `q` is already associated with the left-handed UE
+   * coordinate system.
    *
    * @param q The `glm` quaternion.
    * @return The `FRotator`.

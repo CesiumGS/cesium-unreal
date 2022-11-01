@@ -49,7 +49,7 @@ void UCesiumPolygonRasterOverlay::OnAdd(
         static_cast<RasterizedPolygonsOverlay*>(pOverlay);
     assert(this->_pExcluder == nullptr);
     this->_pExcluder =
-        std::make_shared<RasterizedPolygonsTileExcluder>(*pPolygons);
+        std::make_shared<RasterizedPolygonsTileExcluder>(pPolygons);
     pTileset->getOptions().excluders.push_back(this->_pExcluder);
   }
 }

@@ -5,6 +5,7 @@
 #include "CesiumLifetime.h"
 #include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/Texture.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "VecMath.h"
@@ -66,7 +67,7 @@ void destroyMaterialTexture(
           FMaterialParameterInfo(name, assocation, index),
           pTexture,
           true)) {
-    CesiumLifetime::destroy(pTexture);
+    CesiumTextureUtility::destroyTexture(pTexture);
   }
 }
 

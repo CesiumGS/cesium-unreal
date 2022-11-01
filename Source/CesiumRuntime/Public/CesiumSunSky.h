@@ -51,29 +51,6 @@ public:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cesium")
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
-protected:
-  /**
-   * THIS PROPERTY IS DEPRECATED.
-   *
-   * Get the Georeference instance from the Globe Anchor Component instead.
-   */
-  UPROPERTY(
-      BlueprintReadOnly,
-      Category = "Cesium",
-      BlueprintGetter = GetGeoreference,
-      Meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Get the Georeference instance from the Globe Anchor Component instead."))
-  ACesiumGeoreference* Georeference_DEPRECATED;
-
-  /**
-   * Gets the Georeference Actor associated with this instance. It is obtained
-   * from the Globe Anchor Component.
-   */
-  UFUNCTION(BlueprintGetter, Category = "Cesium")
-  ACesiumGeoreference* GetGeoreference() const;
-
   /**
    * Gets the time zone, represented as hours offset from GMT.
    *
@@ -163,6 +140,29 @@ protected:
       BlueprintReadWrite,
       Category = "Cesium|Date and Time|Daylight Savings")
   bool UseDaylightSavingTime = true;
+
+protected:
+  /**
+   * THIS PROPERTY IS DEPRECATED.
+   *
+   * Get the Georeference instance from the Globe Anchor Component instead.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      Category = "Cesium",
+      BlueprintGetter = GetGeoreference,
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Get the Georeference instance from the Globe Anchor Component instead."))
+  ACesiumGeoreference* Georeference_DEPRECATED;
+
+  /**
+   * Gets the Georeference Actor associated with this instance. It is obtained
+   * from the Globe Anchor Component.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  ACesiumGeoreference* GetGeoreference() const;
 
   /**
    * Set the Date at which DST starts in the current year.

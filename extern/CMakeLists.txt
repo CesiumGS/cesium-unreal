@@ -68,6 +68,27 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zp8")
 endif()
 
+option(CESIUM_USE_UNREAL_TRACING "Whether to trace cesium-native events using Unreal's tracing framework.")
+if (CESIUM_USE_UNREAL_TRACING)
+  # Trace Cesium Native with Unreal Insights. Need to include Unreal Engine headers when building 
+  # Cesium Native.
+
+  # Change this line to change engine version. Note you will have to set an environment variable to
+  # the engine directory manually - or you can hardcode the directory here.
+  set(UNREAL_ENGINE_DIR $ENV{UE427})
+  list(APPEND CESIUM_EXTRA_INCLUDES "${UNREAL_ENGINE_DIR}/Engine/Source/Runtime/TraceLog/Public")
+  list(APPEND CESIUM_EXTRA_INCLUDES "${UNREAL_ENGINE_DIR}/Engine/Source/Runtime/Core/Public")
+  # Change this line depending on where your project's PCH is. 
+  list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/../Intermediate/Build/Win64/UnrealEditor/Development/CesiumRuntime")
+  # Let Cesium Native know that we are tracing and overriding the default tracing macros.
+  add_compile_definitions(CESIUM_TRACING_ENABLED)
+  add_compile_definitions(CESIUM_OVERRIDE_TRACING)
+
+  # Overrides Cesium Native's macro definitions with Unreal Insights macros. 
+  # This allows us to trace Unreal, Cesium for Unreal, and Cesium Native all in Unreal Insights.
+  list(APPEND CESIUM_EXTRA_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/include")
+endif()
+
 add_subdirectory(cesium-native)
 
 # cesium-native doesn't require this header to be public, but Cesium for Unreal wants to use it.

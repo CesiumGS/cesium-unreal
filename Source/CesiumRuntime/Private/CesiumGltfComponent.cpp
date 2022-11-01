@@ -91,10 +91,33 @@ using TMeshVector4 = FVector4;
 static uint32_t nextMaterialId = 0;
 
 namespace {
+void destroyHalfLoadedTexture(
+    TUniquePtr<CesiumTextureUtility::LoadedTextureResult>& pHalfLoadedTexture) {
+  if (pHalfLoadedTexture) {
+    CesiumTextureUtility::destroyHalfLoadedTexture(*pHalfLoadedTexture.Get());
+  }
+}
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
-  virtual ~HalfConstructedReal() {}
   LoadModelResult loadModelResult;
+
+  virtual ~HalfConstructedReal() {
+    // TODO: deal with metadata case, when metadata uses async texture creation
+    // path See: https://github.com/CesiumGS/cesium-unreal/issues/979
+    for (LoadNodeResult& node : loadModelResult.nodeResults) {
+      if (node.meshResult) {
+        for (LoadPrimitiveResult& primitive :
+             node.meshResult->primitiveResults) {
+          destroyHalfLoadedTexture(primitive.baseColorTexture);
+          destroyHalfLoadedTexture(primitive.metallicRoughnessTexture);
+          destroyHalfLoadedTexture(primitive.normalTexture);
+          destroyHalfLoadedTexture(primitive.emissiveTexture);
+          destroyHalfLoadedTexture(primitive.occlusionTexture);
+          destroyHalfLoadedTexture(primitive.waterMaskTexture);
+        }
+      }
+    }
+  }
 };
 } // namespace
 
@@ -382,7 +405,7 @@ struct ColorVisitor {
 
 template <class T>
 static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
-    const CesiumGltf::Model& model,
+    CesiumGltf::Model& model,
     const std::optional<T>& gltfTexture,
     bool sRGB) {
   if (!gltfTexture || gltfTexture.value().index < 0 ||
@@ -404,7 +427,7 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
 }
 
 static void applyWaterMask(
-    const Model& model,
+    Model& model,
     const MeshPrimitive& primitive,
     LoadPrimitiveResult& primitiveResult) {
   // Initialize water mask if needed.
@@ -412,7 +435,7 @@ static void applyWaterMask(
   auto onlyLandIt = primitive.extras.find("OnlyLand");
   if (onlyWaterIt != primitive.extras.end() && onlyWaterIt->second.isBool() &&
       onlyLandIt != primitive.extras.end() && onlyLandIt->second.isBool()) {
-    CESIUM_TRACE("water mask");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ApplyWaterMask)
     bool onlyWater = onlyWaterIt->second.getBoolOrDefault(false);
     bool onlyLand = onlyLandIt->second.getBoolOrDefault(true);
     primitiveResult.onlyWater = onlyWater;
@@ -494,6 +517,8 @@ static void updateTextureCoordinatesForMetadata(
     const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes,
     TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinatesForMetadata)
 
   for (const EncodedFeatureIdTexture& encodedFeatureIdTexture :
        encodedPrimitiveMetadata.encodedFeatureIdTextures) {
@@ -653,10 +678,9 @@ static void loadPrimitive(
     const AccessorView<TMeshVector3>& positionView,
     const TIndexAccessor& indicesView) {
 
-  CESIUM_TRACE("loadPrimitive<T>");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive<T>)
 
-  const Model& model =
-      *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  Model& model = *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
   const Mesh& mesh = *options.pMeshOptions->pMesh;
   const MeshPrimitive& primitive = *options.pPrimitive;
 
@@ -790,7 +814,7 @@ static void loadPrimitive(
   FStaticMeshLODResources& LODResources = RenderData->LODResources[0];
 
   {
-    CESIUM_TRACE("compute AA bounding box");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeAABB)
 
     const std::vector<double>& min = positionAccessor.min;
     const std::vector<double>& max = positionAccessor.max;
@@ -829,7 +853,7 @@ static void loadPrimitive(
 
   TArray<uint32> indices;
   if (primitive.mode == MeshPrimitive::Mode::TRIANGLES) {
-    CESIUM_TRACE("copy TRIANGLE indices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
     for (int32 i = 0; i < indicesView.size(); ++i) {
@@ -837,7 +861,7 @@ static void loadPrimitive(
     }
   } else {
     // assume TRIANGLE_STRIP because all others are rejected earlier.
-    CESIUM_TRACE("copy TRIANGLE_STRIP indices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
     indices.SetNum(
         static_cast<TArray<uint32>::SizeType>(3 * (indicesView.size() - 2)));
     for (int32 i = 0; i < indicesView.size() - 2; ++i) {
@@ -867,7 +891,7 @@ static void loadPrimitive(
 
   {
     if (duplicateVertices) {
-      CESIUM_TRACE("copy duplicated positions");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -879,7 +903,7 @@ static void loadPrimitive(
             RenderData->Bounds.SphereRadius);
       }
     } else {
-      CESIUM_TRACE("copy positions");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.Position = positionView[i];
@@ -896,7 +920,7 @@ static void loadPrimitive(
 
   auto colorAccessorIt = primitive.attributes.find("COLOR_0");
   if (colorAccessorIt != primitive.attributes.end()) {
-    CESIUM_TRACE("copy colors");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyVertexColors)
     int colorAccessorID = colorAccessorIt->second;
     hasVertexColors = createAccessorView(
         model,
@@ -913,7 +937,7 @@ static void loadPrimitive(
       primitiveResult.textureCoordinateMap;
 
   {
-    CESIUM_TRACE("loadTextures");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadTextures)
     primitiveResult.baseColorTexture =
         loadTexture(model, pbrMetallicRoughness.baseColorTexture, true);
     primitiveResult.metallicRoughnessTexture = loadTexture(
@@ -929,7 +953,8 @@ static void loadPrimitive(
   }
 
   {
-    CESIUM_TRACE("updateTextureCoordinates");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinates)
+
     primitiveResult
         .textureCoordinateParameters["baseColorTextureCoordinateIndex"] =
         updateTextureCoordinates(
@@ -1032,7 +1057,7 @@ static void loadPrimitive(
 
   if (hasNormals) {
     if (duplicateVertices) {
-      CESIUM_TRACE("copy normals for duplicated vertices");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormalsForDuplicatedVertices)
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -1041,7 +1066,7 @@ static void loadPrimitive(
         vertex.TangentZ = normalAccessor[vertexIndex];
       }
     } else {
-      CESIUM_TRACE("copy normals");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
@@ -1050,13 +1075,13 @@ static void loadPrimitive(
       }
     }
   } else {
-    CESIUM_TRACE("compute flat normals");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
     computeFlatNormals(indices, StaticMeshBuildVertices);
   }
 
   if (hasTangents) {
     if (duplicateVertices) {
-      CESIUM_TRACE("copy tangents for duplicated vertices");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangentsForDuplicatedVertices)
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
@@ -1067,7 +1092,7 @@ static void loadPrimitive(
             tangent.W;
       }
     } else {
-      CESIUM_TRACE("copy tangents");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyTangents)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector4& tangent = tangentAccessor[i];
@@ -1082,12 +1107,12 @@ static void loadPrimitive(
   if (needsTangents && !hasTangents) {
     // Use mikktspace to calculate the tangents.
     // Note that this assumes normals and UVs are already populated.
-    CESIUM_TRACE("compute tangents");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeTangents)
     computeTangentSpace(StaticMeshBuildVertices);
   }
 
   {
-    CESIUM_TRACE("init buffers");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
         false);
@@ -1127,21 +1152,21 @@ static void loadPrimitive(
   // Note also that we don't want to just flip the index buffer, since that
   // will change the order of the faces.
   if (duplicateVertices) {
-    CESIUM_TRACE("reverse winding order of duplicated vertices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
     for (int32 i = 2; i < indices.Num(); i += 3) {
       indices[i - 2] = i;
       indices[i - 1] = i - 1;
       indices[i] = i - 2;
     }
   } else {
-    CESIUM_TRACE("reverse winding order");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
     for (int32 i = 2; i < indices.Num(); i += 3) {
       std::swap(indices[i - 2], indices[i]);
     }
   }
 
   {
-    CESIUM_TRACE("SetIndices");
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetIndices)
     LODResources.IndexBuffer.SetIndices(
         indices,
         StaticMeshBuildVertices.Num() >= std::numeric_limits<uint16>::max()
@@ -1170,7 +1195,7 @@ static void loadPrimitive(
     if (options.pMeshOptions->pNodeOptions->pModelOptions
             ->createPhysicsMeshes) {
 #if PHYSICS_INTERFACE_PHYSX
-      CESIUM_TRACE("PhysX cook");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
       PxTriangleMesh* createdCollisionMesh = nullptr;
       BuildPhysXTriangleMeshes(
           createdCollisionMesh,
@@ -1181,7 +1206,7 @@ static void loadPrimitive(
           indices);
       primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
-      CESIUM_TRACE("Chaos cook");
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
       primitiveResult.pCollisionMesh =
           BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
@@ -1263,7 +1288,7 @@ static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
     const CreatePrimitiveOptions& options) {
-  CESIUM_TRACE("loadPrimitive");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitive)
 
   const Model& model =
       *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
@@ -1313,7 +1338,7 @@ static void loadMesh(
     const glm::dmat4x4& transform,
     const CreateMeshOptions& options) {
 
-  CESIUM_TRACE("loadMesh");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadMesh)
 
   const Model& model = *options.pNodeOptions->pModelOptions->pModel;
   const Mesh& mesh = *options.pMesh;
@@ -1336,6 +1361,9 @@ static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options) {
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadNode)
+
   static constexpr std::array<double, 16> identityMatrix = {
       1.0,
       0.0,
@@ -1353,8 +1381,6 @@ static void loadNode(
       0.0,
       0.0,
       1.0};
-
-  CESIUM_TRACE("loadNode");
 
   const Model& model = *options.pModelOptions->pModel;
   const Node& node = *options.pNode;
@@ -1474,11 +1500,10 @@ static void loadModelAnyThreadPart(
     LoadModelResult& result,
     const glm::dmat4x4& transform,
     const CreateModelOptions& options) {
-  CESIUM_TRACE("loadModelAnyThreadPart");
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadModelAnyThreadPart)
 
   const Model& model = *options.pModel;
 
-  // TODO: add tracing for metadata and encoded metadata preparation
   const ExtensionModelExtFeatureMetadata* pMetadataExtension =
       model.getExtension<ExtensionModelExtFeatureMetadata>();
   if (pMetadataExtension) {
@@ -1493,7 +1518,6 @@ static void loadModelAnyThreadPart(
   glm::dmat4x4 rootTransform = transform;
 
   {
-    CESIUM_TRACE("Apply transforms");
     rootTransform = Cesium3DTilesSelection::GltfUtilities::applyRtcCenter(
         model,
         rootTransform);
@@ -1533,11 +1557,12 @@ static void loadModelAnyThreadPart(
 }
 
 bool applyTexture(
+    const CesiumGltf::Model& model,
     UMaterialInstanceDynamic* pMaterial,
     const FMaterialParameterInfo& info,
     CesiumTextureUtility::LoadedTextureResult* pLoadedTexture) {
   UTexture2D* pTexture =
-      CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+      CesiumTextureUtility::loadTextureGameThreadPart(model, pLoadedTexture);
   if (!pTexture) {
     return false;
   }
@@ -1548,6 +1573,7 @@ bool applyTexture(
 }
 
 static void SetGltfParameterValues(
+    const CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
     const Material& material,
     const MaterialPBRMetallicRoughness& pbr,
@@ -1595,22 +1621,27 @@ static void SetGltfParameterValues(
       1.0f);
 
   applyTexture(
+      model,
       pMaterial,
       FMaterialParameterInfo("baseColorTexture", association, index),
       loadResult.baseColorTexture.Get());
   applyTexture(
+      model,
       pMaterial,
       FMaterialParameterInfo("metallicRoughnessTexture", association, index),
       loadResult.metallicRoughnessTexture.Get());
   applyTexture(
+      model,
       pMaterial,
       FMaterialParameterInfo("normalTexture", association, index),
       loadResult.normalTexture.Get());
   bool hasEmissiveTexture = applyTexture(
+      model,
       pMaterial,
       FMaterialParameterInfo("emissiveTexture", association, index),
       loadResult.emissiveTexture.Get());
   applyTexture(
+      model,
       pMaterial,
       FMaterialParameterInfo("occlusionTexture", association, index),
       loadResult.occlusionTexture.Get());
@@ -1633,6 +1664,7 @@ static void SetGltfParameterValues(
 }
 
 void SetWaterParameterValues(
+    const CesiumGltf::Model& model,
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
@@ -1646,6 +1678,7 @@ void SetWaterParameterValues(
 
   if (!loadResult.onlyLand && !loadResult.onlyWater) {
     applyTexture(
+        model,
         pMaterial,
         FMaterialParameterInfo("WaterMask", association, index),
         loadResult.waterMaskTexture.Get());
@@ -1674,6 +1707,7 @@ static void SetMetadataFeatureTableParameterValues(
 }
 
 static void SetMetadataParameterValues(
+    const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
@@ -1810,10 +1844,13 @@ static void SetMetadataParameterValues(
 }
 
 static void loadPrimitiveGameThreadPart(
+    const CesiumGltf::Model& model,
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
+
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
@@ -1856,7 +1893,6 @@ static void loadPrimitiveGameThreadPart(
   pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
 #endif
 
-  const Model& model = *loadResult.pModel;
   const Material& material =
       loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
 
@@ -1896,8 +1932,8 @@ static void loadPrimitiveGameThreadPart(
 
   pMaterial->SetFlags(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
-
   SetGltfParameterValues(
+      model,
       loadResult,
       material,
       pbr,
@@ -1905,6 +1941,7 @@ static void loadPrimitiveGameThreadPart(
       EMaterialParameterAssociation::GlobalParameter,
       INDEX_NONE);
   SetWaterParameterValues(
+      model,
       loadResult,
       pMaterial,
       EMaterialParameterAssociation::GlobalParameter,
@@ -1954,6 +1991,7 @@ static void loadPrimitiveGameThreadPart(
 
   if (pCesiumData) {
     SetGltfParameterValues(
+        model,
         loadResult,
         material,
         pbr,
@@ -1961,10 +1999,29 @@ static void loadPrimitiveGameThreadPart(
         EMaterialParameterAssociation::LayerParameter,
         0);
 
+    // Initialize fade uniform to fully visible, in case LOD transitions
+    // are off.
+    int fadeLayerIndex = pCesiumData->LayerNames.Find("DitherFade");
+    if (fadeLayerIndex >= 0) {
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(
+              "FadePercentage",
+              EMaterialParameterAssociation::LayerParameter,
+              fadeLayerIndex),
+          1.0f);
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(
+              "FadingType",
+              EMaterialParameterAssociation::LayerParameter,
+              fadeLayerIndex),
+          0.0f);
+    }
+
     // If there's a "Water" layer, set its parameters
     int32 waterIndex = pCesiumData->LayerNames.Find("Water");
     if (waterIndex >= 0) {
       SetWaterParameterValues(
+          model,
           loadResult,
           pMaterial,
           EMaterialParameterAssociation::LayerParameter,
@@ -1974,6 +2031,7 @@ static void loadPrimitiveGameThreadPart(
     int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
     if (metadataIndex >= 0) {
       SetMetadataParameterValues(
+          model,
           *pGltf,
           loadResult,
           pMaterial,
@@ -2041,6 +2099,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 }
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
+    const CesiumGltf::Model& model,
     AActor* pParentActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
@@ -2049,6 +2108,9 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
+
   HalfConstructedReal* pReal =
       static_cast<HalfConstructedReal*>(pHalfConstructed.Get());
 
@@ -2085,6 +2147,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     if (node.meshResult) {
       for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
         loadPrimitiveGameThreadPart(
+            model,
             Gltf,
             primitive,
             cesiumToUnrealTransform,
@@ -2363,7 +2426,6 @@ static void BuildPhysXTriangleMeshes(
     const TArray<uint32>& indices) {
 
   if (pPhysXCookingModule) {
-    CESIUM_TRACE("PhysX cook");
     // TODO: use PhysX interface directly so we don't need to copy the
     // vertices (it takes a stride parameter).
 
