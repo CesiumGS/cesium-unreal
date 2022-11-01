@@ -2,23 +2,24 @@
 
 ### v1.19.0 - 2022-11-01
 
+##### Breaking Changes :mega:
+
+- Removed some poorly named and unreliable functions on the `CesiumGeoreference`: `ComputeEastNorthUp`, `TransformRotatorEastNorthUpToUnreal`, and `TransformRotatorUnrealToEastNorthUp`. These functions have been replaced with reliable "EastSouthUp" counterparts.
+
 ##### Additions :tada:
 
 - Added asynchronous texture creation where supported by the graphics API. This offloads a frequent render thread bottleneck to background loading threads.
 - Improved synchronous texture creation by eliminating a main-thread memcpy, for cases where asynchronous texture creation is not supported.
-- Added throttling of the main thread part of loading for glTFs.
+- Added throttling of the main-thread part of loading for glTFs.
 - Added throttling for tile cache unloads on the main thread.
-- Bonus: Added a prototype developer feature enabling Unreal Insights tracing into Cesium Native. This helps us investigate end-to-end performance in a deeper and more precise manner.
+- Added a prototype developer feature enabling Unreal Insights tracing into Cesium Native. This helps us investigate end-to-end performance in a deeper and more precise manner.
 
 ##### Fixes :wrench:
 
-- Significantly reduced frame-rate dips during asynchronous tile loading by eliminating thread pool monopilaztion by Cesium tasks.
+- Significantly reduced frame-rate dips during asynchronous tile loading by eliminating thread pool monopolization by Cesium tasks.
 - Improved the tile destruction sequence by allowing it to defer being destroyed to future frames if it is waiting on asynchronous work to finish. Previously we would essentially block the main thread waiting for tiles to become ready for destruction.
 
-
-##### Breaking Changes :mega:
-
-- Removed a number of buggy funnctions on the `CesiumGeoreference`: `ComputeEastNorthUp`, `TransformRotatorEastNorthUpToUnreal`, and `TransformRotatorUnrealToEastNorthUp`. These functions were replaced with "EastSouthUp" counterparts.
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.20.0 to v0.21.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.18.0 - 2022-10-03
 
