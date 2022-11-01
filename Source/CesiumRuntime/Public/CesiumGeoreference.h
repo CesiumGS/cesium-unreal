@@ -404,67 +404,67 @@ public:
   FVector InaccurateTransformUnrealToEcef(const FVector& Unreal) const;
 
   /**
-   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Transforms a rotator from Unreal world to East-South-Up at the given
    * Unreal world location (relative to the floating origin).
    */
-  glm::dquat TransformRotatorUnrealToEastNorthUp(
+  glm::dquat TransformRotatorUnrealToEastSouthUp(
       const glm::dquat& UnrealRotator,
       const glm::dvec3& UnrealLocation) const;
 
   /**
-   * Transforms a rotator from Unreal world to East-North-Up at the given
+   * Transforms a rotator from Unreal world to East-South-Up at the given
    * Unreal world location (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
-   * TransformRotatorUnrealToEastNorthUp can be used.
+   * TransformRotatorUnrealToEastSouthUp can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FRotator InaccurateTransformRotatorUnrealToEastNorthUp(
+  FRotator InaccurateTransformRotatorUnrealToEastSouthUp(
       const FRotator& UnrealRotator,
       const FVector& UnrealLocation) const;
 
   /**
-   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Transforms a rotator from East-South-Up to Unreal world at the given
    * Unreal world location (relative to the floating origin).
    */
-  glm::dquat TransformRotatorEastNorthUpToUnreal(
-      const glm::dquat& EnuRotator,
+  glm::dquat TransformRotatorEastSouthUpToUnreal(
+      const glm::dquat& EsuRotator,
       const glm::dvec3& UnrealLocation) const;
 
   /**
-   * Transforms a rotator from East-North-Up to Unreal world at the given
+   * Transforms a rotator from East-South-Up to Unreal world at the given
    * Unreal world location (relative to the floating origin).
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
-   * TransformRotatorEastNorthUpToUnreal can be used.
+   * TransformRotatorEastSouthUpToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FRotator InaccurateTransformRotatorEastNorthUpToUnreal(
-      const FRotator& EnuRotator,
+  FRotator InaccurateTransformRotatorEastSouthUpToUnreal(
+      const FRotator& EsuRotator,
       const FVector& UnrealLocation) const;
 
   /**
-   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * Computes the rotation matrix from the local East-South-Up to Unreal at the
    * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    */
-  glm::dmat3 ComputeEastNorthUpToUnreal(const glm::dvec3& unreal) const;
+  glm::dmat3 ComputeEastSouthUpToUnreal(const glm::dvec3& unreal) const;
 
   /**
-   * Computes the rotation matrix from the local East-North-Up to Unreal at the
+   * Computes the rotation matrix from the local East-South-Up to Unreal at the
    * specified Unreal world location (relative to the floating
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    *
    * This function peforms the computation in single-precision. When using
    * the C++ API, corresponding double-precision function
-   * ComputeEastNorthUpToUnreal can be used.
+   * ComputeEastSouthUpToUnreal can be used.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FMatrix InaccurateComputeEastNorthUpToUnreal(const FVector& Unreal) const;
+  FMatrix InaccurateComputeEastSouthUpToUnreal(const FVector& Unreal) const;
 
   /**
    * Computes the rotation matrix from the local East-North-Up to
