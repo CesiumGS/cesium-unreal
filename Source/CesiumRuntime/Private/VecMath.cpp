@@ -157,21 +157,14 @@ FVector VecMath::createVector(const glm::dvec3& v) noexcept {
 FRotator VecMath::createRotator(const glm::dmat4& m) noexcept {
   // Avoid converting to Unreal single-precision types until the very end, so
   // that all intermediate conversions are performed in double-precision.
-
-  // This assumes that this transform is associated with the left-handed UE
-  // coordintae system.
   return VecMath::createRotator(quat_cast(m));
 }
 
 FRotator VecMath::createRotator(const glm::dmat3& m) noexcept {
-  // This assumes that this matrix is associated with the left-handed UE
-  // coordintae system.
   return VecMath::createRotator(quat_cast(m));
 }
 
 FRotator VecMath::createRotator(const glm::dquat& q) noexcept {
-  // This assumes that this quaternion is associated with the left-handed UE
-  // coordinate system.
   return FRotator(FQuat(q.x, q.y, q.z, q.w));
 }
 
