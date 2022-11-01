@@ -298,7 +298,7 @@ public:
       // Wrap mip0 as a bulk data source.
       FCesiumTextureData bulkData(*pImage);
 
-      FRHIResourceCreateInfo createInfo{};
+      FRHIResourceCreateInfo createInfo{TEXT("CesiumTextureUtility")};
       createInfo.BulkData = &bulkData;
       createInfo.ExtData = _platformExtData;
 

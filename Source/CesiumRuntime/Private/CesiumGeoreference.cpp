@@ -907,8 +907,8 @@ ACesiumGeoreference::ComputeEastSouthUpToUnreal(const glm::dvec3& ue) const {
       ue);
 }
 
-FMatrix ACesiumGeoreference::ComputeEastSouthUpToUnreal(
-    const FVector& ue) const {
+FMatrix
+ACesiumGeoreference::ComputeEastSouthUpToUnreal(const FVector& ue) const {
   glm::dmat3 esuToUe = this->_geoTransforms.ComputeEastSouthUpToUnreal(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       glm::dvec3(ue.X, ue.Y, ue.Z));
