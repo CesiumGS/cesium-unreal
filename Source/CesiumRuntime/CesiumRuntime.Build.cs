@@ -80,8 +80,10 @@ public class CesiumRuntime : ModuleRules
             "CesiumGeometry",
             "CesiumGeospatial",
             "CesiumGltfReader",
+            "CesiumGltfWriter",
             "CesiumGltf",
             "CesiumJsonReader",
+            "CesiumJsonWriter",
             "CesiumUtility",
             "draco",
             "ktx_read",
@@ -133,7 +135,7 @@ public class CesiumRuntime : ModuleRules
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
-                "Core",
+                "Core"
                 // ... add other public dependencies that you statically link with here ...
             }
         );

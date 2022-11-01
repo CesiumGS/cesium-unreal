@@ -16,8 +16,8 @@ public:
   virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
   get(const CesiumAsync::AsyncSystem& asyncSystem,
       const std::string& url,
-      const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers)
-      override;
+      const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
+      bool writeThrough) override;
 
   virtual CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
   request(

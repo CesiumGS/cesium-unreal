@@ -25,6 +25,8 @@
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumGltfReader/GltfReader.h"
+#include "CesiumGltfWriter/GltfWriter.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
@@ -611,6 +613,8 @@ void ACesium3DTileset::NotifyHit(
   // std::cout << "Hit face index 2: " << detailedHit.FaceIndex << std::endl;
 }
 
+namespace {} // namespace
+
 class UnrealResourcePreparer
     : public Cesium3DTilesSelection::IPrepareRendererResources {
 public:
@@ -624,24 +628,49 @@ public:
 #endif
   {
   }
-
-  virtual CesiumAsync::Future<
-      Cesium3DTilesSelection::TileLoadResultAndRenderResources>
+  virtual CesiumAsync::Future<Cesium3DTilesSelection::ClientTileLoadResult>
   prepareInLoadThread(
       const CesiumAsync::AsyncSystem& asyncSystem,
       Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
       const glm::dmat4& transform,
       const std::any& rendererOptions) override {
-    CesiumGltf::Model* pModel =
-        std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
-    if (!pModel)
-      return asyncSystem.createResolvedFuture(
-          Cesium3DTilesSelection::TileLoadResultAndRenderResources{
-              std::move(tileLoadResult),
-              nullptr});
-
+    // TODO: serialize model options into DDC so we can check cache hits
+    // to see if they used the same options. If the cached derived content
+    // used different options, we may need to invalidate or update the cache.
     CreateGltfOptions::CreateModelOptions options;
-    options.pModel = pModel;
+    options.pModel =
+        std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
+
+    if (!options.pModel) {
+      if (std::get_if<Cesium3DTilesSelection::TileCachedRenderContent>(
+              &tileLoadResult.contentKind)) {
+        // Custom serialized data was found in the cache.
+        const CesiumAsync::IAssetResponse* pResponse =
+            tileLoadResult.pCompletedRequest->response();
+        if (pResponse && !pResponse->clientData().empty()) {
+          // We have cached derived data
+          options.derivedDataCache = pResponse->clientData();
+
+          // Add empty model in the tile content, the gltf loader may populate
+          // it when deserializing the DDC.
+          tileLoadResult.contentKind = CesiumGltf::Model();
+          options.pModel =
+              std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
+        }
+      }
+
+      if (!options.pModel) {
+        // We have no model and no derived content, just write
+        // back the original response data.
+        return asyncSystem.createResolvedFuture(
+            Cesium3DTilesSelection::ClientTileLoadResult{
+                std::move(tileLoadResult),
+                nullptr,
+                true,
+                {}});
+      }
+    }
+
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
@@ -651,12 +680,14 @@ public:
     options.pEncodedMetadataDescription =
         &this->_pActor->_encodedMetadataDescription;
 
-    TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(transform, options);
+    UCesiumGltfComponent::HalfConstructed* pHalf =
+        UCesiumGltfComponent::CreateOffGameThread(transform, options).Release();
     return asyncSystem.createResolvedFuture(
-        Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+        Cesium3DTilesSelection::ClientTileLoadResult{
             std::move(tileLoadResult),
-            pHalf.Release()});
+            pHalf,
+            false,
+            std::move(pHalf->derivedDataToCache)});
   }
 
   virtual void* prepareInMainThread(

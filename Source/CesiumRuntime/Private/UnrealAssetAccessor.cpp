@@ -122,7 +122,8 @@ CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
 UnrealAssetAccessor::get(
     const CesiumAsync::AsyncSystem& asyncSystem,
     const std::string& url,
-    const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers) {
+    const std::vector<CesiumAsync::IAssetAccessor::THeader>& headers,
+    bool /*writeThrough*/) {
 
   CESIUM_TRACE_BEGIN_IN_TRACK("requestAsset");
 

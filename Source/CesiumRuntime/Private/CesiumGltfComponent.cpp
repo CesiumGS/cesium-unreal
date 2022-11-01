@@ -6,6 +6,7 @@
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
+#include "CesiumDerivedDataCache.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
@@ -22,6 +23,7 @@
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumPhysicsUtility.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
@@ -51,17 +53,6 @@
 #include <glm/mat3x3.hpp>
 #include <iostream>
 
-#if PHYSICS_INTERFACE_PHYSX
-#include "IPhysXCooking.h"
-#include "IPhysXCookingModule.h"
-#include "Interfaces/Interface_CollisionDataProvider.h"
-#include "PhysXCookHelper.h"
-#else
-#include "Chaos/AABBTree.h"
-#include "Chaos/CollisionConvexMesh.h"
-#include "Chaos/TriangleMeshImplicitObject.h"
-#endif
-
 #if WITH_EDITOR
 #include "ScopedTransaction.h"
 #endif
@@ -69,6 +60,7 @@
 using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
 using namespace CesiumEncodedMetadataUtility;
+using namespace CesiumPhysicsUtility;
 using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
@@ -304,20 +296,6 @@ static void computeFlatNormals(
     v0.TangentZ = v1.TangentZ = v2.TangentZ = normal.GetSafeNormal();
   }
 }
-
-#if PHYSICS_INTERFACE_PHYSX
-static void BuildPhysXTriangleMeshes(
-    PxTriangleMesh*& pCollisionMesh,
-    FBodySetupUVInfo& uvInfo,
-    IPhysXCookingModule* pPhysXCooking,
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices);
-#else
-static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-BuildChaosTriangleMeshes(
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices);
-#endif
 
 static const Material defaultMaterial;
 static const MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
@@ -669,6 +647,8 @@ FName createSafeName(
 
 } // namespace
 
+// TODO: this function is getting way too complicated, might be worth splitting
+// functionality out into utility functions.
 template <class TIndexAccessor>
 static void loadPrimitive(
     LoadPrimitiveResult& primitiveResult,
@@ -1189,11 +1169,46 @@ static void loadPrimitive(
 
   section.MaterialIndex = 0;
 
-  primitiveResult.pCollisionMesh = nullptr;
+  // primitiveResult.pCollisionMesh = nullptr;
 
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
+    const auto& preCookedMeshes = options.pMeshOptions->pNodeOptions
+                                      ->pModelOptions->preCookedPhysicsMeshes;
+
+    if (!preCookedMeshes.empty()) {
+      // Create the physX mesh from pre-cooked bulk data.
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UnpackPreCookedPhysXMesh);
+      if (preCookedMeshes.size() <= options.primitiveIndex) {
+        // If there are pre-cooked physics mesh, there should be exactly
+        // one for each primitive in the model.
+        UE_LOG(
+            LogCesium,
+            Error,
+            TEXT("Missing pre-cooked physics mesh for a primitive."));
+        return;
+      }
+
+      primitiveResult.physxMesh =
+          createPhysxMesh(preCookedMeshes[options.primitiveIndex]);
+    } else {
+      // No pre-cooked bulk data available. Cook the physics mesh and save the
+      // bulk data in case we want to cache it.
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
+
+      primitiveResult.cookedPhysicsMesh = cookPhysxMesh(
+          options.pMeshOptions->pNodeOptions->pModelOptions
+              ->pPhysXCookingModule,
+          StaticMeshBuildVertices,
+          indices);
+      {
+        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreatePhysXMesh)
+        primitiveResult.physxMesh =
+            createPhysxMesh(primitiveResult.cookedPhysicsMesh);
+      }
+    }
+
+    /*TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
     PxTriangleMesh* createdCollisionMesh = nullptr;
     BuildPhysXTriangleMeshes(
         createdCollisionMesh,
@@ -1201,8 +1216,9 @@ static void loadPrimitive(
         options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
         StaticMeshBuildVertices,
         indices);
-    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
+    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);*/
 #else
+    // TODO: implement cooked physics caching for chaos
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
     primitiveResult.pCollisionMesh =
         BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
@@ -1331,6 +1347,7 @@ static void loadPrimitive(
 
 static void loadMesh(
     std::optional<LoadMeshResult>& result,
+    uint32_t& primitiveCount,
     const glm::dmat4x4& transform,
     const CreateMeshOptions& options) {
 
@@ -1342,7 +1359,8 @@ static void loadMesh(
   result = LoadMeshResult();
   result->primitiveResults.reserve(mesh.primitives.size());
   for (const CesiumGltf::MeshPrimitive& primitive : mesh.primitives) {
-    CreatePrimitiveOptions primitiveOptions = {&options, &*result, &primitive};
+    CreatePrimitiveOptions primitiveOptions =
+        {primitiveCount++, &options, &*result, &primitive};
     auto& primitiveResult = result->primitiveResults.emplace_back();
     loadPrimitive(primitiveResult, transform, primitiveOptions);
 
@@ -1355,6 +1373,7 @@ static void loadMesh(
 
 static void loadNode(
     std::vector<LoadNodeResult>& loadNodeResults,
+    uint32_t& primitiveCount,
     const glm::dmat4x4& transform,
     const CreateNodeOptions& options) {
 
@@ -1432,7 +1451,7 @@ static void loadNode(
   int meshId = node.mesh;
   if (meshId >= 0 && meshId < model.meshes.size()) {
     CreateMeshOptions meshOptions = {&options, &result, &model.meshes[meshId]};
-    loadMesh(result.meshResult, nodeTransform, meshOptions);
+    loadMesh(result.meshResult, primitiveCount, nodeTransform, meshOptions);
   }
 
   for (int childNodeId : node.children) {
@@ -1441,7 +1460,11 @@ static void loadNode(
           options.pModelOptions,
           options.pHalfConstructedModelResult,
           &model.nodes[childNodeId]};
-      loadNode(loadNodeResults, nodeTransform, childNodeOptions);
+      loadNode(
+          loadNodeResults,
+          primitiveCount,
+          nodeTransform,
+          childNodeOptions);
     }
   }
 }
@@ -1520,24 +1543,25 @@ static void loadModelAnyThreadPart(
     applyGltfUpAxisTransform(model, rootTransform);
   }
 
+  uint32_t primitiveCount = 0;
   if (model.scene >= 0 && model.scene < model.scenes.size()) {
     // Show the default scene
     const Scene& defaultScene = model.scenes[model.scene];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(result.nodeResults, rootTransform, nodeOptions);
+      loadNode(result.nodeResults, primitiveCount, rootTransform, nodeOptions);
     }
   } else if (model.scenes.size() > 0) {
     // There's no default, so show the first scene
     const Scene& defaultScene = model.scenes[0];
     for (int nodeId : defaultScene.nodes) {
       CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[nodeId]};
-      loadNode(result.nodeResults, rootTransform, nodeOptions);
+      loadNode(result.nodeResults, primitiveCount, rootTransform, nodeOptions);
     }
   } else if (model.nodes.size() > 0) {
     // No scenes at all, use the first node as the root node.
     CreateNodeOptions nodeOptions = {&options, &result, &model.nodes[0]};
-    loadNode(result.nodeResults, rootTransform, nodeOptions);
+    loadNode(result.nodeResults, primitiveCount, rootTransform, nodeOptions);
   } else if (model.meshes.size() > 0) {
     // No nodes either, show all the meshes.
     for (const Mesh& mesh : model.meshes) {
@@ -1547,7 +1571,11 @@ static void loadModelAnyThreadPart(
           &dummyNodeOptions,
           &dummyNodeResult,
           &mesh};
-      loadMesh(dummyNodeResult.meshResult, rootTransform, meshOptions);
+      loadMesh(
+          dummyNodeResult.meshResult,
+          primitiveCount,
+          rootTransform,
+          meshOptions);
     }
   }
 }
@@ -2060,10 +2088,10 @@ static void loadPrimitiveGameThreadPart(
   // pMesh->UpdateCollisionFromStaticMesh();
   pBodySetup->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
-  if (loadResult.pCollisionMesh) {
+  if (loadResult.physxMesh.pTriMesh) {
 #if PHYSICS_INTERFACE_PHYSX
-    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh.Release());
-    pBodySetup->UVInfo = std::move(loadResult.uvInfo);
+    pBodySetup->TriMeshes.Add(loadResult.physxMesh.pTriMesh.Release());
+    pBodySetup->UVInfo = std::move(loadResult.physxMesh.uvInfo);
 #else
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
 #endif
@@ -2087,9 +2115,56 @@ static void loadPrimitiveGameThreadPart(
 /*static*/ TUniquePtr<UCesiumGltfComponent::HalfConstructed>
 UCesiumGltfComponent::CreateOffGameThread(
     const glm::dmat4x4& Transform,
-    const CreateModelOptions& Options) {
+    CreateModelOptions& Options) {
+  // Deserialize the cached model if available.
+  if (!Options.derivedDataCache.empty()) {
+    std::optional<CesiumDerivedDataCache::DerivedDataResult> derivedDataResult =
+        CesiumDerivedDataCache::deserialize(Options.derivedDataCache);
+    if (derivedDataResult) {
+      *Options.pModel = std::move(derivedDataResult->model);
+      Options.preCookedPhysicsMeshes =
+          std::move(derivedDataResult->cookedPhysicsMeshViews);
+    }
+  }
+
   auto pResult = MakeUnique<HalfConstructedReal>();
   loadModelAnyThreadPart(pResult->loadModelResult, Transform, Options);
+
+  // TODO: this logic needs to respect whether the derived content _should_
+  // be cached. There may be cases where the native tile loaders need the
+  // original data (e.g., embedded availability in quantized mesh tiles).
+
+  // If we didn't have derived content before, this is newly loaded content -
+  // so serialize the derived data cache.
+  if (Options.derivedDataCache.empty()) {
+    CesiumDerivedDataCache::DerivedDataToCache derivedDataToCache;
+    derivedDataToCache.pModel = Options.pModel;
+
+    // Collect cooked physics meshes.
+    for (const LoadNodeResult& node : pResult->loadModelResult.nodeResults) {
+      if (node.meshResult) {
+        for (const LoadPrimitiveResult& primitive :
+             node.meshResult->primitiveResults) {
+          if (primitive.cookedPhysicsMesh.empty()) {
+            // If any of the cooked meshes are missing, we shouldn't cache any
+            // - otherwise we won't be able to infer which cooked physics mesh
+            // corresponds to which glTF primitive.
+            derivedDataToCache.cookedPhysicsMeshViews.clear();
+            break;
+          }
+
+          derivedDataToCache.cookedPhysicsMeshViews.push_back(
+              gsl::span<const std::byte>(primitive.cookedPhysicsMesh));
+        }
+      }
+    }
+
+    pResult->derivedDataToCache =
+        CesiumDerivedDataCache::serialize(derivedDataToCache);
+  }
+
+  // TODO: set this if we detect that options have changed
+  pResult->invalidateDerivedDataCache = false;
 
   return pResult;
 }
@@ -2416,136 +2491,3 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
         fadingIn ? 0.0f : 1.0f);
   }
 }
-
-#if PHYSICS_INTERFACE_PHYSX
-static void BuildPhysXTriangleMeshes(
-    PxTriangleMesh*& pCollisionMesh,
-    FBodySetupUVInfo& uvInfo,
-    IPhysXCookingModule* pPhysXCookingModule,
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices) {
-
-  if (pPhysXCookingModule) {
-    // TODO: use PhysX interface directly so we don't need to copy the
-    // vertices (it takes a stride parameter).
-
-    FPhysXCookHelper cookHelper(pPhysXCookingModule);
-
-    bool copyUVs = UPhysicsSettings::Get()->bSupportUVFromHitResults;
-
-    cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
-    cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
-    cookHelper.CookInfo.TriangleMeshDesc.bFlipNormals = true;
-    cookHelper.CookInfo.bCookTriMesh = true;
-    cookHelper.CookInfo.bSupportFaceRemap = true;
-    cookHelper.CookInfo.bSupportUVFromHitResults = copyUVs;
-
-    TArray<FVector>& vertices = cookHelper.CookInfo.TriangleMeshDesc.Vertices;
-    vertices.SetNum(vertexData.Num());
-    for (size_t i = 0; i < vertexData.Num(); ++i) {
-      vertices[i] = vertexData[i].Position;
-    }
-
-    if (copyUVs) {
-      TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
-      uvs.SetNum(8);
-
-      for (size_t i = 0; i < 8; ++i) {
-        uvs[i].SetNum(vertices.Num());
-      }
-      for (size_t i = 0; i < vertexData.Num(); ++i) {
-        for (size_t j = 0; j < 8; ++j) {
-          uvs[j][i] = vertexData[i].UVs[j];
-        }
-      }
-    }
-
-    TArray<FTriIndices>& physicsIndices =
-        cookHelper.CookInfo.TriangleMeshDesc.Indices;
-    physicsIndices.SetNum(indices.Num() / 3);
-
-    for (size_t i = 0; i < indices.Num() / 3; ++i) {
-      physicsIndices[i].v0 = indices[3 * i];
-      physicsIndices[i].v1 = indices[3 * i + 1];
-      physicsIndices[i].v2 = indices[3 * i + 2];
-    }
-
-    cookHelper.CreatePhysicsMeshes_Concurrent();
-    if (cookHelper.OutTriangleMeshes.Num() > 0) {
-      pCollisionMesh = cookHelper.OutTriangleMeshes[0];
-    }
-    if (copyUVs) {
-      uvInfo = std::move(cookHelper.OutUVInfo);
-    }
-  }
-}
-
-#else
-template <typename TIndex>
-static void fillTriangles(
-    TArray<Chaos::TVector<TIndex, 3>>& triangles,
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices,
-    int32 triangleCount) {
-
-  triangles.Reserve(triangleCount);
-
-  for (int32 i = 0; i < triangleCount; ++i) {
-    const int32 index0 = 3 * i;
-    triangles.Add(Chaos::TVector<int32, 3>(
-        indices[index0 + 1],
-        indices[index0],
-        indices[index0 + 2]));
-  }
-}
-
-static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
-BuildChaosTriangleMeshes(
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices) {
-
-  int32 vertexCount = vertexData.Num();
-  int32 triangleCount = indices.Num() / 3;
-
-  Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
-  vertices.AddParticles(vertexCount);
-
-  for (int32 i = 0; i < vertexCount; ++i) {
-    vertices.X(i) = vertexData[i].Position;
-  }
-
-  TArray<uint16> materials;
-  materials.SetNum(triangleCount);
-
-  TArray<int32> faceRemap;
-  faceRemap.SetNum(triangleCount);
-
-  for (int32 i = 0; i < triangleCount; ++i) {
-    faceRemap[i] = i;
-  }
-
-  TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
-
-  if (vertexCount < TNumericLimits<uint16>::Max()) {
-    TArray<Chaos::TVector<uint16, 3>> triangles;
-    fillTriangles(triangles, vertexData, indices, triangleCount);
-    return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
-        MoveTemp(vertices),
-        MoveTemp(triangles),
-        MoveTemp(materials),
-        MoveTemp(pFaceRemap),
-        nullptr,
-        false);
-  } else {
-    TArray<Chaos::TVector<int32, 3>> triangles;
-    fillTriangles(triangles, vertexData, indices, triangleCount);
-    return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
-        MoveTemp(vertices),
-        MoveTemp(triangles),
-        MoveTemp(materials),
-        MoveTemp(pFaceRemap),
-        nullptr,
-        false);
-  }
-}
-#endif

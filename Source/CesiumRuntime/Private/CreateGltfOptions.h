@@ -10,12 +10,21 @@
 #include "LoadGltfResult.h"
 #if PHYSICS_INTERFACE_PHYSX
 #include "IPhysXCookingModule.h"
+#include <PxTriangleMesh.h>
 #endif
+
+#include <gsl/span>
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 // TODO: internal documentation
 namespace CreateGltfOptions {
 struct CreateModelOptions {
   CesiumGltf::Model* pModel = nullptr;
+  gsl::span<const std::byte> derivedDataCache{};
+  std::vector<gsl::span<const std::byte>> preCookedPhysicsMeshes{};
   const FMetadataDescription* pEncodedMetadataDescription = nullptr;
   bool alwaysIncludeTangents = false;
 #if PHYSICS_INTERFACE_PHYSX
@@ -36,6 +45,7 @@ struct CreateMeshOptions {
 };
 
 struct CreatePrimitiveOptions {
+  uint32_t primitiveIndex = 0;
   const CreateMeshOptions* pMeshOptions = nullptr;
   const LoadGltfResult::LoadMeshResult* pHalfConstructedMeshResult = nullptr;
   const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
