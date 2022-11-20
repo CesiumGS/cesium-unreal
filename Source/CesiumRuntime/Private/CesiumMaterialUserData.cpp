@@ -14,29 +14,17 @@ void UCesiumMaterialUserData::PostEditChangeOwner() {
   if (pMaterial) {
     const FStaticParameterSet& parameters = pMaterial->GetStaticParameters();
 
-#if ENGINE_MAJOR_VERSION >= 5
     const auto& layerParameters = parameters.MaterialLayers;
 
     this->LayerNames.Reserve(layerParameters.Layers.Num());
 
     for (int32 i = 0; i < layerParameters.Layers.Num(); ++i) {
-      this->LayerNames.Add(layerParameters.Layers[i].GetName());
-    }
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+      this->LayerNames.Add(layerParameters.GetLayerName(i).ToString());
 #else
-    const TArray<FStaticMaterialLayersParameter>& layerParameters =
-        parameters.MaterialLayersParameters;
-
-    for (const FStaticMaterialLayersParameter& layerParameter :
-         layerParameters) {
-      if (layerParameter.ParameterInfo.Name != "Cesium")
-        continue;
-
-      this->LayerNames.Reserve(layerParameter.Value.LayerNames.Num());
-      for (const FText& text : layerParameter.Value.LayerNames) {
-        this->LayerNames.Add(text.ToString());
-      }
-    }
+      this->LayerNames.Add(layerParameters.Layers[i].GetName());
 #endif
+    }
   }
 #endif
 }
