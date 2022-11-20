@@ -22,10 +22,6 @@ namespace CreateGltfOptions {
 struct CreateModelOptions;
 } // namespace CreateGltfOptions
 
-#if PHYSICS_INTERFACE_PHYSX
-class IPhysXCooking;
-#endif
-
 namespace CesiumGltf {
 struct Model;
 }
