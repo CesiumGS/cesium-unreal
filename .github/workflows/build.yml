@@ -292,6 +292,9 @@ jobs:
           cmake --build build-android --config Release --target install -j8
       - name: Build plugin
         run: |
+          echo "ANDROID_NDK_ROOT = $ENV:ANDROID_NDK_ROOT"
+          echo "NDKROOT = $ENV:NDKROOT"
+          dir env:
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
       - name: Publish plugin package artifact
