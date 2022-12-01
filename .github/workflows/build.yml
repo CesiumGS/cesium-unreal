@@ -278,20 +278,20 @@ jobs:
         run: |
           $ENV:CESIUM_UNREAL_VERSION=$(git describe)
           $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-android-${ENV:CESIUM_UNREAL_VERSION}"
-          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
-          $ENV:NDKROOT=$ENV:NDKROOT25
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-          echo "ANDROID_NDK_ROOT=${ENV:ANDROID_NDK_ROOT}" >> $ENV:GITHUB_ENV
-          echo "NDKROOT=${ENV:NDKROOT}" >> $ENV:GITHUB_ENV
       - name: Build cesium-native
         run: |
+          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
+          $ENV:NDKROOT=$ENV:NDKROOT25
           cd extern
           cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android --config Release --target install -j8
       - name: Build plugin
         run: |
+          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
+          $ENV:NDKROOT=$ENV:NDKROOT25
           echo "ANDROID_NDK_ROOT = $ENV:ANDROID_NDK_ROOT"
           echo "NDKROOT = $ENV:NDKROOT"
           dir env:
