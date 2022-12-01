@@ -85,7 +85,7 @@ jobs:
       - name: Build cesium-native
         run: |
           $ENV:UNREAL_ENGINE_DIR="C:/Program Files/Epic Games/UE_5.0"
-          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v19_clang-11.0.1-centos7/"
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
           $ENV:UNREAL_ENGINE_COMPILER_DIR="${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           $ENV:UNREAL_ENGINE_LIBCXX_DIR="${ENV:UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
           cd extern
@@ -278,9 +278,13 @@ jobs:
         run: |
           $ENV:CESIUM_UNREAL_VERSION=$(git describe)
           $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-android-${ENV:CESIUM_UNREAL_VERSION}"
+          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
+          $ENV:NDKROOT=$ENV:NDKROOT25
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=${ENV:ANDROID_NDK_ROOT}" >> $ENV:GITHUB_ENV
+          echo "NDKROOT=${ENV:NDKROOT}" >> $ENV:GITHUB_ENV
       - name: Build cesium-native
         run: |
           cd extern
@@ -317,7 +321,7 @@ jobs:
       - name: Build cesium-native
         run: |
           $ENV:UNREAL_ENGINE_DIR="C:/Program Files/Epic Games/UE_5.1"
-          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v19_clang-11.0.1-centos7/"
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
           $ENV:UNREAL_ENGINE_COMPILER_DIR="${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           $ENV:UNREAL_ENGINE_LIBCXX_DIR="${ENV:UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
           cd extern
