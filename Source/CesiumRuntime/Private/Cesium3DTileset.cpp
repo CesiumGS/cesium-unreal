@@ -152,7 +152,8 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
 
 void ACesium3DTileset::InvalidateResolvedGeoreference() {
   if (IsValid(this->ResolvedGeoreference)) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(
+        this->RootComponent);
   }
   this->ResolvedGeoreference = nullptr;
 }

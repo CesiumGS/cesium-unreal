@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused Cesium3DTilesets to fail to disconnect from CesiumGeoreference notifications. It  could cause problems when changing to a different georeference instance.
+
 ### v1.19.0 - 2022-11-01
 
 ##### Breaking Changes :mega:
