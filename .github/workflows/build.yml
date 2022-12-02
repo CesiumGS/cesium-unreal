@@ -297,6 +297,7 @@ jobs:
           # So we fix it here.
           mkdir -p "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\arm64"
           New-Item -ItemType Junction -Path "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\arm64\UnrealGame" -Target "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\UnrealGame"
+          cd "C:\Program Files\Epic Games\UE_5.1\Engine\Plugins"
           Get-ChildItem -Recurse -Directory -Name | Where-Object {$_.EndsWith("Android\UnrealGame")} | ForEach-Object {
             $oldPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_))
             $newPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_, "..", "arm64"))
