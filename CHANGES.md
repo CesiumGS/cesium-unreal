@@ -1,14 +1,18 @@
 # Change Log
 
-### ? - ?
+### v1.20.0 - 2022-12-02
 
 ##### Breaking Changes :mega:
 
 - This is the _last release_ that will support Unreal Engine v4.26. Starting in the next release, in January 2023, UE 4.26 will no longer be supported. You may continue to use old versions of Cesium for Unreal in UE 4.26, but we recommend upgrading your UE version as soon as possible in order to continue receiving the latest updates.
 
+##### Additions :tada:
+
+- Added support for Unreal Engine v5.1.
+
 ##### Fixes :wrench:
 
-- Fixed a bug that caused Cesium3DTilesets to fail to disconnect from CesiumGeoreference notifications. It  could cause problems when changing to a different georeference instance.
+- Fixed a bug that caused Cesium3DTilesets to fail to disconnect from CesiumGeoreference notifications. It could cause problems when changing to a different georeference instance.
 
 ### v1.19.0 - 2022-11-01
 
