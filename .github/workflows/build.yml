@@ -388,7 +388,7 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
-          sed -i 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.1.0\"/g' CesiumForUnreal.uplugin
+          sed -i '' 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.1.0\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/UE_5.1
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
@@ -436,7 +436,7 @@ jobs:
           rm -rf extern
       - name: Build plugin
         run: |
-          sed -i 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.1.0\"/g' CesiumForUnreal.uplugin
+          sed -i '' 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.1.0\"/g' CesiumForUnreal.uplugin
           export UNREAL_ENGINE_DIR=$HOME/UE_5.1
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=iOS -NoHostPlatform
