@@ -263,46 +263,48 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
-  Android51:
-    runs-on: ["self-hosted","windows","x64","unreal"]
-    steps:
-      - name: Install additional dependencies
-        run: |
-          choco install -y ninja
-      - name: Check out repository code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0 # so that `git describe` works.
-      - name: Set environment variables
-        run: |
-          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-android-${ENV:CESIUM_UNREAL_VERSION}"
-          # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-      - name: Build cesium-native
-        run: |
-          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
-          $ENV:NDKROOT=$ENV:NDKROOT25
-          cd extern
-          cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-android --config Release --target install -j8
-      - name: Build plugin
-        run: |
-          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
-          $ENV:NDKROOT=$ENV:NDKROOT25
-          echo "ANDROID_NDK_ROOT = $ENV:ANDROID_NDK_ROOT"
-          echo "NDKROOT = $ENV:NDKROOT"
-          dir env:
-          cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
-          ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-      - name: Publish plugin package artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
-          path: packages
+  # UE 5.1 has problems compiling plugins for Android.
+  # See: https://forums.unrealengine.com/t/5-1-missing-precompiled-manifest-error-when-building-code-plugin-for-android/691983/10
+  # Android51:
+  #   runs-on: ["self-hosted","windows","x64","unreal"]
+  #   steps:
+  #     - name: Install additional dependencies
+  #       run: |
+  #         choco install -y ninja
+  #     - name: Check out repository code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #         fetch-depth: 0 # so that `git describe` works.
+  #     - name: Set environment variables
+  #       run: |
+  #         $ENV:CESIUM_UNREAL_VERSION=$(git describe)
+  #         $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-android-${ENV:CESIUM_UNREAL_VERSION}"
+  #         # Make these available to subsequent steps
+  #         echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
+  #         echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+  #     - name: Build cesium-native
+  #       run: |
+  #         $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
+  #         $ENV:NDKROOT=$ENV:NDKROOT25
+  #         cd extern
+  #         cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+  #         cmake --build build-android --config Release --target install -j8
+  #     - name: Build plugin
+  #       run: |
+  #         $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
+  #         $ENV:NDKROOT=$ENV:NDKROOT25
+  #         echo "ANDROID_NDK_ROOT = $ENV:ANDROID_NDK_ROOT"
+  #         echo "NDKROOT = $ENV:NDKROOT"
+  #         dir env:
+  #         cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
+  #         ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
+  #     - name: Publish plugin package artifact
+  #       if: ${{ success() }}
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+  #         path: packages
   Linux51:
     runs-on: ["self-hosted","windows","x64","unreal"]
     steps:
@@ -332,6 +334,7 @@ jobs:
           cmake --build build --config Release --target install -j8
       - name: Build plugin
         run: |
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
       - name: Publish plugin package artifact
