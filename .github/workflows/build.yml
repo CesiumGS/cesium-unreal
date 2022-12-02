@@ -458,11 +458,11 @@ jobs:
         with:
           name: CesiumForUnreal-51-macos-${{ env.CESIUM_UNREAL_VERSION}}.zip
           path: combine
-      - name: Download Android build
-        uses: actions/download-artifact@v3
-        with:
-          name: CesiumForUnreal-51-android-${{ env.CESIUM_UNREAL_VERSION}}.zip
-          path: combine
+      # - name: Download Android build
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: CesiumForUnreal-51-android-${{ env.CESIUM_UNREAL_VERSION}}.zip
+      #     path: combine
       - name: Download Linux build
         uses: actions/download-artifact@v3
         with:
