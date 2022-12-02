@@ -45,9 +45,9 @@
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
-#include "IPhysXCookingModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
@@ -603,16 +603,7 @@ void ACesium3DTileset::NotifyHit(
 class UnrealResourcePreparer
     : public Cesium3DTilesSelection::IPrepareRendererResources {
 public:
-  UnrealResourcePreparer(ACesium3DTileset* pActor)
-      : _pActor(pActor)
-#if PHYSICS_INTERFACE_PHYSX
-        ,
-        _pPhysXCookingModule(
-            pActor->GetCreatePhysicsMeshes() ? GetPhysXCookingModule()
-                                             : nullptr)
-#endif
-  {
-  }
+  UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
 
   virtual CesiumAsync::Future<
       Cesium3DTilesSelection::TileLoadResultAndRenderResources>
@@ -633,10 +624,6 @@ public:
     options.pModel = pModel;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
     options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
-
-#if PHYSICS_INTERFACE_PHYSX
-    options.pPhysXCookingModule = this->_pPhysXCookingModule;
-#endif
 
     options.pEncodedMetadataDescription =
         &this->_pActor->_encodedMetadataDescription;
@@ -813,9 +800,6 @@ public:
 
 private:
   ACesium3DTileset* _pActor;
-#if PHYSICS_INTERFACE_PHYSX
-  IPhysXCookingModule* _pPhysXCookingModule;
-#endif
 };
 
 void ACesium3DTileset::UpdateLoadStatus() {
@@ -872,6 +856,7 @@ void ACesium3DTileset::LoadTileset() {
     return;
   }
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
     pWorldSettings->bEnableLargeWorlds = true;
@@ -882,6 +867,7 @@ void ACesium3DTileset::LoadTileset() {
             "Cesium for Unreal has enabled the \"Enable Large Worlds\" option in this world's settings, as it is required in order to avoid serious culling problems with Cesium3DTilesets in Unreal Engine 5."),
         *this->Url);
   }
+#endif
 
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
       cesiumViewExtension = getCesiumViewExtension();

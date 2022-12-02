@@ -28,6 +28,9 @@
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
 #include "CesiumUtility/joinToString.h"
+#include "Chaos/AABBTree.h"
+#include "Chaos/CollisionConvexMesh.h"
+#include "Chaos/TriangleMeshImplicitObject.h"
 #include "CreateGltfOptions.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -50,17 +53,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
-
-#if PHYSICS_INTERFACE_PHYSX
-#include "IPhysXCooking.h"
-#include "IPhysXCookingModule.h"
-#include "Interfaces/Interface_CollisionDataProvider.h"
-#include "PhysXCookHelper.h"
-#else
-#include "Chaos/AABBTree.h"
-#include "Chaos/CollisionConvexMesh.h"
-#include "Chaos/TriangleMeshImplicitObject.h"
-#endif
 
 #if WITH_EDITOR
 #include "ScopedTransaction.h"
@@ -305,19 +297,10 @@ static void computeFlatNormals(
   }
 }
 
-#if PHYSICS_INTERFACE_PHYSX
-static void BuildPhysXTriangleMeshes(
-    PxTriangleMesh*& pCollisionMesh,
-    FBodySetupUVInfo& uvInfo,
-    IPhysXCookingModule* pPhysXCooking,
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices);
-#else
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices);
-#endif
 
 static const Material defaultMaterial;
 static const MaterialPBRMetallicRoughness defaultPbrMetallicRoughness;
@@ -1194,22 +1177,9 @@ static void loadPrimitive(
   if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
     if (options.pMeshOptions->pNodeOptions->pModelOptions
             ->createPhysicsMeshes) {
-#if PHYSICS_INTERFACE_PHYSX
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
-      PxTriangleMesh* createdCollisionMesh = nullptr;
-      BuildPhysXTriangleMeshes(
-          createdCollisionMesh,
-          primitiveResult.uvInfo,
-          options.pMeshOptions->pNodeOptions->pModelOptions
-              ->pPhysXCookingModule,
-          StaticMeshBuildVertices,
-          indices);
-      primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
-#else
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
       primitiveResult.pCollisionMesh =
           BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
-#endif
     }
   }
 
@@ -2065,12 +2035,7 @@ static void loadPrimitiveGameThreadPart(
   pBodySetup->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
   if (loadResult.pCollisionMesh) {
-#if PHYSICS_INTERFACE_PHYSX
-    pBodySetup->TriMeshes.Add(loadResult.pCollisionMesh.Release());
-    pBodySetup->UVInfo = std::move(loadResult.uvInfo);
-#else
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
-#endif
   }
 
   // Mark physics meshes created, no matter if we actually have a collision
@@ -2417,70 +2382,6 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 }
 
-#if PHYSICS_INTERFACE_PHYSX
-static void BuildPhysXTriangleMeshes(
-    PxTriangleMesh*& pCollisionMesh,
-    FBodySetupUVInfo& uvInfo,
-    IPhysXCookingModule* pPhysXCookingModule,
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices) {
-
-  if (pPhysXCookingModule) {
-    // TODO: use PhysX interface directly so we don't need to copy the
-    // vertices (it takes a stride parameter).
-
-    FPhysXCookHelper cookHelper(pPhysXCookingModule);
-
-    bool copyUVs = UPhysicsSettings::Get()->bSupportUVFromHitResults;
-
-    cookHelper.CookInfo.TriMeshCookFlags = EPhysXMeshCookFlags::Default;
-    cookHelper.CookInfo.OuterDebugName = "CesiumGltfComponent";
-    cookHelper.CookInfo.TriangleMeshDesc.bFlipNormals = true;
-    cookHelper.CookInfo.bCookTriMesh = true;
-    cookHelper.CookInfo.bSupportFaceRemap = true;
-    cookHelper.CookInfo.bSupportUVFromHitResults = copyUVs;
-
-    TArray<FVector>& vertices = cookHelper.CookInfo.TriangleMeshDesc.Vertices;
-    vertices.SetNum(vertexData.Num());
-    for (size_t i = 0; i < vertexData.Num(); ++i) {
-      vertices[i] = vertexData[i].Position;
-    }
-
-    if (copyUVs) {
-      TArray<TArray<FVector2D>>& uvs = cookHelper.CookInfo.TriangleMeshDesc.UVs;
-      uvs.SetNum(8);
-
-      for (size_t i = 0; i < 8; ++i) {
-        uvs[i].SetNum(vertices.Num());
-      }
-      for (size_t i = 0; i < vertexData.Num(); ++i) {
-        for (size_t j = 0; j < 8; ++j) {
-          uvs[j][i] = vertexData[i].UVs[j];
-        }
-      }
-    }
-
-    TArray<FTriIndices>& physicsIndices =
-        cookHelper.CookInfo.TriangleMeshDesc.Indices;
-    physicsIndices.SetNum(indices.Num() / 3);
-
-    for (size_t i = 0; i < indices.Num() / 3; ++i) {
-      physicsIndices[i].v0 = indices[3 * i];
-      physicsIndices[i].v1 = indices[3 * i + 1];
-      physicsIndices[i].v2 = indices[3 * i + 2];
-    }
-
-    cookHelper.CreatePhysicsMeshes_Concurrent();
-    if (cookHelper.OutTriangleMeshes.Num() > 0) {
-      pCollisionMesh = cookHelper.OutTriangleMeshes[0];
-    }
-    if (copyUVs) {
-      uvInfo = std::move(cookHelper.OutUVInfo);
-    }
-  }
-}
-
-#else
 template <typename TIndex>
 static void fillTriangles(
     TArray<Chaos::TVector<TIndex, 3>>& triangles,
@@ -2548,4 +2449,3 @@ BuildChaosTriangleMeshes(
         false);
   }
 }
-#endif
