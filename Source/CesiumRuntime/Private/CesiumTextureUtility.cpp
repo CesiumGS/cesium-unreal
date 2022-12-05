@@ -25,7 +25,11 @@
 #include <stb_image_resize.h>
 #include <variant>
 
+#if PLATFORM_LINUX || PLATFORM_MAC
+#define LEGACY_TEXTURE_CREATION 1
+#else
 #define LEGACY_TEXTURE_CREATION 0
+#endif
 
 using namespace CesiumGltf;
 
