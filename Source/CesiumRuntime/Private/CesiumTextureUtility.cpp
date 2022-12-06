@@ -35,8 +35,10 @@ using namespace CesiumGltf;
 
 namespace {
 #if LEGACY_TEXTURE_CREATION
-// Legacy texture creation code path. Only for testing, no safety checks are
-// done.
+// Legacy texture creation code path - creates textures using Unreal's
+// FTexture2DMipMap and Texture2D::UpdateResource(). While this is slightly
+// less efficient than other approaches we've found, this is still the only
+// approach that works on certain platforms (as far as we currently know).
 
 void legacy_populateMips(
     FTexturePlatformData& platformData,
