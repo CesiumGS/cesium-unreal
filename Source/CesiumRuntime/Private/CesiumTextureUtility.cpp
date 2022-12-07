@@ -25,21 +25,15 @@
 #include <stb_image_resize.h>
 #include <variant>
 
-#if PLATFORM_LINUX || PLATFORM_MAC
-#define LEGACY_TEXTURE_CREATION 1
-#else
-#define LEGACY_TEXTURE_CREATION 0
-#endif
-
 using namespace CesiumGltf;
 
 namespace {
-#if LEGACY_TEXTURE_CREATION
 // Legacy texture creation code path - creates textures using Unreal's
 // FTexture2DMipMap and Texture2D::UpdateResource(). While this is slightly
-// less efficient than other approaches we've found, this is still the only
-// approach that works on certain platforms (as far as we currently know).
-
+// less efficient than other approaches we've found, the other approaches
+// are not always supported on certain platforms. Once image sources from tiles
+// and raster tiles can be safely read from the render-thread, this approach
+// should no longer be necessary.
 void legacy_populateMips(
     FTexturePlatformData& platformData,
     const CesiumGltf::ImageCesium& image,
@@ -76,7 +70,6 @@ void legacy_populateMips(
     }
   }
 }
-#endif
 
 struct GetImageFromSource {
   CesiumGltf::ImageCesium*
@@ -294,6 +287,12 @@ public:
         GetOrCreateSamplerState(deferredSamplerStateInitializer);
 
     if (!this->TextureRHI) {
+      // TODO: Currently copying from `ImageCesium` on the render-thread is
+      // unsafe. Currently we should never hit this code. Remove this in the
+      // future when images from tiles and raster tiles can be safely accessed
+      // from the render thread.
+      checkNoEntry();
+
       // Asynchronous RHI texture creation was not available. So create it now
       // directly from the in-memory cesium mips.
       CesiumGltf::ImageCesium* pImage =
@@ -593,13 +592,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   pResult->sRGB = sRGB;
   pResult->generateMipMaps = generateMipMaps;
 
-#if LEGACY_TEXTURE_CREATION
-  // Legacy texture creation copies mip data into the FTexturePlatformData.
-  legacy_populateMips(*pResult->pTextureData, image, generateMipMaps);
-  // Mark the image source as legacy, so we later know where to look for image
-  // data.
-  pResult->textureSource = LegacyTextureSource{};
-#else
   if (GRHISupportsAsyncTextureCreation) {
     // Create RHI texture resource asynchronously.
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CreateRHITexture2D)
@@ -609,7 +601,17 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
   } else {
     // The RHI texture will be created later on the render thread, directly
     // from this texture source.
-    pResult->textureSource = std::move(imageSource);
+    // pResult->textureSource = std::move(imageSource);
+
+    // TODO: Use the above texture creation path instead when the image source
+    // becomes render-thread safe in the future. Currently that is not the
+    // case for any `CesiumGltf::ImageCesium` from tiles or raster tiles.
+
+    // Legacy texture creation copies mip data into the FTexturePlatformData.
+    legacy_populateMips(*pResult->pTextureData, image, generateMipMaps);
+    // Mark the image source as legacy, so we later know where to look for image
+    // data.
+    pResult->textureSource = LegacyTextureSource{};
   }
 #endif
 
