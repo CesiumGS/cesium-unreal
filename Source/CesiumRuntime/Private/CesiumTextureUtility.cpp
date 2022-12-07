@@ -613,7 +613,6 @@ TUniquePtr<LoadedTextureResult> loadTextureAnyThreadPart(
     // data.
     pResult->textureSource = LegacyTextureSource{};
   }
-#endif
 
   return pResult;
 }
