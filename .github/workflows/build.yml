@@ -315,6 +315,59 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
+  LinuxNative51:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Unreal Engine
+        run: |
+          df -h
+          aws s3 cp s3://cesium-unreal-engine/5.1.0/Linux/Linux_Unreal_Engine_5.1.0.zip .
+          mkdir -p $HOME/UE_5.1
+          unzip -q Linux_Unreal_Engine_5.1.0.zip -d $HOME/UE_5.1
+          rm Linux_Unreal_Engine_5.1.0.zip
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0 # so that `git describe` works.
+      - name: Set environment variables
+        run: |
+          export CESIUM_UNREAL_VERSION=$(git describe)
+          export BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-linuxnative-${CESIUM_UNREAL_VERSION}"
+          export UNREAL_ENGINE_DIR=$HOME/UE_5.1
+          export UNREAL_ENGINE_COMPILER_DIR=$UNREAL_ENGINE_DIR/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v20_clang-13.0.1-centos7/x86_64-unknown-linux-gnu
+          export UNREAL_ENGINE_LIBCXX_DIR=$UNREAL_ENGINE_DIR/Engine/Source/ThirdParty/Unix/LibCxx
+          # Make these available to subsequent steps
+          echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+          echo "UNREAL_ENGINE_DIR=${UNREAL_ENGINE_DIR}" >> $GITHUB_ENV
+          echo "UNREAL_ENGINE_COMPILER_DIR=${UNREAL_ENGINE_COMPILER_DIR}" >> $GITHUB_ENV
+          echo "UNREAL_ENGINE_LIBCXX_DIR=${UNREAL_ENGINE_LIBCXX_DIR}" >> $GITHUB_ENV
+      - name: Build cesium-native
+        run: |
+          mkdir -p extern/build
+          cd extern/build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+          cmake --build . -j4 --target install
+          cd ../..
+          rm -rf extern
+      - name: Build plugin
+        run: |
+          sed -i 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.1.0\"/g' CesiumForUnreal.uplugin
+          export UNREAL_ENGINE_DIR=$HOME/UE_5.1
+          cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
+      - name: Fix RPATH
+        run: |
+          cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
+          export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
+          patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
+      - name: Publish plugin package artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          path: packages
   Linux51:
     runs-on: ["self-hosted","windows","x64","unreal"]
     steps:
