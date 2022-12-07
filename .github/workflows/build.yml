@@ -325,7 +325,7 @@ jobs:
       - name: Get Unreal Engine
         run: |
           df -h
-          aws s3 cp s3://cesium-unreal-engine/5.1.0/Linux/Linux_Unreal_Engine_5.1.0.zip .
+          aws s3 cp --no-progress s3://cesium-unreal-engine/5.1.0/Linux/Linux_Unreal_Engine_5.1.0.zip .
           mkdir -p $HOME/UE_5.1
           unzip -q Linux_Unreal_Engine_5.1.0.zip -d $HOME/UE_5.1
           rm Linux_Unreal_Engine_5.1.0.zip
