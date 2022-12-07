@@ -22,6 +22,14 @@ UCesiumIonRasterOverlay::CreateOverlay(
       this->IonAccessToken.IsEmpty()
           ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
           : this->IonAccessToken;
+  if(!this->IonAssetEndpointUrl.IsEmpty()) {
+    return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
+      TCHAR_TO_UTF8(*this->MaterialLayerKey),
+      this->IonAssetID,
+      TCHAR_TO_UTF8(*token),
+      options,
+      TCHAR_TO_UTF8(*this->IonAssetEndpointUrl));
+  }
   return std::make_unique<Cesium3DTilesSelection::IonRasterOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       this->IonAssetID,
