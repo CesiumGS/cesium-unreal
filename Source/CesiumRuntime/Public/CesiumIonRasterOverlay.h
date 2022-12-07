@@ -33,9 +33,9 @@ public:
   FString IonAccessToken;
 
   /**
- * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
- * endpoint can be specified.
- */
+   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
+   * endpoint can be specified.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
