@@ -12,7 +12,7 @@ jobs:
     - npm install
     - npm run format -- --dry-run -Werror
   - stage: Build OS Packages
-  - name: Windows 4.27
+    name: Windows 4.27
     os: windows
     install:
     - choco install 7zip.portable
@@ -184,7 +184,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
     env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
   - stage: Combine Packages
-  - name: Combine for UE 4.27
+    name: Combine for UE 4.27
     os: linux
     dist: focal
     git:
