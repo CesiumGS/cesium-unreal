@@ -40,6 +40,25 @@ void legacy_populateMips(
     bool generateMipMaps) {
   uint32 width = static_cast<uint32>(image.width);
   uint32 height = static_cast<uint32>(image.height);
+
+  if (image.mipPositions.empty()) {
+    // Only the full image is available.
+    FTexture2DMipMap* pMip = new FTexture2DMipMap();
+    platformData.Mips.Add(pMip);
+    pMip->SizeX = width;
+    pMip->SizeY = height;
+
+    pMip->BulkData.Lock(LOCK_READ_WRITE);
+    void* pDest =
+        pMip->BulkData.Realloc(static_cast<int64>(image.pixelData.size()));
+
+    FMemory::Memcpy(pDest, image.pixelData.data(), image.pixelData.size());
+
+    pMip->BulkData.Unlock();
+
+    return;
+  }
+
   for (const CesiumGltf::ImageCesiumMipPosition& mipPos : image.mipPositions) {
     FTexture2DMipMap* pMip = new FTexture2DMipMap();
     platformData.Mips.Add(pMip);
