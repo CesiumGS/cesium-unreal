@@ -9,6 +9,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause crashes, including on startup, on non-Windows platforms.
+- Fixed a bug that could cause the plugin to fail to load on Android systems in UE 5.1.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.1 to v0.21.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
