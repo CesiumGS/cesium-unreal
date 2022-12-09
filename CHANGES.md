@@ -1,5 +1,17 @@
 # Change Log
 
+### v1.20.1 - 2022-12-09
+
+##### Additions :tada:
+
+- Added the ability to specify the endpoint URL of the Cesium ion API on a `CesiumIonRasterOverlay`.
+
+##### Fixes :wrench:
+
+- Fixed a bug that could cause crashes, including on startup, on non-Windows platforms.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.1 to v0.21.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.20.0 - 2022-12-02
 
 ##### Breaking Changes :mega:
@@ -13,6 +25,8 @@
 ##### Fixes :wrench:
 
 - Fixed a bug that caused Cesium3DTilesets to fail to disconnect from CesiumGeoreference notifications. It could cause problems when changing to a different georeference instance.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.0 to v0.21.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.19.0 - 2022-11-01
 
