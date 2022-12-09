@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Fixed a bug that caused newly-created sub-levels to have their longitude and latitude parameters flipped relative to the current location of the `CesiumGeoreference`.
+
 ### v1.20.1 - 2022-12-09
 
 ##### Additions :tada:
