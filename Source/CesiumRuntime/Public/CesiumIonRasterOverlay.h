@@ -33,6 +33,17 @@ public:
   FString IonAccessToken;
 
   /**
+   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
+   * endpoint can be specified.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      AdvancedDisplay)
+  FString IonAssetEndpointUrl;
+
+  /**
    * Check if the Cesium ion token used to access this raster overlay is working
    * correctly, and fix it if necessary.
    */
