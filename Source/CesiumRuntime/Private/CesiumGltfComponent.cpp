@@ -16,6 +16,7 @@
 #include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/PropertyType.h"
@@ -284,6 +285,21 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   MikkTContext.m_pUserData = (void*)(&vertices);
   // MikkTContext.m_bIgnoreDegenerates = false;
   genTangSpaceDefault(&MikkTContext);
+}
+
+static void computeFakeNormals(
+    const TArray<uint32_t>& indices,
+    TArray<FStaticMeshBuildVertex>& vertices) {
+  // Compute flat normals
+  for (int i = 0; i < indices.Num(); i += 3) {
+    FStaticMeshBuildVertex& v0 = vertices[i];
+    FStaticMeshBuildVertex& v1 = vertices[i + 1];
+    FStaticMeshBuildVertex& v2 = vertices[i + 2];
+
+    v0.TangentX = v1.TangentX = v2.TangentX = TMeshVector3(0.0f);
+    v0.TangentY = v1.TangentY = v2.TangentY = TMeshVector3(0.0f);
+    v0.TangentZ = v1.TangentZ = v2.TangentZ = TMeshVector3(0.0f, 0.0f, 1.0f);
+  }
 }
 
 static void computeFlatNormals(
@@ -1076,7 +1092,10 @@ static void loadPrimitive(
     }
   } else {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
-    computeFlatNormals(indices, StaticMeshBuildVertices);
+    if (material.hasExtension<ExtensionKhrMaterialsUnlit>()) {
+      computeFakeNormals(indices, StaticMeshBuildVertices);
+    } else
+      computeFlatNormals(indices, StaticMeshBuildVertices);
   }
 
   if (hasTangents) {
