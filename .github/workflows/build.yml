@@ -284,17 +284,12 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
       - name: Build cesium-native
         run: |
-          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
-          $ENV:NDKROOT=$ENV:NDKROOT25
           cd extern
           cmake -B build-android -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-android-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build-android --config Release --target install -j8
       - name: Build plugin
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "5.1.0"') | Set-Content -Path CesiumForUnreal.uplugin
-          $ENV:ANDROID_NDK_ROOT=$ENV:ANDROID_NDK_ROOT25
-          $ENV:NDKROOT=$ENV:NDKROOT25
-
           # UE 5.1 seems to have a bug where the Android precompiled files are in the wrong place.
           # See https://forums.unrealengine.com/t/5-1-missing-precompiled-manifest-error-when-building-code-plugin-for-android/691983
           # So we fix it here.
