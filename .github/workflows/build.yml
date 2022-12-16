@@ -2,7 +2,7 @@ name: Cesium for Unreal
 on: [push]
 jobs:
   Windows50:
-    runs-on: ["self-hosted","windows","x64","unreal"]
+    runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -32,7 +32,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
   Android50:
-    runs-on: ["self-hosted","windows","x64","unreal"]
+    runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
       - name: Install additional dependencies
         run: |
@@ -65,7 +65,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
   Linux50:
-    runs-on: ["self-hosted","windows","x64","unreal"]
+    runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
       - name: Install additional dependencies
         run: |
@@ -234,7 +234,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: combine
   Windows51:
-    runs-on: ["self-hosted","windows","x64","unreal"]
+    runs-on: ["self-hosted","windows","x64","unreal-51"]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -265,7 +265,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
   Android51:
-    runs-on: ["self-hosted","windows","x64","unreal"]
+    runs-on: ["self-hosted","windows","x64","unreal-51"]
     steps:
       - name: Install additional dependencies
         run: |
@@ -322,7 +322,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
   Linux51:
-    runs-on: ["self-hosted","windows","x64","unreal"]
+    runs-on: ["self-hosted","windows","x64","unreal-51"]
     steps:
       - name: Install additional dependencies
         run: |
