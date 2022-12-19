@@ -34,9 +34,6 @@ jobs:
   Android50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
-      - name: Install additional dependencies
-        run: |
-          choco install -y ninja
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
@@ -67,9 +64,6 @@ jobs:
   Linux50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
-      - name: Install additional dependencies
-        run: |
-          choco install -y ninja
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
@@ -267,9 +261,6 @@ jobs:
   Android51:
     runs-on: ["self-hosted","windows","x64","unreal-51"]
     steps:
-      - name: Install additional dependencies
-        run: |
-          choco install -y ninja
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
@@ -319,9 +310,6 @@ jobs:
   Linux51:
     runs-on: ["self-hosted","windows","x64","unreal-51"]
     steps:
-      - name: Install additional dependencies
-        run: |
-          choco install -y ninja
       - name: Check out repository code
         uses: actions/checkout@v3
         with:
