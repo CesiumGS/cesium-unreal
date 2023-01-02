@@ -337,8 +337,8 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
       this->CesiumSubLevels.Add(FCesiumSubLevel{
           longPackageNameToCesiumName(pWorld, level.PackageName),
           canBeEnabled,
-          OriginLongitude,
           OriginLatitude,
+          OriginLongitude,
           OriginHeight,
           1000.0,
           canBeEnabled});
@@ -1092,8 +1092,8 @@ FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
     this->CesiumSubLevels.Add(FCesiumSubLevel{
         cesiumName,
         true,
-        this->OriginLongitude,
         this->OriginLatitude,
+        this->OriginLongitude,
         this->OriginHeight,
         1000.0,
         true});
