@@ -4,6 +4,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug where Cesium for Unreal depended on a number of Unreal modules _privately_, but then used them from public headers. These are now declared as public dependencies. This could lead to compile errors in previous versions when attempting to include Cesium for Unreal headers from outside the project without also explicitly declaring `UMG` and other modules as dependencies.
 - Fixed a bug that caused newly-created sub-levels to have their longitude and latitude parameters flipped relative to the current location of the `CesiumGeoreference`.
 
 ### v1.20.1 - 2022-12-09
