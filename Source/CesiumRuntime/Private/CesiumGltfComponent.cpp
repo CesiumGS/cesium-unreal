@@ -287,18 +287,14 @@ static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
   genTangSpaceDefault(&MikkTContext);
 }
 
-static void computeFakeNormals(
+static void setUniformNormals(
     const TArray<uint32_t>& indices,
-    TArray<FStaticMeshBuildVertex>& vertices) {
-  // Compute flat normals
-  for (int i = 0; i < indices.Num(); i += 3) {
-    FStaticMeshBuildVertex& v0 = vertices[i];
-    FStaticMeshBuildVertex& v1 = vertices[i + 1];
-    FStaticMeshBuildVertex& v2 = vertices[i + 2];
-
-    v0.TangentX = v1.TangentX = v2.TangentX = TMeshVector3(0.0f);
-    v0.TangentY = v1.TangentY = v2.TangentY = TMeshVector3(0.0f);
-    v0.TangentZ = v1.TangentZ = v2.TangentZ = TMeshVector3(0.0f, 0.0f, 1.0f);
+    TArray<FStaticMeshBuildVertex>& vertices,
+    TMeshVector3 normal) {
+  for (int i = 0; i < indices.Num(); i++) {
+    FStaticMeshBuildVertex& v = vertices[i];
+    v.TangentX = v.TangentY = TMeshVector3(0.0f);
+    v.TangentZ = normal;
   }
 }
 
@@ -1091,11 +1087,21 @@ static void loadPrimitive(
       }
     }
   } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
     if (material.hasExtension<ExtensionKhrMaterialsUnlit>()) {
-      computeFakeNormals(indices, StaticMeshBuildVertices);
-    } else
+      glm::dvec3 ecefCenter = glm::dvec3(
+          transform * CesiumTransforms::unrealToOrFromCesium *
+          glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
+      TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
+          CesiumTransforms::unrealToOrFromCesium *
+          glm::dvec4(
+              CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+                  glm::dvec3(ecefCenter)),
+              1.0)));
+      setUniformNormals(indices, StaticMeshBuildVertices, upDir);
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
       computeFlatNormals(indices, StaticMeshBuildVertices);
+    }
   }
 
   if (hasTangents) {
@@ -1914,6 +1920,10 @@ static void loadPrimitiveGameThreadPart(
   const MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
                                     : defaultPbrMetallicRoughness;
+
+  if (material.hasExtension<ExtensionKhrMaterialsUnlit>()) {
+    pMesh->bCastDynamicShadow = false;
+  }
 
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
