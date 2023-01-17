@@ -1093,10 +1093,11 @@ static void loadPrimitive(
           glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
       TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
           CesiumTransforms::unrealToOrFromCesium *
+          glm::affineInverse(transform) *
           glm::dvec4(
               CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
                   glm::dvec3(ecefCenter)),
-              1.0)));
+              0.0)));
       setUniformNormals(indices, StaticMeshBuildVertices, upDir);
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
