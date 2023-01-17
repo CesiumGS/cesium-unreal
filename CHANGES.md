@@ -1,11 +1,5 @@
 # Change Log
 
-### ? - ? 
-
-##### Fixes :wrench:
-
-- Disable normals for unlit materials, which caused photogrammetry to appear too dark. 
-
 ### v1.20.1 - 2022-12-09
 
 ##### Additions :tada:
