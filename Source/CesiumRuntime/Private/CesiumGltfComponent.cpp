@@ -1089,10 +1089,9 @@ static void loadPrimitive(
   } else {
     if (material.hasExtension<ExtensionKhrMaterialsUnlit>()) {
       glm::dvec3 ecefCenter = glm::dvec3(
-          transform * CesiumTransforms::unrealToOrFromCesium *
+          transform *
           glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
       TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
-          CesiumTransforms::unrealToOrFromCesium *
           glm::affineInverse(transform) *
           glm::dvec4(
               CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
