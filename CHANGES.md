@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Fixes :wrench:
+
+- Disable normals for unlit materials, which caused photogrammetry to appear too dark, when "KHR\_materials\_unlit" extension is used.
+
 ### v1.21.0 - 2023-01-02
 
 ##### Fixes :wrench:
