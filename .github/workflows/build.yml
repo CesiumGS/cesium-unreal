@@ -292,7 +292,7 @@ jobs:
             $oldPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_))
             $newPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_, "..", "arm64"))
             mkdir -p "$newPath"
-            New-Item -ItemType Junction -Path "$newPath\UnrealGame" -Target "$_"
+            New-Item -ItemType Junction -Path "$newPath\UnrealGame" -Target "$oldPath"
           }
 
           # Do the actual plugin build
