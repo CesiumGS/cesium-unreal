@@ -11,6 +11,7 @@ jobs:
           fetch-depth: 0 # so that `git describe` works.
       - name: Set environment variables
         run: |
+          choco install -y visualstudio2019-workload-manageddesktop
           $ENV:CESIUM_UNREAL_VERSION=$(git describe)
           $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${ENV:CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
