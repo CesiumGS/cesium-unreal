@@ -4,6 +4,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug that caused raster overlays and other materials features to not work for materials created or saved in Unreal Engine 5.1.
 - Disable normals for unlit materials, which caused photogrammetry to appear too dark, when "KHR\_materials\_unlit" extension is used.
 
 ### v1.21.0 - 2023-01-02

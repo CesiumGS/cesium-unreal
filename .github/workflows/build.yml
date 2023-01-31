@@ -11,6 +11,7 @@ jobs:
           fetch-depth: 0 # so that `git describe` works.
       - name: Set environment variables
         run: |
+          choco install -y dotnetcore-sdk
           $ENV:CESIUM_UNREAL_VERSION=$(git describe)
           $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${ENV:CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
@@ -96,7 +97,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
   macOS50:
-    runs-on: macos-latest
+    runs-on: macos-11
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -139,7 +140,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
   iOS50:
-    runs-on: macos-latest
+    runs-on: macos-11
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -291,7 +292,7 @@ jobs:
             $oldPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_))
             $newPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_, "..", "arm64"))
             mkdir -p "$newPath"
-            New-Item -ItemType Junction -Path "$newPath\UnrealGame" -Target "$_"
+            New-Item -ItemType Junction -Path "$newPath\UnrealGame" -Target "$oldPath"
           }
 
           # Do the actual plugin build
