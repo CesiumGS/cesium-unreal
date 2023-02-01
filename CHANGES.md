@@ -1,11 +1,16 @@
 # Change Log
 
-### ? - ?
+### v1.22.0 - 2023-02-01
+
+##### Additions :tada:
+
+- Added support for the `KHR_materials_unlit` glTF extension. This is rendered in Unreal Engine by disabling shadows and making all normals point up (along the ellipsoid surface normal).
 
 ##### Fixes :wrench:
 
-- Fixed a bug that caused raster overlays and other materials features to not work for materials created or saved in Unreal Engine 5.1.
-- Disable normals for unlit materials, which caused photogrammetry to appear too dark, when "KHR\_materials\_unlit" extension is used.
+- Fixed a bug that caused raster overlays and other material features to not work for materials created or saved in Unreal Engine 5.1.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.2 to v0.21.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.21.0 - 2023-01-02
 
