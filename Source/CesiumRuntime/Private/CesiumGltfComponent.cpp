@@ -1137,6 +1137,10 @@ static void loadPrimitive(
   }
 
   {
+    //set to full precision uv, because featureid > 1 maybe miss precision
+    LODResources.VertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(
+        true);
+    
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
