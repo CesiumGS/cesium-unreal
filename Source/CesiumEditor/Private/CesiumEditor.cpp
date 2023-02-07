@@ -6,7 +6,10 @@
 #include "CesiumCommands.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
+#include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
+#include "CesiumRuntime.h"
+#include "CesiumSunSky.h"
 #include "ClassIconFinder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
@@ -93,17 +96,12 @@ createButtonBoxBrush(const FString& name, const FLinearColor& color) {
 } // namespace
 
 void FCesiumEditorModule::StartupModule() {
-  static CesiumAsync::AsyncSystem asyncSystem(
-      std::make_shared<UnrealTaskProcessor>());
-
   _pModule = this;
 
   IModuleInterface::StartupModule();
 
-  auto pAssetAccessor = std::make_shared<UnrealAssetAccessor>();
-
   this->_pIonSession =
-      std::make_shared<CesiumIonSession>(asyncSystem, pAssetAccessor);
+      std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
   this->_pIonSession->resume();
 
   // Only register style once
@@ -154,6 +152,17 @@ void FCesiumEditorModule::StartupModule() {
         StyleSet,
         "Cesium.Common.OpenSupport",
         "FontAwesome/hands-helping-solid");
+    registerIcon(
+        StyleSet,
+        "Cesium.Common.OpenTokenSelector",
+        "FontAwesome/key-solid");
+
+    StyleSet->Set(
+        "Cesium.Common.GreenTick",
+        new IMAGE_BRUSH(TEXT("FontAwesome/check-solid"), Icon16x16));
+    StyleSet->Set(
+        "Cesium.Common.RedX",
+        new IMAGE_BRUSH(TEXT("FontAwesome/times-solid"), Icon16x16));
 
     registerIcon(StyleSet, "Cesium.Common.OpenCesiumPanel", "Cesium-64x64");
 
@@ -287,9 +296,45 @@ void FCesiumEditorModule::StartupModule() {
     pLevelEditorModule->GetToolBarExtensibilityManager()->AddExtender(
         pToolbarExtender);
   }
+
+  this->_tilesetLoadFailureSubscription = OnCesium3DTilesetLoadFailure.AddRaw(
+      this,
+      &FCesiumEditorModule::OnTilesetLoadFailure);
+  this->_rasterOverlayLoadFailureSubscription =
+      OnCesiumRasterOverlayLoadFailure.AddRaw(
+          this,
+          &FCesiumEditorModule::OnRasterOverlayLoadFailure);
+
+  this->_tilesetIonTroubleshootingSubscription =
+      OnCesium3DTilesetIonTroubleshooting.AddRaw(
+          this,
+          &FCesiumEditorModule::OnTilesetIonTroubleshooting);
+  this->_rasterOverlayIonTroubleshootingSubscription =
+      OnCesiumRasterOverlayIonTroubleshooting.AddRaw(
+          this,
+          &FCesiumEditorModule::OnRasterOverlayIonTroubleshooting);
 }
 
 void FCesiumEditorModule::ShutdownModule() {
+  if (this->_tilesetLoadFailureSubscription.IsValid()) {
+    OnCesium3DTilesetLoadFailure.Remove(this->_tilesetLoadFailureSubscription);
+    this->_tilesetLoadFailureSubscription.Reset();
+  }
+  if (this->_rasterOverlayLoadFailureSubscription.IsValid()) {
+    OnCesiumRasterOverlayLoadFailure.Remove(
+        this->_rasterOverlayLoadFailureSubscription);
+    this->_rasterOverlayLoadFailureSubscription.Reset();
+  }
+  if (this->_tilesetIonTroubleshootingSubscription.IsValid()) {
+    OnCesium3DTilesetIonTroubleshooting.Remove(
+        this->_tilesetIonTroubleshootingSubscription);
+    this->_tilesetIonTroubleshootingSubscription.Reset();
+  }
+  if (this->_rasterOverlayIonTroubleshootingSubscription.IsValid()) {
+    OnCesiumRasterOverlayIonTroubleshooting.Remove(
+        this->_rasterOverlayIonTroubleshootingSubscription);
+    this->_rasterOverlayIonTroubleshootingSubscription.Reset();
+  }
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
@@ -313,6 +358,74 @@ TSharedRef<SDockTab> FCesiumEditorModule::SpawnCesiumIonAssetBrowserTab(
   return SpawnedTab;
 }
 
+void FCesiumEditorModule::OnTilesetLoadFailure(
+    const FCesium3DTilesetLoadFailureDetails& details) {
+  if (!details.Tileset.IsValid()) {
+    return;
+  }
+
+  // Don't pop a troubleshooting panel over a game world (including
+  // Play-In-Editor).
+  if (details.Tileset->GetWorld()->IsGameWorld()) {
+    return;
+  }
+
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->GetLevelEditorTabManager()->TryInvokeTab(
+        FTabId("OutputLog"));
+  }
+
+  // Check for a 401 connecting to Cesium ion, which means the token is invalid
+  // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
+  // when the token is valid but not authorized for the asset.
+  if (details.Type == ECesium3DTilesetLoadType::CesiumIon &&
+      (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
+    CesiumIonTokenTroubleshooting::Open(details.Tileset.Get(), true);
+  }
+}
+
+void FCesiumEditorModule::OnRasterOverlayLoadFailure(
+    const FCesiumRasterOverlayLoadFailureDetails& details) {
+  if (!details.Overlay.IsValid()) {
+    return;
+  }
+
+  // Don't pop a troubleshooting panel over a game world (including
+  // Play-In-Editor).
+  if (details.Overlay->GetWorld()->IsGameWorld()) {
+    return;
+  }
+
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(
+          FName(TEXT("LevelEditor")));
+  if (pLevelEditorModule) {
+    pLevelEditorModule->GetLevelEditorTabManager()->TryInvokeTab(
+        FTabId("OutputLog"));
+  }
+
+  // Check for a 401 connecting to Cesium ion, which means the token is invalid
+  // (or perhaps the asset ID is). Also check for a 404, because ion returns 404
+  // when the token is valid but not authorized for the asset.
+  if (details.Type == ECesiumRasterOverlayLoadType::CesiumIon &&
+      (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
+    CesiumIonTokenTroubleshooting::Open(details.Overlay.Get(), true);
+  }
+}
+
+void FCesiumEditorModule::OnTilesetIonTroubleshooting(
+    ACesium3DTileset* pTileset) {
+  CesiumIonTokenTroubleshooting::Open(pTileset, false);
+}
+
+void FCesiumEditorModule::OnRasterOverlayIonTroubleshooting(
+    UCesiumRasterOverlay* pOverlay) {
+  CesiumIonTokenTroubleshooting::Open(pOverlay, false);
+}
+
 TSharedPtr<FSlateStyleSet> FCesiumEditorModule::GetStyle() { return StyleSet; }
 
 const FName& FCesiumEditorModule::GetStyleSetName() {
@@ -325,7 +438,7 @@ ACesium3DTileset* FCesiumEditorModule::FindFirstTilesetSupportingOverlays() {
 
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); it; ++it) {
     const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
-    if (pTileset && pTileset->supportsRasterOverlays()) {
+    if (pTileset) {
       return *it;
     }
   }
@@ -343,7 +456,7 @@ FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !pTilesetActor && it;
        ++it) {
     const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
-    if (pTileset && pTileset->getIonAssetID() == assetID) {
+    if (pTileset && it->GetIonAssetID() == assetID) {
       return *it;
     }
   }
@@ -366,8 +479,6 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
   if (assetID != -1) {
     pTilesetActor->SetIonAssetID(assetID);
-    pTilesetActor->SetIonAccessToken(UTF8_TO_TCHAR(
-        FCesiumEditorModule::ion().getAssetAccessToken().token.c_str()));
   }
   return pTilesetActor;
 }
@@ -422,8 +533,6 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
       RF_Public | RF_Transactional);
   pOverlay->MaterialLayerKey = overlayKey;
   pOverlay->IonAssetID = assetID;
-  pOverlay->IonAccessToken = UTF8_TO_TCHAR(
-      FCesiumEditorModule::ion().getAssetAccessToken().token.c_str());
   pOverlay->SetActive(true);
   pOverlay->OnComponentCreated();
 
@@ -500,7 +609,7 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
 } // namespace
 
 AActor* FCesiumEditorModule::GetCurrentLevelCesiumSunSky() {
-  return GetFirstCurrentLevelActorWithClass(GetCesiumSunSkyBlueprintClass());
+  return GetFirstCurrentLevelActorWithClass(GetCesiumSunSkyClass());
 }
 
 AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
@@ -508,29 +617,15 @@ AActor* FCesiumEditorModule::GetCurrentLevelDynamicPawn() {
 }
 
 AActor* FCesiumEditorModule::SpawnCesiumSunSky() {
-  return SpawnActorWithClass(GetCesiumSunSkyBlueprintClass());
+  return SpawnActorWithClass(GetCesiumSunSkyClass());
 }
 
 AActor* FCesiumEditorModule::SpawnDynamicPawn() {
   return SpawnActorWithClass(GetDynamicPawnBlueprintClass());
 }
 
-UClass* FCesiumEditorModule::GetCesiumSunSkyBlueprintClass() {
-  static UClass* pResult = nullptr;
-
-  if (!pResult) {
-    pResult = LoadClass<AActor>(
-        nullptr,
-        TEXT("/CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
-    if (!pResult) {
-      UE_LOG(
-          LogCesiumEditor,
-          Warning,
-          TEXT("Could not load /CesiumForUnreal/CesiumSunSky.CesiumSunSky_C"));
-    }
-  }
-
-  return pResult;
+UClass* FCesiumEditorModule::GetCesiumSunSkyClass() {
+  return ACesiumSunSky::StaticClass();
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {

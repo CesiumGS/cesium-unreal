@@ -19,7 +19,7 @@ If a related issue does not exist, submit a new one. Please be concise and inclu
 - The version of Cesium for Unreal. Did this work in a previous version?
 - Your operating system and version, Unreal Engine version, and video card. Are they all up-to-date? Is the issue specific to one of them?
 - If possible, an Unreal project (and data or IDs of Cesium ion assets that have been used) where the issue can be reproduced.
-- Can the issue be reproduced in the [Cesium for Unreal demo](https://github.com/CesiumGS/cesium-unreal-demo)?
+- Can the issue be reproduced in the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples)?
 - A Screenshot, video or animated .gif if appropriate. Screenshots are particularly useful for exceptions and rendering artifacts.
 - Information about whether the issue appeared in the Unreal Editor or in the play mode.
 - If the issue is about a crash of the Unreal Editor, include the stack trace that is shown together with the error message.

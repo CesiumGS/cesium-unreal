@@ -1,31 +1,42 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "Cesium3DTileset.h"
+#include "Async/Async.h"
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
+#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
-#include "Cesium3DTilesSelection/GltfContent.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
-#include "Cesium3DTilesSelection/Tileset.h"
+#include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
+#include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
-#include "CesiumAsync/CachingAssetAccessor.h"
-#include "CesiumAsync/SqliteCache.h"
+#include "CesiumAsync/IAssetResponse.h"
+#include "CesiumBoundingVolumeComponent.h"
+#include "CesiumCamera.h"
+#include "CesiumCameraManager.h"
+#include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumGeospatial/Transforms.h"
+#include "CesiumGltf/ImageCesium.h"
+#include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
+#include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
+#include "CesiumViewExtension.h"
 #include "Components/SceneCaptureComponent2D.h"
-#include "CreateModelOptions.h"
+#include "CreateGltfOptions.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/SceneCapture2D.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
@@ -34,21 +45,22 @@
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
-#include "HttpModule.h"
 #include "IPhysXCookingModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
+#include "PixelFormat.h"
+#include "SceneTypes.h"
 #include "StereoRendering.h"
-#include "UnrealAssetAccessor.h"
-#include "UnrealTaskProcessor.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/trigonometric.hpp>
 #include <memory>
 #include <spdlog/spdlog.h>
+
+FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -59,6 +71,7 @@
 // Sets default values
 ACesium3DTileset::ACesium3DTileset()
     : Georeference(nullptr),
+      ResolvedGeoreference(nullptr),
       CreditSystem(nullptr),
 
       _pTileset(nullptr),
@@ -70,16 +83,18 @@ ACesium3DTileset::ACesium3DTileset()
 
       _lastTilesVisited(0),
       _lastTilesCulled(0),
+      _lastTilesOccluded(0),
+      _lastTilesWaitingForOcclusionResults(0),
       _lastMaxDepthVisited(0),
-
-      _updateGeoreferenceOnBoundingVolumeReady(false),
 
       _captureMovieMode{false},
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieKeepWorldOriginNearCamera{true},
-      _tilesToNoLongerRenderNextFrame{} {
+      _beforeMovieUseLodTransitions{true},
+
+      _tilesetsBeingDestroyed(0) {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -88,14 +103,100 @@ ACesium3DTileset::ACesium3DTileset()
 
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
-  this->RootComponent->SetMobility(EComponentMobility::Static);
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 
+ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
+  return this->Georeference;
+}
+
+void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
+  if (NewMobility != this->Mobility) {
+    this->Mobility = NewMobility;
+    DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
+  this->Georeference = NewGeoreference;
+  this->InvalidateResolvedGeoreference();
+  this->ResolveGeoreference();
+}
+
+ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    return this->ResolvedGeoreference;
+  }
+
+  if (IsValid(this->Georeference)) {
+    this->ResolvedGeoreference = this->Georeference;
+  } else {
+    this->ResolvedGeoreference =
+        ACesiumGeoreference::GetDefaultGeoreference(this);
+  }
+
+  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
+  if (pRoot) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+        pRoot,
+        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+
+    // Update existing tile positions, if any.
+    pRoot->HandleGeoreferenceUpdated();
+  }
+
+  return this->ResolvedGeoreference;
+}
+
+void ACesium3DTileset::InvalidateResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(
+        this->RootComponent);
+  }
+  this->ResolvedGeoreference = nullptr;
+}
+
+ACesiumCreditSystem* ACesium3DTileset::GetCreditSystem() const {
+  return this->CreditSystem;
+}
+
+void ACesium3DTileset::SetCreditSystem(ACesiumCreditSystem* NewCreditSystem) {
+  this->CreditSystem = NewCreditSystem;
+  this->InvalidateResolvedCreditSystem();
+  this->ResolveCreditSystem();
+}
+
+ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
+  if (IsValid(this->ResolvedCreditSystem)) {
+    return this->ResolvedCreditSystem;
+  }
+
+  if (IsValid(this->CreditSystem)) {
+    this->ResolvedCreditSystem = this->CreditSystem;
+  } else {
+    this->ResolvedCreditSystem =
+        ACesiumCreditSystem::GetDefaultCreditSystem(this);
+  }
+
+  // Refresh the tileset so it uses the new credit system.
+  this->RefreshTileset();
+
+  return this->ResolvedCreditSystem;
+}
+
+void ACesium3DTileset::InvalidateResolvedCreditSystem() {
+  this->ResolvedCreditSystem = nullptr;
+  this->RefreshTileset();
+}
+
 void ACesium3DTileset::RefreshTileset() { this->DestroyTileset(); }
+
+void ACesium3DTileset::TroubleshootToken() {
+  OnCesium3DTilesetIonTroubleshooting.Broadcast(this);
+}
 
 void ACesium3DTileset::AddFocusViewportDelegate() {
 #if WITH_EDITOR
@@ -116,40 +217,98 @@ void ACesium3DTileset::PostInitProperties() {
       *this->GetName());
 
   Super::PostInitProperties();
+
   AddFocusViewportDelegate();
+
+  UCesiumRuntimeSettings* pSettings =
+      GetMutableDefault<UCesiumRuntimeSettings>();
+  if (pSettings) {
+    CanEnableOcclusionCulling =
+        pSettings->EnableExperimentalOcclusionCullingFeature;
+#if WITH_EDITOR
+    pSettings->OnSettingChanged().AddUObject(
+        this,
+        &ACesium3DTileset::RuntimeSettingsChanged);
+#endif
+  }
 }
 
-void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
-  if (InSource != this->TilesetSource) {
-    this->TilesetSource = InSource;
+void ACesium3DTileset::SetUseLodTransitions(bool InUseLodTransitions) {
+  if (InUseLodTransitions != this->UseLodTransitions) {
+    this->UseLodTransitions = InUseLodTransitions;
     this->DestroyTileset();
   }
 }
 
-void ACesium3DTileset::SetUrl(FString InUrl) {
+void ACesium3DTileset::SetTilesetSource(ETilesetSource InSource) {
+  if (InSource != this->TilesetSource) {
+    this->DestroyTileset();
+    this->TilesetSource = InSource;
+  }
+}
+
+void ACesium3DTileset::SetUrl(const FString& InUrl) {
   if (InUrl != this->Url) {
-    this->Url = InUrl;
     if (this->TilesetSource == ETilesetSource::FromUrl) {
       this->DestroyTileset();
     }
+    this->Url = InUrl;
   }
 }
 
-void ACesium3DTileset::SetIonAssetID(int32 InAssetID) {
+void ACesium3DTileset::SetIonAssetID(int64 InAssetID) {
   if (InAssetID >= 0 && InAssetID != this->IonAssetID) {
-    this->IonAssetID = InAssetID;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
+    this->IonAssetID = InAssetID;
   }
 }
 
-void ACesium3DTileset::SetIonAccessToken(FString InAccessToken) {
+void ACesium3DTileset::SetIonAccessToken(const FString& InAccessToken) {
   if (this->IonAccessToken != InAccessToken) {
-    this->IonAccessToken = InAccessToken;
     if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
       this->DestroyTileset();
     }
+    this->IonAccessToken = InAccessToken;
+  }
+}
+
+void ACesium3DTileset::SetIonAssetEndpointUrl(
+    const FString& InIonAssetEndpointUrl) {
+  if (this->IonAssetEndpointUrl != InIonAssetEndpointUrl) {
+    if (this->TilesetSource == ETilesetSource::FromCesiumIon) {
+      this->DestroyTileset();
+    }
+    this->IonAssetEndpointUrl = InIonAssetEndpointUrl;
+  }
+}
+
+bool ACesium3DTileset::GetEnableOcclusionCulling() const {
+  return GetDefault<UCesiumRuntimeSettings>()
+             ->EnableExperimentalOcclusionCullingFeature &&
+         EnableOcclusionCulling;
+}
+
+void ACesium3DTileset::SetEnableOcclusionCulling(bool bEnableOcclusionCulling) {
+  if (this->EnableOcclusionCulling != bEnableOcclusionCulling) {
+    this->EnableOcclusionCulling = bEnableOcclusionCulling;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetOcclusionPoolSize(int32 newOcclusionPoolSize) {
+  if (this->OcclusionPoolSize != newOcclusionPoolSize) {
+    this->OcclusionPoolSize = newOcclusionPoolSize;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetDelayRefinementForOcclusion(
+    bool bDelayRefinementForOcclusion) {
+  if (this->DelayRefinementForOcclusion != bDelayRefinementForOcclusion) {
+    this->DelayRefinementForOcclusion = bDelayRefinementForOcclusion;
+    this->DestroyTileset();
   }
 }
 
@@ -188,6 +347,13 @@ void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
   }
 }
 
+void ACesium3DTileset::SetTranslucentMaterial(UMaterialInterface* InMaterial) {
+  if (this->TranslucentMaterial != InMaterial) {
+    this->TranslucentMaterial = InMaterial;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   if (this->WaterMaterial != InMaterial) {
     this->WaterMaterial = InMaterial;
@@ -195,32 +361,44 @@ void ACesium3DTileset::SetWaterMaterial(UMaterialInterface* InMaterial) {
   }
 }
 
-void ACesium3DTileset::PlayMovieSequencer() {
-  ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultForActor(this);
+void ACesium3DTileset::SetCustomDepthParameters(
+    FCustomDepthParameters InCustomDepthParameters) {
+  if (this->CustomDepthParameters != InCustomDepthParameters) {
+    this->CustomDepthParameters = InCustomDepthParameters;
+    this->DestroyTileset();
+  }
+}
 
+void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadAncestors = this->PreloadAncestors;
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
-  this->_beforeMovieKeepWorldOriginNearCamera =
-      cesiumGeoreference->KeepWorldOriginNearCamera;
+  this->_beforeMovieUseLodTransitions = this->UseLodTransitions;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->_beforeMovieKeepWorldOriginNearCamera =
+        this->ResolveGeoreference()->KeepWorldOriginNearCamera;
+  }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
-  cesiumGeoreference->KeepWorldOriginNearCamera = false;
+  this->UseLodTransitions = false;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
+  }
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
-  ACesiumGeoreference* cesiumGeoreference =
-      ACesiumGeoreference::GetDefaultForActor(this);
   this->_captureMovieMode = false;
   this->PreloadAncestors = this->_beforeMoviePreloadAncestors;
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
-  cesiumGeoreference->KeepWorldOriginNearCamera =
-      this->_beforeMovieKeepWorldOriginNearCamera;
+  this->UseLodTransitions = this->_beforeMovieUseLodTransitions;
+  if (IsValid(this->ResolveGeoreference())) {
+    this->ResolveGeoreference()->KeepWorldOriginNearCamera =
+        this->_beforeMovieKeepWorldOriginNearCamera;
+  }
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
@@ -235,12 +413,17 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       *this->GetName());
 
   struct CalculateECEFCameraPosition {
+
+    const GeoTransforms& localGeoTransforms;
+
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
       glm::dmat4 ENU =
-          CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
       glm::dvec3 offset =
-          sphere.getRadius() * glm::normalize(ENU[0] + ENU[1] + ENU[2]);
+          sphere.getRadius() *
+          glm::normalize(
+              glm::dvec3(ENU[0]) + glm::dvec3(ENU[1]) + glm::dvec3(ENU[2]));
       glm::dvec3 position = center + offset;
       return position;
     }
@@ -249,10 +432,12 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
       glm::dmat4 ENU =
-          CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(center);
+          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
-      glm::dvec3 offset = glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
-                          glm::normalize(ENU[0] + ENU[1] + ENU[2]);
+      glm::dvec3 offset =
+          glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
+          glm::normalize(
+              glm::dvec3(ENU[0]) + glm::dvec3(ENU[1]) + glm::dvec3(ENU[2]));
       glm::dvec3 position = center + offset;
       return position;
     }
@@ -268,6 +453,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       return (*this)(boundingRegionWithLooseFittingHeights.getBoundingRegion()
                          .getBoundingBox());
     }
+
+    glm::dvec3 operator()(const CesiumGeospatial::S2CellBoundingVolume& s2) {
+      return (*this)(s2.computeBoundingRegion());
+    }
   };
 
   const Cesium3DTilesSelection::Tile* pRootTile =
@@ -282,15 +471,17 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   // calculate unreal camera position
   const glm::dmat4& transform =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  glm::dvec3 ecefCameraPosition =
-      std::visit(CalculateECEFCameraPosition(), boundingVolume);
+  glm::dvec3 ecefCameraPosition = std::visit(
+      CalculateECEFCameraPosition{
+          this->ResolveGeoreference()->GetGeoTransforms()},
+      boundingVolume);
   glm::dvec3 unrealCameraPosition =
-      transform * glm::dvec4(ecefCameraPosition, 1.0);
+      glm::dvec3(transform * glm::dvec4(ecefCameraPosition, 1.0));
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter =
       Cesium3DTilesSelection::getBoundingVolumeCenter(boundingVolume);
-  glm::dvec3 unrealCenter = transform * glm::dvec4(ecefCenter, 1.0);
+  glm::dvec3 unrealCenter = glm::dvec3(transform * glm::dvec4(ecefCenter, 1.0));
   glm::dvec3 unrealCameraFront =
       glm::normalize(unrealCenter - unrealCameraPosition);
   glm::dvec3 unrealCameraRight =
@@ -335,42 +526,20 @@ ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
       ->GetCesiumTilesetToUnrealRelativeWorldTransform();
 }
 
-bool ACesium3DTileset::IsBoundingVolumeReady() const {
-  // TODO: detect failures that will cause the root tile to never exist.
-  // That counts as "ready" too.
-  return this->_pTileset && this->_pTileset->getRootTile();
-}
+void ACesium3DTileset::UpdateTransformFromCesium() {
 
-std::optional<Cesium3DTilesSelection::BoundingVolume>
-ACesium3DTileset::GetBoundingVolume() const {
-  if (!this->IsBoundingVolumeReady()) {
-    return std::nullopt;
-  }
-
-  return this->_pTileset->getRootTile()->getBoundingVolume();
-}
-
-void ACesium3DTileset::UpdateTransformFromCesium(
-    const glm::dmat4& CesiumToUnreal) {
+  const glm::dmat4& CesiumToUnreal =
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   TArray<UCesiumGltfComponent*> gltfComponents;
   this->GetComponents<UCesiumGltfComponent>(gltfComponents);
 
   for (UCesiumGltfComponent* pGltf : gltfComponents) {
     pGltf->UpdateTransformFromCesium(CesiumToUnreal);
   }
-}
 
-void ACesium3DTileset::NotifyGeoreferenceUpdated() {
-  // If the bounding volume is ready, we can update the georeference transform
-  // as wanted
-  if (IsBoundingVolumeReady()) {
-    UCesium3DTilesetRoot* pRoot =
-        Cast<UCesium3DTilesetRoot>(this->RootComponent);
-    pRoot->RecalculateTransform();
-  } else {
-    // Otherwise, update the transform later in Tick when the bounding volume is
-    // ready
-    this->_updateGeoreferenceOnBoundingVolumeReady = true;
+  if (this->BoundingVolumePoolComponent) {
+    this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
+        CesiumToUnreal);
   }
 }
 
@@ -450,45 +619,67 @@ public:
       : _pActor(pActor)
 #if PHYSICS_INTERFACE_PHYSX
         ,
-        _pPhysXCooking(
-            pActor->GetCreatePhysicsMeshes()
-                ? GetPhysXCookingModule()->GetPhysXCooking()
-                : nullptr)
+        _pPhysXCookingModule(
+            pActor->GetCreatePhysicsMeshes() ? GetPhysXCookingModule()
+                                             : nullptr)
 #endif
   {
   }
 
-  virtual void* prepareInLoadThread(
-      const CesiumGltf::Model& model,
-      const glm::dmat4& transform) override {
+  virtual CesiumAsync::Future<
+      Cesium3DTilesSelection::TileLoadResultAndRenderResources>
+  prepareInLoadThread(
+      const CesiumAsync::AsyncSystem& asyncSystem,
+      Cesium3DTilesSelection::TileLoadResult&& tileLoadResult,
+      const glm::dmat4& transform,
+      const std::any& rendererOptions) override {
+    CesiumGltf::Model* pModel =
+        std::get_if<CesiumGltf::Model>(&tileLoadResult.contentKind);
+    if (!pModel)
+      return asyncSystem.createResolvedFuture(
+          Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+              std::move(tileLoadResult),
+              nullptr});
 
-    CreateModelOptions options;
+    CreateGltfOptions::CreateModelOptions options;
+    options.pModel = pModel;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
 
 #if PHYSICS_INTERFACE_PHYSX
-    options.pPhysXCooking = this->_pPhysXCooking;
+    options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
 
-    std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf =
-        UCesiumGltfComponent::CreateOffGameThread(model, transform, options);
-    return pHalf.release();
+    options.pEncodedMetadataDescription =
+        &this->_pActor->_encodedMetadataDescription;
+
+    TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
+        UCesiumGltfComponent::CreateOffGameThread(transform, options);
+    return asyncSystem.createResolvedFuture(
+        Cesium3DTilesSelection::TileLoadResultAndRenderResources{
+            std::move(tileLoadResult),
+            pHalf.Release()});
   }
 
   virtual void* prepareInMainThread(
       Cesium3DTilesSelection::Tile& tile,
       void* pLoadThreadResult) override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
-        tile.getContent();
-    if (pContent && pContent->model) {
-      std::unique_ptr<UCesiumGltfComponent::HalfConstructed> pHalf(
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    if (content.isRenderContent()) {
+      TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf(
           reinterpret_cast<UCesiumGltfComponent::HalfConstructed*>(
               pLoadThreadResult));
+      const Cesium3DTilesSelection::TileRenderContent& renderContent =
+          *content.getRenderContent();
       return UCesiumGltfComponent::CreateOnGameThread(
+          renderContent.getModel(),
           this->_pActor,
           std::move(pHalf),
           _pActor->GetCesiumTilesetToUnrealRelativeWorldTransform(),
           this->_pActor->GetMaterial(),
-          this->_pActor->GetWaterMaterial());
+          this->_pActor->GetTranslucentMaterial(),
+          this->_pActor->GetWaterMaterial(),
+          this->_pActor->GetCustomDepthParameters(),
+          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()));
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -506,39 +697,63 @@ public:
     } else if (pMainThreadResult) {
       UCesiumGltfComponent* pGltf =
           reinterpret_cast<UCesiumGltfComponent*>(pMainThreadResult);
-      this->destroyRecursively(pGltf);
+      CesiumLifetime::destroyComponentRecursively(pGltf);
     }
   }
 
-  virtual void*
-  prepareRasterInLoadThread(const CesiumGltf::ImageCesium& image) override {
-    return (void*)CesiumTextureUtility::loadTextureAnyThreadPart(
-        image,
+  virtual void* prepareRasterInLoadThread(
+      CesiumGltf::ImageCesium& image,
+      const std::any& rendererOptions) override {
+    auto ppOptions =
+        std::any_cast<FRasterOverlayRendererOptions*>(&rendererOptions);
+    check(ppOptions != nullptr && *ppOptions != nullptr);
+    if (ppOptions == nullptr || *ppOptions == nullptr) {
+      return nullptr;
+    }
+
+    auto pOptions = *ppOptions;
+
+    auto texture = CesiumTextureUtility::loadTextureAnyThreadPart(
+        CesiumTextureUtility::GltfImagePtr{&image},
         TextureAddress::TA_Clamp,
         TextureAddress::TA_Clamp,
-        TextureFilter::TF_Bilinear);
+        pOptions->filter,
+        pOptions->group,
+        pOptions->useMipmaps,
+        true); // TODO: sRGB should probably be configurable on the raster
+               // overlay
+    return texture.Release();
   }
 
   virtual void* prepareRasterInMainThread(
-      const Cesium3DTilesSelection::RasterOverlayTile& /*rasterTile*/,
+      Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pLoadThreadResult) override {
 
-    CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
+    TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pLoadedTexture{
         static_cast<CesiumTextureUtility::LoadedTextureResult*>(
-            pLoadThreadResult);
-
-    CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture);
+            pLoadThreadResult)};
 
     if (!pLoadedTexture) {
       return nullptr;
     }
 
-    UTexture2D* pTexture = pLoadedTexture->pTexture;
+    // The image source pointer during loading may have been invalidated,
+    // so replace it.
+    CesiumTextureUtility::GltfImagePtr* pImageSource =
+        std::get_if<CesiumTextureUtility::GltfImagePtr>(
+            &pLoadedTexture->textureSource);
+    if (pImageSource) {
+      pImageSource->pImage = &rasterTile.getImage();
+    }
+
+    UTexture2D* pTexture =
+        CesiumTextureUtility::loadTextureGameThreadPart(pLoadedTexture.Get());
+    if (!pTexture) {
+      return nullptr;
+    }
+
     pTexture->AddToRoot();
-
-    delete pLoadedTexture;
-
-    return (void*)pTexture;
+    return pTexture;
   }
 
   virtual void freeRaster(
@@ -549,12 +764,14 @@ public:
       CesiumTextureUtility::LoadedTextureResult* pLoadedTexture =
           static_cast<CesiumTextureUtility::LoadedTextureResult*>(
               pLoadThreadResult);
+      CesiumTextureUtility::destroyHalfLoadedTexture(*pLoadedTexture);
       delete pLoadedTexture;
     }
 
     if (pMainThreadResult) {
-      UTexture2D* pTexture = static_cast<UTexture2D*>(pMainThreadResult);
+      UTexture* pTexture = static_cast<UTexture*>(pMainThreadResult);
       pTexture->RemoveFromRoot();
+      CesiumTextureUtility::destroyTexture(pTexture);
     }
   }
 
@@ -565,11 +782,13 @@ public:
       void* pMainThreadRendererResources,
       const glm::dvec2& translation,
       const glm::dvec2& scale) override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
-        tile.getContent();
-    if (pContent && pContent->model) {
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (pRenderContent) {
       UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
+          reinterpret_cast<UCesiumGltfComponent*>(
+              pRenderContent->getRenderResources());
       if (pGltfContent) {
         pGltfContent->AttachRasterTile(
             tile,
@@ -587,11 +806,13 @@ public:
       int32_t overlayTextureCoordinateID,
       const Cesium3DTilesSelection::RasterOverlayTile& rasterTile,
       void* pMainThreadRendererResources) noexcept override {
-    const Cesium3DTilesSelection::TileContentLoadResult* pContent =
-        tile.getContent();
-    if (pContent && pContent->model) {
+    const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (pRenderContent) {
       UCesiumGltfComponent* pGltfContent =
-          reinterpret_cast<UCesiumGltfComponent*>(tile.getRendererResources());
+          reinterpret_cast<UCesiumGltfComponent*>(
+              pRenderContent->getRenderResources());
       if (pGltfContent) {
         pGltfContent->DetachRasterTile(
             tile,
@@ -602,100 +823,170 @@ public:
   }
 
 private:
-  void destroyRecursively(USceneComponent* pComponent) {
-
-    UE_LOG(
-        LogCesium,
-        VeryVerbose,
-        TEXT("Destroying scene component recursively"));
-
-    if (!pComponent) {
-      return;
-    }
-
-    if (pComponent->IsRegistered()) {
-      pComponent->UnregisterComponent();
-    }
-
-    TArray<USceneComponent*> children = pComponent->GetAttachChildren();
-    for (USceneComponent* pChild : children) {
-      this->destroyRecursively(pChild);
-    }
-
-    pComponent->DestroyPhysicsState();
-    pComponent->DestroyComponent();
-
-    UE_LOG(LogCesium, VeryVerbose, TEXT("Destroying scene component done"));
-  }
-
   ACesium3DTileset* _pActor;
 #if PHYSICS_INTERFACE_PHYSX
-  IPhysXCooking* _pPhysXCooking;
+  IPhysXCookingModule* _pPhysXCookingModule;
 #endif
 };
 
-static std::string getCacheDatabaseName() {
-  // On Android, EngineUserDir returns a "fake" directory. UE's IPlatformFile
-  // knows how to resolve it, but we can't pass it to cesium-native because
-  // cesium-native expects a real path. IAndroidPlatformFile::FileRootPath
-  // looks like it should be able to resolve it for us, but that's difficult
-  // to call from here.
+void ACesium3DTileset::UpdateLoadStatus() {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateLoadStatus)
 
-  // At the same time, apps on Android are isolated from each other and so we
-  // can't really share a cache between them anyway. So we store the cache in a
-  // different directory on Android.
-#if PLATFORM_ANDROID
-  FString baseDirectory = FPaths::ProjectPersistentDownloadDir();
-#else
-  FString baseDirectory = FPaths::EngineUserDir();
-#endif
+  this->LoadProgress = this->_pTileset->computeLoadProgress();
 
-  FString filename =
-      FPaths::Combine(baseDirectory, TEXT("cesium-request-cache.sqlite"));
-  UE_LOG(LogCesium, Verbose, TEXT("Caching Cesium requests in %s"), *filename);
-  return TCHAR_TO_UTF8(*filename);
+  if (this->LoadProgress < 100 ||
+      this->_lastTilesWaitingForOcclusionResults > 0) {
+    this->_activeLoading = true;
+  } else if (this->_activeLoading && this->LoadProgress == 100) {
+
+    // There might be a few frames where nothing needs to be loaded as we
+    // are waiting for occlusion results to come back, which means we are not
+    // done with loading all the tiles in the tileset yet.
+    if (this->_lastTilesWaitingForOcclusionResults == 0) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BroadcastOnTilesetLoaded)
+
+      // Tileset just finished loading, we broadcast the update
+      UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
+      OnTilesetLoaded.Broadcast();
+
+      // Tileset remains 100% loaded if we don't have to reload it
+      // so we don't want to keep on sending finished loading updates
+      this->_activeLoading = false;
+    }
+  }
 }
 
+namespace {
+
+const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
+getCesiumViewExtension() {
+  static TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>
+      cesiumViewExtension =
+          GEngine->ViewExtensions->NewExtension<CesiumViewExtension>();
+  return cesiumViewExtension;
+}
+
+} // namespace
+
 void ACesium3DTileset::LoadTileset() {
-  static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
-      std::make_shared<CesiumAsync::CachingAssetAccessor>(
-          spdlog::default_logger(),
-          std::make_shared<UnrealAssetAccessor>(),
-          std::make_shared<CesiumAsync::SqliteCache>(
-              spdlog::default_logger(),
-              getCacheDatabaseName()));
-  static CesiumAsync::AsyncSystem asyncSystem(
-      std::make_shared<UnrealTaskProcessor>());
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
+
+  this->RootComponent->SetMobility(Mobility);
 
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
     return;
   }
 
+  const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
+      cesiumViewExtension = getCesiumViewExtension();
+  const std::shared_ptr<CesiumAsync::IAssetAccessor>& pAssetAccessor =
+      getAssetAccessor();
+  const CesiumAsync::AsyncSystem& asyncSystem = getAsyncSystem();
+
+  // Both the feature flag and the CesiumViewExtension are global, not owned by
+  // the Tileset. We're just applying one to the other here out of convenience.
+  cesiumViewExtension->SetEnabled(
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature);
+
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  if (!this->Georeference) {
-    this->Georeference = ACesiumGeoreference::GetDefaultForActor(this);
+  const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
+      this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
+  if (pEncodedMetadataDescriptionComponent) {
+    this->_encodedMetadataDescription = {
+        pEncodedMetadataDescriptionComponent->FeatureTables,
+        pEncodedMetadataDescriptionComponent->FeatureTextures};
+  } else {
+    this->_encodedMetadataDescription = {};
   }
 
-  this->Georeference->AddGeoreferencedObject(this);
+  ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
-  if (!this->CreditSystem) {
-    this->CreditSystem = ACesiumCreditSystem::GetDefaultForActor(this);
+  this->_cesiumViewExtension = cesiumViewExtension;
+
+  if (GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature &&
+      this->EnableOcclusionCulling && !this->BoundingVolumePoolComponent) {
+    const glm::dmat4& cesiumToUnreal =
+        GetCesiumTilesetToUnrealRelativeWorldTransform();
+    this->BoundingVolumePoolComponent =
+        NewObject<UCesiumBoundingVolumePoolComponent>(this);
+    this->BoundingVolumePoolComponent->SetUsingAbsoluteLocation(true);
+    this->BoundingVolumePoolComponent->SetFlags(
+        RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+    this->BoundingVolumePoolComponent->RegisterComponent();
+    this->BoundingVolumePoolComponent->UpdateTransformFromCesium(
+        cesiumToUnreal);
+  }
+
+  if (this->BoundingVolumePoolComponent) {
+    this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
   }
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
       std::make_shared<UnrealResourcePreparer>(this),
       asyncSystem,
-      this->CreditSystem ? this->CreditSystem->GetExternalCreditSystem()
-                         : nullptr,
-      spdlog::default_logger()};
+      pCreditSystem ? pCreditSystem->GetExternalCreditSystem() : nullptr,
+      spdlog::default_logger(),
+      (GetDefault<UCesiumRuntimeSettings>()
+           ->EnableExperimentalOcclusionCullingFeature &&
+       this->EnableOcclusionCulling && this->BoundingVolumePoolComponent)
+          ? this->BoundingVolumePoolComponent->getPool()
+          : nullptr};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
 
   Cesium3DTilesSelection::TilesetOptions options;
+
+  options.enableOcclusionCulling =
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature &&
+      this->EnableOcclusionCulling;
+  options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
+
+  options.showCreditsOnScreen = ShowCreditsOnScreen;
+
+  options.loadErrorCallback =
+      [this](const Cesium3DTilesSelection::TilesetLoadFailureDetails& details) {
+        static_assert(
+            uint8_t(ECesium3DTilesetLoadType::CesiumIon) ==
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::CesiumIon));
+        static_assert(
+            uint8_t(ECesium3DTilesetLoadType::TilesetJson) ==
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
+        static_assert(
+            uint8_t(ECesium3DTilesetLoadType::Unknown) ==
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::Unknown));
+
+        uint8_t typeValue = uint8_t(details.type);
+        assert(
+            uint8_t(details.type) <=
+            uint8_t(Cesium3DTilesSelection::TilesetLoadType::TilesetJson));
+        assert(this->_pTileset == details.pTileset);
+
+        FCesium3DTilesetLoadFailureDetails ueDetails{};
+        ueDetails.Tileset = this;
+        ueDetails.Type = ECesium3DTilesetLoadType(typeValue);
+        ueDetails.HttpStatusCode = details.statusCode;
+        ueDetails.Message = UTF8_TO_TCHAR(details.message.c_str());
+
+        // Broadcast the event from the game thread.
+        // Even if we're already in the game thread, let the stack unwind.
+        // Otherwise actions that destroy the Tileset will cause a deadlock.
+        AsyncTask(
+            ENamedThreads::GameThread,
+            [ueDetails = std::move(ueDetails)]() {
+              OnCesium3DTilesetLoadFailure.Broadcast(ueDetails);
+            });
+      };
+
+  // Generous per-frame time limits for loading / unloading on main thread.
+  options.mainThreadLoadingTimeLimit = 5.0;
+  options.tileCacheUnloadTimeLimit = 5.0;
 
   options.contentOptions.generateMissingNormalsSmooth =
       this->GenerateSmoothNormals;
@@ -706,10 +997,31 @@ void ACesium3DTileset::LoadTileset() {
   options.contentOptions.enableWaterMask = this->EnableWaterMask;
 #endif
 
+  CesiumGltf::SupportedGpuCompressedPixelFormats supportedFormats;
+  supportedFormats.ETC1_RGB = GPixelFormats[EPixelFormat::PF_ETC1].Supported;
+  supportedFormats.ETC2_RGBA =
+      GPixelFormats[EPixelFormat::PF_ETC2_RGBA].Supported;
+  supportedFormats.BC1_RGB = GPixelFormats[EPixelFormat::PF_DXT1].Supported;
+  supportedFormats.BC3_RGBA = GPixelFormats[EPixelFormat::PF_DXT5].Supported;
+  supportedFormats.BC4_R = GPixelFormats[EPixelFormat::PF_BC4].Supported;
+  supportedFormats.BC5_RG = GPixelFormats[EPixelFormat::PF_BC5].Supported;
+  supportedFormats.BC7_RGBA = GPixelFormats[EPixelFormat::PF_BC7].Supported;
+  supportedFormats.ASTC_4x4_RGBA =
+      GPixelFormats[EPixelFormat::PF_ASTC_4x4].Supported;
+  supportedFormats.PVRTC2_4_RGBA =
+      GPixelFormats[EPixelFormat::PF_PVRTC2].Supported;
+  supportedFormats.ETC2_EAC_R11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_R11_EAC].Supported;
+  supportedFormats.ETC2_EAC_RG11 =
+      GPixelFormats[EPixelFormat::PF_ETC2_RG11_EAC].Supported;
+
+  options.contentOptions.ktx2TranscodeTargets =
+      CesiumGltf::Ktx2TranscodeTargets(supportedFormats, false);
+
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(LogCesium, Log, TEXT("Loading tileset from URL %s"), *this->Url);
-    this->_pTileset = new Cesium3DTilesSelection::Tileset(
+    this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
         externals,
         TCHAR_TO_UTF8(*this->Url),
         options);
@@ -720,11 +1032,24 @@ void ACesium3DTileset::LoadTileset() {
         Log,
         TEXT("Loading tileset for asset ID %d"),
         this->IonAssetID);
-    this->_pTileset = new Cesium3DTilesSelection::Tileset(
-        externals,
-        static_cast<uint32_t>(this->IonAssetID),
-        TCHAR_TO_UTF8(*this->IonAccessToken),
-        options);
+    FString token =
+        this->IonAccessToken.IsEmpty()
+            ? GetDefault<UCesiumRuntimeSettings>()->DefaultIonAccessToken
+            : this->IonAccessToken;
+    if (!IonAssetEndpointUrl.IsEmpty()) {
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options,
+          TCHAR_TO_UTF8(*IonAssetEndpointUrl));
+    } else {
+      this->_pTileset = MakeUnique<Cesium3DTilesSelection::Tileset>(
+          externals,
+          static_cast<uint32_t>(this->IonAssetID),
+          TCHAR_TO_UTF8(*token),
+          options);
+    }
     break;
   }
 
@@ -734,35 +1059,59 @@ void ACesium3DTileset::LoadTileset() {
     }
   }
 
-  if (this->Url.Len() > 0) {
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
         Log,
         TEXT("Loading tileset from URL %s done"),
         *this->Url);
-  } else {
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
         LogCesium,
         Log,
         TEXT("Loading tileset for asset ID %d done"),
         this->IonAssetID);
+    break;
+  }
+
+  switch (ApplyDpiScaling) {
+  case (EApplyDpiScaling::UseProjectDefault):
+    _scaleUsingDPI =
+        GetDefault<UCesiumRuntimeSettings>()->ScaleLevelOfDetailByDPI;
+    break;
+  case (EApplyDpiScaling::Yes):
+    _scaleUsingDPI = true;
+    break;
+  case (EApplyDpiScaling::No):
+    _scaleUsingDPI = false;
+    break;
+  default:
+    _scaleUsingDPI = true;
   }
 }
 
 void ACesium3DTileset::DestroyTileset() {
+  if (this->_cesiumViewExtension) {
+    this->_cesiumViewExtension = nullptr;
+  }
 
-  if (this->Url.Len() > 0) {
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Destroying tileset from URL %s"),
         *this->Url);
-  } else {
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Destroying tileset for asset ID %d"),
         this->IonAssetID);
+    break;
   }
 
   // The way CesiumRasterOverlay::add is currently implemented, destroying the
@@ -781,47 +1130,66 @@ void ACesium3DTileset::DestroyTileset() {
     return;
   }
 
-  delete this->_pTileset;
-  this->_pTileset = nullptr;
+  // Don't allow this Cesium3DTileset to be fully destroyed until
+  // any cesium-native Tilesets it created have wrapped up any async
+  // operations in progress and have been fully destroyed.
+  // See IsReadyForFinishDestroy.
+  ++this->_tilesetsBeingDestroyed;
+  this->_pTileset->getAsyncDestructionCompleteEvent().thenInMainThread(
+      [this]() { --this->_tilesetsBeingDestroyed; });
+  this->_pTileset.Reset();
 
-  if (this->Url.Len() > 0) {
+  switch (this->TilesetSource) {
+  case ETilesetSource::FromUrl:
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Destroying tileset from URL %s done"),
         *this->Url);
-  } else {
+    break;
+  case ETilesetSource::FromCesiumIon:
     UE_LOG(
         LogCesium,
         Verbose,
         TEXT("Destroying tileset for asset ID %d done"),
         this->IonAssetID);
+    break;
   }
 }
 
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetCameras() const {
-  std::vector<UnrealCameraParameters> cameras = this->GetPlayerCameras();
+std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CollectCameras)
+  std::vector<FCesiumCamera> cameras = this->GetPlayerCameras();
 
-  std::vector<UnrealCameraParameters> sceneCaptures = this->GetSceneCaptures();
+  std::vector<FCesiumCamera> sceneCaptures = this->GetSceneCaptures();
   cameras.insert(
       cameras.end(),
       std::make_move_iterator(sceneCaptures.begin()),
       std::make_move_iterator(sceneCaptures.end()));
 
 #if WITH_EDITOR
-  std::vector<UnrealCameraParameters> editorCameras = this->GetEditorCameras();
+  std::vector<FCesiumCamera> editorCameras = this->GetEditorCameras();
   cameras.insert(
       cameras.end(),
       std::make_move_iterator(editorCameras.begin()),
       std::make_move_iterator(editorCameras.end()));
 #endif
 
+  ACesiumCameraManager* pCameraManager =
+      ACesiumCameraManager::GetDefaultCameraManager(this->GetWorld());
+  if (pCameraManager) {
+    const TMap<int32, FCesiumCamera>& extraCameras =
+        pCameraManager->GetCameras();
+    cameras.reserve(cameras.size() + extraCameras.Num());
+    for (auto cameraIt : extraCameras) {
+      cameras.push_back(cameraIt.Value);
+    }
+  }
+
   return cameras;
 }
 
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetPlayerCameras() const {
+std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
   UWorld* pWorld = this->GetWorld();
   if (!pWorld) {
     return {};
@@ -831,17 +1199,6 @@ ACesium3DTileset::GetPlayerCameras() const {
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings) {
     worldToMeters = pWorldSettings->WorldToMeters;
-  }
-
-  UGameViewportClient* pViewport = pWorld->GetGameViewport();
-  if (!pViewport) {
-    return {};
-  }
-
-  FVector2D size;
-  pViewport->GetViewportSize(size);
-  if (size.X < 1.0 || size.Y < 1.0) {
-    return {};
   }
 
   TSharedPtr<IStereoRendering, ESPMode::ThreadSafe> pStereoRendering = nullptr;
@@ -854,33 +1211,7 @@ ACesium3DTileset::GetPlayerCameras() const {
     useStereoRendering = true;
   }
 
-  uint32 stereoLeftSizeX = static_cast<uint32>(size.X);
-  uint32 stereoLeftSizeY = static_cast<uint32>(size.Y);
-  uint32 stereoRightSizeX = static_cast<uint32>(size.X);
-  uint32 stereoRightSizeY = static_cast<uint32>(size.Y);
-  if (useStereoRendering) {
-    int32 _x;
-    int32 _y;
-
-    pStereoRendering->AdjustViewRect(
-        EStereoscopicPass::eSSP_LEFT_EYE,
-        _x,
-        _y,
-        stereoLeftSizeX,
-        stereoLeftSizeY);
-
-    pStereoRendering->AdjustViewRect(
-        EStereoscopicPass::eSSP_RIGHT_EYE,
-        _x,
-        _y,
-        stereoRightSizeX,
-        stereoRightSizeY);
-  }
-
-  FVector2D stereoLeftSize(stereoLeftSizeX, stereoRightSizeY);
-  FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
-
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  std::vector<FCesiumCamera> cameras;
   cameras.reserve(pWorld->GetNumPlayerControllers());
 
   for (auto playerControllerIt = pWorld->GetPlayerControllerIterator();
@@ -900,71 +1231,118 @@ ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    double fov = pPlayerCameraManager->GetFOVAngle();
+    float fov = pPlayerCameraManager->GetFOVAngle();
 
     FVector location;
     FRotator rotation;
     pPlayerController->GetPlayerViewPoint(location, rotation);
 
+    int32 sizeX, sizeY;
+    pPlayerController->GetViewportSize(sizeX, sizeY);
+    if (sizeX < 1 || sizeY < 1) {
+      continue;
+    }
+
+    float dpiScalingFactor = 1.0f;
+    if (this->_scaleUsingDPI) {
+      ULocalPlayer* LocPlayer = Cast<ULocalPlayer>(pPlayerController->Player);
+      if (LocPlayer && LocPlayer->ViewportClient) {
+        dpiScalingFactor = LocPlayer->ViewportClient->GetDPIScale();
+      }
+    }
+
     if (useStereoRendering) {
+#if ENGINE_MAJOR_VERSION >= 5
+      const auto leftEye = EStereoscopicEye::eSSE_LEFT_EYE;
+      const auto rightEye = EStereoscopicEye::eSSE_RIGHT_EYE;
+#else
+      const auto leftEye = EStereoscopicPass::eSSP_LEFT_EYE;
+      const auto rightEye = EStereoscopicPass::eSSP_RIGHT_EYE;
+#endif
+
+      uint32 stereoLeftSizeX = static_cast<uint32>(sizeX);
+      uint32 stereoLeftSizeY = static_cast<uint32>(sizeY);
+      uint32 stereoRightSizeX = static_cast<uint32>(sizeX);
+      uint32 stereoRightSizeY = static_cast<uint32>(sizeY);
+      if (useStereoRendering) {
+        int32 _x;
+        int32 _y;
+
+        pStereoRendering
+            ->AdjustViewRect(leftEye, _x, _y, stereoLeftSizeX, stereoLeftSizeY);
+
+        pStereoRendering->AdjustViewRect(
+            rightEye,
+            _x,
+            _y,
+            stereoRightSizeX,
+            stereoRightSizeY);
+      }
+
+      FVector2D stereoLeftSize(stereoLeftSizeX, stereoLeftSizeY);
+      FVector2D stereoRightSize(stereoRightSizeX, stereoRightSizeY);
+
       if (stereoLeftSize.X >= 1.0 && stereoLeftSize.Y >= 1.0) {
         FVector leftEyeLocation = location;
         FRotator leftEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_LEFT_EYE,
+            leftEye,
             leftEyeRotation,
             worldToMeters,
             leftEyeLocation);
 
-        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_LEFT_EYE);
+        FMatrix projection =
+            pStereoRendering->GetStereoProjectionMatrix(leftEye);
 
         // TODO: consider assymetric frustums using 4 fovs
-        float one_over_tan_half_hfov = projection.M[0][0];
+        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
 
-        float hfov =
-            glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
+        CesiumReal hfov =
+            glm::degrees(2.0 * glm::atan(1.0 / one_over_tan_half_hfov));
 
-        cameras.push_back(UnrealCameraParameters{
+        cameras.emplace_back(
             stereoLeftSize,
             leftEyeLocation,
             leftEyeRotation,
-            hfov});
+            hfov);
       }
 
       if (stereoRightSize.X >= 1.0 && stereoRightSize.Y >= 1.0) {
         FVector rightEyeLocation = location;
         FRotator rightEyeRotation = rotation;
         pStereoRendering->CalculateStereoViewOffset(
-            EStereoscopicPass::eSSP_RIGHT_EYE,
+            rightEye,
             rightEyeRotation,
             worldToMeters,
             rightEyeLocation);
 
-        FMatrix projection = pStereoRendering->GetStereoProjectionMatrix(
-            EStereoscopicPass::eSSP_RIGHT_EYE);
+        FMatrix projection =
+            pStereoRendering->GetStereoProjectionMatrix(rightEye);
 
-        float one_over_tan_half_hfov = projection.M[0][0];
+        CesiumReal one_over_tan_half_hfov = projection.M[0][0];
 
-        float hfov =
+        CesiumReal hfov =
             glm::degrees(2.0f * glm::atan(1.0f / one_over_tan_half_hfov));
 
-        cameras.push_back(UnrealCameraParameters{
+        cameras.emplace_back(
             stereoRightSize,
             rightEyeLocation,
             rightEyeRotation,
-            hfov});
+            hfov);
       }
     } else {
-      cameras.push_back(UnrealCameraParameters{size, location, rotation, fov});
+      cameras.emplace_back(
+          FVector2D(sizeX / dpiScalingFactor, sizeY / dpiScalingFactor),
+          location,
+          rotation,
+          fov);
     }
   }
 
   return cameras;
 }
 
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetSceneCaptures() const {
+std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
   // TODO: really USceneCaptureComponent2D can be attached to any actor, is it
   // worth searching every actor? Might it be better to provide an interface
   // where users can volunteer cameras to be used with the tile selection as
@@ -974,7 +1352,7 @@ ACesium3DTileset::GetSceneCaptures() const {
       ASceneCapture2D::StaticClass();
   UGameplayStatics::GetAllActorsOfClass(this, SceneCapture2D, sceneCaptures);
 
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  std::vector<FCesiumCamera> cameras;
   cameras.reserve(sceneCaptures.Num());
 
   for (AActor* pActor : sceneCaptures) {
@@ -1009,11 +1387,11 @@ ACesium3DTileset::GetSceneCaptures() const {
     FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
     float captureFov = pSceneCaptureComponent->FOVAngle;
 
-    cameras.push_back(UnrealCameraParameters{
+    cameras.emplace_back(
         renderTargetSize,
         captureLocation,
         captureRotation,
-        captureFov});
+        captureFov);
   }
 
   return cameras;
@@ -1021,39 +1399,62 @@ ACesium3DTileset::GetSceneCaptures() const {
 
 /*static*/ Cesium3DTilesSelection::ViewState
 ACesium3DTileset::CreateViewStateFromViewParameters(
-    const UnrealCameraParameters& camera,
+    const FCesiumCamera& camera,
     const glm::dmat4& unrealWorldToTileset) {
 
   double horizontalFieldOfView =
-      FMath::DegreesToRadians(camera.fieldOfViewDegrees);
-  double aspectRatio = camera.viewportSize.X / camera.viewportSize.Y;
+      FMath::DegreesToRadians(camera.FieldOfViewDegrees);
+
+  double actualAspectRatio;
+  glm::dvec2 size(camera.ViewportSize.X, camera.ViewportSize.Y);
+
+  if (camera.OverrideAspectRatio != 0.0f) {
+    // Use aspect ratio and recompute effective viewport size after black bars
+    // are added.
+    actualAspectRatio = camera.OverrideAspectRatio;
+    double computedX = actualAspectRatio * camera.ViewportSize.Y;
+    double computedY = camera.ViewportSize.Y / actualAspectRatio;
+
+    double barWidth = camera.ViewportSize.X - computedX;
+    double barHeight = camera.ViewportSize.Y - computedY;
+
+    if (barWidth > 0.0 && barWidth > barHeight) {
+      // Black bars on the sides
+      size.x = computedX;
+    } else if (barHeight > 0.0 && barHeight > barWidth) {
+      // Black bars on the top and bottom
+      size.y = computedY;
+    }
+  } else {
+    actualAspectRatio = camera.ViewportSize.X / camera.ViewportSize.Y;
+  }
+
   double verticalFieldOfView =
-      atan(tan(horizontalFieldOfView * 0.5) / aspectRatio) * 2.0;
+      atan(tan(horizontalFieldOfView * 0.5) / actualAspectRatio) * 2.0;
 
-  FVector direction = camera.rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
-  FVector up = camera.rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
+  FVector direction = camera.Rotation.RotateVector(FVector(1.0f, 0.0f, 0.0f));
+  FVector up = camera.Rotation.RotateVector(FVector(0.0f, 0.0f, 1.0f));
 
-  glm::dvec3 tilesetCameraLocation =
+  glm::dvec3 tilesetCameraLocation = glm::dvec3(
       unrealWorldToTileset *
-      glm::dvec4(camera.location.X, camera.location.Y, camera.location.Z, 1.0);
-  glm::dvec3 tilesetCameraFront = glm::normalize(
+      glm::dvec4(camera.Location.X, camera.Location.Y, camera.Location.Z, 1.0));
+  glm::dvec3 tilesetCameraFront = glm::normalize(glm::dvec3(
       unrealWorldToTileset *
-      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0));
-  glm::dvec3 tilesetCameraUp =
-      glm::normalize(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0));
+      glm::dvec4(direction.X, direction.Y, direction.Z, 0.0)));
+  glm::dvec3 tilesetCameraUp = glm::normalize(
+      glm::dvec3(unrealWorldToTileset * glm::dvec4(up.X, up.Y, up.Z, 0.0)));
 
   return Cesium3DTilesSelection::ViewState::create(
       tilesetCameraLocation,
       tilesetCameraFront,
       tilesetCameraUp,
-      glm::dvec2(camera.viewportSize.X, camera.viewportSize.Y),
+      size,
       horizontalFieldOfView,
       verticalFieldOfView);
 }
 
 #if WITH_EDITOR
-std::vector<ACesium3DTileset::UnrealCameraParameters>
-ACesium3DTileset::GetEditorCameras() const {
+std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
   if (!GEditor) {
     return {};
   }
@@ -1072,7 +1473,7 @@ ACesium3DTileset::GetEditorCameras() const {
   const TArray<FEditorViewportClient*>& viewportClients =
       GEditor->GetAllViewportClients();
 
-  std::vector<ACesium3DTileset::UnrealCameraParameters> cameras;
+  std::vector<FCesiumCamera> cameras;
   cameras.reserve(viewportClients.Num());
 
   for (FEditorViewportClient* pEditorViewportClient : viewportClients) {
@@ -1080,9 +1481,23 @@ ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
+    if (!pEditorViewportClient->IsVisible() ||
+        !pEditorViewportClient->IsRealtime() ||
+        !pEditorViewportClient->IsPerspective()) {
+      continue;
+    }
+
+    FRotator rotation;
+    if (pEditorViewportClient->bUsingOrbitCamera) {
+      rotation = (pEditorViewportClient->GetLookAtLocation() -
+                  pEditorViewportClient->GetViewLocation())
+                     .Rotation();
+    } else {
+      rotation = pEditorViewportClient->GetViewRotation();
+    }
+
     const FVector& location = pEditorViewportClient->GetViewLocation();
-    const FRotator& rotation = pEditorViewportClient->GetViewRotation();
-    double fov = pEditorViewportClient->FOVAngle;
+    float fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);
@@ -1091,7 +1506,22 @@ ACesium3DTileset::GetEditorCameras() const {
       continue;
     }
 
-    cameras.push_back({size, location, rotation, fov});
+    if (this->_scaleUsingDPI) {
+      float dpiScalingFactor = pEditorViewportClient->GetDPIScale();
+      size.X = static_cast<float>(size.X) / dpiScalingFactor;
+      size.Y = static_cast<float>(size.Y) / dpiScalingFactor;
+    }
+
+    if (pEditorViewportClient->IsAspectRatioConstrained()) {
+      cameras.emplace_back(
+          size,
+          location,
+          rotation,
+          fov,
+          pEditorViewportClient->AspectRatio);
+    } else {
+      cameras.emplace_back(size, location, rotation, fov);
+    }
   }
 
   return cameras;
@@ -1104,7 +1534,7 @@ bool ACesium3DTileset::ShouldTickIfViewportsOnly() const {
 
 namespace {
 
-// TODO These could or should be members, but extracted here as a first step:
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 /**
  * @brief Check if the given tile is contained in one of the given exclusion
@@ -1147,6 +1577,8 @@ bool isInExclusionZone(
   return false;
 }
 
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 void removeVisibleTilesFromList(
     std::vector<Cesium3DTilesSelection::Tile*>& list,
     const std::vector<Cesium3DTilesSelection::Tile*>& visibleTiles) {
@@ -1171,24 +1603,59 @@ void removeVisibleTilesFromList(
  *
  * @param tiles The tiles to hide
  */
-void hideTilesToNoLongerRender(
-    const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+void hideTiles(const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::HideTiles)
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
     if (Gltf && Gltf->IsVisible()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityFalse)
       Gltf->SetVisibility(false, true);
-      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     } else {
       // TODO: why is this happening?
       UE_LOG(
           LogCesium,
           Verbose,
           TEXT("Tile to no longer render does not have a visible Gltf"));
+    }
+  }
+}
+
+/**
+ * @brief Removes collision for tiles that have been removed from the render
+ * list. This includes tiles that are fading out.
+ */
+void removeCollisionForTiles(
+    const std::unordered_set<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::RemoveCollisionForTiles)
+  for (Cesium3DTilesSelection::Tile* pTile : tiles) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+      continue;
+    }
+
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
+    if (Gltf) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionDisabled)
+      Gltf->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
   }
 }
@@ -1204,19 +1671,25 @@ void hideTilesToNoLongerRender(
 void applyActorCollisionSettings(
     const FBodyInstance& BodyInstance,
     UCesiumGltfComponent* Gltf) {
-  UCesiumGltfPrimitiveComponent* PrimitiveComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(Gltf->GetChildComponent(0));
-  if (PrimitiveComponent != nullptr) {
-    const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
-    if (ChannelEnum) {
-      for (int32 ChannelValue = 0; ChannelValue < ECollisionChannel::ECC_MAX;
-           ChannelValue++) {
-        ECollisionResponse response =
-            BodyInstance.GetCollisionResponse().GetResponse(
-                ECollisionChannel(ChannelValue));
-        PrimitiveComponent->SetCollisionResponseToChannel(
-            ECollisionChannel(ChannelValue),
-            response);
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ApplyActorCollisionSettings)
+
+  const TArray<USceneComponent*>& ChildrenComponents =
+      Gltf->GetAttachChildren();
+
+  for (USceneComponent* ChildComponent : ChildrenComponents) {
+    UCesiumGltfPrimitiveComponent* PrimitiveComponent =
+        Cast<UCesiumGltfPrimitiveComponent>(ChildComponent);
+    if (PrimitiveComponent != nullptr) {
+      if (PrimitiveComponent->GetCollisionObjectType() !=
+          BodyInstance.GetObjectType()) {
+        PrimitiveComponent->SetCollisionObjectType(
+            BodyInstance.GetObjectType());
+      }
+      const UEnum* ChannelEnum = StaticEnum<ECollisionChannel>();
+      if (ChannelEnum) {
+        FCollisionResponseContainer responseContainer =
+            BodyInstance.GetResponseToChannels();
+        PrimitiveComponent->SetCollisionResponseToChannels(responseContainer);
       }
     }
   }
@@ -1234,16 +1707,30 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
   options.forbidHoles = this->ForbidHoles;
   options.maximumSimultaneousTileLoads = this->MaximumSimultaneousTileLoads;
   options.loadingDescendantLimit = this->LoadingDescendantLimit;
-
   options.enableFrustumCulling = this->EnableFrustumCulling;
+  options.enableOcclusionCulling =
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature &&
+      this->EnableOcclusionCulling;
+
+  options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
   options.enableFogCulling = this->EnableFogCulling;
   options.enforceCulledScreenSpaceError = this->EnforceCulledScreenSpaceError;
   options.culledScreenSpaceError =
       static_cast<double>(this->CulledScreenSpaceError);
+  options.enableLodTransitionPeriod = this->UseLodTransitions;
+  options.lodTransitionLength = this->LodTransitionLength;
+  // options.kickDescendantsWhileFadingIn = false;
 }
 
 void ACesium3DTileset::updateLastViewUpdateResultState(
     const Cesium3DTilesSelection::ViewUpdateResult& result) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateLastViewUpdateResultState)
+
+  if (!this->LogSelectionStats) {
+    return;
+  }
+
   if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
       result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
       result.tilesLoadingMediumPriority !=
@@ -1252,6 +1739,9 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.tilesVisited != this->_lastTilesVisited ||
       result.culledTilesVisited != this->_lastCulledTilesVisited ||
       result.tilesCulled != this->_lastTilesCulled ||
+      result.tilesOccluded != this->_lastTilesOccluded ||
+      result.tilesWaitingForOcclusionResults !=
+          this->_lastTilesWaitingForOcclusionResults ||
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
@@ -1262,13 +1752,16 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
     this->_lastTilesVisited = result.tilesVisited;
     this->_lastCulledTilesVisited = result.culledTilesVisited;
     this->_lastTilesCulled = result.tilesCulled;
+    this->_lastTilesOccluded = result.tilesOccluded;
+    this->_lastTilesWaitingForOcclusionResults =
+        result.tilesWaitingForOcclusionResults;
     this->_lastMaxDepthVisited = result.maxDepthVisited;
 
     UE_LOG(
         LogCesium,
-        Verbose,
+        Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d, Loaded tiles %g%%"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,
@@ -1276,23 +1769,30 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.culledTilesVisited,
         result.tilesToRenderThisFrame.size(),
         result.tilesCulled,
+        result.tilesOccluded,
+        result.tilesWaitingForOcclusionResults,
         result.maxDepthVisited,
         result.tilesLoadingLowPriority,
         result.tilesLoadingMediumPriority,
-        result.tilesLoadingHighPriority);
+        result.tilesLoadingHighPriority,
+        this->LoadProgress);
   }
 }
 
 void ACesium3DTileset::showTilesToRender(
     const std::vector<Cesium3DTilesSelection::Tile*>& tiles) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ShowTilesToRender)
+
   for (Cesium3DTilesSelection::Tile* pTile : tiles) {
-    if (pTile->getState() != Cesium3DTilesSelection::Tile::LoadState::Done) {
+    if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
       continue;
     }
 
-    if (isInExclusionZone(ExclusionZones, pTile)) {
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (isInExclusionZone(ExclusionZones_DEPRECATED, pTile)) {
       continue;
     }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     // That looks like some reeeally entertaining debug session...:
     // const Cesium3DTilesSelection::TileID& id = pTile->getTileID();
@@ -1302,8 +1802,15 @@ void ACesium3DTileset::showTilesToRender(
     // 11626) { 	continue;
     //}
 
-    UCesiumGltfComponent* Gltf =
-        static_cast<UCesiumGltfComponent*>(pTile->getRendererResources());
+    const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+    const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        content.getRenderContent();
+    if (!pRenderContent) {
+      continue;
+    }
+
+    UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+        pRenderContent->getRenderResources());
     if (!Gltf) {
       // When a tile does not have render resources (i.e. a glTF), then
       // the resources either have not yet been loaded or prepared,
@@ -1335,37 +1842,54 @@ void ACesium3DTileset::showTilesToRender(
     }
 
     if (!Gltf->IsVisible()) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetVisibilityTrue)
       Gltf->SetVisibility(true, true);
+    }
+
+    {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::SetCollisionEnabled)
       Gltf->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     }
   }
 }
 
+static void updateTileFade(Cesium3DTilesSelection::Tile* pTile, bool fadingIn) {
+  if (!pTile || !pTile->getContent().isRenderContent()) {
+    return;
+  }
+
+  if (pTile->getState() != Cesium3DTilesSelection::TileLoadState::Done) {
+    return;
+  }
+
+  const Cesium3DTilesSelection::TileContent& content = pTile->getContent();
+  const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+      content.getRenderContent();
+  if (!pRenderContent) {
+    return;
+  }
+
+  UCesiumGltfComponent* pGltf = reinterpret_cast<UCesiumGltfComponent*>(
+      pRenderContent->getRenderResources());
+  if (!pGltf) {
+    return;
+  }
+
+  float percentage =
+      pTile->getContent().getRenderContent()->getLodTransitionFadePercentage();
+
+  pGltf->UpdateFade(percentage, fadingIn);
+}
+
 // Called every frame
 void ACesium3DTileset::Tick(float DeltaTime) {
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::TilesetTick)
+
   Super::Tick(DeltaTime);
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
   if (!pRoot) {
     return;
-  }
-
-  if (pRoot->IsTransformChanged()) {
-    this->UpdateTransformFromCesium(
-        this->GetCesiumTilesetToUnrealRelativeWorldTransform());
-    pRoot->MarkTransformUnchanged();
-  }
-
-  // If a georeference update is waiting on the bounding volume being ready,
-  // update when ready
-  if (this->_updateGeoreferenceOnBoundingVolumeReady &&
-      this->IsBoundingVolumeReady()) {
-    this->_updateGeoreferenceOnBoundingVolumeReady = false;
-    // Need to potentially recalculate the transform for all georeferenced
-    // objects, not just for this tileset
-    if (IsValid(this->Georeference)) {
-      this->Georeference->UpdateGeoreference();
-    }
   }
 
   if (this->SuspendUpdate) {
@@ -1383,9 +1907,25 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     }
   }
 
+  if (this->BoundingVolumePoolComponent && this->_cesiumViewExtension) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateOcclusion)
+    const TArray<USceneComponent*>& children =
+        this->BoundingVolumePoolComponent->GetAttachChildren();
+    for (USceneComponent* pChild : children) {
+      UCesiumBoundingVolumeComponent* pBoundingVolume =
+          Cast<UCesiumBoundingVolumeComponent>(pChild);
+
+      if (!pBoundingVolume) {
+        continue;
+      }
+
+      pBoundingVolume->UpdateOcclusion(*this->_cesiumViewExtension.Get());
+    }
+  }
+
   updateTilesetOptionsFromProperties();
 
-  std::vector<UnrealCameraParameters> cameras = this->GetCameras();
+  std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {
     return;
   }
@@ -1394,22 +1934,49 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       this->GetCesiumTilesetToUnrealRelativeWorldTransform());
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
-  for (const UnrealCameraParameters& camera : cameras) {
+  for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(
         CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode ? this->_pTileset->updateViewOffline(frustums)
-                              : this->_pTileset->updateView(frustums);
+      this->_captureMovieMode
+          ? this->_pTileset->updateViewOffline(frustums)
+          : this->_pTileset->updateView(frustums, DeltaTime);
   updateLastViewUpdateResultState(result);
+  this->UpdateLoadStatus();
+
+  removeCollisionForTiles(result.tilesFadingOut);
 
   removeVisibleTilesFromList(
-      this->_tilesToNoLongerRenderNextFrame,
+      _tilesToHideNextFrame,
       result.tilesToRenderThisFrame);
-  hideTilesToNoLongerRender(this->_tilesToNoLongerRenderNextFrame);
-  this->_tilesToNoLongerRenderNextFrame = result.tilesToNoLongerRenderThisFrame;
+  hideTiles(_tilesToHideNextFrame);
+
+  _tilesToHideNextFrame.clear();
+  for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+    Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+        pTile->getContent().getRenderContent();
+    if (!this->UseLodTransitions ||
+        (pRenderContent &&
+         pRenderContent->getLodTransitionFadePercentage() >= 1.0f)) {
+      _tilesToHideNextFrame.push_back(pTile);
+    }
+  }
+
   showTilesToRender(result.tilesToRenderThisFrame);
+
+  if (this->UseLodTransitions) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTileFades)
+
+    for (Cesium3DTilesSelection::Tile* pTile : result.tilesToRenderThisFrame) {
+      updateTileFade(pTile, true);
+    }
+
+    for (Cesium3DTilesSelection::Tile* pTile : result.tilesFadingOut) {
+      updateTileFade(pTile, false);
+    }
+  }
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -1445,14 +2012,21 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
 #if WITH_EDITOR
 void ACesium3DTileset::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
-  const FName PropName = (PropertyChangedEvent.Property)
-                             ? PropertyChangedEvent.Property->GetFName()
-                             : NAME_None;
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  if (!PropertyChangedEvent.Property) {
+    return;
+  }
+
+  FName PropName = PropertyChangedEvent.Property->GetFName();
+  FString PropNameAsString = PropertyChangedEvent.Property->GetName();
 
   if (PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TilesetSource) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Url) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetID) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAccessToken) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetEndpointUrl) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==
@@ -1461,11 +2035,37 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial)) {
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, WaterMaterial) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ApplyDpiScaling) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
+      // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
+      // with the struct name, so just do a manual string comparison.
+      PropNameAsString == TEXT("RenderCustomDepth") ||
+      PropNameAsString == TEXT("CustomDepthStencilValue") ||
+      PropNameAsString == TEXT("CustomDepthStencilWriteMask")) {
     this->DestroyTileset();
-  }
+  } else if (
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Georeference)) {
+    this->InvalidateResolvedGeoreference();
+  } else if (
+      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreditSystem)) {
+    this->InvalidateResolvedCreditSystem();
+  } else if (
+      PropName ==
+      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, MaximumScreenSpaceError)) {
+    TArray<UCesiumRasterOverlay*> rasterOverlays;
+    this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  Super::PostEditChangeProperty(PropertyChangedEvent);
+    for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
+      pOverlay->Refresh();
+    }
+  }
 }
 
 void ACesium3DTileset::PostEditUndo() {
@@ -1486,9 +2086,22 @@ void ACesium3DTileset::PostEditImport() {
 #endif
 
 void ACesium3DTileset::BeginDestroy() {
+  this->InvalidateResolvedGeoreference();
   this->DestroyTileset();
 
   AActor::BeginDestroy();
+}
+
+bool ACesium3DTileset::IsReadyForFinishDestroy() {
+  bool ready = AActor::IsReadyForFinishDestroy();
+  ready &= this->_tilesetsBeingDestroyed == 0;
+
+  if (!ready) {
+    getAssetAccessor()->tick();
+    getAsyncSystem().dispatchMainThreadTasks();
+  }
+
+  return ready;
 }
 
 void ACesium3DTileset::Destroyed() {
@@ -1496,3 +2109,17 @@ void ACesium3DTileset::Destroyed() {
 
   AActor::Destroyed();
 }
+
+#if WITH_EDITOR
+void ACesium3DTileset::RuntimeSettingsChanged(
+    UObject* pObject,
+    struct FPropertyChangedEvent& changed) {
+  bool occlusionCullingAvailable =
+      GetDefault<UCesiumRuntimeSettings>()
+          ->EnableExperimentalOcclusionCullingFeature;
+  if (occlusionCullingAvailable != this->CanEnableOcclusionCulling) {
+    this->CanEnableOcclusionCulling = occlusionCullingAvailable;
+    this->RefreshTileset();
+  }
+}
+#endif

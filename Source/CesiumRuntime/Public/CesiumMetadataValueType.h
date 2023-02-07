@@ -20,6 +20,10 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   Array
 };
 
+// True types are cast, reintepreted, or parsed before being packed into gpu
+// types when encoding into a texture.
+enum class ECesiumMetadataPackedGpuType : uint8 { None, Uint8, Float };
+
 // UE requires us to have an enum with the value 0.
 // None should have that value, but make sure.
 static_assert(int(CesiumGltf::PropertyType::None) == 0);

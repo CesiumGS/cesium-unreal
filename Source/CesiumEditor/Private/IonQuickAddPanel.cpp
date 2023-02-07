@@ -2,11 +2,13 @@
 
 #include "IonQuickAddPanel.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCartographicPolygon.h"
 #include "CesiumEditor.h"
 #include "CesiumIonClient/Connection.h"
 #include "CesiumIonRasterOverlay.h"
 #include "Editor.h"
 #include "PropertyCustomizationHelpers.h"
+#include "SelectCesiumIonToken.h"
 #include "Styling/SlateStyle.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"
@@ -176,7 +178,21 @@ void IonQuickAddPanel::AddIonTilesetToLevel(TSharedRef<QuickAddItem> item) {
         TEXT("Cannot add an ion asset without an active connection"));
     return;
   }
-  connection->asset(item->tilesetID)
+
+  std::vector<int64_t> assetIDs{item->tilesetID};
+  if (item->overlayID > 0) {
+    assetIDs.push_back(item->overlayID);
+  }
+
+  SelectCesiumIonToken::SelectAndAuthorizeToken(assetIDs)
+      .thenInMainThread([connection, tilesetID = item->tilesetID](
+                            const std::optional<Token>& /*maybeToken*/) {
+        // If token selection was canceled, or if an error occurred while
+        // selecting the token, ignore it and create the tileset anyway. It's
+        // already been logged if necessary, and we can let the user sort out
+        // the problem using the resulting Troubleshooting panel.
+        return connection->asset(tilesetID);
+      })
       .thenInMainThread([item, connection](Response<Asset>&& response) {
         if (!response.value.has_value()) {
           return connection->getAsyncSystem().createResolvedFuture<int64_t>(
@@ -233,17 +249,21 @@ void IonQuickAddPanel::AddCesiumSunSkyToLevel() {
   }
 
   if (pActor) {
-    // Make this the Georeference's designated CesiumSunSky.
-    ACesiumGeoreference* pGeoreference =
-        ACesiumGeoreference::GetDefaultForActor(pActor);
-    if (pGeoreference) {
-      pGeoreference->SunSky = pActor;
-      pGeoreference->UpdateGeoreference();
-    }
-
     GEditor->SelectNone(true, false);
     GEditor->SelectActor(pActor, true, true, true, true);
   }
+}
+
+void IonQuickAddPanel::AddCartographicPolygonToLevel() {
+  UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+  GEditor->AddActor(
+      pCurrentLevel,
+      ACesiumCartographicPolygon::StaticClass(),
+      FTransform(),
+      false,
+      RF_Public | RF_Transactional);
 }
 
 namespace {
@@ -347,6 +367,9 @@ void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {
     this->_itemsBeingAdded.erase(item->name);
   } else if (item->type == QuickAddItemType::DYNAMIC_PAWN) {
     AddDynamicPawnToLevel();
+    this->_itemsBeingAdded.erase(item->name);
+  } else if (item->type == QuickAddItemType::CARTOGRAPHIC_POLYGON) {
+    AddCartographicPolygonToLevel();
     this->_itemsBeingAdded.erase(item->name);
   }
 }

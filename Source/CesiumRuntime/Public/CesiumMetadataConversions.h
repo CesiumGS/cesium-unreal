@@ -12,6 +12,9 @@
 ECesiumMetadataBlueprintType
 CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType);
 
+ECesiumMetadataPackedGpuType
+CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType);
+
 // Default conversion, just returns the default value.
 template <typename TTo, typename TFrom, typename Enable = void>
 struct CesiumMetadataConversions {
@@ -211,7 +214,7 @@ struct CesiumMetadataConversions<
 template <> struct CesiumMetadataConversions<FString, std::string_view> {
   static FString
   convert(const std::string_view& from, const FString& defaultValue) {
-    return FString(from.size(), from.data());
+    return FString(UTF8_TO_TCHAR(std::string(from.data(), from.size()).data()));
   }
 };
 

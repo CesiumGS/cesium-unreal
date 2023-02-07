@@ -11,7 +11,10 @@
 
 class FSpawnTabArgs;
 class ACesium3DTileset;
+class UCesiumRasterOverlay;
 class UCesiumIonRasterOverlay;
+struct FCesium3DTilesetLoadFailureDetails;
+struct FCesiumRasterOverlayLoadFailureDetails;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCesiumEditor, Log, All);
 
@@ -86,16 +89,26 @@ private:
   TSharedRef<SDockTab>
   SpawnCesiumIonAssetBrowserTab(const FSpawnTabArgs& TabSpawnArgs);
 
+  void OnTilesetLoadFailure(const FCesium3DTilesetLoadFailureDetails& details);
+  void OnRasterOverlayLoadFailure(
+      const FCesiumRasterOverlayLoadFailureDetails& details);
+  void OnTilesetIonTroubleshooting(ACesium3DTileset* pTileset);
+  void OnRasterOverlayIonTroubleshooting(UCesiumRasterOverlay* pOverlay);
+
   std::shared_ptr<CesiumIonSession> _pIonSession;
+  FDelegateHandle _tilesetLoadFailureSubscription;
+  FDelegateHandle _rasterOverlayLoadFailureSubscription;
+  FDelegateHandle _tilesetIonTroubleshootingSubscription;
+  FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;
 
   /**
-   * Gets the class of the "Cesium Sun Sky" blueprint, loading it if necessary.
+   * Gets the class of the "Cesium Sun Sky", loading it if necessary.
    * Used for spawning the CesiumSunSky.
    */
-  static UClass* GetCesiumSunSkyBlueprintClass();
+  static UClass* GetCesiumSunSkyClass();
 
   /**
    * Gets the class of the "Dynamic Pawn" blueprint, loading it if necessary.

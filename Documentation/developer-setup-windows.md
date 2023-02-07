@@ -6,7 +6,6 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - Install Visual Studio 2017 v15.6+ or Visual Studio 2019 v16.5+.
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
 
-
 ## For Cross Compiling Android on Windows
 
 - Follow the [Unreal Engine setup guide for Android](https://docs.unrealengine.com/SharingAndReleasing/Mobile/Android/Setup/AndroidStudio/).
@@ -77,7 +76,7 @@ Basically just open the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\exte
 - Press "Configure" (and confirm the creation of the directory and the default generator for the project)
 - Press "Generate"
 
-This will generate the project file called `cesium-unreal-extern.sln` in the directory `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\build`. You can open this solution file in the Visual Studio IDE and compile as normal. To install cesium-native to the project - which is required for use with Cesium for Unreal - open the `CMakePredefinedTargets` folder in the Solution Explorer, right-click on `INSTALL`, and choose Build. Use the Solution Configuration dropdown to change between the Debug and Release configurations.
+This will generate the project file called `cesium-unreal-extern.sln` in the directory `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\build`. You can open this solution file in the Visual Studio IDE and compile as normal. To install cesium-native to the project - which is required for use with Cesium for Unreal - right-click on `INSTALL` in Solution Explorer, and choose Build. `INSTALL` may be found inside a folder called `CMakePredefinedTargets`. Use the Solution Configuration dropdown to change between the Debug and Release configurations.
 
 
 ## CMake command-line
@@ -93,7 +92,7 @@ To use Visual Studio 2017 instead, open "x64 Native Tools Command Prompt for VS 
 
       cmake -B build -S . -G "Visual Studio 15 2017 Win64"
 
-With either compiler, the commands above will generate the project file called `cesium-unreal-extern.sln` in the directory `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\build`. You can open this solution file in the Visual Studio IDE and compile as normal. To install cesium-native to the project - which is required for use with Cesium for Unreal - open the `CMakePredefinedTargets` folder in the Solution Explorer, right-click on `INSTALL`, and choose Build. Use the Solution Configuration dropdown to change between the Debug and Release configurations.
+With either compiler, the commands above will generate the project file called `cesium-unreal-extern.sln` in the directory `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern\build`. You can open this solution file in the Visual Studio IDE and compile as normal. To install cesium-native to the project - which is required for use with Cesium for Unreal - right-click on `INSTALL` in Solution Explorer, and choose Build. `INSTALL` may be found inside a folder called `CMakePredefinedTargets`. Use the Solution Configuration dropdown to change between the Debug and Release configurations.
 
 You can also build the Release version entirely from the command-line:
 
@@ -119,11 +118,9 @@ Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern
 
 You can also build and install the debug version by using `Debug` or `RelWithDebInfo` instead of `Release`.
 
-
-
 # Creating the project files for the Unreal Engine game/project and the Cesium for Unreal plugin
 
-The project files for the project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine. 
+The project files for the project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
 
 ## Converting the project into a C++ project
 
@@ -174,4 +171,3 @@ Once that is done, it is possible to set breakpoints in Cesium for Unreal plugin
 - Find the file you want to debug in another copy of Visual Studio which is open on the cesium-native solution. Then, right-click on the file's tab and choose "Copy Full Path". Go back to the Cesium for Unreal solution, go to `File` -> `Open` -> `File`, and paste in the copied file path.
 
 If you find the debugger refuses to step into cesium-native code, check that you're using the "DebugGame Editor" configuration of Cesium for Unreal and the Debug configuration of cesium-native, and that you've built and installed cesium-native.
-

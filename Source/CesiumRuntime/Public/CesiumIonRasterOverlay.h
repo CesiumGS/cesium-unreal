@@ -23,16 +23,35 @@ public:
    * If this property is non-zero, the Bing Maps Key and Map Style properties
    * are ignored.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  uint32 IonAssetID;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  int64 IonAssetID;
 
   /**
    * The access token to use to access the Cesium ion resource.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   FString IonAccessToken;
 
+  /**
+   * The URL of the ion asset endpoint. Defaults to Cesium ion but a custom
+   * endpoint can be specified.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      AdvancedDisplay)
+  FString IonAssetEndpointUrl;
+
+  /**
+   * Check if the Cesium ion token used to access this raster overlay is working
+   * correctly, and fix it if necessary.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void TroubleshootToken();
+
 protected:
-  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-  CreateOverlay() override;
+  virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
+      const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
+      override;
 };

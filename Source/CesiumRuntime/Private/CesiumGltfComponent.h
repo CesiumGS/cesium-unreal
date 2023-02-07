@@ -2,8 +2,13 @@
 
 #pragma once
 
+#include "Cesium3DTilesSelection/BoundingVolume.h"
+#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumMetadataModel.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
 #include "CoreMinimal.h"
+#include "CustomDepthParameters.h"
 #include "Interfaces/IHttpRequest.h"
 #include <glm/mat4x4.hpp>
 #include <memory>
@@ -12,7 +17,10 @@
 class UMaterialInterface;
 class UTexture2D;
 class UStaticMeshComponent;
+
+namespace CreateGltfOptions {
 struct CreateModelOptions;
+} // namespace CreateGltfOptions
 
 #if PHYSICS_INTERFACE_PHYSX
 class IPhysXCooking;
@@ -36,13 +44,13 @@ struct FRasterOverlayTile {
   GENERATED_BODY()
 
   UPROPERTY()
-  FString OverlayName;
+  FString OverlayName{};
 
   UPROPERTY()
-  UTexture2D* Texture;
+  UTexture2D* Texture = nullptr;
 
-  FLinearColor TranslationAndScale;
-  int32 TextureCoordinateID;
+  FLinearColor TranslationAndScale{};
+  int32 TextureCoordinateID = -1;
 };
 
 UCLASS()
@@ -55,17 +63,20 @@ public:
     virtual ~HalfConstructed() = default;
   };
 
-  static std::unique_ptr<HalfConstructed> CreateOffGameThread(
-      const CesiumGltf::Model& Model,
+  static TUniquePtr<HalfConstructed> CreateOffGameThread(
       const glm::dmat4x4& Transform,
-      const CreateModelOptions& Options);
+      const CreateGltfOptions::CreateModelOptions& Options);
 
   static UCesiumGltfComponent* CreateOnGameThread(
+      const CesiumGltf::Model& model,
       AActor* ParentActor,
-      std::unique_ptr<HalfConstructed> HalfConstructed,
+      TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
-      UMaterialInterface* BaseWaterMaterial);
+      UMaterialInterface* BaseTranslucentMaterial,
+      UMaterialInterface* BaseWaterMaterial,
+      FCustomDepthParameters CustomDepthParameters,
+      const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
@@ -74,7 +85,17 @@ public:
   UMaterialInterface* BaseMaterial;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
+  UMaterialInterface* BaseMaterialWithTranslucency;
+
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialInterface* BaseMaterialWithWater;
+
+  UPROPERTY(EditAnywhere, Category = "Rendering")
+  FCustomDepthParameters CustomDepthParameters;
+
+  FCesiumMetadataModel Metadata;
+
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata;
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
@@ -94,7 +115,9 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Collision")
   virtual void SetCollisionEnabled(ECollisionEnabled::Type NewType);
 
-  virtual void FinishDestroy() override;
+  virtual void BeginDestroy() override;
+
+  void UpdateFade(float fadePercentage, bool fadingIn);
 
 private:
   UPROPERTY()

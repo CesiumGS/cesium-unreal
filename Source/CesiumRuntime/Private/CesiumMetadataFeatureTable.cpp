@@ -6,7 +6,7 @@
 
 namespace {
 
-struct FeatureIDFromAccessor {
+struct FeatureIDFromAccessor_Deprecated {
   int64 operator()(std::monostate) { return -1; }
 
   int64 operator()(
@@ -72,11 +72,13 @@ FCesiumMetadataFeatureTable::FCesiumMetadataFeatureTable(
                                        auto propertyValue) mutable {
     if (propertyValue.status() ==
         CesiumGltf::MetadataPropertyViewStatus::Valid) {
-      FString key(propertyName.size(), propertyName.data());
+      FString key(UTF8_TO_TCHAR(propertyName.data()));
       properties.Add(key, FCesiumMetadataProperty(propertyValue));
     }
   });
 }
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 TMap<FString, FCesiumMetadataGenericValue>
 UCesiumMetadataFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
@@ -126,7 +128,7 @@ int64 UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
     int64 vertexIdx) {
   return std::visit(
-      FeatureIDFromAccessor{vertexIdx},
+      FeatureIDFromAccessor_Deprecated{vertexIdx},
       FeatureTable._featureIDAccessor);
 }
 
@@ -135,3 +137,5 @@ UCesiumMetadataFeatureTableBlueprintLibrary::GetProperties(
     UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable) {
   return FeatureTable._properties;
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

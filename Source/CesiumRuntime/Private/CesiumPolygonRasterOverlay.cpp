@@ -16,7 +16,8 @@ UCesiumPolygonRasterOverlay::UCesiumPolygonRasterOverlay()
 }
 
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
-UCesiumPolygonRasterOverlay::CreateOverlay() {
+UCesiumPolygonRasterOverlay::CreateOverlay(
+    const Cesium3DTilesSelection::RasterOverlayOptions& options) {
   std::vector<CartographicPolygon> polygons;
   polygons.reserve(this->Polygons.Num());
 
@@ -32,8 +33,10 @@ UCesiumPolygonRasterOverlay::CreateOverlay() {
   return std::make_unique<Cesium3DTilesSelection::RasterizedPolygonsOverlay>(
       TCHAR_TO_UTF8(*this->MaterialLayerKey),
       polygons,
+      this->InvertSelection,
       CesiumGeospatial::Ellipsoid::WGS84,
-      CesiumGeospatial::GeographicProjection());
+      CesiumGeospatial::GeographicProjection(),
+      options);
 }
 
 void UCesiumPolygonRasterOverlay::OnAdd(
@@ -41,12 +44,12 @@ void UCesiumPolygonRasterOverlay::OnAdd(
     RasterOverlay* pOverlay) {
   // If this overlay is used for culling, add it as an excluder too for
   // efficiency.
-  if (pTileset && this->ExcludeTilesInside) {
+  if (pTileset && this->ExcludeSelectedTiles) {
     RasterizedPolygonsOverlay* pPolygons =
         static_cast<RasterizedPolygonsOverlay*>(pOverlay);
     assert(this->_pExcluder == nullptr);
     this->_pExcluder =
-        std::make_shared<RasterizedPolygonsTileExcluder>(*pPolygons);
+        std::make_shared<RasterizedPolygonsTileExcluder>(pPolygons);
     pTileset->getOptions().excluders.push_back(this->_pExcluder);
   }
 }

@@ -30,23 +30,33 @@ public class CesiumRuntime : ModuleRules
         string libPrefix;
         string libPostfix;
         string platform;
-        if (Target.Platform == UnrealTargetPlatform.Win64) {
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
             platform = "Windows-x64";
             libPostfix = ".lib";
             libPrefix = "";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Mac) {
+        else if (Target.Platform == UnrealTargetPlatform.Mac)
+        {
             platform = "Darwin-x64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Android) {
+        else if (Target.Platform == UnrealTargetPlatform.Android)
+        {
             platform = "Android-xaarch64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
-        else if (Target.Platform == UnrealTargetPlatform.Linux) {
+        else if (Target.Platform == UnrealTargetPlatform.Linux)
+        {
             platform = "Linux-x64";
+            libPostfix = ".a";
+            libPrefix = "lib";
+        }
+        else if(Target.Platform == UnrealTargetPlatform.IOS)
+        {
+            platform = "iOS-xarm64";
             libPostfix = ".a";
             libPrefix = "lib";
         }
@@ -76,18 +86,32 @@ public class CesiumRuntime : ModuleRules
             "CesiumJsonReader",
             "CesiumUtility",
             "draco",
+            "ktx_read",
             //"MikkTSpace",
             "modp_b64",
+            "s2geometry",
             "spdlog",
             "sqlite3",
             "tinyxml2",
-            "uriparser"
+            "uriparser",
+            "webpdecoder",
+            "ktx_read",
         };
 
         // Use our own copy of MikkTSpace on Android.
-        if (Target.Platform == UnrealTargetPlatform.Android) {
+        if (Target.Platform == UnrealTargetPlatform.Android || Target.Platform == UnrealTargetPlatform.IOS)
+        {
             libs = libs.Concat(new string[] { "MikkTSpace" }).ToArray();
             PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "../ThirdParty/include/mikktspace"));
+        }
+
+        if (Target.Platform == UnrealTargetPlatform.Win64)
+        {
+            libs = libs.Concat(new string[] { "tidy_static" }).ToArray();
+        }
+        else
+        {
+            libs = libs.Concat(new string[] { "tidy" }).ToArray();
         }
 
         if (preferDebug)
@@ -112,15 +136,6 @@ public class CesiumRuntime : ModuleRules
             new string[]
             {
                 "Core",
-                // ... add other public dependencies that you statically link with here ...
-                "LidarPointCloudRuntime"
-            }
-        );
-
-
-        PrivateDependencyModuleNames.AddRange(
-            new string[]
-            {
                 "RHI",
                 "CoreUObject",
                 "Engine",
@@ -129,7 +144,12 @@ public class CesiumRuntime : ModuleRules
                 "HTTP",
                 "LevelSequence",
                 "Projects",
-                "RenderCore"
+                "RenderCore",
+                "SunPosition",
+                "DeveloperSettings",
+                "UMG",
+                "Renderer",
+                "LidarPointCloudRuntime"
             }
         );
 
@@ -145,7 +165,10 @@ public class CesiumRuntime : ModuleRules
             {
                 "SPDLOG_COMPILED_LIB",
                 "LIBASYNC_STATIC",
-                // "CESIUM_TRACING_ENABLED"
+                "GLM_FORCE_XYZW_ONLY",
+                "GLM_FORCE_EXPLICIT_CTOR",
+                "GLM_FORCE_SIZE_T_LENGTH",
+                "TIDY_STATIC"
             }
         );
 
@@ -166,6 +189,9 @@ public class CesiumRuntime : ModuleRules
                     "UnrealEd",
                     "Slate",
                     "SlateCore",
+                    "WorldBrowser",
+                    "ContentBrowser",
+                    "MaterialEditor"
                 }
             );
         }
@@ -182,10 +208,11 @@ public class CesiumRuntime : ModuleRules
         CppStandard = CppStandardVersion.Cpp17;
         bEnableExceptions = true;
 
-        if (Target.Platform == UnrealTargetPlatform.Android &&
+        if (Target.Platform == UnrealTargetPlatform.IOS ||
+            (Target.Platform == UnrealTargetPlatform.Android &&
             Target.Version.MajorVersion == 4 &&
             Target.Version.MinorVersion == 26 &&
-            Target.Version.PatchVersion < 2)
+            Target.Version.PatchVersion < 2))
         {
             // In UE versions prior to 4.26.2, the Unreal Build Tool on Android
             // (AndroidToolChain.cs) ignores the CppStandard property and just
@@ -195,6 +222,9 @@ public class CesiumRuntime : ModuleRules
             // the compiler command-line to force C++17 mode. Clang ignores all
             // but the last `-std=` argument, so the `-std=c++14` added by the
             // UBT is ignored.
+            //
+            // This is also needed for iOS builds on all engine versions as Unreal
+            // defaults to c++14 regardless of the CppStandard setting
             Type type = Target.GetType();
             FieldInfo innerField = type.GetField("Inner", BindingFlags.Instance | BindingFlags.NonPublic);
             TargetRules inner = (TargetRules)innerField.GetValue(Target);
