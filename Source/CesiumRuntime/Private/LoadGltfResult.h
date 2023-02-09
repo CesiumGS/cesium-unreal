@@ -45,7 +45,13 @@ struct LoadPrimitiveResult {
   CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
   TMap<FString, uint32_t> metadataTextureCoordinateParameters;
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
-  std::optional<TArray<FLidarPointCloudPoint>> pointCloudBuffer;
+
+  /**
+   * If the primitive mode is POINTS, this is set to an array containing the
+   * Lidar point cloud points translated from the glTF.
+   */
+  std::optional<TArray<FLidarPointCloudPoint>> points;
+
   const CesiumGltf::Model* pModel = nullptr;
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
   const CesiumGltf::Material* pMaterial = nullptr;

@@ -22,8 +22,8 @@
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPrimitiveComponent.h"
-#include "CesiumPointCloudComponent.h"
 #include "CesiumMaterialUserData.h"
+#include "CesiumPointCloudComponent.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
 #include "CesiumTextureUtility.h"
@@ -700,8 +700,7 @@ static void loadPrimitive(
   const MeshPrimitive& primitive = *options.pPrimitive;
 
   if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
-      primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP &&
-      primitive.mode != CesiumGltf::MeshPrimitive::Mode::POINTS) {
+      primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP) {
     // TODO: add support for primitive types other than triangles.
     UE_LOG(
         LogCesium,
@@ -759,47 +758,6 @@ static void loadPrimitive(
           UTF8_TO_TCHAR(name.c_str()));
       return;
     }
-  }
-
-  if (primitive.mode == CesiumGltf::MeshPrimitive::Mode::POINTS) {
-
-    // TODO: use regular vertex colors instead of special RGB attribute
-    struct RGB24 {
-      uint8_t red;
-      uint8_t green;
-      uint8_t blue;
-    };
-
-    std::optional<CesiumGltf::AccessorView<RGB24>> colorView = std::nullopt;
-
-    auto colorAccessorIdIt = primitive.attributes.find("RGB");
-    if (colorAccessorIdIt != primitive.attributes.end()) {
-      int32_t colorAccessorId = colorAccessorIdIt->second;
-      colorView = CesiumGltf::AccessorView<RGB24>(model, colorAccessorId);
-    }
-    size_t pointsSize = positionView.size();
-    primitiveResult.pointCloudBuffer = TArray<FLidarPointCloudPoint>();
-    primitiveResult.pointCloudBuffer->SetNum(pointsSize);
-
-    for (size_t i = 0; i < pointsSize; ++i) {
-      FLidarPointCloudPoint& point =
-          primitiveResult.pointCloudBuffer.value()[i];
-      point.Location = positionView[i];
-      point.Color = FColor::Red;
-    }
-
-    if (colorView &&
-        colorView->status() == CesiumGltf::AccessorViewStatus::Valid) {
-      for (size_t i = 0; i < pointsSize; ++i) {
-        FLidarPointCloudPoint& point =
-            primitiveResult.pointCloudBuffer.value()[i];
-        const RGB24& color = colorView.value()[i];
-        point.Color = FColor(color.red, color.green, color.blue, 0xff);
-      }
-    }
-
-    result.push_back(std::move(primitiveResult));
-    return;
   }
 
   auto normalAccessorIt = primitive.attributes.find("NORMAL");
@@ -1350,6 +1308,153 @@ static void loadIndexedPrimitive(
   }
 }
 
+static void loadPrimitivePoints(
+    LoadPrimitiveResult& primitiveResult,
+    const glm::dmat4x4& transform,
+    const CreatePrimitiveOptions& options,
+    const Accessor& positionAccessor,
+    const AccessorView<TMeshVector3>& positionView) {
+
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::loadPrimitivePoints)
+
+  Model& model = *options.pMeshOptions->pNodeOptions->pModelOptions->pModel;
+  const Mesh& mesh = *options.pMeshOptions->pMesh;
+  const MeshPrimitive& primitive = *options.pPrimitive;
+
+  std::string name = "glTF";
+
+  auto urlIt = model.extras.find("Cesium3DTiles_TileUrl");
+  if (urlIt != model.extras.end()) {
+    name = urlIt->second.getStringOrDefault("glTF");
+    name = constrainLength(name, 256);
+  }
+
+  auto meshIt = std::find_if(
+      model.meshes.begin(),
+      model.meshes.end(),
+      [&mesh](const Mesh& candidate) { return &candidate == &mesh; });
+  if (meshIt != model.meshes.end()) {
+    int64_t meshIndex = meshIt - model.meshes.begin();
+    name += " mesh " + std::to_string(meshIndex);
+  }
+
+  auto primitiveIt = std::find_if(
+      mesh.primitives.begin(),
+      mesh.primitives.end(),
+      [&primitive](const MeshPrimitive& candidate) {
+        return &candidate == &primitive;
+      });
+  if (primitiveIt != mesh.primitives.end()) {
+    int64_t primitiveIndex = primitiveIt - mesh.primitives.begin();
+    name += " primitive " + std::to_string(primitiveIndex);
+  }
+
+  primitiveResult.name = name;
+
+  if (positionView.status() != AccessorViewStatus::Valid) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT("%s: Invalid position buffer"),
+        UTF8_TO_TCHAR(name.c_str()));
+    return;
+  }
+
+  AccessorView<glm::vec4> colorRgbaView;
+  AccessorView<glm::vec3> colorRgbView;
+  auto colorAccessorIdIt = primitive.attributes.find("COLOR_0");
+  if (colorAccessorIdIt != primitive.attributes.end()) {
+    int32_t colorAccessorId = colorAccessorIdIt->second;
+    colorRgbaView = CesiumGltf::AccessorView<glm::vec4>(model, colorAccessorId);
+    colorRgbView = CesiumGltf::AccessorView<glm::vec3>(model, colorAccessorId);
+  }
+
+  auto normalAccessorIt = primitive.attributes.find("NORMAL");
+  AccessorView<TMeshVector3> normalAccessor;
+  bool hasNormals = false;
+  if (normalAccessorIt != primitive.attributes.end()) {
+    int normalAccessorID = normalAccessorIt->second;
+    normalAccessor = AccessorView<TMeshVector3>(model, normalAccessorID);
+    hasNormals = normalAccessor.status() == AccessorViewStatus::Valid;
+    if (!hasNormals) {
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT("%s: Invalid normal buffer."),
+          UTF8_TO_TCHAR(name.c_str()));
+    }
+  }
+
+  size_t pointsLength = positionView.size();
+  primitiveResult.points = TArray<FLidarPointCloudPoint>();
+  primitiveResult.points->SetNum(pointsLength);
+  auto& points = *primitiveResult.points;
+
+  /* glm::dvec3 min(
+      positionAccessor.min[0],
+      positionAccessor.min[1],
+      positionAccessor.min[2]);
+
+  glm::dvec3 max(
+      positionAccessor.max[0],
+      positionAccessor.max[1],
+      positionAccessor.max[2]);
+
+  glm::dvec3 ecefCenter =
+      glm::dvec3(transform * glm::dvec4((min + max) / 2.0, 1.0));
+  TMeshVector3 upDir = TMeshVector3(VecMath::createVector(
+      glm::affineInverse(transform) *
+      glm::dvec4(
+          CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+              glm::dvec3(ecefCenter)),
+          0.0)));*/
+
+  for (size_t i = 0; i < pointsLength; ++i) {
+    FLidarPointCloudPoint& point = points[i];
+    point.Location = positionView[i];
+
+    if (colorRgbaView.status() == AccessorViewStatus::Valid) {
+      const glm::vec4& color = colorRgbaView[i];
+      point.Color = FLinearColor(color.x, color.y, color.z, color.w).ToFColor(true);
+    } else if (colorRgbView.status() == AccessorViewStatus::Valid) {
+      const glm::vec3& color = colorRgbView[i];
+      point.Color = FLinearColor(color.x, color.y, color.z, 1.0).ToFColor(true);
+    } else {
+      point.Color = FColor::White;
+    }
+
+    if (hasNormals) {
+      point.Normal = normalAccessor[i];
+    }
+  }
+
+  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+
+  const FMetadataDescription* pEncodedMetadataDescription =
+      options.pMeshOptions->pNodeOptions->pModelOptions
+          ->pEncodedMetadataDescription;
+  if (pEncodedMetadataDescription) {
+    primitiveResult.EncodedMetadata = encodeMetadataPrimitiveAnyThreadPart(
+        *pEncodedMetadataDescription,
+        primitiveResult.Metadata);
+  }
+
+  int materialID = primitive.material;
+  const Material& material =
+      materialID >= 0 && materialID < model.materials.size()
+          ? model.materials[materialID]
+          : defaultMaterial;
+
+  primitiveResult.pModel = &model;
+  primitiveResult.pMeshPrimitive = &primitive;
+  primitiveResult.transform = transform;
+  primitiveResult.pMaterial = &material;
+  primitiveResult.pCollisionMesh = nullptr;
+
+  // load primitive metadata
+  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+}
+
 static void loadPrimitive(
     LoadPrimitiveResult& result,
     const glm::dmat4x4& transform,
@@ -1376,7 +1481,15 @@ static void loadPrimitive(
 
   AccessorView<TMeshVector3> positionView(model, *pPositionAccessor);
 
-  if (primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
+  if (primitive.mode == MeshPrimitive::Mode::POINTS) {
+    loadPrimitivePoints(
+        result,
+        transform,
+        options,
+        *pPositionAccessor,
+        positionView);
+  } else if (
+      primitive.indices < 0 || primitive.indices >= model.accessors.size()) {
     std::vector<uint32_t> syntheticIndexBuffer(positionView.size());
     syntheticIndexBuffer.resize(positionView.size());
     for (uint32_t i = 0; i < positionView.size(); ++i) {
@@ -1417,7 +1530,7 @@ static void loadMesh(
     loadPrimitive(primitiveResult, transform, primitiveOptions);
 
     // if it doesn't have render data, then it can't be loaded
-    if (!primitiveResult.RenderData) {
+    if (!primitiveResult.RenderData && !primitiveResult.points) {
       result->primitiveResults.pop_back();
     }
   }
@@ -1486,16 +1599,6 @@ static void loadNode(
       rotationQuat[1] = node.rotation[1];
       rotationQuat[2] = node.rotation[2];
       rotationQuat[3] = node.rotation[3];
-
-      // TODO: is it actually: ??
-      /*
-
-      rotationQuat[0] = node.rotation[3];
-      rotationQuat[1] = node.rotation[0];
-      rotationQuat[2] = node.rotation[1];
-      rotationQuat[3] = node.rotation[2];
-
-      */
     }
 
     glm::dmat4 scale(1.0);
@@ -1648,17 +1751,17 @@ bool applyTexture(
   return true;
 }
 
-static void loadPointCloud(
+static void loadPrimitivePointsGameThreadPart(
     UCesiumGltfComponent* pGltf,
-    LoadModelResult& loadResult,
+    LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform) {
-  if (!loadResult.pointCloudBuffer) {
+  if (!loadResult.points) {
     return;
   }
 
   FName meshName = createSafeName(loadResult.name, "");
-  UCesiumPointCloudComponent* pMesh = NewObject<UCesiumPointCloudComponent>(
-      pGltf, meshName);
+  UCesiumPointCloudComponent* pMesh =
+      NewObject<UCesiumPointCloudComponent>(pGltf, meshName);
   pMesh->HighPrecisionNodeTransform = loadResult.transform;
   pMesh->UpdateTransformFromCesium(cesiumToUnrealTransform);
 
@@ -1673,7 +1776,6 @@ static void loadPointCloud(
   ULidarPointCloud* pPointCloud =
       NewObject<ULidarPointCloud>(pMesh, FName(loadResult.name.c_str()));
 
-  // TODO: try async load here
   ELidarPointCloudAsyncMode asyncPointCloudResult =
       ELidarPointCloudAsyncMode::Progress;
   float progress = 0.0f;
@@ -1681,7 +1783,7 @@ static void loadPointCloud(
   latentActionInfo.CallbackTarget = pMesh;
   ULidarPointCloudBlueprintLibrary::CreatePointCloudFromData(
       pMesh,
-      *loadResult.pointCloudBuffer,
+      *loadResult.points,
       false,
       latentActionInfo,
       asyncPointCloudResult,
@@ -1689,36 +1791,30 @@ static void loadPointCloud(
       pPointCloud);
 
   pMesh->SetPointCloud(pPointCloud);
+  pPointCloud->UnhideAll();
 
-  pMesh->SetVisibilityOfPointsInBox(true, pMesh->Bounds.GetBox());
+  pMesh->PointSize = 0.0f; // Setting this to zero will make each point 1 px.
+  pMesh->ScalingMethod = ELidarPointCloudScalingMethod::FixedScreenSize;
+  pMesh->SetPointShape(ELidarPointCloudSpriteShape::Square);
 
-  float boundsRadius = pMesh->Bounds.SphereRadius;
-  if (boundsRadius < 100.0f) {
-    boundsRadius = 100.0f;
-  }
+  pMesh->bUseFrustumCulling = false;
+  pMesh->MinDepth = 0;
+  pMesh->MaxDepth = -1;
 
-  float pointSize = 5000.0f / boundsRadius;
-  if (pointSize < 0.01f) {
-    pointSize = 0.01f;
-  }
-
-  pMesh->PointSize = pointSize;
-  pMesh->ScalingMethod = ELidarPointCloudScalingMethod::PerNode;
-
-  //pMesh->PointSizeBias = 0.0f;
-  //pMesh->PointShape = ELidarPointCloudSpriteShape::Circle;
-
-  // TODO: add back in material code
+  // need to use correct material
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
-  UMaterialInstanceDynamic* pMaterial = 
-      UMaterialInstanceDynamic::Create(
-        pGltf->BaseMaterial,
-        nullptr,
-        ImportedSlotName);
-        
+  UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
+      pGltf->BaseMaterial,
+      nullptr,
+      ImportedSlotName);
+
   pMesh->SetMaterial(0, pMaterial);
   pMesh->ApplyRenderingParameters();
+
+  if (loadResult.pMaterial->hasExtension<ExtensionKhrMaterialsUnlit>()) {
+    pMesh->bCastDynamicShadow = false;
+  }
 
   pMesh->SetMobility(EComponentMobility::Movable);
 
@@ -2006,14 +2102,6 @@ static void loadPrimitiveGameThreadPart(
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
-
-  if (loadResult.pMeshPrimitive &&
-      loadResult.pMeshPrimitive->mode ==
-          CesiumGltf::MeshPrimitive::Mode::POINTS) {
-    loadPointCloud(pGltf, loadResult, cesiumToUnrealTransform);
-    return;
-  }
-
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh =
       NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
@@ -2086,10 +2174,10 @@ static void loadPrimitiveGameThreadPart(
   UMaterialInterface* pBaseMaterial =
       (loadResult.onlyWater || !loadResult.onlyLand)
           ? pGltf->BaseMaterialWithWater
-          : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
-             pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
-                ? pGltf->BaseMaterialWithTranslucency
-                : pGltf->BaseMaterial;
+      : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
+         pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+          ? pGltf->BaseMaterialWithTranslucency
+          : pGltf->BaseMaterial;
 #endif
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
@@ -2313,12 +2401,19 @@ UCesiumGltfComponent::CreateOffGameThread(
   for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
-        loadPrimitiveGameThreadPart(
-            model,
-            Gltf,
-            primitive,
-            cesiumToUnrealTransform,
-            boundingVolume);
+        if (primitive.points) {
+          loadPrimitivePointsGameThreadPart(
+              Gltf,
+              primitive,
+              cesiumToUnrealTransform);
+        } else {
+          loadPrimitiveGameThreadPart(
+              model,
+              Gltf,
+              primitive,
+              cesiumToUnrealTransform,
+              boundingVolume);
+        }
       }
     }
   }
