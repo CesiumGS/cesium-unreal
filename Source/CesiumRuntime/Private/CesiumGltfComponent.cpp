@@ -21,6 +21,7 @@
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
+#include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
@@ -697,8 +698,9 @@ static void loadPrimitive(
   const MeshPrimitive& primitive = *options.pPrimitive;
 
   if (primitive.mode != MeshPrimitive::Mode::TRIANGLES &&
-      primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP) {
-    // TODO: add support for primitive types other than triangles.
+      primitive.mode != MeshPrimitive::Mode::TRIANGLE_STRIP &&
+      primitive.mode != MeshPrimitive::Mode::POINTS) {
+    // TODO: add support for other primitive types.
     UE_LOG(
         LogCesium,
         Warning,
@@ -769,7 +771,7 @@ static void loadPrimitive(
           LogCesium,
           Warning,
           TEXT(
-              "%s: Invalid normal buffer. Flat normal will be auto-generated instead"),
+              "%s: Invalid normal buffer. Flat normals will be auto-generated instead."),
           UTF8_TO_TCHAR(name.c_str()));
     }
   }
@@ -864,7 +866,8 @@ static void loadPrimitive(
   }
 
   TArray<uint32> indices;
-  if (primitive.mode == MeshPrimitive::Mode::TRIANGLES) {
+  if (primitive.mode == MeshPrimitive::Mode::TRIANGLES ||
+      primitive.mode == MeshPrimitive::Mode::POINTS) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyIndices)
     indices.SetNum(static_cast<TArray<uint32>::SizeType>(indicesView.size()));
 
@@ -895,6 +898,8 @@ static void loadPrimitive(
   // need them, we need to use a tangent space generation algorithm which
   // requires duplicated vertices.
   bool duplicateVertices = !hasNormals || (needsTangents && !hasTangents);
+  duplicateVertices =
+      duplicateVertices && primitive.mode != MeshPrimitive::Mode::POINTS;
 
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
   StaticMeshBuildVertices.SetNum(
@@ -1154,39 +1159,43 @@ static void loadPrimitive(
         false);
   }
 
+  if (primitive.mode != MeshPrimitive::Mode::POINTS) {
+
 #if ENGINE_MAJOR_VERSION == 5
-  FStaticMeshSectionArray& Sections = LODResources.Sections;
+    FStaticMeshSectionArray& Sections = LODResources.Sections;
 #else
-  FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
-      LODResources.Sections;
+    FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
+        LODResources.Sections;
 #endif
 
-  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  section.bEnableCollision = true;
+    FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+    section.bEnableCollision = true;
 
-  section.NumTriangles = indices.Num() / 3;
-  section.FirstIndex = 0;
-  section.MinVertexIndex = 0;
-  section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
-  section.bEnableCollision = true;
-  section.bCastShadow = true;
+    section.NumTriangles = indices.Num() / 3;
+    section.FirstIndex = 0;
+    section.MinVertexIndex = 0;
+    section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
+    section.bEnableCollision = true;
+    section.bCastShadow = true;
+    section.MaterialIndex = 0;
 
-  // Note that we're reversing the order of the indices, because the change
-  // from the glTF right-handed to the Unreal left-handed coordinate system
-  // reverses the winding order.
-  // Note also that we don't want to just flip the index buffer, since that
-  // will change the order of the faces.
-  if (duplicateVertices) {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 2; i < indices.Num(); i += 3) {
-      indices[i - 2] = i;
-      indices[i - 1] = i - 1;
-      indices[i] = i - 2;
-    }
-  } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 2; i < indices.Num(); i += 3) {
-      std::swap(indices[i - 2], indices[i]);
+    // Note that we're reversing the order of the indices, because the change
+    // from the glTF right-handed to the Unreal left-handed coordinate system
+    // reverses the winding order.
+    // Note also that we don't want to just flip the index buffer, since that
+    // will change the order of the faces.
+    if (duplicateVertices) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
+      for (int32 i = 2; i < indices.Num(); i += 3) {
+        indices[i - 2] = i;
+        indices[i - 1] = i - 1;
+        indices[i] = i - 2;
+      }
+    } else {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
+      for (int32 i = 2; i < indices.Num(); i += 3) {
+        std::swap(indices[i - 2], indices[i]);
+      }
     }
   }
 
@@ -1211,27 +1220,27 @@ static void loadPrimitive(
   primitiveResult.RenderData = std::move(RenderData);
   primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
-
-  section.MaterialIndex = 0;
-
   primitiveResult.pCollisionMesh = nullptr;
 
-  if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
+  if (primitive.mode != MeshPrimitive::Mode::POINTS) {
+    if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
 #if PHYSICS_INTERFACE_PHYSX
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
-    PxTriangleMesh* createdCollisionMesh = nullptr;
-    BuildPhysXTriangleMeshes(
-        createdCollisionMesh,
-        primitiveResult.uvInfo,
-        options.pMeshOptions->pNodeOptions->pModelOptions->pPhysXCookingModule,
-        StaticMeshBuildVertices,
-        indices);
-    primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::PhysXCook)
+      PxTriangleMesh* createdCollisionMesh = nullptr;
+      BuildPhysXTriangleMeshes(
+          createdCollisionMesh,
+          primitiveResult.uvInfo,
+          options.pMeshOptions->pNodeOptions->pModelOptions
+              ->pPhysXCookingModule,
+          StaticMeshBuildVertices,
+          indices);
+      primitiveResult.pCollisionMesh.Reset(createdCollisionMesh);
 #else
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
-    primitiveResult.pCollisionMesh =
-        BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
+      primitiveResult.pCollisionMesh =
+          BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
 #endif
+    }
   }
 
   // load primitive metadata
@@ -1873,8 +1882,13 @@ static void loadPrimitiveGameThreadPart(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
   FName meshName = createSafeName(loadResult.name, "");
-  UCesiumGltfPrimitiveComponent* pMesh =
-      NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+  UCesiumGltfPrimitiveComponent* pMesh;
+  if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
+    pMesh = NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+  } else {
+    pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
+  }
+
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->textureCoordinateMap = std::move(loadResult.textureCoordinateMap);
@@ -1944,10 +1958,10 @@ static void loadPrimitiveGameThreadPart(
   UMaterialInterface* pBaseMaterial =
       (loadResult.onlyWater || !loadResult.onlyLand)
           ? pGltf->BaseMaterialWithWater
-          : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
-             pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
-                ? pGltf->BaseMaterialWithTranslucency
-                : pGltf->BaseMaterial;
+      : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
+         pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+          ? pGltf->BaseMaterialWithTranslucency
+          : pGltf->BaseMaterial;
 #endif
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
@@ -2358,8 +2372,8 @@ void UCesiumGltfComponent::DetachRasterTile(
           UMaterialInstanceDynamic* pMaterial,
           UCesiumMaterialUserData* pCesiumData) {
         // If this material uses material layers and has the Cesium user data,
-        // clear the parameters on each material layer that maps to this overlay
-        // tile.
+        // clear the parameters on each material layer that maps to this
+        // overlay tile.
         if (pCesiumData) {
           FString name(
               UTF8_TO_TCHAR(rasterTile.getOverlay().getName().c_str()));
