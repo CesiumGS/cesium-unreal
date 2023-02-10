@@ -19,16 +19,16 @@ public:
   }
 
   FGltfPointsSceneProxy(
-      UCesiumGltfPointsComponent* Component,
+      UCesiumGltfPointsComponent* InComponent,
       ERHIFeatureLevel::Type InFeatureLevel)
-      : FPrimitiveSceneProxy(Component),
+      : FPrimitiveSceneProxy(InComponent),
+        Component(InComponent),
         MaterialRelevance(
-            Component->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
+            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
     auto& RenderData = Component->GetStaticMesh()->RenderData;
     LODResources = &RenderData->LODResources[0];
     VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;
-    Material =
-        UMaterial::GetDefaultMaterial(MD_Surface); // Component->GetMaterial(0);
+    Material = Component->GetMaterial(0);
   }
 
   virtual ~FGltfPointsSceneProxy() {}
@@ -38,7 +38,12 @@ public:
     FMeshBatchElement& BatchElement = Mesh.Elements[0];
     Mesh.bWireframe = false;
     Mesh.VertexFactory = VertexFactory;
-    Mesh.MaterialRenderProxy = Material->GetRenderProxy();
+    if (Material) {
+      Mesh.MaterialRenderProxy = Material->GetRenderProxy();
+    } else {
+      Mesh.MaterialRenderProxy =
+          UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
+    }
 
     bool receivesDecals = true;
     bool drawsVelocity = false;
@@ -105,6 +110,8 @@ private:
   FStaticMeshLODResources* LODResources;
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
+
+  UCesiumGltfPointsComponent* Component;
 };
 
 // Sets default values for this component's properties

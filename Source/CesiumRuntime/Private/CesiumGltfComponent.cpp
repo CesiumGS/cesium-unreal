@@ -1159,43 +1159,39 @@ static void loadPrimitive(
         false);
   }
 
-  if (primitive.mode != MeshPrimitive::Mode::POINTS) {
-
 #if ENGINE_MAJOR_VERSION == 5
-    FStaticMeshSectionArray& Sections = LODResources.Sections;
+  FStaticMeshSectionArray& Sections = LODResources.Sections;
 #else
-    FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
-        LODResources.Sections;
+  FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
+      LODResources.Sections;
 #endif
 
-    FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-    section.bEnableCollision = true;
+  FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
+  section.bEnableCollision = true;
+  section.NumTriangles = indices.Num() / 3;
+  section.FirstIndex = 0;
+  section.MinVertexIndex = 0;
+  section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
+  section.bEnableCollision = true;
+  section.bCastShadow = true;
+  section.MaterialIndex = 0;
 
-    section.NumTriangles = indices.Num() / 3;
-    section.FirstIndex = 0;
-    section.MinVertexIndex = 0;
-    section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
-    section.bEnableCollision = true;
-    section.bCastShadow = true;
-    section.MaterialIndex = 0;
-
-    // Note that we're reversing the order of the indices, because the change
-    // from the glTF right-handed to the Unreal left-handed coordinate system
-    // reverses the winding order.
-    // Note also that we don't want to just flip the index buffer, since that
-    // will change the order of the faces.
-    if (duplicateVertices) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-      for (int32 i = 2; i < indices.Num(); i += 3) {
-        indices[i - 2] = i;
-        indices[i - 1] = i - 1;
-        indices[i] = i - 2;
-      }
-    } else {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-      for (int32 i = 2; i < indices.Num(); i += 3) {
-        std::swap(indices[i - 2], indices[i]);
-      }
+  // Note that we're reversing the order of the indices, because the change
+  // from the glTF right-handed to the Unreal left-handed coordinate system
+  // reverses the winding order.
+  // Note also that we don't want to just flip the index buffer, since that
+  // will change the order of the faces.
+  if (duplicateVertices) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
+    for (int32 i = 2; i < indices.Num(); i += 3) {
+      indices[i - 2] = i;
+      indices[i - 1] = i - 1;
+      indices[i] = i - 2;
+    }
+  } else {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
+    for (int32 i = 2; i < indices.Num(); i += 3) {
+      std::swap(indices[i - 2], indices[i]);
     }
   }
 
