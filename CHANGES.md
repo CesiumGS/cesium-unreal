@@ -1,5 +1,9 @@
 # Change Log
 
+### v1.23.0 - 2023-03-01
+
+- Added support for rendering point clouds (`pnts`).
+
 ### v1.22.0 - 2023-02-01
 
 ##### Additions :tada:
