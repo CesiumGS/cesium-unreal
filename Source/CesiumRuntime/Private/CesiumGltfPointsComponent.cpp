@@ -21,41 +21,20 @@ public:
   FGltfPointsSceneProxy(
       UCesiumGltfPointsComponent* InComponent,
       ERHIFeatureLevel::Type InFeatureLevel)
-      : FPrimitiveSceneProxy(InComponent),
-        Component(InComponent),
-        MaterialRelevance(
-            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
-    auto& RenderData = Component->GetStaticMesh()->RenderData;
+      : FPrimitiveSceneProxy(InComponent) {
+    auto& RenderData = InComponent->GetStaticMesh()->RenderData;
     LODResources = &RenderData->LODResources[0];
     VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;
-    Material = Component->GetMaterial(0);
+    Material = InComponent->GetMaterial(0);
+    MaterialRelevance =
+        InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel());
   }
 
   virtual ~FGltfPointsSceneProxy() {}
 
   virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override {
     FMeshBatch Mesh;
-    FMeshBatchElement& BatchElement = Mesh.Elements[0];
-    Mesh.bWireframe = false;
-    Mesh.VertexFactory = VertexFactory;
-    if (Material) {
-      Mesh.MaterialRenderProxy = Material->GetRenderProxy();
-    } else {
-      Mesh.MaterialRenderProxy =
-          UMaterial::GetDefaultMaterial(MD_Surface)->GetRenderProxy();
-    }
-
-    bool receivesDecals = true;
-    bool drawsVelocity = false;
-    BatchElement.IndexBuffer = &(LODResources->IndexBuffer);
-    BatchElement.NumPrimitives = LODResources->IndexBuffer.GetNumIndices();
-    BatchElement.FirstIndex = 0;
-    BatchElement.MinVertexIndex = 0;
-    Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
-    Mesh.Type = PT_PointList;
-    Mesh.DepthPriorityGroup = SDPG_World;
-    Mesh.bCanApplyViewModeOverrides = false;
-
+    CreateMesh(Mesh);
     PDI->DrawMesh(Mesh, FLT_MAX);
   }
 
@@ -69,22 +48,8 @@ public:
     for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
       if (VisibilityMap & (1 << ViewIndex)) {
         const FSceneView* View = Views[ViewIndex];
-        // Draw the mesh.
         FMeshBatch& Mesh = Collector.AllocateMesh();
-        FMeshBatchElement& BatchElement = Mesh.Elements[0];
-        BatchElement.IndexBuffer = &(LODResources->IndexBuffer);
-        BatchElement.NumPrimitives = LODResources->IndexBuffer.GetNumIndices();
-        BatchElement.FirstIndex = 0;
-        BatchElement.MinVertexIndex = 0;
-
-        Mesh.bWireframe = false;
-        Mesh.VertexFactory = VertexFactory;
-        Mesh.MaterialRenderProxy = Material->GetRenderProxy();
-        Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
-        Mesh.Type = PT_PointList;
-        Mesh.DepthPriorityGroup = SDPG_World;
-        Mesh.bCanApplyViewModeOverrides = false;
-
+        CreateMesh(Mesh);
         Collector.AddMesh(ViewIndex, Mesh);
       }
     }
@@ -94,8 +59,17 @@ public:
   GetViewRelevance(const FSceneView* View) const override {
     FPrimitiveViewRelevance Result;
     Result.bDrawRelevance = IsShown(View);
-    Result.bShadowRelevance = IsShadowCast(View);
+    Result.bStaticRelevance = true;
     Result.bDynamicRelevance = true;
+
+    Result.bRenderCustomDepth = ShouldRenderCustomDepth();
+    Result.bRenderInMainPass = ShouldRenderInMainPass();
+    Result.bRenderInDepthPass = ShouldRenderInDepthPass();
+    Result.bUsesLightingChannels =
+        GetLightingChannelMask() != GetDefaultLightingChannelMask();
+    Result.bShadowRelevance = IsShadowCast(View);
+    Result.bVelocityRelevance = IsMovable() & Result.bRenderInMainPass;
+
     MaterialRelevance.SetPrimitiveViewRelevance(Result);
 
     return Result;
@@ -111,7 +85,21 @@ private:
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
 
-  UCesiumGltfPointsComponent* Component;
+  void CreateMesh(FMeshBatch& Mesh) const {
+    FMeshBatchElement& BatchElement = Mesh.Elements[0];
+    BatchElement.IndexBuffer = &(LODResources->IndexBuffer);
+    BatchElement.NumPrimitives = LODResources->IndexBuffer.GetNumIndices();
+    BatchElement.FirstIndex = 0;
+    BatchElement.MinVertexIndex = 0;
+
+    Mesh.bWireframe = false;
+    Mesh.VertexFactory = VertexFactory;
+    Mesh.MaterialRenderProxy = Material->GetRenderProxy();
+    Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
+    Mesh.Type = PT_PointList;
+    Mesh.DepthPriorityGroup = SDPG_World;
+    Mesh.bCanApplyViewModeOverrides = false;
+  }
 };
 
 // Sets default values for this component's properties

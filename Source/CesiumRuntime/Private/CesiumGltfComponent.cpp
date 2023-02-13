@@ -1167,12 +1167,12 @@ static void loadPrimitive(
 #endif
 
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
-  section.bEnableCollision = true;
+  // This will be ignored if the primitive contains points.
   section.NumTriangles = indices.Num() / 3;
   section.FirstIndex = 0;
   section.MinVertexIndex = 0;
   section.MaxVertexIndex = StaticMeshBuildVertices.Num() - 1;
-  section.bEnableCollision = true;
+  section.bEnableCollision = primitive.mode != MeshPrimitive::Mode::POINTS;
   section.bCastShadow = true;
   section.MaterialIndex = 0;
 
