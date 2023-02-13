@@ -33,9 +33,11 @@ public:
   virtual ~FGltfPointsSceneProxy() {}
 
   virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) override {
-    FMeshBatch Mesh;
-    CreateMesh(Mesh);
-    PDI->DrawMesh(Mesh, FLT_MAX);
+    if (!HasViewDependentDPG()) {
+      FMeshBatch Mesh;
+      CreateMesh(Mesh);
+      PDI->DrawMesh(Mesh, FLT_MAX);
+    }
   }
 
   virtual void GetDynamicMeshElements(
@@ -59,8 +61,11 @@ public:
   GetViewRelevance(const FSceneView* View) const override {
     FPrimitiveViewRelevance Result;
     Result.bDrawRelevance = IsShown(View);
-    Result.bStaticRelevance = true;
-    Result.bDynamicRelevance = true;
+    if (HasViewDependentDPG()) {
+      Result.bDynamicRelevance = true;
+    } else {
+      Result.bStaticRelevance = true;
+    }
 
     Result.bRenderCustomDepth = ShouldRenderCustomDepth();
     Result.bRenderInMainPass = ShouldRenderInMainPass();
@@ -68,7 +73,8 @@ public:
     Result.bUsesLightingChannels =
         GetLightingChannelMask() != GetDefaultLightingChannelMask();
     Result.bShadowRelevance = IsShadowCast(View);
-    Result.bVelocityRelevance = IsMovable() & Result.bRenderInMainPass;
+    Result.bVelocityRelevance =
+        IsMovable() & Result.bOpaque & Result.bRenderInMainPass;
 
     MaterialRelevance.SetPrimitiveViewRelevance(Result);
 
@@ -86,19 +92,23 @@ private:
   FMaterialRelevance MaterialRelevance;
 
   void CreateMesh(FMeshBatch& Mesh) const {
-    FMeshBatchElement& BatchElement = Mesh.Elements[0];
-    BatchElement.IndexBuffer = &(LODResources->IndexBuffer);
-    BatchElement.NumPrimitives = LODResources->IndexBuffer.GetNumIndices();
-    BatchElement.FirstIndex = 0;
-    BatchElement.MinVertexIndex = 0;
-
-    Mesh.bWireframe = false;
     Mesh.VertexFactory = VertexFactory;
     Mesh.MaterialRenderProxy = Material->GetRenderProxy();
     Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
     Mesh.Type = PT_PointList;
     Mesh.DepthPriorityGroup = SDPG_World;
+    Mesh.LODIndex = 0;
     Mesh.bCanApplyViewModeOverrides = false;
+    Mesh.bUseAsOccluder = false;
+    Mesh.bWireframe = false;
+
+    auto pIndexBuffer = &LODResources->IndexBuffer;
+    FMeshBatchElement& BatchElement = Mesh.Elements[0];
+    BatchElement.IndexBuffer = pIndexBuffer;
+    BatchElement.NumPrimitives = pIndexBuffer->GetNumIndices();
+    BatchElement.FirstIndex = 0;
+    BatchElement.MinVertexIndex = 0;
+    BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;
   }
 };
 
