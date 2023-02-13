@@ -1,15 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPointsComponent.h"
-#include "CalcBounds.h"
-#include "CesiumLifetime.h"
-#include "CesiumMaterialUserData.h"
 #include "Engine/StaticMesh.h"
-#include "Engine/Texture.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "PhysicsEngine/BodySetup.h"
-#include "VecMath.h"
-#include <variant>
 
 class FGltfPointsSceneProxy final : public FPrimitiveSceneProxy {
 public:
