@@ -1137,11 +1137,14 @@ static void loadPrimitive(
   }
 
   {
-    //set to full precision uv, because featureid > 1 maybe miss precision
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
+
+    // Set to full precision (32-bit) UVs. This is especially important for
+    // metadata because integer feature IDs can and will lose meaningful
+    // precision when using 16-bit floats.
     LODResources.VertexBuffers.StaticMeshVertexBuffer.SetUseFullPrecisionUVs(
         true);
-    
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::InitBuffers)
+
     LODResources.VertexBuffers.PositionVertexBuffer.Init(
         StaticMeshBuildVertices,
         false);
