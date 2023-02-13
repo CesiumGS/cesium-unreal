@@ -22,7 +22,7 @@ public:
       UCesiumGltfPointsComponent* InComponent,
       ERHIFeatureLevel::Type InFeatureLevel)
       : FPrimitiveSceneProxy(InComponent) {
-    auto& RenderData = InComponent->GetStaticMesh()->RenderData;
+    const auto RenderData = InComponent->GetStaticMesh()->GetRenderData();
     LODResources = &RenderData->LODResources[0];
     VertexFactory = &RenderData->LODVertexFactories[0].VertexFactory;
     Material = InComponent->GetMaterial(0);
