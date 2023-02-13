@@ -1951,13 +1951,16 @@ static void loadPrimitiveGameThreadPart(
           ? pGltf->BaseMaterialWithTranslucency
           : pGltf->BaseMaterial;
 #else
-  UMaterialInterface* pBaseMaterial =
-      (loadResult.onlyWater || !loadResult.onlyLand)
-          ? pGltf->BaseMaterialWithWater
-      : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
-         pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
+  UMaterialInterface* pBaseMaterial;
+  if (loadResult.onlyWater || !loadResult.onlyLand) {
+    pBaseMaterial = pGltf->BaseMaterialWithWater;
+  } else {
+    pBaseMaterial =
+        : (is_in_blend_mode(loadResult) && pbr.baseColorFactor.size() > 3 &&
+           pbr.baseColorFactor[3] < 0.996) // 1. - 1. / 256.
           ? pGltf->BaseMaterialWithTranslucency
           : pGltf->BaseMaterial;
+  }
 #endif
 
   UMaterialInstanceDynamic* pMaterial = UMaterialInstanceDynamic::Create(
@@ -2117,8 +2120,6 @@ static void loadPrimitiveGameThreadPart(
 
   pMesh->SetMobility(pGltf->Mobility);
 
-  // pMesh->bDrawMeshCollisionIfComplex = true;
-  // pMesh->bDrawMeshCollisionIfSimple = true;
   pMesh->SetupAttachment(pGltf);
   pMesh->RegisterComponent();
 }
