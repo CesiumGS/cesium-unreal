@@ -693,6 +693,8 @@ private:
    * Disabling this option will improve the performance of tile loading, but it
    * will no longer be possible to collide with the tileset since the physics
    * meshes will not be created.
+   *
+   * Physics meshes cannot be generated for primitives containing points.
    */
   UPROPERTY(
       EditAnywhere,
