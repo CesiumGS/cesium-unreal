@@ -53,6 +53,8 @@ struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>>;
 
+  using VertexPositionAccessorType =    std::variant<  CesiumGltf::AccessorView<TMeshVector3>>;
+
 public:
   /**
    * Construct an empty primitive metadata.
