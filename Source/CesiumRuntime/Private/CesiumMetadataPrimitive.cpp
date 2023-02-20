@@ -39,22 +39,18 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
   
   auto positionAccessorIt = primitive.attributes.find("POSITION");
-  if (positionAccessorIt == primitive.attributes.end()) {
-    // This primitive doesn't have a POSITION semantic, ignore it.
-    return;
+  if (positionAccessorIt != primitive.attributes.end()) {
+
+    int positionAccessorID = positionAccessorIt->second;
+    const CesiumGltf::Accessor* pPositionAccessor =
+        CesiumGltf::Model::getSafe(&model.accessors, positionAccessorID);
+    if (pPositionAccessor) {
+      _positionAccessor =
+          CesiumGltf::AccessorView<TMeshVector3>(model, *pPositionAccessor);
+    }
+
   }
-
-  int positionAccessorID = positionAccessorIt->second;
-  const CesiumGltf::Accessor* pPositionAccessor =
-      CesiumGltf::Model::getSafe(&model.accessors, positionAccessorID);
-  if (!pPositionAccessor) {
-    // Position accessor does not exist, so ignore this primitive.
-    return;
-  }
-
-  _positionAccessor =
-      CesiumGltf::AccessorView<TMeshVector3>(model, *pPositionAccessor);
-
+  
   for (const CesiumGltf::FeatureIDAttribute& attribute :
        metadata.featureIdAttributes) {
     if (attribute.featureIds.attribute) {
