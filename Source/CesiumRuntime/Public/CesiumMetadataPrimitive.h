@@ -79,6 +79,8 @@ private:
   TArray<FCesiumFeatureIdTexture> _featureIdTextures;
   TArray<FString> _featureTextureNames;
   VertexIDAccessorType _vertexIDAccessor;
+  
+  VertexPositionAccessorType _positionAccessor;
 
   // REMOVE AFTER DEPRECATION
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
