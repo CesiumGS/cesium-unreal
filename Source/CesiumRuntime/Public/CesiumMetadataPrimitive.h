@@ -9,10 +9,28 @@
 // REMOVE AFTER DEPRECATION
 #include "CesiumMetadataFeatureTable.h"
 
+#include "Runtime/Launch/Resources/Version.h"
+
 #include "CesiumMetadataPrimitive.generated.h"
 
 // REMOVE AFTER DEPRECATION
 struct FCesiumMetadataFeatureTable;
+
+namespace {
+
+// UE4 and UE5 both use single-precision vectors for meshes, but they have
+// different names.
+#if ENGINE_MAJOR_VERSION == 5
+using TMeshVector2 = FVector2f;
+using TMeshVector3 = FVector3f;
+using TMeshVector4 = FVector4f;
+#else
+using TMeshVector2 = FVector2D;
+using TMeshVector3 = FVector;
+using TMeshVector4 = FVector4;
+#endif
+
+} // namespace
 
 namespace CesiumGltf {
 struct ExtensionMeshPrimitiveExtFeatureMetadata;
@@ -142,4 +160,19 @@ public:
   static int64 GetFirstVertexIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
       int64 FaceID);
+  static int64 GetSecondVertexIDFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
+      int64 FaceID);
+  static int64 GetThirdVertexIDFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
+      int64 FaceID);
+  static TMeshVector3 GetFirstVertexPositionFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
+      int64 faceID);
+  static TMeshVector3 GetSecondVertexPositionFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
+      int64 faceID);
+  static TMeshVector3 GetThirdVertexPositionFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
+      int64 faceID);
 };
