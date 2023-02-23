@@ -392,12 +392,11 @@ void SelectCesiumIonToken::createRadioButton(
 }
 
 FReply SelectCesiumIonToken::UseOrCreate() {
-  if (!this->_promise) {
-    return FReply::Handled();
-  }
-
-  Promise<std::optional<Token>> promise = std::move(*this->_promise);
-  this->_promise.reset();
+  Promise<std::optional<Token>> promise =
+      FCesiumEditorModule::ion()
+          .getAsyncSystem()
+          .createPromise<std::optional<Token>>();
+  SharedFuture<std::optional<Token>> future = promise.getFuture().share();
 
   TSharedRef<SelectCesiumIonToken> pPanel =
       StaticCastSharedRef<SelectCesiumIonToken>(this->AsShared());
@@ -497,6 +496,10 @@ FReply SelectCesiumIonToken::UseOrCreate() {
         pPanel->RequestDestroyWindow();
       });
 
+  while (!future.isReady()) {
+    FCesiumEditorModule::ion().getAssetAccessor()->tick();
+    FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+  }
   return FReply::Handled();
 }
 
