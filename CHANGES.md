@@ -4,11 +4,13 @@
 
 ##### Additions :tada:
 
-- Added support for rendering point clouds (`pnts`).
+- Added support for rendering 3D Tiles point clouds (`pnts`).
 
 ##### Fixes :wrench:
 
-- Fixed bug that causes a crash when changing the project default token.
+- Fixed bug that caused a crash when changing the project default token with tilesets active in the level.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.3 to v0.22.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.22.0 - 2023-02-01
 
