@@ -2,7 +2,13 @@
 
 ### v1.23.0 - 2023-03-01
 
+##### Additions :tada:
+
 - Added support for rendering point clouds (`pnts`).
+
+##### Fixes :wrench:
+
+- Fixed bug that causes a crash when changing the project default token.
 
 ### v1.22.0 - 2023-02-01
 
