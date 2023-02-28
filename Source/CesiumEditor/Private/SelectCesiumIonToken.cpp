@@ -392,7 +392,7 @@ void SelectCesiumIonToken::createRadioButton(
 }
 
 FReply SelectCesiumIonToken::UseOrCreate() {
-  if (!this->_promise) {
+  if (!this->_promise || !this->_future) {
     return FReply::Handled();
   }
 
@@ -496,6 +496,11 @@ FReply SelectCesiumIonToken::UseOrCreate() {
 
         pPanel->RequestDestroyWindow();
       });
+
+  while (!this->_future->isReady()) {
+    FCesiumEditorModule::ion().getAssetAccessor()->tick();
+    FCesiumEditorModule::ion().getAsyncSystem().dispatchMainThreadTasks();
+  }
 
   return FReply::Handled();
 }
