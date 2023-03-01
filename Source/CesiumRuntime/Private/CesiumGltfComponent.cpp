@@ -13,8 +13,8 @@
 #include "CesiumFeatureTexture.h"
 #include "CesiumFeatureTextureProperty.h"
 #include "CesiumGeometry/Axis.h"
-#include "CesiumGeometry/AxisTransforms.h"
 #include "CesiumGeometry/Rectangle.h"
+#include "CesiumGeometry/Transforms.h"
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
@@ -49,9 +49,11 @@
 #include "StaticMeshOperations.h"
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
+#include "VecMath.h"
 #include "mikktspace.h"
 #include <cstddef>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
@@ -1479,15 +1481,15 @@ void applyGltfUpAxisTransform(const Model& model, glm::dmat4x4& rootTransform) {
     // The default up-axis of glTF is the Y-axis, and no other
     // up-axis was specified. Transform the Y-axis to the Z-axis,
     // to match the 3D Tiles specification
-    rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
+    rootTransform *= CesiumGeometry::Transforms::Y_UP_TO_Z_UP;
     return;
   }
   const CesiumUtility::JsonValue& gltfUpAxis = gltfUpAxisIt->second;
   int gltfUpAxisValue = static_cast<int>(gltfUpAxis.getSafeNumberOrDefault(1));
   if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::X)) {
-    rootTransform *= CesiumGeometry::AxisTransforms::X_UP_TO_Z_UP;
+    rootTransform *= CesiumGeometry::Transforms::X_UP_TO_Z_UP;
   } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Y)) {
-    rootTransform *= CesiumGeometry::AxisTransforms::Y_UP_TO_Z_UP;
+    rootTransform *= CesiumGeometry::Transforms::Y_UP_TO_Z_UP;
   } else if (gltfUpAxisValue == static_cast<int>(CesiumGeometry::Axis::Z)) {
     // No transform required
   } else {

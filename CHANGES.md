@@ -10,6 +10,7 @@
 
 - Fixed bug that caused a crash when changing the project default token with tilesets active in the level.
 - Vertex buffers created for 3D Tiles are now set to use full-precision UV coordinates, avoiding problems in particular with feature IDs.
+- Added some missing headers, to avoid compiler errors in non-unity builds.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.3 to v0.22.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
