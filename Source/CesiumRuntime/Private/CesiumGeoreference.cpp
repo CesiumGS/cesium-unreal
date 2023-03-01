@@ -4,7 +4,6 @@
 #include "Camera/PlayerCameraManager.h"
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
-#include "CesiumGeospatial/Transforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"

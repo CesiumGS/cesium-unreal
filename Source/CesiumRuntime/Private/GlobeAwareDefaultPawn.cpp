@@ -6,7 +6,6 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumGeoreference.h"
 #include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/Transforms.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"

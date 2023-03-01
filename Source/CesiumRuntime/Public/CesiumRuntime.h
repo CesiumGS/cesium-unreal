@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
+#include <memory>
 
 class ACesium3DTileset;
 class UCesiumRasterOverlay;
