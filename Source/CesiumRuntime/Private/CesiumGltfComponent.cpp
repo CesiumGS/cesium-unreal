@@ -46,9 +46,11 @@
 #include "StaticMeshOperations.h"
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
+#include "VecMath.h"
 #include "mikktspace.h"
 #include <cstddef>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat3x3.hpp>
 #include <iostream>
