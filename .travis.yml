@@ -17,6 +17,7 @@ jobs:
     install:
     - choco install 7zip.portable
     - choco install python --version 3.9.2
+    - choco install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
@@ -53,6 +54,7 @@ jobs:
     - choco install python --version 3.9.2
     - choco install wget
     - choco install ninja
+    - choco install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
@@ -86,6 +88,7 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
+    - brew install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
@@ -115,6 +118,7 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
+    - brew install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
@@ -153,6 +157,7 @@ jobs:
     - choco install python --version 3.9.2
     - choco install wget
     - choco install ninja
+    - choco install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
