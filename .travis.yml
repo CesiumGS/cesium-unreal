@@ -94,7 +94,7 @@ jobs:
     - pip3 install httpie
     - wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.14.tar.gz
     - tar -xzvf nasm-2.14.tar.gz
-    - pushd nasm-nasm-2.14 && ./autogen.sh && ./configure && make && sudo make install && popd
+    - pushd nasm-nasm-2.14 && ./autogen.sh && ./configure --prefix=/usr/local && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -126,7 +126,7 @@ jobs:
     - pip3 install httpie
     - wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.14.tar.gz
     - tar -xzvf nasm-2.14.tar.gz
-    - pushd nasm-nasm-2.14 && ./autogen.sh && ./configure && make && sudo make install && popd
+    - pushd nasm-nasm-2.14 && ./autogen.sh && ./configure --prefix=/usr/local && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
