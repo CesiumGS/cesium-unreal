@@ -92,6 +92,9 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
+    - curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/macosx/nasm-2.16.01-macosx.zip
+    - unzip nasm-2.16.01-macosx.zip
+    - export PATH=“$PATH:$PWD/nasm-2.16.01”
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -117,7 +120,6 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
-    - brew install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
