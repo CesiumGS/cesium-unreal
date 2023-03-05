@@ -92,9 +92,9 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - curl -kO https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/macosx/nasm-2.16.01-macosx.zip
-    - unzip nasm-2.16.01-macosx.zip
-    - export PATH=“$PATH:$PWD/nasm-2.16.01”
+    - wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.16.tar.gz
+    - tar -xzvf nasm-2.16.tar.gz
+    - pushd nasm-nasm-2.16 && ./autogen.sh && ./configure && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -124,9 +124,9 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
-    - curl -kO https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/macosx/nasm-2.16.01-macosx.zip
-    - unzip nasm-2.16.01-macosx.zip
-    - export PATH=“$PATH:$PWD/nasm-2.16.01”
+    - wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.16.tar.gz
+    - tar -xzvf nasm-2.16.tar.gz
+    - pushd nasm-nasm-2.16 && ./autogen.sh && ./configure && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
