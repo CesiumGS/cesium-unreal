@@ -88,7 +88,6 @@ jobs:
     os: osx
     osx_image: xcode11.3
     install:
-    - brew install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
