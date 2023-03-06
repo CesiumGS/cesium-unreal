@@ -17,6 +17,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           cd extern
@@ -47,6 +49,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           cd extern
@@ -77,6 +81,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           $ENV:UNREAL_ENGINE_DIR="C:/Program Files/Epic Games/UE_5.0"
@@ -120,6 +126,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           mkdir -p extern/build
@@ -163,6 +171,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           mkdir -p extern/build-ios
@@ -243,6 +253,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           cd extern
@@ -274,6 +286,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           cd extern
@@ -323,6 +337,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           $ENV:UNREAL_ENGINE_DIR="C:/Program Files/Epic Games/UE_5.1"
@@ -368,6 +384,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           mkdir -p extern/build
@@ -416,6 +434,8 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
           mkdir -p extern/build-ios
