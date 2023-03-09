@@ -118,7 +118,7 @@ jobs:
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
   - name: iOS 4.27
     os: osx
-    osx_image: xcode11.3
+    osx_image: xcode12.2
     install:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
@@ -129,11 +129,6 @@ jobs:
     - pushd nasm-2.14.02 && ./configure --prefix=/usr/local && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
-    addons:
-      homebrew:
-        packages:
-        - cmake
-        update: true
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
