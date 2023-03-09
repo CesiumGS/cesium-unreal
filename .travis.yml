@@ -117,7 +117,7 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
   - name: iOS 4.27
-    os: os
+    os: osx
     osx_image: xcode11.3
     install:
     - python -m pip install --upgrade pip
@@ -134,7 +134,6 @@ jobs:
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
     - cd extern
     - mkdir build-ios
-    - cmake --version
     - cmake -B build-ios -S . -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
     - cd ..
     script:
