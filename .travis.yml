@@ -129,6 +129,10 @@ jobs:
     - pushd nasm-2.14.02 && ./configure --prefix=/usr/local && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
+    addons:
+      homebrew:
+        packages:
+        - cmake
     before_script:
     - export CESIUM_UNREAL_VERSION=$(git describe)
     - export BUILD_CESIUM_UNREAL_PACKAGE_NAME=CesiumForUnreal-427-ios-${CESIUM_UNREAL_VERSION}
