@@ -91,6 +91,7 @@ public class CesiumRuntime : ModuleRules
             "spdlog",
             "sqlite3",
             "tinyxml2",
+            "turbojpeg",
             "uriparser",
             "webpdecoder",
             "ktx_read",
@@ -105,11 +106,11 @@ public class CesiumRuntime : ModuleRules
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            libs = libs.Concat(new string[] { "tidy_static", "turbojpeg-static" }).ToArray();
+            libs = libs.Concat(new string[] { "tidy_static" }).ToArray();
         }
         else
         {
-            libs = libs.Concat(new string[] { "tidy", "turbojpeg" }).ToArray();
+            libs = libs.Concat(new string[] { "tidy" }).ToArray();
         }
 
         if (preferDebug)
