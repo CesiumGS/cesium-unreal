@@ -117,8 +117,8 @@ jobs:
     - aws s3 cp ${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip s3://builds-cesium-unreal/
     - export PACKAGE_LINK=$(aws --region us-east-1 s3 presign s3://builds-cesium-unreal/${BUILD_CESIUM_UNREAL_PACKAGE_NAME}.zip --expires-in 315360000)
   - name: iOS 4.27
-    os: osx
-    osx_image: xcode14.2
+    os: os
+    osx_image: xcode11.3
     install:
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
