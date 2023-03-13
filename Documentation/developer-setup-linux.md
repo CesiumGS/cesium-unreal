@@ -3,6 +3,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 # Prerequisities
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
+- For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Build Unreal Engine for Linux by following the [Linux Quickstart](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html)
 
 After compiling Unreal Engine, set the following environment variables in your `.bashrc`.
