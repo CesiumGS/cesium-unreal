@@ -1,6 +1,10 @@
 # Change Log
 
-### v1.24.0 - 2023-04-01
+### ? - ?
+
+##### Additions :tada:
+
+- The `FlyToAltitudeProfileCurve`, `FlyToProgressCurve`, `FlyToMaximumAltitudeCurve`, `FlyToDuration`, and `FlyToGranularityDegrees` properties of `GlobeAwareDefaultPawn`  / `DynamicPawn` may now be read and written from Blueprints.
 
 ##### Fixes :wrench:
 

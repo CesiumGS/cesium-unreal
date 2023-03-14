@@ -107,7 +107,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   double flyTotalAngle = glm::angle(flyQuat);
   glm::dvec3 flyRotationAxis = glm::axis(flyQuat);
   int steps = glm::max(
-      int(flyTotalAngle / glm::radians(this->FlyToGranularityDegrees)) - 1,
+      int(flyTotalAngle /
+          glm::radians(static_cast<double>(this->FlyToGranularityDegrees))) -
+          1,
       0);
   this->_keypoints.clear();
   this->_currentFlyTime = 0.0;
@@ -153,8 +155,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
     double altitude = glm::mix(sourceAltitude, destinationAltitude, percentage);
-    double phi =
-        glm::radians(this->FlyToGranularityDegrees * static_cast<double>(step));
+    double phi = glm::radians(
+        static_cast<double>(this->FlyToGranularityDegrees) *
+        static_cast<double>(step));
 
     glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
     if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
@@ -265,7 +268,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   }
 
   // If we reached the end, set actual destination location and orientation
-  if (this->_currentFlyTime >= this->FlyToDuration) {
+  if (this->_currentFlyTime >= static_cast<double>(this->FlyToDuration)) {
     const glm::dvec3& finalPoint = _keypoints.back();
     this->GlobeAnchor->MoveToECEF(finalPoint);
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
@@ -281,7 +284,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   // We're currently in flight. Interpolate the position and orientation:
 
-  double rawPercentage = this->_currentFlyTime / this->FlyToDuration;
+  double rawPercentage =
+      this->_currentFlyTime / static_cast<double>(this->FlyToDuration);
 
   // In order to accelerate at start and slow down at end, we use a progress
   // profile curve
