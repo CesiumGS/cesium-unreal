@@ -755,6 +755,13 @@ private:
       meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
   bool EnableWaterMask = false;
 
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIgnoreKhrMaterialsUnlit,
+      BlueprintSetter = SetIgnoreKhrMaterialsUnlit,
+      Category = "Cesium|Rendering")
+  bool IgnoreKhrMaterialsUnlit = false;
+
   /**
    * A custom Material to use to render opaque elements in this tileset, in
    * order to implement custom visual effects.
@@ -898,6 +905,14 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetEnableWaterMask(bool bEnableMask);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetIgnoreKhrMaterialsUnlit()const {
+    return IgnoreKhrMaterialsUnlit;
+  }
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
+
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }

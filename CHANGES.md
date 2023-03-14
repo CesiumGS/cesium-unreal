@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.24.0 - 2023-04-01
+
+##### Fixes :wrench:
+
+- Fixed wierd reflection on tilesets with KHR Materials Unlit when the sun is close to the horizon. Added option to ignore KHR Materials Unlit.
+
 ### v1.23.0 - 2023-03-01
 
 ##### Additions :tada:
