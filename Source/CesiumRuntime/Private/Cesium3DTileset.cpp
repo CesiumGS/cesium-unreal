@@ -341,7 +341,7 @@ void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
 
 void ACesium3DTileset::SetIgnoreKhrMaterialsUnlit(
     bool bIgnoreKhrMaterialsUnlit) {
-  if (this->IgnoreKhrMaterialsUnlit!= bIgnoreKhrMaterialsUnlit) {
+  if (this->IgnoreKhrMaterialsUnlit != bIgnoreKhrMaterialsUnlit) {
     this->IgnoreKhrMaterialsUnlit = bIgnoreKhrMaterialsUnlit;
     this->DestroyTileset();
   }
@@ -2044,7 +2044,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IgnoreKhrMaterialsUnlit) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IgnoreKhrMaterialsUnlit) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||

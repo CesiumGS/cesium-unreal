@@ -907,12 +907,9 @@ public:
   void SetEnableWaterMask(bool bEnableMask);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
-  bool GetIgnoreKhrMaterialsUnlit()const {
-    return IgnoreKhrMaterialsUnlit;
-  }
+  bool GetIgnoreKhrMaterialsUnlit() const { return IgnoreKhrMaterialsUnlit; }
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
-
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }

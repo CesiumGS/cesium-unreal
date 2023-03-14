@@ -1929,7 +1929,6 @@ static void loadPrimitiveGameThreadPart(
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
 
-
   static constexpr std::array<double, 3> emissiveFactor = {1.0, 1.0, 1.0};
   if (loadResult.pMaterial && std::equal(
                                   loadResult.pMaterial->emissiveFactor.begin(),
