@@ -52,4 +52,13 @@ public:
    */
   UPROPERTY(Config, EditAnywhere, Category = "Experimental Feature Flags")
   bool EnableExperimentalOcclusionCullingFeature = false;
+  
+  /**
+  * Creates collisions for navigation when a 3D Tiles tileset is loaded.
+  * It is recommended to set "Runtime Generation" to "Static" in the
+  * navigation mesh settings in the project settings, as collision
+  * calculations become very slow when enabled.
+  */
+  UPROPERTY(Config, EditAnywhere, Category = "Experimental Feature Flags")
+  bool EnableExperimentalCreateNavCollisionFeature = false;
 };

@@ -26,6 +26,7 @@
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
+#include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -2104,7 +2105,11 @@ static void loadPrimitiveGameThreadPart(
 #endif
   pStaticMesh->CreateBodySetup();
   
-  pStaticMesh->CreateNavCollision(true);
+  UCesiumRuntimeSettings* pSettings =
+      GetMutableDefault<UCesiumRuntimeSettings>();
+  if (pSettings && pSettings->EnableExperimentalCreateNavCollisionFeature) {
+    pStaticMesh->CreateNavCollision(true);
+  }
 
   UBodySetup* pBodySetup = pMesh->GetBodySetup();
 
