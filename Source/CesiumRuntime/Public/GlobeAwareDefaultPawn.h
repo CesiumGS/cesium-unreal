@@ -105,7 +105,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium",
       meta = (ClampMin = 0.0))
-  double FlyToDuration = 5.0;
+  float FlyToDuration = 5.0f;
 
   /**
    * The granularity in degrees with which keypoints should be generated for
@@ -116,7 +116,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium",
       meta = (ClampMin = 0.0))
-  double FlyToGranularityDegrees = 0.01;
+  float FlyToGranularityDegrees = 0.01f;
 
   /**
    * A delegate that will be called whenever the pawn finishes flying
