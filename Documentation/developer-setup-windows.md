@@ -8,6 +8,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
   - C++ profiling tools
   - C++ AddressSanitizer (optional)
   - Windows 10 SDK (10.0.18362 or Newer)
+- For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
 
 ## For Cross Compiling Android on Windows

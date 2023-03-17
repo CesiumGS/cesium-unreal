@@ -3,7 +3,8 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 # Prerequisities
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
-- Build Unreal Engine for Linux by following the [Linux Quickstart](https://docs.unrealengine.com/4.27/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/)
+- For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
+- Build Unreal Engine for Linux by following the [Linux Quickstart](https://docs.unrealengine.com/en-US/SharingAndReleasing/Linux/BeginnerLinuxDeveloper/SettingUpAnUnrealWorkflow/index.html)
 
 After compiling Unreal Engine, set the following environment variables in your `.bashrc`.
 
@@ -63,7 +64,7 @@ Delete the entire 'cesium-unreal/extern' directory:
 
     cd ..
     rm -rf extern
-    
+
 Alternatively, this directory could be moved elsewhere and brought back in the case of a rebuild.
 
 # Build and package the Cesium for Unreal plugin
@@ -90,7 +91,7 @@ The Cesium for Unreal Samples project demonstrates a bunch of features of Cesium
 
     cd ~/dev
     git clone https://github.com/CesiumGS/cesium-unreal-samples.git
-    
+
 Then, launch the Unreal Editor and open `~/dev/cesium-unreal-samples/CesiumForUnrealSamples.uproject`. Because we've already installed the plugin to the Engine Plugins directory, the samples project should pick it up automatically.
 
 > Note: These samples were built with UE v4.26. They can be converted to open in UE v5.
