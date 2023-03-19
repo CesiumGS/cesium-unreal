@@ -106,6 +106,13 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       glm::normalize(ECEFDestination));
   double flyTotalAngle = glm::angle(flyQuat);
   glm::dvec3 flyRotationAxis = glm::axis(flyQuat);
+  if (this->FlyTOGranularityDegrees == 0.0f)
+  {
+    UE_LOG(LogCesium, Error, TEXT("CesiumFlyToController cannot fly when flyToGranularityDegrees " +
+                    "is set to 0."));
+    return;
+  }
+  
   int steps = glm::max(
       int(flyTotalAngle /
           glm::radians(static_cast<double>(this->FlyToGranularityDegrees))) -

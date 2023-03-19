@@ -117,6 +117,7 @@ public:
       Category = "Cesium",
       meta = (ClampMin = 0.0))
   float FlyToGranularityDegrees = 0.01f;
+  
 
   /**
    * A delegate that will be called whenever the pawn finishes flying
