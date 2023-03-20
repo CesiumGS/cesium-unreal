@@ -779,15 +779,15 @@ static void loadPrimitive(
   }
 
   int materialID = primitive.material;
-
   const Material& material =
       materialID >= 0 && materialID < model.materials.size()
           ? model.materials[materialID]
           : defaultMaterial;
 
-  primitiveResult.isUnlit = material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
-                 !options.pMeshOptions->pNodeOptions->pModelOptions
-                      ->ignoreKhrMaterialsUnlit;
+  primitiveResult.isUnlit =
+      material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
+      !options.pMeshOptions->pNodeOptions->pModelOptions
+           ->ignoreKhrMaterialsUnlit;
 
   const MaterialPBRMetallicRoughness& pbrMetallicRoughness =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
