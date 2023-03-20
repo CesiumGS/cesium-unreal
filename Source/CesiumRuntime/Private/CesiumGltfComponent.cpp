@@ -785,19 +785,9 @@ static void loadPrimitive(
           ? model.materials[materialID]
           : defaultMaterial;
 
-  bool isUnlit = material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
+  primitiveResult.isUnlit = material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
                  !options.pMeshOptions->pNodeOptions->pModelOptions
                       ->ignoreKhrMaterialsUnlit;
-  if (isUnlit) {
-    Material& unlitMaterial = const_cast<Material&>(material);
-    unlitMaterial.emissiveFactor = {1.0, 1.0, 1.0};
-    if (!unlitMaterial.pbrMetallicRoughness) {
-      unlitMaterial.pbrMetallicRoughness =
-          std::make_optional<CesiumGltf::MaterialPBRMetallicRoughness>();
-    }
-    unlitMaterial.pbrMetallicRoughness->metallicFactor = 0.0;
-    unlitMaterial.pbrMetallicRoughness->roughnessFactor = 1.0;
-  }
 
   const MaterialPBRMetallicRoughness& pbrMetallicRoughness =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
@@ -1110,7 +1100,7 @@ static void loadPrimitive(
       }
     }
   } else {
-    if (isUnlit) {
+    if (primitiveResult.isUnlit) {
       glm::dvec3 ecefCenter = glm::dvec3(
           transform *
           glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
@@ -1663,10 +1653,10 @@ static void SetGltfParameterValues(
   }
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", association, index),
-      static_cast<float>(pbr.metallicFactor));
+      static_cast<float>(loadResult.isUnlit ? 0.0f : pbr.metallicFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("roughnessFactor", association, index),
-      static_cast<float>(pbr.roughnessFactor));
+      static_cast<float>(loadResult.isUnlit ? 1.0f : pbr.roughnessFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("opacityMask", association, index),
       1.0f);
@@ -1928,14 +1918,10 @@ static void loadPrimitiveGameThreadPart(
       pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
-
-  static constexpr std::array<double, 3> emissiveFactor = {1.0, 1.0, 1.0};
-  if (loadResult.pMaterial && std::equal(
-                                  loadResult.pMaterial->emissiveFactor.begin(),
-                                  loadResult.pMaterial->emissiveFactor.end(),
-                                  emissiveFactor.begin())) {
+  if (loadResult.isUnlit) {
     pMesh->bCastDynamicShadow = false;
   }
+
   UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
 
