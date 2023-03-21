@@ -10,6 +10,7 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
+#include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
@@ -810,6 +811,13 @@ private:
       Category = "Rendering",
       meta = (ShowOnlyInnerProperties))
   FCustomDepthParameters CustomDepthParameters;
+
+  /**
+   * If this tileset contains points, their appearance can be configured with
+   * these point cloud shading parameters.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  FCesiumPointCloudShading PointCloudShading;
 
 protected:
   UPROPERTY()
