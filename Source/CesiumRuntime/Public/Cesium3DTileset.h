@@ -935,6 +935,11 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Rendering")
   void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  FCesiumPointCloudShading GetPointCloudShading() const {
+    return PointCloudShading;
+  }
+
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
 

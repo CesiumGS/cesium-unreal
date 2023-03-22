@@ -20,7 +20,7 @@
 		{
 			"Name": "CesiumRuntime",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
+			"LoadingPhase": "PostConfigInit",
 			"WhitelistPlatforms": [ "Win64", "Mac", "Linux", "Android", "IOS" ]
 		},
 		{

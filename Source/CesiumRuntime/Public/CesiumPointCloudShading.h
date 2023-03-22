@@ -18,7 +18,7 @@ struct CESIUMRUNTIME_API FCesiumPointCloudShading {
    * of the points rendered based on the geometric error of their tile.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
-  bool EnableAttenuation = false;
+  bool Attenuation = false;
 
   /**
    * The scale to be applied to the tile's geometric error before it is used
