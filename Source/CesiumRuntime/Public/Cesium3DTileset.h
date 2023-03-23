@@ -1075,9 +1075,8 @@ private:
 
   // For debug output
   uint32_t _lastTilesRendered;
-  uint32_t _lastTilesLoadingLowPriority;
-  uint32_t _lastTilesLoadingMediumPriority;
-  uint32_t _lastTilesLoadingHighPriority;
+  uint32_t _lastWorkerThreadTileLoadQueueLength;
+  uint32_t _lastMainThreadTileLoadQueueLength;
   bool _activeLoading;
 
   uint32_t _lastTilesVisited;
