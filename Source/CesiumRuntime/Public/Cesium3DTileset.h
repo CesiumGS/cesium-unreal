@@ -756,6 +756,24 @@ private:
   bool EnableWaterMask = false;
 
   /**
+   * Whether to ignore the KHR_materials_unlit extension on the glTF tiles in
+   * this tileset, if it exists, and instead render with standard lighting and
+   * shadows. This property will have no effect if the tileset does not have any
+   * tiles that use this extension.
+   *
+   * The KHR_materials_unlit extension is often applied to photogrammetry
+   * tilesets because lighting and shadows are already baked into their
+   * textures.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIgnoreKhrMaterialsUnlit,
+      BlueprintSetter = SetIgnoreKhrMaterialsUnlit,
+      Category = "Cesium|Rendering",
+      meta = (DisplayName = "Ignore KHR_materials_unlit"))
+  bool IgnoreKhrMaterialsUnlit = false;
+
+  /**
    * A custom Material to use to render opaque elements in this tileset, in
    * order to implement custom visual effects.
    *
@@ -898,6 +916,11 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetEnableWaterMask(bool bEnableMask);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetIgnoreKhrMaterialsUnlit() const { return IgnoreKhrMaterialsUnlit; }
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }

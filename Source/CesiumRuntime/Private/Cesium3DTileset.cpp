@@ -338,6 +338,14 @@ void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
   }
 }
 
+void ACesium3DTileset::SetIgnoreKhrMaterialsUnlit(
+    bool bIgnoreKhrMaterialsUnlit) {
+  if (this->IgnoreKhrMaterialsUnlit != bIgnoreKhrMaterialsUnlit) {
+    this->IgnoreKhrMaterialsUnlit = bIgnoreKhrMaterialsUnlit;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetMaterial(UMaterialInterface* InMaterial) {
   if (this->Material != InMaterial) {
     this->Material = InMaterial;
@@ -646,6 +654,9 @@ public:
 #if PHYSICS_INTERFACE_PHYSX
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
+
+    options.ignoreKhrMaterialsUnlit =
+        this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
     options.pEncodedMetadataDescription =
         &this->_pActor->_encodedMetadataDescription;
@@ -2032,6 +2043,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IgnoreKhrMaterialsUnlit) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||
