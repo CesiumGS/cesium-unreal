@@ -8,7 +8,8 @@
 
 ##### Fixes :wrench:
 
-- Fixed wierd reflection on tilesets with KHR Materials Unlit when the sun is close to the horizon. Added option to ignore KHR Materials Unlit.
+- Fixed unexpected reflection on tilesets with `KHR_materials_unlit` extension when the sun is close to the horizon. 
+- Added an option to ignore the `KHR_materials_unlit` extension entirely.
 - Fixed unexpected reflection on tilesets with `KHR_materials_unlit` extension when the sun is close to the horizon.
 - Added an option to ignore the `KHR_materials_unlit` extension entirely.
 
