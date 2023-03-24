@@ -755,11 +755,22 @@ private:
       meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
   bool EnableWaterMask = false;
 
+  /**
+   * Whether to ignore the KHR_materials_unlit extension on the glTF tiles in
+   * this tileset, if it exists, and instead render with standard lighting and
+   * shadows. This property will have no effect if the tileset does not have any
+   * tiles that use this extension.
+   *
+   * The KHR_materials_unlit extension is often applied to photogrammetry
+   * tilesets because lighting and shadows are already baked into their
+   * textures.
+   */
   UPROPERTY(
       EditAnywhere,
       BlueprintGetter = GetIgnoreKhrMaterialsUnlit,
       BlueprintSetter = SetIgnoreKhrMaterialsUnlit,
-      Category = "Cesium|Rendering")
+      Category = "Cesium|Rendering",
+      meta = (DisplayName = "Ignore KHR_materials_unlit"))
   bool IgnoreKhrMaterialsUnlit = false;
 
   /**
