@@ -5,11 +5,11 @@
 ##### Additions :tada:
 
 - The `FlyToAltitudeProfileCurve`, `FlyToProgressCurve`, `FlyToMaximumAltitudeCurve`, `FlyToDuration`, and `FlyToGranularityDegrees` properties of `GlobeAwareDefaultPawn`  / `DynamicPawn` may now be read and written from Blueprints.
+- Added an option on `Cesium3DTileset` to ignore the `KHR_materials_unlit` extension entirely and use normal lighting and shadows.
 
 ##### Fixes :wrench:
 
 - Fixed unexpected reflection on tilesets with `KHR_materials_unlit` extension when the sun is close to the horizon.
-- Added an option to ignore the `KHR_materials_unlit` extension entirely.
 
 ### v1.23.0 - 2023-03-01
 
