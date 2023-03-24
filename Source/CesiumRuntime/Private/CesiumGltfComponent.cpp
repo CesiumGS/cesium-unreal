@@ -103,7 +103,7 @@ void destroyHalfLoadedTexture(
 }
 class HalfConstructedReal : public UCesiumGltfComponent::HalfConstructed {
 public:
-  LoadModelResult loadModelResult;
+  LoadModelResult loadModelResult{};
 
   virtual ~HalfConstructedReal() {
     // TODO: deal with metadata case, when metadata uses async texture creation
