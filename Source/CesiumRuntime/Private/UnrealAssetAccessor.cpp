@@ -150,14 +150,13 @@ UnrealAssetAccessor::get(
             httpModule.CreateRequest();
         pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
-        for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+        for (const auto& header : headers) {
           pRequest->SetHeader(
               UTF8_TO_TCHAR(header.first.c_str()),
               UTF8_TO_TCHAR(header.second.c_str()));
         }
 
-        for (const CesiumAsync::IAssetAccessor::THeader& header :
-             cesiumRequestHeaders) {
+        for (const auto& header : cesiumRequestHeaders) {
           pRequest->SetHeader(
               UTF8_TO_TCHAR(header.first.c_str()),
               UTF8_TO_TCHAR(header.second.c_str()));
@@ -215,14 +214,13 @@ UnrealAssetAccessor::request(
         pRequest->SetVerb(UTF8_TO_TCHAR(verb.c_str()));
         pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
-        for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+        for (const auto& header : headers) {
           pRequest->SetHeader(
               UTF8_TO_TCHAR(header.first.c_str()),
               UTF8_TO_TCHAR(header.second.c_str()));
         }
 
-        for (const CesiumAsync::IAssetAccessor::THeader& header :
-             cesiumRequestHeaders) {
+        for (const auto& header : cesiumRequestHeaders) {
           pRequest->SetHeader(
               UTF8_TO_TCHAR(header.first.c_str()),
               UTF8_TO_TCHAR(header.second.c_str()));
