@@ -95,6 +95,7 @@ private:
 UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
   FString OsVersion, OsSubVersion;
   FPlatformMisc::GetOSVersions(OsVersion, OsSubVersion);
+  OsVersion += " " + FPlatformMisc::GetOSVersion();
 
   IPluginManager& PluginManager = IPluginManager::Get();
   TSharedPtr<IPlugin> pCesiumPlugin =
@@ -106,12 +107,10 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
   }
 
   const TCHAR* projectName = FApp::GetProjectName();
-  FString engine = FEngineVersion::Current().ToString();
+  FString engine = "Unreal Engine " + FEngineVersion::Current().ToString();
 
   this->_userAgent = TEXT("Mozilla/5.0 (");
   this->_userAgent += OsVersion;
-  this->_userAgent += " ";
-  this->_userAgent += FPlatformMisc::GetOSVersion();
   this->_userAgent += TEXT(") Cesium For Unreal/");
   this->_userAgent += version;
   this->_userAgent += TEXT(" (Project ");
@@ -120,15 +119,15 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
   this->_userAgent += engine;
   this->_userAgent += TEXT(")");
 
-  this->_cesiumRequestHeaders.insert({"X-Cesium-Client", "Cesium For Unreal"});
-  this->_cesiumRequestHeaders.insert(
-      {"X-Cesium-Client-Version", TCHAR_TO_UTF8(*version)});
-  this->_cesiumRequestHeaders.insert(
-      {"X-Cesium-Client-Project", TCHAR_TO_UTF8(projectName)});
-  this->_cesiumRequestHeaders.insert(
-      {"X-Cesium-Client-Engine", TCHAR_TO_UTF8(*engine)});
-  this->_cesiumRequestHeaders.insert(
-      {"X-Cesium-Client-OS", TCHAR_TO_UTF8(*OsVersion)});
+  this->_cesiumRequestHeaders.Add("X-Cesium-Client", "Cesium For Unreal");
+  this->_cesiumRequestHeaders.Add(
+      "X-Cesium-Client-Version", TCHAR_TO_UTF8(*version));
+  this->_cesiumRequestHeaders.Add(
+      "X-Cesium-Client-Project", TCHAR_TO_UTF8(projectName));
+  this->_cesiumRequestHeaders.Add(
+      "X-Cesium-Client-Engine", TCHAR_TO_UTF8(*engine));
+  this->_cesiumRequestHeaders.Add(
+      "X-Cesium-Client-OS", TCHAR_TO_UTF8(*OsVersion));
 }
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
@@ -140,7 +139,7 @@ UnrealAssetAccessor::get(
   CESIUM_TRACE_BEGIN_IN_TRACK("requestAsset");
 
   const FString& userAgent = this->_userAgent;
-  const CesiumAsync::HttpHeaders cesiumRequestHeaders =
+  const TMap<FString, FString>& cesiumRequestHeaders =
       this->_cesiumRequestHeaders;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
@@ -157,9 +156,7 @@ UnrealAssetAccessor::get(
         }
 
         for (const auto& header : cesiumRequestHeaders) {
-          pRequest->SetHeader(
-              UTF8_TO_TCHAR(header.first.c_str()),
-              UTF8_TO_TCHAR(header.second.c_str()));
+          pRequest->SetHeader(header.Key, header.Value);
         }
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
@@ -198,7 +195,7 @@ UnrealAssetAccessor::request(
     const gsl::span<const std::byte>& contentPayload) {
 
   const FString& userAgent = this->_userAgent;
-  const CesiumAsync::HttpHeaders cesiumRequestHeaders =
+  const TMap<FString, FString>& cesiumRequestHeaders =
       this->_cesiumRequestHeaders;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
@@ -221,9 +218,7 @@ UnrealAssetAccessor::request(
         }
 
         for (const auto& header : cesiumRequestHeaders) {
-          pRequest->SetHeader(
-              UTF8_TO_TCHAR(header.first.c_str()),
-              UTF8_TO_TCHAR(header.second.c_str()));
+          pRequest->SetHeader(header.Key, header.Value);
         }
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);

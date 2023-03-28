@@ -31,5 +31,5 @@ public:
 
 private:
   FString _userAgent;
-  CesiumAsync::HttpHeaders _cesiumRequestHeaders;
+  TMap<FString, FString> _cesiumRequestHeaders;
 };
