@@ -26,7 +26,6 @@
 #include "CesiumMaterialUserData.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumRuntime.h"
-#include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Tracing.h"
@@ -1882,7 +1881,8 @@ static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    bool createNavCollision) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
   FName meshName = createSafeName(loadResult.name, "");
@@ -2105,9 +2105,7 @@ static void loadPrimitiveGameThreadPart(
 #endif
   pStaticMesh->CreateBodySetup();
   
-  UCesiumRuntimeSettings* pSettings =
-      GetMutableDefault<UCesiumRuntimeSettings>();
-  if (pSettings && pSettings->EnableExperimentalCreateNavCollisionFeature) {
+  if (createNavCollision) {
     pStaticMesh->CreateNavCollision(true);
   }
 
@@ -2157,7 +2155,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    bool createNavCollision) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
@@ -2201,7 +2200,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             Gltf,
             primitive,
             cesiumToUnrealTransform,
-            boundingVolume);
+            boundingVolume,
+            createNavCollision);
       }
     }
   }

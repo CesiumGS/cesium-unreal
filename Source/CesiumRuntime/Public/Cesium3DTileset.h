@@ -704,6 +704,21 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
+   * Whether to generate navigation collisions for this tileset.
+   *
+   * Enabling this option creates collisions for navigation when a 3D Tiles
+   * tileset is loaded. It is recommended to set "Runtime Generation" to
+   * "Static" in the navigation mesh settings in the project settings, as
+   * collision calculations become very slow.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetCreateNavCollision,
+      BlueprintSetter = SetCreateNavCollision,
+      Category = "Cesium|Navigation")
+  bool CreateNavCollision = false;
+
+  /**
    * Whether to always generate a correct tangent space basis for tiles that
    * don't have them.
    *
@@ -880,6 +895,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Navigation")
+  bool GetCreateNavCollision() const { return CreateNavCollision; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Navigation")
+  void SetCreateNavCollision(bool bCreateNavCollision);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
