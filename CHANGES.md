@@ -6,6 +6,7 @@
 
 - The `FlyToAltitudeProfileCurve`, `FlyToProgressCurve`, `FlyToMaximumAltitudeCurve`, `FlyToDuration`, and `FlyToGranularityDegrees` properties of `GlobeAwareDefaultPawn`  / `DynamicPawn` may now be read and written from Blueprints.
 - Added an option on `Cesium3DTileset` to ignore the `KHR_materials_unlit` extension entirely and use normal lighting and shadows.
+- Added `CreateNavCollision` property to `Cesium3DTileset`. When enabled, `CreateNavCollision` is called on the static meshes created for tiles.
 
 ##### Fixes :wrench:
 
