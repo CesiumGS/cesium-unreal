@@ -317,6 +317,13 @@ void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
   }
 }
 
+void ACesium3DTileset::SetCreateNavCollision(bool bCreateNavCollision) {
+  if (this->CreateNavCollision != bCreateNavCollision) {
+    this->CreateNavCollision = bCreateNavCollision;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
@@ -688,7 +695,8 @@ public:
           this->_pActor->GetTranslucentMaterial(),
           this->_pActor->GetWaterMaterial(),
           this->_pActor->GetCustomDepthParameters(),
-          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()));
+          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()),
+          this->_pActor->GetCreateNavCollision());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -2038,6 +2046,8 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IonAssetEndpointUrl) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreateNavCollision) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
       PropName ==

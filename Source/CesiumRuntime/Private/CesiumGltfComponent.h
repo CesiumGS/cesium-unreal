@@ -76,7 +76,8 @@ public:
       UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
-      const Cesium3DTilesSelection::BoundingVolume& boundingVolume);
+      const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+      bool createNavCollision);
 
   UCesiumGltfComponent();
   virtual ~UCesiumGltfComponent();
