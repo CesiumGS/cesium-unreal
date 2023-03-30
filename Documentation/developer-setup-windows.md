@@ -4,6 +4,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
 - Install Visual Studio 2017 v15.6+ or Visual Studio 2019 v16.5+.
+- For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
 
 ## For Cross Compiling Android on Windows

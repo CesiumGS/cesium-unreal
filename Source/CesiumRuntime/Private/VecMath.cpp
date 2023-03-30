@@ -5,7 +5,6 @@
 #include "CesiumUtility/Math.h"
 #include "Math/Quat.h"
 #include "Math/RotationMatrix.h"
-#include <CesiumGeometry/AxisTransforms.h>
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>

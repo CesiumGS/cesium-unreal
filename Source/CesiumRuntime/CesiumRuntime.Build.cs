@@ -91,6 +91,7 @@ public class CesiumRuntime : ModuleRules
             "spdlog",
             "sqlite3",
             "tinyxml2",
+            "turbojpeg",
             "uriparser",
             "webpdecoder",
             "ktx_read",

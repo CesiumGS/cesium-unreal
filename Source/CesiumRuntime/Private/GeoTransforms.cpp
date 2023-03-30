@@ -2,7 +2,7 @@
 
 #include "GeoTransforms.h"
 
-#include "CesiumGeospatial/Transforms.h"
+#include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumTransforms.h"
 #include "VecMath.h"
 
@@ -52,7 +52,7 @@ glm::dquat GeoTransforms::ComputeSurfaceNormalRotationUnreal(
 
 void GeoTransforms::updateTransforms() noexcept {
   this->_georeferencedToEcef =
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(
+      CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
           _center,
           _ellipsoid);
   this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
@@ -166,6 +166,7 @@ glm::dmat3 GeoTransforms::ComputeEastSouthUpToUnreal(
 
 glm::dmat3
 GeoTransforms::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const noexcept {
-  return glm::dmat3(
-      CesiumGeospatial::Transforms::eastNorthUpToFixedFrame(ecef, _ellipsoid));
+  return glm::dmat3(CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
+      ecef,
+      _ellipsoid));
 }

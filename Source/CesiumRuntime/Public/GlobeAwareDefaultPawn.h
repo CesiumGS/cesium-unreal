@@ -78,7 +78,7 @@ public:
    * 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} dictates the
    * actual max altitude at each point along the curve.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   UCurveFloat* FlyToAltitudeProfileCurve;
 
   /**
@@ -86,7 +86,7 @@ public:
    * curves. This allows us to accelerate and deaccelerate as wanted throughout
    * the curve.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   UCurveFloat* FlyToProgressCurve;
 
   /**
@@ -94,21 +94,29 @@ public:
    * This can be used in conjunction with the {@see FlyToAltitudeProfileCurve}
    * to allow the pawn to take some altitude during the flight.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   UCurveFloat* FlyToMaximumAltitudeCurve;
 
   /**
    * The length in seconds that the flight should last.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
-  double FlyToDuration = 5.0;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (ClampMin = 0.0))
+  float FlyToDuration = 5.0f;
 
   /**
    * The granularity in degrees with which keypoints should be generated for
    * the flight interpolation.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
-  double FlyToGranularityDegrees = 0.01;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      meta = (ClampMin = 0.0))
+  float FlyToGranularityDegrees = 0.01f;
 
   /**
    * A delegate that will be called whenever the pawn finishes flying

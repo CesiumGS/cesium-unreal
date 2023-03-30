@@ -83,20 +83,20 @@ public:
   virtual ~UCesiumGltfComponent();
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* BaseMaterial;
+  UMaterialInterface* BaseMaterial = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* BaseMaterialWithTranslucency;
+  UMaterialInterface* BaseMaterialWithTranslucency = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  UMaterialInterface* BaseMaterialWithWater;
+  UMaterialInterface* BaseMaterialWithWater = nullptr;
 
   UPROPERTY(EditAnywhere, Category = "Rendering")
-  FCustomDepthParameters CustomDepthParameters;
+  FCustomDepthParameters CustomDepthParameters{};
 
-  FCesiumMetadataModel Metadata;
+  FCesiumMetadataModel Metadata{};
 
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata;
+  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 
@@ -122,5 +122,5 @@ public:
 
 private:
   UPROPERTY()
-  UTexture2D* Transparent1x1;
+  UTexture2D* Transparent1x1 = nullptr;
 };

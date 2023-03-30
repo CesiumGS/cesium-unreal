@@ -20,7 +20,6 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
-#include "CesiumGeospatial/Transforms.h"
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
@@ -77,9 +76,8 @@ ACesium3DTileset::ACesium3DTileset()
       _pTileset(nullptr),
 
       _lastTilesRendered(0),
-      _lastTilesLoadingLowPriority(0),
-      _lastTilesLoadingMediumPriority(0),
-      _lastTilesLoadingHighPriority(0),
+      _lastWorkerThreadTileLoadQueueLength(0),
+      _lastMainThreadTileLoadQueueLength(0),
 
       _lastTilesVisited(0),
       _lastTilesCulled(0),
@@ -343,6 +341,14 @@ void ACesium3DTileset::SetGenerateSmoothNormals(bool bGenerateSmoothNormals) {
 void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
   if (this->EnableWaterMask != bEnableMask) {
     this->EnableWaterMask = bEnableMask;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetIgnoreKhrMaterialsUnlit(
+    bool bIgnoreKhrMaterialsUnlit) {
+  if (this->IgnoreKhrMaterialsUnlit != bIgnoreKhrMaterialsUnlit) {
+    this->IgnoreKhrMaterialsUnlit = bIgnoreKhrMaterialsUnlit;
     this->DestroyTileset();
   }
 }
@@ -655,6 +661,9 @@ public:
 #if PHYSICS_INTERFACE_PHYSX
     options.pPhysXCookingModule = this->_pPhysXCookingModule;
 #endif
+
+    options.ignoreKhrMaterialsUnlit =
+        this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
     options.pEncodedMetadataDescription =
         &this->_pActor->_encodedMetadataDescription;
@@ -1740,10 +1749,10 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
   }
 
   if (result.tilesToRenderThisFrame.size() != this->_lastTilesRendered ||
-      result.tilesLoadingLowPriority != this->_lastTilesLoadingLowPriority ||
-      result.tilesLoadingMediumPriority !=
-          this->_lastTilesLoadingMediumPriority ||
-      result.tilesLoadingHighPriority != this->_lastTilesLoadingHighPriority ||
+      result.workerThreadTileLoadQueueLength !=
+          this->_lastWorkerThreadTileLoadQueueLength ||
+      result.mainThreadTileLoadQueueLength !=
+          this->_lastMainThreadTileLoadQueueLength ||
       result.tilesVisited != this->_lastTilesVisited ||
       result.culledTilesVisited != this->_lastCulledTilesVisited ||
       result.tilesCulled != this->_lastTilesCulled ||
@@ -1753,9 +1762,10 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
       result.maxDepthVisited != this->_lastMaxDepthVisited) {
 
     this->_lastTilesRendered = result.tilesToRenderThisFrame.size();
-    this->_lastTilesLoadingLowPriority = result.tilesLoadingLowPriority;
-    this->_lastTilesLoadingMediumPriority = result.tilesLoadingMediumPriority;
-    this->_lastTilesLoadingHighPriority = result.tilesLoadingHighPriority;
+    this->_lastWorkerThreadTileLoadQueueLength =
+        result.workerThreadTileLoadQueueLength;
+    this->_lastMainThreadTileLoadQueueLength =
+        result.mainThreadTileLoadQueueLength;
 
     this->_lastTilesVisited = result.tilesVisited;
     this->_lastCulledTilesVisited = result.culledTilesVisited;
@@ -1769,7 +1779,7 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         LogCesium,
         Display,
         TEXT(
-            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Low %d, Loading-Medium %d, Loading-High %d, Loaded tiles %g%%"),
+            "%s: %d ms, Visited %d, Culled Visited %d, Rendered %d, Culled %d, Occluded %d, Waiting For Occlusion Results %d, Max Depth Visited: %d, Loading-Worker %d, Loading-Main %d, Loaded tiles %g%%"),
         *this->GetName(),
         (std::chrono::high_resolution_clock::now() - this->_startTime).count() /
             1000000,
@@ -1780,9 +1790,8 @@ void ACesium3DTileset::updateLastViewUpdateResultState(
         result.tilesOccluded,
         result.tilesWaitingForOcclusionResults,
         result.maxDepthVisited,
-        result.tilesLoadingLowPriority,
-        result.tilesLoadingMediumPriority,
-        result.tilesLoadingHighPriority,
+        result.workerThreadTileLoadQueueLength,
+        result.mainThreadTileLoadQueueLength,
         this->LoadProgress);
   }
 }
@@ -2044,6 +2053,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IgnoreKhrMaterialsUnlit) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||

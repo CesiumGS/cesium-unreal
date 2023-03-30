@@ -1,8 +1,29 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- The `FlyToAltitudeProfileCurve`, `FlyToProgressCurve`, `FlyToMaximumAltitudeCurve`, `FlyToDuration`, and `FlyToGranularityDegrees` properties of `GlobeAwareDefaultPawn`  / `DynamicPawn` may now be read and written from Blueprints.
+- Added an option on `Cesium3DTileset` to ignore the `KHR_materials_unlit` extension entirely and use normal lighting and shadows.
+
+##### Fixes :wrench:
+
+- Fixed unexpected reflection on tilesets with `KHR_materials_unlit` extension when the sun is close to the horizon.
+
 ### v1.23.0 - 2023-03-01
 
-- Added support for rendering point clouds (`pnts`).
+##### Additions :tada:
+
+- Added support for rendering 3D Tiles point clouds (`pnts`).
+
+##### Fixes :wrench:
+
+- Fixed bug that caused a crash when changing the project default token with tilesets active in the level.
+- Vertex buffers created for 3D Tiles are now set to use full-precision UV coordinates, avoiding problems in particular with feature IDs.
+- Added some missing headers, to avoid compiler errors in non-unity builds.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.3 to v0.22.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.22.0 - 2023-02-01
 
