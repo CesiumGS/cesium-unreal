@@ -92,7 +92,8 @@ private:
   CesiumAsync::HttpHeaders _headers;
 };
 
-UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
+UnrealAssetAccessor::UnrealAssetAccessor()
+    : _userAgent(), _cesiumRequestHeaders() {
   FString OsVersion, OsSubVersion;
   FPlatformMisc::GetOSVersions(OsVersion, OsSubVersion);
   OsVersion += " " + FPlatformMisc::GetOSVersion();
@@ -119,15 +120,13 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
   this->_userAgent += engine;
   this->_userAgent += TEXT(")");
 
-  this->_cesiumRequestHeaders.Add("X-Cesium-Client", "Cesium For Unreal");
   this->_cesiumRequestHeaders.Add(
-      "X-Cesium-Client-Version", TCHAR_TO_UTF8(*version));
-  this->_cesiumRequestHeaders.Add(
-      "X-Cesium-Client-Project", TCHAR_TO_UTF8(projectName));
-  this->_cesiumRequestHeaders.Add(
-      "X-Cesium-Client-Engine", TCHAR_TO_UTF8(*engine));
-  this->_cesiumRequestHeaders.Add(
-      "X-Cesium-Client-OS", TCHAR_TO_UTF8(*OsVersion));
+      TEXT("X-Cesium-Client"),
+      TEXT("Cesium For Unreal"));
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-Version"), version);
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-Project"), projectName);
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-Engine"), engine);
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-OS"), OsVersion);
 }
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
