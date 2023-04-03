@@ -1,6 +1,8 @@
 # Change Log
 
-### ? - ?
+### v1.24.0 - 2023-04-03
+
+This will be the _last_ release that supports Unreal Engine v4.27. Future versions will require Unreal Engine v5.0+.
 
 ##### Additions :tada:
 
@@ -11,6 +13,8 @@
 ##### Fixes :wrench:
 
 - Fixed unexpected reflection on tilesets with `KHR_materials_unlit` extension when the sun is close to the horizon.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.22.0 to v0.23.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.23.0 - 2023-03-01
 
@@ -24,7 +28,7 @@
 - Vertex buffers created for 3D Tiles are now set to use full-precision UV coordinates, avoiding problems in particular with feature IDs.
 - Added some missing headers, to avoid compiler errors in non-unity builds.
 
-In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.3 to v0.22.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.3 to v0.22.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.22.0 - 2023-02-01
 
