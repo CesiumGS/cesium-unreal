@@ -766,6 +766,12 @@ static void loadPrimitive(
       materialID >= 0 && materialID < model.materials.size()
           ? model.materials[materialID]
           : defaultMaterial;
+
+  primitiveResult.isUnlit =
+      material.hasExtension<ExtensionKhrMaterialsUnlit>() &&
+      !options.pMeshOptions->pNodeOptions->pModelOptions
+           ->ignoreKhrMaterialsUnlit;
+
   const MaterialPBRMetallicRoughness& pbrMetallicRoughness =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
                                     : defaultPbrMetallicRoughness;
@@ -1077,7 +1083,7 @@ static void loadPrimitive(
       }
     }
   } else {
-    if (material.hasExtension<ExtensionKhrMaterialsUnlit>()) {
+    if (primitiveResult.isUnlit) {
       glm::dvec3 ecefCenter = glm::dvec3(
           transform *
           glm::dvec4(VecMath::createVector3D(RenderData->Bounds.Origin), 1.0));
@@ -1618,10 +1624,10 @@ static void SetGltfParameterValues(
   }
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("metallicFactor", association, index),
-      static_cast<float>(pbr.metallicFactor));
+      static_cast<float>(loadResult.isUnlit ? 0.0f : pbr.metallicFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("roughnessFactor", association, index),
-      static_cast<float>(pbr.roughnessFactor));
+      static_cast<float>(loadResult.isUnlit ? 1.0f : pbr.roughnessFactor));
   pMaterial->SetScalarParameterValueByInfo(
       FMaterialParameterInfo("opacityMask", association, index),
       1.0f);
@@ -1854,7 +1860,8 @@ static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    bool createNavCollision) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
   FName meshName = createSafeName(loadResult.name, "");
@@ -1883,6 +1890,9 @@ static void loadPrimitiveGameThreadPart(
       pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
   pMesh->SetCustomDepthStencilValue(
       pGltf->CustomDepthParameters.CustomDepthStencilValue);
+  if (loadResult.isUnlit) {
+    pMesh->bCastDynamicShadow = false;
+  }
 
   UStaticMesh* pStaticMesh = NewObject<UStaticMesh>(pMesh, meshName);
   pMesh->SetStaticMesh(pStaticMesh);
@@ -1910,10 +1920,6 @@ static void loadPrimitiveGameThreadPart(
   const MaterialPBRMetallicRoughness& pbr =
       material.pbrMetallicRoughness ? material.pbrMetallicRoughness.value()
                                     : defaultPbrMetallicRoughness;
-
-  if (material.hasExtension<ExtensionKhrMaterialsUnlit>()) {
-    pMesh->bCastDynamicShadow = false;
-  }
 
   const FName ImportedSlotName(
       *(TEXT("CesiumMaterial") + FString::FromInt(nextMaterialId++)));
@@ -2077,6 +2083,10 @@ static void loadPrimitiveGameThreadPart(
 #endif
   pStaticMesh->CreateBodySetup();
 
+  if (createNavCollision) {
+    pStaticMesh->CreateNavCollision(true);
+  }
+
   UBodySetup* pBodySetup = pMesh->GetBodySetup();
 
   // pMesh->UpdateCollisionFromStaticMesh();
@@ -2118,7 +2128,8 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume) {
+    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    bool createNavCollision) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
 
@@ -2162,7 +2173,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             Gltf,
             primitive,
             cesiumToUnrealTransform,
-            boundingVolume);
+            boundingVolume,
+            createNavCollision);
       }
     }
   }

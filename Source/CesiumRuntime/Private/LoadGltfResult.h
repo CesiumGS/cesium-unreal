@@ -45,6 +45,8 @@ struct LoadPrimitiveResult {
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> waterMaskTexture;
   std::unordered_map<std::string, uint32_t> textureCoordinateParameters;
 
+  bool isUnlit = false;
+
   bool onlyLand = true;
   bool onlyWater = false;
 

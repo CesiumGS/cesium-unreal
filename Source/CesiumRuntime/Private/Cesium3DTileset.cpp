@@ -316,6 +316,13 @@ void ACesium3DTileset::SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes) {
   }
 }
 
+void ACesium3DTileset::SetCreateNavCollision(bool bCreateNavCollision) {
+  if (this->CreateNavCollision != bCreateNavCollision) {
+    this->CreateNavCollision = bCreateNavCollision;
+    this->DestroyTileset();
+  }
+}
+
 void ACesium3DTileset::SetAlwaysIncludeTangents(bool bAlwaysIncludeTangents) {
   if (this->AlwaysIncludeTangents != bAlwaysIncludeTangents) {
     this->AlwaysIncludeTangents = bAlwaysIncludeTangents;
@@ -333,6 +340,14 @@ void ACesium3DTileset::SetGenerateSmoothNormals(bool bGenerateSmoothNormals) {
 void ACesium3DTileset::SetEnableWaterMask(bool bEnableMask) {
   if (this->EnableWaterMask != bEnableMask) {
     this->EnableWaterMask = bEnableMask;
+    this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetIgnoreKhrMaterialsUnlit(
+    bool bIgnoreKhrMaterialsUnlit) {
+  if (this->IgnoreKhrMaterialsUnlit != bIgnoreKhrMaterialsUnlit) {
+    this->IgnoreKhrMaterialsUnlit = bIgnoreKhrMaterialsUnlit;
     this->DestroyTileset();
   }
 }
@@ -623,6 +638,9 @@ public:
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
     options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
 
+    options.ignoreKhrMaterialsUnlit =
+        this->_pActor->GetIgnoreKhrMaterialsUnlit();
+
     options.pEncodedMetadataDescription =
         &this->_pActor->_encodedMetadataDescription;
 
@@ -653,7 +671,8 @@ public:
           this->_pActor->GetTranslucentMaterial(),
           this->_pActor->GetWaterMaterial(),
           this->_pActor->GetCustomDepthParameters(),
-          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()));
+          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()),
+          this->_pActor->GetCreateNavCollision());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
     return nullptr;
@@ -2019,10 +2038,14 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreatePhysicsMeshes) ||
       PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, CreateNavCollision) ||
+      PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, AlwaysIncludeTangents) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, GenerateSmoothNormals) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableWaterMask) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, IgnoreKhrMaterialsUnlit) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Material) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, TranslucentMaterial) ||

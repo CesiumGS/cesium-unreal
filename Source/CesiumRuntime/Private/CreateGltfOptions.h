@@ -16,6 +16,7 @@ struct CreateModelOptions {
   const FMetadataDescription* pEncodedMetadataDescription = nullptr;
   bool alwaysIncludeTangents = false;
   bool createPhysicsMeshes = true;
+  bool ignoreKhrMaterialsUnlit = false;
 };
 
 struct CreateNodeOptions {
