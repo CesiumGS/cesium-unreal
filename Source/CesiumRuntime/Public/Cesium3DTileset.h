@@ -705,6 +705,21 @@ private:
   bool CreatePhysicsMeshes = true;
 
   /**
+   * Whether to generate navigation collisions for this tileset.
+   *
+   * Enabling this option creates collisions for navigation when a 3D Tiles
+   * tileset is loaded. It is recommended to set "Runtime Generation" to
+   * "Static" in the navigation mesh settings in the project settings, as
+   * collision calculations become very slow.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetCreateNavCollision,
+      BlueprintSetter = SetCreateNavCollision,
+      Category = "Cesium|Navigation")
+  bool CreateNavCollision = false;
+
+  /**
    * Whether to always generate a correct tangent space basis for tiles that
    * don't have them.
    *
@@ -755,6 +770,24 @@ private:
       Category = "Cesium|Rendering",
       meta = (EditCondition = "PlatformName != TEXT(\"Mac\")"))
   bool EnableWaterMask = false;
+
+  /**
+   * Whether to ignore the KHR_materials_unlit extension on the glTF tiles in
+   * this tileset, if it exists, and instead render with standard lighting and
+   * shadows. This property will have no effect if the tileset does not have any
+   * tiles that use this extension.
+   *
+   * The KHR_materials_unlit extension is often applied to photogrammetry
+   * tilesets because lighting and shadows are already baked into their
+   * textures.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetIgnoreKhrMaterialsUnlit,
+      BlueprintSetter = SetIgnoreKhrMaterialsUnlit,
+      Category = "Cesium|Rendering",
+      meta = (DisplayName = "Ignore KHR_materials_unlit"))
+  bool IgnoreKhrMaterialsUnlit = false;
 
   /**
    * A custom Material to use to render opaque elements in this tileset, in
@@ -889,6 +922,12 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Cesium|Physics")
   void SetCreatePhysicsMeshes(bool bCreatePhysicsMeshes);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Navigation")
+  bool GetCreateNavCollision() const { return CreateNavCollision; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Navigation")
+  void SetCreateNavCollision(bool bCreateNavCollision);
+
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   bool GetAlwaysIncludeTangents() const { return AlwaysIncludeTangents; }
 
@@ -906,6 +945,11 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
   void SetEnableWaterMask(bool bEnableMask);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  bool GetIgnoreKhrMaterialsUnlit() const { return IgnoreKhrMaterialsUnlit; }
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetIgnoreKhrMaterialsUnlit(bool bIgnoreKhrMaterialsUnlit);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
   UMaterialInterface* GetMaterial() const { return Material; }
@@ -1088,9 +1132,8 @@ private:
 
   // For debug output
   uint32_t _lastTilesRendered;
-  uint32_t _lastTilesLoadingLowPriority;
-  uint32_t _lastTilesLoadingMediumPriority;
-  uint32_t _lastTilesLoadingHighPriority;
+  uint32_t _lastWorkerThreadTileLoadQueueLength;
+  uint32_t _lastMainThreadTileLoadQueueLength;
   bool _activeLoading;
 
   uint32_t _lastTilesVisited;
