@@ -1950,7 +1950,9 @@ static void loadPrimitiveGameThreadPart(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
-  pMesh->boundingVolume = boundingVolume;
+  if (!createNavCollision) {
+    pMesh->boundingVolume = boundingVolume;
+  }
   pMesh->SetCustomDepthStencilWriteMask(
       pGltf->CustomDepthParameters.CustomDepthStencilWriteMask);
   pMesh->SetCustomDepthStencilValue(
