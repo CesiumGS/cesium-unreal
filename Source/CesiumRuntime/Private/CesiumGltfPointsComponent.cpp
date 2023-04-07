@@ -3,10 +3,15 @@
 #include "CesiumGltfPointsComponent.h"
 
 #include "Cesium3DTileset.h"
-#include "CesiumGltfPointsVertexFactory.h"
+#include "CesiumPointAttenuationVertexFactory.h"
 #include "Engine/StaticMesh.h"
 
 class FCesiumGltfPointsSceneProxy final : public FPrimitiveSceneProxy {
+private:
+  // The original render data of the static mesh.
+  const FStaticMeshRenderData* RenderData;
+  int32_t NumPoints;
+
 public:
   SIZE_T GetTypeHash() const override {
     static size_t UniquePointer;
@@ -18,15 +23,29 @@ public:
       ERHIFeatureLevel::Type InFeatureLevel)
       : FPrimitiveSceneProxy(InComponent),
         RenderData(InComponent->GetStaticMesh()->GetRenderData()),
-        VertexFactory(
+        NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
+        AttenuationVertexFactory(
             InFeatureLevel,
             RenderData->LODResources[0].VertexBuffers),
-        IndexBuffer(),
+        AttenuationIndexBuffer(NumPoints),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(
-            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())) {}
+            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
+  }
 
-  virtual ~FCesiumGltfPointsSceneProxy() {}
+  virtual ~FCesiumGltfPointsSceneProxy() {
+  }
+
+protected:
+  virtual void CreateRenderThreadResources() override {
+    AttenuationVertexFactory.InitResource();
+    AttenuationIndexBuffer.InitResource();
+  }
+
+  virtual void DestroyRenderThreadResources() override {
+    AttenuationVertexFactory.ReleaseResource();
+    AttenuationIndexBuffer.ReleaseResource();
+  }
 
   virtual void GetDynamicMeshElements(
       const TArray<const FSceneView*>& Views,
@@ -35,18 +54,20 @@ public:
       FMeshElementCollector& Collector) const override {
     QUICK_SCOPE_CYCLE_COUNTER(STAT_GltfPointsSceneProxy_GetDynamicMeshElements);
 
-    const bool hasAttenuation =
-        this->_pTileset->GetPointCloudShading().Attenuation;
+    const bool hasAttenuation = true;
+    // this->_pTileset->GetPointCloudShading().Attenuation;
 
     for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
       if (VisibilityMap & (1 << ViewIndex)) {
         const FSceneView* View = Views[ViewIndex];
         FMeshBatch& Mesh = Collector.AllocateMesh();
+
         if (hasAttenuation) {
-          CreateMeshWithAttenuation(Mesh);
+          CreateMeshWithAttenuation(Mesh, Collector);
         } else {
           CreateMesh(Mesh);
         }
+
         Collector.AddMesh(ViewIndex, Mesh);
       }
     }
@@ -59,6 +80,7 @@ public:
     // Always render dynamically; the appearance of the points can change
     // via point cloud shading.
     Result.bDynamicRelevance = true;
+    Result.bStaticRelevance = false;
 
     Result.bRenderCustomDepth = ShouldRenderCustomDepth();
     Result.bRenderInMainPass = ShouldRenderInMainPass();
@@ -79,21 +101,36 @@ public:
   }
 
 private:
-  // The original render data of the static mesh.
-  const FStaticMeshRenderData* RenderData;
-
   // The vertex factory and index buffer for point attenuation.
-  FCesiumGltfPointsVertexFactory VertexFactory;
-  FIndexBuffer IndexBuffer;
+  FCesiumPointAttenuationVertexFactory AttenuationVertexFactory;
+  FCesiumPointAttenuationIndexBuffer AttenuationIndexBuffer;
 
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
 
-  int32_t _numPoints;
-  ACesium3DTileset* _pTileset;
+  ACesium3DTileset* pTileset;
 
-  void CreateMeshWithAttenuation(FMeshBatch& Mesh) const {
-    Mesh.VertexFactory = &VertexFactory;
+  void CreatePointAttenuationUserData(
+      FMeshBatchElement& BatchElement,
+      FMeshElementCollector& Collector) const {
+    FCesiumPointAttenuationBatchElementUserDataWrapper* UserDataWrapper =
+        &Collector.AllocateOneFrameResource<
+            FCesiumPointAttenuationBatchElementUserDataWrapper>();
+
+    FCesiumPointAttenuationBatchElementUserData& UserData =
+        UserDataWrapper->Data;
+    UserData.PositionBuffer =
+        RenderData->LODVertexFactories[0].VertexFactory.GetPositionsSRV();
+    UserData.AttenuationParameters = FVector4(0, 0, 0, 0);
+    UserData.ConstantColor = FVector4(0, 0, 0, 0);
+
+    BatchElement.UserData = &UserDataWrapper->Data;
+  }
+
+  void CreateMeshWithAttenuation(
+      FMeshBatch& Mesh,
+      FMeshElementCollector& Collector) const {
+    Mesh.VertexFactory = &AttenuationVertexFactory;
     Mesh.MaterialRenderProxy = Material->GetRenderProxy();
     Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
     Mesh.Type = PT_TriangleList;
@@ -103,13 +140,15 @@ private:
     Mesh.bUseAsOccluder = false;
     Mesh.bWireframe = false;
 
-    auto pIndexBuffer = &IndexBuffer;
     FMeshBatchElement& BatchElement = Mesh.Elements[0];
-    BatchElement.IndexBuffer = pIndexBuffer;
-    BatchElement.NumPrimitives = _numPoints * 2;
+    BatchElement.IndexBuffer = &AttenuationIndexBuffer;
+    BatchElement.NumPrimitives = NumPoints * 2;
     BatchElement.FirstIndex = 0;
     BatchElement.MinVertexIndex = 0;
-    BatchElement.MaxVertexIndex = _numPoints;
+    BatchElement.MaxVertexIndex = 0;
+    BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
+
+    CreatePointAttenuationUserData(BatchElement, Collector);
   }
 
   void CreateMesh(FMeshBatch& Mesh) const {
@@ -123,10 +162,9 @@ private:
     Mesh.bUseAsOccluder = false;
     Mesh.bWireframe = false;
 
-    auto pIndexBuffer = &RenderData->LODResources[0].IndexBuffer;
     FMeshBatchElement& BatchElement = Mesh.Elements[0];
-    BatchElement.IndexBuffer = pIndexBuffer;
-    BatchElement.NumPrimitives = pIndexBuffer->GetNumIndices();
+    BatchElement.IndexBuffer = &RenderData->LODResources[0].IndexBuffer;
+    BatchElement.NumPrimitives = NumPoints;
     BatchElement.FirstIndex = 0;
     BatchElement.MinVertexIndex = 0;
     BatchElement.MaxVertexIndex = BatchElement.NumPrimitives - 1;

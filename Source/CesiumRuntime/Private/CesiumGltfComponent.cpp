@@ -341,7 +341,6 @@ struct ColorVisitor {
   bool duplicateVertices;
   TArray<FStaticMeshBuildVertex>& StaticMeshBuildVertices;
   const TArray<uint32>& indices;
-  bool isPoints;
 
   bool operator()(AccessorView<nullptr_t>&& invalidView) { return false; }
 
@@ -351,24 +350,6 @@ struct ColorVisitor {
     }
 
     bool success = true;
-    if (isPoints) {
-      for (int i = 0; success && i < this->StaticMeshBuildVertices.Num(); ++i) {
-        uint32 glTFIndex = i;
-        uint32 vertexIndex = i * 4;
-        FStaticMeshBuildVertex& vertex =
-            this->StaticMeshBuildVertices[vertexIndex];
-        success =
-            ColorVisitor::convertColor(colorView[glTFIndex], vertex.Color);
-        if (success) {
-          this->StaticMeshBuildVertices[vertexIndex + 1].Color = vertex.Color;
-          this->StaticMeshBuildVertices[vertexIndex + 2].Color = vertex.Color;
-          this->StaticMeshBuildVertices[vertexIndex + 3].Color = vertex.Color;
-        }
-      }
-
-      return success;
-    }
-
     if (duplicateVertices) {
       for (int i = 0; success && i < this->indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = this->StaticMeshBuildVertices[i];
@@ -929,11 +910,24 @@ static void loadPrimitive(
       duplicateVertices && primitive.mode != MeshPrimitive::Mode::POINTS;
 
   TArray<FStaticMeshBuildVertex> StaticMeshBuildVertices;
+  StaticMeshBuildVertices.SetNum(
+      duplicateVertices ? indices.Num()
+                        : static_cast<int>(positionView.size()));
 
-  if (primitive.mode == MeshPrimitive::Mode::POINTS) {
-    StaticMeshBuildVertices.SetNum(static_cast<int>(positionView.size()) * 4);
-
-    {
+  {
+    if (duplicateVertices) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
+      for (int i = 0; i < indices.Num(); ++i) {
+        FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
+        uint32 vertexIndex = indices[i];
+        vertex.Position = positionView[vertexIndex];
+        vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
+        vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
+        RenderData->Bounds.SphereRadius = FMath::Max(
+            (vertex.Position - RenderData->Bounds.Origin).Size(),
+            RenderData->Bounds.SphereRadius);
+      }
+    } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
@@ -943,37 +937,6 @@ static void loadPrimitive(
         RenderData->Bounds.SphereRadius = FMath::Max(
             (vertex.Position - RenderData->Bounds.Origin).Size(),
             RenderData->Bounds.SphereRadius);
-      }
-    }
-  } else {
-    StaticMeshBuildVertices.SetNum(
-        duplicateVertices ? indices.Num()
-                          : static_cast<int>(positionView.size()));
-
-    {
-      if (duplicateVertices) {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyDuplicatedPositions)
-        for (int i = 0; i < indices.Num(); ++i) {
-          FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-          uint32 vertexIndex = indices[i];
-          vertex.Position = positionView[vertexIndex];
-          vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-          vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
-          RenderData->Bounds.SphereRadius = FMath::Max(
-              (vertex.Position - RenderData->Bounds.Origin).Size(),
-              RenderData->Bounds.SphereRadius);
-        }
-      } else {
-        TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
-        for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
-          FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-          vertex.Position = positionView[i];
-          vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
-          vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
-          RenderData->Bounds.SphereRadius = FMath::Max(
-              (vertex.Position - RenderData->Bounds.Origin).Size(),
-              RenderData->Bounds.SphereRadius);
-        }
       }
     }
   }
@@ -987,11 +950,7 @@ static void loadPrimitive(
     hasVertexColors = createAccessorView(
         model,
         colorAccessorID,
-        ColorVisitor{
-            duplicateVertices,
-            StaticMeshBuildVertices,
-            indices,
-            primitive.mode == MeshPrimitive::Mode::POINTS});
+        ColorVisitor{duplicateVertices, StaticMeshBuildVertices, indices});
   }
 
   LODResources.bHasColorVertexData = hasVertexColors;
