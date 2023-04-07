@@ -39,5 +39,6 @@ struct CreatePrimitiveOptions {
   const CreateMeshOptions* pMeshOptions = nullptr;
   const LoadGltfResult::LoadMeshResult* pHalfConstructedMeshResult = nullptr;
   const CesiumGltf::MeshPrimitive* pPrimitive = nullptr;
+  const bool sharedPositions = false;
 };
 } // namespace CreateGltfOptions
