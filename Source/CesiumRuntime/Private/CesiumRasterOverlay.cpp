@@ -6,6 +6,7 @@
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
 #include "CesiumAsync/IAssetResponse.h"
+#include "CesiumRuntime.h"
 
 FCesiumRasterOverlayLoadFailure OnCesiumRasterOverlayLoadFailure{};
 

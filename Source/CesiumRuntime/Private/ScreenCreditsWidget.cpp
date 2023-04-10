@@ -12,6 +12,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Misc/Base64.h"
 #include "Rendering/DrawElements.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Slate/SlateGameResources.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"

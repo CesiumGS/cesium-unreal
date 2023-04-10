@@ -31,4 +31,5 @@ public:
 
 private:
   FString _userAgent;
+  TMap<FString, FString> _cesiumRequestHeaders;
 };

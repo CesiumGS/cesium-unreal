@@ -17,6 +17,7 @@ jobs:
     install:
     - choco install 7zip.portable
     - choco install python --version 3.9.2
+    - choco install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
@@ -53,6 +54,7 @@ jobs:
     - choco install python --version 3.9.2
     - choco install wget
     - choco install ninja
+    - choco install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli
@@ -90,6 +92,9 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
+    - wget https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.xz
+    - tar -xzvf nasm-2.14.02.tar.xz
+    - pushd nasm-2.14.02 && ./configure --prefix=/usr/local && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -119,6 +124,9 @@ jobs:
     - pip3 install --upgrade pip
     - pip3 install awscli
     - pip3 install httpie
+    - wget https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/nasm-2.14.02.tar.xz
+    - tar -xzvf nasm-2.14.02.tar.xz
+    - pushd nasm-2.14.02 && ./configure --prefix=/usr/local && make && sudo make install && popd
     - chmod +x "./travis/travis-get-ue-427.sh"
     - "./travis/travis-get-ue-427.sh &"
     before_script:
@@ -153,6 +161,7 @@ jobs:
     - choco install python --version 3.9.2
     - choco install wget
     - choco install ninja
+    - choco install nasm
     - python -m pip install --upgrade pip
     - pip3 install --upgrade pip
     - pip3 install awscli

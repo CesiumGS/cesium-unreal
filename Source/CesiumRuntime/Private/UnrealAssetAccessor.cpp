@@ -92,9 +92,11 @@ private:
   CesiumAsync::HttpHeaders _headers;
 };
 
-UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
+UnrealAssetAccessor::UnrealAssetAccessor()
+    : _userAgent(), _cesiumRequestHeaders() {
   FString OsVersion, OsSubVersion;
   FPlatformMisc::GetOSVersions(OsVersion, OsSubVersion);
+  OsVersion += " " + FPlatformMisc::GetOSVersion();
 
   IPluginManager& PluginManager = IPluginManager::Get();
   TSharedPtr<IPlugin> pCesiumPlugin =
@@ -105,17 +107,26 @@ UnrealAssetAccessor::UnrealAssetAccessor() : _userAgent() {
     version = pCesiumPlugin->GetDescriptor().VersionName;
   }
 
+  const TCHAR* projectName = FApp::GetProjectName();
+  FString engine = "Unreal Engine " + FEngineVersion::Current().ToString();
+
   this->_userAgent = TEXT("Mozilla/5.0 (");
   this->_userAgent += OsVersion;
-  this->_userAgent += " ";
-  this->_userAgent += FPlatformMisc::GetOSVersion();
   this->_userAgent += TEXT(") Cesium For Unreal/");
   this->_userAgent += version;
   this->_userAgent += TEXT(" (Project ");
-  this->_userAgent += FApp::GetProjectName();
+  this->_userAgent += projectName;
   this->_userAgent += " Engine ";
-  this->_userAgent += FEngineVersion::Current().ToString();
+  this->_userAgent += engine;
   this->_userAgent += TEXT(")");
+
+  this->_cesiumRequestHeaders.Add(
+      TEXT("X-Cesium-Client"),
+      TEXT("Cesium For Unreal"));
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-Version"), version);
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-Project"), projectName);
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-Engine"), engine);
+  this->_cesiumRequestHeaders.Add(TEXT("X-Cesium-Client-OS"), OsVersion);
 }
 
 CesiumAsync::Future<std::shared_ptr<CesiumAsync::IAssetRequest>>
@@ -127,18 +138,24 @@ UnrealAssetAccessor::get(
   CESIUM_TRACE_BEGIN_IN_TRACK("requestAsset");
 
   const FString& userAgent = this->_userAgent;
+  const TMap<FString, FString>& cesiumRequestHeaders =
+      this->_cesiumRequestHeaders;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
-      [&url, &headers, &userAgent](const auto& promise) {
+      [&url, &headers, &userAgent, &cesiumRequestHeaders](const auto& promise) {
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
         pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
-        for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+        for (const auto& header : headers) {
           pRequest->SetHeader(
               UTF8_TO_TCHAR(header.first.c_str()),
               UTF8_TO_TCHAR(header.second.c_str()));
+        }
+
+        for (const auto& header : cesiumRequestHeaders) {
+          pRequest->SetHeader(header.Key, header.Value);
         }
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);
@@ -177,20 +194,30 @@ UnrealAssetAccessor::request(
     const gsl::span<const std::byte>& contentPayload) {
 
   const FString& userAgent = this->_userAgent;
+  const TMap<FString, FString>& cesiumRequestHeaders =
+      this->_cesiumRequestHeaders;
 
   return asyncSystem.createFuture<std::shared_ptr<CesiumAsync::IAssetRequest>>(
-      [&verb, &url, &headers, &userAgent, &contentPayload](
-          const auto& promise) {
+      [&verb,
+       &url,
+       &headers,
+       &userAgent,
+       &cesiumRequestHeaders,
+       &contentPayload](const auto& promise) {
         FHttpModule& httpModule = FHttpModule::Get();
         TSharedRef<IHttpRequest, ESPMode::ThreadSafe> pRequest =
             httpModule.CreateRequest();
         pRequest->SetVerb(UTF8_TO_TCHAR(verb.c_str()));
         pRequest->SetURL(UTF8_TO_TCHAR(url.c_str()));
 
-        for (const CesiumAsync::IAssetAccessor::THeader& header : headers) {
+        for (const auto& header : headers) {
           pRequest->SetHeader(
               UTF8_TO_TCHAR(header.first.c_str()),
               UTF8_TO_TCHAR(header.second.c_str()));
+        }
+
+        for (const auto& header : cesiumRequestHeaders) {
+          pRequest->SetHeader(header.Key, header.Value);
         }
 
         pRequest->AppendToHeader(TEXT("User-Agent"), userAgent);

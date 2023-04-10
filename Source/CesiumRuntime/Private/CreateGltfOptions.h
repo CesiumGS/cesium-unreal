@@ -21,6 +21,7 @@ struct CreateModelOptions {
 #if PHYSICS_INTERFACE_PHYSX
   IPhysXCookingModule* pPhysXCookingModule = nullptr;
 #endif
+  bool ignoreKhrMaterialsUnlit = false;
 };
 
 struct CreateNodeOptions {
