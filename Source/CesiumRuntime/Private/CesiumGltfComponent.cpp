@@ -1950,6 +1950,7 @@ static void loadPrimitiveGameThreadPart(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pMesh->pModel = loadResult.pModel;
   pMesh->pMeshPrimitive = loadResult.pMeshPrimitive;
+  pMesh->SetRenderCustomDepth(pGltf->CustomDepthParameters.RenderCustomDepth);
   if (!createNavCollision) {
     pMesh->boundingVolume = boundingVolume;
   }
