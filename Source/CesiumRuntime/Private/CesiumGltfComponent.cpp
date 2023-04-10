@@ -1890,7 +1890,8 @@ static void loadPrimitiveGameThreadPart(
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
     const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
-    bool createNavCollision) {
+    bool createNavCollision,
+    ACesium3DTileset* pTilesetActor) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
   FName meshName = createSafeName(loadResult.name, "");
@@ -1900,7 +1901,7 @@ static void loadPrimitiveGameThreadPart(
   } else {
     pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   }
-
+  pMesh->pTilesetActor = pTilesetActor;
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->textureCoordinateMap = std::move(loadResult.textureCoordinateMap);
@@ -2155,7 +2156,7 @@ UCesiumGltfComponent::CreateOffGameThread(
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
     const CesiumGltf::Model& model,
-    AActor* pParentActor,
+    ACesium3DTileset* pTilesetActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
@@ -2176,9 +2177,9 @@ UCesiumGltfComponent::CreateOffGameThread(
   //   return nullptr;
   // }
 
-  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
+  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
   Gltf->SetUsingAbsoluteLocation(true);
-  Gltf->SetMobility(pParentActor->GetRootComponent()->Mobility);
+  Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
@@ -2208,7 +2209,8 @@ UCesiumGltfComponent::CreateOffGameThread(
             primitive,
             cesiumToUnrealTransform,
             boundingVolume,
-            createNavCollision);
+            createNavCollision,
+            pTilesetActor);
       }
     }
   }

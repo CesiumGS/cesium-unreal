@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTileset.h"
 #include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/MeshPrimitive.h"
@@ -27,6 +28,8 @@ public:
   FCesiumMetadataPrimitive Metadata;
 
   CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
+
+  ACesium3DTileset* pTilesetActor;
 
   const CesiumGltf::Model* pModel;
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTileset.h"
 #include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
@@ -69,7 +70,7 @@ public:
 
   static UCesiumGltfComponent* CreateOnGameThread(
       const CesiumGltf::Model& model,
-      AActor* ParentActor,
+      ACesium3DTileset* ParentActor,
       TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,

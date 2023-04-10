@@ -30,11 +30,10 @@ public:
         AttenuationIndexBuffer(NumPoints),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(
-            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
-  }
+            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())),
+        pTilesetActor(InComponent->pTilesetActor) {}
 
-  virtual ~FCesiumGltfPointsSceneProxy() {
-  }
+  virtual ~FCesiumGltfPointsSceneProxy() {}
 
 protected:
   virtual void CreateRenderThreadResources() override {
@@ -54,8 +53,12 @@ protected:
       FMeshElementCollector& Collector) const override {
     QUICK_SCOPE_CYCLE_COUNTER(STAT_GltfPointsSceneProxy_GetDynamicMeshElements);
 
-    const bool hasAttenuation = true;
-    // this->_pTileset->GetPointCloudShading().Attenuation;
+    if (!pTilesetActor) {
+      return;
+    }
+
+    const bool hasAttenuation =
+        pTilesetActor->GetPointCloudShading().Attenuation;
 
     for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
       if (VisibilityMap & (1 << ViewIndex)) {
@@ -108,7 +111,7 @@ private:
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
 
-  ACesium3DTileset* pTileset;
+  ACesium3DTileset* pTilesetActor;
 
   void CreatePointAttenuationUserData(
       FMeshBatchElement& BatchElement,
