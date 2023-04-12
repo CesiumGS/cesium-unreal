@@ -88,9 +88,10 @@ private:
 FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
     ERHIFeatureLevel::Type InFeatureLevel,
     const FStaticMeshVertexBuffers& InStaticMeshVertexBuffers)
-    : FLocalVertexFactory(InFeatureLevel, "FCesiumGltfPointsVertexFactory"),
-      StaticMeshVertexBuffers(InStaticMeshVertexBuffers) {
-  bNeedsDeclaration = false;
+    : FLocalVertexFactory(InFeatureLevel, "FCesiumGltfPointsVertexFactory") {
+  // Vertices are not declared in an explicit vertex stream, so set this false
+  // to avoid errors.
+  bNeedsDeclaration = false; 
 }
 
 bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
@@ -99,34 +100,10 @@ bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
          Parameters.MaterialParameters.bIsDefaultMaterial;
 }
 
-void FCesiumPointAttenuationVertexFactory::InitRHI() {
-  /* check(HasValidFeatureLevel());
-
- VertexBuffer.InitResource();
-
-  FVertexDeclarationElementList Elements;
-
-  Elements.Add(AccessStreamComponent(
-      FVertexStreamComponent(
-          &StaticMeshVertexBuffers.PositionVertexBuffer,
-          0,
-          sizeof(FVector),
-          VET_Float3),
-      0));
-  Elements.Add(AccessStreamComponent(
-      FVertexStreamComponent(
-          &StaticMeshVertexBuffers.ColorVertexBuffer,
-          0,
-          sizeof(FVector4),
-          VET_Float4),
-      0));
-
-  InitDeclaration(Elements);*/
-}
+void FCesiumPointAttenuationVertexFactory::InitRHI() {}
 
 void FCesiumPointAttenuationVertexFactory::ReleaseRHI() {
   FVertexFactory::ReleaseRHI();
-  // VertexBuffer.ReleaseResource();
 }
 
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(

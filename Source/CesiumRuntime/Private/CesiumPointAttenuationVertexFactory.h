@@ -50,9 +50,6 @@ public:
       const FVertexFactoryShaderPermutationParameters& Parameters);
 
 private:
-  FVertexBuffer VertexBuffer;
-  const FStaticMeshVertexBuffers& StaticMeshVertexBuffers;
-
   virtual void InitRHI() override;
   virtual void ReleaseRHI() override;
 };
