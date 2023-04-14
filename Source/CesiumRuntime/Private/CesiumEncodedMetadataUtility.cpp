@@ -21,6 +21,7 @@
 #include <CesiumUtility/Tracing.h>
 #include <glm/gtx/integer.hpp>
 #include <unordered_map>
+#include "TextureResource.h"
 
 using namespace CesiumTextureUtility;
 

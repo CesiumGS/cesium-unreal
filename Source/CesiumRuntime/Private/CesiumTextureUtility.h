@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataValueType.h"
+#include "RHIResources.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureDefines.h"
@@ -21,7 +22,7 @@ namespace CesiumTextureUtility {
  * @brief A texture that has already been asynchronously created.
  */
 struct AsyncCreatedTexture {
-  FTexture2DRHIRef rhiTextureRef{};
+  FTextureRHIRef rhiTextureRef{};
 };
 
 /**

@@ -9,6 +9,7 @@
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
+#include "GameFramework/Pawn.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
