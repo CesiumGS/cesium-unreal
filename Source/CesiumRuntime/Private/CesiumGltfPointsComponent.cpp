@@ -1,10 +1,10 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfPointsComponent.h"
-
 #include "Cesium3DTileset.h"
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/UserInterfaceSettings.h"
 
 class FCesiumGltfPointsSceneProxy final : public FPrimitiveSceneProxy {
 private:
@@ -24,9 +24,7 @@ public:
       : FPrimitiveSceneProxy(InComponent),
         RenderData(InComponent->GetStaticMesh()->GetRenderData()),
         NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-        AttenuationVertexFactory(
-            InFeatureLevel,
-            RenderData->LODResources[0].VertexBuffers),
+        AttenuationVertexFactory(InFeatureLevel),
         AttenuationIndexBuffer(NumPoints),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(
@@ -122,9 +120,37 @@ private:
 
     FCesiumPointAttenuationBatchElementUserData& UserData =
         UserDataWrapper->Data;
-    UserData.PositionBuffer =
-        RenderData->LODVertexFactories[0].VertexFactory.GetPositionsSRV();
-    UserData.AttenuationParameters = FVector4(0, 0, 0, 0);
+
+    const FLocalVertexFactory& OriginalVertexFactory =
+        RenderData->LODVertexFactories[0].VertexFactory;
+    UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
+    UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
+    UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
+
+    FCesiumPointCloudShading PointCloudShading =
+        pTilesetActor->GetPointCloudShading();
+
+    float MaximumPointSize = pTilesetActor->MaximumScreenSpaceError;
+
+    if (PointCloudShading.MaximumAttenuation > 0.0f) {
+      MaximumPointSize = PointCloudShading.MaximumAttenuation;
+    }
+
+    /* FVector2D viewportSize;
+    GEngine->GameViewport->GetViewportSize(viewportSize);
+
+    int32 X = FGenericPlatformMath::FloorToInt(viewportSize.X);
+    int32 Y = FGenericPlatformMath::FloorToInt(viewportSize.Y);
+
+    float DPI = GetDefault<UUserInterfaceSettings>(
+               UUserInterfaceSettings::StaticClass())
+        ->GetDPIScaleBasedOnSize(FIntPoint(X, Y));
+    MaximumPointSize *= DPI / 150;*/
+
+    float GeometricError = 0.0f; // TODO
+    GeometricError *= PointCloudShading.GeometricErrorScale;
+
+    UserData.AttenuationParameters = FVector(MaximumPointSize, 0, 0);
     UserData.ConstantColor = FVector4(0, 0, 0, 0);
 
     BatchElement.UserData = &UserDataWrapper->Data;

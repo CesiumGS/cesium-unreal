@@ -27,6 +27,8 @@ private:
  */
 struct FCesiumPointAttenuationBatchElementUserData {
   FRHIShaderResourceView* PositionBuffer;
+  FRHIShaderResourceView* ColorBuffer;
+  uint32 bHasPointColors;
   FVector AttenuationParameters;
   FVector4 ConstantColor;
 };
@@ -38,13 +40,12 @@ public:
 
 class FCesiumPointAttenuationVertexFactory : public FLocalVertexFactory {
 
-  DECLARE_VERTEX_FACTORY_TYPE(FCesiumGltfPointsVertexFactory);
+  DECLARE_VERTEX_FACTORY_TYPE(FCesiumPointAttenuationVertexFactory);
 
 public:
   // Sets default values for this component's properties
   FCesiumPointAttenuationVertexFactory(
-      ERHIFeatureLevel::Type InFeatureLevel,
-      const FStaticMeshVertexBuffers& InStaticMeshVertexBuffers);
+      ERHIFeatureLevel::Type InFeatureLevel);
 
   static bool ShouldCompilePermutation(
       const FVertexFactoryShaderPermutationParameters& Parameters);

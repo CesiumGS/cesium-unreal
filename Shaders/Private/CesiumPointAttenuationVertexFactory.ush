@@ -8,11 +8,11 @@
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
 StructuredBuffer<float3> PositionBuffer;
-//StructuredBuffer<float4> ColorBuffer;
+Buffer<float4> ColorBuffer;
 
-uint bHasPointColors; // Whether or not the point cloud has per-point colors.
-
-float4 AttenuationParameters;
+// Whether or not the point cloud has per-point colors.
+uint bHasPointColors;
+float3 AttenuationParameters;
 float4 ConstantColor;
 
 #if USE_INSTANCING
@@ -139,9 +139,10 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
 		Intermediates.TangentToLocal = TangentToLocal;
 		Intermediates.TangentToWorldSign = Primitive.InvNonUniformScaleAndDeterminantSign.w;
 		Intermediates.TangentToWorld = mul(TangentToLocal, LocalToWorld);
-		
+
 		bool bHasColors = bHasPointColors;
-		Intermediates.Color = bHasColors ? half4(0, 1, 0, 1) : ConstantColor;
+		float4 Color = bHasColors ? ColorBuffer[PointIndex] : ConstantColor;
+		Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
 
 		return Intermediates;
 }

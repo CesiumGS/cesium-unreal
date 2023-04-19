@@ -45,11 +45,10 @@ class FCesiumPointAttenuationVertexFactoryShaderParameters
 public:
   void Bind(const FShaderParameterMap& ParameterMap) {
     PositionBuffer.Bind(ParameterMap, TEXT("PositionBuffer"), SPF_Mandatory);
-    AttenuationParameters.Bind(
-        ParameterMap,
-        TEXT("AttenuationParameters"),
-        SPF_Optional);
-    ConstantColor.Bind(ParameterMap, TEXT("ConstantColor"), SPF_Optional);
+    ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
+    bHasPointColors.Bind(ParameterMap, TEXT("bHasPointColors"));
+    AttenuationParameters.Bind(ParameterMap, TEXT("AttenuationParameters"));
+    ConstantColor.Bind(ParameterMap, TEXT("ConstantColor"));
   }
 
   void GetElementShaderBindings(
@@ -64,8 +63,17 @@ public:
       FVertexInputStreamArray& VertexStreams) const {
     FCesiumPointAttenuationBatchElementUserData* UserData =
         (FCesiumPointAttenuationBatchElementUserData*)BatchElement.UserData;
+
     if (UserData->PositionBuffer && PositionBuffer.IsBound()) {
       ShaderBindings.Add(PositionBuffer, UserData->PositionBuffer);
+    }
+
+    if (UserData->ColorBuffer && ColorBuffer.IsBound()) {
+      ShaderBindings.Add(ColorBuffer, UserData->ColorBuffer);
+    }
+
+    if (bHasPointColors.IsBound()) {
+      ShaderBindings.Add(bHasPointColors, UserData->bHasPointColors);
     }
 
     if (AttenuationParameters.IsBound()) {
@@ -81,17 +89,18 @@ public:
 
 private:
   LAYOUT_FIELD(FShaderResourceParameter, PositionBuffer);
+  LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);
+  LAYOUT_FIELD(FShaderParameter, bHasPointColors);
   LAYOUT_FIELD(FShaderParameter, AttenuationParameters);
   LAYOUT_FIELD(FShaderParameter, ConstantColor);
 };
 
 FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
-    ERHIFeatureLevel::Type InFeatureLevel,
-    const FStaticMeshVertexBuffers& InStaticMeshVertexBuffers)
+    ERHIFeatureLevel::Type InFeatureLevel)
     : FLocalVertexFactory(InFeatureLevel, "FCesiumGltfPointsVertexFactory") {
   // Vertices are not declared in an explicit vertex stream, so set this false
   // to avoid errors.
-  bNeedsDeclaration = false; 
+  bNeedsDeclaration = false;
 }
 
 bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
