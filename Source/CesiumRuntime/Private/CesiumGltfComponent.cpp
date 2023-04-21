@@ -1889,18 +1889,27 @@ static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision,
     ACesium3DTileset* pTilesetActor) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
 
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
+
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
-    pMesh = NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+    UCesiumGltfPointsComponent* pPointMesh = NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+    pPointMesh->UsesAdditiveRefinement =
+        tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
+    pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
+    // todo: dimensions
+    pMesh = pPointMesh;
   } else {
     pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   }
+
   pMesh->pTilesetActor = pTilesetActor;
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
@@ -2163,7 +2172,7 @@ UCesiumGltfComponent::CreateOffGameThread(
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
@@ -2208,7 +2217,7 @@ UCesiumGltfComponent::CreateOffGameThread(
             Gltf,
             primitive,
             cesiumToUnrealTransform,
-            boundingVolume,
+            tile,
             createNavCollision,
             pTilesetActor);
       }

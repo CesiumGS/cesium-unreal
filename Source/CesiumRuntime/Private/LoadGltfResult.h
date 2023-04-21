@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Cesium3DTilesSelection/Tile.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
@@ -76,6 +77,8 @@ struct LoadPrimitiveResult {
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
   std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+
+  glm::vec3 dimensions;
 };
 
 struct LoadMeshResult {

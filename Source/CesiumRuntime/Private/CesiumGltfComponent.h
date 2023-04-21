@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Cesium3DTileset.h"
-#include "Cesium3DTilesSelection/BoundingVolume.h"
+#include "Cesium3DTilesSelection/Tile.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
 #include "Components/PrimitiveComponent.h"
@@ -77,7 +77,7 @@ public:
       UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
-      const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+      const Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision);
 
   UCesiumGltfComponent();

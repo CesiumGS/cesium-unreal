@@ -29,6 +29,7 @@ public:
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(
             InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())),
+        pGltfPointsComponent(InComponent),
         pTilesetActor(InComponent->pTilesetActor) {}
 
   virtual ~FCesiumGltfPointsSceneProxy() {}
@@ -64,7 +65,7 @@ protected:
         FMeshBatch& Mesh = Collector.AllocateMesh();
 
         if (hasAttenuation) {
-          CreateMeshWithAttenuation(Mesh, Collector);
+          CreateMeshWithAttenuation(Mesh, View, Collector);
         } else {
           CreateMesh(Mesh);
         }
@@ -89,8 +90,7 @@ protected:
     Result.bUsesLightingChannels =
         GetLightingChannelMask() != GetDefaultLightingChannelMask();
     Result.bShadowRelevance = IsShadowCast(View);
-    Result.bVelocityRelevance =
-        IsMovable() & Result.bOpaque & Result.bRenderInMainPass;
+    Result.bVelocityRelevance = false;
 
     MaterialRelevance.SetPrimitiveViewRelevance(Result);
 
@@ -109,10 +109,12 @@ private:
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
 
-  ACesium3DTileset* pTilesetActor;
+  const UCesiumGltfPointsComponent* pGltfPointsComponent;
+  const ACesium3DTileset* pTilesetActor;
 
   void CreatePointAttenuationUserData(
       FMeshBatchElement& BatchElement,
+      const FSceneView* View,
       FMeshElementCollector& Collector) const {
     FCesiumPointAttenuationBatchElementUserDataWrapper* UserDataWrapper =
         &Collector.AllocateOneFrameResource<
@@ -130,7 +132,9 @@ private:
     FCesiumPointCloudShading PointCloudShading =
         pTilesetActor->GetPointCloudShading();
 
-    float MaximumPointSize = pTilesetActor->MaximumScreenSpaceError;
+    float MaximumPointSize = pGltfPointsComponent->UsesAdditiveRefinement
+                                 ? 5.0f
+                                 : pTilesetActor->MaximumScreenSpaceError;
 
     if (PointCloudShading.MaximumAttenuation > 0.0f) {
       MaximumPointSize = PointCloudShading.MaximumAttenuation;
@@ -147,10 +151,18 @@ private:
         ->GetDPIScaleBasedOnSize(FIntPoint(X, Y));
     MaximumPointSize *= DPI / 150;*/
 
-    float GeometricError = 0.0f; // TODO
-    GeometricError *= PointCloudShading.GeometricErrorScale;
+    float GeometricError = pGltfPointsComponent->GeometricError *
+                           PointCloudShading.GeometricErrorScale;
 
-    UserData.AttenuationParameters = FVector(MaximumPointSize, 0, 0);
+    // Depth Multiplier
+    float SSEDenominator =
+        2.0f * tanf(0.5f * FMath::DegreesToRadians(View->FOV));
+    float DepthMultiplier =
+        static_cast<float>(View->UnconstrainedViewRect.Height()) /
+        SSEDenominator;
+
+    UserData.AttenuationParameters =
+        FVector(MaximumPointSize, GeometricError, DepthMultiplier);
     UserData.ConstantColor = FVector4(0, 0, 0, 0);
 
     BatchElement.UserData = &UserDataWrapper->Data;
@@ -158,6 +170,7 @@ private:
 
   void CreateMeshWithAttenuation(
       FMeshBatch& Mesh,
+      const FSceneView* View,
       FMeshElementCollector& Collector) const {
     Mesh.VertexFactory = &AttenuationVertexFactory;
     Mesh.MaterialRenderProxy = Material->GetRenderProxy();
@@ -177,7 +190,7 @@ private:
     BatchElement.MaxVertexIndex = 0;
     BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
 
-    CreatePointAttenuationUserData(BatchElement, Collector);
+    CreatePointAttenuationUserData(BatchElement, View, Collector);
   }
 
   void CreateMesh(FMeshBatch& Mesh) const {

@@ -5,10 +5,10 @@
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
-#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
+#include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
@@ -695,7 +695,7 @@ public:
           this->_pActor->GetTranslucentMaterial(),
           this->_pActor->GetWaterMaterial(),
           this->_pActor->GetCustomDepthParameters(),
-          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()),
+          tile,
           this->_pActor->GetCreateNavCollision());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
