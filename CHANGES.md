@@ -36,6 +36,10 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 - Added support for the `KHR_materials_unlit` glTF extension. This is rendered in Unreal Engine by disabling shadows and making all normals point up (along the ellipsoid surface normal).
 
+##### Fixes :wrench:
+
+- Fixed a bug that caused raster overlays and other material features to not work for materials created or saved in Unreal Engine 5.1.
+
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.2 to v0.21.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.21.0 - 2023-01-02
@@ -54,6 +58,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause crashes, including on startup, on non-Windows platforms.
+- Fixed a bug that could cause the plugin to fail to load on Android systems in UE 5.1.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.21.1 to v0.21.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
@@ -181,6 +186,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 - We now explicitly free physics mesh UVs and face remap data, reducing memory usage in the Editor and reducing pressure on the garbage collector in-game.
 - Fixed a bug that could cause a crash when reporting tileset or raster overlay load errors, particularly while switching levels.
 - We now Log the correct asset source when loading a new tileset from either URL or Ion.
+- Disabling physics meshes of a tileset now works in Unreal Engine 5.
 
 ### v1.14.0 - 2022-06-01
 
@@ -196,6 +202,10 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 ### v1.13.2 - 2022-05-13
 
+##### Additions :tada:
+
+- Added pre-built binaries for Unreal Engine 5 on macOS and iOS.
+
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause a crash after applying a non-UMaterialInstanceDynamic material to a tileset.
@@ -206,11 +216,7 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 ### v1.13.1 - 2022-05-05
 
-##### Breaking Changes :mega:
-
-- Removed the following material assets that were accidentally included in the plugin in v1.13.0: `MetadataStyling/Layers/NYCBuildings_ByHeight_ML`, `MetadataStyling/Layers/NYCBuildings_ByYear_ML`, `MetadataStyling/NYCBuildings_ByHeight_M`, and `MetadataStyling/NYCBuildings_ByYear_M`. These assets can still be found in the [Cesium for Unreal Samples](https://github.com/CesiumGS/cesium-unreal-samples) project.
-
-In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.0 to v0.15.1, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.15.0 to v0.15.1, fixing an important bug. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.13.0 - 2022-05-02
 
@@ -232,10 +238,23 @@ In addition to the above, this release updates [cesium-native](https://github.co
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.14.0 to v0.15.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
+### v1.12.1 - 2022-04-06
+
+##### Fixes :wrench:
+
+- Fixed compiler errors with the official release of Unreal Engine 5.
+
 ### v1.12.0 - 2022-04-01
+
+##### Breaking Changes :mega:
+
+- Removed the `KeepWorldOriginNearCamera`, `OriginRebaseInsideSublevels`, and `MaximumWorldOriginDistanceFromCamera` options from `CesiumGeoreference`. These options are not usually necessary with Unreal Engine 5's double-precision coordinates.
+- Renamed the `WorldOriginCamera` property on `CesiumGeoreference` to `SubLevelCamera`, as this property is now only used for switching sub-levels. Core Redirects should automatically make this change in Blueprints.
+- Removed `Inaccurate` from the name of a large number of Blueprint functions, now that Unreal Engine 5 supports double-precision in Blueprints. Core Redirects should automatically make this change in Blueprints.
 
 ##### Additions :tada:
 
+- Cesium for Unreal automatically enables Unreal Engine 5's "Enable Large Worlds" setting, which is required for correct culling of Cesium tilesets.
 - Raster overlays are now, by default, rendered using the default settings for the `World` texture group, which yields much higher quality on many platforms by enabling anisotrpic texture filtering. Shimmering of overlay textures in the distance should be drastically reduced.
 - New options on `RasterOverlay` give the user control over the texture group, texture filtering, and mipmapping used for overlay textures.
 - Improved the mapping between glTF textures and Unreal Engine texture options, which should improve texture quality in tilesets.

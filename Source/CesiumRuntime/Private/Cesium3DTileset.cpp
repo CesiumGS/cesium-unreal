@@ -44,9 +44,9 @@
 #include "EngineUtils.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
-#include "IPhysXCookingModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/EnumRange.h"
 #include "PhysicsPublicCore.h"
@@ -89,7 +89,6 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMoviePreloadAncestors{PreloadAncestors},
       _beforeMoviePreloadSiblings{PreloadSiblings},
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
-      _beforeMovieKeepWorldOriginNearCamera{true},
       _beforeMovieUseLodTransitions{true},
 
       _tilesetsBeingDestroyed(0) {
@@ -387,19 +386,12 @@ void ACesium3DTileset::PlayMovieSequencer() {
   this->_beforeMoviePreloadSiblings = this->PreloadSiblings;
   this->_beforeMovieLoadingDescendantLimit = this->LoadingDescendantLimit;
   this->_beforeMovieUseLodTransitions = this->UseLodTransitions;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->_beforeMovieKeepWorldOriginNearCamera =
-        this->ResolveGeoreference()->KeepWorldOriginNearCamera;
-  }
 
   this->_captureMovieMode = true;
   this->PreloadAncestors = false;
   this->PreloadSiblings = false;
   this->LoadingDescendantLimit = 10000;
   this->UseLodTransitions = false;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->ResolveGeoreference()->KeepWorldOriginNearCamera = false;
-  }
 }
 
 void ACesium3DTileset::StopMovieSequencer() {
@@ -408,10 +400,6 @@ void ACesium3DTileset::StopMovieSequencer() {
   this->PreloadSiblings = this->_beforeMoviePreloadSiblings;
   this->LoadingDescendantLimit = this->_beforeMovieLoadingDescendantLimit;
   this->UseLodTransitions = this->_beforeMovieUseLodTransitions;
-  if (IsValid(this->ResolveGeoreference())) {
-    this->ResolveGeoreference()->KeepWorldOriginNearCamera =
-        this->_beforeMovieKeepWorldOriginNearCamera;
-  }
 }
 
 void ACesium3DTileset::PauseMovieSequencer() { this->StopMovieSequencer(); }
@@ -628,16 +616,7 @@ void ACesium3DTileset::NotifyHit(
 class UnrealResourcePreparer
     : public Cesium3DTilesSelection::IPrepareRendererResources {
 public:
-  UnrealResourcePreparer(ACesium3DTileset* pActor)
-      : _pActor(pActor)
-#if PHYSICS_INTERFACE_PHYSX
-        ,
-        _pPhysXCookingModule(
-            pActor->GetCreatePhysicsMeshes() ? GetPhysXCookingModule()
-                                             : nullptr)
-#endif
-  {
-  }
+  UnrealResourcePreparer(ACesium3DTileset* pActor) : _pActor(pActor) {}
 
   virtual CesiumAsync::Future<
       Cesium3DTilesSelection::TileLoadResultAndRenderResources>
@@ -657,10 +636,7 @@ public:
     CreateGltfOptions::CreateModelOptions options;
     options.pModel = pModel;
     options.alwaysIncludeTangents = this->_pActor->GetAlwaysIncludeTangents();
-
-#if PHYSICS_INTERFACE_PHYSX
-    options.pPhysXCookingModule = this->_pPhysXCookingModule;
-#endif
+    options.createPhysicsMeshes = this->_pActor->GetCreatePhysicsMeshes();
 
     options.ignoreKhrMaterialsUnlit =
         this->_pActor->GetIgnoreKhrMaterialsUnlit();
@@ -841,9 +817,6 @@ public:
 
 private:
   ACesium3DTileset* _pActor;
-#if PHYSICS_INTERFACE_PHYSX
-  IPhysXCookingModule* _pPhysXCookingModule;
-#endif
 };
 
 void ACesium3DTileset::UpdateLoadStatus() {
@@ -894,6 +867,24 @@ void ACesium3DTileset::LoadTileset() {
     // Tileset already loaded, do nothing.
     return;
   }
+
+  UWorld* pWorld = this->GetWorld();
+  if (!pWorld) {
+    return;
+  }
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+  AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
+  if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
+    pWorldSettings->bEnableLargeWorlds = true;
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Cesium for Unreal has enabled the \"Enable Large Worlds\" option in this world's settings, as it is required in order to avoid serious culling problems with Cesium3DTilesets in Unreal Engine 5."),
+        *this->Url);
+  }
+#endif
 
   const TSharedRef<CesiumViewExtension, ESPMode::ThreadSafe>&
       cesiumViewExtension = getCesiumViewExtension();
@@ -1212,7 +1203,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
     return {};
   }
 
-  float worldToMeters = 100.0f;
+  double worldToMeters = 100.0;
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings) {
     worldToMeters = pWorldSettings->WorldToMeters;
@@ -1248,7 +1239,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetPlayerCameras() const {
       continue;
     }
 
-    float fov = pPlayerCameraManager->GetFOVAngle();
+    double fov = pPlayerCameraManager->GetFOVAngle();
 
     FVector location;
     FRotator rotation;
@@ -1402,7 +1393,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetSceneCaptures() const {
 
     FVector captureLocation = pSceneCaptureComponent->GetComponentLocation();
     FRotator captureRotation = pSceneCaptureComponent->GetComponentRotation();
-    float captureFov = pSceneCaptureComponent->FOVAngle;
+    double captureFov = pSceneCaptureComponent->FOVAngle;
 
     cameras.emplace_back(
         renderTargetSize,
@@ -1514,7 +1505,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
     }
 
     const FVector& location = pEditorViewportClient->GetViewLocation();
-    float fov = pEditorViewportClient->ViewFOV;
+    double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
     pEditorViewportClient->GetViewportDimensions(offset, size);

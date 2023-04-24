@@ -8,9 +8,6 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumGltf/Node.h"
 #include "LoadGltfResult.h"
-#if PHYSICS_INTERFACE_PHYSX
-#include "IPhysXCookingModule.h"
-#endif
 
 // TODO: internal documentation
 namespace CreateGltfOptions {
@@ -18,9 +15,7 @@ struct CreateModelOptions {
   CesiumGltf::Model* pModel = nullptr;
   const FMetadataDescription* pEncodedMetadataDescription = nullptr;
   bool alwaysIncludeTangents = false;
-#if PHYSICS_INTERFACE_PHYSX
-  IPhysXCookingModule* pPhysXCookingModule = nullptr;
-#endif
+  bool createPhysicsMeshes = true;
   bool ignoreKhrMaterialsUnlit = false;
 };
 

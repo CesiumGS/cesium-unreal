@@ -62,7 +62,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Date and Time",
       meta = (ClampMin = -12, ClampMax = 14))
-  float TimeZone = -5.f;
+  double TimeZone = -5.0;
 
   /**
    * The current solar time represented as hours from midnight.
@@ -75,7 +75,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Date and Time",
       meta = (UIMin = 4, UIMax = 22, ClampMin = 0, ClampMax = 23.9999))
-  float SolarTime = 13.f;
+  double SolarTime = 13.0;
 
   /**
    * The day of the month.
@@ -127,7 +127,7 @@ public:
       BlueprintReadWrite,
       Category = "Cesium|Date and Time",
       meta = (ClampMin = -360, ClampMax = 360))
-  float NorthOffset = -90.f;
+  double NorthOffset = -90.0;
 
   /**
    * Enables adjustment of the Solar Time for Daylight Saving Time (DST).
@@ -263,7 +263,7 @@ protected:
       BlueprintReadWrite,
       meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
       Category = "Cesium|Atmosphere")
-  float InscribedGroundThreshold = 30;
+  double InscribedGroundThreshold = 30.0;
 
   /**
    * When the player pawn is above this height, which is expressed in kilometers
@@ -287,7 +287,7 @@ protected:
       BlueprintReadWrite,
       meta = (EditCondition = "UpdateAtmosphereAtRuntime"),
       Category = "Cesium|Atmosphere")
-  float CircumscribedGroundThreshold = 100;
+  double CircumscribedGroundThreshold = 100.0;
 
   /**
    * False: Use Directional Light component inside CesiumSunSky.
@@ -307,21 +307,21 @@ protected:
    * the Georeference origin.
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sun")
-  float Elevation = 0.f;
+  double Elevation = 0.f;
 
   /**
    * The current sun elevation, corrected for atmospheric diffraction, in
    * degrees above the horizontal, as viewed from the Georeference origin.
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sun")
-  float CorrectedElevation = 0.f;
+  double CorrectedElevation = 0.f;
 
   /**
    * The current sun azimuth in degrees clockwise from North toward East, as
    * viewed from the Georeference origin.
    */
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sun")
-  float Azimuth = 0.f;
+  double Azimuth = 0.f;
 
   /**
    * A switch to toggle between desktop and mobile rendering code paths.
@@ -348,7 +348,7 @@ protected:
    * Default intensity of directional light that's spawned for mobile rendering.
    */
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium|Mobile")
-  float MobileDirectionalLightIntensity = 6.f;
+  double MobileDirectionalLightIntensity = 6.f;
 
 public:
   UFUNCTION(
@@ -368,7 +368,7 @@ public:
    */
   UFUNCTION(BlueprintCallable, BlueprintPure, Category = Sun)
   static void GetHMSFromSolarTime(
-      float InSolarTime,
+      double InSolarTime,
       int32& Hour,
       int32& Minute,
       int32& Second);
@@ -406,7 +406,8 @@ protected:
    * @param Radius The radius in kilometers.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, float Radius);
+  void
+  SetSkyAtmosphereGroundRadius(USkyAtmosphereComponent* Sky, double Radius);
 
   /**
    * Update MobileSkySphere by calling its RefreshMaterial function

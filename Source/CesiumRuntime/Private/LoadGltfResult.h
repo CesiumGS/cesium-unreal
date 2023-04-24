@@ -11,6 +11,7 @@
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumTextureUtility.h"
+#include "Chaos/TriangleMeshImplicitObject.h"
 #include "Containers/Map.h"
 #include "Containers/UnrealString.h"
 #include "StaticMeshResources.h"
@@ -20,22 +21,6 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-
-#if PHYSICS_INTERFACE_PHYSX
-#include "IPhysXCooking.h"
-#include "PhysicsEngine/BodySetup.h"
-#include <PxTriangleMesh.h>
-
-struct PxTriangleMeshDeleter {
-  void operator()(PxTriangleMesh* pCollisionMesh) {
-    if (pCollisionMesh) {
-      pCollisionMesh->release();
-    }
-  }
-};
-#else
-#include "Chaos/TriangleMeshImplicitObject.h"
-#endif
 
 // TODO: internal documentation
 namespace LoadGltfResult {
@@ -48,13 +33,8 @@ struct LoadPrimitiveResult {
   const CesiumGltf::MeshPrimitive* pMeshPrimitive = nullptr;
   const CesiumGltf::Material* pMaterial = nullptr;
   glm::dmat4x4 transform{1.0};
-#if PHYSICS_INTERFACE_PHYSX
-  TUniquePtr<PxTriangleMesh, PxTriangleMeshDeleter> pCollisionMesh;
-  FBodySetupUVInfo uvInfo{};
-#else
   TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
       pCollisionMesh = nullptr;
-#endif
   std::string name{};
 
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> baseColorTexture;
