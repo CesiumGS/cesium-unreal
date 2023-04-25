@@ -126,6 +126,7 @@ private:
     const FLocalVertexFactory& OriginalVertexFactory =
         RenderData->LODVertexFactories[0].VertexFactory;
     UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
+    UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
     UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
 
@@ -162,8 +163,8 @@ private:
         SSEDenominator;
 
     UserData.AttenuationParameters =
-        FVector(MaximumPointSize, GeometricError, DepthMultiplier);
-    UserData.ConstantColor = FVector4(0, 0, 0, 0);
+        FVector3f(MaximumPointSize, GeometricError, DepthMultiplier);
+    UserData.ConstantColor = FVector4f(0.8f, 0.8f, 0.8f, 1.0f);
 
     BatchElement.UserData = &UserDataWrapper->Data;
   }

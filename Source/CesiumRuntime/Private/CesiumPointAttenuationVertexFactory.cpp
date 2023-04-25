@@ -7,19 +7,20 @@
 #include "MeshMaterialShader.h"
 
 void FCesiumPointAttenuationIndexBuffer::InitRHI() {
-  FRHIResourceCreateInfo CreateInfo;
-  void* Buffer = nullptr;
+  FRHIResourceCreateInfo CreateInfo(
+      TEXT("FCesiumPointAttenuationIndexBufferCreateInfo"));
   const uint32 NumIndices = NumPoints * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
-  IndexBufferRHI = RHICreateAndLockIndexBuffer(
-      sizeof(uint32),
+  IndexBufferRHI = RHICreateBuffer(
       Size,
-      BUF_Static,
-      CreateInfo,
-      Buffer);
+      BUF_Static | BUF_IndexBuffer,
+      sizeof(uint32),
+      ERHIAccess::VertexOrIndexBuffer,
+      CreateInfo);
 
-  uint32* Data = (uint32*)Buffer;
+  uint32* Data = (uint32*)RHILockBuffer(IndexBufferRHI, 0, Size, RLM_WriteOnly);
+
   for (uint32 index = 0, bufferIndex = 0; bufferIndex < NumIndices;
        index += 4) {
     // Generate six indices per quad, each representing an attenuated point in
@@ -32,19 +33,19 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI() {
     Data[bufferIndex++] = index + 3;
   }
 
-  RHIUnlockIndexBuffer(IndexBufferRHI);
-  Buffer = nullptr;
+  RHIUnlockBuffer(IndexBufferRHI);
 }
 
 class FCesiumPointAttenuationVertexFactoryShaderParameters
     : public FVertexFactoryShaderParameters {
-  DECLARE_INLINE_TYPE_LAYOUT(
+  DECLARE_TYPE_LAYOUT(
       FCesiumPointAttenuationVertexFactoryShaderParameters,
       NonVirtual);
 
 public:
   void Bind(const FShaderParameterMap& ParameterMap) {
     PositionBuffer.Bind(ParameterMap, TEXT("PositionBuffer"), SPF_Mandatory);
+    PackedTangentsBuffer.Bind(ParameterMap, TEXT("PackedTangentsBuffer"));
     ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
     bHasPointColors.Bind(ParameterMap, TEXT("bHasPointColors"));
     AttenuationParameters.Bind(ParameterMap, TEXT("AttenuationParameters"));
@@ -68,6 +69,10 @@ public:
       ShaderBindings.Add(PositionBuffer, UserData->PositionBuffer);
     }
 
+    if (UserData->PackedTangentsBuffer && PackedTangentsBuffer.IsBound()) {
+      ShaderBindings.Add(PackedTangentsBuffer, UserData->PackedTangentsBuffer);
+    }
+
     if (UserData->ColorBuffer && ColorBuffer.IsBound()) {
       ShaderBindings.Add(ColorBuffer, UserData->ColorBuffer);
     }
@@ -89,6 +94,7 @@ public:
 
 private:
   LAYOUT_FIELD(FShaderResourceParameter, PositionBuffer);
+  LAYOUT_FIELD(FShaderResourceParameter, PackedTangentsBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);
   LAYOUT_FIELD(FShaderParameter, bHasPointColors);
   LAYOUT_FIELD(FShaderParameter, AttenuationParameters);
@@ -115,6 +121,8 @@ void FCesiumPointAttenuationVertexFactory::ReleaseRHI() {
   FVertexFactory::ReleaseRHI();
 }
 
+IMPLEMENT_TYPE_LAYOUT(FCesiumPointAttenuationVertexFactoryShaderParameters);
+
 IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(
     FCesiumPointAttenuationVertexFactory,
     SF_Vertex,
@@ -123,9 +131,7 @@ IMPLEMENT_VERTEX_FACTORY_PARAMETER_TYPE(
 IMPLEMENT_VERTEX_FACTORY_TYPE(
     FCesiumPointAttenuationVertexFactory,
     "/Plugin/CesiumForUnreal/Private/CesiumPointAttenuationVertexFactory.ush",
-    true,  // bUsedWithMaterials
-    false, // bSupportsStaticLighting
-    true,  // bSupportsDynamicLighting
-    false, // bPrecisePrevWorldPos
-    false  // bSupportsPositionOnly
-);
+    EVertexFactoryFlags::UsedWithMaterials |
+        EVertexFactoryFlags::SupportsDynamicLighting);
+
+//| EVertexFactoryFlags::SupportsPositionOnly);
