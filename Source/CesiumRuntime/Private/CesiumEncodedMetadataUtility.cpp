@@ -15,13 +15,13 @@
 #include "CesiumRuntime.h"
 #include "Containers/Map.h"
 #include "PixelFormat.h"
+#include "TextureResource.h"
 #include <CesiumGltf/FeatureIDTextureView.h>
 #include <CesiumGltf/FeatureTexturePropertyView.h>
 #include <CesiumGltf/FeatureTextureView.h>
 #include <CesiumUtility/Tracing.h>
 #include <glm/gtx/integer.hpp>
 #include <unordered_map>
-#include "TextureResource.h"
 
 using namespace CesiumTextureUtility;
 

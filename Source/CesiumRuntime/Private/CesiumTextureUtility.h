@@ -4,10 +4,10 @@
 
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataValueType.h"
-#include "RHIResources.h"
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureDefines.h"
+#include "RHIResources.h"
 #include "Templates/UniquePtr.h"
 #include <optional>
 #include <variant>

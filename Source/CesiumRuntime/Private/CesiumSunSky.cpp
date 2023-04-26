@@ -4,12 +4,12 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumRuntime.h"
+#include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "SunPosition.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
-#include "GameFramework/Pawn.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
