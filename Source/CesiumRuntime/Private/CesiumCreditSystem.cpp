@@ -174,18 +174,17 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
   CreditsUpdated =
       creditsToShowThisFrame.size() != _lastCreditsCount ||
       _pCreditSystem->getCreditsToNoLongerShowThisFrame().size() > 0;
+
   if (CreditsUpdated) {
     FString OnScreenCredits;
     FString Credits;
 
     _lastCreditsCount = creditsToShowThisFrame.size();
 
-    bool first = true;
+    bool firstCreditOnScreen = true;
     for (int i = 0; i < creditsToShowThisFrame.size(); i++) {
       const Cesium3DTilesSelection::Credit& credit = creditsToShowThisFrame[i];
-      if (i != 0) {
-        Credits += "\n";
-      }
+
       FString CreditRtf;
       const std::string& html = _pCreditSystem->getHtml(credit);
 
@@ -196,17 +195,28 @@ void ACesiumCreditSystem::Tick(float DeltaTime) {
         CreditRtf = ConvertHtmlToRtf(html);
         _htmlToRtf.insert({html, CreditRtf});
       }
-      Credits += CreditRtf;
+
       if (_pCreditSystem->shouldBeShownOnScreen(credit)) {
-        if (first) {
-          first = false;
+        if (firstCreditOnScreen) {
+          firstCreditOnScreen = false;
         } else {
           OnScreenCredits += TEXT(" \u2022 ");
         }
+
         OnScreenCredits += CreditRtf;
+      } else {
+        if (i != 0) {
+          Credits += "\n";
+        }
+
+        Credits += CreditRtf;
       }
     }
-    OnScreenCredits += "<credits url=\"popup\" text=\" Data attribution\"/>";
+
+    if (!Credits.IsEmpty()) {
+      OnScreenCredits += "<credits url=\"popup\" text=\" Data attribution\"/>";
+    }
+
     CreditsWidget->SetCredits(Credits, OnScreenCredits);
   }
   _pCreditSystem->startNextFrame();
