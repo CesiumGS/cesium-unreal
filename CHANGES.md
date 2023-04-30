@@ -1,5 +1,13 @@
 # Change Log
 
+### ? - ?
+
+Starting with this release, Cesium for Unreal requires Unreal Engine v5.0 or later.
+
+##### Additions :tada:
+
+- Tileset and raster overlay credits are now shown in Editor viewports.
+
 ### v1.24.0 - 2023-04-03
 
 This will be the _last_ release that supports Unreal Engine v4.27. Future versions will require Unreal Engine v5.0+.
