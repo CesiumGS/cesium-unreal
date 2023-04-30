@@ -11,6 +11,13 @@
 #include <tidybuffio.h>
 #include <vector>
 
+#if WITH_EDITOR
+#include "Editor.h"
+#include "IAssetViewport.h"
+#include "LevelEditor.h"
+#include "Modules/ModuleManager.h"
+#endif
+
 /*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 namespace {
 
@@ -149,14 +156,76 @@ ACesiumCreditSystem::ACesiumCreditSystem()
 
 void ACesiumCreditSystem::BeginPlay() {
   Super::BeginPlay();
-  if (!CreditsWidget) {
+  this->updateCreditsViewport(true);
+}
+
+static const FName LevelEditorName("LevelEditor");
+
+void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
+  Super::OnConstruction(Transform);
+
+  this->updateCreditsViewport(false);
+
+#if WITH_EDITOR
+  if (!GetWorld()->IsGameWorld() &&
+      FModuleManager::Get().IsModuleLoaded(LevelEditorName)) {
+    FLevelEditorModule& LevelEditorModule =
+        FModuleManager::GetModuleChecked<FLevelEditorModule>(LevelEditorName);
+    LevelEditorModule.OnRedrawLevelEditingViewports().RemoveAll(this);
+    LevelEditorModule.OnRedrawLevelEditingViewports().AddUObject(
+        this,
+        &ACesiumCreditSystem::OnRedrawLevelEditingViewports);
+  }
+#endif
+}
+
+void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
+  if (IsRunningDedicatedServer())
+    return;
+  if (!IsValid(GetWorld()))
+    return;
+
+  if (!IsValid(CreditsWidget) || recreateWidget) {
     CreditsWidget =
         CreateWidget<UScreenCreditsWidget>(GetWorld(), CreditsWidgetClass);
   }
-  if (IsValid(CreditsWidget) && !IsRunningDedicatedServer()) {
-    CreditsWidget->AddToViewport();
+
+#if WITH_EDITOR
+  if (!GetWorld()->IsGameWorld() &&
+      FModuleManager::Get().IsModuleLoaded(LevelEditorName)) {
+    // Add credits to the active editor viewport
+    FLevelEditorModule& levelEditorModule =
+        FModuleManager::GetModuleChecked<FLevelEditorModule>(LevelEditorName);
+    TSharedPtr<IAssetViewport> pActiveViewport =
+        levelEditorModule.GetFirstActiveViewport();
+    if (pActiveViewport.IsValid() && pLastEditorViewport != pActiveViewport) {
+      if (pLastEditorViewport.IsValid()) {
+        auto pPinned = pLastEditorViewport.Pin();
+        pPinned->RemoveOverlayWidget(CreditsWidget->TakeWidget());
+      }
+      auto pSlateWidget = CreditsWidget->TakeWidget();
+      pActiveViewport->AddOverlayWidget(pSlateWidget);
+      pLastEditorViewport = pActiveViewport;
+    }
+    return;
   }
+
+  if (pLastEditorViewport.IsValid()) {
+    auto pPinned = pLastEditorViewport.Pin();
+    pPinned->RemoveOverlayWidget(CreditsWidget->TakeWidget());
+    pLastEditorViewport = nullptr;
+  }
+#endif
+
+  // Add credits to a game viewport
+  CreditsWidget->AddToViewport();
 }
+
+#if WITH_EDITOR
+void ACesiumCreditSystem::OnRedrawLevelEditingViewports(bool) {
+  this->updateCreditsViewport(false);
+}
+#endif
 
 bool ACesiumCreditSystem::ShouldTickIfViewportsOnly() const { return true; }
 
