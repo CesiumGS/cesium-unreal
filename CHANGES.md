@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.25.0 - 2023-05-01
+
+Starting with this release, Cesium for Unreal requires Unreal Engine v5.0 or later.
+
+This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.23.0 to v0.24.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.24.0 - 2023-04-03
 
 This will be the _last_ release that supports Unreal Engine v4.27. Future versions will require Unreal Engine v5.0+.
