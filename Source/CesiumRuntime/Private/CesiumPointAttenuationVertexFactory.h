@@ -29,9 +29,10 @@ struct FCesiumPointAttenuationBatchElementUserData {
   FRHIShaderResourceView* PositionBuffer;
   FRHIShaderResourceView* PackedTangentsBuffer;
   FRHIShaderResourceView* ColorBuffer;
+  FRHIShaderResourceView* TexCoordBuffer;
+  uint32 NumTexCoords;
   uint32 bHasPointColors;
   FVector3f AttenuationParameters;
-  FVector4f ConstantColor;
 };
 
 class FCesiumPointAttenuationBatchElementUserDataWrapper : public FOneFrameResource {

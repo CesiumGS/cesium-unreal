@@ -47,9 +47,10 @@ public:
     PositionBuffer.Bind(ParameterMap, TEXT("PositionBuffer"), SPF_Mandatory);
     PackedTangentsBuffer.Bind(ParameterMap, TEXT("PackedTangentsBuffer"));
     ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
+    TexCoordBuffer.Bind(ParameterMap, TEXT("TexCoordBuffer"));
+    NumTexCoords.Bind(ParameterMap, TEXT("NumTexCoords"));
     bHasPointColors.Bind(ParameterMap, TEXT("bHasPointColors"));
     AttenuationParameters.Bind(ParameterMap, TEXT("AttenuationParameters"));
-    ConstantColor.Bind(ParameterMap, TEXT("ConstantColor"));
   }
 
   void GetElementShaderBindings(
@@ -77,6 +78,14 @@ public:
       ShaderBindings.Add(ColorBuffer, UserData->ColorBuffer);
     }
 
+    if (UserData->TexCoordBuffer && TexCoordBuffer.IsBound()) {
+      ShaderBindings.Add(TexCoordBuffer, UserData->TexCoordBuffer);
+    }
+
+    if (NumTexCoords.IsBound()) {
+      ShaderBindings.Add(NumTexCoords, UserData->NumTexCoords);
+    }
+
     if (bHasPointColors.IsBound()) {
       ShaderBindings.Add(bHasPointColors, UserData->bHasPointColors);
     }
@@ -86,19 +95,16 @@ public:
           AttenuationParameters,
           UserData->AttenuationParameters);
     }
-
-    if (ConstantColor.IsBound()) {
-      ShaderBindings.Add(ConstantColor, UserData->ConstantColor);
-    }
   }
 
 private:
   LAYOUT_FIELD(FShaderResourceParameter, PositionBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, PackedTangentsBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);
+  LAYOUT_FIELD(FShaderResourceParameter, TexCoordBuffer);
+  LAYOUT_FIELD(FShaderParameter, NumTexCoords);
   LAYOUT_FIELD(FShaderParameter, bHasPointColors);
   LAYOUT_FIELD(FShaderParameter, AttenuationParameters);
-  LAYOUT_FIELD(FShaderParameter, ConstantColor);
 };
 
 FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
@@ -111,8 +117,15 @@ FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
 
 bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
     const FVertexFactoryShaderPermutationParameters& Parameters) {
+  // SM5 is equivalent to DX11 Shader Model 5.
+  if (!IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5) ||
+      Parameters.MaterialParameters.FeatureLevel < ERHIFeatureLevel::SM5) {
+    return false;
+  }
+
   return Parameters.MaterialParameters.MaterialDomain == MD_Surface ||
-         Parameters.MaterialParameters.bIsDefaultMaterial;
+         Parameters.MaterialParameters.bIsDefaultMaterial ||
+         Parameters.MaterialParameters.bIsSpecialEngineMaterial;
 }
 
 void FCesiumPointAttenuationVertexFactory::InitRHI() {}
@@ -132,6 +145,5 @@ IMPLEMENT_VERTEX_FACTORY_TYPE(
     FCesiumPointAttenuationVertexFactory,
     "/Plugin/CesiumForUnreal/Private/CesiumPointAttenuationVertexFactory.ush",
     EVertexFactoryFlags::UsedWithMaterials |
-        EVertexFactoryFlags::SupportsDynamicLighting);
-
-//| EVertexFactoryFlags::SupportsPositionOnly);
+        EVertexFactoryFlags::SupportsDynamicLighting |
+        EVertexFactoryFlags::SupportsPositionOnly);

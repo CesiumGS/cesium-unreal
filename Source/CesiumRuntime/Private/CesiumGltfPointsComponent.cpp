@@ -28,7 +28,7 @@ public:
         AttenuationIndexBuffer(NumPoints),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(
-            InComponent->GetMaterialRelevance(GetScene().GetFeatureLevel())),
+            InComponent->GetMaterialRelevance(InFeatureLevel)),
         pGltfPointsComponent(InComponent),
         pTilesetActor(InComponent->pTilesetActor) {}
 
@@ -128,6 +128,8 @@ private:
     UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
     UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
+    UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
+    UserData.NumTexCoords = OriginalVertexFactory.GetNumTexcoords();
     UserData.bHasPointColors = RenderData->LODResources[0].bHasColorVertexData;
 
     FCesiumPointCloudShading PointCloudShading =
@@ -138,20 +140,10 @@ private:
                                  : pTilesetActor->MaximumScreenSpaceError;
 
     if (PointCloudShading.MaximumAttenuation > 0.0f) {
+      // Don't multiply by DPI; let Unreal handle scaling.
       MaximumPointSize = PointCloudShading.MaximumAttenuation;
     }
-
-    /* FVector2D viewportSize;
-    GEngine->GameViewport->GetViewportSize(viewportSize);
-
-    int32 X = FGenericPlatformMath::FloorToInt(viewportSize.X);
-    int32 Y = FGenericPlatformMath::FloorToInt(viewportSize.Y);
-
-    float DPI = GetDefault<UUserInterfaceSettings>(
-               UUserInterfaceSettings::StaticClass())
-        ->GetDPIScaleBasedOnSize(FIntPoint(X, Y));
-    MaximumPointSize *= DPI / 150;*/
-
+    
     float GeometricError = pGltfPointsComponent->GeometricError *
                            PointCloudShading.GeometricErrorScale;
 
@@ -164,7 +156,6 @@ private:
 
     UserData.AttenuationParameters =
         FVector3f(MaximumPointSize, GeometricError, DepthMultiplier);
-    UserData.ConstantColor = FVector4f(0.8f, 0.8f, 0.8f, 1.0f);
 
     BatchElement.UserData = &UserDataWrapper->Data;
   }
