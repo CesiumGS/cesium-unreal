@@ -176,10 +176,7 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        if (Target.bUseChaos)
-        {
-            PrivateDependencyModuleNames.Add("Chaos");
-        }
+        PrivateDependencyModuleNames.Add("Chaos");
 
         if (Target.bBuildEditor == true)
         {
