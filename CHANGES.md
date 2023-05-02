@@ -1,10 +1,17 @@
 # Change Log
 
+### v1.25.1 - 2023-05-02
+
+##### Fixes :wrench:
+
+- Fixed warnings about `bUseChaos` and `bCompilePhysX` being obsolete.
+
 ### v1.25.0 - 2023-05-01
 
 Starting with this release, Cesium for Unreal requires Unreal Engine v5.0 or later.
 
 ##### Fixes :wrench:
+
 - On-screen credits now only show on the screen, and not in the Data Attribution panel. Additionally, the Data Attribution panel no longer appears if there are no credits to display in it.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.23.0 to v0.24.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
