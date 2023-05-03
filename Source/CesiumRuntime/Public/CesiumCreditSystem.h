@@ -66,6 +66,8 @@ public:
 #if WITH_EDITOR
   void OnRedrawLevelEditingViewports(bool);
   void OnMapChanged(UWorld* pWorld, EMapChangeType changeType);
+  void OnPreBeginPIE(bool bIsSimulating);
+  void OnEndPIE(bool bIsSimulating);
 #endif
 
 private:

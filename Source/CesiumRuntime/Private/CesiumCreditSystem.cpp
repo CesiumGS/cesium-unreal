@@ -179,6 +179,10 @@ void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
     LevelEditorModule.OnMapChanged().AddUObject(
         this,
         &ACesiumCreditSystem::OnMapChanged);
+    FEditorDelegates::PreBeginPIE.RemoveAll(this);
+    FEditorDelegates::PreBeginPIE.AddUObject(this, &ACesiumCreditSystem::OnPreBeginPIE);
+    FEditorDelegates::EndPIE.RemoveAll(this);
+    FEditorDelegates::EndPIE.AddUObject(this, &ACesiumCreditSystem::OnEndPIE);
   }
 #endif
 }
@@ -205,9 +209,11 @@ void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
     if (pActiveViewport.IsValid() && this->_pLastEditorViewport != pActiveViewport) {
       this->removeCreditsFromViewports();
 
-      auto pSlateWidget = CreditsWidget->TakeWidget();
-      pActiveViewport->AddOverlayWidget(pSlateWidget);
-      this->_pLastEditorViewport = pActiveViewport;
+      if (!pActiveViewport->HasPlayInEditorViewport()) {
+        auto pSlateWidget = CreditsWidget->TakeWidget();
+        pActiveViewport->AddOverlayWidget(pSlateWidget);
+        this->_pLastEditorViewport = pActiveViewport;
+      }
     }
     return;
   }
@@ -244,6 +250,15 @@ void ACesiumCreditSystem::OnMapChanged(
   if (changeType == EMapChangeType::TearDownWorld) {
     this->removeCreditsFromViewports();
   }
+}
+void ACesiumCreditSystem::OnPreBeginPIE(bool bIsSimulating) {
+  // When we start play-in-editor, remove the editor viewport credits.
+  // The game will often reuse the same viewport, and we don't want to show
+  // two sets of credits.
+  this->removeCreditsFromViewports();
+}
+void ACesiumCreditSystem::OnEndPIE(bool bIsSimulating) {
+  this->updateCreditsViewport(false);
 }
 #endif
 
