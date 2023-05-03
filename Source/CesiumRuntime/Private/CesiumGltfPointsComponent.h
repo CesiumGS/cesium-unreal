@@ -5,8 +5,6 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfPointsComponent.generated.h"
 
-using namespace Cesium3DTilesSelection;
-
 UCLASS()
 class UCesiumGltfPointsComponent : public UCesiumGltfPrimitiveComponent {
   GENERATED_BODY()

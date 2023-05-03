@@ -29,8 +29,8 @@ uint InstancedEyeIndex;
  */
 struct FVertexFactoryInput
 {
-		uint  VertexId    : SV_VertexID;
-		uint  InstanceId  : SV_InstanceID;
+  	uint  VertexId    : SV_VertexID;
+  	uint  InstanceId  : SV_InstanceID;
 };
 
 /** 
@@ -38,8 +38,8 @@ struct FVertexFactoryInput
  */
 struct FPositionOnlyVertexFactoryInput
 {
-		float4  Position  : ATTRIBUTE0;
-		uint		VertexId	: SV_VertexID;
+  	float4  Position  : ATTRIBUTE0;
+  	uint    VertexId	: SV_VertexID;
 };
 
 /** 
@@ -47,9 +47,9 @@ struct FPositionOnlyVertexFactoryInput
  */
 struct FPositionAndNormalOnlyVertexFactoryInput
 {
-		float4  Position	: ATTRIBUTE0;
-		float4	Normal		: ATTRIBUTE2;
-		uint		VertexId	: SV_VertexID;
+  	float4  Position	: ATTRIBUTE0;
+  	float4	Normal		: ATTRIBUTE2;
+  	uint    VertexId	: SV_VertexID;
 };
 
 /** Cached intermediates that would otherwise have to be computed multiple times. */
@@ -88,9 +88,9 @@ struct FVertexFactoryInterpolantsVSToPS
 /** Helper function for position-only passes that don't require point index for other intermediates.*/
 float4 GetWorldPosition(uint VertexId)
 {
-		uint PointIndex = VertexId / 4;
-		float3 Position = PositionBuffer[PointIndex];
-		return TransformLocalToTranslatedWorld(Position);
+  	uint PointIndex = VertexId / 4;
+  	float3 Position = PositionBuffer[PointIndex];
+  	return TransformLocalToTranslatedWorld(Position);
 }
 
 /** Computes TangentToLocal based on the Manual Vertex Fetch method in LocalVertexFactory.ush */
@@ -129,38 +129,38 @@ half3x3 CalculateTangentToWorldNoScale(half3x3 TangentToLocal)
 
 /** Helper function for position and normal-only passes that don't require point index for other intermediates.*/
 float3 GetPointNormal(uint VertexId) {
-		uint PointIndex = VertexId / 4;
-		return PackedTangentsBuffer[2 * PointIndex + 1].xyz;
+  	uint PointIndex = VertexId / 4;
+  	return PackedTangentsBuffer[2 * PointIndex + 1].xyz;
 }
 
 FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput Input)
 {
-		FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates)0;
-		Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
+  	FVertexFactoryIntermediates Intermediates = (FVertexFactoryIntermediates)0;
+  	Intermediates.SceneData = VF_GPUSCENE_GET_INTERMEDIATES(Input);
 		
-		uint PointIndex = Input.VertexId / 4;
-		uint CornerIndex = Input.VertexId - (PointIndex * 4);
+  	uint PointIndex = Input.VertexId / 4;
+  	uint CornerIndex = Input.VertexId - (PointIndex * 4);
 
-		Intermediates.PointIndex = PointIndex;
-		Intermediates.CornerIndex = CornerIndex;
+  	Intermediates.PointIndex = PointIndex;
+  	Intermediates.CornerIndex = CornerIndex;
 
-		Intermediates.Position = PositionBuffer[PointIndex];
-		Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
+  	Intermediates.Position = PositionBuffer[PointIndex];
+  	Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
 
-		float TangentSign = 1.0;
-		Intermediates.TangentToLocal = CalculateTangentToLocal(Intermediates.PointIndex, TangentSign);
-		Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
-		Intermediates.TangentToWorldSign =  Intermediates.SceneData.InstanceData.DeterminantSign;
+  	float TangentSign = 1.0;
+  	Intermediates.TangentToLocal = CalculateTangentToLocal(Intermediates.PointIndex, TangentSign);
+  	Intermediates.TangentToWorld = CalculateTangentToWorldNoScale(Intermediates.TangentToLocal);
+  	Intermediates.TangentToWorldSign =  Intermediates.SceneData.InstanceData.DeterminantSign;
 
-		bool bHasColors = bHasPointColors;
-		float4 Color = bHasColors ? ColorBuffer[PointIndex] : float4(1, 1, 1, 1);
-		Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
+  	bool bHasColors = bHasPointColors;
+  	float4 Color = bHasColors ? ColorBuffer[PointIndex] : float4(1, 1, 1, 1);
+  	Intermediates.Color = Color FMANUALFETCH_COLOR_COMPONENT_SWIZZLE;
 
-		return Intermediates;
+  	return Intermediates;
 }
 
 FVertexFactoryInterpolantsVSToPS VertexFactoryGetInterpolantsVSToPS(
-		FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
+  	FVertexFactoryInput Input, FVertexFactoryIntermediates Intermediates, FMaterialVertexParameters VertexParameters)
 {
   	FVertexFactoryInterpolantsVSToPS Interpolants = (FVertexFactoryInterpolantsVSToPS)0;
   	Interpolants.TangentToWorld0 = float4(Intermediates.TangentToWorld[0], 0);
