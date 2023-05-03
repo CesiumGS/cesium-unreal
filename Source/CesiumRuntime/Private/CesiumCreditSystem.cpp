@@ -175,6 +175,10 @@ void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
     LevelEditorModule.OnRedrawLevelEditingViewports().AddUObject(
         this,
         &ACesiumCreditSystem::OnRedrawLevelEditingViewports);
+    LevelEditorModule.OnMapChanged().RemoveAll(this);
+    LevelEditorModule.OnMapChanged().AddUObject(
+        this,
+        &ACesiumCreditSystem::OnMapChanged);
   }
 #endif
 }
@@ -198,32 +202,48 @@ void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
         FModuleManager::GetModuleChecked<FLevelEditorModule>(LevelEditorName);
     TSharedPtr<IAssetViewport> pActiveViewport =
         levelEditorModule.GetFirstActiveViewport();
-    if (pActiveViewport.IsValid() && pLastEditorViewport != pActiveViewport) {
-      if (pLastEditorViewport.IsValid()) {
-        auto pPinned = pLastEditorViewport.Pin();
-        pPinned->RemoveOverlayWidget(CreditsWidget->TakeWidget());
-      }
+    if (pActiveViewport.IsValid() && this->_pLastEditorViewport != pActiveViewport) {
+      this->removeCreditsFromViewports();
+
       auto pSlateWidget = CreditsWidget->TakeWidget();
       pActiveViewport->AddOverlayWidget(pSlateWidget);
-      pLastEditorViewport = pActiveViewport;
+      this->_pLastEditorViewport = pActiveViewport;
     }
     return;
   }
 
-  if (pLastEditorViewport.IsValid()) {
-    auto pPinned = pLastEditorViewport.Pin();
-    pPinned->RemoveOverlayWidget(CreditsWidget->TakeWidget());
-    pLastEditorViewport = nullptr;
-  }
+  this->removeCreditsFromViewports();
 #endif
 
   // Add credits to a game viewport
   CreditsWidget->AddToViewport();
 }
 
+void ACesiumCreditSystem::removeCreditsFromViewports() {
+  if (!FModuleManager::Get().IsModuleLoaded(LevelEditorName))
+    return;
+
+  if (this->_pLastEditorViewport.IsValid()) {
+    auto pPinned = this->_pLastEditorViewport.Pin();
+    pPinned->RemoveOverlayWidget(CreditsWidget->TakeWidget());
+    this->_pLastEditorViewport = nullptr;
+  }
+
+  if (IsValid(CreditsWidget)) {
+    CreditsWidget->RemoveFromViewport();
+  }
+}
+
 #if WITH_EDITOR
 void ACesiumCreditSystem::OnRedrawLevelEditingViewports(bool) {
   this->updateCreditsViewport(false);
+}
+void ACesiumCreditSystem::OnMapChanged(
+    UWorld* pWorld,
+    EMapChangeType changeType) {
+  if (changeType == EMapChangeType::TearDownWorld) {
+    this->removeCreditsFromViewports();
+  }
 }
 #endif
 

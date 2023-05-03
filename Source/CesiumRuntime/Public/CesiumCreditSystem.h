@@ -12,6 +12,7 @@
 
 #if WITH_EDITOR
 #include "IAssetViewport.h"
+#include "UnrealEdMisc.h"
 #endif
 
 #include "CesiumCreditSystem.generated.h"
@@ -60,9 +61,11 @@ public:
   }
 
   void updateCreditsViewport(bool recreateWidget);
+  void removeCreditsFromViewports();
 
 #if WITH_EDITOR
   void OnRedrawLevelEditingViewports(bool);
+  void OnMapChanged(UWorld* pWorld, EMapChangeType changeType);
 #endif
 
 private:
@@ -83,6 +86,6 @@ private:
   std::unordered_map<std::string, FString> _htmlToRtf;
 
 #if WITH_EDITOR
-  TWeakPtr<IAssetViewport> pLastEditorViewport;
+  TWeakPtr<IAssetViewport> _pLastEditorViewport;
 #endif
 };
