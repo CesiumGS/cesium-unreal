@@ -13,7 +13,6 @@
 #include "SpdlogUnrealLoggerSink.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
-
 #include <CesiumAsync/AsyncSystem.h>
 #include <CesiumAsync/IAssetAccessor.h>
 #include <Modules/ModuleManager.h>

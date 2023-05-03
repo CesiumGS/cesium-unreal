@@ -840,15 +840,12 @@ static void loadPrimitive(
       maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
 
-#if ENGINE_MAJOR_VERSION >= 5
+    primitiveResult.dimensions =
+        glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
+
     FBox aaBox(
         FVector3d(minPosition.x, minPosition.y, minPosition.z),
         FVector3d(maxPosition.x, maxPosition.y, maxPosition.z));
-#else
-    FBox aaBox(
-        FVector(minPosition.x, minPosition.y, minPosition.z),
-        FVector(maxPosition.x, maxPosition.y, maxPosition.z));
-#endif
 
     aaBox.GetCenterAndExtents(
         RenderData->Bounds.Origin,
@@ -1871,11 +1868,12 @@ static void loadPrimitiveGameThreadPart(
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
-    UCesiumGltfPointsComponent* pPointMesh = NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+    UCesiumGltfPointsComponent* pPointMesh =
+        NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
     pPointMesh->UsesAdditiveRefinement =
         tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
     pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
-    // todo: dimensions
+    pPointMesh->Dimensions = loadResult.dimensions;
     pMesh = pPointMesh;
   } else {
     pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);

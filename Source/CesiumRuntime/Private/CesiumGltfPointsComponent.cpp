@@ -4,7 +4,6 @@
 #include "Cesium3DTileset.h"
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "Engine/StaticMesh.h"
-#include "Engine/UserInterfaceSettings.h"
 
 class FCesiumGltfPointsSceneProxy final : public FPrimitiveSceneProxy {
 private:
@@ -27,8 +26,7 @@ public:
         AttenuationVertexFactory(InFeatureLevel),
         AttenuationIndexBuffer(NumPoints),
         Material(InComponent->GetMaterial(0)),
-        MaterialRelevance(
-            InComponent->GetMaterialRelevance(InFeatureLevel)),
+        MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)),
         pGltfPointsComponent(InComponent),
         pTilesetActor(InComponent->pTilesetActor) {}
 
@@ -63,13 +61,11 @@ protected:
       if (VisibilityMap & (1 << ViewIndex)) {
         const FSceneView* View = Views[ViewIndex];
         FMeshBatch& Mesh = Collector.AllocateMesh();
-
         if (hasAttenuation) {
           CreateMeshWithAttenuation(Mesh, View, Collector);
         } else {
           CreateMesh(Mesh);
         }
-
         Collector.AddMesh(ViewIndex, Mesh);
       }
     }
@@ -90,7 +86,8 @@ protected:
     Result.bUsesLightingChannels =
         GetLightingChannelMask() != GetDefaultLightingChannelMask();
     Result.bShadowRelevance = IsShadowCast(View);
-    Result.bVelocityRelevance = false;
+    Result.bVelocityRelevance =
+        IsMovable() & Result.bOpaque & Result.bRenderInMainPass;
 
     MaterialRelevance.SetPrimitiveViewRelevance(Result);
 
@@ -112,6 +109,23 @@ private:
   const UCesiumGltfPointsComponent* pGltfPointsComponent;
   const ACesium3DTileset* pTilesetActor;
 
+  float
+  GetGeometricError(const FCesiumPointCloudShading& PointCloudShading) const {
+    float GeometricError = pGltfPointsComponent->GeometricError;
+    if (GeometricError > 0.0f) {
+      return GeometricError;
+    }
+
+    if (PointCloudShading.BaseResolution > 0.0f) {
+      return PointCloudShading.BaseResolution;
+    }
+
+    // Estimate the geometric error.
+    glm::vec3 Dimensions = pGltfPointsComponent->Dimensions;
+    float Volume = Dimensions.x * Dimensions.y * Dimensions.z;
+    return FMath::Pow(Volume / NumPoints, 1.0f / 3.0f);
+  }
+
   void CreatePointAttenuationUserData(
       FMeshBatchElement& BatchElement,
       const FSceneView* View,
@@ -122,9 +136,9 @@ private:
 
     FCesiumPointAttenuationBatchElementUserData& UserData =
         UserDataWrapper->Data;
-
     const FLocalVertexFactory& OriginalVertexFactory =
         RenderData->LODVertexFactories[0].VertexFactory;
+
     UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
     UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
@@ -140,12 +154,12 @@ private:
                                  : pTilesetActor->MaximumScreenSpaceError;
 
     if (PointCloudShading.MaximumAttenuation > 0.0f) {
-      // Don't multiply by DPI; let Unreal handle scaling.
+      // Don't multiply by DPI scale; let Unreal handle scaling.
       MaximumPointSize = PointCloudShading.MaximumAttenuation;
     }
-    
-    float GeometricError = pGltfPointsComponent->GeometricError *
-                           PointCloudShading.GeometricErrorScale;
+
+    float GeometricError = GetGeometricError(PointCloudShading);
+    GeometricError *= PointCloudShading.GeometricErrorScale;
 
     // Depth Multiplier
     float SSEDenominator =
@@ -179,7 +193,7 @@ private:
     BatchElement.NumPrimitives = NumPoints * 2;
     BatchElement.FirstIndex = 0;
     BatchElement.MinVertexIndex = 0;
-    BatchElement.MaxVertexIndex = 0;
+    BatchElement.MaxVertexIndex = NumPoints * 4 - 1;
     BatchElement.PrimitiveUniformBuffer = GetUniformBuffer();
 
     CreatePointAttenuationUserData(BatchElement, View, Collector);

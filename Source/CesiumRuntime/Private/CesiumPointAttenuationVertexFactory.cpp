@@ -38,6 +38,7 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI() {
 
 class FCesiumPointAttenuationVertexFactoryShaderParameters
     : public FVertexFactoryShaderParameters {
+
   DECLARE_TYPE_LAYOUT(
       FCesiumPointAttenuationVertexFactoryShaderParameters,
       NonVirtual);
@@ -69,27 +70,21 @@ public:
     if (UserData->PositionBuffer && PositionBuffer.IsBound()) {
       ShaderBindings.Add(PositionBuffer, UserData->PositionBuffer);
     }
-
     if (UserData->PackedTangentsBuffer && PackedTangentsBuffer.IsBound()) {
       ShaderBindings.Add(PackedTangentsBuffer, UserData->PackedTangentsBuffer);
     }
-
     if (UserData->ColorBuffer && ColorBuffer.IsBound()) {
       ShaderBindings.Add(ColorBuffer, UserData->ColorBuffer);
     }
-
     if (UserData->TexCoordBuffer && TexCoordBuffer.IsBound()) {
       ShaderBindings.Add(TexCoordBuffer, UserData->TexCoordBuffer);
     }
-
     if (NumTexCoords.IsBound()) {
       ShaderBindings.Add(NumTexCoords, UserData->NumTexCoords);
     }
-
     if (bHasPointColors.IsBound()) {
       ShaderBindings.Add(bHasPointColors, UserData->bHasPointColors);
     }
-
     if (AttenuationParameters.IsBound()) {
       ShaderBindings.Add(
           AttenuationParameters,
@@ -109,7 +104,9 @@ private:
 
 FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
     ERHIFeatureLevel::Type InFeatureLevel)
-    : FLocalVertexFactory(InFeatureLevel, "FCesiumGltfPointsVertexFactory") {
+    : FLocalVertexFactory(
+          InFeatureLevel,
+          "FCesiumPointAttenuationVertexFactory") {
   // Vertices are not declared in an explicit vertex stream, so set this false
   // to avoid errors.
   bNeedsDeclaration = false;
@@ -117,12 +114,6 @@ FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
 
 bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
     const FVertexFactoryShaderPermutationParameters& Parameters) {
-  // SM5 is equivalent to DX11 Shader Model 5.
-  if (!IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5) ||
-      Parameters.MaterialParameters.FeatureLevel < ERHIFeatureLevel::SM5) {
-    return false;
-  }
-
   return Parameters.MaterialParameters.MaterialDomain == MD_Surface ||
          Parameters.MaterialParameters.bIsDefaultMaterial ||
          Parameters.MaterialParameters.bIsSpecialEngineMaterial;
