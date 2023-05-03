@@ -38,7 +38,7 @@ struct FVertexFactoryInput
  */
 struct FPositionOnlyVertexFactoryInput
 {
-  	float4  Position  : ATTRIBUTE0;
+  	float4  Position	: ATTRIBUTE0;
   	uint    VertexId	: SV_VertexID;
 };
 

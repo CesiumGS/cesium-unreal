@@ -1,5 +1,9 @@
 # Change Log
 
+### ? - ?
+
+- Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
+
 ### v1.25.1 - 2023-05-02
 
 ##### Fixes :wrench:
