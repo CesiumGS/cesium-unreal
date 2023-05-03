@@ -176,15 +176,7 @@ public class CesiumRuntime : ModuleRules
             }
         );
 
-        if (Target.bCompilePhysX && !Target.bUseChaos)
-        {
-            PrivateDependencyModuleNames.Add("PhysXCooking");
-            PrivateDependencyModuleNames.Add("PhysicsCore");
-        }
-        else
-        {
-            PrivateDependencyModuleNames.Add("Chaos");
-        }
+        PrivateDependencyModuleNames.Add("Chaos");
 
         if (Target.bBuildEditor == true)
         {
