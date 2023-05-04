@@ -234,14 +234,13 @@ void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
 }
 
 void ACesiumCreditSystem::removeCreditsFromViewports() {
-  if (!FModuleManager::Get().IsModuleLoaded(LevelEditorName))
-    return;
-
+#if WITH_EDITOR
   if (this->_pLastEditorViewport.IsValid()) {
     auto pPinned = this->_pLastEditorViewport.Pin();
     pPinned->RemoveOverlayWidget(CreditsWidget->TakeWidget());
     this->_pLastEditorViewport = nullptr;
   }
+#endif
 
   if (IsValid(CreditsWidget)) {
     CreditsWidget->RemoveFromViewport();
