@@ -13,6 +13,7 @@
 
 #if WITH_EDITOR
 #include "Editor.h"
+#include "EditorSupportDelegates.h"
 #include "IAssetViewport.h"
 #include "LevelEditor.h"
 #include "Modules/ModuleManager.h"
@@ -175,12 +176,18 @@ void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
     LevelEditorModule.OnRedrawLevelEditingViewports().AddUObject(
         this,
         &ACesiumCreditSystem::OnRedrawLevelEditingViewports);
-    LevelEditorModule.OnMapChanged().RemoveAll(this);
-    LevelEditorModule.OnMapChanged().AddUObject(
+    FEditorSupportDelegates::CleanseEditor.RemoveAll(this);
+    FEditorSupportDelegates::CleanseEditor.AddUObject(
         this,
-        &ACesiumCreditSystem::OnMapChanged);
+        &ACesiumCreditSystem::OnCleanseEditor);
+    // LevelEditorModule.OnMapChanged().RemoveAll(this);
+    // LevelEditorModule.OnMapChanged().AddUObject(
+    //     this,
+    //     &ACesiumCreditSystem::OnMapChanged);
     FEditorDelegates::PreBeginPIE.RemoveAll(this);
-    FEditorDelegates::PreBeginPIE.AddUObject(this, &ACesiumCreditSystem::OnPreBeginPIE);
+    FEditorDelegates::PreBeginPIE.AddUObject(
+        this,
+        &ACesiumCreditSystem::OnPreBeginPIE);
     FEditorDelegates::EndPIE.RemoveAll(this);
     FEditorDelegates::EndPIE.AddUObject(this, &ACesiumCreditSystem::OnEndPIE);
   }
@@ -206,11 +213,11 @@ void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
         FModuleManager::GetModuleChecked<FLevelEditorModule>(LevelEditorName);
     TSharedPtr<IAssetViewport> pActiveViewport =
         levelEditorModule.GetFirstActiveViewport();
-    if (pActiveViewport.IsValid() && this->_pLastEditorViewport != pActiveViewport) {
+    if (pActiveViewport.IsValid() &&
+        this->_pLastEditorViewport != pActiveViewport) {
       this->removeCreditsFromViewports();
 
-      // In the Editor, an unrooted world is in the process of being destroyed.
-      if (!pActiveViewport->HasPlayInEditorViewport() && GetWorld()->IsRooted()) {
+      if (!pActiveViewport->HasPlayInEditorViewport()) {
         auto pSlateWidget = CreditsWidget->TakeWidget();
         pActiveViewport->AddOverlayWidget(pSlateWidget);
         this->_pLastEditorViewport = pActiveViewport;
@@ -260,6 +267,9 @@ void ACesiumCreditSystem::OnPreBeginPIE(bool bIsSimulating) {
 }
 void ACesiumCreditSystem::OnEndPIE(bool bIsSimulating) {
   this->updateCreditsViewport(false);
+}
+void ACesiumCreditSystem::OnCleanseEditor() {
+  this->removeCreditsFromViewports();
 }
 #endif
 

@@ -68,6 +68,7 @@ public:
   void OnMapChanged(UWorld* pWorld, EMapChangeType changeType);
   void OnPreBeginPIE(bool bIsSimulating);
   void OnEndPIE(bool bIsSimulating);
+  void OnCleanseEditor();
 #endif
 
 private:
