@@ -209,7 +209,8 @@ void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
     if (pActiveViewport.IsValid() && this->_pLastEditorViewport != pActiveViewport) {
       this->removeCreditsFromViewports();
 
-      if (!pActiveViewport->HasPlayInEditorViewport()) {
+      // In the Editor, an unrooted world is in the process of being destroyed.
+      if (!pActiveViewport->HasPlayInEditorViewport() && GetWorld()->IsRooted()) {
         auto pSlateWidget = CreditsWidget->TakeWidget();
         pActiveViewport->AddOverlayWidget(pSlateWidget);
         this->_pLastEditorViewport = pActiveViewport;
