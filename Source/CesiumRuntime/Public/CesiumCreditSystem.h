@@ -38,6 +38,7 @@ public:
 
   void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void BeginDestroy() override;
 
   UPROPERTY(EditDefaultsOnly, Category = "Cesium")
   TSubclassOf<UUserWidget> CreditsWidgetClass;
@@ -65,9 +66,8 @@ public:
 
 #if WITH_EDITOR
   void OnRedrawLevelEditingViewports(bool);
-  void OnMapChanged(UWorld* pWorld, EMapChangeType changeType);
   void OnPreBeginPIE(bool bIsSimulating);
-  void OnEndPIE(bool bIsSimulating);
+  void OnEndPIE();
   void OnCleanseEditor();
 #endif
 

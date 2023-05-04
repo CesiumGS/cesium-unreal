@@ -14,6 +14,7 @@
 #if WITH_EDITOR
 #include "Editor.h"
 #include "EditorSupportDelegates.h"
+#include "GameDelegates.h"
 #include "IAssetViewport.h"
 #include "LevelEditor.h"
 #include "Modules/ModuleManager.h"
@@ -168,30 +169,49 @@ void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
   this->updateCreditsViewport(false);
 
 #if WITH_EDITOR
-  if (!GetWorld()->IsGameWorld() &&
-      FModuleManager::Get().IsModuleLoaded(LevelEditorName)) {
-    FLevelEditorModule& LevelEditorModule =
-        FModuleManager::GetModuleChecked<FLevelEditorModule>(LevelEditorName);
-    LevelEditorModule.OnRedrawLevelEditingViewports().RemoveAll(this);
-    LevelEditorModule.OnRedrawLevelEditingViewports().AddUObject(
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(LevelEditorName);
+
+  if (pLevelEditorModule && !GetWorld()->IsGameWorld()) {
+    pLevelEditorModule->OnRedrawLevelEditingViewports().RemoveAll(this);
+    pLevelEditorModule->OnRedrawLevelEditingViewports().AddUObject(
         this,
         &ACesiumCreditSystem::OnRedrawLevelEditingViewports);
+
     FEditorSupportDelegates::CleanseEditor.RemoveAll(this);
     FEditorSupportDelegates::CleanseEditor.AddUObject(
         this,
         &ACesiumCreditSystem::OnCleanseEditor);
-    // LevelEditorModule.OnMapChanged().RemoveAll(this);
-    // LevelEditorModule.OnMapChanged().AddUObject(
-    //     this,
-    //     &ACesiumCreditSystem::OnMapChanged);
+
     FEditorDelegates::PreBeginPIE.RemoveAll(this);
     FEditorDelegates::PreBeginPIE.AddUObject(
         this,
         &ACesiumCreditSystem::OnPreBeginPIE);
-    FEditorDelegates::EndPIE.RemoveAll(this);
-    FEditorDelegates::EndPIE.AddUObject(this, &ACesiumCreditSystem::OnEndPIE);
+
+    FGameDelegates::Get().GetEndPlayMapDelegate().RemoveAll(this);
+    FGameDelegates::Get().GetEndPlayMapDelegate().AddUObject(
+        this,
+        &ACesiumCreditSystem::OnEndPIE);
   }
 #endif
+}
+
+void ACesiumCreditSystem::BeginDestroy() {
+  this->removeCreditsFromViewports();
+
+#if WITH_EDITOR
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(LevelEditorName);
+  if (pLevelEditorModule) {
+    pLevelEditorModule->OnRedrawLevelEditingViewports().RemoveAll(this);
+  }
+
+  FEditorSupportDelegates::CleanseEditor.RemoveAll(this);
+  FEditorDelegates::PreBeginPIE.RemoveAll(this);
+  FEditorDelegates::EndPIE.RemoveAll(this);
+#endif
+
+  Super::BeginDestroy();
 }
 
 void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
@@ -206,13 +226,13 @@ void ACesiumCreditSystem::updateCreditsViewport(bool recreateWidget) {
   }
 
 #if WITH_EDITOR
-  if (!GetWorld()->IsGameWorld() &&
-      FModuleManager::Get().IsModuleLoaded(LevelEditorName)) {
+  FLevelEditorModule* pLevelEditorModule =
+      FModuleManager::GetModulePtr<FLevelEditorModule>(LevelEditorName);
+
+  if (pLevelEditorModule && !GetWorld()->IsGameWorld()) {
     // Add credits to the active editor viewport
-    FLevelEditorModule& levelEditorModule =
-        FModuleManager::GetModuleChecked<FLevelEditorModule>(LevelEditorName);
     TSharedPtr<IAssetViewport> pActiveViewport =
-        levelEditorModule.GetFirstActiveViewport();
+        pLevelEditorModule->GetFirstActiveViewport();
     if (pActiveViewport.IsValid() &&
         this->_pLastEditorViewport != pActiveViewport) {
       this->removeCreditsFromViewports();
@@ -251,23 +271,18 @@ void ACesiumCreditSystem::removeCreditsFromViewports() {
 void ACesiumCreditSystem::OnRedrawLevelEditingViewports(bool) {
   this->updateCreditsViewport(false);
 }
-void ACesiumCreditSystem::OnMapChanged(
-    UWorld* pWorld,
-    EMapChangeType changeType) {
-  if (changeType == EMapChangeType::TearDownWorld) {
-    this->removeCreditsFromViewports();
-  }
-}
+
 void ACesiumCreditSystem::OnPreBeginPIE(bool bIsSimulating) {
   // When we start play-in-editor, remove the editor viewport credits.
   // The game will often reuse the same viewport, and we don't want to show
   // two sets of credits.
   this->removeCreditsFromViewports();
 }
-void ACesiumCreditSystem::OnEndPIE(bool bIsSimulating) {
-  this->updateCreditsViewport(false);
-}
+
+void ACesiumCreditSystem::OnEndPIE() { this->updateCreditsViewport(false); }
+
 void ACesiumCreditSystem::OnCleanseEditor() {
+  // This is called late in the process of unloading a level.
   this->removeCreditsFromViewports();
 }
 #endif
