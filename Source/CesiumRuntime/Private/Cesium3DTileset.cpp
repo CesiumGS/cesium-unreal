@@ -1720,6 +1720,7 @@ void ACesium3DTileset::updateTilesetOptionsFromProperties() {
       GetDefault<UCesiumRuntimeSettings>()
           ->EnableExperimentalOcclusionCullingFeature &&
       this->EnableOcclusionCulling;
+  options.showCreditsOnScreen = this->ShowCreditsOnScreen;
 
   options.delayRefinementForOcclusion = this->DelayRefinementForOcclusion;
   options.enableFogCulling = this->EnableFogCulling;
@@ -2056,6 +2057,8 @@ void ACesium3DTileset::PostEditChangeProperty(
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
       PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
+      PropName ==
+          GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
       // with the struct name, so just do a manual string comparison.
       PropNameAsString == TEXT("RenderCustomDepth") ||
