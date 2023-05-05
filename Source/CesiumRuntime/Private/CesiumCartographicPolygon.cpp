@@ -34,7 +34,10 @@ void ACesiumCartographicPolygon::OnConstruction(const FTransform& Transform) {
   this->MakeLinear();
 }
 
-void ACesiumCartographicPolygon::BeginPlay() { this->MakeLinear(); }
+void ACesiumCartographicPolygon::BeginPlay() {
+  Super::BeginPlay();
+  this->MakeLinear();
+}
 
 CesiumGeospatial::CartographicPolygon
 ACesiumCartographicPolygon::CreateCartographicPolygon() const {
