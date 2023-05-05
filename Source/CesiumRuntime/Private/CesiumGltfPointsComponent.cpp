@@ -4,6 +4,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumPointAttenuationVertexFactory.h"
 #include "Engine/StaticMesh.h"
+#include "RHIResources.h"
 
 class FCesiumGltfPointsSceneProxy final : public FPrimitiveSceneProxy {
 private:
@@ -25,6 +26,7 @@ public:
         NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
         AttenuationVertexFactory(InFeatureLevel),
         AttenuationIndexBuffer(NumPoints),
+        AttenuationVertexBuffer(&RenderData->LODResources[0]),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)),
         pGltfPointsComponent(InComponent),
@@ -36,11 +38,13 @@ protected:
   virtual void CreateRenderThreadResources() override {
     AttenuationVertexFactory.InitResource();
     AttenuationIndexBuffer.InitResource();
+    AttenuationVertexBuffer.InitResource();
   }
 
   virtual void DestroyRenderThreadResources() override {
     AttenuationVertexFactory.ReleaseResource();
     AttenuationIndexBuffer.ReleaseResource();
+    AttenuationVertexBuffer.ReleaseResource();
   }
 
   virtual void GetDynamicMeshElements(
@@ -99,9 +103,10 @@ protected:
   }
 
 private:
-  // The vertex factory and index buffer for point attenuation.
+  // The vertex factory, index buffer, and vertex buffer for point attenuation.
   FCesiumPointAttenuationVertexFactory AttenuationVertexFactory;
   FCesiumPointAttenuationIndexBuffer AttenuationIndexBuffer;
+  FCesiumPointAttenuationVertexBuffer AttenuationVertexBuffer;
 
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
@@ -139,23 +144,7 @@ private:
     const FLocalVertexFactory& OriginalVertexFactory =
         RenderData->LODVertexFactories[0].VertexFactory;
 
-    auto pVertexBuffer =
-        RenderData->LODResources[0]
-            .VertexBuffers.PositionVertexBuffer.VertexBufferRHI;
-
-    FRHIResourceCreateInfo CreateInfo(TEXT("UCesiumGltfPointsComponent"));
-    auto pNewBuffer = RHICreateStructuredBuffer(
-        12,
-        pVertexBuffer->GetSize(),
-        BUF_Static | BUF_ShaderResource,
-        CreateInfo);
-
-    GDynamicRHI->RHICopyBuffer(pVertexBuffer, pNewBuffer);
-
-    UserData.PositionBuffer = RHICreateShaderResourceView(
-        FShaderResourceViewInitializer(pNewBuffer));
-
-    // UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
+    UserData.PositionBuffer = AttenuationVertexBuffer.SRV;
     UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
     UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();

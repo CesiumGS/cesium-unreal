@@ -5,8 +5,12 @@
 #include "MeshBatch.h"
 #include "MeshDrawShaderBindings.h"
 #include "MeshMaterialShader.h"
+#include "RenderCommandFence.h"
 
 void FCesiumPointAttenuationIndexBuffer::InitRHI() {
+  // This must be called from Rendering thread
+  check(IsInRenderingThread());
+
   FRHIResourceCreateInfo CreateInfo(
       TEXT("FCesiumPointAttenuationIndexBufferCreateInfo"));
   const uint32 NumIndices = NumPoints * 6;
@@ -34,6 +38,37 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI() {
   }
 
   RHIUnlockBuffer(IndexBufferRHI);
+}
+
+void FCesiumPointAttenuationVertexBuffer::InitRHI() {
+  // This must be called from Rendering thread
+  check(IsInRenderingThread());
+
+  auto pVertexBuffer =
+      StaticMeshLODResources->VertexBuffers.PositionVertexBuffer.VertexBufferRHI;
+
+  FRHIResourceCreateInfo CreateInfo(
+      TEXT("FCesiumPointAttenuationVertexBuffer"));
+  Buffer = RHICreateStructuredBuffer(
+      12,
+      pVertexBuffer->GetSize(),
+      BUF_Static | BUF_ShaderResource,
+      CreateInfo);
+
+  GDynamicRHI->RHICopyBuffer(pVertexBuffer, Buffer);
+
+  SRV = RHICreateShaderResourceView(FShaderResourceViewInitializer(Buffer));
+}
+
+void FCesiumPointAttenuationVertexBuffer::ReleaseRHI() {
+  // This must be called from Rendering thread
+  check(IsInRenderingThread());
+
+  if (Buffer) {
+    Buffer.SafeRelease();
+  }
+
+  SRV.SafeRelease();
 }
 
 class FCesiumPointAttenuationVertexFactoryShaderParameters
