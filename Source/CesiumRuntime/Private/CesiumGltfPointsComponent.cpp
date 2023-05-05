@@ -139,7 +139,23 @@ private:
     const FLocalVertexFactory& OriginalVertexFactory =
         RenderData->LODVertexFactories[0].VertexFactory;
 
-    UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
+    auto pVertexBuffer =
+        RenderData->LODResources[0]
+            .VertexBuffers.PositionVertexBuffer.VertexBufferRHI;
+
+    FRHIResourceCreateInfo CreateInfo(TEXT("UCesiumGltfPointsComponent"));
+    auto pNewBuffer = RHICreateStructuredBuffer(
+        12,
+        pVertexBuffer->GetSize(),
+        BUF_Static | BUF_ShaderResource,
+        CreateInfo);
+
+    GDynamicRHI->RHICopyBuffer(pVertexBuffer, pNewBuffer);
+
+    UserData.PositionBuffer = RHICreateShaderResourceView(
+        FShaderResourceViewInitializer(pNewBuffer));
+
+    // UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
     UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
     UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();
