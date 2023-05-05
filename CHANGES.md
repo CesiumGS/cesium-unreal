@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Tileset and raster overlay credits are now shown in Editor viewports.
+
 ### v1.25.1 - 2023-05-02
 
 ##### Fixes :wrench:

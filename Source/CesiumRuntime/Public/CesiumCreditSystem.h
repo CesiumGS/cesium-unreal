@@ -10,6 +10,11 @@
 #include <memory>
 #include <unordered_map>
 
+#if WITH_EDITOR
+#include "IAssetViewport.h"
+#include "UnrealEdMisc.h"
+#endif
+
 #include "CesiumCreditSystem.generated.h"
 
 namespace Cesium3DTilesSelection {
@@ -32,6 +37,8 @@ public:
   ACesiumCreditSystem();
 
   void BeginPlay() override;
+  virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void BeginDestroy() override;
 
   UPROPERTY(EditDefaultsOnly, Category = "Cesium")
   TSubclassOf<UUserWidget> CreditsWidgetClass;
@@ -54,6 +61,16 @@ public:
     return _pCreditSystem;
   }
 
+  void updateCreditsViewport(bool recreateWidget);
+  void removeCreditsFromViewports();
+
+#if WITH_EDITOR
+  void OnRedrawLevelEditingViewports(bool);
+  void OnPreBeginPIE(bool bIsSimulating);
+  void OnEndPIE();
+  void OnCleanseEditor();
+#endif
+
 private:
   static UClass* CesiumCreditSystemBP;
 
@@ -70,4 +87,8 @@ private:
 
   FString ConvertHtmlToRtf(std::string html);
   std::unordered_map<std::string, FString> _htmlToRtf;
+
+#if WITH_EDITOR
+  TWeakPtr<IAssetViewport> _pLastEditorViewport;
+#endif
 };
