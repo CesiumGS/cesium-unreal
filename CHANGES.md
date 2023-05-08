@@ -6,6 +6,10 @@
 
 - Tileset and raster overlay credits are now shown in Editor viewports.
 
+##### Fixes :wrench:
+
+- Fixed a bug in `ACesiumCartographicPolygon` where the standard base class `BeginPlay` implementation was not called.
+
 ### v1.25.1 - 2023-05-02
 
 ##### Fixes :wrench:
