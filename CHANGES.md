@@ -4,6 +4,7 @@
 
 ##### Additions :tada:
 
+- Added a `Scale` property to `CesiumGeoreference`. This allows the entire globe to be scaled up or down within the Unreal world.
 - Tileset and raster overlay credits are now shown in Editor viewports.
 
 ##### Fixes :wrench:
