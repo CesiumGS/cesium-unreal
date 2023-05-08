@@ -4,6 +4,7 @@
 
 #include "Engine/StaticMesh.h"
 #include "LocalVertexFactory.h"
+#include "RHIResources.h"
 
 /**
  * This generates the indices necessary for point attenuation in a
@@ -19,6 +20,24 @@ private:
   // The number of points in the original point mesh. Not to be confused with
   // the number of vertices in the attenuated point mesh.
   const int32 NumPoints;
+};
+
+/**
+ * This copies the position vertex buffer of the point mesh represented by a FCesiumGltfPointsComponent.
+ */
+class FCesiumPointAttenuationVertexBuffer : public FVertexBuffer {
+public:
+  FCesiumPointAttenuationVertexBuffer(
+      const FStaticMeshLODResources* StaticMeshLODResources)
+      : StaticMeshLODResources(StaticMeshLODResources) {}
+  virtual void InitRHI() override;
+  virtual void ReleaseRHI() override;
+
+  FBufferRHIRef Buffer;
+  FShaderResourceViewRHIRef SRV;
+
+private:
+  const FStaticMeshLODResources* StaticMeshLODResources;
 };
 
 /**
