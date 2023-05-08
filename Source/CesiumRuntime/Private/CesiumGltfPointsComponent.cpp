@@ -24,9 +24,10 @@ public:
       : FPrimitiveSceneProxy(InComponent),
         RenderData(InComponent->GetStaticMesh()->GetRenderData()),
         NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-        AttenuationVertexFactory(InFeatureLevel),
+        AttenuationVertexFactory(
+            InFeatureLevel,
+            &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
         AttenuationIndexBuffer(NumPoints),
-        AttenuationVertexBuffer(&RenderData->LODResources[0]),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)),
         pGltfPointsComponent(InComponent),
@@ -38,13 +39,11 @@ protected:
   virtual void CreateRenderThreadResources() override {
     AttenuationVertexFactory.InitResource();
     AttenuationIndexBuffer.InitResource();
-    AttenuationVertexBuffer.InitResource();
   }
 
   virtual void DestroyRenderThreadResources() override {
     AttenuationVertexFactory.ReleaseResource();
     AttenuationIndexBuffer.ReleaseResource();
-    AttenuationVertexBuffer.ReleaseResource();
   }
 
   virtual void GetDynamicMeshElements(
@@ -103,10 +102,9 @@ protected:
   }
 
 private:
-  // The vertex factory, index buffer, and vertex buffer for point attenuation.
+  // The vertex factory and index buffer for point attenuation.
   FCesiumPointAttenuationVertexFactory AttenuationVertexFactory;
   FCesiumPointAttenuationIndexBuffer AttenuationIndexBuffer;
-  FCesiumPointAttenuationVertexBuffer AttenuationVertexBuffer;
 
   UMaterialInterface* Material;
   FMaterialRelevance MaterialRelevance;
@@ -144,7 +142,6 @@ private:
     const FLocalVertexFactory& OriginalVertexFactory =
         RenderData->LODVertexFactories[0].VertexFactory;
 
-    UserData.PositionBuffer = AttenuationVertexBuffer.SRV;
     UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
     UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();

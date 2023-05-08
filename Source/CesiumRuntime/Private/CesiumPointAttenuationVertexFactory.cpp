@@ -11,8 +11,7 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI() {
   // This must be called from Rendering thread
   check(IsInRenderingThread());
 
-  FRHIResourceCreateInfo CreateInfo(
-      TEXT("FCesiumPointAttenuationIndexBufferCreateInfo"));
+  FRHIResourceCreateInfo CreateInfo(TEXT("FCesiumPointAttenuationIndexBuffer"));
   const uint32 NumIndices = NumPoints * 6;
   const uint32 Size = NumIndices * sizeof(uint32);
 
@@ -43,32 +42,38 @@ void FCesiumPointAttenuationIndexBuffer::InitRHI() {
 void FCesiumPointAttenuationVertexBuffer::InitRHI() {
   // This must be called from Rendering thread
   check(IsInRenderingThread());
-
-  auto pVertexBuffer =
-      StaticMeshLODResources->VertexBuffers.PositionVertexBuffer.VertexBufferRHI;
-
+ 
   FRHIResourceCreateInfo CreateInfo(
       TEXT("FCesiumPointAttenuationVertexBuffer"));
-  Buffer = RHICreateStructuredBuffer(
-      12,
-      pVertexBuffer->GetSize(),
-      BUF_Static | BUF_ShaderResource,
+
+  int32 NumPoints = PositionVertexBuffer->GetNumVertices();
+  uint8 Stride = sizeof(float) * 3;
+  int32 BufferSize = NumPoints * 4 * Stride;
+  VertexBufferRHI = RHICreateBuffer(
+      BufferSize,
+      BUF_Static | BUF_VertexBuffer,
+      Stride,
+      ERHIAccess::VertexOrIndexBuffer,
       CreateInfo);
 
-  GDynamicRHI->RHICopyBuffer(pVertexBuffer, Buffer);
+  void* Buffer = RHILockBuffer(VertexBufferRHI, 0, BufferSize, RLM_WriteOnly);
 
-  SRV = RHICreateShaderResourceView(FShaderResourceViewInitializer(Buffer));
-}
-
-void FCesiumPointAttenuationVertexBuffer::ReleaseRHI() {
-  // This must be called from Rendering thread
-  check(IsInRenderingThread());
-
-  if (Buffer) {
-    Buffer.SafeRelease();
+  const float* Data = (const float*)PositionVertexBuffer->GetVertexData();
+  float* Dest = (float*)Buffer;
+  for (int32 i = 0; i < NumPoints; ++i, Data += 3) {
+    FMemory::Memcpy(Dest, Data, Stride);
+    Dest += 3;
+    FMemory::Memcpy(Dest, Data, Stride);
+    Dest += 3;
+    FMemory::Memcpy(Dest, Data, Stride);
+    Dest += 3;
+    FMemory::Memcpy(Dest, Data, Stride);
+    Dest += 3;
   }
 
-  SRV.SafeRelease();
+  RHIUnlockBuffer(VertexBufferRHI);
+
+  // SRV = RHICreateShaderResourceView(FShaderResourceViewInitializer(Buffer));
 }
 
 class FCesiumPointAttenuationVertexFactoryShaderParameters
@@ -80,7 +85,6 @@ class FCesiumPointAttenuationVertexFactoryShaderParameters
 
 public:
   void Bind(const FShaderParameterMap& ParameterMap) {
-    PositionBuffer.Bind(ParameterMap, TEXT("PositionBuffer"), SPF_Mandatory);
     PackedTangentsBuffer.Bind(ParameterMap, TEXT("PackedTangentsBuffer"));
     ColorBuffer.Bind(ParameterMap, TEXT("ColorBuffer"));
     TexCoordBuffer.Bind(ParameterMap, TEXT("TexCoordBuffer"));
@@ -101,10 +105,6 @@ public:
       FVertexInputStreamArray& VertexStreams) const {
     FCesiumPointAttenuationBatchElementUserData* UserData =
         (FCesiumPointAttenuationBatchElementUserData*)BatchElement.UserData;
-
-    if (UserData->PositionBuffer && PositionBuffer.IsBound()) {
-      ShaderBindings.Add(PositionBuffer, UserData->PositionBuffer);
-    }
     if (UserData->PackedTangentsBuffer && PackedTangentsBuffer.IsBound()) {
       ShaderBindings.Add(PackedTangentsBuffer, UserData->PackedTangentsBuffer);
     }
@@ -128,7 +128,6 @@ public:
   }
 
 private:
-  LAYOUT_FIELD(FShaderResourceParameter, PositionBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, PackedTangentsBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, ColorBuffer);
   LAYOUT_FIELD(FShaderResourceParameter, TexCoordBuffer);
@@ -138,14 +137,12 @@ private:
 };
 
 FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
-    ERHIFeatureLevel::Type InFeatureLevel)
+    ERHIFeatureLevel::Type InFeatureLevel,
+    const FPositionVertexBuffer* PositionVertexBuffer)
     : FLocalVertexFactory(
           InFeatureLevel,
-          "FCesiumPointAttenuationVertexFactory") {
-  // Vertices are not declared in an explicit vertex stream, so set this false
-  // to avoid errors.
-  bNeedsDeclaration = false;
-}
+          "FCesiumPointAttenuationVertexFactory"),
+      VertexBuffer(PositionVertexBuffer) {}
 
 bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
     const FVertexFactoryShaderPermutationParameters& Parameters) {
@@ -154,10 +151,19 @@ bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
          Parameters.MaterialParameters.bIsSpecialEngineMaterial;
 }
 
-void FCesiumPointAttenuationVertexFactory::InitRHI() {}
+void FCesiumPointAttenuationVertexFactory::InitRHI() {
+  VertexBuffer.InitResource();
+
+  FVertexDeclarationElementList Elements;
+  Elements.Add(AccessStreamComponent(
+      FVertexStreamComponent(&VertexBuffer, 0, sizeof(float) * 3, VET_Float3),
+      0));
+  InitDeclaration(Elements);
+}
 
 void FCesiumPointAttenuationVertexFactory::ReleaseRHI() {
   FVertexFactory::ReleaseRHI();
+  VertexBuffer.ReleaseResource();
 }
 
 IMPLEMENT_TYPE_LAYOUT(FCesiumPointAttenuationVertexFactoryShaderParameters);

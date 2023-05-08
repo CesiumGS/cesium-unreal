@@ -7,7 +7,6 @@
 #include "/Engine/Private/Common.ush"
 #include "/Engine/Private/VertexFactoryCommon.ush"
 
-StructuredBuffer<float3> PositionBuffer;
 Buffer<float4> PackedTangentsBuffer;
 Buffer<float4> ColorBuffer;
 Buffer<float2> TexCoordBuffer;
@@ -25,12 +24,13 @@ uint InstancedEyeIndex;
 #endif
 
 /*
- * Per-vertex input. No vertex buffers are bound.
+ * Per-vertex input. Only a position buffer is bound.
  */
 struct FVertexFactoryInput
 {
-  	uint  VertexId    : SV_VertexID;
-  	uint  InstanceId  : SV_InstanceID;
+  	float4  Position	: ATTRIBUTE0;
+  	uint    VertexId    : SV_VertexID;
+  	uint    InstanceId  : SV_InstanceID;
 };
 
 /** 
@@ -85,14 +85,6 @@ struct FVertexFactoryInterpolantsVSToPS
 #endif
 };
 
-/** Helper function for position-only passes that don't require point index for other intermediates.*/
-float4 GetWorldPosition(uint VertexId)
-{
-  	uint PointIndex = VertexId / 4;
-  	float3 Position = PositionBuffer[PointIndex];
-  	return TransformLocalToTranslatedWorld(Position);
-}
-
 /** Computes TangentToLocal based on the Manual Vertex Fetch method in LocalVertexFactory.ush */
 half3x3 CalculateTangentToLocal(uint PointIndex, out float TangentSign)
 {
@@ -144,7 +136,7 @@ FVertexFactoryIntermediates GetVertexFactoryIntermediates(FVertexFactoryInput In
   	Intermediates.PointIndex = PointIndex;
   	Intermediates.CornerIndex = CornerIndex;
 
-  	Intermediates.Position = PositionBuffer[PointIndex];
+  	Intermediates.Position = Input.Position;
   	Intermediates.WorldPosition = TransformLocalToTranslatedWorld(Intermediates.Position);
 
   	float TangentSign = 1.0;
@@ -186,12 +178,14 @@ float4 VertexFactoryGetWorldPosition(FVertexFactoryInput Input, FVertexFactoryIn
 
 float4 VertexFactoryGetWorldPosition(FPositionOnlyVertexFactoryInput Input)
 {
-  	return GetWorldPosition(Input.VertexId);
+  	float3 Position = Input.Position;
+  	return TransformLocalToTranslatedWorld(Position);
 }
 
 float4 VertexFactoryGetWorldPosition(FPositionAndNormalOnlyVertexFactoryInput Input)
 {
-  	return GetWorldPosition(Input.VertexId);
+  	float3 Position = Input.Position;
+  	return TransformLocalToTranslatedWorld(Position);
 }
 
 float3 VertexFactoryGetWorldNormal(FPositionAndNormalOnlyVertexFactoryInput Input)

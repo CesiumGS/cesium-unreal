@@ -23,21 +23,19 @@ private:
 };
 
 /**
- * This copies the position vertex buffer of the point mesh represented by a FCesiumGltfPointsComponent.
+ * This generates the vertices necessary for point attenuation in a
+ * FCesiumGltfPointsComponent.
  */
 class FCesiumPointAttenuationVertexBuffer : public FVertexBuffer {
 public:
-  FCesiumPointAttenuationVertexBuffer(
-      const FStaticMeshLODResources* StaticMeshLODResources)
-      : StaticMeshLODResources(StaticMeshLODResources) {}
+  FCesiumPointAttenuationVertexBuffer(const FPositionVertexBuffer* PositionVertexBuffer)
+      : PositionVertexBuffer(PositionVertexBuffer) {}
   virtual void InitRHI() override;
-  virtual void ReleaseRHI() override;
 
-  FBufferRHIRef Buffer;
   FShaderResourceViewRHIRef SRV;
 
 private:
-  const FStaticMeshLODResources* StaticMeshLODResources;
+  const FPositionVertexBuffer* PositionVertexBuffer;
 };
 
 /**
@@ -45,7 +43,6 @@ private:
  * shader.
  */
 struct FCesiumPointAttenuationBatchElementUserData {
-  FRHIShaderResourceView* PositionBuffer;
   FRHIShaderResourceView* PackedTangentsBuffer;
   FRHIShaderResourceView* ColorBuffer;
   FRHIShaderResourceView* TexCoordBuffer;
@@ -54,7 +51,8 @@ struct FCesiumPointAttenuationBatchElementUserData {
   FVector3f AttenuationParameters;
 };
 
-class FCesiumPointAttenuationBatchElementUserDataWrapper : public FOneFrameResource {
+class FCesiumPointAttenuationBatchElementUserDataWrapper
+    : public FOneFrameResource {
 public:
   FCesiumPointAttenuationBatchElementUserData Data;
 };
@@ -66,7 +64,8 @@ class FCesiumPointAttenuationVertexFactory : public FLocalVertexFactory {
 public:
   // Sets default values for this component's properties
   FCesiumPointAttenuationVertexFactory(
-      ERHIFeatureLevel::Type InFeatureLevel);
+      ERHIFeatureLevel::Type InFeatureLevel,
+      const FPositionVertexBuffer* PositionVertexBuffer);
 
   static bool ShouldCompilePermutation(
       const FVertexFactoryShaderPermutationParameters& Parameters);
@@ -74,4 +73,6 @@ public:
 private:
   virtual void InitRHI() override;
   virtual void ReleaseRHI() override;
+
+  FCesiumPointAttenuationVertexBuffer VertexBuffer;
 };
