@@ -1,6 +1,6 @@
 # Change Log
 
-### v1.26.0
+### v1.26.0 - 2023-05-09
 
 ##### Additions :tada:
 
