@@ -572,6 +572,12 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
     this->UpdateGeoreference();
     return;
   } else if (
+      propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, Scale)) {
+    if (this->Scale < 1e-6) {
+      this->Scale = 1e-6;
+    }
+    this->UpdateGeoreference();
+  } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
   }
@@ -742,7 +748,8 @@ void ACesiumGeoreference::_updateGeoTransforms() {
           this->_ellipsoidRadii[0],
           this->_ellipsoidRadii[1],
           this->_ellipsoidRadii[2]),
-      center);
+      center,
+      this->Scale / 100.0);
 }
 
 void ACesiumGeoreference::Tick(float DeltaTime) {

@@ -1,11 +1,16 @@
 # Change Log
 
-### ? - ?
+### v1.26.0 - 2023-05-09
 
 ##### Additions :tada:
 
+- Added a `Scale` property to `CesiumGeoreference`. This allows the entire globe to be scaled up or down within the Unreal world.
 - Tileset and raster overlay credits are now shown in Editor viewports.
 - Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
+
+##### Fixes :wrench:
+
+- Fixed a bug in `ACesiumCartographicPolygon` where the standard base class `BeginPlay` implementation was not called.
 
 ### v1.25.1 - 2023-05-02
 

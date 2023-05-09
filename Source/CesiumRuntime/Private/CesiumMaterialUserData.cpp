@@ -15,7 +15,8 @@ void UCesiumMaterialUserData::PostEditChangeOwner() {
     const FStaticParameterSet& parameters = pMaterial->GetStaticParameters();
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
-    const TArray<FText>& layerNames = parameters.EditorOnly.MaterialLayers.LayerNames;
+    const TArray<FText>& layerNames =
+        parameters.EditorOnly.MaterialLayers.LayerNames;
 
     this->LayerNames.Reserve(layerNames.Num());
 
