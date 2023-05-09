@@ -142,6 +142,7 @@ private:
     const FLocalVertexFactory& OriginalVertexFactory =
         RenderData->LODVertexFactories[0].VertexFactory;
 
+    UserData.PositionBuffer = OriginalVertexFactory.GetPositionsSRV();
     UserData.PackedTangentsBuffer = OriginalVertexFactory.GetTangentsSRV();
     UserData.ColorBuffer = OriginalVertexFactory.GetColorComponentsSRV();
     UserData.TexCoordBuffer = OriginalVertexFactory.GetTextureCoordinatesSRV();

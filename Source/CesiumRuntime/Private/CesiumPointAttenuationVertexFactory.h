@@ -23,26 +23,11 @@ private:
 };
 
 /**
- * This generates the vertices necessary for point attenuation in a
- * FCesiumGltfPointsComponent.
- */
-class FCesiumPointAttenuationVertexBuffer : public FVertexBuffer {
-public:
-  FCesiumPointAttenuationVertexBuffer(const FPositionVertexBuffer* PositionVertexBuffer)
-      : PositionVertexBuffer(PositionVertexBuffer) {}
-  virtual void InitRHI() override;
-
-  FShaderResourceViewRHIRef SRV;
-
-private:
-  const FPositionVertexBuffer* PositionVertexBuffer;
-};
-
-/**
  * The parameters to be passed as UserData to the
  * shader.
  */
 struct FCesiumPointAttenuationBatchElementUserData {
+  FRHIShaderResourceView* PositionBuffer;
   FRHIShaderResourceView* PackedTangentsBuffer;
   FRHIShaderResourceView* ColorBuffer;
   FRHIShaderResourceView* TexCoordBuffer;
@@ -73,6 +58,4 @@ public:
 private:
   virtual void InitRHI() override;
   virtual void ReleaseRHI() override;
-
-  FCesiumPointAttenuationVertexBuffer VertexBuffer;
 };
