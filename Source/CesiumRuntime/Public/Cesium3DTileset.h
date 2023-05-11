@@ -10,6 +10,7 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
+#include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
@@ -849,7 +850,10 @@ private:
    * If this tileset contains points, their appearance can be configured with
    * these point cloud shading parameters.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Rendering")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetPointCloudShading,
+      Category = "Cesium|Rendering")
   FCesiumPointCloudShading PointCloudShading;
 
 protected:
@@ -1025,6 +1029,8 @@ public:
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditChangeChainProperty(
+      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
 #endif
@@ -1169,5 +1175,8 @@ private:
 
   int32 _tilesetsBeingDestroyed;
 
+  TUniquePtr<FCesiumGltfPointsSceneProxyUpdater> _pPointsSceneProxyUpdater;
+
   friend class UnrealResourcePreparer;
+  friend class UCesiumGltfPointsComponent;
 };

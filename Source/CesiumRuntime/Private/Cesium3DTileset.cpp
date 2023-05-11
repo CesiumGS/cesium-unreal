@@ -23,6 +23,8 @@
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfPointsComponent.h"
+#include "CesiumGltfPointsSceneProxy.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
@@ -91,7 +93,9 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieUseLodTransitions{true},
 
-      _tilesetsBeingDestroyed(0) {
+      _tilesetsBeingDestroyed(0),
+      _pPointsSceneProxyUpdater(
+          MakeUnique<FCesiumGltfPointsSceneProxyUpdater>(this)) {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -1146,6 +1150,7 @@ void ACesium3DTileset::DestroyTileset() {
   this->_pTileset->getAsyncDestructionCompleteEvent().thenInMainThread(
       [this]() { --this->_tilesetsBeingDestroyed; });
   this->_pTileset.Reset();
+  this->_pPointsSceneProxyUpdater.Reset();
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
@@ -2080,6 +2085,27 @@ void ACesium3DTileset::PostEditChangeProperty(
     for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
       pOverlay->Refresh();
     }
+
+    // Maximum Screen Space Error can affect how attenuated points are rendered,
+    // so propagate the new value to the render proxies for this tileset.
+    _pPointsSceneProxyUpdater->UpdateSettingsInProxies();
+  }
+}
+
+void ACesium3DTileset::PostEditChangeChainProperty(
+    FPropertyChangedChainEvent& PropertyChangedChainEvent) {
+  Super::PostEditChangeChainProperty(PropertyChangedChainEvent);
+
+  if (!PropertyChangedChainEvent.Property ||
+      PropertyChangedChainEvent.PropertyChain.IsEmpty()) {
+    return;
+  }
+
+  FName PropName =
+      PropertyChangedChainEvent.PropertyChain.GetHead()->GetValue()->GetFName();
+  if (PropName ==
+      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, PointCloudShading)) {
+    _pPointsSceneProxyUpdater->UpdateSettingsInProxies();
   }
 }
 
