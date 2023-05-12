@@ -268,7 +268,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintReadWrite,
+      BlueprintGetter = GetMaximumScreenSpaceError,
+      BlueprintSetter = SetMaximumScreenSpaceError,
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
   double MaximumScreenSpaceError = 16.0;
@@ -853,6 +854,7 @@ private:
   UPROPERTY(
       EditAnywhere,
       BlueprintGetter = GetPointCloudShading,
+      BlueprintSetter = SetPointCloudShading,
       Category = "Cesium|Rendering")
   FCesiumPointCloudShading PointCloudShading;
 
@@ -899,6 +901,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  double GetMaximumScreenSpaceError() { return MaximumScreenSpaceError; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetMaximumScreenSpaceError(double InMaximumScreenSpaceError);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   bool GetEnableOcclusionCulling() const;
@@ -987,6 +995,9 @@ public:
   FCesiumPointCloudShading GetPointCloudShading() const {
     return PointCloudShading;
   }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetPointCloudShading(FCesiumPointCloudShading InPointCloudShading);
 
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();

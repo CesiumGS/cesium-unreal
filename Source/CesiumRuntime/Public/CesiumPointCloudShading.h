@@ -58,4 +58,16 @@ struct CESIUMRUNTIME_API FCesiumPointCloudShading {
       Category = "Cesium",
       meta = (ClampMin = 0.0))
   float BaseResolution = 0.0f;
+
+  bool
+  operator==(const FCesiumPointCloudShading& OtherPointCloudShading) const {
+    return Attenuation == OtherPointCloudShading.Attenuation &&
+           GeometricErrorScale == OtherPointCloudShading.GeometricErrorScale &&
+           MaximumAttenuation == OtherPointCloudShading.MaximumAttenuation &&
+           BaseResolution == OtherPointCloudShading.BaseResolution;
+  }
+
+  bool operator!=(const FCesiumPointCloudShading& OtherPointCloudShading) const {
+    return !(*this == OtherPointCloudShading);
+  }
 };

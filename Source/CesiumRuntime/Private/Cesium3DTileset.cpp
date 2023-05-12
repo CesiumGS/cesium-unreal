@@ -285,6 +285,14 @@ void ACesium3DTileset::SetIonAssetEndpointUrl(
   }
 }
 
+void ACesium3DTileset::SetMaximumScreenSpaceError(
+    double InMaximumScreenSpaceError) {
+  if (MaximumScreenSpaceError != InMaximumScreenSpaceError) {
+    MaximumScreenSpaceError = InMaximumScreenSpaceError;
+    this->_pPointsSceneProxyUpdater->UpdateSettingsInProxies();
+  }
+}
+
 bool ACesium3DTileset::GetEnableOcclusionCulling() const {
   return GetDefault<UCesiumRuntimeSettings>()
              ->EnableExperimentalOcclusionCullingFeature &&
@@ -382,6 +390,14 @@ void ACesium3DTileset::SetCustomDepthParameters(
   if (this->CustomDepthParameters != InCustomDepthParameters) {
     this->CustomDepthParameters = InCustomDepthParameters;
     this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetPointCloudShading(
+    FCesiumPointCloudShading InPointCloudShading) {
+  if (PointCloudShading != InPointCloudShading) {
+    PointCloudShading = InPointCloudShading;
+    this->_pPointsSceneProxyUpdater->UpdateSettingsInProxies();
   }
 }
 

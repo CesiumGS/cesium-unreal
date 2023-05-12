@@ -3,7 +3,6 @@
 #include "Cesium3DTileset.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPointsSceneProxy.h"
-#include "CesiumPointAttenuationVertexFactory.h"
 #include "Misc/ScopeLock.h"
 #include "Misc/ScopeTryLock.h"
 
