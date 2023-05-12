@@ -49,7 +49,7 @@ public:
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
 
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  UPROPERTY(BlueprintReadOnly, Transient, Category = "Cesium")
   class UScreenCreditsWidget* CreditsWidget;
 
   // Called every frame
