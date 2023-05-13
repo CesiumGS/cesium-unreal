@@ -296,26 +296,8 @@ jobs:
       - name: Build plugin
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "5.1.0"') | Set-Content -Path CesiumForUnreal.uplugin
-          # UE 5.1 seems to have a bug where the Android precompiled files are in the wrong place.
-          # See https://forums.unrealengine.com/t/5-1-missing-precompiled-manifest-error-when-building-code-plugin-for-android/691983
-          # So we fix it here.
-          mkdir -p "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\arm64"
-          New-Item -ItemType Junction -Path "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\arm64\UnrealGame" -Target "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\UnrealGame"
-          cd "C:\Program Files\Epic Games\UE_5.1\Engine\Plugins"
-          Get-ChildItem -Recurse -Directory -Name | Where-Object {$_.EndsWith("Android\UnrealGame")} | ForEach-Object {
-            $oldPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_))
-            $newPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_, "..", "arm64"))
-            mkdir -p "$newPath"
-            New-Item -ItemType Junction -Path "$newPath\UnrealGame" -Target "$oldPath"
-          }
-
-          # Do the actual plugin build
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-
-          # But then the built plugin will have `Intermediate/Build/Android/arm64/UnrealGame` instead of `Intermediate/Build/Android/arm64/UnrealGame`
-          # which will cause problems when we try to package a game for Android. So fix that up.
-          mv $ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal/Intermediate/Build/Android/arm64/UnrealGame $ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
