@@ -588,7 +588,7 @@ jobs:
       - name: Build cesium-native
         run: |
           $ENV:UNREAL_ENGINE_DIR="C:/Program Files/Epic Games/UE_5.2"
-          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v21_clang-15.0.1-centos7/"
           $ENV:UNREAL_ENGINE_COMPILER_DIR="${ENV:LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           $ENV:UNREAL_ENGINE_LIBCXX_DIR="${ENV:UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
           cd extern
