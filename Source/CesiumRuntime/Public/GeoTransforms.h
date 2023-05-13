@@ -24,6 +24,7 @@ public:
   GeoTransforms()
       : _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
         _center(glm::dvec3(0.0)),
+        _scale(1.0),
         _georeferencedToEcef(1.0),
         _ecefToGeoreferenced(1.0),
         _ueAbsToEcef(1.0),
@@ -39,12 +40,15 @@ public:
    *
    * @param ellipsoid The ellipsoid to use for the georeferenced coordinates
    * @param center The center position.
+   * @param scale The scale factor of the globe in the Unreal world.
    */
   GeoTransforms(
       const CesiumGeospatial::Ellipsoid& ellipsoid,
-      const glm::dvec3& center)
+      const glm::dvec3& center,
+      double scale)
       : _ellipsoid(ellipsoid),
         _center(center),
+        _scale(scale),
         _georeferencedToEcef(1.0),
         _ecefToGeoreferenced(1.0),
         _ueAbsToEcef(1.0),
@@ -267,6 +271,7 @@ private:
   // Modifiable state
   CesiumGeospatial::Ellipsoid _ellipsoid;
   glm::dvec3 _center;
+  double _scale;
 
   // Derived state
   glm::dmat4 _georeferencedToEcef;

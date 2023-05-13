@@ -56,12 +56,16 @@ void GeoTransforms::updateTransforms() noexcept {
           _center,
           _ellipsoid);
   this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
-  this->_ueAbsToEcef = this->_georeferencedToEcef *
-                       CesiumTransforms::scaleToCesium *
-                       CesiumTransforms::unrealToOrFromCesium;
-  this->_ecefToUeAbs = CesiumTransforms::unrealToOrFromCesium *
-                       CesiumTransforms::scaleToUnrealWorld *
-                       this->_ecefToGeoreferenced;
+  this->_ueAbsToEcef =
+      this->_georeferencedToEcef *
+      glm::dmat4x4(
+          glm::dmat3x3(CesiumTransforms::centimetersToMeters / this->_scale)) *
+      CesiumTransforms::unrealToOrFromCesium;
+  this->_ecefToUeAbs =
+      CesiumTransforms::unrealToOrFromCesium *
+      glm::dmat4x4(
+          glm::dmat3x3(CesiumTransforms::metersToCentimeters * this->_scale)) *
+      this->_ecefToGeoreferenced;
 
   UE_LOG(
       LogCesium,

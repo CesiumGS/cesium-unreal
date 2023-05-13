@@ -442,11 +442,15 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(
           VecMath::createVector3D(location));
 
+  double scale = this->GetGeoreference()->Scale / 100.0;
+
   // An atmosphere of this radius should circumscribe all Earth terrain.
   double maxRadius = 6387000.0;
 
   if (llh.z / 1000.0 > this->CircumscribedGroundThreshold) {
-    this->SetSkyAtmosphereGroundRadius(this->SkyAtmosphere, maxRadius / 1000.0);
+    this->SetSkyAtmosphereGroundRadius(
+        this->SkyAtmosphere,
+        maxRadius * scale / 1000.0);
   } else {
     // Find the ellipsoid radius 100m below the surface at this location. See
     // the comment at the top of this file.
@@ -459,13 +463,15 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     if (llh.z / 1000.0 < this->InscribedGroundThreshold) {
       this->SetSkyAtmosphereGroundRadius(
           this->SkyAtmosphere,
-          minRadius / 1000.0);
+          minRadius * scale / 1000.0);
     } else {
       double t =
           ((llh.z / 1000.0) - this->InscribedGroundThreshold) /
           (this->CircumscribedGroundThreshold - this->InscribedGroundThreshold);
       double radius = glm::mix(minRadius, maxRadius, t);
-      this->SetSkyAtmosphereGroundRadius(this->SkyAtmosphere, radius / 1000.0);
+      this->SetSkyAtmosphereGroundRadius(
+          this->SkyAtmosphere,
+          radius * scale / 1000.0);
     }
   }
 }

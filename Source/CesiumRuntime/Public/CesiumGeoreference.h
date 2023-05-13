@@ -96,6 +96,17 @@ public:
   TArray<FCesiumSubLevel> CesiumSubLevels;
 
   /**
+   * The percentage scale of the globe in the Unreal world. If this value is 50,
+   * for example, one meter on the globe occupies half a meter in the Unreal
+   * world.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (UIMin = 0.000001, UIMax = 100.0))
+  double Scale = 100.0;
+
+  /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
    *
    * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates, such
