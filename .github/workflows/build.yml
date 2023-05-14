@@ -597,7 +597,7 @@ jobs:
       - name: Build plugin
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "5.2.0"') | Set-Content -Path CesiumForUnreal.uplugin
-          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
+          $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v21_clang-15.0.1-centos7/"
           cd "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
           cat "C:\Users\ec2-user\AppData\Roaming\Unreal Engine\AutomationTool\Logs\C+Program+Files+Epic+Games+UE_5.2\UBT-UnrealGame-Linux-Development.txt"
