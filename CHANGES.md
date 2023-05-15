@@ -1,5 +1,12 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added settings to control the cache, specifically, how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
+
+
 ### v1.26.0 - 2023-05-09
 
 ##### Additions :tada:

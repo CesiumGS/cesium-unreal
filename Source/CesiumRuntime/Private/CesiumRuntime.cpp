@@ -4,6 +4,7 @@
 #include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Tracing.h"
 #include "HAL/FileManager.h"
 #include "HttpModule.h"
@@ -90,12 +91,17 @@ std::string getCacheDatabaseName() {
 } // namespace
 
 const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
+  int RequestsPerCachePrune =
+      GetDefault<UCesiumRuntimeSettings>()->RequestsPerCachePrune;
+  int MaxCacheItems = GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),
           std::make_shared<UnrealAssetAccessor>(),
           std::make_shared<CesiumAsync::SqliteCache>(
               spdlog::default_logger(),
-              getCacheDatabaseName()));
+              getCacheDatabaseName(),
+              MaxCacheItems),
+          RequestsPerCachePrune);
   return pAssetAccessor;
 }
