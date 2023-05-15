@@ -4,6 +4,7 @@
 #include "Templates/SharedPointer.h"
 #include <glm/vec3.hpp>
 
+class ACesium3DTileset;
 class UCesiumGltfPointsComponent;
 class FCesiumGltfPointsSceneProxy;
 struct FCesiumGltfPointsSceneProxyWrapper;
