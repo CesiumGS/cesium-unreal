@@ -1,5 +1,11 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Emit a warning if the camera is too far from the origin when the "Enable World Bounds Checks" option is enabled.
+
 ### v1.26.0 - 2023-05-09
 
 ##### Additions :tada:
