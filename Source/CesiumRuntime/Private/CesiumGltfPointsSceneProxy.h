@@ -24,11 +24,13 @@ public:
       : FPrimitiveSceneProxy(InComponent),
         RenderData(InComponent->GetStaticMesh()->GetRenderData()),
         NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
+        bAttenuationSupported(
+            RHISupportsManualVertexFetch(GetScene().GetShaderPlatform())),
         TilesetData(),
         AttenuationVertexFactory(
             InFeatureLevel,
             &RenderData->LODResources[0].VertexBuffers.PositionVertexBuffer),
-        AttenuationIndexBuffer(NumPoints),
+        AttenuationIndexBuffer(NumPoints, bAttenuationSupported),
         Material(InComponent->GetMaterial(0)),
         MaterialRelevance(InComponent->GetMaterialRelevance(InFeatureLevel)) {}
 
@@ -51,13 +53,14 @@ protected:
       FMeshElementCollector& Collector) const override {
     QUICK_SCOPE_CYCLE_COUNTER(STAT_GltfPointsSceneProxy_GetDynamicMeshElements);
 
-    const bool hasAttenuation = TilesetData.PointCloudShading.Attenuation;
+    const bool useAttenuation =
+        bAttenuationSupported && TilesetData.PointCloudShading.Attenuation;
 
     for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
       if (VisibilityMap & (1 << ViewIndex)) {
         const FSceneView* View = Views[ViewIndex];
         FMeshBatch& Mesh = Collector.AllocateMesh();
-        if (hasAttenuation) {
+        if (useAttenuation) {
           CreateMeshWithAttenuation(Mesh, View, Collector);
         } else {
           CreateMesh(Mesh);
@@ -101,6 +104,9 @@ public:
   }
 
 private:
+  // Whether or not the shader platform supports attenuation.
+  bool bAttenuationSupported;
+
   // Data from the UCesiumGltfComponent that owns this scene proxy, as well as
   // its ACesium3DTileset.
   FCesiumGltfPointsSceneProxyTilesetData TilesetData;

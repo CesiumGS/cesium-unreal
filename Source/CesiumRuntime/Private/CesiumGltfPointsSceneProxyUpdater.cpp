@@ -25,7 +25,7 @@ void FCesiumGltfPointsSceneProxyTilesetData::UpdateFromComponent(
 
 FCesiumGltfPointsSceneProxyUpdater::FCesiumGltfPointsSceneProxyUpdater(
     ACesium3DTileset* Tileset)
-    : Owner(Tileset) {}
+    : Owner(Tileset), bNeedsUpdate(false) {}
 
 FCesiumGltfPointsSceneProxyUpdater::~FCesiumGltfPointsSceneProxyUpdater() {}
 

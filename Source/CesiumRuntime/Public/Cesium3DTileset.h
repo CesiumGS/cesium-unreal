@@ -850,6 +850,8 @@ private:
   /**
    * If this tileset contains points, their appearance can be configured with
    * these point cloud shading parameters.
+   *
+   * These settings are not supported on mobile platforms.
    */
   UPROPERTY(
       EditAnywhere,

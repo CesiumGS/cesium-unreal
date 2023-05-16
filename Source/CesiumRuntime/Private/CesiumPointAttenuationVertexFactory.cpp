@@ -8,6 +8,10 @@
 #include "RenderCommandFence.h"
 
 void FCesiumPointAttenuationIndexBuffer::InitRHI() {
+  if (!bAttenuationSupported) {
+    return;
+  }
+
   // This must be called from Rendering thread
   check(IsInRenderingThread());
 
@@ -142,6 +146,10 @@ FCesiumPointAttenuationVertexFactory::FCesiumPointAttenuationVertexFactory(
 
 bool FCesiumPointAttenuationVertexFactory::ShouldCompilePermutation(
     const FVertexFactoryShaderPermutationParameters& Parameters) {
+  if (!RHISupportsManualVertexFetch(Parameters.Platform)) {
+    return false;
+  }
+
   return Parameters.MaterialParameters.MaterialDomain == MD_Surface ||
          Parameters.MaterialParameters.bIsDefaultMaterial ||
          Parameters.MaterialParameters.bIsSpecialEngineMaterial;
