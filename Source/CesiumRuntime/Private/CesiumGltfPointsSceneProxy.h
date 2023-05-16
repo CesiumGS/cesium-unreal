@@ -24,9 +24,6 @@ public:
       : FPrimitiveSceneProxy(InComponent),
         RenderData(InComponent->GetStaticMesh()->GetRenderData()),
         NumPoints(RenderData->LODResources[0].IndexBuffer.GetNumIndices()),
-        ProxyWrapper(
-            MakeShared<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>(
-                this)),
         TilesetData(),
         AttenuationVertexFactory(
             InFeatureLevel,
@@ -98,9 +95,6 @@ protected:
   }
 
 public:
-  TSharedPtr<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>
-      ProxyWrapper;
-
   virtual void UpdateTilesetData(
       const FCesiumGltfPointsSceneProxyTilesetData& InTilesetData) {
     TilesetData = InTilesetData;

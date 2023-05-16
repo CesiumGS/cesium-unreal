@@ -1166,7 +1166,6 @@ void ACesium3DTileset::DestroyTileset() {
   this->_pTileset->getAsyncDestructionCompleteEvent().thenInMainThread(
       [this]() { --this->_tilesetsBeingDestroyed; });
   this->_pTileset.Reset();
-  this->_pPointsSceneProxyUpdater.Reset();
 
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
@@ -1954,6 +1953,9 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   updateTilesetOptionsFromProperties();
+  if (this->_pPointsSceneProxyUpdater) {
+    this->_pPointsSceneProxyUpdater->UpdateSettingsInProxiesIfNeeded();
+  }
 
   std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {

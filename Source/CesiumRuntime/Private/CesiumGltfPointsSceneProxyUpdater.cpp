@@ -27,108 +27,60 @@ FCesiumGltfPointsSceneProxyUpdater::FCesiumGltfPointsSceneProxyUpdater(
     ACesium3DTileset* Tileset)
     : Owner(Tileset) {}
 
-FCesiumGltfPointsSceneProxyUpdater::~FCesiumGltfPointsSceneProxyUpdater() {
-  this->RegisteredProxies.Empty();
+FCesiumGltfPointsSceneProxyUpdater::~FCesiumGltfPointsSceneProxyUpdater() {}
+
+void FCesiumGltfPointsSceneProxyUpdater::MarkForUpdateNextFrame() {
+  bNeedsUpdate = true;
 }
 
-FCesiumGltfPointsSceneProxyUpdater::FCesiumRegisteredProxy::
-    FCesiumRegisteredProxy(
-        TWeakObjectPtr<UCesiumGltfPointsComponent> Component,
-        TWeakPtr<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>
-            SceneProxyWrapper)
-    : Component(Component),
-      Tileset(Component->pTilesetActor),
-      SceneProxyWrapper(SceneProxyWrapper) {}
-
-void FCesiumGltfPointsSceneProxyUpdater::RegisterProxy(
-    UCesiumGltfPointsComponent* Component,
-    TWeakPtr<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>
-        SceneProxyWrapper) {
-  if (IsValid(Component)) {
-    FCriticalSection ProxyLock;
-
-    if (TSharedPtr<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>
-            SceneProxyWrapperShared = SceneProxyWrapper.Pin()) {
-      FScopeLock Lock(&ProxyLock);
-      this->RegisteredProxies.Emplace(Component, SceneProxyWrapper);
-      this->UpdateSettingsInProxies();
-    }
+void FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies() {
+  if (IsValid(this->Owner) && IsInGameThread()) {
+    TransferSettingsToProxies();
+    bNeedsUpdate = false;
   }
 }
 
-void FCesiumGltfPointsSceneProxyUpdater::PrepareProxies() {
-  for (int32 i = 0; i < this->RegisteredProxies.Num(); ++i) {
-    FCesiumRegisteredProxy& RegisteredProxy = this->RegisteredProxies[i];
-    bool bValidProxy = false;
-
-    // Acquire a Shared Pointer from the Weak Pointer and check that it
-    // references a valid object
-    if (TSharedPtr<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>
-            SceneProxyWrapper = RegisteredProxy.SceneProxyWrapper.Pin()) {
-      if (UCesiumGltfPointsComponent* Component =
-              RegisteredProxy.Component.Get()) {
-        if (ACesium3DTileset* Tileset = RegisteredProxy.Tileset.Get()) {
-          if (Tileset == this->Owner) {
-            RegisteredProxy.TilesetData.UpdateFromComponent(Component);
-            bValidProxy = true;
-          }
-        }
-      }
-    }
-
-    // If the SceneProxy has been destroyed, remove it from the list and
-    // reiterate
-    if (!bValidProxy) {
-      RegisteredProxies.RemoveAtSwap(i--, 1, false);
-    }
+void FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxiesIfNeeded() {
+  if (bNeedsUpdate) {
+    UpdateSettingsInProxies();
   }
 }
 
 void FCesiumGltfPointsSceneProxyUpdater::TransferSettingsToProxies() {
-  if (RegisteredProxies.Num() == 0) {
-    return;
-  }
+  TInlineComponentArray<UActorComponent*> ComponentArray(Owner, true);
+  Owner->GetComponents(
+      UCesiumGltfPointsComponent::StaticClass(),
+      ComponentArray,
+      true);
 
-  // Used to pass render data updates to render thread
+  // Used to pass tileset data updates to render thread
+  TArray<FCesiumGltfPointsSceneProxy*> SceneProxies;
   TArray<FCesiumGltfPointsSceneProxyTilesetData> ProxyTilesetData;
 
-  // Process Nodes
-  {
-    for (int32 i = 0; i < RegisteredProxies.Num(); ++i) {
-      const FCesiumRegisteredProxy& RegisteredProxy = RegisteredProxies[i];
-
-      // Attempt to get a data lock
-      FScopeTryLock TryDataLock(&this->DataLock);
-      if (TryDataLock.IsLocked()) {
-        FCesiumGltfPointsSceneProxyTilesetData TilesetData =
-            RegisteredProxy.TilesetData;
-        TilesetData.SceneProxyWrapper = RegisteredProxy.SceneProxyWrapper;
-        ProxyTilesetData.Add(TilesetData);
-      }
+  for (UActorComponent* ActorComponent : ComponentArray) {
+    UCesiumGltfPointsComponent* PointsComponent =
+        static_cast<UCesiumGltfPointsComponent*>(ActorComponent);
+    FCesiumGltfPointsSceneProxy* PointsProxy =
+        static_cast<FCesiumGltfPointsSceneProxy*>(PointsComponent->SceneProxy);
+    if (PointsProxy) {
+      SceneProxies.Add(PointsProxy);
     }
+
+    FCesiumGltfPointsSceneProxyTilesetData TilesetData;
+    TilesetData.UpdateFromComponent(PointsComponent);
+    ProxyTilesetData.Add(TilesetData);
   }
 
-  // Update Render Data
+  // Update render Data
   ENQUEUE_RENDER_COMMAND(TransferCesium3DTilesetSettingsToPointsProxies)
-  ([ProxyTilesetData](FRHICommandListImmediate& RHICmdList) mutable {
+  ([SceneProxies,
+    ProxyTilesetData](FRHICommandListImmediate& RHICmdList) mutable {
     // Iterate over proxies and, if valid, update their data
-    for (FCesiumGltfPointsSceneProxyTilesetData& TilesetData :
-         ProxyTilesetData) {
-      // Check for proxy's validity, in case it has been destroyed since the
-      // update was issued
-      if (TSharedPtr<FCesiumGltfPointsSceneProxyWrapper, ESPMode::ThreadSafe>
-              SceneProxyWrapper = TilesetData.SceneProxyWrapper.Pin()) {
-        if (SceneProxyWrapper->Proxy) {
-          SceneProxyWrapper->Proxy->UpdateTilesetData(TilesetData);
-        }
+    for (int32 i = 0; i < SceneProxies.Num(); i++) {
+      FCesiumGltfPointsSceneProxy* SceneProxy = SceneProxies[i];
+      if (SceneProxy) {
+        SceneProxy->UpdateTilesetData(ProxyTilesetData[i]);
       }
     }
   });
-}
-
-void FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies() {
-  if (IsInGameThread()) {
-    PrepareProxies();
-    TransferSettingsToProxies();
-  }
 }

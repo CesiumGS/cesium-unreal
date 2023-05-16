@@ -12,9 +12,10 @@ UCesiumGltfPointsComponent::UCesiumGltfPointsComponent()
 UCesiumGltfPointsComponent::~UCesiumGltfPointsComponent() {}
 
 FPrimitiveSceneProxy* UCesiumGltfPointsComponent::CreateSceneProxy() {
-  FCesiumGltfPointsSceneProxy* Proxy = new FCesiumGltfPointsSceneProxy(this, GetScene()->GetFeatureLevel());
-  this->pTilesetActor->_pPointsSceneProxyUpdater->RegisterProxy(
-      this,
-      Proxy->ProxyWrapper);
+  FPrimitiveSceneProxy* Proxy =
+      new FCesiumGltfPointsSceneProxy(this, GetScene()->GetFeatureLevel());
+  if (IsValid(this) && IsValid(this->pTilesetActor)) {
+    this->pTilesetActor->_pPointsSceneProxyUpdater->MarkForUpdateNextFrame();
+  }
   return Proxy;
 }
