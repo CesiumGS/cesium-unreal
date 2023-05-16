@@ -19,11 +19,10 @@ public:
   virtual void InitRHI() override;
 
 private:
-  const bool bAttenuationSupported;
-
   // The number of points in the original point mesh. Not to be confused with
   // the number of vertices in the attenuated point mesh.
   const int32 NumPoints;
+  const bool bAttenuationSupported;
 };
 
 /**
