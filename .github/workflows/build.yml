@@ -583,6 +583,10 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${CESIUM_UNREAL_VERSION}" >> $GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $GITHUB_ENV
+      - name: Install additional packages
+        run: |
+          # TODO: move these to the image instead.
+          sudo yum install -y gcc
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
