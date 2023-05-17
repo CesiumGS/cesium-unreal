@@ -617,6 +617,9 @@ jobs:
           sed -i 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.2.0\"/g' CesiumForUnreal.uplugin
           export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7/"
           cd /opt/ue52/Engine/Build/BatchFiles
+          # UnrealBuildTool writes to write to ~/.config and loses its mind if it doesn't exist. So create it.
+          # TODO: move this to the image instead
+          mkdir -p ~/.config
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
       - name: Publish plugin package artifact
         if: ${{ success() }}
