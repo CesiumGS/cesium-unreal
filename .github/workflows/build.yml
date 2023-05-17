@@ -604,7 +604,7 @@ jobs:
       - name: Build cesium-native
         run: |
           export UNREAL_ENGINE_DIR="/opt/ue52"
-          export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7"
+          export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7/"
           export UNREAL_ENGINE_COMPILER_DIR="${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
           # TODO: Move this to the image instead
@@ -615,7 +615,7 @@ jobs:
       - name: Build plugin
         run: |
           sed -i '' 's/\"EngineVersion\": \"5.0.0\"/\"EngineVersion\": \"5.2.0\"/g' CesiumForUnreal.uplugin
-          export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7"
+          export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7/"
           cd /opt/ue52/Engine/Build/BatchFiles
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
       - name: Publish plugin package artifact
