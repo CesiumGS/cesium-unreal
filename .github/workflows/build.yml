@@ -588,6 +588,7 @@ jobs:
           # TODO: move these to the image instead.
           sudo yum install -y gcc-c++
           sudo yum install -y openssl-devel
+          sudo yum install -y ninja-build
       - name: Install CMake from source
         run: |
           # TODO: move this to the image instead.
