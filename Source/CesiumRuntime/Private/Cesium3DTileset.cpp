@@ -25,6 +25,7 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPointsSceneProxy.h"
+#include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
@@ -93,9 +94,7 @@ ACesium3DTileset::ACesium3DTileset()
       _beforeMovieLoadingDescendantLimit{LoadingDescendantLimit},
       _beforeMovieUseLodTransitions{true},
 
-      _tilesetsBeingDestroyed(0),
-      _pPointsSceneProxyUpdater(
-          MakeUnique<FCesiumGltfPointsSceneProxyUpdater>(this)) {
+      _tilesetsBeingDestroyed(0) {
 
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
@@ -289,7 +288,7 @@ void ACesium3DTileset::SetMaximumScreenSpaceError(
     double InMaximumScreenSpaceError) {
   if (MaximumScreenSpaceError != InMaximumScreenSpaceError) {
     MaximumScreenSpaceError = InMaximumScreenSpaceError;
-    this->_pPointsSceneProxyUpdater->UpdateSettingsInProxies();
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }
 
@@ -397,7 +396,7 @@ void ACesium3DTileset::SetPointCloudShading(
     FCesiumPointCloudShading InPointCloudShading) {
   if (PointCloudShading != InPointCloudShading) {
     PointCloudShading = InPointCloudShading;
-    this->_pPointsSceneProxyUpdater->UpdateSettingsInProxies();
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }
 
@@ -1953,9 +1952,6 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   }
 
   updateTilesetOptionsFromProperties();
-  if (this->_pPointsSceneProxyUpdater) {
-    this->_pPointsSceneProxyUpdater->UpdateSettingsInProxiesIfNeeded();
-  }
 
   std::vector<FCesiumCamera> cameras = this->GetCameras();
   if (cameras.empty()) {
@@ -2106,7 +2102,7 @@ void ACesium3DTileset::PostEditChangeProperty(
 
     // Maximum Screen Space Error can affect how attenuated points are rendered,
     // so propagate the new value to the render proxies for this tileset.
-    _pPointsSceneProxyUpdater->UpdateSettingsInProxies();
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }
 
@@ -2123,7 +2119,7 @@ void ACesium3DTileset::PostEditChangeChainProperty(
       PropertyChangedChainEvent.PropertyChain.GetHead()->GetValue()->GetFName();
   if (PropName ==
       GET_MEMBER_NAME_CHECKED(ACesium3DTileset, PointCloudShading)) {
-    _pPointsSceneProxyUpdater->UpdateSettingsInProxies();
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }
 

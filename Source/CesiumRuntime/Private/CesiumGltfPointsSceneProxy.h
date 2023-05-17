@@ -6,6 +6,34 @@
 #include "Engine/StaticMesh.h"
 #include "RHIResources.h"
 
+/**
+ * Used to pass tile data and Cesium3DTileset settings to a SceneProxy, usually
+ * via render thread.
+ */
+struct FCesiumGltfPointsSceneProxyTilesetData {
+  FCesiumPointCloudShading PointCloudShading;
+  double MaximumScreenSpaceError;
+  bool UsesAdditiveRefinement;
+  float GeometricError;
+  glm::vec3 Dimensions;
+
+  FCesiumGltfPointsSceneProxyTilesetData()
+      : PointCloudShading(),
+        MaximumScreenSpaceError(0.0),
+        UsesAdditiveRefinement(false),
+        GeometricError(0.0f),
+        Dimensions() {}
+
+  void UpdateFromComponent(UCesiumGltfPointsComponent* Component) {
+    ACesium3DTileset* Tileset = Component->pTilesetActor;
+    PointCloudShading = Tileset->GetPointCloudShading();
+    MaximumScreenSpaceError = Tileset->MaximumScreenSpaceError;
+    UsesAdditiveRefinement = Component->UsesAdditiveRefinement;
+    GeometricError = Component->GeometricError;
+    Dimensions = Component->Dimensions;
+  }
+};
+
 class FCesiumGltfPointsSceneProxy final : public FPrimitiveSceneProxy {
 private:
   // The original render data of the static mesh.

@@ -15,10 +15,13 @@ FPrimitiveSceneProxy* UCesiumGltfPointsComponent::CreateSceneProxy() {
   if (!IsValid(this)) {
     return nullptr;
   }
-  FPrimitiveSceneProxy* Proxy =
+
+  FCesiumGltfPointsSceneProxy* Proxy =
       new FCesiumGltfPointsSceneProxy(this, GetScene()->GetFeatureLevel());
-  if (IsValid(this->pTilesetActor)) {
-    this->pTilesetActor->_pPointsSceneProxyUpdater->MarkForUpdateNextFrame();
-  }
+
+  FCesiumGltfPointsSceneProxyTilesetData TilesetData;
+  TilesetData.UpdateFromComponent(this);
+  Proxy->UpdateTilesetData(TilesetData);
+  
   return Proxy;
 }

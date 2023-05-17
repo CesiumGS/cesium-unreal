@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Cesium3DTilesSelection/Tile.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"

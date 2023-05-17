@@ -10,7 +10,6 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
@@ -1187,8 +1186,6 @@ private:
   std::vector<Cesium3DTilesSelection::Tile*> _tilesToHideNextFrame;
 
   int32 _tilesetsBeingDestroyed;
-
-  TUniquePtr<FCesiumGltfPointsSceneProxyUpdater> _pPointsSceneProxyUpdater;
 
   friend class UnrealResourcePreparer;
   friend class UCesiumGltfPointsComponent;
