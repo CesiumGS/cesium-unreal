@@ -1,5 +1,12 @@
 # Change Log
 
+### ? - ?
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.2.
+- Added support for running Cesium for Unreal in the Unreal Editor in Linux under UE 5.2. Previous versions supported Linux only as a packaging target.
+
 ### v1.26.0 - 2023-05-09
 
 ##### Additions :tada:
