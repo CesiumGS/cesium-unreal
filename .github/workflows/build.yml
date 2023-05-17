@@ -586,7 +586,18 @@ jobs:
       - name: Install additional packages
         run: |
           # TODO: move these to the image instead.
-          sudo yum install -y gcc
+          sudo yum install -y gcc-c++
+          sudo yum install -y openssl-devel
+      - name: Install CMake from source
+        run: |
+          # TODO: move this to the image instead.
+          cd /data
+          wget https://github.com/Kitware/CMake/releases/download/v3.26.3/cmake-3.26.3.tar.gz
+          tar xzf cmake-3.26.3.tar.gz
+          cd cmake-3.26.3
+          ./bootstrap
+          make
+          sudo make install
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
