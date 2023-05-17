@@ -8,6 +8,7 @@
 #include "Engine/Texture2D.h"
 #include "Engine/TextureDefines.h"
 #include "RHI.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Templates/UniquePtr.h"
 #include <optional>
 #include <variant>
