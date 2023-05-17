@@ -607,6 +607,8 @@ jobs:
           export LINUX_MULTIARCH_ROOT="/opt/ue52/Engine/Extras/ThirdPartyNotUE/SDKs/HostLinux/Linux_x64/v21_clang-15.0.1-centos7"
           export UNREAL_ENGINE_COMPILER_DIR="${LINUX_MULTIARCH_ROOT}x86_64-unknown-linux-gnu"
           export UNREAL_ENGINE_LIBCXX_DIR="${UNREAL_ENGINE_DIR}/Engine/Source/ThirdParty/Unix/LibCxx"
+          # TODO: Move this to the image instead
+          export PATH=$PATH:/usr/local/bin
           cd extern
           cmake -B build -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE="unreal-linux-toolchain.cmake" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --target install -j8
