@@ -611,6 +611,7 @@ jobs:
         run: |
           sudo yum install -y patchelf
           cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
+          patchelf --print-rpath libUnrealEditor-CesiumRuntime.so
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
           patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
       - name: Publish plugin package artifact
