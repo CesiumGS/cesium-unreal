@@ -101,6 +101,7 @@ public class CesiumRuntime : ModuleRules
             "uriparser",
             "webpdecoder",
             "ktx_read",
+            "zlibstatic"
         };
 
         // Use our own copy of MikkTSpace on Android.
