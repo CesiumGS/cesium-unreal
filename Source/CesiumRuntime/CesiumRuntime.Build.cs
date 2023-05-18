@@ -195,7 +195,7 @@ public class CesiumRuntime : ModuleRules
         DynamicallyLoadedModuleNames.AddRange(
             new string[]
             {
-                "SunPosition"
+                // ... add any modules that your module loads dynamically here ...
             }
         );
 
