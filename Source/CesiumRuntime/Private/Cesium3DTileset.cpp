@@ -875,21 +875,12 @@ void ACesium3DTileset::LoadTileset() {
 
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
   if (pWorldSettings && pWorldSettings->bEnableWorldBoundsChecks) {
-    std::vector<FCesiumCamera> cameras = this->GetCameras();
-    if (!cameras.empty()) {
-      for (const FCesiumCamera& camera : cameras) {
-        if (camera.Location.GetAbsMax() > 1048574.0) {
-          UE_LOG(
-              LogCesium,
-              Warning,
-              TEXT(
-                  "The camera is too far from the origin which will cause the camera to float towards the origin. "
-                  "Consider moving the origin closer to the camera or disabling the \"Enable World Bounds Checks\" in the world settings."),
-              *this->Url);
-          break;
-        }
-      }
-    }
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "\"Enable World Bounds Checks\" in the world settings is currently enabled. Please consider disabling it to avoid potential issues."),
+        *this->Url);
   }
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
