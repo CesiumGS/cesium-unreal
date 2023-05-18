@@ -609,6 +609,7 @@ jobs:
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
       - name: Fix RPATH
         run: |
+          sudo yum install -y patchelf
           cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
           export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
           patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
