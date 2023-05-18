@@ -384,11 +384,6 @@ void FCesiumEditorModule::OnTilesetLoadFailure(
   if (details.Type == ECesium3DTilesetLoadType::CesiumIon &&
       (details.HttpStatusCode == 401 || details.HttpStatusCode == 404)) {
     CesiumIonTokenTroubleshooting::Open(details.Tileset.Get(), true);
-  } else {
-          UE_LOG(
-          LogCesiumEditor,
-          Warning,
-          TEXT("%s"), *details.Message);
   }
 }
 
