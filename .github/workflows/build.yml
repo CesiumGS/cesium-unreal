@@ -354,11 +354,6 @@ jobs:
           $ENV:LINUX_MULTIARCH_ROOT="C:/UnrealToolchains/v20_clang-13.0.1-centos7/"
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux -NoHostPlatform
-      - name: Fix RPATH
-        run: |
-          cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
-          export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
-          patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -612,6 +607,11 @@ jobs:
           # TODO: move this to the image instead
           mkdir -p ~/.config
           ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Linux
+      - name: Fix RPATH
+        run: |
+          cd $GITHUB_WORKSPACE/packages/CesiumForUnreal/Binaries/Linux
+          export UPDATED_RPATH=`patchelf --print-rpath libUnrealEditor-CesiumRuntime.so | sed 's/${ORIGIN}[^:]*\/SunPosition\/Binaries\/Linux/${ORIGIN}\/..\/..\/..\/..\/Runtime\/SunPosition\/Binaries\/Linux/'`
+          patchelf --force-rpath --set-rpath "$UPDATED_RPATH" libUnrealEditor-CesiumRuntime.so
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
