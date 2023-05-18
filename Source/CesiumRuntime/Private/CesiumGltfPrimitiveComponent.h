@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTileset.h"
 #include "Cesium3DTilesSelection/BoundingVolume.h"
+#include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"

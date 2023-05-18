@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTileset.h"
 #include "Cesium3DTilesSelection/Tile.h"
+#include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
 #include "Components/PrimitiveComponent.h"

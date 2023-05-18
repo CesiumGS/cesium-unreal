@@ -67,7 +67,8 @@ struct CESIUMRUNTIME_API FCesiumPointCloudShading {
            BaseResolution == OtherPointCloudShading.BaseResolution;
   }
 
-  bool operator!=(const FCesiumPointCloudShading& OtherPointCloudShading) const {
+  bool
+  operator!=(const FCesiumPointCloudShading& OtherPointCloudShading) const {
     return !(*this == OtherPointCloudShading);
   }
 };

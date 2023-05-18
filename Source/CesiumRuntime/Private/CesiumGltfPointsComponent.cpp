@@ -22,6 +22,6 @@ FPrimitiveSceneProxy* UCesiumGltfPointsComponent::CreateSceneProxy() {
   FCesiumGltfPointsSceneProxyTilesetData TilesetData;
   TilesetData.UpdateFromComponent(this);
   Proxy->UpdateTilesetData(TilesetData);
-  
+
   return Proxy;
 }
