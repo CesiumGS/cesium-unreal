@@ -55,15 +55,23 @@ public:
 
   /**
    * The number of requests to handle before each prune of old cached results
-   * from the database. Must restart Unreal for changes to take effect.
+   * from the database.
    */
-  UPROPERTY(Config, EditAnywhere, Category = "Cache")
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cache",
+      meta = (ConfigRestartRequired = true))
   int RequestsPerCachePrune = 10000;
 
   /**
    * The maximum number of items that should be kept in the Sqlite database
-   * after pruning. Must restart Unreal for changes to take effect.
+   * after pruning.
    */
-  UPROPERTY(Config, EditAnywhere, Category = "Cache")
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cache",
+      meta = (ConfigRestartRequired = true))
   int MaxCacheItems = 4096;
 };
