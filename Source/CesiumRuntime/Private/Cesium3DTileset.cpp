@@ -5,9 +5,9 @@
 #include "Camera/CameraTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Cesium3DTilesSelection/BingMapsRasterOverlay.h"
-#include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTilesSelection/CreditSystem.h"
 #include "Cesium3DTilesSelection/IPrepareRendererResources.h"
+#include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTilesSelection/TilesetLoadFailureDetails.h"
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
@@ -23,6 +23,9 @@
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
+#include "CesiumGltfPointsComponent.h"
+#include "CesiumGltfPointsSceneProxy.h"
+#include "CesiumGltfPointsSceneProxyUpdater.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumLifetime.h"
 #include "CesiumRasterOverlay.h"
@@ -281,6 +284,14 @@ void ACesium3DTileset::SetIonAssetEndpointUrl(
   }
 }
 
+void ACesium3DTileset::SetMaximumScreenSpaceError(
+    double InMaximumScreenSpaceError) {
+  if (MaximumScreenSpaceError != InMaximumScreenSpaceError) {
+    MaximumScreenSpaceError = InMaximumScreenSpaceError;
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
+  }
+}
+
 bool ACesium3DTileset::GetEnableOcclusionCulling() const {
   return GetDefault<UCesiumRuntimeSettings>()
              ->EnableExperimentalOcclusionCullingFeature &&
@@ -378,6 +389,14 @@ void ACesium3DTileset::SetCustomDepthParameters(
   if (this->CustomDepthParameters != InCustomDepthParameters) {
     this->CustomDepthParameters = InCustomDepthParameters;
     this->DestroyTileset();
+  }
+}
+
+void ACesium3DTileset::SetPointCloudShading(
+    FCesiumPointCloudShading InPointCloudShading) {
+  if (PointCloudShading != InPointCloudShading) {
+    PointCloudShading = InPointCloudShading;
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }
 
@@ -671,7 +690,7 @@ public:
           this->_pActor->GetTranslucentMaterial(),
           this->_pActor->GetWaterMaterial(),
           this->_pActor->GetCustomDepthParameters(),
-          tile.getContentBoundingVolume().value_or(tile.getBoundingVolume()),
+          tile,
           this->_pActor->GetCreateNavCollision());
     }
     // UE_LOG(LogCesium, VeryVerbose, TEXT("No content for tile"));
@@ -2080,6 +2099,27 @@ void ACesium3DTileset::PostEditChangeProperty(
     for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
       pOverlay->Refresh();
     }
+
+    // Maximum Screen Space Error can affect how attenuated points are rendered,
+    // so propagate the new value to the render proxies for this tileset.
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
+  }
+}
+
+void ACesium3DTileset::PostEditChangeChainProperty(
+    FPropertyChangedChainEvent& PropertyChangedChainEvent) {
+  Super::PostEditChangeChainProperty(PropertyChangedChainEvent);
+
+  if (!PropertyChangedChainEvent.Property ||
+      PropertyChangedChainEvent.PropertyChain.IsEmpty()) {
+    return;
+  }
+
+  FName PropName =
+      PropertyChangedChainEvent.PropertyChain.GetHead()->GetValue()->GetFName();
+  if (PropName ==
+      GET_MEMBER_NAME_CHECKED(ACesium3DTileset, PointCloudShading)) {
+    FCesiumGltfPointsSceneProxyUpdater::UpdateSettingsInProxies(this);
   }
 }
 

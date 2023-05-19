@@ -56,6 +56,8 @@ struct LoadPrimitiveResult {
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
   std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+
+  glm::vec3 dimensions;
 };
 
 struct LoadMeshResult {

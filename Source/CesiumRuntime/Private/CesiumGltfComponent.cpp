@@ -840,15 +840,12 @@ static void loadPrimitive(
       maxPosition = glm::dvec3(max[0], max[1], max[2]);
     }
 
-#if ENGINE_MAJOR_VERSION >= 5
+    primitiveResult.dimensions =
+        glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
+
     FBox aaBox(
         FVector3d(minPosition.x, minPosition.y, minPosition.z),
         FVector3d(maxPosition.x, maxPosition.y, maxPosition.z));
-#else
-    FBox aaBox(
-        FVector(minPosition.x, minPosition.y, minPosition.z),
-        FVector(maxPosition.x, maxPosition.y, maxPosition.z));
-#endif
 
     aaBox.GetCenterAndExtents(
         RenderData->Bounds.Origin,
@@ -1860,18 +1857,29 @@ static void loadPrimitiveGameThreadPart(
     UCesiumGltfComponent* pGltf,
     LoadPrimitiveResult& loadResult,
     const glm::dmat4x4& cesiumToUnrealTransform,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
-    bool createNavCollision) {
+    const Cesium3DTilesSelection::Tile& tile,
+    bool createNavCollision,
+    ACesium3DTileset* pTilesetActor) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadPrimitive)
+
+  const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
+      tile.getContentBoundingVolume().value_or(tile.getBoundingVolume());
 
   FName meshName = createSafeName(loadResult.name, "");
   UCesiumGltfPrimitiveComponent* pMesh;
   if (loadResult.pMeshPrimitive->mode == MeshPrimitive::Mode::POINTS) {
-    pMesh = NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+    UCesiumGltfPointsComponent* pPointMesh =
+        NewObject<UCesiumGltfPointsComponent>(pGltf, meshName);
+    pPointMesh->UsesAdditiveRefinement =
+        tile.getRefine() == Cesium3DTilesSelection::TileRefine::Add;
+    pPointMesh->GeometricError = static_cast<float>(tile.getGeometricError());
+    pPointMesh->Dimensions = loadResult.dimensions;
+    pMesh = pPointMesh;
   } else {
     pMesh = NewObject<UCesiumGltfPrimitiveComponent>(pGltf, meshName);
   }
 
+  pMesh->pTilesetActor = pTilesetActor;
   pMesh->overlayTextureCoordinateIDToUVIndex =
       loadResult.overlayTextureCoordinateIDToUVIndex;
   pMesh->textureCoordinateMap = std::move(loadResult.textureCoordinateMap);
@@ -2121,14 +2129,14 @@ UCesiumGltfComponent::CreateOffGameThread(
 
 /*static*/ UCesiumGltfComponent* UCesiumGltfComponent::CreateOnGameThread(
     const CesiumGltf::Model& model,
-    AActor* pParentActor,
+    ACesium3DTileset* pTilesetActor,
     TUniquePtr<HalfConstructed> pHalfConstructed,
     const glm::dmat4x4& cesiumToUnrealTransform,
     UMaterialInterface* pBaseMaterial,
     UMaterialInterface* pBaseTranslucentMaterial,
     UMaterialInterface* pBaseWaterMaterial,
     FCustomDepthParameters CustomDepthParameters,
-    const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+    const Cesium3DTilesSelection::Tile& tile,
     bool createNavCollision) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadModel)
@@ -2142,9 +2150,9 @@ UCesiumGltfComponent::CreateOffGameThread(
   //   return nullptr;
   // }
 
-  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pParentActor);
+  UCesiumGltfComponent* Gltf = NewObject<UCesiumGltfComponent>(pTilesetActor);
   Gltf->SetUsingAbsoluteLocation(true);
-  Gltf->SetMobility(pParentActor->GetRootComponent()->Mobility);
+  Gltf->SetMobility(pTilesetActor->GetRootComponent()->Mobility);
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
@@ -2173,8 +2181,9 @@ UCesiumGltfComponent::CreateOffGameThread(
             Gltf,
             primitive,
             cesiumToUnrealTransform,
-            boundingVolume,
-            createNavCollision);
+            tile,
+            createNavCollision,
+            pTilesetActor);
       }
     }
   }

@@ -2,6 +2,10 @@
 
 ### ? - ?
 
+##### Additions :tada:
+
+- Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
+
 ##### Fixes :wrench:
 
 - Fixed a bug introduced in v1.26.0 that caused an error when attempting to save a sub-level containing Cesium objects.
