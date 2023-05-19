@@ -101,7 +101,6 @@ public class CesiumRuntime : ModuleRules
             "uriparser",
             "webpdecoder",
             "ktx_read",
-            "zlibstatic"
         };
 
         // Use our own copy of MikkTSpace on Android.
@@ -113,11 +112,11 @@ public class CesiumRuntime : ModuleRules
 
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
-            libs = libs.Concat(new string[] { "tidy_static" }).ToArray();
+            libs = libs.Concat(new string[] { "tidy_static", "zlibstatic" }).ToArray();
         }
         else
         {
-            libs = libs.Concat(new string[] { "tidy" }).ToArray();
+            libs = libs.Concat(new string[] { "tidy", "z" }).ToArray();
         }
 
         if (preferDebug)
