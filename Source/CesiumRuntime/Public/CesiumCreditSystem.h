@@ -72,7 +72,7 @@ public:
 #endif
 
 private:
-  static UClass* CesiumCreditSystemBP;
+  static UObject* CesiumCreditSystemBP;
 
   /**
    * A tag that is assigned to Credit Systems when they are created
