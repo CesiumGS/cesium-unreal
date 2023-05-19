@@ -4,7 +4,8 @@
 
 ##### Additions :tada:
 
-- Emit a warning if the camera is too far from the origin when the "Enable World Bounds Checks" option is enabled.
+- Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
+- `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
 
 ### v1.26.0 - 2023-05-09
 

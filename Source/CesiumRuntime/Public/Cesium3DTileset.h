@@ -10,6 +10,7 @@
 #include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
 #include "CesiumGeoreference.h"
+#include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
 #include "CustomDepthParameters.h"
 #include "Engine/EngineTypes.h"
@@ -266,7 +267,8 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
-      BlueprintReadWrite,
+      BlueprintGetter = GetMaximumScreenSpaceError,
+      BlueprintSetter = SetMaximumScreenSpaceError,
       Category = "Cesium|Level of Detail",
       meta = (ClampMin = 0.0))
   double MaximumScreenSpaceError = 16.0;
@@ -844,6 +846,19 @@ private:
       meta = (ShowOnlyInnerProperties))
   FCustomDepthParameters CustomDepthParameters;
 
+  /**
+   * If this tileset contains points, their appearance can be configured with
+   * these point cloud shading parameters.
+   *
+   * These settings are not supported on mobile platforms.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintGetter = GetPointCloudShading,
+      BlueprintSetter = SetPointCloudShading,
+      Category = "Cesium|Rendering")
+  FCesiumPointCloudShading PointCloudShading;
+
 protected:
   UPROPERTY()
   FString PlatformName;
@@ -887,6 +902,12 @@ public:
 
   UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetIonAssetEndpointUrl(const FString& InIonAssetEndpointUrl);
+
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  double GetMaximumScreenSpaceError() { return MaximumScreenSpaceError; }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetMaximumScreenSpaceError(double InMaximumScreenSpaceError);
 
   UFUNCTION(BlueprintGetter, Category = "Cesium|Tile Culling|Experimental")
   bool GetEnableOcclusionCulling() const;
@@ -971,6 +992,14 @@ public:
   UFUNCTION(BlueprintSetter, Category = "Rendering")
   void SetCustomDepthParameters(FCustomDepthParameters InCustomDepthParameters);
 
+  UFUNCTION(BlueprintGetter, Category = "Cesium|Rendering")
+  FCesiumPointCloudShading GetPointCloudShading() const {
+    return PointCloudShading;
+  }
+
+  UFUNCTION(BlueprintSetter, Category = "Cesium|Rendering")
+  void SetPointCloudShading(FCesiumPointCloudShading InPointCloudShading);
+
   UFUNCTION(BlueprintCallable, Category = "Cesium|Rendering")
   void PlayMovieSequencer();
 
@@ -1012,6 +1041,8 @@ public:
 #if WITH_EDITOR
   virtual void
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+  virtual void PostEditChangeChainProperty(
+      FPropertyChangedChainEvent& PropertyChangedChainEvent) override;
   virtual void PostEditUndo() override;
   virtual void PostEditImport() override;
 #endif
@@ -1157,4 +1188,5 @@ private:
   int32 _tilesetsBeingDestroyed;
 
   friend class UnrealResourcePreparer;
+  friend class UCesiumGltfPointsComponent;
 };
