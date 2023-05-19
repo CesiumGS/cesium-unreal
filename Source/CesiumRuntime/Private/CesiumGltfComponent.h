@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "Cesium3DTilesSelection/BoundingVolume.h"
+#include "Cesium3DTilesSelection/Tile.h"
+#include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
 #include "CesiumMetadataModel.h"
 #include "Components/PrimitiveComponent.h"
@@ -65,14 +66,14 @@ public:
 
   static UCesiumGltfComponent* CreateOnGameThread(
       const CesiumGltf::Model& model,
-      AActor* ParentActor,
+      ACesium3DTileset* ParentActor,
       TUniquePtr<HalfConstructed> HalfConstructed,
       const glm::dmat4x4& CesiumToUnrealTransform,
       UMaterialInterface* BaseMaterial,
       UMaterialInterface* BaseTranslucentMaterial,
       UMaterialInterface* BaseWaterMaterial,
       FCustomDepthParameters CustomDepthParameters,
-      const Cesium3DTilesSelection::BoundingVolume& boundingVolume,
+      const Cesium3DTilesSelection::Tile& tile,
       bool createNavCollision);
 
   UCesiumGltfComponent();

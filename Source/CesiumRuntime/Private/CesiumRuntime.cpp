@@ -8,7 +8,9 @@
 #include "CesiumUtility/Tracing.h"
 #include "HAL/FileManager.h"
 #include "HttpModule.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
+#include "ShaderCore.h"
 #include "SpdlogUnrealLoggerSink.h"
 #include "UnrealAssetAccessor.h"
 #include "UnrealTaskProcessor.h"
@@ -40,6 +42,13 @@ void FCesiumRuntimeModule::StartupModule() {
                          .time_since_epoch()
                          .count()) +
       ".json");
+
+  FString PluginShaderDir = FPaths::Combine(
+      IPluginManager::Get().FindPlugin(TEXT("CesiumForUnreal"))->GetBaseDir(),
+      TEXT("Shaders"));
+  AddShaderSourceDirectoryMapping(
+      TEXT("/Plugin/CesiumForUnreal"),
+      PluginShaderDir);
 }
 
 void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }

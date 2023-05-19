@@ -4,8 +4,9 @@
 
 ##### Additions :tada:
 
-- Added settings to control the cache, specifically, how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
-
+- Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
+- `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
+- Added new settings to the Cesium section of the Project Settings, allowing users to control how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
 
 ### v1.26.0 - 2023-05-09
 

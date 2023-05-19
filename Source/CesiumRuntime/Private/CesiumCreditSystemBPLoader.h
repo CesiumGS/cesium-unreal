@@ -12,5 +12,7 @@ public:
   UCesiumCreditSystemBPLoader();
 
   UPROPERTY()
-  UClass* CesiumCreditSystemBP;
+  TSoftClassPtr<UClass> CesiumCreditSystemBP = TSoftClassPtr<
+      UClass>(FSoftObjectPath(TEXT(
+      "Class'/CesiumForUnreal/CesiumCreditSystemBP.CesiumCreditSystemBP_C'")));
 };

@@ -75,7 +75,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
   if (!CesiumCreditSystemBP) {
     UCesiumCreditSystemBPLoader* bpLoader =
         NewObject<UCesiumCreditSystemBPLoader>();
-    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP;
+    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP.Get();
     bpLoader->ConditionalBeginDestroy();
   }
 
