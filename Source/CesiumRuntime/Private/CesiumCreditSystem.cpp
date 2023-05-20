@@ -132,7 +132,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
-        dynamic_cast<UClass*>(CesiumCreditSystemBP),
+        Cast<UClass>(CesiumCreditSystemBP),
         spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
     // this function without a valid world context object.
