@@ -892,8 +892,17 @@ void ACesium3DTileset::LoadTileset() {
     return;
   }
 
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
   AWorldSettings* pWorldSettings = pWorld->GetWorldSettings();
+  if (pWorldSettings && pWorldSettings->bEnableWorldBoundsChecks) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "\"Enable World Bounds Checks\" in the world settings is currently enabled. Please consider disabling it to avoid potential issues."),
+        *this->Url);
+  }
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
   if (pWorldSettings && !pWorldSettings->bEnableLargeWorlds) {
     pWorldSettings->bEnableLargeWorlds = true;
     UE_LOG(
