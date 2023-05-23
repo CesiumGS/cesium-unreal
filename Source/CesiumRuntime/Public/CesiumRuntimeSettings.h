@@ -52,4 +52,26 @@ public:
    */
   UPROPERTY(Config, EditAnywhere, Category = "Experimental Feature Flags")
   bool EnableExperimentalOcclusionCullingFeature = false;
+
+  /**
+   * The number of requests to handle before each prune of old cached results
+   * from the database.
+   */
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cache",
+      meta = (ConfigRestartRequired = true))
+  int RequestsPerCachePrune = 10000;
+
+  /**
+   * The maximum number of items that should be kept in the Sqlite database
+   * after pruning.
+   */
+  UPROPERTY(
+      Config,
+      EditAnywhere,
+      Category = "Cache",
+      meta = (ConfigRestartRequired = true))
+  int MaxCacheItems = 4096;
 };

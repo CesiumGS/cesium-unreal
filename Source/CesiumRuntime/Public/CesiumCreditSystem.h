@@ -49,7 +49,7 @@ public:
   UPROPERTY(BlueprintReadOnly, Category = "Cesium")
   bool CreditsUpdated = false;
 
-  UPROPERTY(BlueprintReadOnly, Category = "Cesium")
+  UPROPERTY(BlueprintReadOnly, Transient, Category = "Cesium")
   class UScreenCreditsWidget* CreditsWidget;
 
   // Called every frame
@@ -72,7 +72,7 @@ public:
 #endif
 
 private:
-  static UClass* CesiumCreditSystemBP;
+  static UObject* CesiumCreditSystemBP;
 
   /**
    * A tag that is assigned to Credit Systems when they are created

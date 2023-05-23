@@ -20,7 +20,7 @@
 #include "Modules/ModuleManager.h"
 #endif
 
-/*static*/ UClass* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
+/*static*/ UObject* ACesiumCreditSystem::CesiumCreditSystemBP = nullptr;
 namespace {
 
 /**
@@ -75,7 +75,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
   if (!CesiumCreditSystemBP) {
     UCesiumCreditSystemBPLoader* bpLoader =
         NewObject<UCesiumCreditSystemBPLoader>();
-    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP;
+    CesiumCreditSystemBP = bpLoader->CesiumCreditSystemBP.LoadSynchronous();
     bpLoader->ConditionalBeginDestroy();
   }
 
@@ -132,7 +132,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
-        CesiumCreditSystemBP,
+        Cast<UClass>(CesiumCreditSystemBP),
         spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
     // this function without a valid world context object.
