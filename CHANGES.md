@@ -7,6 +7,7 @@
 - Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
 - `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
 - Added new settings to the Cesium section of the Project Settings, allowing users to control how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
+- Error and Warning messages will be printed to the Output Log regardless of whether the OnTilesetLoadFailure callback has been set.
 
 ##### Fixes :wrench:
 
