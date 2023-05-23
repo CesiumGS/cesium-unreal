@@ -102,7 +102,8 @@ std::string getCacheDatabaseName() {
 const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   static int RequestsPerCachePrune =
       GetDefault<UCesiumRuntimeSettings>()->RequestsPerCachePrune;
-  static int MaxCacheItems = GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
+  static int MaxCacheItems =
+      GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::CachingAssetAccessor>(
           spdlog::default_logger(),
