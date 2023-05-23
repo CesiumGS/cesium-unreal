@@ -10,6 +10,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a bug introduced in v1.26.0 that caused an error when attempting to save a sub-level containing Cesium objects.
 - Remove degenerate triangles from collision mesh.
 
 ### v1.26.0 - 2023-05-09
