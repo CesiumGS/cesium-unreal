@@ -9,14 +9,14 @@ using namespace CesiumUtility;
 
 BEGIN_DEFINE_SPEC(
     FTestGeoTransforms,
-    "GeoTransforms",
+    "Cesium.GeoTransforms",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FTestGeoTransforms)
 
 void FTestGeoTransforms::Define() {
   Describe("TransformLongitudeLatitudeHeightToUnreal", [this]() {
-    It("returns the origin when given the origin position", [this]() {
+    It("returns the origin when given the origin LLH", [this]() {
       GeoTransformsNew geotransforms{};
       glm::dvec3 center = geotransforms.TransformLongitudeLatitudeHeightToEcef(
           glm::dvec3(12.0, 23.0, 1000.0));

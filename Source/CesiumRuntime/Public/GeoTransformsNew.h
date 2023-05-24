@@ -6,6 +6,7 @@
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "HAL/Platform.h"
 #include <glm/fwd.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <glm/vec3.hpp>
 
 /**
