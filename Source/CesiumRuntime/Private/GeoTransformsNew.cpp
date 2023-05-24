@@ -5,6 +5,8 @@
 #include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 using namespace CesiumGeospatial;
 
