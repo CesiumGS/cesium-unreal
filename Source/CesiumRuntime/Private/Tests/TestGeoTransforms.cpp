@@ -16,7 +16,7 @@ END_DEFINE_SPEC(FTestGeoTransforms)
 void FTestGeoTransforms::Define() {
   Describe("TransformLongitudeLatitudeHeightToUnreal", [this]() {
     It("returns the origin when given the origin LLH", [this]() {
-      GeoTransformsNew geotransforms{};
+      GeoTransforms geotransforms{};
       glm::dvec3 center = geotransforms.TransformLongitudeLatitudeHeightToEcef(
           glm::dvec3(12.0, 23.0, 1000.0));
       geotransforms.setCenter(center);
