@@ -16,6 +16,7 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   PrimaryComponentTick.bCanEverTick = false;
   pModel = nullptr;
   pMeshPrimitive = nullptr;
+  pTilesetActor = nullptr;
 }
 
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
