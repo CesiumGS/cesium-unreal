@@ -17,13 +17,13 @@
  * - Unreal coordinates (relative to the unreal world origin)
  *
  */
-class CESIUMRUNTIME_API GeoTransformsNew {
+class CESIUMRUNTIME_API GeoTransforms {
 
 public:
   /**
    * @brief Creates a new instance
    */
-  GeoTransformsNew();
+  GeoTransforms();
 
   /**
    * @brief Creates a new instance.
@@ -35,7 +35,7 @@ public:
    * @param center The center position.
    * @param scale The scale factor of the globe in the Unreal world.
    */
-  GeoTransformsNew(
+  GeoTransforms(
       const CesiumGeospatial::Ellipsoid& ellipsoid,
       const glm::dvec3& center,
       double scale);

@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "GeoTransformsNew.h"
+#include "GeoTransforms.h"
 
 #include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumRuntime.h"
@@ -27,7 +27,7 @@ LocalHorizontalCoordinateSystem createCoordinateSystem(
 
 } // namespace
 
-GeoTransformsNew::GeoTransformsNew()
+GeoTransforms::GeoTransforms()
     : _coordinateSystem(
           glm::dvec3(0.0),
           LocalDirection::East,
@@ -40,7 +40,7 @@ GeoTransformsNew::GeoTransformsNew()
   this->updateTransforms();
 }
 
-GeoTransformsNew::GeoTransformsNew(
+GeoTransforms::GeoTransforms(
     const CesiumGeospatial::Ellipsoid& ellipsoid,
     const glm::dvec3& center,
     double scale)
@@ -56,13 +56,13 @@ GeoTransformsNew::GeoTransformsNew(
   this->updateTransforms();
 }
 
-void GeoTransformsNew::setCenter(const glm::dvec3& center) noexcept {
+void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
   if (this->_center != center) {
     this->_center = center;
     updateTransforms();
   }
 }
-void GeoTransformsNew::setEllipsoid(
+void GeoTransforms::setEllipsoid(
     const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept {
   if (this->_ellipsoid.getRadii() != ellipsoid.getRadii()) {
     this->_ellipsoid = ellipsoid;
@@ -70,7 +70,7 @@ void GeoTransformsNew::setEllipsoid(
   }
 }
 
-glm::dquat GeoTransformsNew::ComputeSurfaceNormalRotation(
+glm::dquat GeoTransforms::ComputeSurfaceNormalRotation(
     const glm::dvec3& oldPosition,
     const glm::dvec3& newPosition) const {
   const glm::dvec3 oldEllipsoidNormal =
@@ -80,7 +80,7 @@ glm::dquat GeoTransformsNew::ComputeSurfaceNormalRotation(
   return glm::rotation(oldEllipsoidNormal, newEllipsoidNormal);
 }
 
-glm::dquat GeoTransformsNew::ComputeSurfaceNormalRotationUnreal(
+glm::dquat GeoTransforms::ComputeSurfaceNormalRotationUnreal(
     const glm::dvec3& oldPosition,
     const glm::dvec3& newPosition) const {
   const glm::dmat3 ecefToUnreal =
@@ -92,7 +92,7 @@ glm::dquat GeoTransformsNew::ComputeSurfaceNormalRotationUnreal(
   return glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
 }
 
-void GeoTransformsNew::updateTransforms() noexcept {
+void GeoTransforms::updateTransforms() noexcept {
   this->_coordinateSystem =
       createCoordinateSystem(this->_ellipsoid, this->_center, this->_scale);
 
@@ -109,7 +109,7 @@ void GeoTransformsNew::updateTransforms() noexcept {
       _ellipsoid.getRadii().z);
 }
 
-glm::dvec3 GeoTransformsNew::TransformLongitudeLatitudeHeightToEcef(
+glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToEcef(
     const glm::dvec3& longitudeLatitudeHeight) const noexcept {
   return _ellipsoid.cartographicToCartesian(
       CesiumGeospatial::Cartographic::fromDegrees(
@@ -118,7 +118,7 @@ glm::dvec3 GeoTransformsNew::TransformLongitudeLatitudeHeightToEcef(
           longitudeLatitudeHeight.z));
 }
 
-glm::dvec3 GeoTransformsNew::TransformEcefToLongitudeLatitudeHeight(
+glm::dvec3 GeoTransforms::TransformEcefToLongitudeLatitudeHeight(
     const glm::dvec3& ecef) const noexcept {
   std::optional<CesiumGeospatial::Cartographic> llh =
       _ellipsoid.cartesianToCartographic(ecef);
@@ -134,7 +134,7 @@ glm::dvec3 GeoTransformsNew::TransformEcefToLongitudeLatitudeHeight(
       llh->height);
 }
 
-glm::dvec3 GeoTransformsNew::TransformLongitudeLatitudeHeightToUnreal(
+glm::dvec3 GeoTransforms::TransformLongitudeLatitudeHeightToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& longitudeLatitudeHeight) const noexcept {
   glm::dvec3 ecef =
@@ -142,26 +142,26 @@ glm::dvec3 GeoTransformsNew::TransformLongitudeLatitudeHeightToUnreal(
   return this->TransformEcefToUnreal(origin, ecef);
 }
 
-glm::dvec3 GeoTransformsNew::TransformUnrealToLongitudeLatitudeHeight(
+glm::dvec3 GeoTransforms::TransformUnrealToLongitudeLatitudeHeight(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
   return this->TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
-glm::dvec3 GeoTransformsNew::TransformEcefToUnreal(
+glm::dvec3 GeoTransforms::TransformEcefToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ecef) const noexcept {
   return this->_coordinateSystem.ecefPositionToLocal(ecef) - origin;
 }
 
-glm::dvec3 GeoTransformsNew::TransformUnrealToEcef(
+glm::dvec3 GeoTransforms::TransformUnrealToEcef(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
   return this->_coordinateSystem.localPositionToEcef(ue + origin);
 }
 
-glm::dquat GeoTransformsNew::TransformRotatorUnrealToEastSouthUp(
+glm::dquat GeoTransforms::TransformRotatorUnrealToEastSouthUp(
     const glm::dvec3& origin,
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
@@ -171,7 +171,7 @@ glm::dquat GeoTransformsNew::TransformRotatorUnrealToEastSouthUp(
   return ueToEsuQuat * UERotator;
 }
 
-glm::dquat GeoTransformsNew::TransformRotatorEastSouthUpToUnreal(
+glm::dquat GeoTransforms::TransformRotatorEastSouthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dquat& ESURotator,
     const glm::dvec3& ueLocation) const noexcept {
@@ -181,7 +181,7 @@ glm::dquat GeoTransformsNew::TransformRotatorEastSouthUpToUnreal(
   return esuToUeQuat * ESURotator;
 }
 
-glm::dmat3 GeoTransformsNew::ComputeEastSouthUpToUnreal(
+glm::dmat3 GeoTransforms::ComputeEastSouthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
@@ -191,8 +191,8 @@ glm::dmat3 GeoTransformsNew::ComputeEastSouthUpToUnreal(
       newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }
 
-glm::dmat3 GeoTransformsNew::ComputeEastNorthUpToEcef(
-    const glm::dvec3& ecef) const noexcept {
+glm::dmat3
+GeoTransforms::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const noexcept {
   return glm::dmat3(CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
       ecef,
       _ellipsoid));
