@@ -2463,7 +2463,7 @@ static bool isTriangleDegenerate(
   Chaos::FTriangleMeshImplicitObject::ParticleVecType AC = C - A;
   Chaos::FTriangleMeshImplicitObject::ParticleVecType Normal =
       Chaos::FTriangleMeshImplicitObject::ParticleVecType::CrossProduct(AB, AC);
-  return (Normal.SafeNormalize() < UE_SMALL_NUMBER);
+  return (Normal.SafeNormalize() < 1.e-8f);
 }
 
 template <typename TIndex>
