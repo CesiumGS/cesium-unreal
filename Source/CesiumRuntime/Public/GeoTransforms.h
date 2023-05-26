@@ -3,8 +3,10 @@
 #pragma once
 
 #include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "HAL/Platform.h"
-#include <glm/glm.hpp>
+#include <glm/fwd.hpp>
+#include <glm/vec3.hpp>
 
 /**
  * @brief A lightweight structure to encapsulate coordinate transforms.
@@ -21,16 +23,7 @@ public:
   /**
    * @brief Creates a new instance
    */
-  GeoTransforms()
-      : _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
-        _center(glm::dvec3(0.0)),
-        _scale(1.0),
-        _georeferencedToEcef(1.0),
-        _ecefToGeoreferenced(1.0),
-        _ueAbsToEcef(1.0),
-        _ecefToUeAbs(1.0) {
-    updateTransforms();
-  }
+  GeoTransforms();
 
   /**
    * @brief Creates a new instance.
@@ -45,16 +38,7 @@ public:
   GeoTransforms(
       const CesiumGeospatial::Ellipsoid& ellipsoid,
       const glm::dvec3& center,
-      double scale)
-      : _ellipsoid(ellipsoid),
-        _center(center),
-        _scale(scale),
-        _georeferencedToEcef(1.0),
-        _ecefToGeoreferenced(1.0),
-        _ueAbsToEcef(1.0),
-        _ecefToUeAbs(1.0) {
-    updateTransforms();
-  }
+      double scale);
 
   /**
    * @brief Set the center position of this instance
@@ -162,36 +146,6 @@ public:
    */
 
   /**
-   * @brief Gets the transformation from the "Georeferenced" reference frame
-   * defined by this instance to the "Ellipsoid-centered" reference frame (i.e.
-   * ECEF).
-   *
-   * Gets a matrix that transforms coordinates from the "Georeference" reference
-   * frame defined by this instance to the "Ellipsoid-centered" reference frame,
-   * which is usually Earth-centered, Earth-fixed. See {@link
-   * reference-frames.md}.
-   */
-  const glm::dmat4&
-  GetGeoreferencedToEllipsoidCenteredTransform() const noexcept {
-    return this->_georeferencedToEcef;
-  }
-
-  /**
-   * @brief Gets the transformation from the "Ellipsoid-centered" reference
-   * frame (i.e. ECEF) to the georeferenced reference frame defined by this
-   * instance.
-   *
-   * Gets a matrix that transforms coordinates from the "Ellipsoid-centered"
-   * reference frame (which is usually Earth-centered, Earth-fixed) to the
-   * "Georeferenced" reference frame defined by this instance. See {@link
-   * reference-frames.md}.
-   */
-  const glm::dmat4&
-  GetEllipsoidCenteredToGeoreferencedTransform() const noexcept {
-    return this->_ecefToGeoreferenced;
-  }
-
-  /**
    * @brief Gets the transformation from the _absolute_ "Unreal World" reference
    * frame to the "Ellipsoid-centered" reference frame (i.e. ECEF).
    *
@@ -202,7 +156,7 @@ public:
    */
   const glm::dmat4&
   GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() const noexcept {
-    return this->_ueAbsToEcef;
+    return this->_coordinateSystem.getLocalToEcefTransformation();
   }
 
   /**
@@ -216,7 +170,7 @@ public:
    */
   const glm::dmat4&
   GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() const noexcept {
-    return this->_ecefToUeAbs;
+    return this->_coordinateSystem.getEcefToLocalTransformation();
   }
 
   /**
@@ -268,14 +222,10 @@ private:
    */
   void updateTransforms() noexcept;
 
+  CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem;
+
   // Modifiable state
   CesiumGeospatial::Ellipsoid _ellipsoid;
   glm::dvec3 _center;
   double _scale;
-
-  // Derived state
-  glm::dmat4 _georeferencedToEcef;
-  glm::dmat4 _ecefToGeoreferenced;
-  glm::dmat4 _ueAbsToEcef;
-  glm::dmat4 _ecefToUeAbs;
 };
