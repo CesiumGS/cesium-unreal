@@ -312,6 +312,7 @@ static void computeFlatNormals(
   }
 }
 
+template <typename TIndex>
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
