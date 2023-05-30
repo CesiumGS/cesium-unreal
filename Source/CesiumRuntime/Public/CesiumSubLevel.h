@@ -6,8 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "CesiumSubLevel.generated.h"
 
-class ULevelStreaming;
-
 /*
  * Sublevels can be georeferenced to the globe by filling out this struct.
  */

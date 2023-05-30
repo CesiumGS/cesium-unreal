@@ -9,7 +9,6 @@
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
-#include "Engine/WorldComposition.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTransforms.h"
@@ -212,36 +211,6 @@ FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
   return levelName;
 }
 
-struct WorldCompositionLevelPair {
-  FWorldCompositionTile* pTile;
-  ULevelStreaming* pLevelStreaming;
-};
-
-WorldCompositionLevelPair findWorldCompositionLevel(
-    UWorldComposition* pWorldComposition,
-    const FName& packageName) {
-
-  UWorldComposition::FTilesList& tiles = pWorldComposition->GetTilesList();
-  const TArray<ULevelStreaming*>& levels = pWorldComposition->TilesStreaming;
-
-  for (int32 i = 0; i < tiles.Num(); ++i) {
-    FWorldCompositionTile& tile = tiles[i];
-
-    if (tile.Info.Layer.DistanceStreamingEnabled) {
-      // UE itself is managing distance-based streaming for this level, ignore
-      // it.
-      continue;
-    }
-
-    if (tile.PackageName == packageName) {
-      assert(i < levels.Num());
-      return {&tile, levels[i]};
-    }
-  }
-
-  return {nullptr, nullptr};
-}
-
 } // namespace
 
 #if WITH_EDITOR
@@ -259,8 +228,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     return;
   }
 
-  const UWorldComposition::FTilesList& allLevels =
-      pWorld->WorldComposition->GetTilesList();
+  const TArray<ULevelStreaming*>& allLevels = pWorld->GetStreamingLevels();
 
   TArray<int32> newSubLevels;
   TArray<int32> missingSubLevels;
@@ -269,9 +237,11 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
   // Find new sub-levels that we don't know about on the Cesium side.
   for (int32 i = 0; i < allLevels.Num(); ++i) {
-    const FWorldCompositionTile& level = allLevels[i];
+    ULevelStreaming* pLevel = allLevels[i];
 
-    FString levelName = longPackageNameToCesiumName(pWorld, level.PackageName);
+    FString levelName = longPackageNameToCesiumName(
+        pWorld,
+        pLevel->GetWorldAssetPackageFName());
 
     // Check if the level is already known
     FCesiumSubLevel* pFound = this->CesiumSubLevels.FindByPredicate(
@@ -280,7 +250,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
         });
 
     if (pFound) {
-      bool newCanBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
+      bool newCanBeEnabled = true;
       if (pFound->CanBeEnabled != newCanBeEnabled) {
         pFound->CanBeEnabled = newCanBeEnabled;
 
@@ -306,9 +276,11 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
     FCesiumSubLevel& cesiumLevel = this->CesiumSubLevels[i];
 
-    const FWorldCompositionTile* pLevel = allLevels.FindByPredicate(
-        [&cesiumLevel, pWorld](const FWorldCompositionTile& level) {
-          return longPackageNameToCesiumName(pWorld, level.PackageName) ==
+    ULevelStreaming* const* pLevel = allLevels.FindByPredicate(
+        [&cesiumLevel, pWorld](ULevelStreaming* pLevel) {
+          return longPackageNameToCesiumName(
+                     pWorld,
+                     pLevel->GetWorldAssetPackageFName()) ==
                  cesiumLevel.LevelName;
         });
 
@@ -319,9 +291,11 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
   if (newSubLevels.Num() == 1 && missingSubLevels.Num() == 1) {
     // There is exactly one missing and one new, assume it's been renamed.
-    const FWorldCompositionTile& level = allLevels[newSubLevels[0]];
+    ULevelStreaming* pLevel = allLevels[newSubLevels[0]];
     this->CesiumSubLevels[missingSubLevels[0]].LevelName =
-        longPackageNameToCesiumName(pWorld, level.PackageName);
+        longPackageNameToCesiumName(
+            pWorld,
+            pLevel->GetWorldAssetPackageFName());
   } else if (newSubLevels.Num() > 0 || missingSubLevels.Num() > 0) {
     // Remove our record of the sub-levels that no longer exist.
     // Do this in reverse order so the indices don't get invalidated.
@@ -331,10 +305,13 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
     // Add new Cesium records for the new sub-levels
     for (int32 i = 0; i < newSubLevels.Num(); ++i) {
-      const FWorldCompositionTile& level = allLevels[newSubLevels[i]];
-      bool canBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
+      ULevelStreaming* pLevel = allLevels[newSubLevels[i]];
+      bool canBeEnabled = true;
+
       this->CesiumSubLevels.Add(FCesiumSubLevel{
-          longPackageNameToCesiumName(pWorld, level.PackageName),
+          longPackageNameToCesiumName(
+              pWorld,
+              pLevel->GetWorldAssetPackageFName()),
           canBeEnabled,
           OriginLatitude,
           OriginLongitude,
@@ -759,7 +736,6 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   // There doesn't appear to be a good way to be notified about the wide variety
   // of level manipulations we care about, so in the Editor we'll poll.
   if (GEditor && IsValid(this->GetWorld()) &&
-      IsValid(this->GetWorld()->WorldComposition) &&
       !this->GetWorld()->IsGameWorld()) {
     this->_updateCesiumSubLevels();
   }
@@ -1070,26 +1046,22 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
     return;
   }
 
-  UWorldComposition* pWorldComposition = pWorld->WorldComposition;
-  if (!pWorldComposition) {
-    return;
-  }
-
   ULevel* pCurrent = pWorld->GetCurrentLevel();
   UPackage* pLevelPackage = pCurrent->GetOutermost();
 
-  // Find the world composition details for the new level.
-  WorldCompositionLevelPair worldCompositionLevelPair =
-      findWorldCompositionLevel(pWorldComposition, pLevelPackage->GetFName());
+  // Find the streaming details for the new level.
+  ULevelStreaming* const* ppLevelStreaming =
+      pWorld->GetStreamingLevels().FindByPredicate(
+          [pCurrent](ULevelStreaming* p) {
+            return p->GetLoadedLevel() == pCurrent;
+          });
 
-  FWorldCompositionTile* pTile = worldCompositionLevelPair.pTile;
-  ULevelStreaming* pLevelStreaming = worldCompositionLevelPair.pLevelStreaming;
-
-  if (!pTile || !pLevelStreaming) {
-    // The new level doesn't appear to participate in world composition, so
-    // ignore it.
+  if (!ppLevelStreaming) {
+    // The new level doesn't appear to be a streaming level, so ignore it.
     return;
   }
+
+  ULevelStreaming* pLevelStreaming = *ppLevelStreaming;
 
   // Find the corresponding FCesiumSubLevel, creating it if necessary.
   FCesiumSubLevel* pCesiumLevel =
@@ -1114,30 +1086,33 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
 
   // Remove levels from the list that we don't want to hide for various reasons.
   levelsToHide.RemoveAll(
-      [pCurrent, pWorldComposition](const TSharedPtr<FLevelModel>& pLevel) {
+      [pCurrent, pWorld](const TSharedPtr<FLevelModel>& pLevel) {
         // Remove persistent levels.
         if (pLevel->IsPersistent()) {
           return true;
         }
 
+        ULevel* pLevelObject = pLevel->GetLevelObject();
+
+        // Remove levels with no level object
+        if (pLevelObject == nullptr) {
+          return true;
+        }
+
         // Remove the now-current level.
-        if (pLevel->GetLevelObject() == pCurrent) {
+        if (pLevelObject == pCurrent) {
           return true;
         }
 
-        WorldCompositionLevelPair compositionLevel = findWorldCompositionLevel(
-            pWorldComposition,
-            pLevel->GetLongPackageName());
 
-        // Remove levels that are not part of the world composition.
-        if (!compositionLevel.pLevelStreaming || !compositionLevel.pTile) {
-          return true;
-        }
+        ULevelStreaming* const* ppLevelStreaming =
+            pWorld->GetStreamingLevels().FindByPredicate(
+                [pLevelObject](ULevelStreaming* p) {
+                  return p->GetLoadedLevel() == pLevelObject;
+                });
 
-        // Remove levels that Unreal Engine is handling distance-based streaming
-        // for. Hiding such a level that UE thinks should be shown would cause
-        // the level to toggle on and off continually.
-        if (compositionLevel.pTile->Info.Layer.DistanceStreamingEnabled) {
+        // Remove levels that are not streaming levels.
+        if (ppLevelStreaming == nullptr) {
           return true;
         }
 
