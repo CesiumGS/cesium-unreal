@@ -6,6 +6,12 @@
 #include "MeshDrawShaderBindings.h"
 #include "MeshMaterialShader.h"
 #include "RenderCommandFence.h"
+#include "Runtime/Launch/Resources/Version.h"
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION > 1
+#include "DataDrivenShaderPlatformInfo.h"
+#include "MaterialDomain.h"
+#endif
 
 void FCesiumPointAttenuationIndexBuffer::InitRHI() {
   if (!bAttenuationSupported) {
