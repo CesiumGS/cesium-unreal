@@ -15,6 +15,7 @@
 - Fixed a bug introduced in v1.26.0 that caused an error when attempting to save a sub-level containing Cesium objects.
 - Remove degenerate triangles from collision mesh.
 - Fixed a bug in `CesiumGlTFFunction` that caused glTF and 3D Tiles "Ambient Occlusion" value to be 0.0 (instead of the expected 1.0) when the model does not specify an explicit occlusion texture. This could cause some extremely dark shadows.
+- Fixed a bug that could cause a crash when using Cesium Actors with World Partitioning.
 
 ### v1.26.0 - 2023-05-09
 
