@@ -3,11 +3,12 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 # Prerequisities
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
-- Install Visual Studio 2017 v15.6+ or Visual Studio 2019 v16.5+. Include the following options derived from https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/
-  - `Desktop Development with C++` and `Game development with C++` under **Workloads**
-  - C++ profiling tools
-  - C++ AddressSanitizer (optional)
-  - Windows 10 SDK (10.0.18362 or Newer)
+- Install Visual Studio 2019 v16.11+ (or Visual Studio 2017 v15.6+)
+  - Under **Workloads**, check `Desktop development with C++`
+  - Under **Workloads**, check `Game development with C++` 
+  - Under **Individual components**, check `.NET Framework 4.8 SDK` (or newer)
+> Note: VS options are derived from Unreal Engine's [recommended setup](https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/))
+ - Install the .NET  Core 3.1 Runtime, [link](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.32-windows-x64-installer?cid=getdotnetcore)
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
 
