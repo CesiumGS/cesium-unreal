@@ -25,15 +25,10 @@ struct FCesiumSubLevel {
    * no other levels are closer, and the Georeference will be updated so that
    * this level's Longitude, Latitude, and Height bcome (0, 0, 0) in the Unreal
    * World. A sub-level that is not enabled will be ignored by Cesium.
-   *
-   * If this option is greyed out, check that World Composition is enabled
-   * in the World Settings and that this sub-level is in a Layer that has
-   * Distance-based streaming DISABLED.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium",
-      Meta = (EditCondition = "CanBeEnabled"))
+      Category = "Cesium")
   bool Enabled = true;
 
   /**
@@ -74,7 +69,4 @@ struct FCesiumSubLevel {
       Category = "Cesium",
       meta = (ClampMin = 0.0, EditCondition = "Enabled"))
   double LoadRadius = 0.0;
-
-  UPROPERTY(VisibleDefaultsOnly, Category = "Cesium")
-  bool CanBeEnabled = false;
 };

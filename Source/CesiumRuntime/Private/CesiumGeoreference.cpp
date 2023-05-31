@@ -233,8 +233,6 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   TArray<int32> newSubLevels;
   TArray<int32> missingSubLevels;
 
-  bool checkForNewCurrentLevel = false;
-
   // Find new sub-levels that we don't know about on the Cesium side.
   for (int32 i = 0; i < allLevels.Num(); ++i) {
     ULevelStreaming* pLevel = allLevels[i];
@@ -249,25 +247,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
           return levelName.Equals(subLevel.LevelName);
         });
 
-    if (pFound) {
-      bool newCanBeEnabled = true;
-      if (pFound->CanBeEnabled != newCanBeEnabled) {
-        pFound->CanBeEnabled = newCanBeEnabled;
-
-        // If this level can't be enabled, make sure it's not enabled.
-        if (!pFound->CanBeEnabled) {
-          pFound->Enabled = false;
-        }
-
-        if (newCanBeEnabled) {
-          // This level existed before but is newly enable-able, probably
-          // because it was just added to the right streaming layer. If it also
-          // happens to be the current level, we'll want to immediately hide
-          // other levels. Set a flag to do that later.
-          checkForNewCurrentLevel = true;
-        }
-      }
-    } else {
+    if (!pFound) {
       newSubLevels.Add(i);
     }
   }
@@ -306,23 +286,16 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     // Add new Cesium records for the new sub-levels
     for (int32 i = 0; i < newSubLevels.Num(); ++i) {
       ULevelStreaming* pLevel = allLevels[newSubLevels[i]];
-      bool canBeEnabled = true;
-
       this->CesiumSubLevels.Add(FCesiumSubLevel{
           longPackageNameToCesiumName(
               pWorld,
               pLevel->GetWorldAssetPackageFName()),
-          canBeEnabled,
+          false,
           OriginLatitude,
           OriginLongitude,
           OriginHeight,
-          1000.0,
-          canBeEnabled});
+          1000.0});
     }
-  }
-
-  if (checkForNewCurrentLevel) {
-    this->_onNewCurrentLevel();
   }
 }
 #endif
@@ -354,13 +327,6 @@ bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
   // Deactivate all other streaming levels controlled by Cesium
   for (const FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
     if (&subLevel == pLevel) {
-      continue;
-    }
-
-    if (!subLevel.CanBeEnabled) {
-      // A sub-level that can't be enabled is being controled by Unreal Engine,
-      // based on its own distance-based system, so we have no business trying
-      // to disable it. Ignore it.
       continue;
     }
 
@@ -744,7 +710,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   _handleViewportOriginEditing();
 #endif
 
-  if (!this->_shouldManageSubLevels()) {
+  if (this->_shouldManageSubLevels()) {
     this->_insideSublevel = _updateSublevelState();
   }
 }
@@ -1026,12 +992,11 @@ FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
     // No Cesium sub-level exists, so create it now.
     this->CesiumSubLevels.Add(FCesiumSubLevel{
         cesiumName,
-        true,
+        false,
         this->OriginLatitude,
         this->OriginLongitude,
         this->OriginHeight,
-        1000.0,
-        true});
+        1000.0});
     pCesiumLevel = &this->CesiumSubLevels.Last();
   }
 
@@ -1056,16 +1021,17 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
             return p->GetLoadedLevel() == pCurrent;
           });
 
-  if (!ppLevelStreaming) {
-    // The new level doesn't appear to be a streaming level, so ignore it.
-    return;
+  ULevelStreaming* pLevelStreaming =
+      ppLevelStreaming ? *ppLevelStreaming : nullptr;
+
+  FCesiumSubLevel* pCesiumLevel = nullptr;
+
+  if (pLevelStreaming) {
+    // This is a streaming level, so find the corresponding FCesiumSubLevel,
+    // creating it if necessary.
+    pCesiumLevel =
+        this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
   }
-
-  ULevelStreaming* pLevelStreaming = *ppLevelStreaming;
-
-  // Find the corresponding FCesiumSubLevel, creating it if necessary.
-  FCesiumSubLevel* pCesiumLevel =
-      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
 
   // Hide all other levels.
   // I initially thought we could call handy methods like SetShouldBeVisible
@@ -1086,7 +1052,7 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
 
   // Remove levels from the list that we don't want to hide for various reasons.
   levelsToHide.RemoveAll(
-      [pCurrent, pWorld](const TSharedPtr<FLevelModel>& pLevel) {
+      [pCurrent, pWorld, pCesiumLevel](const TSharedPtr<FLevelModel>& pLevel) {
         // Remove persistent levels.
         if (pLevel->IsPersistent()) {
           return true;
@@ -1104,25 +1070,30 @@ void ACesiumGeoreference::_onNewCurrentLevel() {
           return true;
         }
 
+        // Remove levels that are disabled (not under Cesium control).
+        if (pCesiumLevel && !pCesiumLevel->Enabled) {
+          return true;
+        }
 
+        // Remove levels that are not streaming levels.
         ULevelStreaming* const* ppLevelStreaming =
             pWorld->GetStreamingLevels().FindByPredicate(
                 [pLevelObject](ULevelStreaming* p) {
                   return p->GetLoadedLevel() == pLevelObject;
                 });
 
-        // Remove levels that are not streaming levels.
         if (ppLevelStreaming == nullptr) {
           return true;
         }
 
+        // Don't remove this level from the list of levels to hide.
         return false;
       });
 
   pWorldModel->HideLevels(levelsToHide);
 
   // Set the georeference origin for the new level if it's enabled.
-  if (pCesiumLevel->Enabled) {
+  if (pCesiumLevel && pCesiumLevel->Enabled) {
     this->_setGeoreferenceOrigin(
         pCesiumLevel->LevelLongitude,
         pCesiumLevel->LevelLatitude,
@@ -1147,7 +1118,7 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
     pLevel->LevelLatitude = this->OriginLatitude;
     pLevel->LevelHeight = this->OriginHeight;
 
-    pLevel->Enabled = pLevel->CanBeEnabled;
+    pLevel->Enabled = true;
   }
 }
 
@@ -1155,5 +1126,5 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
 
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
   // Only a Georeference in the PersistentLevel should manage sub-levels.
-  return !this->GetLevel()->IsPersistentLevel();
+  return this->GetLevel()->IsPersistentLevel();
 }
