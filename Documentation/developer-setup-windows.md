@@ -59,13 +59,21 @@ The version of CMake included with Visual Studio 2017 is too old to build cesium
 
 ## Visual Studio 2019
 
-Visual Studio 2019 has built-in support for CMake as long as the "C++ CMake tools for Windows" option was selected at install time. It is included by default in the "Desktop Development with C++" workload.
+Launch Visual Studio 2019 and "Open a local folder". Select `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`. 
+> Be sure to select the `extern` directory, *not* the `cesium-native` subdirectory.
 
-To begin, launch Visual Studio 2019 and "Open a local folder". Select the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`. Be sure to select the `extern` directory, *not* the `cesium-native` subdirectory.
+Find the "Solution Explorer - Folder View".
 
-Then, in the "Solution Explorer - Folder View", right-click on the root `CMakeLists.txt` and select "Install". This will compile a debug build of cesium-native and "install" it to the place in the project that Cesium for Unreal expects to find it: `c:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\Source\ThirdParty`.
+To build a "Debug" build  of cesium-native,
+  - Right-click on the root `CMakeLists.txt` and select "Install".
+  - This will compile and "install" it to the place in the project that Cesium for Unreal expects to find it
+  - `c:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\Source\ThirdParty`.
 
-To also build a "Release" build of cesium-native, right click on `CMakeLists.txt` and select "CMake Settings for cesium-unreal-extern". Add a new configuration by clicking the `+` and choose `x64-Release`. Then select the new "x64-Release" from the Solution Configuration dropdown. Finally, right-click on `CMakeLists.txt` again and choose "Install".
+To build a "Release" build of cesium-native, 
+  - Right click on `CMakeLists.txt` and select "CMake Settings for cesium-unreal-extern". 
+  - Add a new configuration by clicking the `+` and choose `x64-Release`. 
+  - Select the new "x64-Release" from the Solution Configuration dropdown. 
+  - Right-click on `CMakeLists.txt` again and choose "Install".
 
 ## Visual Studio Code
 
