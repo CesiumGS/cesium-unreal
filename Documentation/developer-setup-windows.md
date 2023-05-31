@@ -77,7 +77,7 @@ To build a "Release" build of cesium-native,
 
 ## Visual Studio Code
 
-Basically just open the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` folder in Visual Studio Code and invoke the "install" target. More detailed instructions coming soon...
+Open the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` folder in Visual Studio Code and invoke the "install" target.
 
 ## CMake GUI
 
@@ -132,21 +132,20 @@ Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern
 
 You can also build and install the debug version by using `Debug` or `RelWithDebInfo` instead of `Release`.
 
-# Creating the project files for the Unreal Engine game/project and the Cesium for Unreal plugin
+# Create the VS project files for cesium-unreal-samples
 
-The project files for the project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
+The project files for the samples project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
 
-## Converting the project into a C++ project
+## Convert the Unreal project into a C++ project
 
-Unreal Engine does not allow a Blueprints-only project to have an embedded C++ plugin like Cesium for Unreal. Fortunately, it's easy to convert a Blueprints project to a C++ project just by adding a few files: Just copy the [Source directory](Source) from this documentation folder into the root directory of your project. Your project should now work as a C++ project. However, you probably do not want to commit this change to your project's source code repository. A project that includes C++ code like this will require everyone opening the project to have an installed and working C++ compiler, including e.g. artists that do not typically have such an environment.
-
-After the `Source` directory has been added, follow these steps:
-
-- Using the Windows Explorer, browse into the `C:\Dev\cesium-unreal-samples` directory
+- Copy the `\cesium-unreal-samples\Plugins\cesium-unreal\Documentation\Source` folder to `\cesium-unreal-samples`
+- Using Windows Explorer, browse into the `\cesium-unreal-samples` directory
 - Right-click on the `CesiumForUnrealSamples.uproject` file
 - Select "Generate Visual Studio project files"
 
 This will generate the `CesiumForUnrealSamples.sln` file that can be opened, compiled, and debugger with Visual Studio. Be sure to switch the "Solution Platform" to "Win64".
+
+> Unreal Engine does not allow a Blueprints-only project to have an embedded C++ plugin like Cesium for Unreal. Fortunately, it's easy to convert a Blueprints project to a C++ project just by adding a few files: Just copy the [Source directory](Source) from this documentation folder into the root directory of your project. Your project should now work as a C++ project. However, you probably do not want to commit this change to your project's source code repository. A project that includes C++ code like this will require everyone opening the project to have an installed and working C++ compiler, including e.g. artists that do not typically have such an environment.
 
 If you have both Visual Studio 2017 and Visual Studio 2019 installed, the Visual Studio project files generated above may build with VS2017 even if they're opened with VS2019. This will still be true even if you allow VS2019 to upgrade the project files to the VS2019 toolchain. That's because the project files simply invoke the Unreal Build Tool, which plays by its own rules. This is generally not a problem, except if you used Visual Studio 2019 to build cesium-native. In that case, you will get linker errors when you try to compile Cesium for Unreal.
 
