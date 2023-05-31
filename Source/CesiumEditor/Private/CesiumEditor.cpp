@@ -474,7 +474,7 @@ FCesiumEditorModule::CreateTileset(const std::string& name, int64_t assetID) {
       ACesium3DTileset::StaticClass(),
       FTransform(),
       false,
-      RF_Public | RF_Transactional);
+      RF_Transactional);
   ACesium3DTileset* pTilesetActor = Cast<ACesium3DTileset>(pNewActor);
   pTilesetActor->SetActorLabel(UTF8_TO_TCHAR(name.c_str()));
   if (assetID != -1) {
@@ -530,7 +530,7 @@ UCesiumIonRasterOverlay* FCesiumEditorModule::AddOverlay(
   UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
       pTilesetActor,
       FName(name.c_str()),
-      RF_Public | RF_Transactional);
+      RF_Transactional);
   pOverlay->MaterialLayerKey = overlayKey;
   pOverlay->IonAssetID = assetID;
   pOverlay->SetActive(true);

@@ -263,7 +263,7 @@ void IonQuickAddPanel::AddCartographicPolygonToLevel() {
       ACesiumCartographicPolygon::StaticClass(),
       FTransform(),
       false,
-      RF_Public | RF_Transactional);
+      RF_Transactional);
 }
 
 namespace {
@@ -339,7 +339,7 @@ void IonQuickAddPanel::AddBlankTilesetToLevel() {
       ACesium3DTileset::StaticClass(),
       FTransform(),
       false,
-      RF_Public | RF_Transactional);
+      RF_Transactional);
 }
 
 void IonQuickAddPanel::AddItemToLevel(TSharedRef<QuickAddItem> item) {

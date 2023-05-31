@@ -2014,7 +2014,7 @@ static void loadPrimitiveGameThreadPart(
       pCesiumData = NewObject<UCesiumMaterialUserData>(
           pBaseAsMaterialInstance,
           NAME_None,
-          RF_Public);
+          RF_Transactional);
       pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
       pCesiumData->PostEditChangeOwner();
     }
