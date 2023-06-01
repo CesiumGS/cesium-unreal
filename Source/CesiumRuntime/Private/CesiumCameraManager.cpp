@@ -81,6 +81,12 @@ int32 ACesiumCameraManager::AddCamera(UPARAM(ref) const FCesiumCamera& camera) {
   return cameraId;
 }
 
+bool ACesiumCameraManager::RemoveCamera(int32 cameraId) {
+  int32 numRemovedPairs = this->_cameras.Remove(cameraId);
+  bool success = numRemovedPairs > 0; 
+  return success;
+}
+
 bool ACesiumCameraManager::UpdateCamera(
     int32 cameraId,
     UPARAM(ref) const FCesiumCamera& camera) {
