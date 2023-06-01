@@ -3,15 +3,16 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 # Prerequisities
 
 - Install CMake (version 3.15 or newer) from https://cmake.org/install/
-- Install Visual Studio 2017 v15.6+ or Visual Studio 2019 v16.5+. Include the following options derived from https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/
-  - `Desktop Development with C++` and `Game development with C++` under **Workloads**
-  - C++ profiling tools
-  - C++ AddressSanitizer (optional)
-  - Windows 10 SDK (10.0.18362 or Newer)
+- Install Visual Studio 2019 v16.11+ (or Visual Studio 2017 v15.6+)
+  - Under **Workloads**, check `Desktop development with C++`
+  - Under **Workloads**, check `Game development with C++` 
+  - Under **Individual components**, check `.NET Framework 4.8 SDK` (or newer)
+> Note: Visual Studio options are derived from Unreal Engine's [recommended setup](https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/)
+ - Install the .NET  Core 3.1 Runtime, [link](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.32-windows-x64-installer?cid=getdotnetcore)
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
-- Install the Unreal Engine (version 4.26 or newer) from https://www.unrealengine.com/en-US/download
+- Install the Unreal Engine (version 5.0 or newer) from https://www.unrealengine.com/en-US/download
 
-## For Cross Compiling Android on Windows
+## To Cross Compile Android on Windows
 
 - Follow the [Unreal Engine setup guide for Android](https://docs.unrealengine.com/SharingAndReleasing/Mobile/Android/Setup/AndroidStudio/).
 - Then set the following environment variable either in command line or system variables. Note that you must use forward-slashes, i.e. `c:/android` not `c:\android`.
@@ -19,7 +20,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
     SET ANDROID_NDK_ROOT=<path_to_android_ndk>
     ```
 
-# Cloning the git repos
+# Clone the git repos
 
 The following illustrates the recommended directory layout for developers:
 
@@ -44,7 +45,7 @@ This can be set up with the following sequence of commands, on the console, star
 
      git submodule update --init --recursive
 
-# Building cesium-native
+# Build cesium-native
 
 The cesium-native libraries and their dependencies use CMake and must be built separately from Cesium for Unreal. There are a number of ways to do this, depending on your preferred environment:
 
@@ -58,17 +59,25 @@ The version of CMake included with Visual Studio 2017 is too old to build cesium
 
 ## Visual Studio 2019
 
-Visual Studio 2019 has built-in support for CMake as long as the "C++ CMake tools for Windows" option was selected at install time. It is included by default in the "Desktop Development with C++" workload.
+Launch Visual Studio 2019 and "Open a local folder". Select `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`. 
+> Be sure to select the `extern` directory, *not* the `cesium-native` subdirectory.
 
-To begin, launch Visual Studio 2019 and "Open a local folder". Select the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern`. Be sure to select the `extern` directory, *not* the `cesium-native` subdirectory.
+Find the "Solution Explorer - Folder View".
 
-Then, in the "Solution Explorer - Folder View", right-click on the root `CMakeLists.txt` and select "Install". This will compile a debug build of cesium-native and "install" it to the place in the project that Cesium for Unreal expects to find it: `c:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\Source\ThirdParty`.
+To build a "Debug" build  of cesium-native,
+  - Right-click on the root `CMakeLists.txt` and select "Install".
+  - This will compile and "install" it to the place in the project that Cesium for Unreal expects to find it
+  - `c:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\Source\ThirdParty`.
 
-To also build a "Release" build of cesium-native, right click on `CMakeLists.txt` and select "CMake Settings for cesium-unreal-extern". Add a new configuration by clicking the `+` and choose `x64-Release`. Then select the new "x64-Release" from the Solution Configuration dropdown. Finally, right-click on `CMakeLists.txt` again and choose "Install".
+To build a "Release" build of cesium-native, 
+  - Right click on `CMakeLists.txt` and select "CMake Settings for cesium-unreal-extern". 
+  - Add a new configuration by clicking the `+` and choose `x64-Release`. 
+  - Select the new "x64-Release" from the Solution Configuration dropdown. 
+  - Right-click on `CMakeLists.txt` again and choose "Install".
 
 ## Visual Studio Code
 
-Basically just open the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` folder in Visual Studio Code and invoke the "install" target. More detailed instructions coming soon...
+Open the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern` folder in Visual Studio Code and invoke the "install" target.
 
 ## CMake GUI
 
@@ -123,21 +132,20 @@ Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern
 
 You can also build and install the debug version by using `Debug` or `RelWithDebInfo` instead of `Release`.
 
-# Creating the project files for the Unreal Engine game/project and the Cesium for Unreal plugin
+# Create the Visual Studio project files for cesium-unreal-samples
 
-The project files for the project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
+The project files for the samples project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
 
-## Converting the project into a C++ project
+## Convert the Unreal project into a C++ project
 
-Unreal Engine does not allow a Blueprints-only project to have an embedded C++ plugin like Cesium for Unreal. Fortunately, it's easy to convert a Blueprints project to a C++ project just by adding a few files: Just copy the [Source directory](Source) from this documentation folder into the root directory of your project. Your project should now work as a C++ project. However, you probably do not want to commit this change to your project's source code repository. A project that includes C++ code like this will require everyone opening the project to have an installed and working C++ compiler, including e.g. artists that do not typically have such an environment.
-
-After the `Source` directory has been added, follow these steps:
-
-- Using the Windows Explorer, browse into the `C:\Dev\cesium-unreal-samples` directory
+- Copy the `\cesium-unreal-samples\Plugins\cesium-unreal\Documentation\Source` folder to `\cesium-unreal-samples`
+- Using Windows Explorer, browse into the `\cesium-unreal-samples` directory
 - Right-click on the `CesiumForUnrealSamples.uproject` file
 - Select "Generate Visual Studio project files"
 
 This will generate the `CesiumForUnrealSamples.sln` file that can be opened, compiled, and debugger with Visual Studio. Be sure to switch the "Solution Platform" to "Win64".
+
+> Unreal Engine does not allow a Blueprints-only project to have an embedded C++ plugin like Cesium for Unreal. Fortunately, it's easy to convert a Blueprints project to a C++ project just by adding a few files: Just copy the [Source directory](Source) from this documentation folder into the root directory of your project. Your project should now work as a C++ project. However, you probably do not want to commit this change to your project's source code repository. A project that includes C++ code like this will require everyone opening the project to have an installed and working C++ compiler, including e.g. artists that do not typically have such an environment.
 
 If you have both Visual Studio 2017 and Visual Studio 2019 installed, the Visual Studio project files generated above may build with VS2017 even if they're opened with VS2019. This will still be true even if you allow VS2019 to upgrade the project files to the VS2019 toolchain. That's because the project files simply invoke the Unreal Build Tool, which plays by its own rules. This is generally not a problem, except if you used Visual Studio 2019 to build cesium-native. In that case, you will get linker errors when you try to compile Cesium for Unreal.
 
