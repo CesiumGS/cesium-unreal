@@ -3,6 +3,7 @@
 #include "CesiumRuntime.h"
 #include "Cesium3DTilesSelection/registerAllTileContentTypes.h"
 #include "CesiumAsync/CachingAssetAccessor.h"
+#include "CesiumAsync/GunzipAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Tracing.h"
@@ -105,13 +106,14 @@ const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   static int MaxCacheItems =
       GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
-      std::make_shared<CesiumAsync::CachingAssetAccessor>(
-          spdlog::default_logger(),
-          std::make_shared<UnrealAssetAccessor>(),
-          std::make_shared<CesiumAsync::SqliteCache>(
+      std::make_shared<CesiumAsync::GunzipAssetAccessor>(
+          std::make_shared<CesiumAsync::CachingAssetAccessor>(
               spdlog::default_logger(),
-              getCacheDatabaseName(),
-              MaxCacheItems),
-          RequestsPerCachePrune);
+              std::make_shared<UnrealAssetAccessor>(),
+              std::make_shared<CesiumAsync::SqliteCache>(
+                  spdlog::default_logger(),
+                  getCacheDatabaseName(),
+                  MaxCacheItems),
+              RequestsPerCachePrune));
   return pAssetAccessor;
 }
