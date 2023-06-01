@@ -32,6 +32,48 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
   }
 }
 
+ECesiumMetadataBlueprintType
+CesiumMetadataTypesToBlueprintType(FCesiumMetadataTypes types) {
+  if (types.bIsArray) {
+    return ECesiumMetadataBlueprintType::Array;
+  }
+  ECesiumMetadataType type = types.Type;
+  ECesiumMetadataComponentType componentType = types.ComponentType;
+
+  if (type == ECesiumMetadataType::Boolean) {
+    return ECesiumMetadataBlueprintType::Boolean;
+  }
+
+  if (type == ECesiumMetadataType::String) {
+    return ECesiumMetadataBlueprintType::String;
+  }
+
+  if (type == ECesiumMetadataType::Scalar) {
+    switch (componentType) {
+    case ECesiumMetadataComponentType::Uint8:
+      return ECesiumMetadataBlueprintType::Byte;
+    case ECesiumMetadataComponentType::Int8:
+    case ECesiumMetadataComponentType::Int16:
+    case ECesiumMetadataComponentType::Uint16:
+    case ECesiumMetadataComponentType::Int32:
+    // TODO: remove this one -- why?
+    case ECesiumMetadataComponentType::Uint32:
+      return ECesiumMetadataBlueprintType::Integer;
+    case ECesiumMetadataComponentType::Int64:
+      return ECesiumMetadataBlueprintType::Integer64;
+    case ECesiumMetadataComponentType::Float32:
+      return ECesiumMetadataBlueprintType::Float;
+    case ECesiumMetadataComponentType::Float64:
+      return ECesiumMetadataBlueprintType::Float64;
+    case ECesiumMetadataComponentType::Uint64:
+      return ECesiumMetadataBlueprintType::String;
+    }
+  }
+  // TODO: vec and mat
+
+  return ECesiumMetadataBlueprintType::None;
+}
+
 ECesiumMetadataPackedGpuType
 CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType) {
   switch (trueType) {
@@ -51,4 +93,35 @@ CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType) {
   default:
     return ECesiumMetadataPackedGpuType::None;
   }
+}
+
+
+ECesiumMetadataPackedGpuType CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataTypes types) {
+  ECesiumMetadataType type = types.Type;
+  ECesiumMetadataComponentType componentType = types.ComponentType;
+
+  if (type == ECesiumMetadataType::Boolean) {
+    return ECesiumMetadataPackedGpuType::Uint8;
+  }
+
+  if (type == ECesiumMetadataType::Scalar) {
+    switch (componentType) {
+    case ECesiumMetadataComponentType::Int8: // lossy or reinterpreted
+    case ECesiumMetadataComponentType::Uint8:
+      return ECesiumMetadataPackedGpuType::Uint8;
+    case ECesiumMetadataComponentType::Float32:
+    case ECesiumMetadataComponentType::Float64: // lossy
+    case ECesiumMetadataComponentType::Int16:
+    case ECesiumMetadataComponentType::Uint16:
+    case ECesiumMetadataComponentType::Int32: // lossy or reinterpreted
+    case ECesiumMetadataComponentType::Uint32: // lossy or reinterpreted
+    case ECesiumMetadataComponentType::Int64:  // lossy
+    case ECesiumMetadataComponentType::Uint64: // lossy
+      return ECesiumMetadataPackedGpuType::Float;
+    default:
+      return ECesiumMetadataPackedGpuType::None; 
+    }
+  }
+
+  return ECesiumMetadataPackedGpuType::None;
 }

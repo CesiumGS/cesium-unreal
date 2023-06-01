@@ -1,5 +1,17 @@
 # Change Log
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- GetNumberOfFeatures -> GetPropertySize
+- GetComponentCount -> GetPropertyArraySize
+- GetBlueprintComponentType -> GetArrayElementBlueprintType.
+- ECesiumMetadataTrueType is deprecated.
+- Renamed `FCesiumMetadataPrimitive` to `FCesiumPrimitiveMetadata`.
+- FCesiumFeatureTable -> FCesiumPropertyTable
+- FCesiumMetadataModel -> FCesiumModelMetadata
+
 ### v1.27.0 - 2023-06-1
 
 ##### Additions :tada:

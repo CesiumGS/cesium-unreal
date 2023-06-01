@@ -9,11 +9,19 @@
 #include <glm/common.hpp>
 #include <type_traits>
 
+// Remove? Looks like this function was always typoed...
 ECesiumMetadataBlueprintType
 CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType);
 
+ECesiumMetadataBlueprintType
+CesiumMetadataTypesToBlueprintType(FCesiumMetadataTypes types);
+
+// Remove
 ECesiumMetadataPackedGpuType
 CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType);
+
+ECesiumMetadataPackedGpuType
+CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataTypes types);
 
 // Default conversion, just returns the default value.
 template <typename TTo, typename TFrom, typename Enable = void>
@@ -321,3 +329,5 @@ template <> struct CesiumMetadataConversions<double, std::string_view> {
     return defaultValue;
   }
 };
+
+// TODO: conversions between vecn / matn and strings?
