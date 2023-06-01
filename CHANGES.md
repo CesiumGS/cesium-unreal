@@ -17,6 +17,8 @@
 - Fixed a bug in `CesiumGlTFFunction` that caused the glTF and 3D Tiles "Ambient Occlusion" value to be 0.0 (instead of the expected 1.0) when the model does not specify an explicit occlusion texture. This could cause some extremely dark shadows.
 - Fixed a bug that could cause a crash when using Cesium Actors with World Partitioning.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.24.0 to v0.25.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.26.0 - 2023-05-09
 
 ##### Additions :tada:
