@@ -12,7 +12,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Install the Unreal Engine (version 5.0 or newer) from https://www.unrealengine.com/en-US/download
 
-## For Cross Compiling Android on Windows
+## To Cross Compile Android on Windows
 
 - Follow the [Unreal Engine setup guide for Android](https://docs.unrealengine.com/SharingAndReleasing/Mobile/Android/Setup/AndroidStudio/).
 - Then set the following environment variable either in command line or system variables. Note that you must use forward-slashes, i.e. `c:/android` not `c:\android`.
@@ -20,7 +20,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
     SET ANDROID_NDK_ROOT=<path_to_android_ndk>
     ```
 
-# Cloning the git repos
+# Clone the git repos
 
 The following illustrates the recommended directory layout for developers:
 
@@ -45,7 +45,7 @@ This can be set up with the following sequence of commands, on the console, star
 
      git submodule update --init --recursive
 
-# Building cesium-native
+# Build cesium-native
 
 The cesium-native libraries and their dependencies use CMake and must be built separately from Cesium for Unreal. There are a number of ways to do this, depending on your preferred environment:
 
