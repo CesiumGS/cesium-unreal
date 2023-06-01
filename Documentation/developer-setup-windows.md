@@ -7,7 +7,7 @@ Detailed instructions for setting up a Cesium for Unreal development environment
   - Under **Workloads**, check `Desktop development with C++`
   - Under **Workloads**, check `Game development with C++` 
   - Under **Individual components**, check `.NET Framework 4.8 SDK` (or newer)
-> Note: VS options are derived from Unreal Engine's [recommended setup](https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/))
+> Note: Visual Studio options are derived from Unreal Engine's [recommended setup](https://docs.unrealengine.com/5.0/en-US/setting-up-visual-studio-development-environment-for-cplusplus-projects-in-unreal-engine/))
  - Install the .NET  Core 3.1 Runtime, [link](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-3.1.32-windows-x64-installer?cid=getdotnetcore)
 - For best JPEG-decoding performance, you must have [nasm](https://www.nasm.us/) installed so that CMake can find it. Everything will work fine without it, just slower.
 - Install the Unreal Engine (version 5.0 or newer) from https://www.unrealengine.com/en-US/download
@@ -132,7 +132,7 @@ Then, change into the `C:\Dev\cesium-unreal-samples\Plugins\cesium-unreal\extern
 
 You can also build and install the debug version by using `Debug` or `RelWithDebInfo` instead of `Release`.
 
-# Create the VS project files for cesium-unreal-samples
+# Create the Visual Studio project files for cesium-unreal-samples
 
 The project files for the samples project, *including* the actual *Cesium for Unreal* plugin, can be created with the Unreal Engine.
 
