@@ -5,6 +5,8 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "Runtime/Launch/Resources/Version.h"
+#include "StaticMeshResources.h"
 #include "UObject/Object.h"
 #include <algorithm>
 

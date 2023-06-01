@@ -7,6 +7,8 @@
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureDefines.h"
+#include "RHI.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Templates/UniquePtr.h"
 #include <optional>
 #include <variant>
@@ -21,7 +23,11 @@ namespace CesiumTextureUtility {
  * @brief A texture that has already been asynchronously created.
  */
 struct AsyncCreatedTexture {
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
   FTexture2DRHIRef rhiTextureRef{};
+#else
+  FTextureRHIRef rhiTextureRef{};
+#endif
 };
 
 /**

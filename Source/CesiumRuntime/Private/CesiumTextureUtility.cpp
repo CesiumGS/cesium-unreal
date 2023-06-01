@@ -13,8 +13,10 @@
 #include "RHIDefinitions.h"
 #include "RHIResources.h"
 #include "RenderUtils.h"
+#include "RenderingThread.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "TextureResource.h"
+#include "UObject/Package.h"
 #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
 #include <CesiumGltf/ExtensionTextureWebp.h>
 #include <CesiumGltf/ImageCesium.h>
