@@ -4,11 +4,11 @@
 #include "Misc/AutomationTest.h"
 
 BEGIN_DEFINE_SPEC(
-    CesiumCamerManagerSpec,
+    CesiumCameraManagerSpec,
     "Cesium.CameraManager",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-END_DEFINE_SPEC(CesiumCamerManagerSpec)
+END_DEFINE_SPEC(CesiumCameraManagerSpec)
 
 UWorld* getGlobalWorldContext () {
 	const TIndirectArray<FWorldContext>& worldContexts = GEngine->GetWorldContexts();
@@ -16,7 +16,7 @@ UWorld* getGlobalWorldContext () {
 	return firstWorldContext.World();
 }
 
-void CesiumCamerManagerSpec::Define() {
+void CesiumCameraManagerSpec::Define() {
 
   Describe("GetDefaultCameraManager", [this]() {
 		It("should get the default camera manager", [this]() {
