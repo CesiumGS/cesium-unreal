@@ -12,6 +12,9 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
 
 /*static*/ ACesiumCameraManager* ACesiumCameraManager::GetDefaultCameraManager(
     const UObject* WorldContextObject) {
+	// A null world context means a null return value (no camera manager available)
+  if (WorldContextObject == nullptr)
+    return nullptr;
   UWorld* world = WorldContextObject->GetWorld();
   // This method can be called by actors even when opening the content browser.
   if (!IsValid(world)) {
