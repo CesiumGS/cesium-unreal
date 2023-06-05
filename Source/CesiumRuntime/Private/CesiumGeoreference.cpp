@@ -5,6 +5,7 @@
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"
+#include "CesiumSubLevelInstance.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
@@ -127,6 +128,7 @@ ACesiumGeoreference::ACesiumGeoreference()
 }
 
 #if WITH_EDITOR
+
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
   UWorld* pWorld = this->GetWorld();
@@ -201,6 +203,21 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
 
   this->_enableAndGeoreferenceCurrentSubLevel();
 }
+
+void ACesiumGeoreference::NotifySubLevelVisibleInEditor(
+    ACesiumSubLevelInstance* SubLevel) {
+  for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
+    ACesiumSubLevelInstance* Current = this->_sublevels[i].Get();
+    if (IsValid(Current) && Current != SubLevel &&
+        !Current->IsTemporarilyHiddenInEditor(true))
+      Current->SetIsTemporarilyHiddenInEditor(true);
+  }
+
+  if (SubLevel->IsTemporarilyHiddenInEditor(true)) {
+    SubLevel->SetIsTemporarilyHiddenInEditor(false);
+  }
+}
+
 #endif
 
 namespace {
@@ -465,6 +482,28 @@ void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
 void ACesiumGeoreference::SetGeoreferenceOriginEcef(const FVector& TargetEcef) {
   this->SetGeoreferenceOriginEcef(
       glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
+}
+
+void ACesiumGeoreference::AddSubLevel(ACesiumSubLevelInstance* SubLevel) {
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT("Adding SubLevel %s to Georeference %s"),
+      *SubLevel->GetName(),
+      *this->GetName());
+  this->_sublevels.AddUnique(SubLevel);
+  this->_ensureZeroOrOneSubLevelsAreVisible();
+}
+
+void ACesiumGeoreference::RemoveSubLevel(ACesiumSubLevelInstance* SubLevel) {
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT("Removing SubLevel %s from Georeference %s"),
+      *SubLevel->GetName(),
+      *this->GetName());
+
+  this->_sublevels.Remove(SubLevel);
 }
 
 // Called when the game starts or when spawned
@@ -1181,4 +1220,25 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
   // Only a Georeference in the PersistentLevel should manage sub-levels.
   return !this->GetLevel()->IsPersistentLevel();
+}
+
+void ACesiumGeoreference::_ensureZeroOrOneSubLevelsAreVisible() {
+#if WITH_EDITOR
+  bool foundFirstVisible = false;
+  for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
+    ACesiumSubLevelInstance* Current = this->_sublevels[i].Get();
+    if (!IsValid(Current))
+      continue;
+
+    if (!Current->IsTemporarilyHiddenInEditor(true)) {
+      if (!foundFirstVisible) {
+        // Ignore the first visible level.
+        foundFirstVisible = true;
+      } else {
+        // Set additional visible levels to hidden.
+        Current->SetIsTemporarilyHiddenInEditor(true);
+      }
+    }
+  }
+#endif
 }

@@ -15,6 +15,7 @@
 
 class APlayerCameraManager;
 class FLevelCollectionModel;
+class ACesiumSubLevelInstance;
 
 /**
  * The delegate for the ACesiumGeoreference::OnGeoreferenceUpdated,
@@ -180,6 +181,12 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
+
+  /**
+   * Notifies the georeference that a Cesium sub-level has just been made
+   * visible in the Editor. As a result, all other sub-levels will be hidden.
+   */
+  void NotifySubLevelVisibleInEditor(ACesiumSubLevelInstance* SubLevel);
 #endif
 
   /**
@@ -476,6 +483,20 @@ public:
     return _geoTransforms;
   }
 
+  /**
+   * Adds a sub-level to this georeference. This is called automatically by the
+   * CesiumSubLevelInstance itself as needed and should not be called
+   * explicitly.
+   */
+  void AddSubLevel(ACesiumSubLevelInstance* SubLevel);
+
+  /**
+   * Removes a sub-level from this georeference. This is called automatically by
+   * the CesiumSubLevelInstance itself as needed and should not be called
+   * explicitly.
+   */
+  void RemoveSubLevel(ACesiumSubLevelInstance* SubLevel);
+
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
@@ -505,6 +526,9 @@ private:
   GeoTransforms _geoTransforms;
 
   bool _insideSublevel;
+
+  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
+  TArray<TWeakObjectPtr<ACesiumSubLevelInstance>> _sublevels;
 
 #if WITH_EDITOR
   FDelegateHandle _newCurrentLevelSubscription;
@@ -593,4 +617,10 @@ private:
    * PersistentLevel.
    */
   bool _shouldManageSubLevels() const;
+
+  /**
+   * In the Editor, ensures that there are not multiple visible sub-levels.
+   * Outside of the Editor, this method does nothing.
+   */
+  void _ensureZeroOrOneSubLevelsAreVisible();
 };
