@@ -34,64 +34,75 @@ struct VertexCountFromAccessor {
 };
 } // namespace
 
-FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
+FCesiumFeatureIDAttribute::FCesiumFeatureIDAttribute(
     const Model& model,
-    const Accessor& featureIDAccessor,
-    int32 attributeIndex,
-    const FString& featureTableName)
-    : _featureTableName(featureTableName), _attributeIndex(attributeIndex) {
-  switch (featureIDAccessor.componentType) {
+    const CesiumGltf::MeshPrimitive Primitive,
+    const int64 FeatureIDAttribute)
+    : _attributeIndex() {
+  const std::string attributeName = "_FEATURE_ID_" + FeatureIDAttribute;
+
+  auto featureID = Primitive.attributes.find(attributeName);
+  if (featureID == Primitive.attributes.end()) {
+    return;
+  }
+
+  const Accessor* accessor =
+      model.getSafe<Accessor>(&model.accessors, featureID->second);
+  if (!accessor) {
+    return;
+  }
+
+  if (accessor->type != Accessor::Type::SCALAR) {
+    return;
+  }
+
+  switch (accessor->componentType) {
   case CesiumGltf::Accessor::ComponentType::BYTE:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>(
             model,
-            featureIDAccessor);
+            *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>(
             model,
-            featureIDAccessor);
+            *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::SHORT:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>(
             model,
-            featureIDAccessor);
+            *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>(
             model,
-            featureIDAccessor);
+            *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::FLOAT:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>(
             model,
-            featureIDAccessor);
+            *accessor);
     break;
   default:
     break;
   }
 }
 
-const FString& UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute) {
-  return FeatureIdAttribute._featureTableName;
-}
-
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute) {
+int64 UCesiumFeatureIDAttributeBlueprintLibrary::GetVertexCount(
+    UPARAM(ref) const FCesiumFeatureIDAttribute& FeatureIDAttribute) {
   return std::visit(
       VertexCountFromAccessor{},
-      FeatureIdAttribute._featureIDAccessor);
+      FeatureIDAttribute._featureIDAccessor);
 }
 
-int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
+int64 UCesiumFeatureIDAttributeBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumFeatureIDAttribute& FeatureIDAttribute,
     int64 vertexIdx) {
   return std::visit(
       FeatureIDFromAccessor{vertexIdx},
-      FeatureIdAttribute._featureIDAccessor);
+      FeatureIDAttribute._featureIDAccessor);
 }

@@ -57,8 +57,8 @@ public:
       const CesiumGltf::ExtensionModelExtFeatureMetadata& modelMetadata);
 
 private:
-  TArray<FCesiumFeatureIdAttribute> _featureIdAttributes;
-  TArray<FCesiumFeatureIdTexture> _featureIdTextures;
+  TArray<FCesiumFeatureIDAttribute> _featureIdAttributes;
+  TArray<FCesiumFeatureIDTexture> _featureIdTextures;
   TArray<FString> _featureTextureNames;
   VertexIDAccessorType _vertexIDAccessor;
 
@@ -76,23 +76,6 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
   GENERATED_BODY()
 
 public:
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  /**
-   * Get all the feature tables that are associated with the primitive.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Property",
-      Meta =
-          (DeprecatedFunction,
-           DeprecationMessage =
-               "Use UCesiumMetadataModelBlueprintLibrary::GetFeatureTables() instead."))
-  static const TArray<FCesiumMetadataFeatureTable>&
-  GetFeatureTables(UPARAM(ref)
-                       const FCesiumMetadataPrimitive& MetadataPrimitive);
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
   /**
    * @brief Get all the feature id attributes that are associated with the
    * primitive.
@@ -101,7 +84,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumFeatureIdAttribute>&
+  static const TArray<FCesiumFeatureIDAttribute>&
   GetFeatureIdAttributes(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
 
@@ -113,7 +96,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumFeatureIdTexture>&
+  static const TArray<FCesiumFeatureIDTexture>&
   GetFeatureIdTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
 

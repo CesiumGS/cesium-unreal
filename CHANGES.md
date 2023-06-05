@@ -1,5 +1,15 @@
 # Change Log
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- Several deprecated classes and functions have been formally removed.
+- Feature IDs are now parsed via the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`. This includes the following changes to the feature IDs API:
+  - `FCesiumMetadataPrimitive` has been deprecated. Feature IDs are to be retrieved from `FCesiumPrimitiveFeatures` as `FCesiumFeatureId` instances.
+  - `GetFeatureTableName` has been removed. Use `GetPropertyTableIndex` instead.
+  - `GetFirstVertexIDFromFaceID` has been renamed to `GetFirstVertexIndexFromFaceIndex`.
+
 ### v1.27.0 - 2023-06-1
 
 ##### Additions :tada:

@@ -3,74 +3,61 @@
 #pragma once
 
 #include "CesiumFeatureTable.h"
-#include "CesiumGltf/FeatureIDTextureView.h"
+#include "CesiumGltf/MeshFeaturesFeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdTexture.generated.h"
 
 namespace CesiumGltf {
 struct Model;
-struct FeatureIDTexture;
+struct ExtensionExtMeshFeaturesFeatureIdTexture;
 } // namespace CesiumGltf
 
 /**
- * @brief A blueprint-accessible wrapper for a feature id texture from a glTF
- * primitive. Provides access to per-pixel feature IDs which can be used with
+ * @brief A blueprint-accessible wrapper for a feature ID texture from a glTF
+ * primitive. Provides access to per-pixel feature IDs, which can be used with
  * the corresponding {@link FCesiumFeatureTable} to access per-pixel metadata.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
+struct CESIUMRUNTIME_API FCesiumFeatureIDTexture {
   GENERATED_USTRUCT_BODY()
 
 public:
-  FCesiumFeatureIdTexture() {}
+  FCesiumFeatureIDTexture() {}
 
-  FCesiumFeatureIdTexture(
+  FCesiumFeatureIDTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::FeatureIDTexture& featureIdTexture);
+      const CesiumGltf::ExtensionExtMeshFeaturesFeatureIdTexture&
+          featureIdTexture);
 
-  constexpr const CesiumGltf::FeatureIDTextureView&
-  getFeatureIdTextureView() const {
-    return this->_featureIdTextureView;
+  constexpr const CesiumGltf::MeshFeatures::FeatureIdTextureView&
+  getFeatureIDTextureView() const {
+    return this->_featureIDTextureView;
   }
 
 private:
-  CesiumGltf::FeatureIDTextureView _featureIdTextureView;
-  FString _featureTableName;
+  CesiumGltf::MeshFeatures::FeatureIdTextureView _featureIDTextureView;
 
-  friend class UCesiumFeatureIdTextureBlueprintLibrary;
+  friend class UCesiumFeatureIDTextureBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumFeatureIdTextureBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumFeatureIDTextureBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
   /**
-   * @brief Get the name of the feature table corresponding to this feature ID
-   * texture. The name can be used to fetch the appropriate
-   * {@link FCesiumFeatureTable} from the {@link FCesiumMetadataModel}.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIdTexture")
-  static const FString&
-  GetFeatureTableName(UPARAM(ref)
-                          const FCesiumFeatureIdTexture& featureIdTexture);
-
-  /**
    * @brief Get the index of the texture coordinate set that corresponds to the
-   * feature id texture.
+   * feature ID texture.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIdTexture")
+      Category = "Cesium|Primitive|FeatureIDTexture")
   static int64 GetTextureCoordinateIndex(
       const UPrimitiveComponent* component,
-      UPARAM(ref) const FCesiumFeatureIdTexture& featureIdTexture);
+      UPARAM(ref) const FCesiumFeatureIDTexture& featureIDTexture);
 
   /**
    * @brief Given texture coordinates from the appropriate texture coordinate
@@ -81,9 +68,9 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureIdTexture")
-  static int64 GetFeatureIdForTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureIdTexture& featureIdTexture,
+      Category = "Cesium|Primitive|FeatureIDTexture")
+  static int64 GetFeatureIDForTextureCoordinates(
+      UPARAM(ref) const FCesiumFeatureIDTexture& featureIDTexture,
       float u,
       float v);
 };

@@ -38,53 +38,53 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     break;
   }
 
-  for (const CesiumGltf::FeatureIDAttribute& attribute :
-       metadata.featureIdAttributes) {
-    if (attribute.featureIds.attribute) {
-      auto featureID =
-          primitive.attributes.find(attribute.featureIds.attribute.value());
-      if (featureID == primitive.attributes.end()) {
-        continue;
-      }
+  //for (const CesiumGltf::FeatureIDAttribute& attribute :
+  //     metadata.featureIdAttributes) {
+  //  if (attribute.featureIds.attribute) {
+  //    auto featureID =
+  //        primitive.attributes.find(attribute.featureIds.attribute.value());
+  //    if (featureID == primitive.attributes.end()) {
+  //      continue;
+  //    }
 
-      const CesiumGltf::Accessor* accessor =
-          model.getSafe<CesiumGltf::Accessor>(
-              &model.accessors,
-              featureID->second);
-      if (!accessor) {
-        continue;
-      }
+  //    const CesiumGltf::Accessor* accessor =
+  //        model.getSafe<CesiumGltf::Accessor>(
+  //            &model.accessors,
+  //            featureID->second);
+  //    if (!accessor) {
+  //      continue;
+  //    }
 
-      if (accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
-        continue;
-      }
+  //    if (accessor->type != CesiumGltf::Accessor::Type::SCALAR) {
+  //      continue;
+  //    }
 
-      this->_featureIdAttributes.Add(FCesiumFeatureIdAttribute(
-          model,
-          *accessor,
-          featureID->second,
-          UTF8_TO_TCHAR(attribute.featureTable.c_str())));
+  //    this->_featureIdAttributes.Add(FCesiumFeatureIdAttribute(
+  //        model,
+  //        *accessor,
+  //        featureID->second,
+  //        UTF8_TO_TCHAR(attribute.featureTable.c_str())));
 
-      // REMOVE AFTER DEPRECATION
-      PRAGMA_DISABLE_DEPRECATION_WARNINGS
-      auto featureTableIt =
-          modelMetadata.featureTables.find(attribute.featureTable);
-      if (featureTableIt == modelMetadata.featureTables.end()) {
-        continue;
-      }
-      this->_featureTables_deprecated.Add((FCesiumMetadataFeatureTable(
-          model,
-          *accessor,
-          featureTableIt->second)));
-      PRAGMA_ENABLE_DEPRECATION_WARNINGS
-    }
-  }
+  //    // REMOVE AFTER DEPRECATION
+  //    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  //    auto featureTableIt =
+  //        modelMetadata.featureTables.find(attribute.featureTable);
+  //    if (featureTableIt == modelMetadata.featureTables.end()) {
+  //      continue;
+  //    }
+  //    this->_featureTables_deprecated.Add((FCesiumMetadataFeatureTable(
+  //        model,
+  //        *accessor,
+  //        featureTableIt->second)));
+  //    PRAGMA_ENABLE_DEPRECATION_WARNINGS
+  //  }
+  //}
 
-  for (const CesiumGltf::FeatureIDTexture& featureIdTexture :
-       metadata.featureIdTextures) {
-    this->_featureIdTextures.Add(
-        FCesiumFeatureIdTexture(model, featureIdTexture));
-  }
+  //for (const CesiumGltf::FeatureIDTexture& featureIdTexture :
+  //     metadata.featureIdTextures) {
+  //  this->_featureIdTextures.Add(
+  //      FCesiumFeatureIdTexture(model, featureIdTexture));
+  //}
 
   this->_featureTextureNames.Reserve(metadata.featureTextures.size());
   for (const std::string& featureTextureName : metadata.featureTextures) {
@@ -93,21 +93,13 @@ FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
   }
 }
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-const TArray<FCesiumMetadataFeatureTable>&
-UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables(
-    const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureTables_deprecated;
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-const TArray<FCesiumFeatureIdAttribute>&
+const TArray<FCesiumFeatureIDAttribute>&
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
   return MetadataPrimitive._featureIdAttributes;
 }
 
-const TArray<FCesiumFeatureIdTexture>&
+const TArray<FCesiumFeatureIDTexture>&
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
   return MetadataPrimitive._featureIdTextures;

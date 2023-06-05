@@ -13,13 +13,13 @@ int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
   const UCesiumGltfPrimitiveComponent* pPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!pPrimitive) {
-    return 0;
+    return -1;
   }
 
   auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
       property._pProperty->getTextureCoordinateAttributeId());
   if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
-    return 0;
+    return -1;
   }
 
   return textureCoordinateIndexIt->second;

@@ -420,7 +420,7 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const Texture& texture = model.textures[gltfTexture.value().index];
+  const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
 
   return loadTextureAnyThreadPart(model, texture, sRGB);
 }
@@ -513,7 +513,7 @@ static void updateTextureCoordinatesForMetadata(
     const TArray<uint32>& indices,
     const EncodedMetadata& encodedMetadata,
     const EncodedMetadataPrimitive& encodedPrimitiveMetadata,
-    const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes,
+    const TArray<FCesiumFeatureIDAttribute>& featureIdAttributes,
     TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
 
@@ -563,7 +563,7 @@ static void updateTextureCoordinatesForMetadata(
   if (pMetadata) {
     for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
          encodedPrimitiveMetadata.encodedFeatureIdAttributes) {
-      const FCesiumFeatureIdAttribute& featureIdAttribute =
+      const FCesiumFeatureIDAttribute& featureIdAttribute =
           featureIdAttributes[encodedFeatureIdAttribute.index];
 
       int32_t attribute = featureIdAttribute.getAttributeIndex();
@@ -574,7 +574,7 @@ static void updateTextureCoordinatesForMetadata(
           textureCoordinateIndex);
 
       int64 vertexCount =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIDAttributeBlueprintLibrary::GetVertexCount(
               featureIdAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
@@ -585,7 +585,7 @@ static void updateTextureCoordinatesForMetadata(
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
+                UCesiumFeatureIDAttributeBlueprintLibrary::
                     GetFeatureIDForVertex(featureIdAttribute, vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
@@ -597,7 +597,7 @@ static void updateTextureCoordinatesForMetadata(
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIdAttributeBlueprintLibrary::
+                UCesiumFeatureIDAttributeBlueprintLibrary::
                     GetFeatureIDForVertex(featureIdAttribute, i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
@@ -779,8 +779,9 @@ static void loadPrimitive(
 
   bool hasNormalMap = material.normalTexture.has_value();
   if (hasNormalMap) {
-    const Texture* pTexture =
-        Model::getSafe(&model.textures, material.normalTexture->index);
+    const CesiumGltf::Texture* pTexture = CesiumGltf::Model::getSafe(
+        &model.textures,
+        material.normalTexture->index);
     hasNormalMap = pTexture != nullptr &&
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
   }

@@ -9,7 +9,6 @@ FCesiumFeatureTexture::FCesiumFeatureTexture(
     const CesiumGltf::Model& model,
     const CesiumGltf::FeatureTexture& featureTexture)
     : _featureTextureView(model, featureTexture) {
-
   if (this->_featureTextureView.status() ==
       CesiumGltf::FeatureTextureViewStatus::Valid) {
     const std::unordered_map<

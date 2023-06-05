@@ -39,229 +39,229 @@ extern UNREALED_API class UEditorEngine* GEditor;
 using namespace CesiumEncodedMetadataUtility;
 
 void UCesiumEncodedMetadataComponent::AutoFill() {
-  const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
-  if (!pOwner) {
-    return;
-  }
+  //const ACesium3DTileset* pOwner = this->GetOwner<ACesium3DTileset>();
+  //if (!pOwner) {
+  //  return;
+  //}
 
-  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
-    const UCesiumGltfComponent* pGltf = Cast<UCesiumGltfComponent>(pComponent);
-    if (!pGltf) {
-      continue;
-    }
+  //for (const UActorComponent* pComponent : pOwner->GetComponents()) {
+  //  const UCesiumGltfComponent* pGltf = Cast<UCesiumGltfComponent>(pComponent);
+  //  if (!pGltf) {
+  //    continue;
+  //  }
 
-    const FCesiumMetadataModel& model = pGltf->Metadata;
-    const TMap<FString, FCesiumFeatureTable>& featureTables =
-        UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(model);
-    const TMap<FString, FCesiumFeatureTexture>& featureTextures =
-        UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(model);
+  //  const FCesiumMetadataModel& model = pGltf->Metadata;
+  //  const TMap<FString, FCesiumFeatureTable>& featureTables =
+  //      UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(model);
+  //  const TMap<FString, FCesiumFeatureTexture>& featureTextures =
+  //      UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(model);
 
-    for (const auto& featureTableIt : featureTables) {
-      const TMap<FString, FCesiumMetadataProperty>& properties =
-          UCesiumFeatureTableBlueprintLibrary::GetProperties(
-              featureTableIt.Value);
+  //  for (const auto& featureTableIt : featureTables) {
+  //    const TMap<FString, FCesiumMetadataProperty>& properties =
+  //        UCesiumFeatureTableBlueprintLibrary::GetProperties(
+  //            featureTableIt.Value);
 
-      FFeatureTableDescription* pFeatureTable =
-          this->FeatureTables.FindByPredicate(
-              [&featureTableName = featureTableIt.Key](
-                  const FFeatureTableDescription& existingFeatureTable) {
-                return existingFeatureTable.Name == featureTableName;
-              });
+  //    FFeatureTableDescription* pFeatureTable =
+  //        this->FeatureTables.FindByPredicate(
+  //            [&featureTableName = featureTableIt.Key](
+  //                const FFeatureTableDescription& existingFeatureTable) {
+  //              return existingFeatureTable.Name == featureTableName;
+  //            });
 
-      if (!pFeatureTable) {
-        pFeatureTable = &this->FeatureTables.Emplace_GetRef();
-        pFeatureTable->Name = featureTableIt.Key;
-      }
+  //    if (!pFeatureTable) {
+  //      pFeatureTable = &this->FeatureTables.Emplace_GetRef();
+  //      pFeatureTable->Name = featureTableIt.Key;
+  //    }
 
-      for (const auto& propertyIt : properties) {
-        if (pFeatureTable->Properties.FindByPredicate(
-                [&propertyName = propertyIt.Key](
-                    const FPropertyDescription& existingProperty) {
-                  return existingProperty.Name == propertyName;
-                })) {
-          // We have already filled this property.
-          continue;
-        }
+  //    for (const auto& propertyIt : properties) {
+  //      if (pFeatureTable->Properties.FindByPredicate(
+  //              [&propertyName = propertyIt.Key](
+  //                  const FPropertyDescription& existingProperty) {
+  //                return existingProperty.Name == propertyName;
+  //              })) {
+  //        // We have already filled this property.
+  //        continue;
+  //      }
 
-        ECesiumMetadataTrueType type =
-            UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(
-                propertyIt.Value);
-        ECesiumMetadataTrueType componentType =
-            UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
-                propertyIt.Value);
-        int64 componentCount;
+  //      ECesiumMetadataTrueType type =
+  //          UCesiumMetadataPropertyBlueprintLibrary::GetTrueType(
+  //              propertyIt.Value);
+  //      ECesiumMetadataTrueType componentType =
+  //          UCesiumMetadataPropertyBlueprintLibrary::GetTrueComponentType(
+  //              propertyIt.Value);
+  //      int64 componentCount;
 
-        ECesiumMetadataPackedGpuType gpuType =
-            ECesiumMetadataPackedGpuType::None;
-        if (type == ECesiumMetadataTrueType::Array) {
-          gpuType = CesiumMetadataTrueTypeToDefaultPackedGpuType(componentType);
-          componentCount =
-              UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(
-                  propertyIt.Value);
-        } else {
-          gpuType = CesiumMetadataTrueTypeToDefaultPackedGpuType(type);
-          componentCount = 1;
-        }
+  //      ECesiumMetadataPackedGpuType gpuType =
+  //          ECesiumMetadataPackedGpuType::None;
+  //      if (type == ECesiumMetadataTrueType::Array) {
+  //        gpuType = CesiumMetadataTrueTypeToDefaultPackedGpuType(componentType);
+  //        componentCount =
+  //            UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(
+  //                propertyIt.Value);
+  //      } else {
+  //        gpuType = CesiumMetadataTrueTypeToDefaultPackedGpuType(type);
+  //        componentCount = 1;
+  //      }
 
-        if (gpuType == ECesiumMetadataPackedGpuType::None) {
-          continue;
-        }
+  //      if (gpuType == ECesiumMetadataPackedGpuType::None) {
+  //        continue;
+  //      }
 
-        FPropertyDescription& property =
-            pFeatureTable->Properties.Emplace_GetRef();
-        property.Name = propertyIt.Key;
+  //      FPropertyDescription& property =
+  //          pFeatureTable->Properties.Emplace_GetRef();
+  //      property.Name = propertyIt.Key;
 
-        switch (componentCount) {
-        case 2:
-          property.Type = ECesiumPropertyType::Vec2;
-          break;
-        case 3:
-          property.Type = ECesiumPropertyType::Vec3;
-          break;
-        case 4:
-          property.Type = ECesiumPropertyType::Vec4;
-          break;
-        default:
-          property.Type = ECesiumPropertyType::Scalar;
-        };
+  //      switch (componentCount) {
+  //      case 2:
+  //        property.Type = ECesiumPropertyType::Vec2;
+  //        break;
+  //      case 3:
+  //        property.Type = ECesiumPropertyType::Vec3;
+  //        break;
+  //      case 4:
+  //        property.Type = ECesiumPropertyType::Vec4;
+  //        break;
+  //      default:
+  //        property.Type = ECesiumPropertyType::Scalar;
+  //      };
 
-        if (gpuType == ECesiumMetadataPackedGpuType::Uint8) {
-          property.ComponentType = ECesiumPropertyComponentType::Uint8;
-        } else /*if (gpuType == float)*/ {
-          property.ComponentType = ECesiumPropertyComponentType::Float;
-        }
+  //      if (gpuType == ECesiumMetadataPackedGpuType::Uint8) {
+  //        property.ComponentType = ECesiumPropertyComponentType::Uint8;
+  //      } else /*if (gpuType == float)*/ {
+  //        property.ComponentType = ECesiumPropertyComponentType::Float;
+  //      }
 
-        property.Normalized =
-            UCesiumMetadataPropertyBlueprintLibrary::IsNormalized(
-                propertyIt.Value);
-      }
-    }
+  //      property.Normalized =
+  //          UCesiumMetadataPropertyBlueprintLibrary::IsNormalized(
+  //              propertyIt.Value);
+  //    }
+  //  }
 
-    for (const auto& featureTextureIt : featureTextures) {
-      FFeatureTextureDescription* pFeatureTexture =
-          this->FeatureTextures.FindByPredicate(
-              [&featureTextureName = featureTextureIt.Key](
-                  const FFeatureTextureDescription& existingFeatureTexture) {
-                return existingFeatureTexture.Name == featureTextureName;
-              });
+  //  for (const auto& featureTextureIt : featureTextures) {
+  //    FFeatureTextureDescription* pFeatureTexture =
+  //        this->FeatureTextures.FindByPredicate(
+  //            [&featureTextureName = featureTextureIt.Key](
+  //                const FFeatureTextureDescription& existingFeatureTexture) {
+  //              return existingFeatureTexture.Name == featureTextureName;
+  //            });
 
-      if (!pFeatureTexture) {
-        pFeatureTexture = &this->FeatureTextures.Emplace_GetRef();
-        pFeatureTexture->Name = featureTextureIt.Key;
-      }
+  //    if (!pFeatureTexture) {
+  //      pFeatureTexture = &this->FeatureTextures.Emplace_GetRef();
+  //      pFeatureTexture->Name = featureTextureIt.Key;
+  //    }
 
-      const TArray<FString>& propertyNames =
-          UCesiumFeatureTextureBlueprintLibrary::GetPropertyKeys(
-              featureTextureIt.Value);
+  //    const TArray<FString>& propertyNames =
+  //        UCesiumFeatureTextureBlueprintLibrary::GetPropertyKeys(
+  //            featureTextureIt.Value);
 
-      for (const FString& propertyName : propertyNames) {
-        if (pFeatureTexture->Properties.FindByPredicate(
-                [&propertyName](const FFeatureTexturePropertyDescription&
-                                    existingProperty) {
-                  return propertyName == existingProperty.Name;
-                })) {
-          // We have already filled this property.
-          continue;
-        }
+  //    for (const FString& propertyName : propertyNames) {
+  //      if (pFeatureTexture->Properties.FindByPredicate(
+  //              [&propertyName](const FFeatureTexturePropertyDescription&
+  //                                  existingProperty) {
+  //                return propertyName == existingProperty.Name;
+  //              })) {
+  //        // We have already filled this property.
+  //        continue;
+  //      }
 
-        FCesiumFeatureTextureProperty property =
-            UCesiumFeatureTextureBlueprintLibrary::FindProperty(
-                featureTextureIt.Value,
-                propertyName);
-        FFeatureTexturePropertyDescription& propertyDescription =
-            pFeatureTexture->Properties.Emplace_GetRef();
-        propertyDescription.Name = propertyName;
-        propertyDescription.Normalized =
-            UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
-                property);
+  //      FCesiumFeatureTextureProperty property =
+  //          UCesiumFeatureTextureBlueprintLibrary::FindProperty(
+  //              featureTextureIt.Value,
+  //              propertyName);
+  //      FFeatureTexturePropertyDescription& propertyDescription =
+  //          pFeatureTexture->Properties.Emplace_GetRef();
+  //      propertyDescription.Name = propertyName;
+  //      propertyDescription.Normalized =
+  //          UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
+  //              property);
 
-        switch (
-            UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
-                property)) {
-        case 2:
-          propertyDescription.Type = ECesiumPropertyType::Vec2;
-          break;
-        case 3:
-          propertyDescription.Type = ECesiumPropertyType::Vec3;
-          break;
-        case 4:
-          propertyDescription.Type = ECesiumPropertyType::Vec4;
-          break;
-        // case 1:
-        default:
-          propertyDescription.Type = ECesiumPropertyType::Scalar;
-        }
+  //      switch (
+  //          UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
+  //              property)) {
+  //      case 2:
+  //        propertyDescription.Type = ECesiumPropertyType::Vec2;
+  //        break;
+  //      case 3:
+  //        propertyDescription.Type = ECesiumPropertyType::Vec3;
+  //        break;
+  //      case 4:
+  //        propertyDescription.Type = ECesiumPropertyType::Vec4;
+  //        break;
+  //      // case 1:
+  //      default:
+  //        propertyDescription.Type = ECesiumPropertyType::Scalar;
+  //      }
 
-        propertyDescription.Swizzle =
-            UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(property);
-      }
-    }
-  }
+  //      propertyDescription.Swizzle =
+  //          UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(property);
+  //    }
+  //  }
+  //}
 
-  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
-    const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pComponent);
-    if (!pGltfPrimitive) {
-      continue;
-    }
+  //for (const UActorComponent* pComponent : pOwner->GetComponents()) {
+  //  const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
+  //      Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+  //  if (!pGltfPrimitive) {
+  //    continue;
+  //  }
 
-    const FCesiumMetadataPrimitive& primitive = pGltfPrimitive->Metadata;
-    const TArray<FCesiumFeatureIdAttribute>& attributes =
-        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
-            primitive);
-    const TArray<FCesiumFeatureIdTexture>& textures =
-        UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
-            primitive);
+  //  const FCesiumMetadataPrimitive& primitive = pGltfPrimitive->Metadata;
+  //  const TArray<FCesiumFeatureIdAttribute>& attributes =
+  //      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
+  //          primitive);
+  //  const TArray<FCesiumFeatureIdTexture>& textures =
+  //      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
+  //          primitive);
 
-    for (const FCesiumFeatureIdAttribute& attribute : attributes) {
-      const FString& featureTableName =
-          UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
-              attribute);
-      for (FFeatureTableDescription& featureTable : this->FeatureTables) {
-        if (featureTableName == featureTable.Name) {
-          if (featureTable.AccessType ==
-              ECesiumFeatureTableAccessType::Unknown) {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
-          }
+  //  for (const FCesiumFeatureIdAttribute& attribute : attributes) {
+  //    const FString& featureTableName =
+  //        UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
+  //            attribute);
+  //    for (FFeatureTableDescription& featureTable : this->FeatureTables) {
+  //      if (featureTableName == featureTable.Name) {
+  //        if (featureTable.AccessType ==
+  //            ECesiumFeatureTableAccessType::Unknown) {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
+  //        }
 
-          break;
-        }
-      }
-    }
+  //        break;
+  //      }
+  //    }
+  //  }
 
-    for (const FCesiumFeatureIdTexture& texture : textures) {
-      const FString& featureTableName =
-          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(texture);
-      for (FFeatureTableDescription& featureTable : this->FeatureTables) {
-        if (featureTableName == featureTable.Name) {
-          if (featureTable.AccessType ==
-              ECesiumFeatureTableAccessType::Unknown) {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
-            switch (texture.getFeatureIdTextureView().getChannel()) {
-            case 1:
-              featureTable.Channel = "g";
-              break;
-            case 2:
-              featureTable.Channel = "b";
-              break;
-            case 3:
-              featureTable.Channel = "a";
-              break;
-            // case 0:
-            default:
-              featureTable.Channel = "r";
-            }
-          } else if (
-              featureTable.AccessType ==
-              ECesiumFeatureTableAccessType::Attribute) {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
-          }
+  //  for (const FCesiumFeatureIdTexture& texture : textures) {
+  //    const FString& featureTableName =
+  //        UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(texture);
+  //    for (FFeatureTableDescription& featureTable : this->FeatureTables) {
+  //      if (featureTableName == featureTable.Name) {
+  //        if (featureTable.AccessType ==
+  //            ECesiumFeatureTableAccessType::Unknown) {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
+  //          switch (texture.getFeatureIdTextureView().getChannel()) {
+  //          case 1:
+  //            featureTable.Channel = "g";
+  //            break;
+  //          case 2:
+  //            featureTable.Channel = "b";
+  //            break;
+  //          case 3:
+  //            featureTable.Channel = "a";
+  //            break;
+  //          // case 0:
+  //          default:
+  //            featureTable.Channel = "r";
+  //          }
+  //        } else if (
+  //            featureTable.AccessType ==
+  //            ECesiumFeatureTableAccessType::Attribute) {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
+  //        }
 
-          break;
-        }
-      }
-    }
-  }
+  //        break;
+  //      }
+  //    }
+  //  }
+  //}
 }
 
 #if WITH_EDITOR
