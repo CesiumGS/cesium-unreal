@@ -32,7 +32,8 @@ FCesiumFeatureIDSet::FCesiumFeatureIDSet(
   }
 
   if (FeatureID.texture) {
-    _featureID = FCesiumFeatureIDTexture(InModel, *FeatureID.texture);
+    _featureID =
+        FCesiumFeatureIDTexture(InModel, Primitive, *FeatureID.texture);
     _featureIDType = ECesiumFeatureIDType::Texture;
 
     return;
@@ -43,7 +44,8 @@ FCesiumFeatureIDSet::FCesiumFeatureIDSet(
   }
 }
 
-const ECesiumFeatureIDType UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(
+const ECesiumFeatureIDType
+UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(
     UPARAM(ref) const FCesiumFeatureIDSet& FeatureID) {
   return FeatureID._featureIDType;
 }
@@ -92,7 +94,11 @@ int64 UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDForVertex(
   }
 
   if (FeatureIDSet._featureIDType == ECesiumFeatureIDType::Texture) {
-    // TODO: does it make sense to get the feature ID with the texture coordinate of the vertex?
+    FCesiumFeatureIDTexture texture =
+        std::get<FCesiumFeatureIDTexture>(FeatureIDSet._featureID);
+    return UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureIDForVertex(
+        texture,
+        VertexIndex);
   }
 
   if (FeatureIDSet._featureIDType == ECesiumFeatureIDType::Implicit) {

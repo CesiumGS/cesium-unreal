@@ -97,9 +97,12 @@ public:
       int64 FaceIndex);
 
   /**
-   * Gets the feature ID associated with the given face and feature ID set. If
-   * the given feature ID set is a feature ID texture, this returns the feature ID
-   * using the texture coordinates of the first vertex of the face.
+   * Gets the feature ID associated with the given face and feature ID set.
+   *
+   * This does not interface well with feature ID textures, since feature ID
+   * textures make it possible for a face to have multiple feature IDs. If the
+   * given feature ID set is a feature ID texture, the feature ID of the
+   * first vertex of the face is returned.
    */
   UFUNCTION(
       BlueprintCallable,

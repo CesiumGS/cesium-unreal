@@ -39,7 +39,7 @@ FCesiumFeatureIDAttribute::FCesiumFeatureIDAttribute(
     const CesiumGltf::MeshPrimitive Primitive,
     const int64 FeatureIDAttribute)
     : _attributeIndex() {
-  const std::string attributeName = "_FEATURE_ID_" + FeatureIDAttribute;
+  const std::string attributeName = "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
 
   auto featureID = Primitive.attributes.find(attributeName);
   if (featureID == Primitive.attributes.end()) {

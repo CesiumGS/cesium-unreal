@@ -8,7 +8,7 @@
   - Added `FCesiumFeatureID`, which represents a feature ID in the `EXT_mesh_features` extension. A `FCesiumFeatureIDSet` has a `ECesiumFeatureIDType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
   - Feature IDs are now managed by `FCesiumPrimitiveFeatures`. `FCesiumMetadataPrimitive` is no longer aware of a primitive's feature IDs.
   - `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` have been renamed to `FCesiumFeatureIDAttribute` and `FCesiumFeatureIDTexture`, to improve readability in the Blueprint menu.
-  - Similarly, `UCesiumFeatureIdAttributeBlueprintLibrary` and `UCesiumFeatureIdTextureBlueprintLibrary` have been renamed to `UCesiumFeatureIDAttributeBlueprintLibrary` and `UCesiumFeatureIDTextureBlueprintLibrary` respectively.
+    - Similarly, `UCesiumFeatureIdAttributeBlueprintLibrary` and `UCesiumFeatureIdTextureBlueprintLibrary` have been renamed to `UCesiumFeatureIDAttributeBlueprintLibrary` and `UCesiumFeatureIDTextureBlueprintLibrary`.
   - `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been removed since they are no longer applicable in `EXT_mesh_features`. Use `UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex` instead.
   - `UCesiumMetadataUtilityBlueprintLibrary::GetFirstVertexIDFromFaceID` has been removed. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace` instead.
 - Additionally, `CesiumMetadataFeatureTable`,  `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace` have been removed. These have been deprecated since Unreal Engine 4.26.

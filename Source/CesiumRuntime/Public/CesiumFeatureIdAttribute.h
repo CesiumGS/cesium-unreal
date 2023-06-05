@@ -65,7 +65,7 @@ public:
                      const FCesiumFeatureIDAttribute& FeatureIDAttribute);
 
   /**
-   * Gets the feature ID associated with a given vertex. The feature ID can be
+   * Gets the feature ID associated with the given vertex. The feature ID can be
    * used with a {@link FCesiumFeatureTable} to retrieve the per-vertex
    * metadata.
    */
