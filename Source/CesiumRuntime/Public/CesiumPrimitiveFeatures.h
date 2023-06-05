@@ -61,7 +61,7 @@ class CESIUMRUNTIME_API UCesiumPrimitiveFeaturesBlueprintLibrary
 
 public:
   /**
-   * @brief Gets all the feature IDs that are associated with the
+   * Gets all the feature IDs that are associated with the
    * primitive.
    */
   UFUNCTION(
@@ -72,40 +72,15 @@ public:
   GetFeatureIDs(UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures);
 
   /**
-   * @brief Gets all the feature ID attributes that are associated with the
-   * primitive. If the primitive has none, the returned array will be empty.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Primitive|Features")
-  static const TArray<FCesiumFeatureIDAttribute>
-  GetFeatureIDAttributes(UPARAM(ref)
-                             const FCesiumPrimitiveFeatures& MetadataPrimitive);
-
-  /**
-   * @brief Gets all the feature ID textures that are associated with the
-   * primitive. If the primitive has none, the returned array will be empty.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Primitive|Features")
-  static const TArray<FCesiumFeatureIDTexture>
-  GetFeatureIDTextures(UPARAM(ref)
-                           const FCesiumPrimitiveFeatures& MetadataPrimitive);
-
-  /**
-   * @brief Gets all the feature IDs that represent implicit feature IDs on the
-   * primitive. If the primitive has none, the returned array will be empty.
+   * Gets all the feature IDs of the given type. If the primitive has none of that type, the returned array will be empty.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
   static const TArray<FCesiumFeatureID>
-  GetImplicitFeatureIDs(UPARAM(ref)
-                            const FCesiumPrimitiveFeatures& MetadataPrimitive);
+  GetFeatureIDsOfType(UPARAM(ref) const FCesiumPrimitiveFeatures& MetadataPrimitive,
+      ECesiumFeatureIDType Type);
 
   /**
    * Gets the index of the first vertex that makes up a given face of this
@@ -131,6 +106,6 @@ public:
       Category = "Cesium|Primitive|Features")
   static int64 GetFeatureIDFromFaceIndex(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-
+      UPARAM(ref) const FCesiumFeatureID& FeatureID,
       int64 FaceIndex);
 };

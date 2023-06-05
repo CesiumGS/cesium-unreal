@@ -6,13 +6,8 @@
 #include "CesiumFeatureIdTexture.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
-// REMOVE AFTER DEPRECATION
-#include "CesiumMetadataFeatureTable.h"
 
 #include "CesiumMetadataPrimitive.generated.h"
-
-// REMOVE AFTER DEPRECATION
-struct FCesiumMetadataFeatureTable;
 
 namespace CesiumGltf {
 struct ExtensionMeshPrimitiveExtFeatureMetadata;

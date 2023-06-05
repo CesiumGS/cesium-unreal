@@ -51,7 +51,7 @@ struct EncodedFeatureIdTexture {
   FString featureTableName;
 
   /**
-   * @brief The actual feature id texture.
+   * @brief The actual feature ID texture.
    */
   TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 

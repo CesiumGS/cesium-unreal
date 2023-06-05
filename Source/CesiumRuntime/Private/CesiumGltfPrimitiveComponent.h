@@ -8,6 +8,7 @@
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "CesiumRasterOverlays.h"
 #include "Components/StaticMeshComponent.h"
 #include "CoreMinimal.h"
@@ -25,6 +26,7 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
+  FCesiumPrimitiveFeatures Features;
   FCesiumMetadataPrimitive Metadata;
 
   CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;

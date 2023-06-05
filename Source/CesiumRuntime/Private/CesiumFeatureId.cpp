@@ -16,7 +16,7 @@ FCesiumFeatureID::FCesiumFeatureID(
     const MeshPrimitive& Primitive,
     const ExtensionExtMeshFeaturesFeatureId& FeatureID)
     : _featureID(),
-      _featureIDType(FeatureIDType::None),
+      _featureIDType(ECesiumFeatureIDType::None),
       _featureCount(FeatureID.featureCount),
       _propertyTableIndex() {
   if (FeatureID.propertyTable) {
@@ -26,26 +26,46 @@ FCesiumFeatureID::FCesiumFeatureID(
   if (FeatureID.attribute) {
     _featureID =
         FCesiumFeatureIDAttribute(InModel, Primitive, *FeatureID.attribute);
-    _featureIDType = FeatureIDType::Attribute;
+    _featureIDType = ECesiumFeatureIDType::Attribute;
 
     return;
   }
 
   if (FeatureID.texture) {
     _featureID = FCesiumFeatureIDTexture(InModel, *FeatureID.texture);
-    _featureIDType = FeatureIDType::Texture;
+    _featureIDType = ECesiumFeatureIDType::Texture;
 
     return;
   }
 
   if (_featureCount > 0) {
-    _featureIDType = FeatureIDType::Implicit;
+    _featureIDType = ECesiumFeatureIDType::Implicit;
   }
 }
 
-const FeatureIDType UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(
+const ECesiumFeatureIDType UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(
     UPARAM(ref) const FCesiumFeatureID& FeatureID) {
   return FeatureID._featureIDType;
+}
+
+const FCesiumFeatureIDAttribute
+UCesiumFeatureIDBlueprintLibrary::GetAsFeatureIDAttribute(
+    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
+  if (FeatureID._featureIDType == ECesiumFeatureIDType::Attribute) {
+    return std::get<FCesiumFeatureIDAttribute>(FeatureID._featureID);
+  }
+
+  return EmptyFeatureIDAttribute;
+}
+
+const FCesiumFeatureIDTexture
+UCesiumFeatureIDBlueprintLibrary::GetAsFeatureIDTexture(
+    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
+  if (FeatureID._featureIDType == ECesiumFeatureIDType::Texture) {
+    return std::get<FCesiumFeatureIDTexture>(FeatureID._featureID);
+  }
+
+  return EmptyFeatureIDTexture;
 }
 
 const int64 UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex(
@@ -63,7 +83,7 @@ int64 UCesiumFeatureIDBlueprintLibrary::GetFeatureCount(
 int64 UCesiumFeatureIDBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureID& FeatureID,
     int64 VertexIndex) {
-  if (FeatureID._featureIDType == FeatureIDType::Attribute) {
+  if (FeatureID._featureIDType == ECesiumFeatureIDType::Attribute) {
     FCesiumFeatureIDAttribute attribute =
         std::get<FCesiumFeatureIDAttribute>(FeatureID._featureID);
     return UCesiumFeatureIDAttributeBlueprintLibrary::GetFeatureIDForVertex(
@@ -71,11 +91,11 @@ int64 UCesiumFeatureIDBlueprintLibrary::GetFeatureIDForVertex(
         VertexIndex);
   }
 
-  if (FeatureID._featureIDType == FeatureIDType::Texture) {
+  if (FeatureID._featureIDType == ECesiumFeatureIDType::Texture) {
     // TODO:
   }
 
-  if (FeatureID._featureIDType == FeatureIDType::Implicit) {
+  if (FeatureID._featureIDType == ECesiumFeatureIDType::Implicit) {
     return VertexIndex;
   }
 

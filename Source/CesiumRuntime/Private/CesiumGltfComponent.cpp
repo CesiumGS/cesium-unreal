@@ -16,6 +16,7 @@
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
@@ -69,19 +70,9 @@ using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
 namespace {
-
-// UE4 and UE5 both use single-precision vectors for meshes, but they have
-// different names.
-#if ENGINE_MAJOR_VERSION == 5
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
 using TMeshVector4 = FVector4f;
-#else
-using TMeshVector2 = FVector2D;
-using TMeshVector3 = FVector;
-using TMeshVector4 = FVector4;
-#endif
-
 } // namespace
 
 static uint32_t nextMaterialId = 0;
@@ -420,7 +411,8 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
+  const CesiumGltf::Texture& texture =
+      model.textures[gltfTexture.value().index];
 
   return loadTextureAnyThreadPart(model, texture, sRGB);
 }
@@ -477,6 +469,17 @@ static void applyWaterMask(
     primitiveResult.waterMaskScale =
         waterMaskScaleIt->second.getDoubleOrDefault(1.0);
   }
+}
+
+static FCesiumPrimitiveFeatures
+loadPrimitiveFeatures(const Model& model, const MeshPrimitive& primitive) {
+  const ExtensionExtMeshFeatures* pExtension =
+      primitive.getExtension<ExtensionExtMeshFeatures>();
+  if (!pExtension) {
+    return FCesiumPrimitiveFeatures();
+  }
+
+  return FCesiumPrimitiveFeatures(model, primitive, *pExtension);
 }
 
 static FCesiumMetadataPrimitive
@@ -1033,7 +1036,9 @@ static void loadPrimitive(
     }
   }
 
-  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
+  primitiveResult.Metadata =
+      loadMetadataPrimitive(model, primitive); // TODO: use structural metadata
 
   const FMetadataDescription* pEncodedMetadataDescription =
       options.pMeshOptions->pNodeOptions->pModelOptions

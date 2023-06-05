@@ -41,46 +41,18 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDs(
   return PrimitiveFeatures._featureIDs;
 }
 
-const TArray<FCesiumFeatureIDAttribute>
-UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDAttributes(
-    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
-  TArray<FCesiumFeatureIDAttribute> attributes;
-  for (int32 i = 0; i < PrimitiveFeatures._featureIDs.Num(); i++) {
-    const FCesiumFeatureID& featureId = PrimitiveFeatures._featureIDs[i];
-    if (UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(featureId) ==
-        FeatureIDType::Attribute) {
-      // TODO
-    }
-  }
-  return attributes;
-}
-
-const TArray<FCesiumFeatureIDTexture>
-UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDTextures(
-    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
-  TArray<FCesiumFeatureIDTexture> textures;
-  for (int32 i = 0; i < PrimitiveFeatures._featureIDs.Num(); i++) {
-    const FCesiumFeatureID& featureId = PrimitiveFeatures._featureIDs[i];
-    if (UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(featureId) ==
-        FeatureIDType::Texture) {
-      // TODO
-    }
-  }
-  return textures;
-}
-
 const TArray<FCesiumFeatureID>
-UCesiumPrimitiveFeaturesBlueprintLibrary::GetImplicitFeatureIDs(
-    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
-  TArray<FCesiumFeatureID> implicitFeatureIds;
+UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDsOfType(
+    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+    ECesiumFeatureIDType Type) {
+  TArray<FCesiumFeatureID> featureIDs;
   for (int32 i = 0; i < PrimitiveFeatures._featureIDs.Num(); i++) {
-    const FCesiumFeatureID& featureId = PrimitiveFeatures._featureIDs[i];
-    if (UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(featureId) ==
-        FeatureIDType::Implicit) {
-      implicitFeatureIds.Add(featureId);
+    const FCesiumFeatureID& featureID = PrimitiveFeatures._featureIDs[i];
+    if (UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(featureID) == Type) {
+      featureIDs.Add(featureID);
     }
   }
-  return implicitFeatureIds;
+  return featureIDs;
 }
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::
@@ -107,11 +79,10 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFaceIndex(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-    int64 faceID) {
-  return -1; /*
-  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
-      FeatureIdAttribute,
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIDFromFaceID(
-          PrimitiveFeatures,
-          faceID));*/
+    UPARAM(ref) const FCesiumFeatureID& FeatureID,
+    int64 FaceIndex) {
+  return UCesiumFeatureIDBlueprintLibrary::GetFeatureIDForVertex(
+      FeatureID,
+      UCesiumPrimitiveFeaturesBlueprintLibrary::
+          GetFirstVertexIndexFromFaceIndex(PrimitiveFeatures, FaceIndex));
 }
