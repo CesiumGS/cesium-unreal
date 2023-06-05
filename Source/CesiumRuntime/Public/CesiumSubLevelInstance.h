@@ -13,6 +13,43 @@ class CESIUMRUNTIME_API ACesiumSubLevelInstance : public ALevelInstance {
 
 public:
   /**
+   * The latitude of the georeference origin for this sublevel in degrees, in
+   * the range [-90, 90].
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -90.0, ClampMax = 90.0))
+  double OriginLatitude = 39.736401;
+
+  /**
+   * The longitude of the georeference origin for this sublevel in degrees, in
+   * the range [-180, 180].
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = -180.0, ClampMax = 180.0))
+  double OriginLongitude = -105.25737;
+
+  /**
+   * The height of the georeference origin for this sublevel in meters above the
+   * ellipsoid.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  double OriginHeight = 2250.0;
+
+  /**
+   * How far in meters from the sublevel local origin the camera needs to be to
+   * load the level.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      meta = (ClampMin = 0.0))
+  double LoadRadius = 1000.0;
+
+  /**
    * Resolves the Cesium Georeference to use with this Actor. Returns
    * the value of the Georeference property if it is set. Otherwise, finds a
    * Georeference in the World and returns it, creating it if necessary. The
@@ -44,6 +81,7 @@ public:
 
   virtual void BeginDestroy() override;
   virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void PostActorCreated() override;
 
 protected:
   // Called when the game starts or when spawned
@@ -82,4 +120,6 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
+
+  bool _isAttachedToGeoreference() const;
 };

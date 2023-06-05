@@ -183,10 +183,11 @@ public:
   void PlaceGeoreferenceOriginHere();
 
   /**
-   * Notifies the georeference that a Cesium sub-level has just been made
-   * visible in the Editor. As a result, all other sub-levels will be hidden.
+   * Activates a given sub-level and deactivates all others. If SubLevel is
+   * nullptr, all levels are deactivated. In Play mode, this method is called
+   * automatically every frame, so calling it manually will be ineffective.
    */
-  void NotifySubLevelVisibleInEditor(ACesiumSubLevelInstance* SubLevel);
+  void ActivateSubLevel(ACesiumSubLevelInstance* SubLevel);
 #endif
 
   /**
@@ -497,6 +498,13 @@ public:
    */
   void RemoveSubLevel(ACesiumSubLevelInstance* SubLevel);
 
+  /**
+   * Synchronizes the state of the georeference with the activation state of
+   * this sublevel. This is called automatically by the CesiumSubLevelInstance
+   * itself as needed and should not be called explicitly.
+   */
+  void SyncSubLevel(ACesiumSubLevelInstance* SubLevel);
+
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
@@ -619,8 +627,12 @@ private:
   bool _shouldManageSubLevels() const;
 
   /**
-   * In the Editor, ensures that there are not multiple visible sub-levels.
-   * Outside of the Editor, this method does nothing.
+   * Ensures that there are not multiple visible sub-levels by deactivating
+   * any additional sublevels after the first one.
    */
-  void _ensureZeroOrOneSubLevelsAreVisible();
+  void _ensureZeroOrOneSubLevelsAreActive();
+
+  void _deactivateSubLevel(ACesiumSubLevelInstance* SubLevel);
+  void _activateSubLevel(ACesiumSubLevelInstance* SubLevel);
+  bool _isSubLevelActive(ACesiumSubLevelInstance* SubLevel) const;
 };

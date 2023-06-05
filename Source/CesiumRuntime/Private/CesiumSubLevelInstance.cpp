@@ -14,9 +14,7 @@ ACesiumGeoreference* ACesiumSubLevelInstance::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
-  // Ignore transient level instances, like those that are created when dragging
-  // from Create Actors but before releasing the mouse button.
-  if (IsValid(this->ResolvedGeoreference) && !this->HasAllFlags(RF_Transient)) {
+  if (this->_isAttachedToGeoreference()) {
     this->ResolvedGeoreference->AddSubLevel(this);
   }
 
@@ -49,9 +47,9 @@ void ACesiumSubLevelInstance::SetIsTemporarilyHiddenInEditor(bool bIsHidden) {
   // If this sub-level just became visible, notify the georeference so it can
   // hide the other levels.
   if (!bIsHidden) {
-    ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-    if (IsValid(pGeoreference)) {
-      pGeoreference->NotifySubLevelVisibleInEditor(this);
+    this->ResolveGeoreference();
+    if (this->_isAttachedToGeoreference()) {
+      this->ResolvedGeoreference->ActivateSubLevel(this);
     }
   }
 }
@@ -66,9 +64,41 @@ void ACesiumSubLevelInstance::BeginDestroy() {
 void ACesiumSubLevelInstance::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
   this->ResolveGeoreference();
+
+  if (this->_isAttachedToGeoreference()) {
+    this->ResolvedGeoreference->SyncSubLevel(this);
+  }
+}
+
+void ACesiumSubLevelInstance::PostActorCreated() {
+  Super::PostActorCreated();
+
+  // When a new sub-level is created (not loaded!)...
+
+  // Set the initial location to (0,0,0).
+  this->SetActorLocationAndRotation(FVector(0.0, 0.0, 0.0), FQuat::Identity);
+
+  // Copy the current georeference info into it.
+  this->ResolveGeoreference();
+  if (this->_isAttachedToGeoreference()) {
+    this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
+    this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
+    this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
+  }
 }
 
 void ACesiumSubLevelInstance::BeginPlay() {
   Super::BeginPlay();
   this->ResolveGeoreference();
+
+  if (this->_isAttachedToGeoreference()) {
+    this->ResolvedGeoreference->SyncSubLevel(this);
+  }
+}
+
+bool ACesiumSubLevelInstance::_isAttachedToGeoreference() const {
+  // Ignore transient level instances, like those that are created when dragging
+  // from Create Actors but before releasing the mouse button.
+  return IsValid(this->ResolvedGeoreference) &&
+         !this->HasAllFlags(RF_Transient);
 }
