@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumFeatureId.h"
+#include "CesiumFeatureIdSet.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
@@ -14,9 +14,7 @@ struct ExtensionExtMeshFeatures;
 
 /**
  * A Blueprint-accessible wrapper for a glTF Primitive's mesh features. It holds
- * views of the feature ID attributes / textures associated with this
- * primitive. If the primitive has EXT_mesh_features, but no attributes or
- * textures are defined, then the feature IDs are implicit via vertex index.
+ * views of the feature ID sets associated with this primitive.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
@@ -48,7 +46,7 @@ public:
       const CesiumGltf::ExtensionExtMeshFeatures& features);
 
 private:
-  TArray<FCesiumFeatureID> _featureIDs;
+  TArray<FCesiumFeatureIDSet> _featureIDSets;
   VertexIDAccessorType _vertexIDAccessor;
 
   friend class UCesiumPrimitiveFeaturesBlueprintLibrary;
@@ -61,25 +59,27 @@ class CESIUMRUNTIME_API UCesiumPrimitiveFeaturesBlueprintLibrary
 
 public:
   /**
-   * Gets all the feature IDs that are associated with the
+   * Gets all the feature ID sets that are associated with the
    * primitive.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static const TArray<FCesiumFeatureID>&
-  GetFeatureIDs(UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures);
+  static const TArray<FCesiumFeatureIDSet>&
+  GetFeatureIDSets(UPARAM(ref)
+                       const FCesiumPrimitiveFeatures& PrimitiveFeatures);
 
   /**
-   * Gets all the feature IDs of the given type. If the primitive has none of that type, the returned array will be empty.
+   * Gets all the feature ID sets of the given type. If the primitive has no
+   * sets of that type, the returned array will be empty.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static const TArray<FCesiumFeatureID>
-  GetFeatureIDsOfType(UPARAM(ref) const FCesiumPrimitiveFeatures& MetadataPrimitive,
+  static const TArray<FCesiumFeatureIDSet> GetFeatureIDSetsOfType(
+      UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
       ECesiumFeatureIDType Type);
 
   /**
@@ -92,20 +92,21 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static int64 GetFirstVertexIndexFromFaceIndex(
+  static int64 GetFirstVertexIndexFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
       int64 FaceIndex);
 
-  
   /**
-   * Gets the feature ID associated with a given face and feature ID from this primitive.
+   * Gets the feature ID associated with the given face and feature ID set. If
+   * the given feature ID set is a feature ID texture, this returns the feature ID
+   * using the texture coordinates of the first vertex of the face.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static int64 GetFeatureIDFromFaceIndex(
+  static int64 GetFeatureIDFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-      UPARAM(ref) const FCesiumFeatureID& FeatureID,
+      UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet,
       int64 FaceIndex);
 };

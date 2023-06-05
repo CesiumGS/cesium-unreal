@@ -11,9 +11,6 @@
 
 namespace CesiumGltf {
 struct ExtensionMeshPrimitiveExtFeatureMetadata;
-
-// REMOVE AFTER DEPRECATION
-struct ExtensionModelExtFeatureMetadata;
 } // namespace CesiumGltf
 
 /**
@@ -56,11 +53,6 @@ private:
   TArray<FCesiumFeatureIDTexture> _featureIdTextures;
   TArray<FString> _featureTextureNames;
   VertexIDAccessorType _vertexIDAccessor;
-
-  // REMOVE AFTER DEPRECATION
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  TArray<FCesiumMetadataFeatureTable> _featureTables_deprecated;
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };

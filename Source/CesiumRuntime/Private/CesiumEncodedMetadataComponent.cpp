@@ -207,18 +207,18 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     }
 
     const FCesiumPrimitiveFeatures& features = pGltfPrimitive->Features;
-    const TArray<FCesiumFeatureID> featureIDs =
-        UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDs(features);
+    const TArray<FCesiumFeatureIDSet> featureIDSets =
+        UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
 
-    for (const FCesiumFeatureID& featureID : featureIDs) {
+    for (const FCesiumFeatureIDSet& featureIDSet : featureIDSets) {
       const int64 propertyTableIndex =
-          UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex(featureID);
+          UCesiumFeatureIDSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
       if (propertyTableIndex >= 0 &&
           propertyTableIndex < this->FeatureTables.Num()) {
         FFeatureTableDescription& featureTable =
             this->FeatureTables[propertyTableIndex];
         const ECesiumFeatureIDType type =
-            UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(featureID);
+            UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(featureIDSet);
 
         // TODO: this will be overhauled, but here's code with new API for
         // future reference

@@ -31,34 +31,33 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
 
   for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
        Features.featureIds) {
-    this->_featureIDs.Add(FCesiumFeatureID(InModel, Primitive, FeatureId));
+    this->_featureIDSets.Add(FCesiumFeatureIDSet(InModel, Primitive, FeatureId));
   }
 }
 
-const TArray<FCesiumFeatureID>&
-UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDs(
+const TArray<FCesiumFeatureIDSet>&
+UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
-  return PrimitiveFeatures._featureIDs;
+  return PrimitiveFeatures._featureIDSets;
 }
 
-const TArray<FCesiumFeatureID>
-UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDsOfType(
+const TArray<FCesiumFeatureIDSet>
+UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
     ECesiumFeatureIDType Type) {
-  TArray<FCesiumFeatureID> featureIDs;
-  for (int32 i = 0; i < PrimitiveFeatures._featureIDs.Num(); i++) {
-    const FCesiumFeatureID& featureID = PrimitiveFeatures._featureIDs[i];
-    if (UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(featureID) == Type) {
-      featureIDs.Add(featureID);
+  TArray<FCesiumFeatureIDSet> featureIDSets;
+  for (int32 i = 0; i < PrimitiveFeatures._featureIDSets.Num(); i++) {
+    const FCesiumFeatureIDSet& featureIDSet = PrimitiveFeatures._featureIDSets[i];
+    if (UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(featureIDSet) == Type) {
+      featureIDSets.Add(featureIDSet);
     }
   }
-  return featureIDs;
+  return featureIDSets;
 }
 
-int64 UCesiumPrimitiveFeaturesBlueprintLibrary::
-    GetFirstVertexIndexFromFaceIndex(
-        UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-        int64 FaceIndex) {
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace(
+    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+    int64 FaceIndex) {
   return std::visit(
       [FaceIndex](const auto& accessor) {
         int64 index = FaceIndex * 3;
@@ -77,12 +76,13 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::
       PrimitiveFeatures._vertexIDAccessor);
 }
 
-int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFaceIndex(
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-    UPARAM(ref) const FCesiumFeatureID& FeatureID,
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet,
     int64 FaceIndex) {
-  return UCesiumFeatureIDBlueprintLibrary::GetFeatureIDForVertex(
-      FeatureID,
-      UCesiumPrimitiveFeaturesBlueprintLibrary::
-          GetFirstVertexIndexFromFaceIndex(PrimitiveFeatures, FaceIndex));
+  return UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDForVertex(
+      FeatureIDSet,
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace(
+          PrimitiveFeatures,
+          FaceIndex));
 }

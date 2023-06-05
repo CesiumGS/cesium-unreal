@@ -1,6 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumFeatureId.h"
+#include "CesiumFeatureIdSet.h"
 #include "CesiumFeatureTable.h"
 #include "CesiumGltf/Accessor.h"
 #include "CesiumGltf/ExtensionExtMeshFeaturesFeatureId.h"
@@ -11,7 +11,7 @@ using namespace CesiumGltf;
 static FCesiumFeatureIDAttribute EmptyFeatureIDAttribute;
 static FCesiumFeatureIDTexture EmptyFeatureIDTexture;
 
-FCesiumFeatureID::FCesiumFeatureID(
+FCesiumFeatureIDSet::FCesiumFeatureIDSet(
     const Model& InModel,
     const MeshPrimitive& Primitive,
     const ExtensionExtMeshFeaturesFeatureId& FeatureID)
@@ -43,14 +43,14 @@ FCesiumFeatureID::FCesiumFeatureID(
   }
 }
 
-const ECesiumFeatureIDType UCesiumFeatureIDBlueprintLibrary::GetFeatureIDType(
-    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
+const ECesiumFeatureIDType UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureID) {
   return FeatureID._featureIDType;
 }
 
 const FCesiumFeatureIDAttribute
-UCesiumFeatureIDBlueprintLibrary::GetAsFeatureIDAttribute(
-    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
+UCesiumFeatureIDSetBlueprintLibrary::GetAsFeatureIDAttribute(
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureID) {
   if (FeatureID._featureIDType == ECesiumFeatureIDType::Attribute) {
     return std::get<FCesiumFeatureIDAttribute>(FeatureID._featureID);
   }
@@ -59,8 +59,8 @@ UCesiumFeatureIDBlueprintLibrary::GetAsFeatureIDAttribute(
 }
 
 const FCesiumFeatureIDTexture
-UCesiumFeatureIDBlueprintLibrary::GetAsFeatureIDTexture(
-    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
+UCesiumFeatureIDSetBlueprintLibrary::GetAsFeatureIDTexture(
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureID) {
   if (FeatureID._featureIDType == ECesiumFeatureIDType::Texture) {
     return std::get<FCesiumFeatureIDTexture>(FeatureID._featureID);
   }
@@ -68,34 +68,34 @@ UCesiumFeatureIDBlueprintLibrary::GetAsFeatureIDTexture(
   return EmptyFeatureIDTexture;
 }
 
-const int64 UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex(
-    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
-  return FeatureID._propertyTableIndex.IsSet()
-             ? FeatureID._propertyTableIndex.GetValue()
+const int64 UCesiumFeatureIDSetBlueprintLibrary::GetPropertyTableIndex(
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet) {
+  return FeatureIDSet._propertyTableIndex.IsSet()
+             ? FeatureIDSet._propertyTableIndex.GetValue()
              : -1;
 }
 
-int64 UCesiumFeatureIDBlueprintLibrary::GetFeatureCount(
-    UPARAM(ref) const FCesiumFeatureID& FeatureID) {
-  return FeatureID._featureCount;
+int64 UCesiumFeatureIDSetBlueprintLibrary::GetFeatureCount(
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet) {
+  return FeatureIDSet._featureCount;
 }
 
-int64 UCesiumFeatureIDBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumFeatureID& FeatureID,
+int64 UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet,
     int64 VertexIndex) {
-  if (FeatureID._featureIDType == ECesiumFeatureIDType::Attribute) {
+  if (FeatureIDSet._featureIDType == ECesiumFeatureIDType::Attribute) {
     FCesiumFeatureIDAttribute attribute =
-        std::get<FCesiumFeatureIDAttribute>(FeatureID._featureID);
+        std::get<FCesiumFeatureIDAttribute>(FeatureIDSet._featureID);
     return UCesiumFeatureIDAttributeBlueprintLibrary::GetFeatureIDForVertex(
         attribute,
         VertexIndex);
   }
 
-  if (FeatureID._featureIDType == ECesiumFeatureIDType::Texture) {
-    // TODO:
+  if (FeatureIDSet._featureIDType == ECesiumFeatureIDType::Texture) {
+    // TODO: does it make sense to get the feature ID with the texture coordinate of the vertex?
   }
 
-  if (FeatureID._featureIDType == ECesiumFeatureIDType::Implicit) {
+  if (FeatureIDSet._featureIDType == ECesiumFeatureIDType::Implicit) {
     return VertexIndex;
   }
 
