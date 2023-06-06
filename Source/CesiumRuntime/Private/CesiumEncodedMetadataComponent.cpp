@@ -207,22 +207,22 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     }
 
     const FCesiumPrimitiveFeatures& features = pGltfPrimitive->Features;
-    const TArray<FCesiumFeatureIDSet> featureIDSets =
+    const TArray<FCesiumFeatureIdSet> featureIDSets =
         UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
 
-    for (const FCesiumFeatureIDSet& featureIDSet : featureIDSets) {
+    for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
       const int64 propertyTableIndex =
-          UCesiumFeatureIDSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
+          UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
       if (propertyTableIndex >= 0 &&
           propertyTableIndex < this->FeatureTables.Num()) {
         FFeatureTableDescription& featureTable =
             this->FeatureTables[propertyTableIndex];
-        const ECesiumFeatureIDType type =
-            UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(featureIDSet);
+        const ECesiumFeatureIdType type =
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet);
 
         // TODO: this will be overhauled, but here's code with new API for
         // future reference
-        if (type == ECesiumFeatureIDType::Attribute) {
+        if (type == ECesiumFeatureIdType::Attribute) {
           if (featureTable.AccessType == ECesiumFeatureTableAccessType::Mixed ||
               featureTable.AccessType ==
                   ECesiumFeatureTableAccessType::Texture) {
@@ -230,7 +230,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
           } else {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
           }
-        } else if (type == ECesiumFeatureIDType::Texture) {
+        } else if (type == ECesiumFeatureIdType::Texture) {
           if (featureTable.AccessType ==
               ECesiumFeatureTableAccessType::Attribute) {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;

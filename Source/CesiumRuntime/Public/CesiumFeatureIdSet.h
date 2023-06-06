@@ -14,7 +14,7 @@ struct ExtensionExtMeshFeaturesFeatureId;
 } // namespace CesiumGltf
 
 UENUM(BlueprintType)
-enum ECesiumFeatureIDType { None, Attribute, Texture, Implicit };
+enum ECesiumFeatureIdType { None, Attribute, Texture, Implicit };
 
 /**
  * @brief A blueprint-accessible wrapper for a feature ID set from a glTF
@@ -23,33 +23,33 @@ enum ECesiumFeatureIDType { None, Attribute, Texture, Implicit };
  * corresponding {@link FCesiumFeatureTable} to access per-vertex metadata.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureIDSet {
+struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDType = std::variant<
       std::monostate,
-      FCesiumFeatureIDAttribute,
-      FCesiumFeatureIDTexture>;
+      FCesiumFeatureIdAttribute,
+      FCesiumFeatureIdTexture>;
 
 public:
-  FCesiumFeatureIDSet() {}
+  FCesiumFeatureIdSet() {}
 
-  FCesiumFeatureIDSet(
+  FCesiumFeatureIdSet(
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
       const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId);
 
 private:
   FeatureIDType _featureID;
-  ECesiumFeatureIDType _featureIDType;
+  ECesiumFeatureIdType _featureIDType;
   int64 _featureCount;
   TOptional<int64> _propertyTableIndex;
 
-  friend class UCesiumFeatureIDSetBlueprintLibrary;
+  friend class UCesiumFeatureIdSetBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumFeatureIDSetBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumFeatureIdSetBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 public:
@@ -60,8 +60,8 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
-  static const ECesiumFeatureIDType
-  GetFeatureIDType(UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet);
+  static const ECesiumFeatureIdType
+  GetFeatureIDType(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Gets this feature ID set as a feature ID attribute. This can be used for
@@ -73,8 +73,8 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
-  static const FCesiumFeatureIDAttribute
-  GetAsFeatureIDAttribute(UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet);
+  static const FCesiumFeatureIdAttribute
+  GetAsFeatureIDAttribute(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Gets this feature ID set as a feature ID texture. This can be used for more
@@ -85,8 +85,8 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
-  static const FCesiumFeatureIDTexture
-  GetAsFeatureIDTexture(UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet);
+  static const FCesiumFeatureIdTexture
+  GetAsFeatureIDTexture(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Get the index of the property table corresponding to this feature
@@ -99,7 +99,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
   static const int64
-  GetPropertyTableIndex(UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet);
+  GetPropertyTableIndex(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Get the number of features this primitive has.
@@ -109,7 +109,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
   static int64 GetFeatureCount(UPARAM(ref)
-                                   const FCesiumFeatureIDSet& FeatureIDSet);
+                                   const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Gets the feature ID associated with a given vertex. The feature ID can be
@@ -121,6 +121,6 @@ public:
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
   static int64 GetFeatureIDForVertex(
-      UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet,
+      UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
       int64 VertexIndex);
 };

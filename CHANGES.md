@@ -4,14 +4,19 @@
 
 ##### Breaking Changes :mega:
 
-- Feature IDs are now parsed via the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`. This includes the following changes to the feature IDs API:
-  - Added `FCesiumFeatureID`, which represents a feature ID in the `EXT_mesh_features` extension. A `FCesiumFeatureIDSet` has a `ECesiumFeatureIDType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
-  - Feature IDs are now managed by `FCesiumPrimitiveFeatures`. `FCesiumMetadataPrimitive` is no longer aware of a primitive's feature IDs.
-  - `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` have been renamed to `FCesiumFeatureIDAttribute` and `FCesiumFeatureIDTexture`, to improve readability in the Blueprint menu.
-    - Similarly, `UCesiumFeatureIdAttributeBlueprintLibrary` and `UCesiumFeatureIdTextureBlueprintLibrary` have been renamed to `UCesiumFeatureIDAttributeBlueprintLibrary` and `UCesiumFeatureIDTextureBlueprintLibrary`.
-  - `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been removed since they are no longer applicable in `EXT_mesh_features`. Use `UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex` instead.
-  - `UCesiumMetadataUtilityBlueprintLibrary::GetFirstVertexIDFromFaceID` has been removed. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace` instead.
-- Additionally, `CesiumMetadataFeatureTable`,  `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace` have been removed. These have been deprecated since Unreal Engine 4.26.
+- Feature IDs are now parsed via the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`. Models with the `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
+- Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
+
+##### Additions :tada:
+
+- Added `FCesiumFeatureIdSet`, which represents a feature ID in the `EXT_mesh_features` extension. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
+- Added `FCesiumPrimitiveFeatures` and `UCesiumPrimitiveFeaturesBlueprintLibrary`, which can be used to enact on the feature IDs stored in `EXT_mesh_features`.
+
+##### Deprecated :hourglass_flowing_sand:
+
+- `FCesiumMetadataPrimitive` has been deprecated. Use `FCesiumPrimitiveFeatures` to access the feature IDs of a model instead.
+- `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are no longer applicable in `EXT_mesh_features`. Use `UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex` instead.
+- `UCesiumMetadataUtilityBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace` instead.
 
 ### v1.27.0 - 2023-06-1
 

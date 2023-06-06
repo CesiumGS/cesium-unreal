@@ -31,24 +31,24 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
 
   for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
        Features.featureIds) {
-    this->_featureIDSets.Add(FCesiumFeatureIDSet(InModel, Primitive, FeatureId));
+    this->_featureIDSets.Add(FCesiumFeatureIdSet(InModel, Primitive, FeatureId));
   }
 }
 
-const TArray<FCesiumFeatureIDSet>&
+const TArray<FCesiumFeatureIdSet>&
 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
   return PrimitiveFeatures._featureIDSets;
 }
 
-const TArray<FCesiumFeatureIDSet>
+const TArray<FCesiumFeatureIdSet>
 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-    ECesiumFeatureIDType Type) {
-  TArray<FCesiumFeatureIDSet> featureIDSets;
+    ECesiumFeatureIdType Type) {
+  TArray<FCesiumFeatureIdSet> featureIDSets;
   for (int32 i = 0; i < PrimitiveFeatures._featureIDSets.Num(); i++) {
-    const FCesiumFeatureIDSet& featureIDSet = PrimitiveFeatures._featureIDSets[i];
-    if (UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDType(featureIDSet) == Type) {
+    const FCesiumFeatureIdSet& featureIDSet = PrimitiveFeatures._featureIDSets[i];
+    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet) == Type) {
       featureIDSets.Add(featureIDSet);
     }
   }
@@ -78,9 +78,9 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace(
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-    UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet,
+    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
     int64 FaceIndex) {
-  return UCesiumFeatureIDSetBlueprintLibrary::GetFeatureIDForVertex(
+  return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
       FeatureIDSet,
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace(
           PrimitiveFeatures,

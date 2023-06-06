@@ -34,12 +34,13 @@ struct VertexCountFromAccessor {
 };
 } // namespace
 
-FCesiumFeatureIDAttribute::FCesiumFeatureIDAttribute(
+FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
     const Model& model,
     const CesiumGltf::MeshPrimitive Primitive,
     const int64 FeatureIDAttribute)
     : _attributeIndex() {
-  const std::string attributeName = "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
+  const std::string attributeName =
+      "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
 
   auto featureID = Primitive.attributes.find(attributeName);
   if (featureID == Primitive.attributes.end()) {
@@ -48,11 +49,7 @@ FCesiumFeatureIDAttribute::FCesiumFeatureIDAttribute(
 
   const Accessor* accessor =
       model.getSafe<Accessor>(&model.accessors, featureID->second);
-  if (!accessor) {
-    return;
-  }
-
-  if (accessor->type != Accessor::Type::SCALAR) {
+  if (!accessor || accessor->type != Accessor::Type::SCALAR) {
     return;
   }
 
@@ -92,17 +89,21 @@ FCesiumFeatureIDAttribute::FCesiumFeatureIDAttribute(
   }
 }
 
-int64 UCesiumFeatureIDAttributeBlueprintLibrary::GetVertexCount(
-    UPARAM(ref) const FCesiumFeatureIDAttribute& FeatureIDAttribute) {
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return std::visit(
       VertexCountFromAccessor{},
       FeatureIDAttribute._featureIDAccessor);
 }
 
-int64 UCesiumFeatureIDAttributeBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumFeatureIDAttribute& FeatureIDAttribute,
-    int64 vertexIdx) {
+int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
+    int64 VertexIndex) {
+  if (VertexIndex < 0 || VertexIndex >= GetVertexCount(FeatureIDAttribute)) {
+    return -1;
+  }
+
   return std::visit(
-      FeatureIDFromAccessor{vertexIdx},
+      FeatureIDFromAccessor{VertexIndex},
       FeatureIDAttribute._featureIDAccessor);
 }

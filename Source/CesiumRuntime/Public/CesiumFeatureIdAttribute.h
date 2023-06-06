@@ -19,7 +19,7 @@ struct FeatureTable;
  * the corresponding {@link FCesiumFeatureTable} to access per-vertex metadata.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureIDAttribute {
+struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
   GENERATED_USTRUCT_BODY()
 
   using FeatureIDAccessorType = std::variant<
@@ -32,9 +32,9 @@ struct CESIUMRUNTIME_API FCesiumFeatureIDAttribute {
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>>;
 
 public:
-  FCesiumFeatureIDAttribute() {}
+  FCesiumFeatureIdAttribute() {}
 
-  FCesiumFeatureIDAttribute(
+  FCesiumFeatureIdAttribute(
       const CesiumGltf::Model& InModel,
       const CesiumGltf::MeshPrimitive Primitive,
       const int64 FeatureIDAttribute);
@@ -45,11 +45,11 @@ private:
   FeatureIDAccessorType _featureIDAccessor;
   int32 _attributeIndex;
 
-  friend class UCesiumFeatureIDAttributeBlueprintLibrary;
+  friend class UCesiumFeatureIdAttributeBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumFeatureIDAttributeBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumFeatureIdAttributeBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 public:
@@ -62,11 +62,11 @@ public:
       Category = "Cesium|Primitive|FeatureIDAttribute")
   static int64
   GetVertexCount(UPARAM(ref)
-                     const FCesiumFeatureIDAttribute& FeatureIDAttribute);
+                     const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 
   /**
    * Gets the feature ID associated with the given vertex. The feature ID can be
-   * used with a {@link FCesiumFeatureTable} to retrieve the per-vertex
+   * used with a FCesiumFeatureTable to retrieve the per-vertex
    * metadata.
    */
   UFUNCTION(
@@ -74,6 +74,6 @@ public:
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDAttribute")
   static int64 GetFeatureIDForVertex(
-      UPARAM(ref) const FCesiumFeatureIDAttribute& FeatureIDAttribute,
+      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
       int64 VertexIndex);
 };

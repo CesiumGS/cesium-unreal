@@ -27,7 +27,7 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
 
 public:
   /**
-   * Construct an empty primitive features.
+   * Constructs an empty primitive features instance.
    */
   FCesiumPrimitiveFeatures() {}
 
@@ -35,7 +35,7 @@ public:
    * Constructs a primitive features instance.
    *
    * @param model The model that contains the EXT_mesh_features extension
-   * @param primitive The mesh primitive that stores EXT_feature_metadata
+   * @param primitive The mesh primitive that stores EXT_mesh_features
    * extension
    * @param features The EXT_mesh_features of the gltf mesh primitive.
    * primitive
@@ -46,7 +46,7 @@ public:
       const CesiumGltf::ExtensionExtMeshFeatures& features);
 
 private:
-  TArray<FCesiumFeatureIDSet> _featureIDSets;
+  TArray<FCesiumFeatureIdSet> _featureIDSets;
   VertexIDAccessorType _vertexIDAccessor;
 
   friend class UCesiumPrimitiveFeaturesBlueprintLibrary;
@@ -66,7 +66,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static const TArray<FCesiumFeatureIDSet>&
+  static const TArray<FCesiumFeatureIdSet>&
   GetFeatureIDSets(UPARAM(ref)
                        const FCesiumPrimitiveFeatures& PrimitiveFeatures);
 
@@ -78,9 +78,9 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static const TArray<FCesiumFeatureIDSet> GetFeatureIDSetsOfType(
+  static const TArray<FCesiumFeatureIdSet> GetFeatureIDSetsOfType(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-      ECesiumFeatureIDType Type);
+      ECesiumFeatureIdType Type);
 
   /**
    * Gets the index of the first vertex that makes up a given face of this
@@ -110,6 +110,6 @@ public:
       Category = "Cesium|Primitive|Features")
   static int64 GetFeatureIDFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-      UPARAM(ref) const FCesiumFeatureIDSet& FeatureIDSet,
+      UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
       int64 FaceIndex);
 };

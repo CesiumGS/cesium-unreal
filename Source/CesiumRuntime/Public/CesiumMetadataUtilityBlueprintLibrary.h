@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CesiumFeatureTable.h"
+#include "CesiumFeatureIDAttribute.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
@@ -11,8 +12,8 @@
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
 
-struct FCesiumFeatureIDAttribute;
-struct FCesiumFeatureIDTexture;
+struct FCesiumFeatureIdAttribute;
+struct FCesiumFeatureIdTexture;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
@@ -68,4 +69,23 @@ public:
   static TMap<FString, FString> GetMetadataValuesAsStringForFace(
       const UPrimitiveComponent* component,
       int64 faceID);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets the feature ID associated with a given face for a feature id
+   * attribute.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Utility",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataUtilityBlueprintLibrary.GetFeatureIDFromFaceID is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFeatureIDFromFace instead."))
+  static int64 GetFeatureIDFromFaceID(
+      UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
+      int64 FaceID);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

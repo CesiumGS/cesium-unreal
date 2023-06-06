@@ -482,11 +482,12 @@ loadPrimitiveFeatures(const Model& model, const MeshPrimitive& primitive) {
   return FCesiumPrimitiveFeatures(model, primitive, *pExtension);
 }
 
-static FCesiumMetadataPrimitive
-loadMetadataPrimitive(const Model& model, const MeshPrimitive& primitive) {
+static FCesiumMetadataPrimitive loadMetadataPrimitive(
+    const Model& model,
+    const MeshPrimitive& primitive,
+    const FCesiumPrimitiveFeatures& primitiveFeatures) {
 
-  // NOTE: will have a deprecation period after which this function should no
-  // longer rely on model, only primitive.
+  // TODO: refactor for structural metadata
 
   const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
       primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
@@ -494,18 +495,11 @@ loadMetadataPrimitive(const Model& model, const MeshPrimitive& primitive) {
     return FCesiumMetadataPrimitive();
   }
 
-  const ExtensionModelExtFeatureMetadata* pModelMetadata =
-      model.getExtension<ExtensionModelExtFeatureMetadata>();
-  if (!pModelMetadata) {
-    return FCesiumMetadataPrimitive{};
-  }
-
-  // This will change to no longer require the model-level extension
   return FCesiumMetadataPrimitive(
       model,
       primitive,
       *pMetadata,
-      *pModelMetadata);
+      primitiveFeatures);
 }
 
 static void updateTextureCoordinatesForMetadata(
@@ -516,7 +510,7 @@ static void updateTextureCoordinatesForMetadata(
     const TArray<uint32>& indices,
     const EncodedMetadata& encodedMetadata,
     const EncodedMetadataPrimitive& encodedPrimitiveMetadata,
-    const TArray<FCesiumFeatureIDAttribute>& featureIdAttributes,
+    const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes,
     TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
 
@@ -566,7 +560,7 @@ static void updateTextureCoordinatesForMetadata(
   if (pMetadata) {
     for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
          encodedPrimitiveMetadata.encodedFeatureIdAttributes) {
-      const FCesiumFeatureIDAttribute& featureIdAttribute =
+      const FCesiumFeatureIdAttribute& featureIdAttribute =
           featureIdAttributes[encodedFeatureIdAttribute.index];
 
       int32_t attribute = featureIdAttribute.getAttributeIndex();
@@ -577,7 +571,7 @@ static void updateTextureCoordinatesForMetadata(
           textureCoordinateIndex);
 
       int64 vertexCount =
-          UCesiumFeatureIDAttributeBlueprintLibrary::GetVertexCount(
+          UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
               featureIdAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
@@ -588,7 +582,7 @@ static void updateTextureCoordinatesForMetadata(
           uint32 vertexIndex = indices[i];
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIDAttributeBlueprintLibrary::
+                UCesiumFeatureIdAttributeBlueprintLibrary::
                     GetFeatureIDForVertex(featureIdAttribute, vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
@@ -600,7 +594,7 @@ static void updateTextureCoordinatesForMetadata(
           FStaticMeshBuildVertex& vertex = vertices[i];
           if (i < vertexCount) {
             float featureId = static_cast<float>(
-                UCesiumFeatureIDAttributeBlueprintLibrary::
+                UCesiumFeatureIdAttributeBlueprintLibrary::
                     GetFeatureIDForVertex(featureIdAttribute, i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
@@ -1037,8 +1031,10 @@ static void loadPrimitive(
   }
 
   primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
-  primitiveResult.Metadata =
-      loadMetadataPrimitive(model, primitive); // TODO: use structural metadata
+  primitiveResult.Metadata = loadMetadataPrimitive(
+      model,
+      primitive,
+      primitiveResult.Features); // TODO: use structural metadata
 
   const FMetadataDescription* pEncodedMetadataDescription =
       options.pMeshOptions->pNodeOptions->pModelOptions
@@ -1161,13 +1157,7 @@ static void loadPrimitive(
         false);
   }
 
-#if ENGINE_MAJOR_VERSION == 5
   FStaticMeshSectionArray& Sections = LODResources.Sections;
-#else
-  FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
-      LODResources.Sections;
-#endif
-
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
   // This will be ignored if the primitive contains points.
   section.NumTriangles = indices.Num() / 3;
@@ -1236,7 +1226,9 @@ static void loadPrimitive(
   }
 
   // load primitive metadata
-  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
+  primitiveResult.Metadata =
+      loadMetadataPrimitive(model, primitive, primitiveResult.Features);
 }
 
 static void loadIndexedPrimitive(

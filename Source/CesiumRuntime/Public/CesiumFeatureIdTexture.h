@@ -19,7 +19,7 @@ struct ExtensionExtMeshFeaturesFeatureIdTexture;
  * the corresponding {@link FCesiumFeatureTable} to access per-pixel metadata.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureIDTexture {
+struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
   GENERATED_USTRUCT_BODY()
 
   using TexCoordAccessorType = std::variant<
@@ -29,30 +29,30 @@ struct CESIUMRUNTIME_API FCesiumFeatureIDTexture {
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>>;
 
 public:
-  FCesiumFeatureIDTexture() {}
+  FCesiumFeatureIdTexture() {}
 
-  FCesiumFeatureIDTexture(
+  FCesiumFeatureIdTexture(
       const CesiumGltf::Model& InModel,
       const CesiumGltf::MeshPrimitive Primitive,
       const CesiumGltf::ExtensionExtMeshFeaturesFeatureIdTexture&
           FeatureIdTexture);
 
   constexpr const CesiumGltf::MeshFeatures::FeatureIdTextureView&
-  getFeatureIDTextureView() const {
-    return this->_featureIDTextureView;
+  getFeatureIdTextureView() const {
+    return this->_featureIdTextureView;
   }
 
 private:
-  CesiumGltf::MeshFeatures::FeatureIdTextureView _featureIDTextureView;
+  CesiumGltf::MeshFeatures::FeatureIdTextureView _featureIdTextureView;
 
   TexCoordAccessorType _texCoordAccessor;
   int64 _textureCoordinateIndex;
 
-  friend class UCesiumFeatureIDTextureBlueprintLibrary;
+  friend class UCesiumFeatureIdTextureBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumFeatureIDTextureBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumFeatureIdTextureBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
@@ -67,7 +67,7 @@ public:
       Category = "Cesium|Primitive|FeatureIDTexture")
   static int64 GetTextureCoordinateIndex(
       const UPrimitiveComponent* Component,
-      UPARAM(ref) const FCesiumFeatureIDTexture& FeatureIDTexture);
+      UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
   /**
    * Gets the feature ID corresponding to the pixel specified by the texture
@@ -82,7 +82,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDTexture")
   static int64 GetFeatureIDForTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureIDTexture& FeatureIDTexture,
+      UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       float u,
       float v);
 
@@ -100,6 +100,6 @@ public:
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDTexture")
   static int64 GetFeatureIDForVertex(
-      UPARAM(ref) const FCesiumFeatureIDTexture& FeatureIDTexture,
+      UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       int64 VertexIndex);
 };

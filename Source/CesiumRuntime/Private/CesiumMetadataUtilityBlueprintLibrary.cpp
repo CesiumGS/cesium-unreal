@@ -57,10 +57,10 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   }
 
   const FCesiumPrimitiveFeatures& features = pGltfComponent->Features;
-  const TArray<FCesiumFeatureIDSet>& featureIdAttributes =
+  const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           features,
-          ECesiumFeatureIDType::Attribute);
+          ECesiumFeatureIdType::Attribute);
   if (featureIdAttributes.Num() == 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
@@ -111,10 +111,10 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
   }
 
   const FCesiumPrimitiveFeatures& features = pGltfComponent->Features;
-  const TArray<FCesiumFeatureIDSet>& featureIdAttributes =
+  const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           features,
-          ECesiumFeatureIDType::Attribute);
+          ECesiumFeatureIdType::Attribute);
   if (featureIdAttributes.Num() == 0) {
     return TMap<FString, FString>();
   }
@@ -145,4 +145,15 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
 
   return UCesiumFeatureTableBlueprintLibrary::
       GetMetadataValuesAsStringForFeatureID(*pFeatureTable, featureID);
+}
+
+int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
+    UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
+    int64 FaceID) {
+  return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
+      FeatureIDAttribute,
+      UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
+          Primitive,
+          FaceID));
 }

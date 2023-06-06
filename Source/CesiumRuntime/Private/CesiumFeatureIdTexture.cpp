@@ -9,6 +9,7 @@
 using namespace CesiumGltf;
 using namespace CesiumGltf::MeshFeatures;
 
+namespace {
 struct TexCoordFromAccessor {
   glm::vec2 operator()(std::monostate) { return glm::vec2(-1, -1); }
 
@@ -41,14 +42,23 @@ struct TexCoordFromAccessor {
   int64 vertexIdx;
 };
 
-FCesiumFeatureIDTexture::FCesiumFeatureIDTexture(
+//struct VertexCountFromAccessor {
+//  int64 operator()(std::monostate) { return 0; }
+//
+//  template <typename T> int64 operator()(const AccessorView<T>& value) {
+//    return static_cast<int64>(value.size());
+//  }
+//};
+} // namespace
+
+FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const Model& InModel,
-    const CesiumGltf::MeshPrimitive Primitive,
+    const MeshPrimitive Primitive,
     const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture)
-    : _featureIDTextureView(InModel, FeatureIdTexture),
+    : _featureIdTextureView(InModel, FeatureIdTexture),
       _texCoordAccessor(),
       _textureCoordinateIndex(-1) {
-  const int64 texCoordIndex = _featureIDTextureView.getTexCoordSetIndex();
+  const int64 texCoordIndex = _featureIdTextureView.getTexCoordSetIndex();
   const std::string texCoordName = "TEXCOORD_" + std::to_string(texCoordIndex);
   auto texCoord = Primitive.attributes.find(texCoordName);
   if (texCoord == Primitive.attributes.end()) {
@@ -96,23 +106,24 @@ FCesiumFeatureIDTexture::FCesiumFeatureIDTexture(
   _textureCoordinateIndex = texCoordIndex;
 }
 
-int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
+int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* component,
-    const FCesiumFeatureIDTexture& featureIDTexture) {
-  // TODO: where is this function used?
+    const FCesiumFeatureIdTexture& FeatureIDTexture) {
+  // TODO: where is this function used? Does it need to validate against the
+  // component?
   const UCesiumGltfPrimitiveComponent* pPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!pPrimitive) {
     return -1;
   }
 
-  if (featureIDTexture._featureIDTextureView.status() !=
+  if (FeatureIDTexture._featureIdTextureView.status() !=
       FeatureIdTextureViewStatus::Valid) {
     return -1;
   }
 
   auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
-      featureIDTexture._featureIDTextureView.getTexCoordSetIndex());
+      FeatureIDTexture._featureIdTextureView.getTexCoordSetIndex());
   if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
     return -1;
   }
@@ -120,22 +131,32 @@ int64 UCesiumFeatureIDTextureBlueprintLibrary::GetTextureCoordinateIndex(
   return textureCoordinateIndexIt->second;
 }
 
-int64 UCesiumFeatureIDTextureBlueprintLibrary::
+int64 UCesiumFeatureIdTextureBlueprintLibrary::
     GetFeatureIDForTextureCoordinates(
-        const FCesiumFeatureIDTexture& FeatureIDTexture,
+        const FCesiumFeatureIdTexture& FeatureIDTexture,
         float u,
         float v) {
-  if (FeatureIDTexture._featureIDTextureView.status() !=
+  if (FeatureIDTexture._featureIdTextureView.status() !=
       FeatureIdTextureViewStatus::Valid) {
     return -1;
   }
 
-  return FeatureIDTexture._featureIDTextureView.getFeatureId(u, v);
+  return FeatureIDTexture._featureIdTextureView.getFeatureId(u, v);
 }
 
-int64 UCesiumFeatureIDTextureBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumFeatureIDTexture& FeatureIDTexture,
+int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
     int64 VertexIndex) {
+  if (VertexIndex < 0) {
+    return -1;
+  }
+
+  /*int64 vertexCount =
+      std::visit(VertexCountFromAccessor{}, FeatureIDTexture._texCoordAccessor);
+  if (VertexIndex >= vertexCount) {
+    return -1;
+  }*/
+
   const glm::vec2 texCoords = std::visit(
       TexCoordFromAccessor{VertexIndex},
       FeatureIDTexture._texCoordAccessor);

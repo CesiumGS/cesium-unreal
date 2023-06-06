@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "CesiumFeatureIdAttribute.h"
-#include "CesiumFeatureIdTexture.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
@@ -31,7 +30,7 @@ public:
   /**
    * Construct an empty primitive metadata.
    */
-  FCesiumMetadataPrimitive() {}
+  FCesiumMetadataPrimitive() : _pPrimitiveFeatures(nullptr) {}
 
   /**
    * Constructs a primitive metadata instance.
@@ -41,18 +40,17 @@ public:
    * extension
    * @param metadata The EXT_feature_metadata of the gltf mesh primitive.
    * primitive
+   * @param primitiveFeatures The FCesiumPrimitiveFeatures denoting the feature IDs in the glTF mesh primitive.
    */
   FCesiumMetadataPrimitive(
       const CesiumGltf::Model& model,
       const CesiumGltf::MeshPrimitive& primitive,
       const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
-      const CesiumGltf::ExtensionModelExtFeatureMetadata& modelMetadata);
+      const FCesiumPrimitiveFeatures& primitiveFeatures);
 
 private:
-  TArray<FCesiumFeatureIDAttribute> _featureIdAttributes;
-  TArray<FCesiumFeatureIDTexture> _featureIdTextures;
+  const FCesiumPrimitiveFeatures* _pPrimitiveFeatures;
   TArray<FString> _featureTextureNames;
-  VertexIDAccessorType _vertexIDAccessor;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
@@ -63,27 +61,36 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
-   * @brief Get all the feature id attributes that are associated with the
+   * Get all the feature id attributes that are associated with the
    * primitive.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumFeatureIDAttribute>&
+      Category = "Cesium|Metadata|Primitive",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated, use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+  static const TArray<FCesiumFeatureIdAttribute>
   GetFeatureIdAttributes(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
-   * @brief Get all the feature id textures that are associated with the
+   * Get all the feature id textures that are associated with the
    * primitive.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Primitive")
-  static const TArray<FCesiumFeatureIDTexture>&
+      Category = "Cesium|Metadata|Primitive",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated, use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+  static const TArray<FCesiumFeatureIdTexture>
   GetFeatureIdTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
 
@@ -94,7 +101,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Primitive")
+      Category = "Cesium|Metadata|Primitive",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary and FCesiumPrimitiveFeatures instead."))
   static const TArray<FString>&
   GetFeatureTextureNames(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -108,8 +119,14 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Primitive")
+      Category = "Cesium|Metadata|Primitive",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFirstVertexIndexFromFace with FCesiumPrimitiveFeatures instead."))
   static int64 GetFirstVertexIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
       int64 FaceID);
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
