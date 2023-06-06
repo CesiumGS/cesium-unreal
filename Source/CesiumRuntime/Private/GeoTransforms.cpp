@@ -3,16 +3,62 @@
 #include "GeoTransforms.h"
 
 #include "CesiumGeospatial/GlobeTransforms.h"
-#include "CesiumTransforms.h"
-#include "VecMath.h"
-
-// ONLY used for logging!
 #include "CesiumRuntime.h"
-
-#include "GeoTransforms.h"
-#include <glm/glm.hpp>
+#include "CesiumTransforms.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+using namespace CesiumGeospatial;
+
+namespace {
+
+LocalHorizontalCoordinateSystem createCoordinateSystem(
+    const Ellipsoid& ellipsoid,
+    const glm::dvec3& center,
+    double scale) {
+  return LocalHorizontalCoordinateSystem(
+      center,
+      LocalDirection::East,
+      LocalDirection::South,
+      LocalDirection::Up,
+      1.0 / (scale * 100.0),
+      ellipsoid);
+}
+
+} // namespace
+
+GeoTransforms::GeoTransforms()
+    : _coordinateSystem(
+          glm::dvec3(0.0),
+          LocalDirection::East,
+          LocalDirection::North,
+          LocalDirection::Up,
+          1.0),
+      _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
+      _center(0.0),
+      _scale(1.0) {
+  // Coordinate system is initialized with the default values. This function
+  // overrides them with proper values.
+  this->updateTransforms();
+}
+
+GeoTransforms::GeoTransforms(
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    const glm::dvec3& center,
+    double scale)
+    : _coordinateSystem(
+          glm::dvec3(0.0),
+          LocalDirection::East,
+          LocalDirection::North,
+          LocalDirection::Up,
+          1.0),
+      _ellipsoid(ellipsoid),
+      _center(center),
+      _scale(scale) {
+  // Coordinate system is initialized with the default values. This function
+  // overrides them with proper values.
+  this->updateTransforms();
+}
 
 void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
   if (this->_center != center) {
@@ -20,6 +66,7 @@ void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
     updateTransforms();
   }
 }
+
 void GeoTransforms::setEllipsoid(
     const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept {
   if (this->_ellipsoid.getRadii() != ellipsoid.getRadii()) {
@@ -51,21 +98,8 @@ glm::dquat GeoTransforms::ComputeSurfaceNormalRotationUnreal(
 }
 
 void GeoTransforms::updateTransforms() noexcept {
-  this->_georeferencedToEcef =
-      CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
-          _center,
-          _ellipsoid);
-  this->_ecefToGeoreferenced = glm::affineInverse(this->_georeferencedToEcef);
-  this->_ueAbsToEcef =
-      this->_georeferencedToEcef *
-      glm::dmat4x4(
-          glm::dmat3x3(CesiumTransforms::centimetersToMeters / this->_scale)) *
-      CesiumTransforms::unrealToOrFromCesium;
-  this->_ecefToUeAbs =
-      CesiumTransforms::unrealToOrFromCesium *
-      glm::dmat4x4(
-          glm::dmat3x3(CesiumTransforms::metersToCentimeters * this->_scale)) *
-      this->_ecefToGeoreferenced;
+  this->_coordinateSystem =
+      createCoordinateSystem(this->_ellipsoid, this->_center, this->_scale);
 
   UE_LOG(
       LogCesium,
@@ -123,16 +157,13 @@ glm::dvec3 GeoTransforms::TransformUnrealToLongitudeLatitudeHeight(
 glm::dvec3 GeoTransforms::TransformEcefToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ecef) const noexcept {
-  glm::dvec3 ueAbs = glm::dvec3(this->_ecefToUeAbs * glm::dvec4(ecef, 1.0));
-  return ueAbs - origin;
+  return this->_coordinateSystem.ecefPositionToLocal(ecef) - origin;
 }
 
 glm::dvec3 GeoTransforms::TransformUnrealToEcef(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
-
-  glm::dvec3 ueAbs = ue + origin;
-  return glm::dvec3(this->_ueAbsToEcef * glm::dvec4(ueAbs, 1.0));
+  return this->_coordinateSystem.localPositionToEcef(ue + origin);
 }
 
 glm::dquat GeoTransforms::TransformRotatorUnrealToEastSouthUp(
@@ -159,13 +190,10 @@ glm::dmat3 GeoTransforms::ComputeEastSouthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
-  glm::dmat3 enuToEcef = this->ComputeEastNorthUpToEcef(ecef);
-
-  glm::dmat3 rotationCesium =
-      glm::dmat3(this->_ecefToGeoreferenced) * enuToEcef;
-
-  return glm::dmat3(CesiumTransforms::unrealToOrFromCesium) * rotationCesium *
-         glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
+  LocalHorizontalCoordinateSystem newLocal =
+      createCoordinateSystem(this->_ellipsoid, ecef, this->_scale);
+  return glm::dmat3(
+      newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }
 
 glm::dmat3
