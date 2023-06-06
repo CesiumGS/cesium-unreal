@@ -37,13 +37,17 @@ public:
   FCesiumFeatureIdAttribute(
       const CesiumGltf::Model& InModel,
       const CesiumGltf::MeshPrimitive Primitive,
-      const int64 FeatureIDAttribute);
+      const int64 FeatureIDAttribute,
+      const FString& PropertyTableName);
 
   int32 getAttributeIndex() const { return this->_attributeIndex; }
 
 private:
   FeatureIDAccessorType _featureIDAccessor;
   int32 _attributeIndex;
+
+  // For backwards compatibility.
+  FString _propertyTableName;
 
   friend class UCesiumFeatureIdAttributeBlueprintLibrary;
 };
@@ -52,7 +56,27 @@ UCLASS()
 class CESIUMRUNTIME_API UCesiumFeatureIdAttributeBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
+
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Get the name of the feature table corresponding to this feature ID
+   * attribute. The name can be used to fetch the appropriate
+   * FCesiumFeatureTable from the FCesiumMetadataModel.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureIdAttribute",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetPropertyTableIndex instead."))
+  static const FString&
+  GetFeatureTableName(UPARAM(ref)
+                          const FCesiumFeatureIdAttribute& FeatureIDAttribute);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
   /**
    * @brief Get the number of vertices this primitive has.
    */

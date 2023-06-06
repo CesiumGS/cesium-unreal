@@ -12,10 +12,15 @@ namespace CesiumGltf {
 struct ExtensionMeshPrimitiveExtFeatureMetadata;
 } // namespace CesiumGltf
 
+struct UE_DEPRECATED(
+    5.0,
+    "FCesiumMetadataPrimitive is deprecated. Use FCesiumPrimitiveFeatures instead to retrieve feature IDs from a glTF primitive.")
+    FCesiumMetadataPrimitive;
+
 /**
- * A Blueprint-accessible wrapper for a glTF Primitive's Metadata. It holds
- * views of feature id attributes / feature id textures and names of feature
- * textures associated with this primitive.
+ * A Blueprint-accessible wrapper for a glTF Primitive's EXT_feature_metadata
+ * extension. It has views of feature ID attributes / feature ID textures and
+ * names of feature textures associated with this primitive.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {
@@ -40,7 +45,8 @@ public:
    * extension
    * @param metadata The EXT_feature_metadata of the gltf mesh primitive.
    * primitive
-   * @param primitiveFeatures The FCesiumPrimitiveFeatures denoting the feature IDs in the glTF mesh primitive.
+   * @param primitiveFeatures The FCesiumPrimitiveFeatures denoting the feature
+   * IDs in the glTF mesh primitive.
    */
   FCesiumMetadataPrimitive(
       const CesiumGltf::Model& model,
@@ -63,7 +69,7 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
 public:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
-   * Get all the feature id attributes that are associated with the
+   * Get all the feature ID attributes that are associated with the
    * primitive.
    */
   UFUNCTION(
@@ -79,7 +85,7 @@ public:
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
 
   /**
-   * Get all the feature id textures that are associated with the
+   * Get all the feature ID textures that are associated with the
    * primitive.
    */
   UFUNCTION(

@@ -35,7 +35,8 @@ public:
       const CesiumGltf::Model& InModel,
       const CesiumGltf::MeshPrimitive Primitive,
       const CesiumGltf::ExtensionExtMeshFeaturesFeatureIdTexture&
-          FeatureIdTexture);
+          FeatureIdTexture,
+      const FString& PropertyTableName);
 
   constexpr const CesiumGltf::MeshFeatures::FeatureIdTextureView&
   getFeatureIdTextureView() const {
@@ -44,9 +45,11 @@ public:
 
 private:
   CesiumGltf::MeshFeatures::FeatureIdTextureView _featureIdTextureView;
-
   TexCoordAccessorType _texCoordAccessor;
   int64 _textureCoordinateIndex;
+
+  // For backwards compatibility.
+  FString _propertyTableName;
 
   friend class UCesiumFeatureIdTextureBlueprintLibrary;
 };
@@ -57,6 +60,25 @@ class CESIUMRUNTIME_API UCesiumFeatureIdTextureBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Get the name of the feature table corresponding to this feature ID
+   * texture. The name can be used to fetch the appropriate
+   * FCesiumFeatureTable from the FCesiumMetadataModel.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|FeatureIdTexture",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumFeatureIdTextureBlueprintLibrary.GetFeatureTableName is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetPropertyTableIndex instead."))
+  static const FString&
+  GetFeatureTableName(UPARAM(ref)
+                          const FCesiumFeatureIdTexture& FeatureIDTexture);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
   /**
    * Get the index of the texture coordinate set that corresponds to the
    * feature ID texture.

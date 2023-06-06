@@ -4,6 +4,7 @@
 #include "CesiumFeatureTable.h"
 #include "CesiumGltf/Accessor.h"
 #include "CesiumGltf/ExtensionExtMeshFeaturesFeatureId.h"
+#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 
 using namespace CesiumGltf;
@@ -19,8 +20,22 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
       _featureIDType(ECesiumFeatureIdType::None),
       _featureCount(FeatureID.featureCount),
       _propertyTableIndex() {
+  FString propertyTableName;
+
   if (FeatureID.propertyTable) {
     _propertyTableIndex = *FeatureID.propertyTable;
+  }
+
+  // For backwards compatibility with GetFeatureTableName.
+  const ExtensionModelExtStructuralMetadata* pMetadata =
+      InModel.getExtension<ExtensionModelExtStructuralMetadata>();
+  if (pMetadata && _propertyTableIndex.IsSet() &&
+      _propertyTableIndex.GetValue() >= 0 &&
+      _propertyTableIndex.GetValue() < pMetadata->propertyTables.size()) {
+    const ExtensionExtStructuralMetadataPropertyTable& propertyTable =
+        pMetadata->propertyTables[_propertyTableIndex.GetValue()];
+    std::string name = propertyTable.name ? *propertyTable.name : "";
+    propertyTableName = FString(name.c_str());
   }
 
   if (FeatureID.attribute) {
@@ -32,8 +47,11 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   }
 
   if (FeatureID.texture) {
-    _featureID =
-        FCesiumFeatureIdTexture(InModel, Primitive, *FeatureID.texture);
+    _featureID = FCesiumFeatureIdTexture(
+        InModel,
+        Primitive,
+        *FeatureID.texture,
+        propertyTableName);
     _featureIDType = ECesiumFeatureIdType::Texture;
 
     return;

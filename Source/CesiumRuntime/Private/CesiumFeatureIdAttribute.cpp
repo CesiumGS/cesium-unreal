@@ -35,9 +35,10 @@ struct VertexCountFromAccessor {
 } // namespace
 
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
-    const Model& model,
+    const Model& InModel,
     const CesiumGltf::MeshPrimitive Primitive,
-    const int64 FeatureIDAttribute)
+    const int64 FeatureIDAttribute,
+    const FString& PropertyTableName)
     : _attributeIndex() {
   const std::string attributeName =
       "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
@@ -48,7 +49,7 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
   }
 
   const Accessor* accessor =
-      model.getSafe<Accessor>(&model.accessors, featureID->second);
+      InModel.getSafe<Accessor>(&InModel.accessors, featureID->second);
   if (!accessor || accessor->type != Accessor::Type::SCALAR) {
     return;
   }
@@ -57,36 +58,41 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
   case CesiumGltf::Accessor::ComponentType::BYTE:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>(
-            model,
+            InModel,
             *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>(
-            model,
+            InModel,
             *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::SHORT:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>(
-            model,
+            InModel,
             *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>(
-            model,
+            InModel,
             *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::FLOAT:
     this->_featureIDAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>(
-            model,
+            InModel,
             *accessor);
     break;
   default:
     break;
   }
+}
+
+const FString& UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
+  return FeatureIDAttribute._propertyTableName;
 }
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(

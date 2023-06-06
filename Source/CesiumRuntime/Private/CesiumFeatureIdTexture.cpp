@@ -61,10 +61,12 @@ struct TexCoordFromAccessor {
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const Model& InModel,
     const MeshPrimitive Primitive,
-    const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture)
+    const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture,
+    const FString& PropertyTableName)
     : _featureIdTextureView(InModel, FeatureIdTexture),
       _texCoordAccessor(),
-      _textureCoordinateIndex(-1) {
+      _textureCoordinateIndex(-1),
+      _propertyTableName(PropertyTableName) {
   const int64 texCoordIndex = _featureIdTextureView.getTexCoordSetIndex();
   const std::string texCoordName = "TEXCOORD_" + std::to_string(texCoordIndex);
   auto texCoord = Primitive.attributes.find(texCoordName);
@@ -111,6 +113,11 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   }
 
   _textureCoordinateIndex = texCoordIndex;
+}
+
+const FString& UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
+    UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
+  return FeatureIDTexture._propertyTableName;
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
