@@ -80,6 +80,38 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
 }
 
+void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
+    double percentage,
+    double sourceAltitude,
+    double destinationAltitude,
+    double flyToDistance,
+    double phi,
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    const glm::dvec3& sourceUpVector,
+    const glm::dvec3& flyRotationAxis,
+    glm::dvec3& out) const {
+  double altitude = glm::mix(sourceAltitude, destinationAltitude, percentage);
+
+  glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
+  if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
+    glm::dvec3 upVector = glm::normalize(*scaled);
+
+    // Add an altitude if we have a profile curve for it
+    double offsetAltitude = 0;
+    if (this->FlyToAltitudeProfileCurve != NULL) {
+      double maxAltitude = 30000;
+      if (this->FlyToMaximumAltitudeCurve != NULL) {
+        maxAltitude =
+          this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
+      }
+      offsetAltitude =
+        maxAltitude *
+          this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+    }
+    out = *scaled + upVector * (altitude + offsetAltitude);
+  }
+}
+
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     const glm::dvec3& ECEFDestination,
     double YawAtDestination,
@@ -155,31 +187,23 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
-    double altitude = glm::mix(sourceAltitude, destinationAltitude, percentage);
     double phi = glm::radians(
         static_cast<double>(this->FlyToGranularityDegrees) *
         static_cast<double>(step));
 
-    glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
-    if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
-      glm::dvec3 upVector = glm::normalize(*scaled);
+    glm::dvec3 point;
+    _calcKeypointFromPercentage(
+      percentage,
+      sourceAltitude,
+      destinationAltitude,
+      flyToDistance,
+      phi,
+      ellipsoid,
+      sourceUpVector,
+      flyRotationAxis,
+      point);
 
-      // Add an altitude if we have a profile curve for it
-      double offsetAltitude = 0;
-      if (this->FlyToAltitudeProfileCurve != NULL) {
-        double maxAltitude = 30000;
-        if (this->FlyToMaximumAltitudeCurve != NULL) {
-          maxAltitude =
-              this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
-        }
-        offsetAltitude =
-            maxAltitude *
-            this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
-      }
-
-      glm::dvec3 point = *scaled + upVector * (altitude + offsetAltitude);
-      this->_keypoints.push_back(point);
-    }
+    this->_keypoints.push_back(point);
   }
 
   this->_keypoints.push_back(ECEFDestination);

@@ -228,6 +228,16 @@ private:
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
   void _interruptFlight();
+  void _calcKeypointFromPercentage(
+    double percentage,
+    double sourceAltitude,
+    double destinationAltitude,
+    double flyToDistance,
+    double phi,
+    const CesiumGeospatial::Ellipsoid& ellipsoid,
+    const glm::dvec3& sourceUpVector,
+    const glm::dvec3& flyRotationAxis,
+    glm::dvec3& out) const ;
 
   /**
    * @brief Advance the camera flight based on the given time delta.
