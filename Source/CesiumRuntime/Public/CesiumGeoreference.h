@@ -16,6 +16,7 @@
 class APlayerCameraManager;
 class FLevelCollectionModel;
 class ACesiumSubLevelInstance;
+class UCesiumSubLevelSwitcherComponent;
 
 /**
  * The delegate for the ACesiumGeoreference::OnGeoreferenceUpdated,
@@ -181,13 +182,6 @@ public:
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
-
-  /**
-   * Activates a given sub-level and deactivates all others. If SubLevel is
-   * nullptr, all levels are deactivated. In Play mode, this method is called
-   * automatically every frame, so calling it manually will be ineffective.
-   */
-  void ActivateSubLevel(ACesiumSubLevelInstance* SubLevel);
 #endif
 
   /**
@@ -195,7 +189,7 @@ public:
    * be activated and all others deactivated.
    */
   UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
-  APlayerCameraManager* SubLevelCamera;
+  APlayerCameraManager* SubLevelCamera = nullptr;
 
   // TODO: Allow user to select/configure the ellipsoid.
   // Yeah, we're working on that...
@@ -484,27 +478,6 @@ public:
     return _geoTransforms;
   }
 
-  /**
-   * Adds a sub-level to this georeference. This is called automatically by the
-   * CesiumSubLevelInstance itself as needed and should not be called
-   * explicitly.
-   */
-  void AddSubLevel(ACesiumSubLevelInstance* SubLevel);
-
-  /**
-   * Removes a sub-level from this georeference. This is called automatically by
-   * the CesiumSubLevelInstance itself as needed and should not be called
-   * explicitly.
-   */
-  void RemoveSubLevel(ACesiumSubLevelInstance* SubLevel);
-
-  /**
-   * Synchronizes the state of the georeference with the activation state of
-   * this sublevel. This is called automatically by the CesiumSubLevelInstance
-   * itself as needed and should not be called explicitly.
-   */
-  void SyncSubLevel(ACesiumSubLevelInstance* SubLevel);
-
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
@@ -536,7 +509,7 @@ private:
   bool _insideSublevel;
 
   UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
-  TArray<TWeakObjectPtr<ACesiumSubLevelInstance>> _sublevels;
+  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
 
 #if WITH_EDITOR
   FDelegateHandle _newCurrentLevelSubscription;
@@ -625,14 +598,4 @@ private:
    * PersistentLevel.
    */
   bool _shouldManageSubLevels() const;
-
-  /**
-   * Ensures that there are not multiple visible sub-levels by deactivating
-   * any additional sublevels after the first one.
-   */
-  void _ensureZeroOrOneSubLevelsAreActive();
-
-  void _deactivateSubLevel(ACesiumSubLevelInstance* SubLevel);
-  void _activateSubLevel(ACesiumSubLevelInstance* SubLevel);
-  bool _isSubLevelActive(ACesiumSubLevelInstance* SubLevel) const;
 };

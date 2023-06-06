@@ -43,10 +43,7 @@ public:
    * How far in meters from the sublevel local origin the camera needs to be to
    * load the level.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      meta = (ClampMin = 0.0))
+  UPROPERTY(EditAnywhere, Category = "Cesium", meta = (ClampMin = 0.0))
   double LoadRadius = 1000.0;
 
   /**
@@ -121,5 +118,5 @@ private:
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
 
-  bool _isAttachedToGeoreference() const;
+  UCesiumSubLevelSwitcherComponent* _getSwitcher() noexcept;
 };

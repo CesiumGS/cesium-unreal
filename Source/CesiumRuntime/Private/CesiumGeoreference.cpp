@@ -6,6 +6,7 @@
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelInstance.h"
+#include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
@@ -125,6 +126,10 @@ ACesiumGeoreference::ACesiumGeoreference()
       _geoTransforms(),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
+
+  this->SubLevelSwitcher =
+      CreateDefaultSubobject<UCesiumSubLevelSwitcherComponent>(
+          "SubLevelSwitcher");
 }
 
 #if WITH_EDITOR
@@ -202,20 +207,6 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
 
   this->_enableAndGeoreferenceCurrentSubLevel();
-}
-
-void ACesiumGeoreference::ActivateSubLevel(ACesiumSubLevelInstance* SubLevel) {
-  for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-    ACesiumSubLevelInstance* Current = this->_sublevels[i].Get();
-    if (IsValid(Current) && Current != SubLevel &&
-        this->_isSubLevelActive(Current)) {
-      this->_deactivateSubLevel(Current);
-    }
-  }
-
-  if (IsValid(SubLevel)) {
-    this->_activateSubLevel(SubLevel);
-  }
 }
 
 #endif
@@ -484,36 +475,6 @@ void ACesiumGeoreference::SetGeoreferenceOriginEcef(const FVector& TargetEcef) {
       glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
 }
 
-void ACesiumGeoreference::AddSubLevel(ACesiumSubLevelInstance* SubLevel) {
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT("Adding SubLevel %s to Georeference %s"),
-      *SubLevel->GetName(),
-      *this->GetName());
-  this->_sublevels.AddUnique(SubLevel);
-  this->_ensureZeroOrOneSubLevelsAreActive();
-}
-
-void ACesiumGeoreference::RemoveSubLevel(ACesiumSubLevelInstance* SubLevel) {
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT("Removing SubLevel %s from Georeference %s"),
-      *SubLevel->GetName(),
-      *this->GetName());
-
-  this->_sublevels.Remove(SubLevel);
-}
-
-void ACesiumGeoreference::SyncSubLevel(ACesiumSubLevelInstance* SubLevel) {
-  if (this->_isSubLevelActive(SubLevel)) {
-    this->_activateSubLevel(SubLevel);
-  } else {
-    this->_deactivateSubLevel(SubLevel);
-  }
-}
-
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();
@@ -733,7 +694,10 @@ int32 clampedAdd(double f, int32 i) {
 } // namespace
 
 bool ACesiumGeoreference::_updateSublevelState() {
-  if (this->CesiumSubLevels.Num() == 0 && this->_sublevels.Num() == 0) {
+  const TArray<TWeakObjectPtr<ACesiumSubLevelInstance>>& sublevels =
+      this->SubLevelSwitcher->GetRegisteredSubLevels();
+
+  if (this->CesiumSubLevels.Num() == 0 && sublevels.Num() == 0) {
     // If we don't have any known sublevels, bail quickly to save ourselves a
     // little work.
     return false;
@@ -759,8 +723,8 @@ bool ACesiumGeoreference::_updateSublevelState() {
     ACesiumSubLevelInstance* pClosestActiveLevel = nullptr;
     double closestLevelDistance = std::numeric_limits<double>::max();
 
-    for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-      ACesiumSubLevelInstance* pCurrent = this->_sublevels[i].Get();
+    for (int32 i = 0; i < sublevels.Num(); ++i) {
+      ACesiumSubLevelInstance* pCurrent = sublevels[i].Get();
       if (!IsValid(pCurrent))
         continue;
 
@@ -778,7 +742,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
       }
     }
 
-    this->ActivateSubLevel(pClosestActiveLevel);
+    this->SubLevelSwitcher->SetTarget(pClosestActiveLevel);
   }
 
   {
@@ -1257,68 +1221,4 @@ void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
   // Only a Georeference in the PersistentLevel should manage sub-levels.
   return !this->GetLevel()->IsPersistentLevel();
-}
-
-void ACesiumGeoreference::_ensureZeroOrOneSubLevelsAreActive() {
-  bool foundFirstVisible = false;
-  for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-    ACesiumSubLevelInstance* Current = this->_sublevels[i].Get();
-    if (!IsValid(Current))
-      continue;
-
-    if (this->_isSubLevelActive(Current)) {
-      if (!foundFirstVisible) {
-        // Ignore the first visible level.
-        foundFirstVisible = true;
-      } else {
-        // Deactivate additional sublevels.
-        this->_deactivateSubLevel(Current);
-      }
-    }
-  }
-}
-
-void ACesiumGeoreference::_deactivateSubLevel(
-    ACesiumSubLevelInstance* SubLevel) {
-#if WITH_EDITOR
-  if (GEditor && IsValid(this->GetWorld()) &&
-      !this->GetWorld()->IsGameWorld()) {
-    SubLevel->SetIsTemporarilyHiddenInEditor(true);
-    return;
-  }
-#endif
-
-  SubLevel->UnloadLevelInstance();
-}
-
-void ACesiumGeoreference::_activateSubLevel(ACesiumSubLevelInstance* SubLevel) {
-  // Apply the sub-level's origin to this georeference.
-  this->SetGeoreferenceOriginLongitudeLatitudeHeight(glm::dvec3(
-      SubLevel->OriginLongitude,
-      SubLevel->OriginLatitude,
-      SubLevel->OriginHeight));
-
-#if WITH_EDITOR
-  if (GEditor && IsValid(this->GetWorld()) &&
-      !this->GetWorld()->IsGameWorld()) {
-    if (SubLevel->IsTemporarilyHiddenInEditor(true)) {
-      SubLevel->SetIsTemporarilyHiddenInEditor(false);
-    }
-    return;
-  }
-#endif
-
-  SubLevel->LoadLevelInstance();
-}
-
-bool ACesiumGeoreference::_isSubLevelActive(
-    ACesiumSubLevelInstance* SubLevel) const {
-#if WITH_EDITOR
-  if (GEditor && IsValid(this->GetWorld()) &&
-      !this->GetWorld()->IsGameWorld()) {
-    return !SubLevel->IsTemporarilyHiddenInEditor(true);
-  }
-#endif
-
-  return SubLevel->IsLoaded();
 }

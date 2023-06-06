@@ -1,6 +1,7 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumSubLevelInstance.h"
+#include "CesiumSubLevelSwitcherComponent.h"
 
 ACesiumGeoreference* ACesiumSubLevelInstance::ResolveGeoreference() {
   if (IsValid(this->ResolvedGeoreference)) {
@@ -14,8 +15,10 @@ ACesiumGeoreference* ACesiumSubLevelInstance::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
-  if (this->_isAttachedToGeoreference()) {
-    this->ResolvedGeoreference->AddSubLevel(this);
+  if (IsValid(ResolvedGeoreference)) {
+    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+    if (pSwitcher)
+      pSwitcher->RegisterSubLevel(this);
   }
 
   return this->ResolvedGeoreference;
@@ -23,7 +26,9 @@ ACesiumGeoreference* ACesiumSubLevelInstance::ResolveGeoreference() {
 
 void ACesiumSubLevelInstance::InvalidateResolvedGeoreference() {
   if (this->ResolvedGeoreference) {
-    this->ResolvedGeoreference->RemoveSubLevel(this);
+    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+    if (pSwitcher)
+      pSwitcher->UnregisterSubLevel(this);
   }
   this->ResolvedGeoreference = nullptr;
 }
@@ -44,13 +49,12 @@ void ACesiumSubLevelInstance::SetGeoreference(
 void ACesiumSubLevelInstance::SetIsTemporarilyHiddenInEditor(bool bIsHidden) {
   Super::SetIsTemporarilyHiddenInEditor(bIsHidden);
 
-  // If this sub-level just became visible, notify the georeference so it can
-  // hide the other levels.
-  if (!bIsHidden) {
-    this->ResolveGeoreference();
-    if (this->_isAttachedToGeoreference()) {
-      this->ResolvedGeoreference->ActivateSubLevel(this);
-    }
+  this->ResolveGeoreference();
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher) {
+    pSwitcher->NotifySubLevelIsTemporarilyHiddenInEditorChanged(
+        this,
+        bIsHidden);
   }
 }
 
@@ -64,41 +68,34 @@ void ACesiumSubLevelInstance::BeginDestroy() {
 void ACesiumSubLevelInstance::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
   this->ResolveGeoreference();
-
-  if (this->_isAttachedToGeoreference()) {
-    this->ResolvedGeoreference->SyncSubLevel(this);
-  }
 }
 
 void ACesiumSubLevelInstance::PostActorCreated() {
   Super::PostActorCreated();
 
-  // When a new sub-level is created (not loaded!)...
-
   // Set the initial location to (0,0,0).
   this->SetActorLocationAndRotation(FVector(0.0, 0.0, 0.0), FQuat::Identity);
 
-  // Copy the current georeference info into it.
-  this->ResolveGeoreference();
-  if (this->_isAttachedToGeoreference()) {
-    this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
-    this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
-    this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher) {
+    pSwitcher->OnCreateNewSubLevel(this);
   }
 }
 
 void ACesiumSubLevelInstance::BeginPlay() {
   Super::BeginPlay();
   this->ResolveGeoreference();
-
-  if (this->_isAttachedToGeoreference()) {
-    this->ResolvedGeoreference->SyncSubLevel(this);
-  }
 }
 
-bool ACesiumSubLevelInstance::_isAttachedToGeoreference() const {
+UCesiumSubLevelSwitcherComponent*
+ACesiumSubLevelInstance::_getSwitcher() noexcept {
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+
   // Ignore transient level instances, like those that are created when dragging
   // from Create Actors but before releasing the mouse button.
-  return IsValid(this->ResolvedGeoreference) &&
-         !this->HasAllFlags(RF_Transient);
+  if (!IsValid(pGeoreference) || this->HasAllFlags(RF_Transient))
+    return nullptr;
+
+  return pGeoreference
+      ->FindComponentByClass<UCesiumSubLevelSwitcherComponent>();
 }
