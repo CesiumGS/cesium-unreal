@@ -10,6 +10,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"

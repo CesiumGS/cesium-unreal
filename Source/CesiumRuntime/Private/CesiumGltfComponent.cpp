@@ -312,6 +312,7 @@ static void computeFlatNormals(
   }
 }
 
+template <typename TIndex>
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
@@ -1218,7 +1219,13 @@ static void loadPrimitive(
     if (StaticMeshBuildVertices.Num() != 0 && indices.Num() != 0) {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ChaosCook)
       primitiveResult.pCollisionMesh =
-          BuildChaosTriangleMeshes(StaticMeshBuildVertices, indices);
+          StaticMeshBuildVertices.Num() < TNumericLimits<uint16>::Max()
+              ? BuildChaosTriangleMeshes<uint16>(
+                    StaticMeshBuildVertices,
+                    indices)
+              : BuildChaosTriangleMeshes<int32>(
+                    StaticMeshBuildVertices,
+                    indices);
     }
   }
 
@@ -2014,7 +2021,7 @@ static void loadPrimitiveGameThreadPart(
       pCesiumData = NewObject<UCesiumMaterialUserData>(
           pBaseAsMaterialInstance,
           NAME_None,
-          RF_Public);
+          RF_Transactional);
       pBaseAsMaterialInstance->AddAssetUserData(pCesiumData);
       pCesiumData->PostEditChangeOwner();
     }
@@ -2449,70 +2456,60 @@ void UCesiumGltfComponent::UpdateFade(float fadePercentage, bool fadingIn) {
   }
 }
 
-template <typename TIndex>
-static void fillTriangles(
-    TArray<Chaos::TVector<TIndex, 3>>& triangles,
-    const TArray<FStaticMeshBuildVertex>& vertexData,
-    const TArray<uint32>& indices,
-    int32 triangleCount) {
-
-  triangles.Reserve(triangleCount);
-
-  for (int32 i = 0; i < triangleCount; ++i) {
-    const int32 index0 = 3 * i;
-    triangles.Add(Chaos::TVector<int32, 3>(
-        indices[index0 + 1],
-        indices[index0],
-        indices[index0 + 2]));
-  }
+static bool isTriangleDegenerate(
+    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& A,
+    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& B,
+    const Chaos::FTriangleMeshImplicitObject::ParticleVecType& C) {
+  Chaos::FTriangleMeshImplicitObject::ParticleVecType AB = B - A;
+  Chaos::FTriangleMeshImplicitObject::ParticleVecType AC = C - A;
+  Chaos::FTriangleMeshImplicitObject::ParticleVecType Normal =
+      Chaos::FTriangleMeshImplicitObject::ParticleVecType::CrossProduct(AB, AC);
+  return (Normal.SafeNormalize() < 1.e-8f);
 }
 
+template <typename TIndex>
 static TSharedPtr<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>
 BuildChaosTriangleMeshes(
     const TArray<FStaticMeshBuildVertex>& vertexData,
     const TArray<uint32>& indices) {
 
   int32 vertexCount = vertexData.Num();
-  int32 triangleCount = indices.Num() / 3;
-
   Chaos::TParticles<Chaos::FRealSingle, 3> vertices;
   vertices.AddParticles(vertexCount);
-
   for (int32 i = 0; i < vertexCount; ++i) {
     vertices.X(i) = vertexData[i].Position;
   }
 
-  TArray<uint16> materials;
-  materials.SetNum(triangleCount);
-
+  int32 triangleCount = indices.Num() / 3;
+  TArray<Chaos::TVector<TIndex, 3>> triangles;
+  triangles.Reserve(triangleCount);
   TArray<int32> faceRemap;
-  faceRemap.SetNum(triangleCount);
+  faceRemap.Reserve(triangleCount);
 
   for (int32 i = 0; i < triangleCount; ++i) {
-    faceRemap[i] = i;
+    const int32 index0 = 3 * i;
+    int32 vIndex0 = indices[index0 + 1];
+    int32 vIndex1 = indices[index0];
+    int32 vIndex2 = indices[index0 + 2];
+
+    if (!isTriangleDegenerate(
+            vertices.X(vIndex0),
+            vertices.X(vIndex1),
+            vertices.X(vIndex2))) {
+      triangles.Add(Chaos::TVector<int32, 3>(vIndex0, vIndex1, vIndex2));
+      faceRemap.Add(i);
+    }
   }
 
   TUniquePtr<TArray<int32>> pFaceRemap = MakeUnique<TArray<int32>>(faceRemap);
+  TArray<uint16> materials;
+  materials.SetNum(triangles.Num());
 
-  if (vertexCount < TNumericLimits<uint16>::Max()) {
-    TArray<Chaos::TVector<uint16, 3>> triangles;
-    fillTriangles(triangles, vertexData, indices, triangleCount);
-    return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
-        MoveTemp(vertices),
-        MoveTemp(triangles),
-        MoveTemp(materials),
-        MoveTemp(pFaceRemap),
-        nullptr,
-        false);
-  } else {
-    TArray<Chaos::TVector<int32, 3>> triangles;
-    fillTriangles(triangles, vertexData, indices, triangleCount);
-    return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
-        MoveTemp(vertices),
-        MoveTemp(triangles),
-        MoveTemp(materials),
-        MoveTemp(pFaceRemap),
-        nullptr,
-        false);
-  }
+  return MakeShared<Chaos::FTriangleMeshImplicitObject, ESPMode::ThreadSafe>(
+      MoveTemp(vertices),
+      MoveTemp(triangles),
+      MoveTemp(materials),
+      MoveTemp(pFaceRemap),
+      nullptr,
+      false);
 }

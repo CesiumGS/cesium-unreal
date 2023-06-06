@@ -4,7 +4,10 @@
 
 #include "Engine/StaticMesh.h"
 #include "LocalVertexFactory.h"
+#include "RHIDefinitions.h"
 #include "RHIResources.h"
+#include "Rendering/PositionVertexBuffer.h"
+#include "SceneManagement.h"
 
 /**
  * This generates the indices necessary for point attenuation in a

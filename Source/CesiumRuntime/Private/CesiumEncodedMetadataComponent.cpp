@@ -419,7 +419,7 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
             UMaterialFunctionMaterialLayer::StaticClass(),
             Package,
             *MaterialName,
-            RF_Standalone | RF_Public | RF_Transactional,
+            RF_Standalone | RF_Transactional,
             NULL,
             GWarn);
     FAssetRegistryModule::AssetCreated(this->TargetMaterialLayer);
