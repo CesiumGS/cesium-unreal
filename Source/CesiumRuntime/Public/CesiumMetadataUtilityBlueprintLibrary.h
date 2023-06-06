@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CesiumFeatureTable.h"
-#include "CesiumFeatureIDAttribute.h"
+#include "CesiumFeatureIdAttribute.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"

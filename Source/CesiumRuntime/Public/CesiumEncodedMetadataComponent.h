@@ -246,7 +246,7 @@ public:
   /**
    * @brief This button can be used to create a boiler-plate material layer that
    * exposes the requested metadata properties in the current description. The
-   * nodes to access the metada will be added to TargetMaterialLayer if it
+   * nodes to access the metadata will be added to TargetMaterialLayer if it
    * exists. Otherwise a new material layer will be created in the /Game/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */

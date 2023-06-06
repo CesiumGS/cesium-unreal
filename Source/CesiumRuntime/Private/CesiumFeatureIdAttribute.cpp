@@ -15,14 +15,14 @@ struct FeatureIDFromAccessor {
 
   int64 operator()(
       const AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>& value) {
-    return static_cast<int64>(glm::round(value[vertexIdx].value[0]));
+    return static_cast<int64>(glm::round(value[vertexIndex].value[0]));
   }
 
   template <typename T> int64 operator()(const AccessorView<T>& value) {
-    return static_cast<int64>(value[vertexIdx].value[0]);
+    return static_cast<int64>(value[vertexIndex].value[0]);
   }
 
-  int64 vertexIdx;
+  int64 vertexIndex;
 };
 
 struct VertexCountFromAccessor {

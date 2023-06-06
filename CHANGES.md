@@ -5,17 +5,17 @@
 ##### Breaking Changes :mega:
 
 - Feature IDs are now parsed via the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`. Models with the `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
-- Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
+- Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
 
 ##### Additions :tada:
 
-- Added `FCesiumFeatureIdSet`, which represents a feature ID in the `EXT_mesh_features` extension. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
+- Added `FCesiumFeatureIdSet`, which represents a set of feature IDs in the `EXT_mesh_features` extension. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
 - Added `FCesiumPrimitiveFeatures` and `UCesiumPrimitiveFeaturesBlueprintLibrary`, which can be used to enact on the feature IDs stored in `EXT_mesh_features`.
 
 ##### Deprecated :hourglass_flowing_sand:
 
 - `FCesiumMetadataPrimitive` has been deprecated. Use `FCesiumPrimitiveFeatures` to access the feature IDs of a model instead.
-- `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are no longer applicable in `EXT_mesh_features`. Use `UCesiumFeatureIDBlueprintLibrary::GetPropertyTableIndex` instead.
+- `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are no longer applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
 - `UCesiumMetadataUtilityBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace` instead.
 
 ### v1.27.0 - 2023-06-1

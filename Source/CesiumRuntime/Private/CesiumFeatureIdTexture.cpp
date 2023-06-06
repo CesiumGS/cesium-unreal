@@ -6,21 +6,32 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
+#include <optional>
+
 using namespace CesiumGltf;
 using namespace CesiumGltf::MeshFeatures;
 
 namespace {
 struct TexCoordFromAccessor {
-  glm::vec2 operator()(std::monostate) { return glm::vec2(-1, -1); }
+  std::optional<glm::vec2> operator()(std::monostate) { return std::nullopt; }
 
-  glm::vec2 operator()(const AccessorView<AccessorTypes::VEC2<float>>& value) {
-    return glm::vec2(value[vertexIdx].value[0], value[vertexIdx].value[1]);
+  std::optional<glm::vec2>
+  operator()(const AccessorView<AccessorTypes::VEC2<float>>& value) {
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return std::nullopt;
+    }
+
+    return glm::vec2(value[vertexIndex].value[0], value[vertexIndex].value[1]);
   }
 
-  glm::vec2
+  std::optional<glm::vec2>
   operator()(const AccessorView<AccessorTypes::VEC2<uint8_t>>& value) {
-    float u = static_cast<float>(value[vertexIdx].value[0]);
-    float v = static_cast<float>(value[vertexIdx].value[1]);
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return std::nullopt;
+    }
+
+    float u = static_cast<float>(value[vertexIndex].value[0]);
+    float v = static_cast<float>(value[vertexIndex].value[1]);
 
     u /= std::numeric_limits<uint8_t>::max();
     v /= std::numeric_limits<uint8_t>::max();
@@ -28,10 +39,14 @@ struct TexCoordFromAccessor {
     return glm::vec2(u, v);
   }
 
-  glm::vec2
+  std::optional<glm::vec2>
   operator()(const AccessorView<AccessorTypes::VEC2<uint16_t>>& value) {
-    float u = static_cast<float>(value[vertexIdx].value[0]);
-    float v = static_cast<float>(value[vertexIdx].value[1]);
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return std::nullopt;
+    }
+
+    float u = static_cast<float>(value[vertexIndex].value[0]);
+    float v = static_cast<float>(value[vertexIndex].value[1]);
 
     u /= std::numeric_limits<uint16_t>::max();
     v /= std::numeric_limits<uint16_t>::max();
@@ -39,16 +54,8 @@ struct TexCoordFromAccessor {
     return glm::vec2(u, v);
   }
 
-  int64 vertexIdx;
+  int64 vertexIndex;
 };
-
-//struct VertexCountFromAccessor {
-//  int64 operator()(std::monostate) { return 0; }
-//
-//  template <typename T> int64 operator()(const AccessorView<T>& value) {
-//    return static_cast<int64>(value.size());
-//  }
-//};
 } // namespace
 
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
@@ -147,22 +154,16 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
     int64 VertexIndex) {
-  if (VertexIndex < 0) {
-    return -1;
-  }
-
-  /*int64 vertexCount =
-      std::visit(VertexCountFromAccessor{}, FeatureIDTexture._texCoordAccessor);
-  if (VertexIndex >= vertexCount) {
-    return -1;
-  }*/
-
-  const glm::vec2 texCoords = std::visit(
+  const std::optional<glm::vec2> texCoords = std::visit(
       TexCoordFromAccessor{VertexIndex},
       FeatureIDTexture._texCoordAccessor);
 
+  if (!texCoords) {
+    return -1;
+  }
+
   return GetFeatureIDForTextureCoordinates(
       FeatureIDTexture,
-      texCoords[0],
-      texCoords[1]);
+      (*texCoords)[0],
+      (*texCoords)[1]);
 }
