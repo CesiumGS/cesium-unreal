@@ -252,6 +252,7 @@ private:
   double _currentFlyTime = 0.0;
   FQuat _flyToSourceRotation;
   FQuat _flyToDestinationRotation;
+	glm::dvec3 _flyToECEFDestination;
 
   std::vector<glm::dvec3> _keypoints;
 };

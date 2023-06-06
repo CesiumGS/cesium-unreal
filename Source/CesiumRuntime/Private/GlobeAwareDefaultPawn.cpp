@@ -99,6 +99,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   this->_flyToSourceRotation = Controller->GetControlRotation().Quaternion();
   this->_flyToDestinationRotation =
       FRotator(PitchAtDestination, YawAtDestination, 0).Quaternion();
+	this->_flyToECEFDestination = ECEFDestination;
 
   // Compute axis/Angle transform and initialize key points
   glm::dquat flyQuat = glm::rotation(
@@ -269,8 +270,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   // If we reached the end, set actual destination location and orientation
   if (this->_currentFlyTime >= static_cast<double>(this->FlyToDuration)) {
-    const glm::dvec3& finalPoint = _keypoints.back();
-    this->GlobeAnchor->MoveToECEF(finalPoint);
+    this->GlobeAnchor->MoveToECEF(this->_flyToECEFDestination);
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0;
