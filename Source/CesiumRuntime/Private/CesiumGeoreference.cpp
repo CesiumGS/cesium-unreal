@@ -213,7 +213,9 @@ void ACesiumGeoreference::ActivateSubLevel(ACesiumSubLevelInstance* SubLevel) {
     }
   }
 
-  this->_activateSubLevel(SubLevel);
+  if (IsValid(SubLevel)) {
+    this->_activateSubLevel(SubLevel);
+  }
 }
 
 #endif
@@ -759,7 +761,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
     for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
       ACesiumSubLevelInstance* pCurrent = this->_sublevels[i].Get();
-      if (pCurrent == nullptr)
+      if (!IsValid(pCurrent))
         continue;
 
       glm::dvec3 levelECEF =
@@ -776,9 +778,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
       }
     }
 
-    if (pClosestActiveLevel != nullptr) {
-      this->ActivateSubLevel(pClosestActiveLevel);
-    }
+    this->ActivateSubLevel(pClosestActiveLevel);
   }
 
   {
