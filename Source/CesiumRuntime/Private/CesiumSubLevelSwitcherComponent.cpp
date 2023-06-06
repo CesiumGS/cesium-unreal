@@ -50,12 +50,14 @@ UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
 
 void UCesiumSubLevelSwitcherComponent::SetTarget(
     ACesiumSubLevelInstance* pLevelInstance) noexcept {
-  if (this->_pTarget != nullptr) {
-    this->_deactivateSubLevel(this->_pTarget);
-  }
+  if (this->_pTarget != pLevelInstance) {
+    if (this->_pTarget != nullptr) {
+      this->_deactivateSubLevel(this->_pTarget);
+    }
 
-  if (pLevelInstance) {
-    this->_activateSubLevel(pLevelInstance);
+    if (pLevelInstance) {
+      this->_activateSubLevel(pLevelInstance);
+    }
   }
 
   this->_pTarget = pLevelInstance;
