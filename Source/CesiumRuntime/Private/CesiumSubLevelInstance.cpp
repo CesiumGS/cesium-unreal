@@ -15,12 +15,6 @@ ACesiumGeoreference* ACesiumSubLevelInstance::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreference(this);
   }
 
-  if (IsValid(ResolvedGeoreference)) {
-    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-    if (pSwitcher)
-      pSwitcher->RegisterSubLevel(this);
-  }
-
   return this->ResolvedGeoreference;
 }
 
@@ -41,7 +35,10 @@ void ACesiumSubLevelInstance::SetGeoreference(
     ACesiumGeoreference* NewGeoreference) {
   this->Georeference = NewGeoreference;
   this->InvalidateResolvedGeoreference();
-  this->ResolveGeoreference();
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->RegisterSubLevel(this);
 }
 
 void ACesiumSubLevelInstance::ActivateSubLevel() {
@@ -77,7 +74,10 @@ void ACesiumSubLevelInstance::BeginDestroy() {
 
 void ACesiumSubLevelInstance::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
-  this->ResolveGeoreference();
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->RegisterSubLevel(this);
 }
 
 void ACesiumSubLevelInstance::PostActorCreated() {
@@ -97,7 +97,10 @@ void ACesiumSubLevelInstance::PostActorCreated() {
 
 void ACesiumSubLevelInstance::BeginPlay() {
   Super::BeginPlay();
-  this->ResolveGeoreference();
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->RegisterSubLevel(this);
 }
 
 UCesiumSubLevelSwitcherComponent*

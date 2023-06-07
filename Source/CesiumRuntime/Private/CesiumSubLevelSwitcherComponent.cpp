@@ -3,6 +3,7 @@
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
 #include "LevelInstance/LevelInstanceLevelStreaming.h"
+#include "LevelInstance/LevelInstanceSubsystem.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -15,6 +16,10 @@ UCesiumSubLevelSwitcherComponent::UCesiumSubLevelSwitcherComponent() {
 void UCesiumSubLevelSwitcherComponent::RegisterSubLevel(
     ACesiumSubLevelInstance* pSubLevel) noexcept {
   this->_sublevels.AddUnique(pSubLevel);
+
+  // Levels should initially be unloaded.
+  pSubLevel->UnloadLevelInstance();
+
   this->_ensureZeroOrOneSubLevelsAreActive();
 }
 
@@ -44,20 +49,9 @@ UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
 
 void UCesiumSubLevelSwitcherComponent::SetTarget(
     ACesiumSubLevelInstance* pLevelInstance) noexcept {
-  // if (this->_pTarget != pLevelInstance) {
-  //   if (this->_pTarget != nullptr) {
-  //     this->_deactivateSubLevel(this->_pTarget);
-  //   }
-
-  //  if (pLevelInstance) {
-  //    this->_activateSubLevel(pLevelInstance);
-  //  }
-  //}
-
   this->_pTarget = pLevelInstance;
-  // this->_pCurrent = pLevelInstance;
 
-  // If there is no other sublevel currently active, move the georeference
+  // If there is no other sublevels currently active, move the georeference
   // immediately.
   if (this->_pCurrent == nullptr && this->_pTarget != nullptr) {
     this->_pTarget->ActivateSubLevel();
@@ -70,7 +64,12 @@ void UCesiumSubLevelSwitcherComponent::
     NotifySubLevelIsTemporarilyHiddenInEditorChanged(
         ACesiumSubLevelInstance* pLevelInstance,
         bool bIsHidden) {
-  if (!bIsHidden) {
+  if (bIsHidden) {
+    // The previous target level has been hidden, so clear out the target.
+    if (this->_pTarget == pLevelInstance) {
+      this->_pTarget = nullptr;
+    }
+  } else {
     this->SetTarget(pLevelInstance);
   }
 }
@@ -90,12 +89,19 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
 
   if (this->_pCurrent != nullptr) {
     // Work toward unloading the current level.
+
     ULevelStreaming* pStreaming =
         this->_getLevelStreamingForSubLevel(this->_pCurrent);
 
     ULevelStreaming::ECurrentState state =
-        IsValid(pStreaming) ? pStreaming->GetCurrentState()
-                            : ULevelStreaming::ECurrentState::Unloaded;
+        ULevelStreaming::ECurrentState::Unloaded;
+    if (IsValid(pStreaming)) {
+      state = pStreaming->GetCurrentState();
+    } else if (this->_pCurrent->GetWorldAsset().IsNull()) {
+      // There is no level associated with the target at all, so mark it
+      // unloaded but also deactivate it for the benefit of the Editor UI.
+      this->_deactivateSubLevel(this->_pCurrent);
+    }
 
     switch (state) {
     case ULevelStreaming::ECurrentState::Loading:
@@ -124,12 +130,20 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
 
   if (this->_pCurrent == nullptr && this->_pTarget != nullptr) {
     // Once the current level is unloaded, work toward loading the target level.
+
     ULevelStreaming* pStreaming =
         this->_getLevelStreamingForSubLevel(this->_pTarget);
 
     ULevelStreaming::ECurrentState state =
-        IsValid(pStreaming) ? pStreaming->GetCurrentState()
-                            : ULevelStreaming::ECurrentState::Unloaded;
+        ULevelStreaming::ECurrentState::Unloaded;
+    if (IsValid(pStreaming)) {
+      state = pStreaming->GetCurrentState();
+    } else if (this->_pTarget->GetWorldAsset().IsNull()) {
+      // There is no level associated with the target at all, so mark it failed
+      // to load, but also activate it for the benefit of the Editor UI.
+      state = ULevelStreaming::ECurrentState::FailedToLoad;
+      this->_activateSubLevel(this->_pTarget);
+    }
 
     switch (state) {
     case ULevelStreaming::ECurrentState::Loading:
@@ -206,7 +220,7 @@ bool UCesiumSubLevelSwitcherComponent::_isSubLevelActive(
   }
 #endif
 
-  return SubLevel->IsLoaded();
+  return SubLevel->GetLevelInstanceSubsystem()->IsLoaded(SubLevel);
 }
 
 ULevelStreaming*
