@@ -42,7 +42,7 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   }
 
   glm::dvec4 upEcef(
-      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+      this->_ellipsoid.geodeticSurfaceNormal(
           VecMath::createVector3D(this->GlobeAnchor->GetECEF())),
       0.0);
   glm::dvec4 up = this->GlobeAnchor->ResolveGeoreference()
@@ -80,19 +80,11 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
 }
 
-void AGlobeAwareDefaultPawn::_interpolatePosition(
-    double percentage,
-    double flyTotalAngle,
-    const CesiumGeospatial::Ellipsoid& ellipsoid,
-    const glm::dvec3& sourceUpVector,
-    const glm::dvec3& flyRotationAxis,
-    glm::dvec3& out) const {
+void AGlobeAwareDefaultPawn::_interpolatePosition(double percentage, glm::dvec3& out) const {
 
-  double phi = percentage * flyTotalAngle;
+  glm::dvec3 rotated = glm::rotate(_flyToSourceUpVector, percentage * _flyToTotalAngle, _flyToRotationAxis);
 
-  glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
-
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
+  if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(rotated)) {
     glm::dvec3 upVector = glm::normalize(*scaled);
 
     // Add the altitude offset. Start with linear path between source and destination
@@ -132,17 +124,19 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   glm::dquat flyQuat = glm::rotation(
       glm::normalize(ECEFSource),
       glm::normalize(ECEFDestination));
-  double flyTotalAngle = glm::angle(flyQuat);
-  glm::dvec3 flyRotationAxis = glm::axis(flyQuat);
+  _flyToTotalAngle = glm::angle(flyQuat);
+  _flyToRotationAxis = glm::axis(flyQuat);
+  _flyToSourceUpVector = ECEFSource;
+
   int steps = glm::max(
-      int(flyTotalAngle /
+      int(_flyToTotalAngle /
           glm::radians(static_cast<double>(this->FlyToGranularityDegrees))) -
           1,
       0);
   this->_keypoints.clear();
   this->_currentFlyTime = 0.0;
 
-  if (flyTotalAngle == 0.0 &&
+  if (_flyToTotalAngle == 0.0 &&
       this->_flyToSourceRotation == this->_flyToDestinationRotation) {
     return;
   }
@@ -157,21 +151,15 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   //  point smoothly.
   //  - Add as flightProfile offset /-\ defined by a curve.
 
-  // Compute global radius at source and destination points
-  double sourceRadius = glm::length(ECEFSource);
-  glm::dvec3 sourceUpVector = ECEFSource;
-
   // Compute actual altitude at source and destination points by scaling on
   // ellipsoid.
   _flyToSourceAltitude = 0.0;
   _flyToDestinationAltitude = 0.0;
 
-  const CesiumGeospatial::Ellipsoid& ellipsoid =
-      CesiumGeospatial::Ellipsoid::WGS84;
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFSource)) {
+  if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(ECEFSource)) {
     _flyToSourceAltitude = glm::length(ECEFSource - *scaled);
   }
-  if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFDestination)) {
+  if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(ECEFDestination)) {
     _flyToDestinationAltitude = glm::length(ECEFDestination - *scaled);
   }
 
@@ -192,13 +180,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     double percentage = (double)step / (steps + 1);
 
     glm::dvec3 point;
-    _interpolatePosition(
-      percentage,
-      flyTotalAngle,
-      ellipsoid,
-      sourceUpVector,
-      flyRotationAxis,
-      point);
+    _interpolatePosition(percentage, point);
 
     this->_keypoints.push_back(point);
   }

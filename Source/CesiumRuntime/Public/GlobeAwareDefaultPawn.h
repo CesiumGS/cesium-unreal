@@ -228,13 +228,7 @@ private:
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
   void _interruptFlight();
-  void _interpolatePosition(
-    double percentage,
-    double flyTotalAngle,
-    const CesiumGeospatial::Ellipsoid& ellipsoid,
-    const glm::dvec3& sourceUpVector,
-    const glm::dvec3& flyRotationAxis,
-    glm::dvec3& out) const ;
+  void _interpolatePosition(double percentage, glm::dvec3& out) const ;
 
   /**
    * @brief Advance the camera flight based on the given time delta.
@@ -261,9 +255,16 @@ private:
   double _flyToSourceAltitude = 0.0;
   double _flyToDestinationAltitude = 0.0;
   double _flyToMaxAltitude = 0.0;
+
+  double _flyToTotalAngle = 0.0;
+  glm::dvec3 _flyToSourceUpVector;
+  glm::dvec3 _flyToRotationAxis;
+
   FQuat _flyToSourceRotation;
   FQuat _flyToDestinationRotation;
 	glm::dvec3 _flyToECEFDestination;
 
   std::vector<glm::dvec3> _keypoints;
+
+  const CesiumGeospatial::Ellipsoid& _ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
 };
