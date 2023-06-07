@@ -127,12 +127,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   _flyToRotationAxis = glm::axis(flyQuat);
   _flyToSourceUpVector = ECEFSource;
 
-  int steps = glm::max(
-      int(_flyToTotalAngle /
-          glm::radians(static_cast<double>(this->FlyToGranularityDegrees))) -
-          1,
-      0);
-  this->_keypoints.clear();
   this->_currentFlyTime = 0.0;
 
   if (_flyToTotalAngle == 0.0 &&
@@ -171,20 +165,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       _flyToMaxAltitude = this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
     }
   }
-
-  // Add first keypoint
-  this->_keypoints.push_back(ECEFSource);
-
-  for (int step = 1; step <= steps; step++) {
-    double percentage = (double)step / (steps + 1);
-
-    glm::dvec3 point;
-    _interpolatePosition(percentage, point);
-
-    this->_keypoints.push_back(point);
-  }
-
-  this->_keypoints.push_back(ECEFDestination);
 
   // Tell the tick we will be flying from now
   this->_bFlyingToLocation = true;
@@ -264,12 +244,6 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   this->_currentFlyTime += static_cast<double>(DeltaSeconds);
 
-  // double check that we don't have an empty list of keypoints
-  if (this->_keypoints.size() == 0) {
-    this->_bFlyingToLocation = false;
-    return;
-  }
-
   // If we reached the end, set actual destination location and orientation
   if (this->_currentFlyTime >= static_cast<double>(this->FlyToDuration)) {
     this->GlobeAnchor->MoveToECEF(this->_flyToECEFDestination);
@@ -300,18 +274,10 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
         1.0);
   }
 
-  // Find the keypoint indexes corresponding to the current percentage
-  int lastIndex = static_cast<int>(
-      glm::floor(flyPercentage * (this->_keypoints.size() - 1)));
-  double segmentPercentage =
-      flyPercentage * (this->_keypoints.size() - 1) - lastIndex;
-  int nextIndex = lastIndex + 1;
+  // Get the current position by interpolating with flyPercentage
+  glm::dvec3 currentPosition;
+  _interpolatePosition(flyPercentage, currentPosition);
 
-  // Get the current position by interpolating linearly between those two points
-  const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
-  const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
-  glm::dvec3 currentPosition =
-      glm::mix(lastPosition, nextPosition, segmentPercentage);
   // Set Location
   this->GlobeAnchor->MoveToECEF(currentPosition);
 

@@ -238,8 +238,7 @@ private:
    * is not valid, then this function will do nothing.
    *
    * The given delta will be added to the _currentFlyTime, and the position
-   * and orientation will be computed by interpolating the _keypoints
-   * and _flyToSourceRotation/_flyToDestinationRotation  based on this time.
+   * and orientation will be computed by interpolating based on this time.
    *
    * The position will be set as the SetECEFCameraLocation, and the
    * orientation will be assigned GetController()->SetControlRotation.
@@ -264,8 +263,6 @@ private:
   FQuat _flyToSourceRotation;
   FQuat _flyToDestinationRotation;
 	glm::dvec3 _flyToECEFDestination;
-
-  std::vector<glm::dvec3> _keypoints;
 
   const CesiumGeospatial::Ellipsoid& _ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
 };
