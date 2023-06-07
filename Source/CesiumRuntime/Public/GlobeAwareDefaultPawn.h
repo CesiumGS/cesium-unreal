@@ -233,7 +233,7 @@ private:
     double sourceAltitude,
     double destinationAltitude,
     double flyToDistance,
-    double phi,
+    double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
     const glm::dvec3& sourceUpVector,
     const glm::dvec3& flyRotationAxis,

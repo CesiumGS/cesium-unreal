@@ -85,11 +85,14 @@ void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
     double sourceAltitude,
     double destinationAltitude,
     double flyToDistance,
-    double phi,
+    double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
     const glm::dvec3& sourceUpVector,
     const glm::dvec3& flyRotationAxis,
     glm::dvec3& out) const {
+
+  double phi = percentage * flyTotalAngle;
+
   double altitude = glm::mix(sourceAltitude, destinationAltitude, percentage);
 
   glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
@@ -187,9 +190,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   for (int step = 1; step <= steps; step++) {
     double percentage = (double)step / (steps + 1);
-    double phi = glm::radians(
-        static_cast<double>(this->FlyToGranularityDegrees) *
-        static_cast<double>(step));
 
     glm::dvec3 point;
     _calcKeypointFromPercentage(
@@ -197,7 +197,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       sourceAltitude,
       destinationAltitude,
       flyToDistance,
-      phi,
+      flyTotalAngle,
       ellipsoid,
       sourceUpVector,
       flyRotationAxis,
