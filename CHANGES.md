@@ -6,6 +6,7 @@
 
 - Feature IDs are now parsed via the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`. Models with the `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
 - Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
+- Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 
 ##### Additions :tada:
 
