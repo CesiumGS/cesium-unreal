@@ -72,6 +72,11 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetGeoreference(ACesiumGeoreference* NewGeoreference);
 
+  /**
+   * Activates this sub-level, applying the sub-level georeference origin to the georeference.
+   */
+  void ActivateSubLevel();
+
 #if WITH_EDITOR
   virtual void SetIsTemporarilyHiddenInEditor(bool bIsHidden) override;
 #endif

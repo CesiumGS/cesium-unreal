@@ -44,12 +44,22 @@ void ACesiumSubLevelInstance::SetGeoreference(
   this->ResolveGeoreference();
 }
 
+void ACesiumSubLevelInstance::ActivateSubLevel() {
+  // Apply the sub-level's origin to this georeference.
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+        glm::dvec3(
+            this->OriginLongitude,
+            this->OriginLatitude,
+            this->OriginHeight));
+  }
+}
+
 #if WITH_EDITOR
 
 void ACesiumSubLevelInstance::SetIsTemporarilyHiddenInEditor(bool bIsHidden) {
   Super::SetIsTemporarilyHiddenInEditor(bIsHidden);
 
-  this->ResolveGeoreference();
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
   if (pSwitcher) {
     pSwitcher->NotifySubLevelIsTemporarilyHiddenInEditorChanged(
@@ -77,8 +87,11 @@ void ACesiumSubLevelInstance::PostActorCreated() {
   this->SetActorLocationAndRotation(FVector(0.0, 0.0, 0.0), FQuat::Identity);
 
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-  if (pSwitcher) {
-    pSwitcher->OnCreateNewSubLevel(this);
+  if (pSwitcher && this->ResolvedGeoreference) {
+    // Copy the current georeference info into the newly-created sublevel.
+    this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
+    this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
+    this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
   }
 }
 

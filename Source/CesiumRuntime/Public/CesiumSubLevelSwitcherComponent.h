@@ -7,6 +7,7 @@
 
 class ACesiumGeoreference;
 class ACesiumSubLevelInstance;
+class ULevelStreaming;
 class UWorld;
 
 /**
@@ -20,6 +21,8 @@ class CESIUMRUNTIME_API UCesiumSubLevelSwitcherComponent
   GENERATED_BODY()
 
 public:
+  UCesiumSubLevelSwitcherComponent();
+
   /**
    * Registers a sub-level with this switcher. The switcher will ensure that
    * no more than one of the registered sub-levels is active at any time.
@@ -38,14 +41,6 @@ public:
    */
   const TArray<TWeakObjectPtr<ACesiumSubLevelInstance>>&
   GetRegisteredSubLevels() const noexcept;
-
-  /**
-   * Notifies the switcher of a brand new-sublevel. The current
-   * CesiumGeoreference origin will be copied into the new sub-level. This
-   * method should _not_ be called on load of a sub-level, only on creation of a
-   * brand new one that needs to be initialized.
-   */
-  void OnCreateNewSubLevel(ACesiumSubLevelInstance* pSubLevel) noexcept;
 
   /**
    * Gets the sub-level that is currently active, or nullptr if none are active.
@@ -85,6 +80,13 @@ private:
   void _deactivateSubLevel(ACesiumSubLevelInstance* SubLevel);
   void _activateSubLevel(ACesiumSubLevelInstance* SubLevel);
   bool _isSubLevelActive(ACesiumSubLevelInstance* SubLevel) const;
+
+  /**
+   * Finds the ULevelStreaming instance, if any, associated with a given
+   * sublevel.
+   */
+  ULevelStreaming*
+  _getLevelStreamingForSubLevel(ACesiumSubLevelInstance* SubLevel) const;
 
   UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
   TArray<TWeakObjectPtr<ACesiumSubLevelInstance>> _sublevels;
