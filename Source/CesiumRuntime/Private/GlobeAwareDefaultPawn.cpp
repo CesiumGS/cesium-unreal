@@ -82,7 +82,6 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 
 void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
     double percentage,
-    double flyToDistance,
     double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
     const glm::dvec3& sourceUpVector,
@@ -99,16 +98,10 @@ void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
 
     // Add an altitude if we have a profile curve for it
     double offsetAltitude = 0;
-    if (this->FlyToAltitudeProfileCurve != NULL) {
-      double maxAltitude = 30000;
-      if (this->FlyToMaximumAltitudeCurve != NULL) {
-        maxAltitude =
-          this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
-      }
-      offsetAltitude =
-        maxAltitude *
-          this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+    if (_flyToMaxAltitude != 0.0) {
+      offsetAltitude = _flyToMaxAltitude * this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
     }
+
     out = *scaled + upVector * (altitude + offsetAltitude);
   }
 }
@@ -181,9 +174,15 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     _flyToDestinationAltitude = glm::length(ECEFDestination - *scaled);
   }
 
-  // Get distance between source and destination points to compute a wanted
-  // altitude from curve
-  double flyToDistance = glm::length(ECEFDestination - ECEFSource);
+  // Compute a wanted altitude from curve
+  _flyToMaxAltitude = 0.0;
+  if (this->FlyToAltitudeProfileCurve != NULL) {
+    _flyToMaxAltitude = 30000;
+    if (this->FlyToMaximumAltitudeCurve != NULL) {
+      double flyToDistance = glm::length(ECEFDestination - ECEFSource);
+      _flyToMaxAltitude = this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
+    }
+  }
 
   // Add first keypoint
   this->_keypoints.push_back(ECEFSource);
@@ -194,7 +193,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     glm::dvec3 point;
     _calcKeypointFromPercentage(
       percentage,
-      flyToDistance,
       flyTotalAngle,
       ellipsoid,
       sourceUpVector,

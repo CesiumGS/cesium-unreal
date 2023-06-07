@@ -230,7 +230,6 @@ private:
   void _interruptFlight();
   void _calcKeypointFromPercentage(
     double percentage,
-    double flyToDistance,
     double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
     const glm::dvec3& sourceUpVector,
