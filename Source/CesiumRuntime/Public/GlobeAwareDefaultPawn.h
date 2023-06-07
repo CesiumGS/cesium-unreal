@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
+#include "CesiumGeospatial/Ellipsoid.h"
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 #include <vector>
