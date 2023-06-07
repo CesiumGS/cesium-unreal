@@ -31,7 +31,7 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
       InModel.getExtension<ExtensionModelExtStructuralMetadata>();
   if (pMetadata && _propertyTableIndex.IsSet() &&
       _propertyTableIndex.GetValue() >= 0 &&
-      _propertyTableIndex.GetValue() < pMetadata->propertyTables.size()) {
+      static_cast<size_t>(_propertyTableIndex.GetValue()) < pMetadata->propertyTables.size()) {
     const ExtensionExtStructuralMetadataPropertyTable& propertyTable =
         pMetadata->propertyTables[_propertyTableIndex.GetValue()];
     std::string name = propertyTable.name ? *propertyTable.name : "";
@@ -39,8 +39,11 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   }
 
   if (FeatureID.attribute) {
-    _featureID =
-        FCesiumFeatureIdAttribute(InModel, Primitive, *FeatureID.attribute);
+    _featureID = FCesiumFeatureIdAttribute(
+        InModel,
+        Primitive,
+        *FeatureID.attribute,
+        propertyTableName);
     _featureIDType = ECesiumFeatureIdType::Attribute;
 
     return;
@@ -68,7 +71,7 @@ UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(
   return FeatureIDSet._featureIDType;
 }
 
-const FCesiumFeatureIdAttribute
+const FCesiumFeatureIdAttribute&
 UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
   if (FeatureIDSet._featureIDType == ECesiumFeatureIdType::Attribute) {
@@ -78,7 +81,7 @@ UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
   return EmptyFeatureIDAttribute;
 }
 
-const FCesiumFeatureIdTexture
+const FCesiumFeatureIdTexture&
 UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
   if (FeatureIDSet._featureIDType == ECesiumFeatureIdType::Texture) {

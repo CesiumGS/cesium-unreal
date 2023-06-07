@@ -73,7 +73,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
-  static const FCesiumFeatureIdAttribute
+  static const FCesiumFeatureIdAttribute&
   GetAsFeatureIDAttribute(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
@@ -85,7 +85,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
-  static const FCesiumFeatureIdTexture
+  static const FCesiumFeatureIdTexture&
   GetAsFeatureIDTexture(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**

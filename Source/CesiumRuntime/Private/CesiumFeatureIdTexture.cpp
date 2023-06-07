@@ -63,20 +63,33 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const MeshPrimitive Primitive,
     const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
-    : _featureIdTextureView(InModel, FeatureIdTexture),
+    : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
+      _featureIdTextureView(InModel, FeatureIdTexture),
       _texCoordAccessor(),
-      _textureCoordinateIndex(-1),
+      _textureCoordinateIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
-  const int64 texCoordIndex = _featureIdTextureView.getTexCoordSetIndex();
-  const std::string texCoordName = "TEXCOORD_" + std::to_string(texCoordIndex);
+  if (_featureIdTextureView.status() ==
+      FeatureIdTextureViewStatus::ErrorInvalidChannels) {
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidChannelAccess;
+    return;
+  }
+
+  if (_featureIdTextureView.status() != FeatureIdTextureViewStatus::Valid) {
+    return;
+  }
+
+  const std::string texCoordName =
+      "TEXCOORD_" + std::to_string(_textureCoordinateIndex);
   auto texCoord = Primitive.attributes.find(texCoordName);
   if (texCoord == Primitive.attributes.end()) {
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoord;
     return;
   }
 
   const Accessor* accessor =
       InModel.getSafe<Accessor>(&InModel.accessors, texCoord->second);
   if (!accessor || accessor->type != Accessor::Type::VEC2) {
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
     return;
   }
 
@@ -84,6 +97,7 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
     if (!accessor->normalized) {
       // Unsigned byte texcoords must be normalized.
+      _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
       return;
     }
 
@@ -95,8 +109,10 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
     if (!accessor->normalized) {
       // Unsigned short texcoords must be normalized.
+      _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
       return;
     }
+
     this->_texCoordAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint16_t>>(
             InModel,
@@ -109,10 +125,11 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
             *accessor);
     break;
   default:
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
     return;
   }
 
-  _textureCoordinateIndex = texCoordIndex;
+  _status = ECesiumFeatureIdTextureStatus::Valid;
 }
 
 const FString& UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
@@ -120,19 +137,22 @@ const FString& UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
   return FeatureIDTexture._propertyTableName;
 }
 
+ECesiumFeatureIdTextureStatus
+UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+    UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
+  return FeatureIDTexture._status;
+}
+
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* component,
     const FCesiumFeatureIdTexture& FeatureIDTexture) {
-  // TODO: where is this function used? Does it need to validate against the
-  // component?
   const UCesiumGltfPrimitiveComponent* pPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!pPrimitive) {
     return -1;
   }
 
-  if (FeatureIDTexture._featureIdTextureView.status() !=
-      FeatureIdTextureViewStatus::Valid) {
+  if (FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
     return -1;
   }
 

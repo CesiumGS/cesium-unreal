@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumFeatureTable.h"
 #include "CesiumGltf/AccessorView.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdAttribute.generated.h"
@@ -10,8 +9,14 @@
 namespace CesiumGltf {
 struct Model;
 struct Accessor;
-struct FeatureTable;
 } // namespace CesiumGltf
+
+UENUM(BlueprintType)
+enum class ECesiumFeatureIdAttributeStatus : uint8 {
+  Valid = 0,
+  ErrorInvalidAttribute,
+  ErrorInvalidAccessor
+};
 
 /**
  * @brief A blueprint-accessible wrapper for a feature ID attribute from a glTF
@@ -32,19 +37,42 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>>;
 
 public:
-  FCesiumFeatureIdAttribute() {}
+  /**
+   * @brief Constructs an empty feature ID attribute instance. Empty feature ID
+   * attributes can be constructed from trying to convert a FCesiumFeatureIdSet
+   * that is not an attribute. In this case, the status reports it is an invalid
+   * attribute.
+   */
+  FCesiumFeatureIdAttribute()
+      : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
+        _featureIDAccessor(),
+        _attributeIndex(-1) {}
 
+  /**
+   * @brief Constructs a feature ID attribute instance.
+   *
+   * @param InModel The model.
+   * @param Primitive The mesh primitive containing the feature ID attribute.
+   * @param FeatureIDAttribute The attribute index specified by the
+   * ExtensionExtMeshFeaturesFeatureId.
+   * @param PropertyTableName The name of the property table this attribute
+   * corresponds to, if one exists, for backwards compatibility.
+   */
   FCesiumFeatureIdAttribute(
       const CesiumGltf::Model& InModel,
       const CesiumGltf::MeshPrimitive Primitive,
       const int64 FeatureIDAttribute,
       const FString& PropertyTableName);
 
-  int32 getAttributeIndex() const { return this->_attributeIndex; }
+  /**
+   * Gets the index of this feature ID attribute.
+   */
+  int64 getAttributeIndex() const { return this->_attributeIndex; }
 
 private:
+  ECesiumFeatureIdAttributeStatus _status;
   FeatureIDAccessorType _featureIDAccessor;
-  int32 _attributeIndex;
+  int64 _attributeIndex;
 
   // For backwards compatibility.
   FString _propertyTableName;
@@ -78,7 +106,19 @@ public:
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
-   * @brief Get the number of vertices this primitive has.
+   * Gets the status of the feature ID attribute. If this attribute is
+   * invalid in any way, this will briefly indicate why.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|FeatureIDAttribute")
+  static ECesiumFeatureIdAttributeStatus GetFeatureIDAttributeStatus(
+      UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute);
+
+  /**
+   * Get the number of vertices in the primitive containing the feature
+   * ID attribute. If th feature ID attribute is invalid, this returns 0.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -90,8 +130,8 @@ public:
 
   /**
    * Gets the feature ID associated with the given vertex. The feature ID can be
-   * used with a FCesiumFeatureTable to retrieve the per-vertex
-   * metadata.
+   * used with a FCesiumFeatureTable to retrieve the per-vertex metadata. If
+   * the feature ID attribute is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
