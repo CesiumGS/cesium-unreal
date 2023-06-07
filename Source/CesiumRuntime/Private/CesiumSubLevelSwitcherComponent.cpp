@@ -177,7 +177,6 @@ void UCesiumSubLevelSwitcherComponent::_deactivateSubLevel(
   if (GEditor && IsValid(this->GetWorld()) &&
       !this->GetWorld()->IsGameWorld()) {
     SubLevel->SetIsTemporarilyHiddenInEditor(true);
-    return;
   }
 #endif
 
@@ -192,7 +191,6 @@ void UCesiumSubLevelSwitcherComponent::_activateSubLevel(
     if (SubLevel->IsTemporarilyHiddenInEditor(true)) {
       SubLevel->SetIsTemporarilyHiddenInEditor(false);
     }
-    return;
   }
 #endif
 
