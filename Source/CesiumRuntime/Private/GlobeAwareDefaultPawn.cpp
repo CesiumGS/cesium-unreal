@@ -90,19 +90,20 @@ void AGlobeAwareDefaultPawn::_interpolatePosition(
 
   double phi = percentage * flyTotalAngle;
 
-  double altitude = glm::mix(_flyToSourceAltitude, _flyToDestinationAltitude, percentage);
-
   glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
+
   if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
     glm::dvec3 upVector = glm::normalize(*scaled);
 
-    // Add an altitude if we have a profile curve for it
-    double offsetAltitude = 0;
+    // Add the altitude offset. Start with linear path between source and destination
+    // If we have a profile curve, use this as well
+    double altitudeOffset = glm::mix(_flyToSourceAltitude, _flyToDestinationAltitude, percentage);
     if (_flyToMaxAltitude != 0.0) {
-      offsetAltitude = _flyToMaxAltitude * this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+      double curveOffset = _flyToMaxAltitude * this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+      altitudeOffset += curveOffset;
     }
 
-    out = *scaled + upVector * (altitude + offsetAltitude);
+    out = *scaled + upVector * altitudeOffset;
   }
 }
 
