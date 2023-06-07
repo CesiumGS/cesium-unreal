@@ -230,8 +230,6 @@ private:
   void _interruptFlight();
   void _calcKeypointFromPercentage(
     double percentage,
-    double sourceAltitude,
-    double destinationAltitude,
     double flyToDistance,
     double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
@@ -260,6 +258,10 @@ private:
   bool _bFlyingToLocation = false;
   bool _bCanInterruptFlight = false;
   double _currentFlyTime = 0.0;
+
+  double _flyToSourceAltitude = 0.0;
+  double _flyToDestinationAltitude = 0.0;
+  double _flyToMaxAltitude = 0.0;
   FQuat _flyToSourceRotation;
   FQuat _flyToDestinationRotation;
 	glm::dvec3 _flyToECEFDestination;

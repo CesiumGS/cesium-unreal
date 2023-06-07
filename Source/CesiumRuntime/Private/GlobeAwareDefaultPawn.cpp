@@ -82,8 +82,6 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 
 void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
     double percentage,
-    double sourceAltitude,
-    double destinationAltitude,
     double flyToDistance,
     double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
@@ -93,7 +91,7 @@ void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
 
   double phi = percentage * flyTotalAngle;
 
-  double altitude = glm::mix(sourceAltitude, destinationAltitude, percentage);
+  double altitude = glm::mix(_flyToSourceAltitude, _flyToDestinationAltitude, percentage);
 
   glm::dvec3 rotated = glm::rotate(sourceUpVector, phi, flyRotationAxis);
   if (auto scaled = ellipsoid.scaleToGeodeticSurface(rotated)) {
@@ -171,14 +169,16 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // Compute actual altitude at source and destination points by scaling on
   // ellipsoid.
-  double sourceAltitude = 0.0, destinationAltitude = 0.0;
+  _flyToSourceAltitude = 0.0;
+  _flyToDestinationAltitude = 0.0;
+
   const CesiumGeospatial::Ellipsoid& ellipsoid =
       CesiumGeospatial::Ellipsoid::WGS84;
   if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFSource)) {
-    sourceAltitude = glm::length(ECEFSource - *scaled);
+    _flyToSourceAltitude = glm::length(ECEFSource - *scaled);
   }
   if (auto scaled = ellipsoid.scaleToGeodeticSurface(ECEFDestination)) {
-    destinationAltitude = glm::length(ECEFDestination - *scaled);
+    _flyToDestinationAltitude = glm::length(ECEFDestination - *scaled);
   }
 
   // Get distance between source and destination points to compute a wanted
@@ -194,8 +194,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     glm::dvec3 point;
     _calcKeypointFromPercentage(
       percentage,
-      sourceAltitude,
-      destinationAltitude,
       flyToDistance,
       flyTotalAngle,
       ellipsoid,
