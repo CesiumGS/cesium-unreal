@@ -80,7 +80,7 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
 }
 
-void AGlobeAwareDefaultPawn::_calcKeypointFromPercentage(
+void AGlobeAwareDefaultPawn::_interpolatePosition(
     double percentage,
     double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
@@ -191,7 +191,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     double percentage = (double)step / (steps + 1);
 
     glm::dvec3 point;
-    _calcKeypointFromPercentage(
+    _interpolatePosition(
       percentage,
       flyTotalAngle,
       ellipsoid,

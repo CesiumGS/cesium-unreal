@@ -228,7 +228,7 @@ private:
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
   void _interruptFlight();
-  void _calcKeypointFromPercentage(
+  void _interpolatePosition(
     double percentage,
     double flyTotalAngle,
     const CesiumGeospatial::Ellipsoid& ellipsoid,
