@@ -81,10 +81,14 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 
 void AGlobeAwareDefaultPawn::_interpolatePosition(double percentage, glm::dvec3& out) const {
 
-  glm::dvec3 rotated = glm::rotate(_flyToSourceUpVector, percentage * _flyToTotalAngle, _flyToRotationAxis);
+  // Rotate our normalized source direction, interpolating with time
+  glm::dvec3 rotatedDirection = glm::rotate(_flyToSourceDirection, percentage * _flyToTotalAngle, _flyToRotationAxis);
 
-  if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(rotated)) {
-    glm::dvec3 upVector = glm::normalize(*scaled);
+  // Map the result to a position on our reference ellipsoid
+  if (auto geodeticPosition = this->_ellipsoid.scaleToGeodeticSurface(rotatedDirection)) {
+
+    // Calculate the geodetic up at this position
+    glm::dvec3 geodeticUp = this->_ellipsoid.geodeticSurfaceNormal(*geodeticPosition);
 
     // Add the altitude offset. Start with linear path between source and destination
     // If we have a profile curve, use this as well
@@ -94,7 +98,7 @@ void AGlobeAwareDefaultPawn::_interpolatePosition(double percentage, glm::dvec3&
       altitudeOffset += curveOffset;
     }
 
-    out = *scaled + upVector * altitudeOffset;
+    out = *geodeticPosition + geodeticUp * altitudeOffset;
   }
 }
 
@@ -125,7 +129,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       glm::normalize(ECEFDestination));
   _flyToTotalAngle = glm::angle(flyQuat);
   _flyToRotationAxis = glm::axis(flyQuat);
-  _flyToSourceUpVector = ECEFSource;
 
   this->_currentFlyTime = 0.0;
 
@@ -149,11 +152,18 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   _flyToSourceAltitude = 0.0;
   _flyToDestinationAltitude = 0.0;
 
-  if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(ECEFSource)) {
-    _flyToSourceAltitude = glm::length(ECEFSource - *scaled);
+  if (auto cartographicSource = this->_ellipsoid.cartesianToCartographic(ECEFSource)) {
+    _flyToSourceAltitude = cartographicSource->height;
+
+    cartographicSource->height = 0;
+    glm::dvec3 zeroHeightSource = this->_ellipsoid.cartographicToCartesian(*cartographicSource);
+
+    if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(zeroHeightSource)) {
+      _flyToSourceDirection = glm::normalize(*scaled);
+    }
   }
-  if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(ECEFDestination)) {
-    _flyToDestinationAltitude = glm::length(ECEFDestination - *scaled);
+  if (auto cartographic = this->_ellipsoid.cartesianToCartographic(ECEFDestination)) {
+    _flyToDestinationAltitude = cartographic->height;
   }
 
   // Compute a wanted altitude from curve

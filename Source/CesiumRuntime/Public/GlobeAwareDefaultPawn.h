@@ -257,7 +257,7 @@ private:
   double _flyToMaxAltitude = 0.0;
 
   double _flyToTotalAngle = 0.0;
-  glm::dvec3 _flyToSourceUpVector;
+  glm::dvec3 _flyToSourceDirection;
   glm::dvec3 _flyToRotationAxis;
 
   FQuat _flyToSourceRotation;
