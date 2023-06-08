@@ -158,9 +158,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     cartographicSource->height = 0;
     glm::dvec3 zeroHeightSource = this->_ellipsoid.cartographicToCartesian(*cartographicSource);
 
-    if (auto scaled = this->_ellipsoid.scaleToGeodeticSurface(zeroHeightSource)) {
-      _flyToSourceDirection = glm::normalize(*scaled);
-    }
+    _flyToSourceDirection = glm::normalize(zeroHeightSource);
   }
   if (auto cartographic = this->_ellipsoid.cartesianToCartographic(ECEFDestination)) {
     _flyToDestinationAltitude = cartographic->height;
