@@ -12,6 +12,7 @@
 #include "EngineUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Misc/App.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "ScopedTransaction.h"
 #include "Widgets/Images/SThrobber.h"
 #include "Widgets/Input/SButton.h"

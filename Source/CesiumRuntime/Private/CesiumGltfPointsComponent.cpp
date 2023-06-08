@@ -2,6 +2,7 @@
 
 #include "CesiumGltfPointsComponent.h"
 #include "CesiumGltfPointsSceneProxy.h"
+#include "SceneInterface.h"
 
 // Sets default values for this component's properties
 UCesiumGltfPointsComponent::UCesiumGltfPointsComponent()

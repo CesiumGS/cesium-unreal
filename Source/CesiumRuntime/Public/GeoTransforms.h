@@ -21,7 +21,7 @@ class CESIUMRUNTIME_API GeoTransforms {
 
 public:
   /**
-   * @brief Creates a new instance
+   * @brief Creates a new instance.
    */
   GeoTransforms();
 
@@ -217,8 +217,8 @@ public:
 
 private:
   /**
-   * Update the derived state (i.e. the matrices) when either
-   * the center or the ellipsoid has changed.
+   * Update the derived state (i.e. the local horizontal coordinate system) when
+   * either the center or the ellipsoid has changed.
    */
   void updateTransforms() noexcept;
 

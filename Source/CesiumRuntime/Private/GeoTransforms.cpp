@@ -37,6 +37,8 @@ GeoTransforms::GeoTransforms()
       _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
       _center(0.0),
       _scale(1.0) {
+  // Coordinate system is initialized with the default values. This function
+  // overrides them with proper values.
   this->updateTransforms();
 }
 
@@ -53,6 +55,8 @@ GeoTransforms::GeoTransforms(
       _ellipsoid(ellipsoid),
       _center(center),
       _scale(scale) {
+  // Coordinate system is initialized with the default values. This function
+  // overrides them with proper values.
   this->updateTransforms();
 }
 
@@ -62,6 +66,7 @@ void GeoTransforms::setCenter(const glm::dvec3& center) noexcept {
     updateTransforms();
   }
 }
+
 void GeoTransforms::setEllipsoid(
     const CesiumGeospatial::Ellipsoid& ellipsoid) noexcept {
   if (this->_ellipsoid.getRadii() != ellipsoid.getRadii()) {
