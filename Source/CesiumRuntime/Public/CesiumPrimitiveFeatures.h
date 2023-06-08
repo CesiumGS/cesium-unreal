@@ -20,7 +20,8 @@ USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPrimitiveFeatures {
   GENERATED_USTRUCT_BODY()
 
-  using VertexIDAccessorType = std::variant<
+  using IndexAccessorType = std::variant<
+      std::monostate,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
       CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>>;
@@ -29,7 +30,7 @@ public:
   /**
    * Constructs an empty primitive features instance.
    */
-  FCesiumPrimitiveFeatures() {}
+  FCesiumPrimitiveFeatures() : _vertexCount(0) {}
 
   /**
    * Constructs a primitive features instance.
@@ -47,7 +48,8 @@ public:
 
 private:
   TArray<FCesiumFeatureIdSet> _featureIDSets;
-  VertexIDAccessorType _vertexIDAccessor;
+  IndexAccessorType _vertexIDAccessor;
+  int64_t _vertexCount;
 
   friend class UCesiumPrimitiveFeaturesBlueprintLibrary;
 };
@@ -83,6 +85,16 @@ public:
       ECesiumFeatureIdType Type);
 
   /**
+   * Get the number of vertices in the primitive.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|Features")
+  static int64
+  GetVertexCount(UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures);
+
+  /**
    * Gets the index of the first vertex that makes up a given face of this
    * primitive.
    *
@@ -92,17 +104,18 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|Features")
-  static int64 GetFirstVertexIndexFromFace(
+  static int64 GetFirstVertexFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
       int64 FaceIndex);
 
   /**
    * Gets the feature ID associated with the given face and feature ID set.
    *
-   * This does not interface well with feature ID textures, since feature ID
-   * textures make it possible for a face to have multiple feature IDs. If the
-   * given feature ID set is a feature ID texture, the feature ID of the
-   * first vertex of the face is returned.
+   * This does not interface well with feature ID textures or implicit feature
+   * IDs, since these feature ID types make it possible for a face to have
+   * multiple feature IDs. In these cases, the feature ID of the first
+   * vertex of the face is returned.
+   *
    */
   UFUNCTION(
       BlueprintCallable,

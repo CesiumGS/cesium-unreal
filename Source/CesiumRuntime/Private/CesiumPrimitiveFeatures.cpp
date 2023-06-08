@@ -6,10 +6,39 @@
 
 using namespace CesiumGltf;
 
+struct VertexIndexFromAccessor {
+  int64 operator()(std::monostate) {
+    const int64 vertexIndex = faceIndex * 3;
+    if (vertexIndex < vertexCount) {
+      return vertexIndex;
+    }
+    return -1;
+  }
+
+  template <typename T> int64 operator()(const AccessorView<T>& value) {
+    if (value.status() != AccessorViewStatus::Valid) {
+      // Invalid accessor.
+      return -1;
+    }
+
+    const int64 vertexIndex = faceIndex * 3;
+    if (vertexIndex >= value.size()) {
+      // Invalid face index.
+      return -1;
+    }
+
+    return static_cast<int64>(value[vertexIndex].value[0]);
+  }
+
+  int64 faceIndex;
+  int64 vertexCount;
+};
+
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     const Model& InModel,
     const MeshPrimitive& Primitive,
-    const ExtensionExtMeshFeatures& Features) {
+    const ExtensionExtMeshFeatures& Features)
+    : _vertexCount(0) {
   const Accessor& indicesAccessor =
       InModel.getSafe(InModel.accessors, Primitive.indices);
   switch (indicesAccessor.componentType) {
@@ -29,9 +58,17 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     break;
   }
 
+  auto positionIt = Primitive.attributes.find("POSITION");
+  if (positionIt != Primitive.attributes.end()) {
+    const Accessor& positionAccessor =
+        InModel.getSafe(InModel.accessors, positionIt->second);
+    _vertexCount = positionAccessor.count;
+  }
+
   for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
        Features.featureIds) {
-    this->_featureIDSets.Add(FCesiumFeatureIdSet(InModel, Primitive, FeatureId));
+    this->_featureIDSets.Add(
+        FCesiumFeatureIdSet(InModel, Primitive, FeatureId));
   }
 }
 
@@ -47,32 +84,30 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
     ECesiumFeatureIdType Type) {
   TArray<FCesiumFeatureIdSet> featureIDSets;
   for (int32 i = 0; i < PrimitiveFeatures._featureIDSets.Num(); i++) {
-    const FCesiumFeatureIdSet& featureIDSet = PrimitiveFeatures._featureIDSets[i];
-    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet) == Type) {
+    const FCesiumFeatureIdSet& featureIDSet =
+        PrimitiveFeatures._featureIDSets[i];
+    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet) ==
+        Type) {
       featureIDSets.Add(featureIDSet);
     }
   }
   return featureIDSets;
 }
 
-int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace(
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetVertexCount(
+    UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures) {
+  return PrimitiveFeatures._vertexCount;
+}
+
+int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
     int64 FaceIndex) {
+  if (FaceIndex < 0) {
+    return -1;
+  }
+
   return std::visit(
-      [FaceIndex](const auto& accessor) {
-        int64 index = FaceIndex * 3;
-
-        if (accessor.status() != AccessorViewStatus::Valid) {
-          // No indices, so each successive face is just the next three
-          // vertices.
-          return index;
-        } else if (index >= accessor.size()) {
-          // Invalid face index.
-          return -1LL;
-        }
-
-        return int64(accessor[index].value[0]);
-      },
+      VertexIndexFromAccessor{FaceIndex, PrimitiveFeatures._vertexCount},
       PrimitiveFeatures._vertexIDAccessor);
 }
 
@@ -82,7 +117,7 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
     int64 FaceIndex) {
   return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
       FeatureIDSet,
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexIndexFromFace(
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
           PrimitiveFeatures,
           FaceIndex));
 }

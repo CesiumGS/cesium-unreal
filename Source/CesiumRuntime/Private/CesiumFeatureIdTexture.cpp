@@ -12,6 +12,8 @@ using namespace CesiumGltf;
 using namespace CesiumGltf::MeshFeatures;
 
 namespace {
+// There's technically no invalid texcoord values because of clamp / wrap
+// behavior, so we use an optional to denote an invalid value.
 struct TexCoordFromAccessor {
   std::optional<glm::vec2> operator()(std::monostate) { return std::nullopt; }
 
@@ -68,28 +70,39 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
       _texCoordAccessor(),
       _textureCoordinateIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
-  if (_featureIdTextureView.status() ==
-      FeatureIdTextureViewStatus::ErrorInvalidChannels) {
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidChannelAccess;
+  switch (_featureIdTextureView.status()) {
+  case FeatureIdTextureViewStatus::Valid:
+    _status = ECesiumFeatureIdTextureStatus::Valid;
+    break;
+  case FeatureIdTextureViewStatus::ErrorInvalidTexCoordSetIndex:
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordSetIndex;
+    return;
+  case FeatureIdTextureViewStatus::ErrorInvalidChannels:
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
+    return;
+  default:
+    // Error with the texture or image. The status is already set by the
+    // initializer list.
     return;
   }
 
-  if (_featureIdTextureView.status() != FeatureIdTextureViewStatus::Valid) {
-    return;
-  }
-
+  // The initial implementation of FCesiumFeatureIDTexture did not construct
+  // with an "owner" primitive in mind. It was possible to access the texture
+  // data with arbitrary coordinates.
+  //
+  // To maintain this possibility with EXT_mesh_features, the texture view will
+  // still be valid if the intended texcoords don't exist. However, feature IDs
+  // won't be retrievable by vertex index.
   const std::string texCoordName =
       "TEXCOORD_" + std::to_string(_textureCoordinateIndex);
   auto texCoord = Primitive.attributes.find(texCoordName);
   if (texCoord == Primitive.attributes.end()) {
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoord;
     return;
   }
 
   const Accessor* accessor =
       InModel.getSafe<Accessor>(&InModel.accessors, texCoord->second);
   if (!accessor || accessor->type != Accessor::Type::VEC2) {
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
     return;
   }
 
@@ -97,7 +110,6 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
     if (!accessor->normalized) {
       // Unsigned byte texcoords must be normalized.
-      _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
       return;
     }
 
@@ -109,7 +121,6 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
     if (!accessor->normalized) {
       // Unsigned short texcoords must be normalized.
-      _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
       return;
     }
 
@@ -125,11 +136,8 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
             *accessor);
     break;
   default:
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordAccessor;
-    return;
+    break;
   }
-
-  _status = ECesiumFeatureIdTextureStatus::Valid;
 }
 
 const FString& UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(

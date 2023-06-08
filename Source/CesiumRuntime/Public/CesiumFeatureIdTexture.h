@@ -14,12 +14,11 @@ struct ExtensionExtMeshFeaturesFeatureIdTexture;
 } // namespace CesiumGltf
 
 UENUM(BlueprintType)
-enum class ECesiumFeatureIdTextureStatus : uint8 {
+enum ECesiumFeatureIdTextureStatus {
   Valid = 0,
   ErrorInvalidTexture,
-  ErrorInvalidTexCoord,
-  ErrorInvalidTexCoordAccessor,
-  ErrorInvalidChannelAccess
+  ErrorInvalidTextureAccess,
+  ErrorInvalidTexCoordSetIndex
 };
 
 /**
@@ -51,10 +50,10 @@ public:
    * @brief Constructs a feature ID attribute instance.
    *
    * @param InModel The model.
-   * @param Primitive The mesh primitive containing the feature ID attribute.
-   * @param FeatureIDAttribute The attribute index specified by the
+   * @param Primitive The mesh primitive containing the feature ID texture.
+   * @param FeatureIdTexture The texture specified by the
    * ExtensionExtMeshFeaturesFeatureId.
-   * @param PropertyTableName The name of the property table this attribute
+   * @param PropertyTableName The name of the property table this texture
    * corresponds to, if one exists, for backwards compatibility.
    */
   FCesiumFeatureIdTexture(

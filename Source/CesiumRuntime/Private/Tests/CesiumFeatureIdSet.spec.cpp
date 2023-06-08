@@ -5,6 +5,7 @@
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;
+using namespace CesiumGltf::MeshFeatures;
 
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdSetSpec,
@@ -79,18 +80,55 @@ void FCesiumFeatureIdSetSpec::Define() {
           featureID.featureCount);
     });
 
-    // It("constructs from feature ID texture", [this]() {
+    It("constructs from feature ID texture", [this]() {
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      const std::vector<glm::vec2> texCoords{
+          glm::vec2(0, 0),
+          glm::vec2(0.45, 0),
+          glm::vec2(0, 0.45),
+          glm::vec2(0.6, 0.6)};
 
-    //  FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, *pFeatureId);
-    //  TestEqual(
-    //      "FeatureIDType",
-    //      UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-    //      ECesiumFeatureIdType::Attribute);
-    //  TestEqual(
-    //      "FeatureCount",
-    //      UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-    //      pFeatureId->featureCount);
-    //});
+      ExtensionExtMeshFeaturesFeatureId& featureId =
+          AddFeatureIDsAsTextureToModel(
+              model,
+              *pPrimitive,
+              featureIDs,
+              4,
+              2,
+              2,
+              texCoords);
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      TestEqual(
+          "FeatureIDType",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
+          ECesiumFeatureIdType::Texture);
+      TestEqual(
+          "FeatureCount",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
+          featureId.featureCount);
+    });
+
+    It("constructs with property table index", [this]() {
+      ExtensionExtMeshFeaturesFeatureId featureId;
+      featureId.featureCount = 10;
+      featureId.propertyTable = 1;
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      TestEqual(
+          "FeatureIDType",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
+          ECesiumFeatureIdType::Implicit);
+      TestEqual(
+          "FeatureCount",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
+          featureId.featureCount);
+      TestEqual(
+          "PropertyTableIndex",
+          UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
+              featureIDSet),
+          *featureId.propertyTable);
+    });
   });
 
   Describe("GetAsFeatureIDAttribute", [this]() {
@@ -109,11 +147,11 @@ void FCesiumFeatureIdSetSpec::Define() {
           UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
               featureIDSet);
       TestEqual(
-          "Attribute Status",
+          "AttributeStatus",
           UCesiumFeatureIdAttributeBlueprintLibrary::
               GetFeatureIDAttributeStatus(attribute),
           ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute);
-      TestEqual("Attribute Index", attribute.getAttributeIndex(), -1);
+      TestEqual("AttributeIndex", attribute.getAttributeIndex(), -1);
     });
 
     It("returns valid instance for attribute feature ID set", [this]() {
@@ -132,14 +170,181 @@ void FCesiumFeatureIdSetSpec::Define() {
           UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
               featureIDSet);
       TestEqual(
-          "Attribute Status",
+          "AttributeStatus",
           UCesiumFeatureIdAttributeBlueprintLibrary::
               GetFeatureIDAttributeStatus(attribute),
           ECesiumFeatureIdAttributeStatus::Valid);
       TestEqual(
-          "Attribute Index",
+          "AttributeIndex",
           attribute.getAttributeIndex(),
           attributeIndex);
+    });
+  });
+
+  Describe("GetAsFeatureIDTexture", [this]() {
+    BeforeEach([this]() {
+      model = Model();
+      Mesh& mesh = model.meshes.emplace_back();
+      pPrimitive = &mesh.primitives.emplace_back();
+    });
+
+    It("returns empty instance for non-texture feature ID set", [this]() {
+      ExtensionExtMeshFeaturesFeatureId featureId;
+      featureId.featureCount = 10;
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      const FCesiumFeatureIdTexture texture =
+          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
+              featureIDSet);
+      TestEqual(
+          "TextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              texture),
+          ECesiumFeatureIdTextureStatus::ErrorInvalidTexture);
+
+      auto featureIDTextureView = texture.getFeatureIdTextureView();
+      TestEqual(
+          "FeatureIDTextureViewStatus",
+          featureIDTextureView.status(),
+          FeatureIdTextureViewStatus::ErrorUninitialized);
+    });
+
+    It("returns valid instance for texture feature ID set", [this]() {
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      const std::vector<glm::vec2> texCoords{
+          glm::vec2(0, 0),
+          glm::vec2(0.45, 0),
+          glm::vec2(0, 0.45),
+          glm::vec2(0.6, 0.6)};
+
+      ExtensionExtMeshFeaturesFeatureId& featureId =
+          AddFeatureIDsAsTextureToModel(
+              model,
+              *pPrimitive,
+              featureIDs,
+              4,
+              2,
+              2,
+              texCoords);
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      const FCesiumFeatureIdTexture texture =
+          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
+              featureIDSet);
+      TestEqual(
+          "TextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              texture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      auto featureIDTextureView = texture.getFeatureIdTextureView();
+      TestEqual(
+          "FeatureIDTextureViewStatus",
+          featureIDTextureView.status(),
+          FeatureIdTextureViewStatus::Valid);
+    });
+  });
+
+  Describe("GetFeatureIDForVertex", [this]() {
+    BeforeEach([this]() {
+      model = Model();
+      Mesh& mesh = model.meshes.emplace_back();
+      pPrimitive = &mesh.primitives.emplace_back();
+    });
+
+    It("returns -1 for empty feature ID set", [this]() {
+      FCesiumFeatureIdSet featureIDSet;
+      TestEqual(
+          "FeatureIDForVertex",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
+              featureIDSet,
+              0),
+          -1);
+    });
+
+    It("returns -1 for out of bounds index", [this]() {
+      ExtensionExtMeshFeaturesFeatureId featureId;
+      featureId.featureCount = 10;
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      TestEqual(
+          "FeatureIDForVertex",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
+              featureIDSet,
+              -1),
+          -1);
+      TestEqual(
+          "FeatureIDForVertex",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
+              featureIDSet,
+              11),
+          -1);
+    });
+
+    It("returns correct value for implicit set", [this]() {
+      ExtensionExtMeshFeaturesFeatureId featureId;
+      featureId.featureCount = 10;
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      for (int64 i = 0; i < featureId.featureCount; i++) {
+        TestEqual(
+            "FeatureIDForVertex",
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
+                featureIDSet,
+                i),
+            i);
+      }
+    });
+
+    It("returns correct value for attribute set", [this]() {
+      const int64 attributeIndex = 0;
+      const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
+      ExtensionExtMeshFeaturesFeatureId& featureID =
+          AddFeatureIDsAsAttributeToModel(
+              model,
+              *pPrimitive,
+              featureIDs,
+              4,
+              attributeIndex);
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
+      for (size_t i = 0; i < featureIDs.size(); i++) {
+        TestEqual(
+            "FeatureIDForVertex",
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
+                featureIDSet,
+                static_cast<int64>(i)),
+            featureIDs[i]);
+      }
+    });
+
+    It("returns correct value for texture set", [this]() {
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      const std::vector<glm::vec2> texCoords{
+          glm::vec2(0, 0),
+          glm::vec2(0.45, 0),
+          glm::vec2(0, 0.45),
+          glm::vec2(0.6, 0.6)};
+
+      ExtensionExtMeshFeaturesFeatureId& featureId =
+          AddFeatureIDsAsTextureToModel(
+              model,
+              *pPrimitive,
+              featureIDs,
+              4,
+              2,
+              2,
+              texCoords);
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      for (size_t i = 0; i < featureIDs.size(); i++) {
+        TestEqual(
+            "FeatureIDForVertex",
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
+                featureIDSet,
+                static_cast<int64>(i)),
+            featureIDs[i]);
+      }
     });
   });
 
@@ -184,6 +389,50 @@ void FCesiumFeatureIdSetSpec::Define() {
              "GetFeatureTableName",
              UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
                  attribute),
+             FString(expectedName.c_str()));
+       });
+
+    It("backwards compatibility for FCesiumFeatureIdTexture.GetFeatureTableName",
+       [this]() {
+         const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+         const std::vector<glm::vec2> texCoords{
+             glm::vec2(0, 0),
+             glm::vec2(0.45, 0),
+             glm::vec2(0, 0.45),
+             glm::vec2(0.6, 0.6)};
+
+         ExtensionExtMeshFeaturesFeatureId& featureId =
+             AddFeatureIDsAsTextureToModel(
+                 model,
+                 *pPrimitive,
+                 featureIDs,
+                 4,
+                 2,
+                 2,
+                 texCoords);
+         featureId.propertyTable = 0;
+
+         const std::string expectedName = "PropertyTableName";
+
+         ExtensionModelExtStructuralMetadata& metadataExtension =
+             model.addExtension<ExtensionModelExtStructuralMetadata>();
+         ExtensionExtStructuralMetadataPropertyTable& propertyTable =
+             metadataExtension.propertyTables.emplace_back();
+         propertyTable.name = expectedName;
+
+         FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+         const FCesiumFeatureIdTexture texture =
+             UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
+                 featureIDSet);
+         TestEqual(
+             "TextureStatus",
+             UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+                 texture),
+             ECesiumFeatureIdTextureStatus::Valid);
+         TestEqual(
+             "GetFeatureTableName",
+             UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
+                 texture),
              FString(expectedName.c_str()));
        });
   });

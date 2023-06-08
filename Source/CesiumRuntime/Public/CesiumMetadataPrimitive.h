@@ -111,7 +111,8 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary and FCesiumPrimitiveFeatures instead."))
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated."))
+    // TODO: properly deprecate this function when metadata is overhauled
   static const TArray<FString>&
   GetFeatureTextureNames(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -129,7 +130,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFirstVertexIndexFromFace with FCesiumPrimitiveFeatures instead."))
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFirstVertexFromFace with FCesiumPrimitiveFeatures instead."))
   static int64 GetFirstVertexIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
       int64 FaceID);

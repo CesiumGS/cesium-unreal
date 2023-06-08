@@ -1,14 +1,18 @@
 #pragma once
 
-#include "CesiumGltf/Model.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltf/Model.h"
 #include <glm/glm.hpp>
 #include <vector>
 
-void CreateAttributeForPrimitive(
+/**
+ * @brief Adds the buffer to the given primitive, creating a buffer view and
+ * accessor in the process.
+ * @returns The index of the accessor.
+ */
+int32_t AddBufferToPrimitive(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
-    const std::string& attributeName,
     const std::string& type,
     const int32_t componentType,
     const std::vector<std::byte>&& values) {
@@ -25,13 +29,64 @@ void CreateAttributeForPrimitive(
   accessor.bufferView = static_cast<int32_t>(model.bufferViews.size() - 1);
   accessor.type = type;
   accessor.componentType = componentType;
-  accessor.count =
-      buffer.byteLength / Accessor::computeByteSizeOfComponent(componentType);
 
-  primitive.attributes.insert(
-      {attributeName, static_cast<int32_t>(model.accessors.size() - 1)});
+  const int64_t elementByteSize =
+      Accessor::computeByteSizeOfComponent(componentType) *
+      Accessor::computeNumberOfComponents(type);
+  accessor.count = buffer.byteLength / elementByteSize;
+
+  return static_cast<int32_t>(model.accessors.size() - 1);
 }
 
+/**
+ * @brief Creates an attribute on the given primitive, including a buffer,
+ * buffer view, and accessor for the given values.
+ */
+void CreateAttributeForPrimitive(
+    CesiumGltf::Model& model,
+    CesiumGltf::MeshPrimitive& primitive,
+    const std::string& attributeName,
+    const std::string& type,
+    const int32_t componentType,
+    const std::vector<std::byte>&& values) {
+  const int32_t accessor = AddBufferToPrimitive(
+      model,
+      primitive,
+      type,
+      componentType,
+      std::move(values));
+  primitive.attributes.insert({attributeName, accessor});
+}
+
+/**
+ * @brief Creates indices for the given primitive, including a buffer,
+ * buffer view, and accessor for the given values.
+ */
+void CreateIndicesForPrimitive(
+    CesiumGltf::Model& model,
+    CesiumGltf::MeshPrimitive& primitive,
+    const std::string& type,
+    const int32_t componentType,
+    const std::vector<uint8_t>& indices) {
+  std::vector<std::byte> values(indices.size());
+  std::memcpy(values.data(), indices.data(), values.size());
+
+  const int32_t accessor = AddBufferToPrimitive(
+      model,
+      primitive,
+      type,
+      componentType,
+      std::move(values));
+  primitive.indices = accessor;
+}
+
+/**
+ * @brief Adds the feature IDs to the given primitive as a feature ID attribute
+ * in EXT_mesh_features. If the primitive doesn't already contain
+ * EXT_mesh_features, this function adds it.
+ *
+ * @returns The newly created feature ID in the primitive extension.
+ */
 ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
@@ -64,6 +119,14 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
   return featureID;
 }
 
+/**
+ * @brief Adds the feature IDs to the given primitive as a feature ID texture
+ * in EXT_mesh_features. This also adds the given texcoords to the primitive as
+ * a TEXCOORD_0 attribute. If the primitive doesn't already contain
+ * EXT_mesh_features, this function adds it.
+ *
+ * @returns The newly created feature ID in the primitive extension.
+ */
 ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,

@@ -118,7 +118,7 @@ public:
 
   /**
    * Get the number of vertices in the primitive containing the feature
-   * ID attribute. If th feature ID attribute is invalid, this returns 0.
+   * ID attribute. If the feature ID attribute is invalid, this returns 0.
    */
   UFUNCTION(
       BlueprintCallable,
