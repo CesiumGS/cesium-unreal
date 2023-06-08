@@ -5,6 +5,7 @@
 ##### Breaking Changes :mega:
 
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
+- Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. The flight path interpolation logic has been reworked to always provide the highest quality, so this property no longer needs to exist. Should load from existing blueprints, but not save. C++ code that references the property name directly will no longer compile. Please change any affected C++ code from `FlyToGranularityDegrees` to `FlyToGranularityDegrees_DEPRECATED`.
 
 ### v1.27.0 - 2023-06-1
 
