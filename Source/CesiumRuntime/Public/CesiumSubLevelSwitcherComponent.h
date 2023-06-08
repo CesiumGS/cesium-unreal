@@ -72,14 +72,15 @@ public:
 
 private:
   /**
-   * Ensures that there are not multiple visible sub-levels by deactivating
-   * any additional sublevels after the first one.
+   * Ensures that there are not multiple visible sub-levels in the Editor by
+   * deactivating any additional sublevels after the first one.
    */
-  void _ensureZeroOrOneSubLevelsAreActive();
+  void _ensureZeroOrOneSubLevelsAreActiveInEditor();
 
-  void _deactivateSubLevel(ACesiumSubLevelInstance* SubLevel);
-  void _activateSubLevel(ACesiumSubLevelInstance* SubLevel);
-  bool _isSubLevelActive(ACesiumSubLevelInstance* SubLevel) const;
+  void _updateSubLevelStateGame();
+#if WITH_EDITOR
+  void _updateSubLevelStateEditor();
+#endif
 
   /**
    * Finds the ULevelStreaming instance, if any, associated with a given

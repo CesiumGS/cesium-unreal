@@ -42,13 +42,17 @@ void ACesiumSubLevelInstance::SetGeoreference(
 }
 
 void ACesiumSubLevelInstance::ActivateSubLevel() {
-  // Apply the sub-level's origin to this georeference.
+  // Apply the sub-level's origin to this georeference, if it's different.
   if (IsValid(this->ResolvedGeoreference)) {
-    this->ResolvedGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-        glm::dvec3(
-            this->OriginLongitude,
-            this->OriginLatitude,
-            this->OriginHeight));
+    if (this->OriginLongitude != this->ResolvedGeoreference->OriginLongitude ||
+        this->OriginLatitude != this->ResolvedGeoreference->OriginLatitude ||
+        this->OriginHeight != this->ResolvedGeoreference->OriginHeight) {
+      this->ResolvedGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+          glm::dvec3(
+              this->OriginLongitude,
+              this->OriginLatitude,
+              this->OriginHeight));
+    }
   }
 }
 
