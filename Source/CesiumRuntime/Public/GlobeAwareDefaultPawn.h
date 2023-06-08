@@ -113,11 +113,11 @@ public:
    * the flight interpolation.
    */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium",
-      meta = (ClampMin = 0.0))
-  float FlyToGranularityDegrees = 0.01f;
+      meta =
+        (DeprecatedProperty,
+         DeprecationMessage =
+               "FlyToGranularityDegrees has been deprecated. Flight interpolation is now always of the highest quality."))
+  float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
   /**
    * A delegate that will be called whenever the pawn finishes flying
@@ -138,8 +138,7 @@ public:
    * (ECEF) destination such that the camera ends at the specified yaw and
    * pitch. The characteristics of the flight can be configured with
    * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
-   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
-   * {@see FlyToGranularityDegrees}.
+   * {@see FlyToMaximumAltitudeCurve}, and {@see FlyToDuration}
    */
   void FlyToLocationECEF(
       const glm::dvec3& ECEFDestination,
@@ -152,8 +151,7 @@ public:
    * (ECEF) destination such that the camera ends at the specified yaw and
    * pitch. The characteristics of the flight can be configured with
    * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
-   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
-   * {@see FlyToGranularityDegrees}.
+   * {@see FlyToMaximumAltitudeCurve}, and {@see FlyToDuration}
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void FlyToLocationECEF(
@@ -168,7 +166,7 @@ public:
    * ends at the given yaw and pitch. The characteristics of the flight can be
    * configured with {@see FlyToAltitudeProfileCurve},
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
-   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   * and {@see FlyToDuration}
    */
   void FlyToLocationLongitudeLatitudeHeight(
       const glm::dvec3& LongitudeLatitudeHeightDestination,
