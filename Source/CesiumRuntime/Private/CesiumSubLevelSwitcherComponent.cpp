@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "LevelInstance/LevelInstanceLevelStreaming.h"
 #include "LevelInstance/LevelInstanceSubsystem.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 #if WITH_EDITOR
 #include "Editor.h"
