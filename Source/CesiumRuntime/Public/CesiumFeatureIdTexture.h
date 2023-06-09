@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CesiumFeatureTable.h"
-#include "CesiumGltf/MeshFeaturesFeatureIdTextureView.h"
+#include "CesiumGltf/FeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdTexture.generated.h"
@@ -63,14 +63,14 @@ public:
           FeatureIdTexture,
       const FString& PropertyTableName);
 
-  constexpr const CesiumGltf::MeshFeatures::FeatureIdTextureView&
+  constexpr const CesiumGltf::FeatureIdTextureView&
   getFeatureIdTextureView() const {
     return this->_featureIdTextureView;
   }
 
 private:
   ECesiumFeatureIdTextureStatus _status;
-  CesiumGltf::MeshFeatures::FeatureIdTextureView _featureIdTextureView;
+  CesiumGltf::FeatureIdTextureView _featureIdTextureView;
   TexCoordAccessorType _texCoordAccessor;
   int64 _textureCoordinateIndex;
 

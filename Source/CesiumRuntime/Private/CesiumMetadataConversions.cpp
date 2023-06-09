@@ -33,12 +33,12 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
 }
 
 ECesiumMetadataBlueprintType
-CesiumMetadataTypesToBlueprintType(FCesiumMetadataTypes types) {
-  if (types.bIsArray) {
+CesiumMetadataTypesToBlueprintType(FCesiumMetadataValueType ValueType) {
+  if (ValueType.bIsArray) {
     return ECesiumMetadataBlueprintType::Array;
   }
-  ECesiumMetadataType type = types.Type;
-  ECesiumMetadataComponentType componentType = types.ComponentType;
+  ECesiumMetadataType type = ValueType.Type;
+  ECesiumMetadataComponentType componentType = ValueType.ComponentType;
 
   if (type == ECesiumMetadataType::Boolean) {
     return ECesiumMetadataBlueprintType::Boolean;
@@ -95,10 +95,10 @@ CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType) {
   }
 }
 
-
-ECesiumMetadataPackedGpuType CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataTypes types) {
-  ECesiumMetadataType type = types.Type;
-  ECesiumMetadataComponentType componentType = types.ComponentType;
+ECesiumMetadataPackedGpuType
+CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataValueType ValueType) {
+  ECesiumMetadataType type = ValueType.Type;
+  ECesiumMetadataComponentType componentType = ValueType.ComponentType;
 
   if (type == ECesiumMetadataType::Boolean) {
     return ECesiumMetadataPackedGpuType::Uint8;
@@ -113,13 +113,13 @@ ECesiumMetadataPackedGpuType CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMe
     case ECesiumMetadataComponentType::Float64: // lossy
     case ECesiumMetadataComponentType::Int16:
     case ECesiumMetadataComponentType::Uint16:
-    case ECesiumMetadataComponentType::Int32: // lossy or reinterpreted
+    case ECesiumMetadataComponentType::Int32:  // lossy or reinterpreted
     case ECesiumMetadataComponentType::Uint32: // lossy or reinterpreted
     case ECesiumMetadataComponentType::Int64:  // lossy
     case ECesiumMetadataComponentType::Uint64: // lossy
       return ECesiumMetadataPackedGpuType::Float;
     default:
-      return ECesiumMetadataPackedGpuType::None; 
+      return ECesiumMetadataPackedGpuType::None;
     }
   }
 

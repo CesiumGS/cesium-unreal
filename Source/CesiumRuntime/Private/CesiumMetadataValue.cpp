@@ -7,25 +7,25 @@
 ECesiumMetadataBlueprintType
 UCesiumMetadataValueBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return CesiumMetadataTypesToBlueprintType(Value._types);
+  return CesiumMetadataTypesToBlueprintType(Value._valueType);
 }
 
 ECesiumMetadataBlueprintType
 UCesiumMetadataValueBlueprintLibrary::GetArrayElementBlueprintType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  if (!Value._types.bIsArray) {
+  if (!Value._valueType.bIsArray) {
     return ECesiumMetadataBlueprintType::None;
   }
 
-  FCesiumMetadataTypes types(Value._types);
+  FCesiumMetadataValueType types(Value._valueType);
   types.bIsArray = false;
 
   return CesiumMetadataTypesToBlueprintType(types);
 }
 
-FCesiumMetadataTypes UCesiumMetadataValueBlueprintLibrary::GetTypes(
+FCesiumMetadataValueType UCesiumMetadataValueBlueprintLibrary::GetValueType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return Value._types;
+  return Value._valueType;
 }
 
 bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(

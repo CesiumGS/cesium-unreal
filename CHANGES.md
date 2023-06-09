@@ -12,8 +12,13 @@
 - FCesiumFeatureTable -> FCesiumPropertyTable
 
 - Feature IDs are now parsed through the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`.
-- Metadata is now parsed through the `EXT_structural_metadata` extension. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
-- Renamed `FCesiumMetadataModel` to `FCesiumModelMetadata`.
+- Metadata is now parsed through the `EXT_structural_metadata` extension. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible. This includes the following API changes:
+  - Renamed `FCesiumMetadataModel` to `FCesiumModelMetadata`.
+  - Renamed `FCesiumFeatureTable` to `FCesiumPropertyTable`. `FCesiumFeatureTable.GetNumberOfFeatures` is now `FCesiumPropertyTable.GetNumberOfElements`.
+  - Renamed `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty`.
+  - Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
+  - Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
+  - Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` has now become `GetPropertyNames`.
 - Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 
@@ -31,6 +36,7 @@
 - `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are less applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
 - `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
 -`UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace` instead.
+- `ECesiumMetadataTrueType` has been deprecated.
 
 ### v1.27.0 - 2023-06-1
 

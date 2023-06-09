@@ -13,10 +13,17 @@ struct Model;
 struct ExtensionExtStructuralMetadataPropertyTable;
 } // namespace CesiumGltf
 
+UENUM(BlueprintType)
+enum class ECesiumPropertyTableStatus : uint8 {
+  Valid = 0,
+  ErrorInvalidMetadataExtension,
+  ErrorInvalidPropertyTableClass
+};
+
 /**
  * A Blueprint-accessible wrapper for a glTF property table. A property table is
- * a collection of properties for the features in a mesh. It also knows how to
- * look up the feature ID associated with a given mesh vertex.
+ * a collection of properties for the features in a mesh. It knows how to
+ * look up the metadata values associated with a given feature ID.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumPropertyTable {
@@ -24,9 +31,10 @@ struct CESIUMRUNTIME_API FCesiumPropertyTable {
 
 public:
   /**
-   * Construct an empty feature table.
+   * Construct an empty property table instance.
    */
-  FCesiumPropertyTable(){};
+  FCesiumPropertyTable()
+      : _status(ECesiumPropertyTableStatus::ErrorInvalidMetadataExtension){};
 
   /**
    * Constructs a property table from a glTF Property Table.
@@ -40,6 +48,7 @@ public:
           PropertyTable);
 
 private:
+  ECesiumPropertyTableStatus _status;
   int64 _count;
   TMap<FString, FCesiumPropertyTableProperty> _properties;
 
@@ -53,8 +62,20 @@ class CESIUMRUNTIME_API UCesiumPropertyTableBlueprintLibrary
 
 public:
   /**
-   * Gets the number of elements in the property table. If an error occurred
-   * while parsing the property table, this returns zero.
+   * Gets the status of the property table. If an error occurred while parsing
+   * the property table from the glTF extension, this briefly conveys why.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTable")
+  static ECesiumPropertyTableStatus
+  GetPropertyTableStatus(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
+
+  /**
+   * Gets the number of elements in the property table. In other words, this is
+   * how many values each property in the table is expected to have. If an error
+   * occurred while parsing the property table, this returns zero.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -83,8 +104,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTable")
-  static TMap<FString, FCesiumMetadataValue>
-  GetMetadataValuesForFeatureID(
+  static TMap<FString, FCesiumMetadataValue> GetMetadataValuesForFeatureID(
       UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
       int64 FeatureID);
 

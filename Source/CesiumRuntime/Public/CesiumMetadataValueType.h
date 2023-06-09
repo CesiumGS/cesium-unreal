@@ -34,67 +34,78 @@ enum class ECesiumMetadataPackedGpuType : uint8 { None, Uint8, Float };
 
 // UE requires us to have an enum with the value 0.
 // Invalid / None should have that value, but just make sure.
-static_assert(int(CesiumGltf::StructuralMetadata::PropertyType::Invalid) == 0);
-static_assert(
-    int(CesiumGltf::StructuralMetadata::PropertyComponentType::None) == 0);
+static_assert(int(CesiumGltf::PropertyType::Invalid) == 0);
+static_assert(int(CesiumGltf::PropertyComponentType::None) == 0);
 
 // TODO: deprecate
 UENUM(BlueprintType)
 enum class ECesiumMetadataTrueType : uint8 {
   None = 0,
-  Int8 = int(CesiumGltf::PropertyType::Int8),
-  Uint8 = int(CesiumGltf::PropertyType::Uint8),
-  Int16 = int(CesiumGltf::PropertyType::Int16),
-  Uint16 = int(CesiumGltf::PropertyType::Uint16),
-  Int32 = int(CesiumGltf::PropertyType::Int32),
-  Uint32 = int(CesiumGltf::PropertyType::Uint32),
-  Int64 = int(CesiumGltf::PropertyType::Int64),
-  Uint64 = int(CesiumGltf::PropertyType::Uint64),
-  Float32 = int(CesiumGltf::PropertyType::Float32),
-  Float64 = int(CesiumGltf::PropertyType::Float64),
-  Boolean = int(CesiumGltf::PropertyType::Boolean),
-  Enum = int(CesiumGltf::PropertyType::Enum),
-  String = int(CesiumGltf::PropertyType::String),
-  Array = int(CesiumGltf::PropertyType::Array)
+  Int8,
+  Uint8,
+  Int16,
+  Uint16,
+  Int32,
+  Uint32,
+  Int64,
+  Uint64,
+  Float32,
+  Float64,
+  Boolean,
+  Enum,
+  String,
+  Array
 };
 
 UENUM(BlueprintType)
 enum class ECesiumMetadataType : uint8 {
   Invalid = 0,
-  Scalar = int(CesiumGltf::StructuralMetadata::PropertyType::Scalar),
-  Vec2 = int(CesiumGltf::StructuralMetadata::PropertyType::Vec2),
-  Vec3 = int(CesiumGltf::StructuralMetadata::PropertyType::Vec3),
-  Vec4 = int(CesiumGltf::StructuralMetadata::PropertyType::Vec4),
-  Mat2 = int(CesiumGltf::StructuralMetadata::PropertyType::Mat2),
-  Mat3 = int(CesiumGltf::StructuralMetadata::PropertyType::Mat3),
-  Mat4 = int(CesiumGltf::StructuralMetadata::PropertyType::Mat4),
-  Boolean = int(CesiumGltf::StructuralMetadata::PropertyType::Boolean),
-  Enum = int(CesiumGltf::StructuralMetadata::PropertyType::Enum),
-  String = int(CesiumGltf::StructuralMetadata::PropertyType::String),
+  Scalar = int(CesiumGltf::PropertyType::Scalar),
+  Vec2 = int(CesiumGltf::PropertyType::Vec2),
+  Vec3 = int(CesiumGltf::PropertyType::Vec3),
+  Vec4 = int(CesiumGltf::PropertyType::Vec4),
+  Mat2 = int(CesiumGltf::PropertyType::Mat2),
+  Mat3 = int(CesiumGltf::PropertyType::Mat3),
+  Mat4 = int(CesiumGltf::PropertyType::Mat4),
+  Boolean = int(CesiumGltf::PropertyType::Boolean),
+  Enum = int(CesiumGltf::PropertyType::Enum),
+  String = int(CesiumGltf::PropertyType::String),
 };
 
 UENUM(BlueprintType)
 enum class ECesiumMetadataComponentType : uint8 {
   None = 0,
-  Int8 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Int8),
-  Uint8 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Uint8),
-  Int16 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Int16),
-  Uint16 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Uint16),
-  Int32 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Int32),
-  Uint32 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Uint32),
-  Int64 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Int64),
-  Uint64 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Uint64),
-  Float32 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Float32),
-  Float64 = int(CesiumGltf::StructuralMetadata::PropertyComponentType::Float64),
+  Int8 = int(CesiumGltf::PropertyComponentType::Int8),
+  Uint8 = int(CesiumGltf::PropertyComponentType::Uint8),
+  Int16 = int(CesiumGltf::PropertyComponentType::Int16),
+  Uint16 = int(CesiumGltf::PropertyComponentType::Uint16),
+  Int32 = int(CesiumGltf::PropertyComponentType::Int32),
+  Uint32 = int(CesiumGltf::PropertyComponentType::Uint32),
+  Int64 = int(CesiumGltf::PropertyComponentType::Int64),
+  Uint64 = int(CesiumGltf::PropertyComponentType::Uint64),
+  Float32 = int(CesiumGltf::PropertyComponentType::Float32),
+  Float64 = int(CesiumGltf::PropertyComponentType::Float64),
 };
 
 /**
- * Represents the true types of a metadata property according to how the
+ * Represents the true value type of a metadata property according to how the
  * property is defined in EXT_structural_metadata.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumMetadataTypes {
+struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   GENERATED_USTRUCT_BODY()
+
+  FCesiumMetadataValueType()
+      : Type(ECesiumMetadataType::Invalid),
+        ComponentType(ECesiumMetadataComponentType::None),
+        bIsArray(false) {}
+
+  FCesiumMetadataValueType(
+      ECesiumMetadataType InType,
+      ECesiumMetadataComponentType InComponentType,
+      bool IsArray)
+      : Type(InType), ComponentType(InComponentType), bIsArray(IsArray) {}
+
   ECesiumMetadataType Type;
   ECesiumMetadataComponentType ComponentType;
   bool bIsArray;

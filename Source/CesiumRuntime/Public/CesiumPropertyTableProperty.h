@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CesiumGltf/StructuralMetadataPropertyTablePropertyView.h"
-#include "CesiumGltf/StructuralMetadataPropertyTypeTraits.h"
+#include "CesiumGltf/PropertyTablePropertyView.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
@@ -26,13 +26,11 @@ struct CESIUMRUNTIME_API FCesiumPropertyTableProperty {
 private:
 #pragma region PropertyType declaration
   template <typename T>
-  using PropertyView =
-      CesiumGltf::StructuralMetadata::PropertyTablePropertyView<T>;
+  using PropertyView = CesiumGltf::PropertyTablePropertyView<T>;
 
   template <typename T>
   using ArrayPropertyView =
-      CesiumGltf::StructuralMetadata::PropertyTablePropertyView<
-          CesiumGltf::StructuralMetadata::MetadataArrayView<T>>;
+      CesiumGltf::PropertyTablePropertyView<CesiumGltf::PropertyArrayView<T>>;
 
   using PropertyType = std::variant<
       PropertyView<int8_t>,
@@ -187,10 +185,10 @@ public:
    */
   FCesiumPropertyTableProperty()
       : _property(),
-        _types{
+        _valueType(
             ECesiumMetadataType::Invalid,
             ECesiumMetadataComponentType::None,
-            false},
+            false),
         _count(0),
         _normalized(false) {}
 
@@ -201,7 +199,7 @@ public:
    */
   template <typename T>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::StructuralMetadata::PropertyTablePropertyView<T>& value)
+      const CesiumGltf::PropertyTablePropertyView<T>& value)
       : _property(value),
         _types{
             ECesiumMetadataType::Invalid,
@@ -212,36 +210,33 @@ public:
     ECesiumMetadataType type;
     ECesiumMetadataComponentType componentType;
     bool isArray;
-    if constexpr (CesiumGltf::StructuralMetadata::IsMetadataArray<T>::value) {
-      using ArrayType =
-          CesiumGltf::StructuralMetadata::MetadataArrayType<T>::type;
-      type = ECesiumMetadataType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<ArrayType>::value);
+    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+      using ArrayType = CesiumGltf::MetadataArrayType<T>::type;
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
       componentType = ECesiumMetadataComponentType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<
-              ArrayType>::component);
+          CesiumGltf::TypeToPropertyType<ArrayType>::component);
       isArray = true;
     } else {
-      type = ECesiumMetadataType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<T>::value);
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
       componentType = ECesiumMetadataComponentType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<T>::component);
+          CesiumGltf::TypeToPropertyType<T>::component);
       isArray = false;
     }
 
-    _types = {type, componentType, isArray};
+    _valueType = {type, componentType, isArray};
   }
 
 private:
   template <typename T, typename... VariantType>
   static bool
   holdsPropertyAlternative(const std::variant<VariantType...>& variant) {
-    return std::holds_alternative<
-        CesiumGltf::StructuralMetadata::PropertyTablePropertyView<T>>(variant);
+    return std::holds_alternative<CesiumGltf::PropertyTablePropertyView<T>>(
+        variant);
   }
 
   PropertyType _property;
-  FCesiumMetadataTypes _types;
+  FCesiumMetadataValueType _valueType;
   int64 _count;
   bool _normalized;
 
@@ -279,7 +274,7 @@ public:
       UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
   /**
-   * Gets the true metadata types of the property. Many of these types are not
+   * Gets the true metadata value type of the property. Many of these types are not
    * accessible from Blueprints, but can be converted to a Blueprint-accessible
    * type.
    */
@@ -287,8 +282,8 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static FCesiumMetadataTypes
-  GetTypes(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+  static FCesiumMetadataValueType
+  GetValueType(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
   /**
    * Queries the number of metadata entries in the property.

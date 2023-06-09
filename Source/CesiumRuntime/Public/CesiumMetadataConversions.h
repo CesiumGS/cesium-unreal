@@ -14,14 +14,14 @@ ECesiumMetadataBlueprintType
 CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType);
 
 ECesiumMetadataBlueprintType
-CesiumMetadataTypesToBlueprintType(FCesiumMetadataTypes types);
+CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType valueType);
 
 // Remove
 ECesiumMetadataPackedGpuType
 CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType);
 
 ECesiumMetadataPackedGpuType
-CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataTypes types);
+CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataValueType valueType);
 
 // Default conversion, just returns the default value.
 template <typename TTo, typename TFrom, typename Enable = void>

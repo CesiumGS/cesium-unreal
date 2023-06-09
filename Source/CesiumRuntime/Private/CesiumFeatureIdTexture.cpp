@@ -9,7 +9,6 @@
 #include <optional>
 
 using namespace CesiumGltf;
-using namespace CesiumGltf::MeshFeatures;
 
 namespace {
 // There's technically no invalid texcoord values because of clamp / wrap

@@ -5,7 +5,6 @@
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;
-using namespace CesiumGltf::MeshFeatures;
 
 BEGIN_DEFINE_SPEC(
     FCesiumFeatureIdSetSpec,

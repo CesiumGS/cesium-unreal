@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTableProperty.h"
-#include "CesiumGltf/StructuralMetadataPropertyTypeTraits.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataConversions.h"
 
 using namespace CesiumGltf;
@@ -9,26 +9,26 @@ using namespace CesiumGltf;
 ECesiumMetadataBlueprintType
 UCesiumPropertyTablePropertyBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  return CesiumMetadataTypesToBlueprintType(Property._types);
+  return CesiumMetadataTypesToBlueprintType(Property._valueType);
 }
 
 ECesiumMetadataBlueprintType
 UCesiumPropertyTablePropertyBlueprintLibrary::GetArrayElementBlueprintType(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  if (!Property._types.bIsArray) {
+  if (!Property._valueType.bIsArray) {
     return ECesiumMetadataBlueprintType::None;
   }
 
-  FCesiumMetadataTypes types(Property._types);
-  types.bIsArray = false;
+  FCesiumMetadataValueType valueType(Property._valueType);
+  valueType.bIsArray = false;
 
-  return CesiumMetadataTypesToBlueprintType(types);
+  return CesiumMetadataTypesToBlueprintType(valueType);
 }
 
-FCesiumMetadataTypes
-UCesiumPropertyTablePropertyBlueprintLibrary::GetTypes(
+FCesiumMetadataValueType
+UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  return Property._types;
+  return Property._valueType;
 }
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(

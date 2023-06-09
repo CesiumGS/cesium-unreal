@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumGltf/FeatureTexturePropertyView.h"
+#include "CesiumGltf/StructuralMetadataPropertyTexturePropertyView.h"
 #include "GenericPlatform/GenericPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureTextureProperty.generated.h"
@@ -30,7 +30,7 @@ public:
 };
 
 /**
- * @brief An float color retrieved from a
+ * @brief A float color retrieved from a
  * {@link FCesiumFeatureTextureProperty}.
  */
 USTRUCT(BlueprintType)
@@ -51,44 +51,51 @@ public:
   float a = 0.0f;
 };
 
+UENUM(BlueprintType)
+enum class ECesiumPropertyTexturePropertyStatus : uint8 {
+  Valid = 0,
+  
+};
+
 /**
- * @brief A blueprint-accessible wrapper for a feature texture property from a
- * glTF. Provides per-pixel access to metadata encoded as pixel color.
+ * @brief A blueprint-accessible wrapper for a property texture property from a
+ * glTF. Provides per-pixel access to metadata encoded as pixel colors.
  */
 USTRUCT(BlueprintType)
-struct CESIUMRUNTIME_API FCesiumFeatureTextureProperty {
+struct CESIUMRUNTIME_API FCesiumPropertyTextureProperty {
   GENERATED_USTRUCT_BODY()
 
 public:
-  FCesiumFeatureTextureProperty() {}
+  FCesiumPropertyTextureProperty() {}
 
-  FCesiumFeatureTextureProperty(
-      const CesiumGltf::FeatureTexturePropertyView& property)
-      : _pProperty(&property) {}
+  FCesiumPropertyTextureProperty(
+      const CesiumGltf::PropertyTexturePropertyView&
+          Property)
+      : _pPropertyView(&Property) {}
 
 private:
-  const CesiumGltf::FeatureTexturePropertyView* _pProperty;
+  const CesiumGltf::PropertyTexturePropertyView* _pPropertyView;
 
-  friend class UCesiumFeatureTexturePropertyBlueprintLibrary;
+  friend class UCesiumPropertyTexturePropertyBlueprintLibrary;
 };
 
 UCLASS()
-class CESIUMRUNTIME_API UCesiumFeatureTexturePropertyBlueprintLibrary
+class CESIUMRUNTIME_API UCesiumPropertyTexturePropertyBlueprintLibrary
     : public UBlueprintFunctionLibrary {
   GENERATED_BODY()
 
 public:
   /**
    * @brief Get the index of the texture coordinate set that corresponds to the
-   * feature texture property.
+   * property texture property.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTextureProperty")
+      Category = "Cesium|Metadata|PropertyTextureProperty")
   static int64 GetTextureCoordinateIndex(
-      const UPrimitiveComponent* component,
-      UPARAM(ref) const FCesiumFeatureTextureProperty& property);
+      const UPrimitiveComponent* PrimitiveComponent,
+      UPARAM(ref) const FCesiumPropertyTextureProperty& Property);
 
   /**
    * @brief Get the component count of this property. Since the metadata is
@@ -98,33 +105,33 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTextureProperty")
+      Category = "Cesium|Metadata|PropertyTextureProperty")
   static int64
-  GetComponentCount(UPARAM(ref) const FCesiumFeatureTextureProperty& property);
+  GetComponentCount(UPARAM(ref) const FCesiumPropertyTextureProperty& Property);
 
   /**
-   * @brief Get the string representing how the metadata is encoded into a
-   * pixel color. This is useful to unpack the correct order of the metadata
+   * @brief Get the string representing how the metadata is encoded in a
+   * pixel color. This is useful to unpack the metadata in the correct order of
    * components from the pixel color.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTextureProperty")
+      Category = "Cesium|Metadata|PropertyTextureProperty")
   static FString GetSwizzle(UPARAM(ref)
-                                const FCesiumFeatureTextureProperty& property);
+                                const FCesiumPropertyTextureProperty& Property);
 
   /**
    * @brief Whether the metadata components are to be interpreted as
-   * normalized. This only applies when the metadata components have an integer
-   * type.
+   * normalized values. This only applies when the metadata components have an
+   * integer type.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTextureProperty")
+      Category = "Cesium|Metadata|PropertyTextureProperty")
   static bool IsNormalized(UPARAM(ref)
-                               const FCesiumFeatureTextureProperty& property);
+                               const FCesiumPropertyTextureProperty& Property);
 
   /**
    * @brief Given texture coordinates from the appropriate texture coordinate
@@ -135,9 +142,9 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTextureProperty")
+      Category = "Cesium|Metadata|PropertyTextureProperty")
   static FCesiumIntegerColor GetIntegerColorFromTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureTextureProperty& property,
+      UPARAM(ref) const FCesiumFeatureTextureProperty& Property,
       float u,
       float v);
 
@@ -153,7 +160,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|FeatureTextureProperty")
   static FCesiumFloatColor GetFloatColorFromTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureTextureProperty& property,
+      UPARAM(ref) const FCesiumFeatureTextureProperty& Property,
       float u,
       float v);
 };

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CesiumGltf/StructuralMetadataArrayView.h"
-#include "CesiumGltf/StructuralMetadataPropertyTypeTraits.h"
+#include "CesiumGltf/PropertyArrayView.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataArray.h"
 #include "CesiumMetadataValueType.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -20,8 +20,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 
 private:
 #pragma region ValueType declaration
-  template <typename T>
-  using ArrayView = CesiumGltf::StructuralMetadata::MetadataArrayView<T>;
+  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
   using ValueType = std::variant<
       std::monostate,
       int8_t,
@@ -176,7 +175,7 @@ public:
    */
   FCesiumMetadataValue()
       : _value(std::monostate{}),
-        _types(
+        _valueType(
             {ECesiumMetadataType::Invalid,
              ECesiumMetadataComponentType::None,
              false}) {}
@@ -196,29 +195,26 @@ public:
     ECesiumMetadataType type;
     ECesiumMetadataComponentType componentType;
     bool isArray;
-    if constexpr (CesiumGltf::StructuralMetadata::IsMetadataArray<T>()) {
-      using ArrayType =
-          CesiumGltf::StructuralMetadata::MetadataArrayType<T>::type;
-      type = ECesiumMetadataType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<ArrayType>::value);
+    if constexpr (CesiumGltf::IsMetadataArray<T>()) {
+      using ArrayType = CesiumGltf::MetadataArrayType<T>::type;
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
       componentType = ECesiumMetadataComponentType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<
-              ArrayType>::component);
+          CesiumGltf::TypeToPropertyType<ArrayType>::component);
       isArray = true;
     } else {
-      type = ECesiumMetadataType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<T>::value);
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
       componentType = ECesiumMetadataComponentType(
-          CesiumGltf::StructuralMetadata::TypeToPropertyType<T>::component);
+          CesiumGltf::TypeToPropertyType<T>::component);
       isArray = false;
     }
 
-    _types = {type, componentType, isArray};
+    _valueType = {type, componentType, isArray};
   }
 
 private:
   ValueType _value;
-  FCesiumMetadataTypes _types;
+  FCesiumMetadataValueType _valueType;
 
   friend class UCesiumMetadataValueBlueprintLibrary;
 };
@@ -253,16 +249,16 @@ public:
   GetArrayElementBlueprintType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets the true metadata types of the value. Many of these types are not
-   * accessible from Blueprints, but can be converted to a Blueprint-accessible
-   * type.
+   * Gets the true type of the metadata value as it is defined in the
+   * EXT_structural_metadata extension. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Value")
-  static FCesiumMetadataTypes GetTypes(UPARAM(ref)
-                                           const FCesiumMetadataValue& Value);
+  static FCesiumMetadataValueType
+  GetValueType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
    * Gets the value and attempts to convert it to a Boolean value.

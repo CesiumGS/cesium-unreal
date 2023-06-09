@@ -1,23 +1,23 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
-#include "CesiumFeatureTextureProperty.h"
+#include "CesiumPropertyTextureProperty.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataConversions.h"
 
 #include <cstdint>
 #include <limits>
 
-int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
-    const UPrimitiveComponent* component,
-    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
+int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
+    const UPrimitiveComponent* Component,
+    UPARAM(ref) const FCesiumPropertyTextureProperty& Property) {
   const UCesiumGltfPrimitiveComponent* pPrimitive =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
+      Cast<UCesiumGltfPrimitiveComponent>(Component);
   if (!pPrimitive) {
     return -1;
   }
 
   auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
-      property._pProperty->getTextureCoordinateAttributeId());
+      Property._pProperty->getTexCoordSetIndex());
   if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
     return -1;
   }
@@ -25,12 +25,12 @@ int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
   return textureCoordinateIndexIt->second;
 }
 
-int64 UCesiumFeatureTexturePropertyBlueprintLibrary::GetComponentCount(
-    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
-  return property._pProperty->getComponentCount();
+int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
+    UPARAM(ref) const FCesiumPropertyTextureProperty& property) {
+  return property._pProperty->getCount();
 }
 
-bool UCesiumFeatureTexturePropertyBlueprintLibrary::IsNormalized(
+bool UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
     UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
   return property._pProperty->isNormalized();
 }

@@ -10,28 +10,43 @@ using namespace CesiumGltf::StructuralMetadata;
 FCesiumPropertyTable::FCesiumPropertyTable(
     const Model& Model,
     const ExtensionExtStructuralMetadataPropertyTable& PropertyTable)
-    : _count(PropertyTable.count), _properties() {
+    : _status(ECesiumPropertyTableStatus::ErrorInvalidMetadataExtension),
+      _count(PropertyTable.count),
+      _properties() {
 
   PropertyTableView propertyTableView{Model, PropertyTable};
-  if (propertyTableView.status() != PropertyTableViewStatus::Valid) {
-    // Log warning?
+  switch (propertyTableView.status()) {
+  case PropertyTableViewStatus::Valid:
+    break;
+  case PropertyTableViewStatus::ErrorClassNotFound:
+    _status = ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass;
+    return;
+  default:
+    // Status was already set in initializer list.
     return;
   }
 
   propertyTableView.forEachProperty([&properties = _properties](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
+    // Should we log a warning if invalid? I think it's actually nicer to
+    // include the property but say it's invalid, so the user isn't confused.
     if (propertyValue.status() == PropertyTablePropertyViewStatus::Valid) {
       FString key(UTF8_TO_TCHAR(propertyName.data()));
       properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
     }
-    // Should we log a warning if invalid?
   });
+}
+
+ECesiumPropertyTableStatus
+UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
+    UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
+  return PropertyTable._status;
 }
 
 int64 UCesiumPropertyTableBlueprintLibrary::GetNumberOfElements(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
-  if (PropertyTable._properties.Num() == 0) {
+  if (PropertyTable._status != ECesiumPropertyTableStatus::Valid) {
     return 0;
   }
 

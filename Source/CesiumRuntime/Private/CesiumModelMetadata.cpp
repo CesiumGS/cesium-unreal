@@ -16,12 +16,12 @@ FCesiumModelMetadata::FCesiumModelMetadata(
         FCesiumPropertyTable(model, metadata.propertyTables[i]));
   }
 
-  //this->_featureTextures.Reserve(metadata.featureTextures.size());
-  //for (const auto& featureTextureIt : metadata.featureTextures) {
-  //  this->_featureTextures.Emplace(
-  //      UTF8_TO_TCHAR(featureTextureIt.first.c_str()),
-  //      FCesiumFeatureTexture(model, featureTextureIt.second));
-  //}
+  this->_featureTextures.Reserve(metadata.featureTextures.size());
+  for (const auto& featureTextureIt : metadata.featureTextures) {
+    this->_featureTextures.Emplace(
+        UTF8_TO_TCHAR(featureTextureIt.first.c_str()),
+        FCesiumFeatureTexture(model, featureTextureIt.second));
+  }
 }
 
 /*static*/

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumGltf/MetadataArrayView.h"
+#include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataValueType.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -19,47 +19,48 @@ struct CESIUMRUNTIME_API FCesiumMetadataArray {
   GENERATED_USTRUCT_BODY()
 
 private:
+  // TODO: all types
   using ArrayType = std::variant<
-      CesiumGltf::MetadataArrayView<int8_t>,
-      CesiumGltf::MetadataArrayView<uint8_t>,
-      CesiumGltf::MetadataArrayView<int16_t>,
-      CesiumGltf::MetadataArrayView<uint16_t>,
-      CesiumGltf::MetadataArrayView<int32_t>,
-      CesiumGltf::MetadataArrayView<uint32_t>,
-      CesiumGltf::MetadataArrayView<int64_t>,
-      CesiumGltf::MetadataArrayView<uint64_t>,
-      CesiumGltf::MetadataArrayView<float>,
-      CesiumGltf::MetadataArrayView<double>,
-      CesiumGltf::MetadataArrayView<bool>,
-      CesiumGltf::MetadataArrayView<std::string_view>>;
+      CesiumGltf::PropertyArrayView<int8_t>,
+      CesiumGltf::PropertyArrayView<uint8_t>,
+      CesiumGltf::PropertyArrayView<int16_t>,
+      CesiumGltf::PropertyArrayView<uint16_t>,
+      CesiumGltf::PropertyArrayView<int32_t>,
+      CesiumGltf::PropertyArrayView<uint32_t>,
+      CesiumGltf::PropertyArrayView<int64_t>,
+      CesiumGltf::PropertyArrayView<uint64_t>,
+      CesiumGltf::PropertyArrayView<float>,
+      CesiumGltf::PropertyArrayView<double>,
+      CesiumGltf::PropertyArrayView<bool>,
+      CesiumGltf::PropertyArrayView<std::string_view>>;
 
 public:
   /**
-   * Construct an empty array with unknown type.
+   * Constructs an empty array instance with unknown type.
    */
   FCesiumMetadataArray() : _value(), _type(ECesiumMetadataTrueType::None) {}
 
   /**
-   * Construct a non-empty array.
-   * @param value The metadata array view that will be stored in this struct
+   * Constructs a non-empty array instance.
+   * @param value The property array view that will be stored in this struct
    */
   template <typename T>
-  FCesiumMetadataArray(CesiumGltf::MetadataArrayView<T> value)
-      : _value(value), _type(ECesiumMetadataTrueType::None) {
+  FCesiumMetadataArray(CesiumGltf::PropertyArrayView<T> value)
+      : _value(value), _type() {
     _type =
         ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<
-                                CesiumGltf::MetadataArrayView<T>>::component);
+                                CesiumGltf::PropertyArrayView<T>>::component);
   }
 
 private:
   template <typename T, typename... VariantType>
   static bool
   holdsArrayAlternative(const std::variant<VariantType...>& variant) {
-    return std::holds_alternative<CesiumGltf::MetadataArrayView<T>>(variant);
+    return std::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
   }
 
   ArrayType _value;
-  ECesiumMetadataTrueType _type;
+  FCesiumMetadataTypes _type;
 
   friend class UCesiumMetadataArrayBlueprintLibrary;
 };
