@@ -53,7 +53,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       TestEqual(
           "Feature Count",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-          featureID.featureCount);
+          static_cast<int64>(featureID.featureCount));
       TestEqual(
           "FeatureIDType",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
@@ -103,7 +103,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
         TestEqual(
             "Feature Count",
             UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-            gltfFeatureID.featureCount);
+            static_cast<int64>(gltfFeatureID.featureCount));
         TestEqual(
             "FeatureIDType",
             UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),

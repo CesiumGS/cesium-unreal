@@ -55,7 +55,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-          featureId.featureCount);
+          static_cast<int64>(featureId.featureCount));
     });
 
     It("constructs from feature ID attribute", [this]() {
@@ -77,7 +77,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-          featureID.featureCount);
+          static_cast<int64>(featureID.featureCount));
     });
 
     It("constructs from feature ID texture", [this]() {
@@ -106,7 +106,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-          featureId.featureCount);
+          static_cast<int64>(featureId.featureCount));
     });
 
     It("constructs with property table index", [this]() {
@@ -122,12 +122,12 @@ void FCesiumFeatureIdSetSpec::Define() {
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
-          featureId.featureCount);
+          static_cast<int64>(featureId.featureCount));
       TestEqual(
           "PropertyTableIndex",
           UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
               featureIDSet),
-          *featureId.propertyTable);
+          static_cast<int64>(*featureId.propertyTable));
     });
   });
 
