@@ -27,7 +27,8 @@ public:
   virtual ~UCesiumGltfPrimitiveComponent();
 
   FCesiumPrimitiveFeatures Features;
-  FCesiumMetadataPrimitive Metadata;
+  FCesiumPrimitiveMetadata Metadata;
+  FCesiumMetadataPrimitive MetadataDeprecated;
 
   CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
 

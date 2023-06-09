@@ -254,7 +254,7 @@ public:
    * Gets the value and attempts to convert it to a 32-bit floating-point
    * value.
    *
-   * If the value is a singe-precision floating-point number, is is returned.
+   * If the value is a single-precision floating-point number, it is returned.
    *
    * If the value is an integer or double-precision floating-point number,
    * it is converted to the closest representable single-precision
@@ -285,7 +285,7 @@ public:
    * Gets the value and attempts to convert it to a 64-bit floating-point
    * value.
    *
-   * If the value is a single- or double-precision floating-point number, is is
+   * If the value is a single- or double-precision floating-point number, it is
    * returned.
    *
    * If the value is an integer, it is converted to the closest representable
@@ -315,7 +315,7 @@ public:
   /**
    * Gets the value and attempts to convert it to a string value.
    *
-   * A numeric value is converted to a string with `FString::Format`, which uses
+   * Numeric values are converted to strings with `FString::Format`, which uses
    * the current locale.
    *
    * Boolean properties are converted to "true" or "false".

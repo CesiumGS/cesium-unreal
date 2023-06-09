@@ -18,8 +18,8 @@
 #include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
-#include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
-#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
+#include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
+#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPointsComponent.h"
@@ -482,24 +482,15 @@ loadPrimitiveFeatures(const Model& model, const MeshPrimitive& primitive) {
   return FCesiumPrimitiveFeatures(model, primitive, *pExtension);
 }
 
-static FCesiumMetadataPrimitive loadMetadataPrimitive(
-    const Model& model,
-    const MeshPrimitive& primitive,
-    const FCesiumPrimitiveFeatures& primitiveFeatures) {
-
-  // TODO: refactor for structural metadata
-
-  const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
-      primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
+static FCesiumPrimitiveMetadata
+loadPrimitiveMetadata(const Model& model, const MeshPrimitive& primitive) {
+  const ExtensionMeshPrimitiveExtStructuralMetadata* pMetadata =
+      primitive.getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
   if (!pMetadata) {
-    return FCesiumMetadataPrimitive();
+    return FCesiumPrimitiveMetadata();
   }
 
-  return FCesiumMetadataPrimitive(
-      model,
-      primitive,
-      *pMetadata,
-      primitiveFeatures);
+  return FCesiumPrimitiveMetadata(model, primitive, *pMetadata);
 }
 
 static void updateTextureCoordinatesForMetadata(
@@ -554,8 +545,8 @@ static void updateTextureCoordinatesForMetadata(
     }
   }
 
-  const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
-      primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
+  const ExtensionMeshPrimitiveExtStructuralMetadata* pMetadata =
+      primitive.getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
 
   if (pMetadata) {
     for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
@@ -1031,10 +1022,10 @@ static void loadPrimitive(
   }
 
   primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
-  primitiveResult.Metadata = loadMetadataPrimitive(
-      model,
-      primitive,
-      primitiveResult.Features); // TODO: use structural metadata
+  primitiveResult.Metadata = loadPrimitiveMetadata(model, primitive);
+  primitiveResult.MetadataDeprecated = FCesiumMetadataPrimitive(
+      primitiveResult.Features,
+      primitiveResult.Metadata);
 
   const FMetadataDescription* pEncodedMetadataDescription =
       options.pMeshOptions->pNodeOptions->pModelOptions
@@ -1518,15 +1509,15 @@ static void loadModelAnyThreadPart(
 
   const Model& model = *options.pModel;
 
-  const ExtensionModelExtFeatureMetadata* pMetadataExtension =
-      model.getExtension<ExtensionModelExtFeatureMetadata>();
+  const ExtensionModelExtStructuralMetadata* pMetadataExtension =
+      model.getExtension<ExtensionModelExtStructuralMetadata>();
   if (pMetadataExtension) {
-    result.Metadata = FCesiumMetadataModel(model, *pMetadataExtension);
-    if (options.pEncodedMetadataDescription) {
-      result.EncodedMetadata = encodeMetadataAnyThreadPart(
-          *options.pEncodedMetadataDescription,
-          result.Metadata);
-    }
+    result.Metadata = FCesiumModelMetadata(model, *pMetadataExtension);
+    //if (options.pEncodedMetadataDescription) {
+    //  result.EncodedMetadata = encodeMetadataAnyThreadPart(
+    //      *options.pEncodedMetadataDescription,
+    //      result.Metadata);
+    //}
   }
 
   glm::dmat4x4 rootTransform = transform;
@@ -2077,7 +2068,9 @@ static void loadPrimitiveGameThreadPart(
     }
   }
 
+  pMesh->Features = std::move(loadResult.Features);
   pMesh->Metadata = std::move(loadResult.Metadata);
+  pMesh->MetadataDeprecated = std::move(loadResult.MetadataDeprecated);
   pMesh->EncodedMetadata = std::move(loadResult.EncodedMetadata);
 
   pMaterial->TwoSided = true;

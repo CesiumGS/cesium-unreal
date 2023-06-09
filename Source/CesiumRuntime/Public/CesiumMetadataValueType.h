@@ -19,9 +19,11 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   Integer64,
   Float,
   Float64,
-  FVector,
+  IntVector,
+  FVector3f,
+  FVector3,
   FVector4,
-  // TODO: find all vector and matrix types
+  Matrix,
   String,
   Array
 };
@@ -88,7 +90,7 @@ enum class ECesiumMetadataComponentType : uint8 {
 
 /**
  * Represents the true types of a metadata property according to how the
- * property is defined in the metadata extension.
+ * property is defined in EXT_structural_metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataTypes {

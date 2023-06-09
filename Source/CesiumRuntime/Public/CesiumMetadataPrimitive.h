@@ -3,60 +3,47 @@
 #pragma once
 
 #include "CesiumPrimitiveFeatures.h"
+#include "CesiumPrimitiveMetadata.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 
 #include "CesiumMetadataPrimitive.generated.h"
 
-namespace CesiumGltf {
-struct ExtensionMeshPrimitiveExtFeatureMetadata;
-} // namespace CesiumGltf
-
 struct UE_DEPRECATED(
     5.0,
-    "FCesiumMetadataPrimitive is deprecated. Use FCesiumPrimitiveFeatures instead to retrieve feature IDs from a glTF primitive.")
+    "FCesiumMetadataPrimitive is deprecated. Instead, use FCesiumPrimitiveFeatures and FCesiumPrimitiveMetadata to retrieve feature IDs and metadata from a glTF primitive.")
     FCesiumMetadataPrimitive;
 
 /**
  * A Blueprint-accessible wrapper for a glTF Primitive's EXT_feature_metadata
- * extension. It has views of feature ID attributes / feature ID textures and
- * names of feature textures associated with this primitive.
+ * extension. This class is deprecated and only exists for backwards
+ * compatibility.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {
   GENERATED_USTRUCT_BODY()
 
-  using VertexIDAccessorType = std::variant<
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>>;
-
 public:
   /**
    * Construct an empty primitive metadata.
    */
-  FCesiumMetadataPrimitive() : _pPrimitiveFeatures(nullptr) {}
+  FCesiumMetadataPrimitive()
+      : _pPrimitiveFeatures(nullptr), _pPrimitiveMetadata(nullptr) {}
 
   /**
-   * Constructs a primitive metadata instance.
+   * Constructs a primitive metadata instance from the new features / metadata
+   * implementations for backwards compatibility.
    *
-   * @param model The model that stores EXT_feature_metadata extension
-   * @param primitive The mesh primitive that stores EXT_feature_metadata
-   * extension
-   * @param metadata The EXT_feature_metadata of the gltf mesh primitive.
-   * primitive
    * @param primitiveFeatures The FCesiumPrimitiveFeatures denoting the feature
    * IDs in the glTF mesh primitive.
+   * @param primitiveMetadata The FCesiumPrimitiveMetadata containing references
+   * to the metadata for the glTF mesh primitive.
    */
-  FCesiumMetadataPrimitive(
-      const CesiumGltf::Model& model,
-      const CesiumGltf::MeshPrimitive& primitive,
-      const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
-      const FCesiumPrimitiveFeatures& primitiveFeatures);
+  FCesiumMetadataPrimitive(const FCesiumPrimitiveFeatures& primitiveFeatures);
 
 private:
   const FCesiumPrimitiveFeatures* _pPrimitiveFeatures;
-  TArray<FString> _featureTextureNames;
+  const FCesiumPrimitiveMetadata* _pPrimitiveMetadata;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };
@@ -68,6 +55,7 @@ class CESIUMRUNTIME_API UCesiumMetadataPrimitiveBlueprintLibrary
 
 public:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
   /**
    * Get all the feature ID attributes that are associated with the
    * primitive.
@@ -79,7 +67,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated, use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
   static const TArray<FCesiumFeatureIdAttribute>
   GetFeatureIdAttributes(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -95,7 +83,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated, use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
   static const TArray<FCesiumFeatureIdTexture>
   GetFeatureIdTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -111,9 +99,8 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated."))
-    // TODO: properly deprecate this function when metadata is overhauled
-  static const TArray<FString>&
+               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveMetadataBlueprintLibrary to get property texture indices from FCesiumPrimitiveMetadata instead."))
+  static const TArray<FString>
   GetFeatureTextureNames(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
 

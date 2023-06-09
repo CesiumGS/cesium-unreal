@@ -47,6 +47,7 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
   if (!MetadataPrimitive._pPrimitiveFeatures) {
     return featureIDTextures;
   }
+
   const TArray<FCesiumFeatureIdSet> featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           *MetadataPrimitive._pPrimitiveFeatures,
@@ -62,10 +63,27 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
   return featureIDTextures;
 }
 
-const TArray<FString>&
+const TArray<FString>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureTextureNames;
+  TArray<FString> propertyTextureNames;
+  if (!MetadataPrimitive._pPrimitiveMetadata) {
+    return;
+  }
+
+  const TArray<int64>& propertyTextureIndices =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
+          *MetadataPrimitive._pPrimitiveMetadata);
+
+  propertyTextureNames.Reserve(propertyTextureIndices.Num());
+  for (const int64 index : propertyTextureIndices) {
+    // TODO
+    /*propertyTextureNames.Add(
+        UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
+            featureIDSet));*/
+  }
+
+  return propertyTextureNames;
 }
 
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(

@@ -445,6 +445,40 @@ public:
       double DefaultValue);
 
   /**
+   * Gets the value and attempts to convert it to a Vector3f.
+   *
+   * If the value is a vector with three single-precision floating-point
+   * components, it is returned.
+   *
+   * Otherwise, if the value is a 3-dimensional vector but with integer or
+   * double-precision components, each component will be converted to the
+   * closest representable single-precision floating-point number.
+   *
+   * Otherwise, if the value is a 4-dimensional vector, a 3-dimensional vector
+   * containing the first three components will be returned.
+   *
+   * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
+   *
+   * If the value is a string and the entire string can be parsed as a
+   * number, the parsed value is returned. The string is parsed in a
+   * locale-independent way and does not support use of a comma or other
+   * character to group digits.
+   *
+   * Otherwise, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the feature ID is invalid
+   * or the feature's value cannot be converted.
+   * @return The property value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|GenericValue")
+  static FVector3f GetVector3f(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      FVector3f DefaultValue);
+
+  /**
    * Gets the value and attempts to convert it to a string value.
    *
    * A numeric value is converted to a string with `FString::Format`, which uses

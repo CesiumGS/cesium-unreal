@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CesiumPropertyTable.h"
-//#include "CesiumPropertyTexture.h"
+// #include "CesiumPropertyTexture.h"
 
 #include "Containers/Array.h"
 #include "Containers/Map.h"
@@ -18,8 +18,8 @@ struct Model;
 
 /**
  * @brief A blueprint-accessible wrapper for metadata contained in a glTF model.
- * Provides access to views of property tables and property textures available on
- * the glTF.
+ * Provides access to views of property tables, property textures, and property
+ * attributes available on the glTF.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumModelMetadata {
@@ -29,12 +29,13 @@ public:
   FCesiumModelMetadata() {}
 
   FCesiumModelMetadata(
-      const CesiumGltf::Model& model,
-      const CesiumGltf::ExtensionModelExtStructuralMetadata& metadata);
+      const CesiumGltf::Model& InModel,
+      const CesiumGltf::ExtensionModelExtStructuralMetadata& Metadata);
 
 private:
   TArray<FCesiumPropertyTable> _propertyTables;
-  //TMap<FString, FCesiumPropertyTexture> _propertyTextures;
+  // TArray<FCesiumPropertyTexture> _propertyTextures;
+  //  TODO: property attributes?
 
   friend class UCesiumModelMetadataBlueprintLibrary;
 };
@@ -58,10 +59,10 @@ public:
   ///**
   // * @brief Get all the property textures for this model metadata.
   // */
-  //UFUNCTION(
+  // UFUNCTION(
   //    BlueprintCallable,
   //    BlueprintPure,
   //    Category = "Cesium|Metadata|Model")
-  //static const TMap<FString, FCesiumFeatureTexture>&
-  //GetFeatureTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
+  // static const TMap<FString, FCesiumFeatureTexture>&
+  // GetFeatureTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
 };
