@@ -124,7 +124,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
       FRotator(PitchAtDestination, YawAtDestination, 0).Quaternion();
 	this->_flyToECEFDestination = ECEFDestination;
 
-  // Compute axis/Angle transform and initialize key points
+  // Compute axis/Angle transform
   glm::dquat flyQuat = glm::rotation(
       glm::normalize(ECEFSource),
       glm::normalize(ECEFDestination));
