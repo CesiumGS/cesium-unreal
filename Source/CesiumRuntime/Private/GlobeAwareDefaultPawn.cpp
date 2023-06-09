@@ -94,7 +94,7 @@ void AGlobeAwareDefaultPawn::_interpolateFlightPosition(double percentage, glm::
     // Add the altitude offset. Start with linear path between source and destination
     // If we have a profile curve, use this as well
     double altitudeOffset = glm::mix(_flyToSourceAltitude, _flyToDestinationAltitude, percentage);
-    if (_flyToMaxAltitude != 0.0) {
+    if (_flyToMaxAltitude != 0.0 && this->FlyToAltitudeProfileCurve) {
       double curveOffset = _flyToMaxAltitude * this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
       altitudeOffset += curveOffset;
     }
