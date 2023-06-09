@@ -32,7 +32,10 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
       FCesiumFeatureIdTexture>;
 
 public:
-  FCesiumFeatureIdSet() {}
+  FCesiumFeatureIdSet()
+      : _featureIDType(ECesiumFeatureIdType::None),
+        _featureCount(0),
+        _nullFeatureID(-1) {}
 
   FCesiumFeatureIdSet(
       const CesiumGltf::Model& Model,
@@ -43,6 +46,7 @@ private:
   FeatureIDType _featureID;
   ECesiumFeatureIdType _featureIDType;
   int64 _featureCount;
+  int64 _nullFeatureID;
   TOptional<int64> _propertyTableIndex;
 
   friend class UCesiumFeatureIdSetBlueprintLibrary;
@@ -112,9 +116,26 @@ public:
                                    const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
+   * Gets the null feature ID, i.e., the value that indicates no feature is
+   * associated with the owner. In other words, if a vertex or texel returns
+   * this value, then it is not associated with any feature.
+   *
+   * If this value was not defined in the glTF feature ID set, this defaults to
+   * -1.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|FeatureIDSet")
+  static const int64
+  GetNullFeatureID(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
+
+  /**
    * Gets the feature ID associated with a given vertex. The feature ID can be
    * used with a FCesiumFeatureTable to retrieve the per-vertex
-   * metadata.
+   * metadata. This returns -1 if the given vertex is out-of-bounds, or if the
+   * feature ID set is invalid (e.g., it contains an invalid feature ID
+   * texture).
    */
   UFUNCTION(
       BlueprintCallable,
