@@ -13,16 +13,15 @@ namespace {
 struct FeatureIDFromAccessor {
   int64 operator()(std::monostate) { return -1; }
 
-  int64 operator()(
-      const AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>& value) {
-    return static_cast<int64>(glm::round(value[vertexIdx].value[0]));
+  int64 operator()(const AccessorView<AccessorTypes::SCALAR<float>>& value) {
+    return static_cast<int64>(glm::round(value[vertexIndex].value[0]));
   }
 
   template <typename T> int64 operator()(const AccessorView<T>& value) {
-    return static_cast<int64>(value[vertexIdx].value[0]);
+    return static_cast<int64>(value[vertexIndex].value[0]);
   }
 
-  int64 vertexIdx;
+  int64 vertexIndex;
 };
 
 struct VertexCountFromAccessor {
@@ -35,63 +34,83 @@ struct VertexCountFromAccessor {
 } // namespace
 
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
-    const Model& model,
-    const Accessor& featureIDAccessor,
-    int32 attributeIndex,
-    const FString& featureTableName)
-    : _featureTableName(featureTableName), _attributeIndex(attributeIndex) {
-  switch (featureIDAccessor.componentType) {
-  case CesiumGltf::Accessor::ComponentType::BYTE:
+    const Model& InModel,
+    const MeshPrimitive Primitive,
+    const int64 FeatureIDAttribute,
+    const FString& PropertyTableName)
+    : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
+      _attributeIndex(FeatureIDAttribute),
+      _propertyTableName(PropertyTableName) {
+  const std::string attributeName =
+      "_FEATURE_ID_" + std::to_string(FeatureIDAttribute);
+
+  auto featureID = Primitive.attributes.find(attributeName);
+  if (featureID == Primitive.attributes.end()) {
+    return;
+  }
+
+  const Accessor* accessor =
+      InModel.getSafe<Accessor>(&InModel.accessors, featureID->second);
+  if (!accessor || accessor->type != Accessor::Type::SCALAR) {
+    _status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
+    return;
+  }
+
+  switch (accessor->componentType) {
+  case Accessor::ComponentType::BYTE:
     this->_featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>(
-            model,
-            featureIDAccessor);
+        AccessorView<AccessorTypes::SCALAR<int8_t>>(InModel, *accessor);
     break;
-  case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
+  case Accessor::ComponentType::UNSIGNED_BYTE:
     this->_featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>(
-            model,
-            featureIDAccessor);
+        AccessorView<AccessorTypes::SCALAR<uint8_t>>(InModel, *accessor);
     break;
-  case CesiumGltf::Accessor::ComponentType::SHORT:
+  case Accessor::ComponentType::SHORT:
     this->_featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>(
-            model,
-            featureIDAccessor);
+        AccessorView<AccessorTypes::SCALAR<int16_t>>(InModel, *accessor);
     break;
-  case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
+  case Accessor::ComponentType::UNSIGNED_SHORT:
     this->_featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>(
-            model,
-            featureIDAccessor);
+        AccessorView<AccessorTypes::SCALAR<uint16_t>>(InModel, *accessor);
     break;
-  case CesiumGltf::Accessor::ComponentType::FLOAT:
+  case Accessor::ComponentType::FLOAT:
     this->_featureIDAccessor =
-        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>(
-            model,
-            featureIDAccessor);
+        AccessorView<AccessorTypes::SCALAR<float>>(InModel, *accessor);
     break;
   default:
-    break;
+    _status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
+    return;
   }
+
+  _status = ECesiumFeatureIdAttributeStatus::Valid;
 }
 
 const FString& UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute) {
-  return FeatureIdAttribute._featureTableName;
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
+  return FeatureIDAttribute._propertyTableName;
+}
+
+ECesiumFeatureIdAttributeStatus
+UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus(
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
+  return FeatureIDAttribute._status;
 }
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute) {
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute) {
   return std::visit(
       VertexCountFromAccessor{},
-      FeatureIdAttribute._featureIDAccessor);
+      FeatureIDAttribute._featureIDAccessor);
 }
 
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
-    int64 vertexIdx) {
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
+    int64 VertexIndex) {
+  if (VertexIndex < 0 || VertexIndex >= GetVertexCount(FeatureIDAttribute)) {
+    return -1;
+  }
+
   return std::visit(
-      FeatureIDFromAccessor{vertexIdx},
-      FeatureIdAttribute._featureIDAccessor);
+      FeatureIDFromAccessor{VertexIndex},
+      FeatureIDAttribute._featureIDAccessor);
 }

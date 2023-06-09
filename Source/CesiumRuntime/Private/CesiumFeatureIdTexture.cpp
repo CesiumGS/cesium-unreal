@@ -2,46 +2,203 @@
 
 #include "CesiumFeatureIdTexture.h"
 
-#include "CesiumGltf/FeatureIDTexture.h"
+#include "CesiumGltf/ExtensionExtMeshFeaturesFeatureIdTexture.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
+#include <optional>
+
 using namespace CesiumGltf;
+using namespace CesiumGltf::MeshFeatures;
+
+namespace {
+// There's technically no invalid texcoord values because of clamp / wrap
+// behavior, so we use an optional to denote an invalid value.
+struct TexCoordFromAccessor {
+  std::optional<glm::vec2> operator()(std::monostate) { return std::nullopt; }
+
+  std::optional<glm::vec2>
+  operator()(const AccessorView<AccessorTypes::VEC2<float>>& value) {
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return std::nullopt;
+    }
+
+    return glm::vec2(value[vertexIndex].value[0], value[vertexIndex].value[1]);
+  }
+
+  std::optional<glm::vec2>
+  operator()(const AccessorView<AccessorTypes::VEC2<uint8_t>>& value) {
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return std::nullopt;
+    }
+
+    float u = static_cast<float>(value[vertexIndex].value[0]);
+    float v = static_cast<float>(value[vertexIndex].value[1]);
+
+    u /= std::numeric_limits<uint8_t>::max();
+    v /= std::numeric_limits<uint8_t>::max();
+
+    return glm::vec2(u, v);
+  }
+
+  std::optional<glm::vec2>
+  operator()(const AccessorView<AccessorTypes::VEC2<uint16_t>>& value) {
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return std::nullopt;
+    }
+
+    float u = static_cast<float>(value[vertexIndex].value[0]);
+    float v = static_cast<float>(value[vertexIndex].value[1]);
+
+    u /= std::numeric_limits<uint16_t>::max();
+    v /= std::numeric_limits<uint16_t>::max();
+
+    return glm::vec2(u, v);
+  }
+
+  int64 vertexIndex;
+};
+} // namespace
 
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
-    const Model& model,
-    const FeatureIDTexture& featureIdTexture)
-    : _featureIdTextureView(model, featureIdTexture),
-      _featureTableName(UTF8_TO_TCHAR(
-          this->_featureIdTextureView.getFeatureTableName().c_str())) {}
+    const Model& InModel,
+    const MeshPrimitive Primitive,
+    const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture,
+    const FString& PropertyTableName)
+    : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
+      _featureIdTextureView(InModel, FeatureIdTexture),
+      _texCoordAccessor(),
+      _textureCoordinateIndex(FeatureIdTexture.texCoord),
+      _propertyTableName(PropertyTableName) {
+  switch (_featureIdTextureView.status()) {
+  case FeatureIdTextureViewStatus::Valid:
+    _status = ECesiumFeatureIdTextureStatus::Valid;
+    break;
+  case FeatureIdTextureViewStatus::ErrorInvalidTexCoordSetIndex:
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordSetIndex;
+    return;
+  case FeatureIdTextureViewStatus::ErrorInvalidChannels:
+    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
+    return;
+  default:
+    // Error with the texture or image. The status is already set by the
+    // initializer list.
+    return;
+  }
+
+  // The initial implementation of FCesiumFeatureIDTexture did not construct
+  // with an "owner" primitive in mind. It was possible to access the texture
+  // data with arbitrary coordinates.
+  //
+  // To maintain this possibility with EXT_mesh_features, the texture view will
+  // still be valid if the intended texcoords don't exist. However, feature IDs
+  // won't be retrievable by vertex index.
+  const std::string texCoordName =
+      "TEXCOORD_" + std::to_string(_textureCoordinateIndex);
+  auto texCoord = Primitive.attributes.find(texCoordName);
+  if (texCoord == Primitive.attributes.end()) {
+    return;
+  }
+
+  const Accessor* accessor =
+      InModel.getSafe<Accessor>(&InModel.accessors, texCoord->second);
+  if (!accessor || accessor->type != Accessor::Type::VEC2) {
+    return;
+  }
+
+  switch (accessor->componentType) {
+  case CesiumGltf::Accessor::ComponentType::UNSIGNED_BYTE:
+    if (!accessor->normalized) {
+      // Unsigned byte texcoords must be normalized.
+      return;
+    }
+
+    this->_texCoordAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint8_t>>(
+            InModel,
+            *accessor);
+    break;
+  case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
+    if (!accessor->normalized) {
+      // Unsigned short texcoords must be normalized.
+      return;
+    }
+
+    this->_texCoordAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint16_t>>(
+            InModel,
+            *accessor);
+    break;
+  case CesiumGltf::Accessor::ComponentType::FLOAT:
+    this->_texCoordAccessor =
+        CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
+            InModel,
+            *accessor);
+    break;
+  default:
+    break;
+  }
+}
 
 const FString& UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName(
-    const FCesiumFeatureIdTexture& featureIdTexture) {
-  return featureIdTexture._featureTableName;
+    UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
+  return FeatureIDTexture._propertyTableName;
+}
+
+ECesiumFeatureIdTextureStatus
+UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+    UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture) {
+  return FeatureIDTexture._status;
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* component,
-    const FCesiumFeatureIdTexture& featureIdTexture) {
+    const FCesiumFeatureIdTexture& FeatureIDTexture) {
   const UCesiumGltfPrimitiveComponent* pPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!pPrimitive) {
-    return 0;
+    return -1;
+  }
+
+  if (FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
+    return -1;
   }
 
   auto textureCoordinateIndexIt = pPrimitive->textureCoordinateMap.find(
-      featureIdTexture._featureIdTextureView.getTextureCoordinateAttributeId());
+      FeatureIDTexture._featureIdTextureView.getTexCoordSetIndex());
   if (textureCoordinateIndexIt == pPrimitive->textureCoordinateMap.end()) {
-    return 0;
+    return -1;
   }
 
   return textureCoordinateIndexIt->second;
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::
-    GetFeatureIdForTextureCoordinates(
-        const FCesiumFeatureIdTexture& featureIdTexture,
+    GetFeatureIDForTextureCoordinates(
+        const FCesiumFeatureIdTexture& FeatureIDTexture,
         float u,
         float v) {
-  return featureIdTexture._featureIdTextureView.getFeatureID(u, v);
+  if (FeatureIDTexture._featureIdTextureView.status() !=
+      FeatureIdTextureViewStatus::Valid) {
+    return -1;
+  }
+
+  return FeatureIDTexture._featureIdTextureView.getFeatureId(u, v);
+}
+
+int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
+    UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
+    int64 VertexIndex) {
+  const std::optional<glm::vec2> texCoords = std::visit(
+      TexCoordFromAccessor{VertexIndex},
+      FeatureIDTexture._texCoordAccessor);
+
+  if (!texCoords) {
+    return -1;
+  }
+
+  return GetFeatureIDForTextureCoordinates(
+      FeatureIDTexture,
+      (*texCoords)[0],
+      (*texCoords)[1]);
 }

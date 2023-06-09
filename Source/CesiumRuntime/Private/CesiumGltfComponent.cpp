@@ -16,6 +16,7 @@
 #include "CesiumGeometry/Rectangle.h"
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGltf/AccessorView.h"
+#include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
@@ -69,19 +70,9 @@ using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
 namespace {
-
-// UE4 and UE5 both use single-precision vectors for meshes, but they have
-// different names.
-#if ENGINE_MAJOR_VERSION == 5
 using TMeshVector2 = FVector2f;
 using TMeshVector3 = FVector3f;
 using TMeshVector4 = FVector4f;
-#else
-using TMeshVector2 = FVector2D;
-using TMeshVector3 = FVector;
-using TMeshVector4 = FVector4;
-#endif
-
 } // namespace
 
 static uint32_t nextMaterialId = 0;
@@ -420,7 +411,8 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const Texture& texture = model.textures[gltfTexture.value().index];
+  const CesiumGltf::Texture& texture =
+      model.textures[gltfTexture.value().index];
 
   return loadTextureAnyThreadPart(model, texture, sRGB);
 }
@@ -479,11 +471,23 @@ static void applyWaterMask(
   }
 }
 
-static FCesiumMetadataPrimitive
-loadMetadataPrimitive(const Model& model, const MeshPrimitive& primitive) {
+static FCesiumPrimitiveFeatures
+loadPrimitiveFeatures(const Model& model, const MeshPrimitive& primitive) {
+  const ExtensionExtMeshFeatures* pExtension =
+      primitive.getExtension<ExtensionExtMeshFeatures>();
+  if (!pExtension) {
+    return FCesiumPrimitiveFeatures();
+  }
 
-  // NOTE: will have a deprecation period after which this function should no
-  // longer rely on model, only primitive.
+  return FCesiumPrimitiveFeatures(model, primitive, *pExtension);
+}
+
+static FCesiumMetadataPrimitive loadMetadataPrimitive(
+    const Model& model,
+    const MeshPrimitive& primitive,
+    const FCesiumPrimitiveFeatures& primitiveFeatures) {
+
+  // TODO: refactor for structural metadata
 
   const ExtensionMeshPrimitiveExtFeatureMetadata* pMetadata =
       primitive.getExtension<ExtensionMeshPrimitiveExtFeatureMetadata>();
@@ -491,18 +495,11 @@ loadMetadataPrimitive(const Model& model, const MeshPrimitive& primitive) {
     return FCesiumMetadataPrimitive();
   }
 
-  const ExtensionModelExtFeatureMetadata* pModelMetadata =
-      model.getExtension<ExtensionModelExtFeatureMetadata>();
-  if (!pModelMetadata) {
-    return FCesiumMetadataPrimitive{};
-  }
-
-  // This will change to no longer require the model-level extension
   return FCesiumMetadataPrimitive(
       model,
       primitive,
       *pMetadata,
-      *pModelMetadata);
+      primitiveFeatures);
 }
 
 static void updateTextureCoordinatesForMetadata(
@@ -779,8 +776,9 @@ static void loadPrimitive(
 
   bool hasNormalMap = material.normalTexture.has_value();
   if (hasNormalMap) {
-    const Texture* pTexture =
-        Model::getSafe(&model.textures, material.normalTexture->index);
+    const CesiumGltf::Texture* pTexture = CesiumGltf::Model::getSafe(
+        &model.textures,
+        material.normalTexture->index);
     hasNormalMap = pTexture != nullptr &&
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
   }
@@ -1032,7 +1030,11 @@ static void loadPrimitive(
     }
   }
 
-  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
+  primitiveResult.Metadata = loadMetadataPrimitive(
+      model,
+      primitive,
+      primitiveResult.Features); // TODO: use structural metadata
 
   const FMetadataDescription* pEncodedMetadataDescription =
       options.pMeshOptions->pNodeOptions->pModelOptions
@@ -1155,13 +1157,7 @@ static void loadPrimitive(
         false);
   }
 
-#if ENGINE_MAJOR_VERSION == 5
   FStaticMeshSectionArray& Sections = LODResources.Sections;
-#else
-  FStaticMeshLODResources::FStaticMeshSectionArray& Sections =
-      LODResources.Sections;
-#endif
-
   FStaticMeshSection& section = Sections.AddDefaulted_GetRef();
   // This will be ignored if the primitive contains points.
   section.NumTriangles = indices.Num() / 3;
@@ -1230,7 +1226,9 @@ static void loadPrimitive(
   }
 
   // load primitive metadata
-  primitiveResult.Metadata = loadMetadataPrimitive(model, primitive);
+  primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
+  primitiveResult.Metadata =
+      loadMetadataPrimitive(model, primitive, primitiveResult.Features);
 }
 
 static void loadIndexedPrimitive(
