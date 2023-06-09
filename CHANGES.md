@@ -6,6 +6,10 @@
 
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 
+##### Fixes :wrench:
+
+- Fixed physics bug caused by Unreal 5.1.
+
 ### v1.27.0 - 2023-06-1
 
 ##### Additions :tada:

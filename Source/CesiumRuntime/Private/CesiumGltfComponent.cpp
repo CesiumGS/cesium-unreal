@@ -2107,6 +2107,10 @@ static void loadPrimitiveGameThreadPart(
   // pMesh->UpdateCollisionFromStaticMesh();
   pBodySetup->CollisionTraceFlag = ECollisionTraceFlag::CTF_UseComplexAsSimple;
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+  pBodySetup->bDoubleSidedGeometry = true;
+#endif
+
   if (loadResult.pCollisionMesh) {
     pBodySetup->ChaosTriMeshes.Add(loadResult.pCollisionMesh);
   }
@@ -2488,10 +2492,15 @@ BuildChaosTriangleMeshes(
 
   for (int32 i = 0; i < triangleCount; ++i) {
     const int32 index0 = 3 * i;
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+    int32 vIndex0 = indices[index0];
+    int32 vIndex1 = indices[index0 + 1];
+    int32 vIndex2 = indices[index0 + 2];
+#else
     int32 vIndex0 = indices[index0 + 1];
     int32 vIndex1 = indices[index0];
     int32 vIndex2 = indices[index0 + 2];
-
+#endif
     if (!isTriangleDegenerate(
             vertices.X(vIndex0),
             vertices.X(vIndex1),
