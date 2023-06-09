@@ -80,7 +80,7 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
 }
 
-void AGlobeAwareDefaultPawn::_interpolatePosition(double percentage, glm::dvec3& out) const {
+void AGlobeAwareDefaultPawn::_interpolateFlightPosition(double percentage, glm::dvec3& out) const {
 
   // Rotate our normalized source direction, interpolating with time
   glm::dvec3 rotatedDirection = glm::rotate(_flyToSourceDirection, percentage * _flyToTotalAngle, _flyToRotationAxis);
@@ -284,7 +284,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   // Get the current position by interpolating with flyPercentage
   glm::dvec3 currentPosition;
-  _interpolatePosition(flyPercentage, currentPosition);
+  _interpolateFlightPosition(flyPercentage, currentPosition);
 
   // Set Location
   this->GlobeAnchor->MoveToECEF(currentPosition);
