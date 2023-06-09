@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CesiumPropertyTable.h"
-// #include "CesiumPropertyTexture.h"
+#include "CesiumPropertyTexture.h"
 
 #include "Containers/Array.h"
 #include "Containers/Map.h"
@@ -34,7 +34,7 @@ public:
 
 private:
   TArray<FCesiumPropertyTable> _propertyTables;
-  // TArray<FCesiumPropertyTexture> _propertyTextures;
+  TArray<FCesiumPropertyTexture> _propertyTextures;
   //  TODO: property attributes?
 
   friend class UCesiumModelMetadataBlueprintLibrary;
@@ -47,22 +47,22 @@ class CESIUMRUNTIME_API UCesiumModelMetadataBlueprintLibrary
 
 public:
   /**
-   * @brief Get all the property tables for this model metadata.
+   * Gets an array of all the property tables for this model metadata.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Model")
+      Category = "Cesium|Model|Metadata")
   static const TArray<FCesiumPropertyTable>&
   GetPropertyTables(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
 
-  ///**
-  // * @brief Get all the property textures for this model metadata.
-  // */
-  // UFUNCTION(
-  //    BlueprintCallable,
-  //    BlueprintPure,
-  //    Category = "Cesium|Metadata|Model")
-  // static const TMap<FString, FCesiumFeatureTexture>&
-  // GetFeatureTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
+  /**
+   * Gets an array of all the property textures for this model metadata.
+   */
+   UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Model|Metadata")
+   static const TArray<FCesiumPropertyTexture>&
+   GetPropertyTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
 };

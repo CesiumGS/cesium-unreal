@@ -36,7 +36,7 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
           pMetadata->propertyTables.size()) {
     const ExtensionExtStructuralMetadataPropertyTable& propertyTable =
         pMetadata->propertyTables[_propertyTableIndex.GetValue()];
-    std::string name = propertyTable.name ? *propertyTable.name : "";
+    std::string name = propertyTable.name.value_or("");
     propertyTableName = FString(name.c_str());
   }
 

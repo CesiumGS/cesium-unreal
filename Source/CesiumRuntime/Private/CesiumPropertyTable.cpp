@@ -12,7 +12,9 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     const ExtensionExtStructuralMetadataPropertyTable& PropertyTable)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidMetadataExtension),
       _count(PropertyTable.count),
+      _name(),
       _properties() {
+  _name = PropertyTable.name.value_or("").c_str();
 
   PropertyTableView propertyTableView{Model, PropertyTable};
   switch (propertyTableView.status()) {
@@ -38,13 +40,19 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   });
 }
 
-ECesiumPropertyTableStatus
+/*static*/ ECesiumPropertyTableStatus
 UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
   return PropertyTable._status;
 }
 
-int64 UCesiumPropertyTableBlueprintLibrary::GetNumberOfElements(
+/*static*/ const FString&
+UCesiumPropertyTableBlueprintLibrary::GetPropertyTableName(
+    UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
+  return PropertyTable._name;
+}
+
+/*static*/ int64 UCesiumPropertyTableBlueprintLibrary::GetNumberOfElements(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
   if (PropertyTable._status != ECesiumPropertyTableStatus::Valid) {
     return 0;
@@ -53,13 +61,13 @@ int64 UCesiumPropertyTableBlueprintLibrary::GetNumberOfElements(
   return PropertyTable._count;
 }
 
-const TMap<FString, FCesiumPropertyTableProperty>&
+/*static*/ const TMap<FString, FCesiumPropertyTableProperty>&
 UCesiumPropertyTableBlueprintLibrary::GetProperties(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
   return PropertyTable._properties;
 }
 
-TMap<FString, FCesiumMetadataValue>
+/*static*/ TMap<FString, FCesiumMetadataValue>
 UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureID(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     int64 featureID) {
@@ -75,7 +83,7 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureID(
   return feature;
 }
 
-TMap<FString, FString>
+/*static*/ TMap<FString, FString>
 UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesAsStringsForFeatureID(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     int64 featureID) {

@@ -33,7 +33,7 @@ CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
 }
 
 ECesiumMetadataBlueprintType
-CesiumMetadataTypesToBlueprintType(FCesiumMetadataValueType ValueType) {
+CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
   if (ValueType.bIsArray) {
     return ECesiumMetadataBlueprintType::Array;
   }

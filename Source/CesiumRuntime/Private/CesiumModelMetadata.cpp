@@ -7,20 +7,17 @@
 using namespace CesiumGltf;
 
 FCesiumModelMetadata::FCesiumModelMetadata(
-    const Model& model,
-    const ExtensionModelExtStructuralMetadata& metadata) {
-  const size_t propertyTablesSize = metadata.propertyTables.size();
-  this->_propertyTables.Reserve(propertyTablesSize);
-  for (size_t i = 0; i < propertyTablesSize; i++) {
-    this->_propertyTables.Emplace(
-        FCesiumPropertyTable(model, metadata.propertyTables[i]));
+    const Model& InModel,
+    const ExtensionModelExtStructuralMetadata& Metadata) {
+  this->_propertyTables.Reserve(Metadata.propertyTables.size());
+  for (const auto& propertyTable : Metadata.propertyTables) {
+    this->_propertyTables.Emplace(FCesiumPropertyTable(InModel, propertyTable));
   }
 
-  this->_featureTextures.Reserve(metadata.featureTextures.size());
-  for (const auto& featureTextureIt : metadata.featureTextures) {
-    this->_featureTextures.Emplace(
-        UTF8_TO_TCHAR(featureTextureIt.first.c_str()),
-        FCesiumFeatureTexture(model, featureTextureIt.second));
+  this->_propertyTextures.Reserve(Metadata.propertyTextures.size());
+  for (const auto& propertyTexture : Metadata.propertyTextures) {
+    this->_propertyTextures.Emplace(
+        FCesiumPropertyTexture(InModel, propertyTexture));
   }
 }
 
@@ -31,9 +28,9 @@ UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(
   return ModelMetadata._propertyTables;
 }
 
-///*static*/
-//const TMap<FString, FCesiumFeatureTexture>&
-//UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(
-//    UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
-//  return MetadataModel._featureTextures;
-//}
+/*static*/
+const TArray<FCesiumPropertyTexture>&
+UCesiumModelMetadataBlueprintLibrary::GetPropertyTextures(
+    UPARAM(ref) const FCesiumModelMetadata& ModelMetadata) {
+  return ModelMetadata._propertyTextures;
+}

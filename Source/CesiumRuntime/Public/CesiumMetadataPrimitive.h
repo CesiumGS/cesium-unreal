@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumPrimitiveMetadata.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -25,7 +26,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPrimitive {
 
 public:
   /**
-   * Construct an empty primitive metadata.
+   * Construct an empty primitive metadata instance.
    */
   FCesiumMetadataPrimitive()
       : _pPrimitiveFeatures(nullptr), _pPrimitiveMetadata(nullptr) {}
@@ -34,16 +35,20 @@ public:
    * Constructs a primitive metadata instance from the new features / metadata
    * implementations for backwards compatibility.
    *
-   * @param primitiveFeatures The FCesiumPrimitiveFeatures denoting the feature
+   * @param PrimitiveFeatures The FCesiumPrimitiveFeatures denoting the feature
    * IDs in the glTF mesh primitive.
-   * @param primitiveMetadata The FCesiumPrimitiveMetadata containing references
+   * @param PrimitiveMetadata The FCesiumPrimitiveMetadata containing references
    * to the metadata for the glTF mesh primitive.
    */
-  FCesiumMetadataPrimitive(const FCesiumPrimitiveFeatures& primitiveFeatures);
+  FCesiumMetadataPrimitive(
+      const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+      const FCesiumPrimitiveMetadata& PrimitiveMetadata,
+    const FCesiumModelMetadata& ModelMetadata);
 
 private:
   const FCesiumPrimitiveFeatures* _pPrimitiveFeatures;
   const FCesiumPrimitiveMetadata* _pPrimitiveMetadata;
+  const FCesiumModelMetadata* _pModelMetadata;
 
   friend class UCesiumMetadataPrimitiveBlueprintLibrary;
 };

@@ -50,6 +50,7 @@ public:
 private:
   ECesiumPropertyTableStatus _status;
   int64 _count;
+  FString _name;
   TMap<FString, FCesiumPropertyTableProperty> _properties;
 
   friend class UCesiumPropertyTableBlueprintLibrary;
@@ -71,6 +72,17 @@ public:
       Category = "Cesium|Metadata|PropertyTable")
   static ECesiumPropertyTableStatus
   GetPropertyTableStatus(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
+
+  /**
+   * Gets the name of the property table. If no name was specified in the glTF
+   * extension, this returns an empty string.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTable")
+  static const FString&
+  GetPropertyTableName(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
 
   /**
    * Gets the number of elements in the property table. In other words, this is

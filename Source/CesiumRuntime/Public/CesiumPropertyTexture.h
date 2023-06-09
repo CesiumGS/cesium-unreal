@@ -43,6 +43,7 @@ public:
 
 private:
   ECesiumPropertyTextureStatus _status;
+  FString _name;
   CesiumGltf::PropertyTextureView _propertyTextureView;
   TArray<> _propertyKeys;
 
@@ -64,6 +65,18 @@ public:
       Category = "Cesium|Metadata|PropertyTexture")
   static const ECesiumPropertyTextureStatus
   GetPropertyTextureStatus(UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture);
+
+  
+  /**
+   * Gets the name of the property texture. If
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTexture")
+  static const ECesiumPropertyTextureStatus
+  GetPropertyTextureName(UPARAM(ref)
+                               const FCesiumPropertyTexture& PropertyTexture);
 
   /**
    * Gets the FCesiumPropertyTextureProperty views for the given property

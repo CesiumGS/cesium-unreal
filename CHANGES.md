@@ -13,7 +13,6 @@
 
 - Feature IDs are now parsed through the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`.
 - Metadata is now parsed through the `EXT_structural_metadata` extension. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible. This includes the following API changes:
-  - Renamed `FCesiumMetadataModel` to `FCesiumModelMetadata`.
   - Renamed `FCesiumFeatureTable` to `FCesiumPropertyTable`. `FCesiumFeatureTable.GetNumberOfFeatures` is now `FCesiumPropertyTable.GetNumberOfElements`.
   - Renamed `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty`.
   - Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
@@ -33,6 +32,7 @@
 ##### Deprecated :hourglass_flowing_sand:
 
 - `FCesiumMetadataPrimitive` has been deprecated. Instead, use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
+- `FCesiumMetadataModel` has been deprecated. Use `FCesiumModelMetadata` to access metadata from a model instead.
 - `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are less applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
 - `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
 -`UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace` instead.

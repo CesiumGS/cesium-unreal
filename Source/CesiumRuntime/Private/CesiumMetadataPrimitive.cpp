@@ -5,17 +5,11 @@
 #include "CesiumGltf/Model.h"
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive,
-    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
-    const FCesiumPrimitiveFeatures& primitiveFeatures)
-    : _pPrimitiveFeatures(&primitiveFeatures), _featureTextureNames() {
-  this->_featureTextureNames.Reserve(metadata.featureTextures.size());
-  for (const std::string& featureTextureName : metadata.featureTextures) {
-    this->_featureTextureNames.Emplace(
-        UTF8_TO_TCHAR(featureTextureName.c_str()));
-  }
-}
+    const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+    const FCesiumPrimitiveMetadata& PrimitiveMetadata,
+  const FCesiumModelMetadata& ModelMetadata)
+    : _pPrimitiveFeatures(&PrimitiveFeatures),
+      _pPrimitiveMetadata(&PrimitiveMetadata) {}
 
 const TArray<FCesiumFeatureIdAttribute>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
@@ -75,13 +69,14 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
       UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
           *MetadataPrimitive._pPrimitiveMetadata);
 
+  // this requires model metadata
+ /* const TArray<FCesiumPropertyTexture> propertyTextures = UCesiumM
+
   propertyTextureNames.Reserve(propertyTextureIndices.Num());
   for (const int64 index : propertyTextureIndices) {
-    // TODO
-    /*propertyTextureNames.Add(
-        UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
-            featureIDSet));*/
-  }
+    propertyTextureNames.Add(::GetAsFeatureIDTexture(
+            featureIDSet));
+  }*/
 
   return propertyTextureNames;
 }
