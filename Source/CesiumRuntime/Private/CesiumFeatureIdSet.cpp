@@ -19,6 +19,7 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
     : _featureID(),
       _featureIDType(ECesiumFeatureIdType::None),
       _featureCount(FeatureID.featureCount),
+      _nullFeatureID(FeatureID.nullFeatureId ? *FeatureID.nullFeatureId : -1),
       _propertyTableIndex() {
   FString propertyTableName;
 
@@ -31,7 +32,8 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
       InModel.getExtension<ExtensionModelExtStructuralMetadata>();
   if (pMetadata && _propertyTableIndex.IsSet() &&
       _propertyTableIndex.GetValue() >= 0 &&
-      static_cast<size_t>(_propertyTableIndex.GetValue()) < pMetadata->propertyTables.size()) {
+      static_cast<size_t>(_propertyTableIndex.GetValue()) <
+          pMetadata->propertyTables.size()) {
     const ExtensionExtStructuralMetadataPropertyTable& propertyTable =
         pMetadata->propertyTables[_propertyTableIndex.GetValue()];
     std::string name = propertyTable.name ? *propertyTable.name : "";
@@ -101,6 +103,11 @@ const int64 UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
 int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
   return FeatureIDSet._featureCount;
+}
+
+const int64 UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(
+    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
+  return FeatureIDSet._nullFeatureID;
 }
 
 int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(

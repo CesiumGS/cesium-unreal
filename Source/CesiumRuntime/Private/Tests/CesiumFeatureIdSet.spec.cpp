@@ -109,6 +109,26 @@ void FCesiumFeatureIdSetSpec::Define() {
           static_cast<int64>(featureId.featureCount));
     });
 
+    It("constructs with null feature ID", [this]() {
+      ExtensionExtMeshFeaturesFeatureId featureId;
+      featureId.featureCount = 10;
+      featureId.nullFeatureId = 0;
+
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      TestEqual(
+          "FeatureIDType",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
+          ECesiumFeatureIdType::Implicit);
+      TestEqual(
+          "FeatureCount",
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
+          static_cast<int64>(featureId.featureCount));
+      TestEqual(
+          "NullFeatureID",
+          UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(featureIDSet),
+          static_cast<int64>(*featureId.nullFeatureId));
+    });
+
     It("constructs with property table index", [this]() {
       ExtensionExtMeshFeaturesFeatureId featureId;
       featureId.featureCount = 10;
