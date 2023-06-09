@@ -116,7 +116,7 @@ public:
       meta =
         (DeprecatedProperty,
          DeprecationMessage =
-               "FlyToGranularityDegrees has been deprecated. Flight interpolation is now always of the highest quality."))
+               "FlyToGranularityDegrees has been deprecated. This property no longer needs to be set."))
   float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
   /**
