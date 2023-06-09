@@ -148,8 +148,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   //  point smoothly.
   //  - Add as flightProfile offset /-\ defined by a curve.
 
-  // Compute actual altitude at source and destination points by scaling on
-  // ellipsoid.
+  // Compute actual altitude at source and destination points by getting their cartographic height
   _flyToSourceAltitude = 0.0;
   _flyToDestinationAltitude = 0.0;
 
