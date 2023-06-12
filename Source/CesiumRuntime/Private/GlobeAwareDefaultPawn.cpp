@@ -308,7 +308,9 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
 
   // Get the current position by interpolating linearly between those two points
   const glm::dvec3& lastPosition = this->_keypoints[lastIndex];
-  const glm::dvec3& nextPosition = this->_keypoints[nextIndex];
+  const glm::dvec3& nextPosition = nextIndex >= this->_keypoints.size()
+                                       ? lastPosition
+                                       : this->_keypoints[nextIndex];
   glm::dvec3 currentPosition =
       glm::mix(lastPosition, nextPosition, segmentPercentage);
   // Set Location
