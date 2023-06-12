@@ -5,6 +5,7 @@
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"
+#include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelInstance.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumTransforms.h"
@@ -694,7 +695,7 @@ int32 clampedAdd(double f, int32 i) {
 } // namespace
 
 bool ACesiumGeoreference::_updateSublevelState() {
-  const TArray<TWeakObjectPtr<ACesiumSubLevelInstance>>& sublevels =
+  const TArray<TWeakObjectPtr<ALevelInstance>>& sublevels =
       this->SubLevelSwitcher->GetRegisteredSubLevels();
 
   if (this->CesiumSubLevels.Num() == 0 && sublevels.Num() == 0) {
@@ -720,22 +721,27 @@ bool ACesiumGeoreference::_updateSublevelState() {
       cameraAbsolute);
 
   {
-    ACesiumSubLevelInstance* pClosestActiveLevel = nullptr;
+    ALevelInstance* pClosestActiveLevel = nullptr;
     double closestLevelDistance = std::numeric_limits<double>::max();
 
     for (int32 i = 0; i < sublevels.Num(); ++i) {
-      ACesiumSubLevelInstance* pCurrent = sublevels[i].Get();
+      ALevelInstance* pCurrent = sublevels[i].Get();
       if (!IsValid(pCurrent))
+        continue;
+
+      UCesiumSubLevelComponent* pComponent =
+          pCurrent->FindComponentByClass<UCesiumSubLevelComponent>();
+      if (!IsValid(pComponent))
         continue;
 
       glm::dvec3 levelECEF =
           _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-              pCurrent->OriginLongitude,
-              pCurrent->OriginLatitude,
-              pCurrent->OriginHeight));
+              pComponent->GetOriginLongitude(),
+              pComponent->GetOriginLatitude(),
+              pComponent->GetOriginHeight()));
 
       double levelDistance = glm::length(levelECEF - cameraECEF);
-      if (levelDistance < pCurrent->LoadRadius &&
+      if (levelDistance < pComponent->GetLoadRadius() &&
           levelDistance < closestLevelDistance) {
         pClosestActiveLevel = pCurrent;
         closestLevelDistance = levelDistance;

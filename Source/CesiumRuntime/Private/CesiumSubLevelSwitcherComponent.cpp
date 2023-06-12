@@ -1,4 +1,5 @@
 #include "CesiumSubLevelSwitcherComponent.h"
+#include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelInstance.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
@@ -15,7 +16,7 @@ UCesiumSubLevelSwitcherComponent::UCesiumSubLevelSwitcherComponent() {
 }
 
 void UCesiumSubLevelSwitcherComponent::RegisterSubLevel(
-    ACesiumSubLevelInstance* pSubLevel) noexcept {
+    ALevelInstance* pSubLevel) noexcept {
   this->_sublevels.AddUnique(pSubLevel);
 
   // In the Editor, ensure only one is active.
@@ -23,7 +24,7 @@ void UCesiumSubLevelSwitcherComponent::RegisterSubLevel(
 }
 
 void UCesiumSubLevelSwitcherComponent::UnregisterSubLevel(
-    ACesiumSubLevelInstance* pSubLevel) noexcept {
+    ALevelInstance* pSubLevel) noexcept {
   // If this sub-level is active, deactivate it.
   if (this->_pTarget == pSubLevel)
     this->SetTarget(nullptr);
@@ -31,23 +32,21 @@ void UCesiumSubLevelSwitcherComponent::UnregisterSubLevel(
   this->_sublevels.Remove(pSubLevel);
 }
 
-const TArray<TWeakObjectPtr<ACesiumSubLevelInstance>>&
+const TArray<TWeakObjectPtr<ALevelInstance>>&
 UCesiumSubLevelSwitcherComponent::GetRegisteredSubLevels() const noexcept {
   return this->_sublevels;
 }
 
-ACesiumSubLevelInstance*
-UCesiumSubLevelSwitcherComponent::GetCurrent() const noexcept {
+ALevelInstance* UCesiumSubLevelSwitcherComponent::GetCurrent() const noexcept {
   return this->_pCurrent;
 }
 
-ACesiumSubLevelInstance*
-UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
+ALevelInstance* UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
   return this->_pTarget;
 }
 
 void UCesiumSubLevelSwitcherComponent::SetTarget(
-    ACesiumSubLevelInstance* pLevelInstance) noexcept {
+    ALevelInstance* pLevelInstance) noexcept {
   this->_pTarget = pLevelInstance;
 }
 
@@ -55,7 +54,7 @@ void UCesiumSubLevelSwitcherComponent::SetTarget(
 
 void UCesiumSubLevelSwitcherComponent::
     NotifySubLevelIsTemporarilyHiddenInEditorChanged(
-        ACesiumSubLevelInstance* pLevelInstance,
+        ALevelInstance* pLevelInstance,
         bool bIsHidden) {
   if (bIsHidden) {
     // The previous target level has been hidden, so clear out the target.
@@ -100,7 +99,7 @@ void UCesiumSubLevelSwitcherComponent::
 
   bool foundFirstVisible = false;
   for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-    ACesiumSubLevelInstance* Current = this->_sublevels[i].Get();
+    ALevelInstance* Current = this->_sublevels[i].Get();
     if (!IsValid(Current))
       continue;
 
@@ -130,7 +129,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
   // to disable this.
   bool anyLevelsStillLoaded = false;
   for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-    ACesiumSubLevelInstance* pSubLevel = this->_sublevels[i].Get();
+    ALevelInstance* pSubLevel = this->_sublevels[i].Get();
     if (!IsValid(pSubLevel))
       continue;
 
@@ -206,7 +205,10 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     // Target one even though it's not loaded yet. This way, by the time the
     // level _is_ loaded, it will be at the right location because the
     // georeference has been updated.
-    this->_pTarget->ActivateSubLevel();
+    UCesiumSubLevelComponent* pTargetComponent =
+        this->_pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
+    if (pTargetComponent)
+      pTargetComponent->UpdateGeoreferenceIfSubLevelIsActive();
 
     ULevelStreaming* pStreaming =
         this->_getLevelStreamingForSubLevel(this->_pTarget);
@@ -256,7 +258,10 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateEditor() {
   }
 
   if (this->_pTarget != nullptr) {
-    this->_pTarget->ActivateSubLevel();
+    UCesiumSubLevelComponent* pTargetComponent =
+        this->_pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
+    if (pTargetComponent)
+      pTargetComponent->UpdateGeoreferenceIfSubLevelIsActive();
     this->_pTarget->SetIsTemporarilyHiddenInEditor(false);
     this->_pCurrent = this->_pTarget;
   }
@@ -266,7 +271,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateEditor() {
 
 ULevelStreaming*
 UCesiumSubLevelSwitcherComponent::_getLevelStreamingForSubLevel(
-    ACesiumSubLevelInstance* SubLevel) const {
+    ALevelInstance* SubLevel) const {
   if (!IsValid(SubLevel))
     return nullptr;
 
