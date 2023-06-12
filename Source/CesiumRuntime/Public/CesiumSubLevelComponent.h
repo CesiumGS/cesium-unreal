@@ -92,8 +92,28 @@ public:
    */
   void UpdateGeoreferenceIfSubLevelIsActive();
 
+  virtual void BeginDestroy() override;
+
 protected:
   virtual void BeginPlay() override;
+
+  /**
+   * Called when a component is registered. This can be viewed as "enabling"
+   * this Component on the Actor to which it is attached.
+   *
+   * In the Editor, this is called in a many different situations, such as on
+   * changes to properties.
+   */
+  virtual void OnRegister() override;
+
+  /**
+   * Called when a component is unregistered. This can be viewed as
+   * "disabling" this Component on the Actor to which it is attached.
+   *
+   * In the Editor, this is called in a many different situations, such as on
+   * changes to properties.
+   */
+  virtual void OnUnregister() override;
 
 private:
   /**

@@ -128,6 +128,11 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
   }
 }
 
+void UCesiumSubLevelComponent::BeginDestroy() {
+  this->InvalidateResolvedGeoreference();
+  Super::BeginDestroy();
+}
+
 void UCesiumSubLevelComponent::BeginPlay() {
   Super::BeginPlay();
 
@@ -140,6 +145,37 @@ void UCesiumSubLevelComponent::BeginPlay() {
     return;
 
   pSwitcher->RegisterSubLevel(pLevel);
+}
+
+void UCesiumSubLevelComponent::OnRegister() {
+  Super::OnRegister();
+
+  // We set this to true here so that the CesiumEditorSubLevelMutex in the
+  // CesiumEditor module is invoked for this component when the ALevelInstance's
+  // visibility is toggled in the Editor.
+  bRenderStateCreated = true;
+
+  ALevelInstance* pOwner = this->_getLevelInstance();
+  if (!pOwner) {
+    return;
+  }
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->RegisterSubLevel(pOwner);
+}
+
+void UCesiumSubLevelComponent::OnUnregister() {
+  Super::OnUnregister();
+
+  ALevelInstance* pOwner = this->_getLevelInstance();
+  if (!pOwner) {
+    return;
+  }
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->UnregisterSubLevel(pOwner);
 }
 
 UCesiumSubLevelSwitcherComponent*
