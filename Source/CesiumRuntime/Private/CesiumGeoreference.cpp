@@ -467,6 +467,15 @@ void ACesiumGeoreference::SetGeoreferenceOriginEcef(const FVector& TargetEcef) {
       glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
 }
 
+void ACesiumGeoreference::SetGeoreferenceScale(double NewScale) {
+  if (NewScale < 1e-6) {
+    this->Scale = 1e-6;
+  } else {
+    this->Scale = NewScale;
+  }
+  this->UpdateGeoreference();
+}
+
 // Called when the game starts or when spawned
 void ACesiumGeoreference::BeginPlay() {
   Super::BeginPlay();

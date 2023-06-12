@@ -102,6 +102,7 @@ public:
    */
   UPROPERTY(
       EditAnywhere,
+      BlueprintReadOnly,
       Category = "Cesium",
       Meta = (UIMin = 0.000001, UIMax = 100.0))
   double Scale = 100.0;
@@ -252,6 +253,13 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetGeoreferenceOriginEcef(const FVector& TargetEcef);
+
+  /**
+   * This sets the percentage scale of the globe. For instance, if the value is
+   * 50, the globe will shrink by half.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetGeoreferenceScale(double NewScale);
 
   /*
    * USEFUL CONVERSION FUNCTIONS
