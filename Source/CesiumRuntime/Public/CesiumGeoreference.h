@@ -90,12 +90,11 @@ public:
    * DISABLED.
    */
   UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Cesium Sublevels",
       Meta =
-          (TitleProperty = "LevelName",
-           DisplayName = "Georeferenced Sublevels"))
-  TArray<FCesiumSubLevel> CesiumSubLevels;
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Create sub-levels by adding a UCesiumSubLevelComponent to an ALevelInstance Actor."))
+  TArray<FCesiumSubLevel> CesiumSubLevels_DEPRECATED;
 
   /**
    * The percentage scale of the globe in the Unreal world. If this value is 50,
@@ -484,6 +483,7 @@ protected:
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void OnConstruction(const FTransform& Transform) override;
   virtual void BeginDestroy() override;
+  virtual void PostLoad() override;
 
 #if WITH_EDITOR
   virtual void

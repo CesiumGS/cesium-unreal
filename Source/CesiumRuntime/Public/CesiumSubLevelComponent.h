@@ -15,6 +15,13 @@ class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
   GENERATED_BODY()
 
 public:
+  /** @copydoc UCesiumSubLevelComponent::Enabled */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  bool GetEnabled() const;
+  /** @copydoc UCesiumSubLevelComponent::Enabled */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetEnabled(bool value);
+
   /** @copydoc UCesiumSubLevelComponent::OriginLongitude */
   UFUNCTION(BlueprintPure, Category = "Cesium")
   double GetOriginLongitude() const;
@@ -93,6 +100,7 @@ public:
   void UpdateGeoreferenceIfSubLevelIsActive();
 
   virtual void BeginDestroy() override;
+  virtual void OnComponentCreated() override;
 
 protected:
   virtual void BeginPlay() override;
@@ -116,6 +124,23 @@ protected:
   virtual void OnUnregister() override;
 
 private:
+  /**
+   * Whether this sub-level is enabled. An enabled sub-level will be
+   * automatically loaded when the camera moves within its LoadRadius and
+   * no other levels are closer, and the Georeference will be updated so that
+   * this level's Longitude, Latitude, and Height become (0, 0, 0) in the Unreal
+   * World. A sub-level that is not enabled will be ignored by Cesium at
+   * runtime.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      BlueprintGetter = GetEnabled,
+      BlueprintSetter = SetEnabled,
+      meta = (AllowPrivateAccess = true))
+  bool Enabled = true;
+
   /**
    * The latitude of the georeference origin for this sublevel in degrees, in
    * the range [-90, 90]. When this sub-level is active, the CesiumGeoreference

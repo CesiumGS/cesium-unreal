@@ -3,6 +3,10 @@
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "LevelInstance/LevelInstanceActor.h"
 
+bool UCesiumSubLevelComponent::GetEnabled() const { return this->Enabled; }
+
+void UCesiumSubLevelComponent::SetEnabled(bool value) { this->Enabled = value; }
+
 double UCesiumSubLevelComponent::GetOriginLongitude() const {
   return this->OriginLongitude;
 }
@@ -131,6 +135,34 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
 void UCesiumSubLevelComponent::BeginDestroy() {
   this->InvalidateResolvedGeoreference();
   Super::BeginDestroy();
+}
+
+void UCesiumSubLevelComponent::OnComponentCreated() {
+  Super::OnComponentCreated();
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher && this->ResolvedGeoreference) {
+    this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
+    this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
+    this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
+
+    // Make the sub-level's position the georeference origin and reset the
+    // origin to (0,0,0).
+    // TODO: make this a button instead
+    // AActor* pOwner = this->GetOwner();
+    // const FTransform& transform = pOwner->GetActorTransform();
+    // FVector location = transform.GetLocation();
+
+    // FVector llh =
+    //     this->ResolvedGeoreference->TransformUnrealToLongitudeLatitudeHeight(
+    //         location);
+
+    // this->OriginLongitude = llh.X;
+    // this->OriginLatitude = llh.Y;
+    // this->OriginHeight = llh.Z;
+
+    // pOwner->SetActorLocation(FVector::ZeroVector);
+  }
 }
 
 void UCesiumSubLevelComponent::BeginPlay() {
