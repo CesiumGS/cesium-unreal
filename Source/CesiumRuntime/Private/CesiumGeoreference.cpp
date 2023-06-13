@@ -221,36 +221,6 @@ FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
   return levelName;
 }
 
-struct WorldCompositionLevelPair {
-  FWorldCompositionTile* pTile;
-  ULevelStreaming* pLevelStreaming;
-};
-
-WorldCompositionLevelPair findWorldCompositionLevel(
-    UWorldComposition* pWorldComposition,
-    const FName& packageName) {
-
-  UWorldComposition::FTilesList& tiles = pWorldComposition->GetTilesList();
-  const TArray<ULevelStreaming*>& levels = pWorldComposition->TilesStreaming;
-
-  for (int32 i = 0; i < tiles.Num(); ++i) {
-    FWorldCompositionTile& tile = tiles[i];
-
-    if (tile.Info.Layer.DistanceStreamingEnabled) {
-      // UE itself is managing distance-based streaming for this level, ignore
-      // it.
-      continue;
-    }
-
-    if (tile.PackageName == packageName) {
-      assert(i < levels.Num());
-      return {&tile, levels[i]};
-    }
-  }
-
-  return {nullptr, nullptr};
-}
-
 } // namespace
 
 #if WITH_EDITOR
@@ -276,7 +246,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
   // Convert old-style sublevels (using World Composition) to new style
   // sub-levels (level instances)
-  const UWorldComposition::FTilesList& allLevels =
+  UWorldComposition::FTilesList& allLevels =
       pWorld->WorldComposition->GetTilesList();
 
   for (const FWorldCompositionTile& level : allLevels) {
@@ -293,6 +263,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
     FActorSpawnParameters spawnParameters{};
     spawnParameters.Name = FName(pFound->LevelName);
+    spawnParameters.ObjectFlags = RF_Transactional;
 
     ALevelInstance* pLevelInstance = pWorld->SpawnActor<ALevelInstance>(
         FVector::ZeroVector,
@@ -311,6 +282,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
             false,
             FTransform::Identity,
             false));
+    pLevelComponent->SetFlags(RF_Transactional);
     pLevelInstance->AddInstanceComponent(pLevelComponent);
 
     pLevelComponent->SetOriginLongitudeLatitudeHeight(FVector(
@@ -338,7 +310,7 @@ void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
     const glm::dvec3& targetLongitudeLatitudeHeight) {
   // Should not allow externally initiated georeference origin changing if we
   // are inside a sublevel
-  //if (this->_insideSublevel) {
+  // if (this->_insideSublevel) {
   //  return;
   //}
   this->_setGeoreferenceOrigin(

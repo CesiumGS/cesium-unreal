@@ -165,6 +165,30 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
   }
 }
 
+#if WITH_EDITOR
+
+void UCesiumSubLevelComponent::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  if (!PropertyChangedEvent.Property) {
+    return;
+  }
+
+  FName propertyName = PropertyChangedEvent.Property->GetFName();
+
+  if (propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginLongitude) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginLatitude) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginHeight)) {
+    this->UpdateGeoreferenceIfSubLevelIsActive();
+  }
+}
+
+#endif
+
 void UCesiumSubLevelComponent::BeginPlay() {
   Super::BeginPlay();
 
@@ -195,6 +219,8 @@ void UCesiumSubLevelComponent::OnRegister() {
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
   if (pSwitcher)
     pSwitcher->RegisterSubLevel(pOwner);
+
+  this->UpdateGeoreferenceIfSubLevelIsActive();
 }
 
 void UCesiumSubLevelComponent::OnUnregister() {

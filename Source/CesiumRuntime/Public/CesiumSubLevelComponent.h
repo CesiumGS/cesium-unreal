@@ -102,6 +102,11 @@ public:
   virtual void BeginDestroy() override;
   virtual void OnComponentCreated() override;
 
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 protected:
   virtual void BeginPlay() override;
 
