@@ -202,8 +202,6 @@ void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumCreditSystem::BeginDestroy() {
-  this->removeCreditsFromViewports();
-
 #if WITH_EDITOR
   FLevelEditorModule* pLevelEditorModule =
       FModuleManager::GetModulePtr<FLevelEditorModule>(LevelEditorName);
