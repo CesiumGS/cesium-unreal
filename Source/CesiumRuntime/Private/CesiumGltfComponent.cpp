@@ -845,8 +845,8 @@ static void loadPrimitive(
         glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
 
     FBox aaBox(
-        FVector3d(minPosition.x, minPosition.y, minPosition.z),
-        FVector3d(maxPosition.x, maxPosition.y, maxPosition.z));
+        FVector3d(minPosition.x, -minPosition.y, minPosition.z),
+        FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
 
     aaBox.GetCenterAndExtents(
         RenderData->Bounds.Origin,
@@ -901,7 +901,10 @@ static void loadPrimitive(
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
-        vertex.Position = positionView[vertexIndex];
+        const TMeshVector3& pos = positionView[vertexIndex];
+        vertex.Position.X = pos.X;
+        vertex.Position.Y = -pos.Y;
+        vertex.Position.Z = pos.Z;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -912,7 +915,10 @@ static void loadPrimitive(
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        vertex.Position = positionView[i];
+        const TMeshVector3& pos = positionView[i];
+        vertex.Position.X = pos.X;
+        vertex.Position.Y = -pos.Y;
+        vertex.Position.Z = pos.Z;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1069,7 +1075,10 @@ static void loadPrimitive(
         uint32 vertexIndex = indices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
         vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[vertexIndex];
+        const TMeshVector3& normal = normalAccessor[vertexIndex];
+        vertex.TangentZ.X = normal.X;
+        vertex.TangentZ.Y = -normal.Y;
+        vertex.TangentZ.Z = normal.Z;
       }
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
@@ -1077,7 +1086,10 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
         vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[i];
+        const TMeshVector3& normal = normalAccessor[i];
+        vertex.TangentZ.X = normal.X;
+        vertex.TangentZ.Y = -normal.Y;
+        vertex.TangentZ.Z = normal.Z;
       }
     }
   } else {
@@ -1091,6 +1103,7 @@ static void loadPrimitive(
               CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
                   glm::dvec3(ecefCenter)),
               0.0)));
+      upDir.Y *= -1;
       setUniformNormals(indices, StaticMeshBuildVertices, upDir);
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
@@ -1105,7 +1118,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector4& tangent = tangentAccessor[vertexIndex];
-        vertex.TangentX = tangent;
+        vertex.TangentX.X = tangent.X;
+        vertex.TangentX.Y = -tangent.Y;
+        vertex.TangentX.Z = tangent.Z;
         vertex.TangentY =
             TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
             tangent.W;
@@ -1116,6 +1131,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector4& tangent = tangentAccessor[i];
         vertex.TangentX = tangent;
+        vertex.TangentX.X = tangent.X;
+        vertex.TangentX.Y = -tangent.Y;
+        vertex.TangentX.Z = tangent.Z;
         vertex.TangentY =
             TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
             tangent.W;
@@ -1172,22 +1190,10 @@ static void loadPrimitive(
   section.bCastShadow = true;
   section.MaterialIndex = 0;
 
-  // Note that we're reversing the order of the indices, because the change
-  // from the glTF right-handed to the Unreal left-handed coordinate system
-  // reverses the winding order.
-  // Note also that we don't want to just flip the index buffer, since that
-  // will change the order of the faces.
   if (duplicateVertices) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 2; i < indices.Num(); i += 3) {
-      indices[i - 2] = i;
-      indices[i - 1] = i - 1;
-      indices[i] = i - 2;
-    }
-  } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 2; i < indices.Num(); i += 3) {
-      std::swap(indices[i - 2], indices[i]);
+    for (int32 i = 0; i < indices.Num(); i++) {
+      indices[i] = i;
     }
   }
 
@@ -1210,9 +1216,28 @@ static void loadPrimitive(
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
   primitiveResult.RenderData = std::move(RenderData);
-  primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
+
+  static constexpr glm::dmat4 scaleMatrix = {
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0};
+
+  primitiveResult.transform = transform * scaleMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
