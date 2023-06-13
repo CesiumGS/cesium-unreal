@@ -296,6 +296,12 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   }
 
   this->CesiumSubLevels_DEPRECATED.Empty();
+
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT(
+          "Cesium sub-levels based on World Composition have been converted to Level Instances. Save the level to keep these changes. We recommend disabling World Composition in the World Settings, as it is now obsolete."));
 }
 #endif
 
