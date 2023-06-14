@@ -212,10 +212,11 @@ void UScreenCreditsWidget::HandleImageRequest(
     FHttpResponsePtr HttpResponse,
     bool bSucceeded,
     int32 id) {
+  UTexture2D* texture = nullptr;
   if (bSucceeded && HttpResponse.IsValid() &&
-      HttpResponse->GetContentLength() > 0) {
-    UTexture2D* texture =
-        FImageUtils::ImportBufferAsTexture2D(HttpResponse->GetContent());
+      HttpResponse->GetContentLength() > 0 &&
+      (texture = FImageUtils::ImportBufferAsTexture2D(
+           HttpResponse->GetContent())) != nullptr) {
     texture->SRGB = true;
     texture->UpdateResource();
     _textures.Add(texture);
