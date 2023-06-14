@@ -71,12 +71,6 @@ public:
       FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-  /**
-   * Ensures that there are not multiple visible sub-levels in the Editor by
-   * deactivating any additional sublevels after the first one.
-   */
-  void _ensureZeroOrOneSubLevelsAreActiveInEditor();
-
   void _updateSubLevelStateGame();
 #if WITH_EDITOR
   void _updateSubLevelStateEditor();
@@ -89,12 +83,15 @@ private:
   ULevelStreaming*
   _getLevelStreamingForSubLevel(ALevelInstance* SubLevel) const;
 
+  // Don't save/load or copy this.
   UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
   TArray<TWeakObjectPtr<ALevelInstance>> _sublevels;
 
+  // Don't save/load or copy this.
   UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
-  ALevelInstance* _pCurrent = nullptr;
+  TWeakObjectPtr<ALevelInstance> _pCurrent = nullptr;
 
-  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
-  ALevelInstance* _pTarget = nullptr;
+  // Save/load this, but don't copy it.
+  UPROPERTY(DuplicateTransient, TextExportTransient)
+  TWeakObjectPtr<ALevelInstance> _pTarget = nullptr;
 };

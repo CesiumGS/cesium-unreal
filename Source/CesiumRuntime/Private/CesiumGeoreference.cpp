@@ -249,6 +249,8 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
   UWorldComposition::FTilesList& allLevels =
       pWorld->WorldComposition->GetTilesList();
 
+  ALevelInstance* pActiveSubLevel = nullptr;
+
   for (const FWorldCompositionTile& level : allLevels) {
     FString levelName = longPackageNameToCesiumName(pWorld, level.PackageName);
 
@@ -276,6 +278,9 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     TSoftObjectPtr<UWorld> asset{FSoftObjectPath(levelPath)};
     pLevelInstance->SetWorldAsset(asset);
 
+    // Initially mark all sub-levels hidden in the Editor.
+    pLevelInstance->SetIsTemporarilyHiddenInEditor(true);
+
     UCesiumSubLevelComponent* pLevelComponent =
         Cast<UCesiumSubLevelComponent>(pLevelInstance->AddComponentByClass(
             UCesiumSubLevelComponent::StaticClass(),
@@ -292,8 +297,24 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     pLevelComponent->SetEnabled(pFound->Enabled);
     pLevelComponent->SetLoadRadius(pFound->LoadRadius);
 
+    // But if the georeference origin is close to this sub-levels origin, make
+    // this the active sub-level.
+    if (FMath::IsNearlyEqual(
+            this->OriginLongitude,
+            pFound->LevelLongitude,
+            1e-8) &&
+        FMath::IsNearlyEqual(
+            this->OriginLatitude,
+            pFound->LevelLatitude,
+            1e-8) &&
+        FMath::IsNearlyEqual(this->OriginHeight, pFound->LevelHeight, 1e-3)) {
+      pActiveSubLevel = pLevelInstance;
+    }
+
     pLevelInstance->LoadLevelInstance();
   }
+
+  this->SubLevelSwitcher->SetTarget(pActiveSubLevel);
 
   this->CesiumSubLevels_DEPRECATED.Empty();
 

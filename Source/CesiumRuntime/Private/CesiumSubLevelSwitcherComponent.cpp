@@ -19,8 +19,15 @@ void UCesiumSubLevelSwitcherComponent::RegisterSubLevel(
     ALevelInstance* pSubLevel) noexcept {
   this->_sublevels.AddUnique(pSubLevel);
 
-  // In the Editor, ensure only one is active.
-  this->_ensureZeroOrOneSubLevelsAreActiveInEditor();
+  // In the Editor, sub-levels other than the target must initially be hidden.
+#if WITH_EDITOR
+  if (GEditor && IsValid(this->GetWorld()) &&
+      !this->GetWorld()->IsGameWorld()) {
+    if (this->_pTarget != pSubLevel) {
+      pSubLevel->SetIsTemporarilyHiddenInEditor(true);
+    }
+  }
+#endif
 }
 
 void UCesiumSubLevelSwitcherComponent::UnregisterSubLevel(
@@ -38,11 +45,11 @@ UCesiumSubLevelSwitcherComponent::GetRegisteredSubLevels() const noexcept {
 }
 
 ALevelInstance* UCesiumSubLevelSwitcherComponent::GetCurrent() const noexcept {
-  return this->_pCurrent;
+  return this->_pCurrent.Get();
 }
 
 ALevelInstance* UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
-  return this->_pTarget;
+  return this->_pTarget.Get();
 }
 
 void UCesiumSubLevelSwitcherComponent::SetTarget(
@@ -86,35 +93,6 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
 #endif
 
   this->_updateSubLevelStateGame();
-}
-
-void UCesiumSubLevelSwitcherComponent::
-    _ensureZeroOrOneSubLevelsAreActiveInEditor() {
-#if WITH_EDITOR
-  if (!GEditor || !IsValid(this->GetWorld()) ||
-      this->GetWorld()->IsGameWorld()) {
-    // This is Play-in-Editor, so this method does nothing.
-    return;
-  }
-
-  bool foundFirstVisible = false;
-  for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-    ALevelInstance* Current = this->_sublevels[i].Get();
-    if (!IsValid(Current))
-      continue;
-
-    if (!Current->IsTemporarilyHiddenInEditor(true)) {
-      if (!foundFirstVisible) {
-        // Make the first visible level the target.
-        foundFirstVisible = true;
-        this->SetTarget(Current);
-      } else {
-        // Deactivate additional sublevels.
-        Current->SetIsTemporarilyHiddenInEditor(true);
-      }
-    }
-  }
-#endif
 }
 
 void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
@@ -166,7 +144,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     // Work toward unloading the current level.
 
     ULevelStreaming* pStreaming =
-        this->_getLevelStreamingForSubLevel(this->_pCurrent);
+        this->_getLevelStreamingForSubLevel(this->_pCurrent.Get());
 
     ULevelStreaming::ECurrentState state =
         ULevelStreaming::ECurrentState::Unloaded;
@@ -211,13 +189,13 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       pTargetComponent->UpdateGeoreferenceIfSubLevelIsActive();
 
     ULevelStreaming* pStreaming =
-        this->_getLevelStreamingForSubLevel(this->_pTarget);
+        this->_getLevelStreamingForSubLevel(this->_pTarget.Get());
 
     ULevelStreaming::ECurrentState state =
         ULevelStreaming::ECurrentState::Unloaded;
     if (IsValid(pStreaming)) {
       state = pStreaming->GetCurrentState();
-    } else if (this->_pTarget->GetWorldAsset().IsNull()) {
+    } else if (this->_pTarget.Get()->GetWorldAsset().IsNull()) {
       // There is no level associated with the target at all, so mark it failed
       // to load because this is as loaded as it will ever be.
       state = ULevelStreaming::ECurrentState::FailedToLoad;
@@ -238,7 +216,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     case ULevelStreaming::ECurrentState::Removed:
     case ULevelStreaming::ECurrentState::Unloaded:
       // Start loading this level
-      this->_pTarget->LoadLevelInstance();
+      this->_pTarget.Get()->LoadLevelInstance();
       break;
     }
   }
@@ -253,16 +231,16 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateEditor() {
   }
 
   if (this->_pCurrent != nullptr) {
-    this->_pCurrent->SetIsTemporarilyHiddenInEditor(true);
+    this->_pCurrent.Get()->SetIsTemporarilyHiddenInEditor(true);
     this->_pCurrent = nullptr;
   }
 
   if (this->_pTarget != nullptr) {
     UCesiumSubLevelComponent* pTargetComponent =
-        this->_pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
+        this->_pTarget.Get()->FindComponentByClass<UCesiumSubLevelComponent>();
     if (pTargetComponent)
       pTargetComponent->UpdateGeoreferenceIfSubLevelIsActive();
-    this->_pTarget->SetIsTemporarilyHiddenInEditor(false);
+    this->_pTarget.Get()->SetIsTemporarilyHiddenInEditor(false);
     this->_pCurrent = this->_pTarget;
   }
 }
