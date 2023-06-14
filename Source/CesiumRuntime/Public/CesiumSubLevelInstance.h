@@ -73,7 +73,8 @@ public:
   void SetGeoreference(ACesiumGeoreference* NewGeoreference);
 
   /**
-   * Activates this sub-level, applying the sub-level georeference origin to the georeference.
+   * Activates this sub-level, applying the sub-level georeference origin to the
+   * georeference.
    */
   void ActivateSubLevel();
 
