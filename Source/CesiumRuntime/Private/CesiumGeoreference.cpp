@@ -420,6 +420,17 @@ bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
   return pStreamedLevel != nullptr;
 }
 
+void ACesiumGeoreference::SetScale(double NewScale) {
+  if (NewScale < 1e-6) {
+    this->Scale = 1e-6;
+  } else {
+    this->Scale = NewScale;
+  }
+  this->UpdateGeoreference();
+}
+
+double ACesiumGeoreference::GetScale() const { return Scale; }
+
 FVector
 ACesiumGeoreference::GetGeoreferenceOriginLongitudeLatitudeHeight() const {
   return FVector(OriginLongitude, OriginLatitude, OriginHeight);
@@ -465,15 +476,6 @@ void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
 void ACesiumGeoreference::SetGeoreferenceOriginEcef(const FVector& TargetEcef) {
   this->SetGeoreferenceOriginEcef(
       glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
-}
-
-void ACesiumGeoreference::SetGeoreferenceScale(double NewScale) {
-  if (NewScale < 1e-6) {
-    this->Scale = 1e-6;
-  } else {
-    this->Scale = NewScale;
-  }
-  this->UpdateGeoreference();
 }
 
 // Called when the game starts or when spawned
@@ -582,10 +584,7 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
     return;
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, Scale)) {
-    if (this->Scale < 1e-6) {
-      this->Scale = 1e-6;
-    }
-    this->UpdateGeoreference();
+    this->SetScale(Scale);
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
