@@ -508,7 +508,7 @@ private:
 
   bool _insideSublevel;
 
-  UPROPERTY(DuplicateTransient, TextExportTransient)
+  UPROPERTY()
   UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
 
 #if WITH_EDITOR
