@@ -442,7 +442,7 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(
           VecMath::createVector3D(location));
 
-  double scale = this->GetGeoreference()->Scale / 100.0;
+  double scale = this->GetGeoreference()->GetScale() / 100.0;
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
   double maxRadius = 6387000.0;
