@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "CesiumGeospatial/Ellipsoid.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
-#include "CesiumGeospatial/Ellipsoid.h"
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 #include <vector>
@@ -114,8 +114,8 @@ public:
    */
   UPROPERTY(
       meta =
-        (DeprecatedProperty,
-         DeprecationMessage =
+          (DeprecatedProperty,
+           DeprecationMessage =
                "FlyToGranularityDegrees has been deprecated. This property no longer needs to be set."))
   float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
@@ -260,7 +260,8 @@ private:
 
   FQuat _flyToSourceRotation;
   FQuat _flyToDestinationRotation;
-	glm::dvec3 _flyToECEFDestination;
+  glm::dvec3 _flyToECEFDestination;
 
-  const CesiumGeospatial::Ellipsoid& _ellipsoid = CesiumGeospatial::Ellipsoid::WGS84;
+  const CesiumGeospatial::Ellipsoid& _ellipsoid =
+      CesiumGeospatial::Ellipsoid::WGS84;
 };

@@ -1,6 +1,16 @@
 name: Cesium for Unreal
 on: [push]
 jobs:
+  QuickChecks:
+    name: "Quick Checks"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Check source formatting
+        run: |
+          npm install
+          npm run format -- --dry-run -Werror
   Windows50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
