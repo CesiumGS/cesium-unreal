@@ -14,10 +14,16 @@ struct FeatureIDFromAccessor {
   int64 operator()(std::monostate) { return -1; }
 
   int64 operator()(const AccessorView<AccessorTypes::SCALAR<float>>& value) {
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return -1;
+    }
     return static_cast<int64>(glm::round(value[vertexIndex].value[0]));
   }
 
   template <typename T> int64 operator()(const AccessorView<T>& value) {
+    if (vertexIndex < 0 || vertexIndex >= value.size()) {
+      return -1;
+    }
     return static_cast<int64>(value[vertexIndex].value[0]);
   }
 
@@ -106,10 +112,6 @@ int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
 int64 UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
     UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
     int64 VertexIndex) {
-  if (VertexIndex < 0 || VertexIndex >= GetVertexCount(FeatureIDAttribute)) {
-    return -1;
-  }
-
   return std::visit(
       FeatureIDFromAccessor{VertexIndex},
       FeatureIDAttribute._featureIDAccessor);

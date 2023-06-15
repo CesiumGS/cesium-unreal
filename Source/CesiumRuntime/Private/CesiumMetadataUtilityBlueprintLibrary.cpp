@@ -60,7 +60,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           features,
-          ECesiumFeatureIdType::Attribute);
+          ECesiumFeatureIdSetType::Attribute);
   if (featureIdAttributes.Num() == 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
@@ -114,7 +114,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
   const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           features,
-          ECesiumFeatureIdType::Attribute);
+          ECesiumFeatureIdSetType::Attribute);
   if (featureIdAttributes.Num() == 0) {
     return TMap<FString, FString>();
   }

@@ -13,12 +13,20 @@ struct Model;
 struct ExtensionExtMeshFeaturesFeatureIdTexture;
 } // namespace CesiumGltf
 
+/**
+ * @brief Reports the status of a FCesiumFeatureIdTexture. If the feature ID
+ * texture cannot be accessed, this briefly indicates why.
+ */
 UENUM(BlueprintType)
 enum ECesiumFeatureIdTextureStatus {
+  /* The feature ID texture is valid. */
   Valid = 0,
+  /* The feature ID texture cannot be found in the glTF, of the texture itself
+     has errors. */
   ErrorInvalidTexture,
+  /* The feature ID texture is being read in an invalid way -- for example,
+     trying to read nonexistent image channels. */
   ErrorInvalidTextureAccess,
-  ErrorInvalidTexCoordSetIndex
 };
 
 /**
@@ -39,7 +47,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
 public:
   /**
    * @brief Constructs an empty feature ID texture instance. Empty feature ID
-   * textures can be constructed from trying to convert a FCesiumFeatureIdSet
+   * textures can be constructed while trying to convert a FCesiumFeatureIdSet
    * that is not an texture. In this case, the status reports it is an invalid
    * texture.
    */
@@ -47,7 +55,7 @@ public:
       : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture) {}
 
   /**
-   * @brief Constructs a feature ID attribute instance.
+   * @brief Constructs a feature ID texture instance.
    *
    * @param InModel The model.
    * @param Primitive The mesh primitive containing the feature ID texture.
@@ -63,6 +71,9 @@ public:
           FeatureIdTexture,
       const FString& PropertyTableName);
 
+  /**
+   * @brief Gets the underlying view of this feature ID texture.
+   */
   constexpr const CesiumGltf::FeatureIdTextureView&
   getFeatureIdTextureView() const {
     return this->_featureIdTextureView;
@@ -88,7 +99,7 @@ class CESIUMRUNTIME_API UCesiumFeatureIdTextureBlueprintLibrary
 public:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
-   * Get the name of the feature table corresponding to this feature ID
+   * Gets the name of the feature table corresponding to this feature ID
    * texture. The name can be used to fetch the appropriate
    * FCesiumFeatureTable from the FCesiumMetadataModel.
    */
@@ -117,9 +128,9 @@ public:
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
   /**
-   * Get texture coordinate set index that corresponds to the feature ID texture
-   * on the given primitive component. If the feature ID texture is invalid,
-   * this returns -1.
+   * Gets the texture coordinate set index that corresponds to the feature ID
+   * texture on the given primitive component. If the feature ID texture is
+   * invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -144,8 +155,8 @@ public:
       Category = "Cesium|Primitive|FeatureIDTexture")
   static int64 GetFeatureIDForTextureCoordinates(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
-      float u,
-      float v);
+      float U,
+      float V);
 
   /**
    * Gets the feature ID associated with the given vertex. The

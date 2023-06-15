@@ -22,7 +22,7 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
   const TArray<FCesiumFeatureIdSet> featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           *MetadataPrimitive._pPrimitiveFeatures,
-          ECesiumFeatureIdType::Attribute);
+          ECesiumFeatureIdSetType::Attribute);
 
   featureIDAttributes.Reserve(featureIDSets.Num());
   for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
@@ -45,7 +45,7 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
   const TArray<FCesiumFeatureIdSet> featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           *MetadataPrimitive._pPrimitiveFeatures,
-          ECesiumFeatureIdType::Texture);
+          ECesiumFeatureIdSetType::Texture);
 
   featureIDTextures.Reserve(featureIDSets.Num());
   for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {

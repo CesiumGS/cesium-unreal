@@ -13,8 +13,11 @@ struct Model;
 struct ExtensionExtMeshFeaturesFeatureId;
 } // namespace CesiumGltf
 
+/**
+ * @brief The type of a feature ID set.
+ */
 UENUM(BlueprintType)
-enum ECesiumFeatureIdType { None, Attribute, Texture, Implicit };
+enum ECesiumFeatureIdSetType { None, Attribute, Texture, Implicit };
 
 /**
  * @brief A blueprint-accessible wrapper for a feature ID set from a glTF
@@ -33,7 +36,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSet {
 
 public:
   FCesiumFeatureIdSet()
-      : _featureIDType(ECesiumFeatureIdType::None),
+      : _featureIDSetType(ECesiumFeatureIdSetType::None),
         _featureCount(0),
         _nullFeatureID(-1) {}
 
@@ -44,10 +47,10 @@ public:
 
 private:
   FeatureIDType _featureID;
-  ECesiumFeatureIdType _featureIDType;
+  ECesiumFeatureIdSetType _featureIDSetType;
   int64 _featureCount;
   int64 _nullFeatureID;
-  TOptional<int64> _propertyTableIndex;
+  int64 _propertyTableIndex;
 
   friend class UCesiumFeatureIdSetBlueprintLibrary;
 };
@@ -58,14 +61,14 @@ class CESIUMRUNTIME_API UCesiumFeatureIdSetBlueprintLibrary
   GENERATED_BODY()
 public:
   /**
-   * Gets the type of this feature ID.
+   * Gets the type of this feature ID set.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Primitive|FeatureIDSet")
-  static const ECesiumFeatureIdType
-  GetFeatureIDType(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
+  static const ECesiumFeatureIdSetType
+  GetFeatureIDSetType(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Gets this feature ID set as a feature ID attribute. This can be used for

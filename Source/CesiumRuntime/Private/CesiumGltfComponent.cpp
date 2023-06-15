@@ -411,8 +411,7 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const CesiumGltf::Texture& texture =
-      model.textures[gltfTexture.value().index];
+  const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
 
   return loadTextureAnyThreadPart(model, texture, sRGB);
 }
@@ -767,9 +766,8 @@ static void loadPrimitive(
 
   bool hasNormalMap = material.normalTexture.has_value();
   if (hasNormalMap) {
-    const CesiumGltf::Texture* pTexture = CesiumGltf::Model::getSafe(
-        &model.textures,
-        material.normalTexture->index);
+    const CesiumGltf::Texture* pTexture =
+        Model::getSafe(&model.textures, material.normalTexture->index);
     hasNormalMap = pTexture != nullptr &&
                    Model::getSafe(&model.images, pTexture->source) != nullptr;
   }

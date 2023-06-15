@@ -104,10 +104,9 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
       CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
       std::move(values));
 
-  ExtensionExtMeshFeatures* pExtension;
-  if (primitive.hasExtension<ExtensionExtMeshFeatures>()) {
-    pExtension = primitive.getExtension<ExtensionExtMeshFeatures>();
-  } else {
+  ExtensionExtMeshFeatures* pExtension =
+      primitive.getExtension<ExtensionExtMeshFeatures>();
+  if (pExtension == nullptr) {
     pExtension = &primitive.addExtension<ExtensionExtMeshFeatures>();
   }
 
@@ -122,7 +121,7 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
 /**
  * @brief Adds the feature IDs to the given primitive as a feature ID texture
  * in EXT_mesh_features. This also adds the given texcoords to the primitive as
- * a TEXCOORD_0 attribute. If the primitive doesn't already contain
+ * a TEXCOORD attribute. If the primitive doesn't already contain
  * EXT_mesh_features, this function adds it.
  *
  * @returns The newly created feature ID in the primitive extension.
@@ -134,7 +133,8 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
     const int64_t featureCount,
     const int32_t imageWidth,
     const int32_t imageHeight,
-    const std::vector<glm::vec2>& texCoords) {
+    const std::vector<glm::vec2>& texCoords,
+    const int64_t texcoordSetIndex) {
   CesiumGltf::Image& image = model.images.emplace_back();
   image.cesium.bytesPerChannel = 1;
   image.cesium.channels = 1;
@@ -156,15 +156,14 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
   CreateAttributeForPrimitive(
       model,
       primitive,
-      "TEXCOORD_0",
+      "TEXCOORD_" + std::to_string(texcoordSetIndex),
       CesiumGltf::AccessorSpec::Type::VEC2,
       CesiumGltf::AccessorSpec::ComponentType::FLOAT,
       std::move(values));
 
-  ExtensionExtMeshFeatures* pExtension;
-  if (primitive.hasExtension<ExtensionExtMeshFeatures>()) {
-    pExtension = primitive.getExtension<ExtensionExtMeshFeatures>();
-  } else {
+  ExtensionExtMeshFeatures* pExtension =
+      primitive.getExtension<ExtensionExtMeshFeatures>();
+  if (pExtension == nullptr) {
     pExtension = &primitive.addExtension<ExtensionExtMeshFeatures>();
   }
 
@@ -175,7 +174,7 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
   ExtensionExtMeshFeaturesFeatureIdTexture featureIDTexture;
   featureIDTexture.channels = {0};
   featureIDTexture.index = 0;
-  featureIDTexture.texCoord = 0;
+  featureIDTexture.texCoord = texcoordSetIndex;
 
   featureID.texture = featureIDTexture;
 
