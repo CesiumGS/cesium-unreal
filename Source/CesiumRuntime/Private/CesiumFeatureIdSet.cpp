@@ -26,16 +26,6 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   // For backwards compatibility with GetFeatureTableName.
   const ExtensionModelExtStructuralMetadata* pMetadata =
       InModel.getExtension<ExtensionModelExtStructuralMetadata>();
-<<<<<<< HEAD
-  if (pMetadata && _propertyTableIndex.IsSet() &&
-      _propertyTableIndex.GetValue() >= 0 &&
-      static_cast<size_t>(_propertyTableIndex.GetValue()) <
-          pMetadata->propertyTables.size()) {
-    const ExtensionExtStructuralMetadataPropertyTable& propertyTable =
-        pMetadata->propertyTables[_propertyTableIndex.GetValue()];
-    std::string name = propertyTable.name.value_or("");
-    propertyTableName = FString(name.c_str());
-=======
   if (pMetadata && _propertyTableIndex >= 0) {
     size_t index = static_cast<size_t>(_propertyTableIndex);
     if (index < pMetadata->propertyTables.size()) {
@@ -44,7 +34,6 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
       std::string name = propertyTable.name.value_or("");
       propertyTableName = FString(name.c_str());
     }
->>>>>>> use-mesh-features
   }
 
   if (FeatureID.attribute) {
