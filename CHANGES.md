@@ -11,7 +11,7 @@
 
 ##### Additions :tada:
 
-- Added `FCesiumFeatureIdSet`, which represents a set of feature IDs in the `EXT_mesh_features` extension. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
+- Added `FCesiumFeatureIdSet`, which represents a set of feature IDs in the `EXT_mesh_features` extension. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
 - Added `FCesiumPrimitiveFeatures` and `UCesiumPrimitiveFeaturesBlueprintLibrary`, which can be used to enact on the feature IDs stored in `EXT_mesh_features`.
 - Added `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus`, as well as Blueprints functions to retrieve them. These indicate when something in the feature ID sets is invalid.
 - Added `FCesiumFeatureIdTexture.GetFeatureIDForVertex`, which can retrieve the feature ID of the given vertex if it contains texture coordinates.
