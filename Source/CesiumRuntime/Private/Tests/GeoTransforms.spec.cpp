@@ -7,13 +7,13 @@ using namespace CesiumGeospatial;
 using namespace CesiumUtility;
 
 BEGIN_DEFINE_SPEC(
-    FTestGeoTransforms,
+    FGeoTransformsSpec,
     "Cesium.GeoTransforms",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-END_DEFINE_SPEC(FTestGeoTransforms)
+END_DEFINE_SPEC(FGeoTransformsSpec)
 
-void FTestGeoTransforms::Define() {
+void FGeoTransformsSpec::Define() {
   Describe("TransformLongitudeLatitudeHeightToUnreal", [this]() {
     It("returns the origin when given the origin LLH", [this]() {
       GeoTransforms geotransforms{};
