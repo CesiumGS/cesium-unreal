@@ -12,8 +12,8 @@ using namespace CesiumGltf;
 using namespace CesiumGltf::MeshFeatures;
 
 namespace {
-// There's technically no invalid texcoord values because of clamp / wrap
-// behavior, so we use an optional to denote an invalid value.
+// There are technically no invalid texcoord values because of clamp / wrap
+// behavior, so we use std::nullopt to denote an erroneous value.
 struct TexCoordFromAccessor {
   std::optional<glm::vec2> operator()(std::monostate) { return std::nullopt; }
 
@@ -74,9 +74,6 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   case FeatureIdTextureViewStatus::Valid:
     _status = ECesiumFeatureIdTextureStatus::Valid;
     break;
-  case FeatureIdTextureViewStatus::ErrorInvalidTexCoordSetIndex:
-    _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordSetIndex;
-    return;
   case FeatureIdTextureViewStatus::ErrorInvalidChannels:
     _status = ECesiumFeatureIdTextureStatus::ErrorInvalidTextureAccess;
     return;
@@ -86,11 +83,11 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     return;
   }
 
-  // The initial implementation of FCesiumFeatureIDTexture did not construct
-  // with an "owner" primitive in mind. It was possible to access the texture
-  // data with arbitrary coordinates.
+  // The EXT_feature_metadata version of FCesiumFeatureIdTexture was not
+  // constructed with an "owner" primitive. It was possible to access the
+  // texture data with technically arbitrary coordinates.
   //
-  // To maintain this possibility with EXT_mesh_features, the texture view will
+  // To maintain this functionality in EXT_mesh_features, the texture view will
   // still be valid if the intended texcoords don't exist. However, feature IDs
   // won't be retrievable by vertex index.
   const std::string texCoordName =
@@ -112,7 +109,6 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
       // Unsigned byte texcoords must be normalized.
       return;
     }
-
     this->_texCoordAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint8_t>>(
             InModel,
@@ -123,7 +119,6 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
       // Unsigned short texcoords must be normalized.
       return;
     }
-
     this->_texCoordAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint16_t>>(
             InModel,
@@ -152,15 +147,12 @@ UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
-    const UPrimitiveComponent* component,
+    const UPrimitiveComponent* PrimitiveComponent,
     const FCesiumFeatureIdTexture& FeatureIDTexture) {
   const UCesiumGltfPrimitiveComponent* pPrimitive =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-  if (!pPrimitive) {
-    return -1;
-  }
-
-  if (FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
+      Cast<UCesiumGltfPrimitiveComponent>(PrimitiveComponent);
+  if (!pPrimitive ||
+      FeatureIDTexture._status != ECesiumFeatureIdTextureStatus::Valid) {
     return -1;
   }
 
@@ -176,14 +168,9 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetTextureCoordinateIndex(
 int64 UCesiumFeatureIdTextureBlueprintLibrary::
     GetFeatureIDForTextureCoordinates(
         const FCesiumFeatureIdTexture& FeatureIDTexture,
-        float u,
-        float v) {
-  if (FeatureIDTexture._featureIdTextureView.status() !=
-      FeatureIdTextureViewStatus::Valid) {
-    return -1;
-  }
-
-  return FeatureIDTexture._featureIdTextureView.getFeatureId(u, v);
+        float U,
+        float V) {
+  return FeatureIDTexture._featureIdTextureView.getFeatureId(U, V);
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
@@ -192,7 +179,6 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
   const std::optional<glm::vec2> texCoords = std::visit(
       TexCoordFromAccessor{VertexIndex},
       FeatureIDTexture._texCoordAccessor);
-
   if (!texCoords) {
     return -1;
   }

@@ -82,7 +82,7 @@ public:
       Category = "Cesium|Primitive|Features")
   static const TArray<FCesiumFeatureIdSet> GetFeatureIDSetsOfType(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-      ECesiumFeatureIdType Type);
+      ECesiumFeatureIdSetType Type);
 
   /**
    * Get the number of vertices in the primitive.

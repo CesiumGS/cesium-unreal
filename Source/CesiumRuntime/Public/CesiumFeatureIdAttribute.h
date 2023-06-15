@@ -11,10 +11,17 @@ struct Model;
 struct Accessor;
 } // namespace CesiumGltf
 
+/**
+ * @brief Reports the status of a FCesiumFeatureIdAttribute. If the feature ID
+ * attribute cannot be accessed, this briefly indicates why.
+ */
 UENUM(BlueprintType)
 enum class ECesiumFeatureIdAttributeStatus : uint8 {
+  /* The feature ID attribute is valid. */
   Valid = 0,
+  /* The feature ID attribute does not exist in the glTF primitive. */
   ErrorInvalidAttribute,
+  /* The feature ID attribute uses an invalid accessor in the glTF. */
   ErrorInvalidAccessor
 };
 
@@ -39,7 +46,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
 public:
   /**
    * @brief Constructs an empty feature ID attribute instance. Empty feature ID
-   * attributes can be constructed from trying to convert a FCesiumFeatureIdSet
+   * attributes can be constructed while trying to convert a FCesiumFeatureIdSet
    * that is not an attribute. In this case, the status reports it is an invalid
    * attribute.
    */
@@ -65,7 +72,7 @@ public:
       const FString& PropertyTableName);
 
   /**
-   * Gets the index of this feature ID attribute.
+   * Gets the index of this feature ID attribute in the glTF primitive.
    */
   int64 getAttributeIndex() const { return this->_attributeIndex; }
 

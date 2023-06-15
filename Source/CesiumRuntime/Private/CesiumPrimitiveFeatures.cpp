@@ -6,6 +6,7 @@
 
 using namespace CesiumGltf;
 
+namespace {
 struct VertexIndexFromAccessor {
   int64 operator()(std::monostate) {
     const int64 vertexIndex = faceIndex * 3;
@@ -33,6 +34,7 @@ struct VertexIndexFromAccessor {
   int64 faceIndex;
   int64 vertexCount;
 };
+} // namespace
 
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     const Model& InModel,
@@ -81,12 +83,12 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
 const TArray<FCesiumFeatureIdSet>
 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-    ECesiumFeatureIdType Type) {
+    ECesiumFeatureIdSetType Type) {
   TArray<FCesiumFeatureIdSet> featureIDSets;
   for (int32 i = 0; i < PrimitiveFeatures._featureIDSets.Num(); i++) {
     const FCesiumFeatureIdSet& featureIDSet =
         PrimitiveFeatures._featureIDSets[i];
-    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet) ==
+    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet) ==
         Type) {
       featureIDSets.Add(featureIDSet);
     }

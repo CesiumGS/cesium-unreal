@@ -49,6 +49,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           *pPrimitive,
           texture,
           "PropertyTableName");
+
       TestEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -76,6 +77,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           *pPrimitive,
           texture,
           "PropertyTableName");
+
       TestEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -88,39 +90,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
           featureIDTextureView.status(),
           FeatureIdTextureViewStatus::ErrorInvalidImage);
     });
-
-    It("constructs invalid instance for texture with invalid texcoord set index",
-       [this]() {
-         Image& image = model.images.emplace_back();
-         image.cesium.width = image.cesium.height = 1;
-         image.cesium.channels = 1;
-         image.cesium.pixelData.push_back(std::byte(42));
-
-         CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
-         gltfTexture.source = 0;
-
-         ExtensionExtMeshFeaturesFeatureIdTexture texture;
-         texture.index = 0;
-         texture.texCoord = -1;
-         texture.channels = {0};
-
-         FCesiumFeatureIdTexture featureIDTexture(
-             model,
-             *pPrimitive,
-             texture,
-             "PropertyTableName");
-         TestEqual(
-             "FeatureIDTextureStatus",
-             UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
-                 featureIDTexture),
-             ECesiumFeatureIdTextureStatus::ErrorInvalidTexCoordSetIndex);
-
-         auto featureIDTextureView = featureIDTexture.getFeatureIdTextureView();
-         TestEqual(
-             "FeatureIDTextureViewStatus",
-             featureIDTextureView.status(),
-             FeatureIdTextureViewStatus::ErrorInvalidTexCoordSetIndex);
-       });
 
     It("constructs valid instance", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
@@ -138,13 +107,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords,
+              0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
           *pPrimitive,
           *featureId.texture,
           "PropertyTableName");
+
       TestEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -178,6 +149,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
              *pPrimitive,
              texture,
              "PropertyTableName");
+
          TestEqual(
              "FeatureIDTextureStatus",
              UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -213,6 +185,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
              *pPrimitive,
              texture,
              "PropertyTableName");
+
          TestEqual(
              "FeatureIDTextureStatus",
              UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -254,6 +227,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
               featureIDTexture),
           ECesiumFeatureIdTextureStatus::Valid);
+
       TestEqual(
           "FeatureID",
           UCesiumFeatureIdTextureBlueprintLibrary::
@@ -277,13 +251,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords,
+              0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
           *pPrimitive,
           *featureId.texture,
           "PropertyTableName");
+
       TestEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -320,11 +296,13 @@ void FCesiumFeatureIdTextureSpec::Define() {
           *pPrimitive,
           texture,
           "PropertyTableName");
+
       TestNotEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
               featureIDTexture),
           ECesiumFeatureIdTextureStatus::Valid);
+
       TestEqual(
           "FeatureIDForVertex",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
@@ -349,24 +327,28 @@ void FCesiumFeatureIdTextureSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords,
+              0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
           *pPrimitive,
           *featureId.texture,
           "PropertyTableName");
+
       TestEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
               featureIDTexture),
           ECesiumFeatureIdTextureStatus::Valid);
+
       TestEqual(
           "FeatureIDForNegativeVertex",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
               featureIDTexture,
               -1),
           -1);
+
       TestEqual(
           "FeatureIDForOutOfBoundsVertex",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
@@ -375,7 +357,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           -1);
     });
 
-    It("returns correct value for valid attribute", [this]() {
+    It("returns correct value for valid texture", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
@@ -391,13 +373,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords,
+              0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
           *pPrimitive,
           *featureId.texture,
           "PropertyTableName");
+
       TestEqual(
           "FeatureIDTextureStatus",
           UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
@@ -410,6 +394,64 @@ void FCesiumFeatureIdTextureSpec::Define() {
                 featureIDTexture,
                 static_cast<int64>(i));
         TestEqual("FeatureIDForVertex", featureID, featureIDs[i]);
+      }
+    });
+
+    It("returns correct value for primitive with multiple texcoords", [this]() {
+      const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
+      const std::vector<glm::vec2> texCoord0{
+          glm::vec2(0, 0),
+          glm::vec2(0.45, 0),
+          glm::vec2(0, 0.45),
+          glm::vec2(0.6, 0.6)};
+
+      std::vector<std::byte> values(texCoord0.size());
+      std::memcpy(values.data(), texCoord0.data(), values.size());
+
+      CreateAttributeForPrimitive(
+          model,
+          *pPrimitive,
+          "TEXCOORD_0",
+          AccessorSpec::Type::SCALAR,
+          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          std::move(values));
+
+      const std::vector<glm::vec2> texCoord1{
+          glm::vec2(0.6, 0.6),
+          glm::vec2(0, 0),
+          glm::vec2(0.45, 0),
+          glm::vec2(0.0, 0.45)};
+
+      ExtensionExtMeshFeaturesFeatureId& featureId =
+          AddFeatureIDsAsTextureToModel(
+              model,
+              *pPrimitive,
+              featureIDs,
+              4,
+              2,
+              2,
+              texCoord1,
+              1);
+
+      FCesiumFeatureIdTexture featureIDTexture(
+          model,
+          *pPrimitive,
+          *featureId.texture,
+          "PropertyTableName");
+
+      TestEqual(
+          "FeatureIDTextureStatus",
+          UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus(
+              featureIDTexture),
+          ECesiumFeatureIdTextureStatus::Valid);
+
+      const std::vector<uint8_t> expected{2, 0, 3, 1};
+      for (size_t i = 0; i < featureIDs.size(); i++) {
+        int64 featureID =
+            UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(
+                featureIDTexture,
+                static_cast<int64>(i));
+        TestEqual("FeatureIDForVertex", featureID, expected[i]);
       }
     });
   });

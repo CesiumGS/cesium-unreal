@@ -27,7 +27,7 @@ void FCesiumFeatureIdSetSpec::Define() {
           pPrimitive->addExtension<ExtensionExtMeshFeatures>();
     });
 
-    It("constructs from feature ID with no features", [this]() {
+    It("constructs from empty feature ID set", [this]() {
       // This is technically disallowed by the spec, but just make sure it's
       // handled reasonably.
       ExtensionExtMeshFeaturesFeatureId featureId;
@@ -35,30 +35,32 @@ void FCesiumFeatureIdSetSpec::Define() {
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
           "FeatureIDType",
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-          ECesiumFeatureIdType::None);
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIDSet),
+          ECesiumFeatureIdSetType::None);
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
           0);
     });
 
-    It("constructs from implicit feature ID", [this]() {
+    It("constructs implicit feature ID set", [this]() {
       ExtensionExtMeshFeaturesFeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
           "FeatureIDType",
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-          ECesiumFeatureIdType::Implicit);
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIDSet),
+          ECesiumFeatureIdSetType::Implicit);
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
           static_cast<int64>(featureId.featureCount));
     });
 
-    It("constructs from feature ID attribute", [this]() {
+    It("constructs set with feature ID attribute", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
       ExtensionExtMeshFeaturesFeatureId& featureID =
@@ -72,15 +74,16 @@ void FCesiumFeatureIdSetSpec::Define() {
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
       TestEqual(
           "FeatureIDType",
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-          ECesiumFeatureIdType::Attribute);
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIDSet),
+          ECesiumFeatureIdSetType::Attribute);
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
           static_cast<int64>(featureID.featureCount));
     });
 
-    It("constructs from feature ID texture", [this]() {
+    It("constructs set with feature ID texture", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
@@ -96,13 +99,15 @@ void FCesiumFeatureIdSetSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords,
+              0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
           "FeatureIDType",
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-          ECesiumFeatureIdType::Texture);
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIDSet),
+          ECesiumFeatureIdSetType::Texture);
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
@@ -117,8 +122,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
           "FeatureIDType",
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-          ECesiumFeatureIdType::Implicit);
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIDSet),
+          ECesiumFeatureIdSetType::Implicit);
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
@@ -137,8 +143,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
           "FeatureIDType",
-          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet),
-          ECesiumFeatureIdType::Implicit);
+          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+              featureIDSet),
+          ECesiumFeatureIdSetType::Implicit);
       TestEqual(
           "FeatureCount",
           UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
@@ -245,7 +252,7 @@ void FCesiumFeatureIdSetSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords, 0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       const FCesiumFeatureIdTexture texture =
@@ -354,7 +361,7 @@ void FCesiumFeatureIdSetSpec::Define() {
               4,
               2,
               2,
-              texCoords);
+              texCoords, 0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       for (size_t i = 0; i < featureIDs.size(); i++) {
@@ -429,7 +436,7 @@ void FCesiumFeatureIdSetSpec::Define() {
                  4,
                  2,
                  2,
-                 texCoords);
+                 texCoords, 0);
          featureId.propertyTable = 0;
 
          const std::string expectedName = "PropertyTableName";

@@ -217,12 +217,12 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
           propertyTableIndex < this->FeatureTables.Num()) {
         FFeatureTableDescription& featureTable =
             this->FeatureTables[propertyTableIndex];
-        const ECesiumFeatureIdType type =
-            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDType(featureIDSet);
+        const ECesiumFeatureIdSetType type =
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet);
 
         // TODO: this will be overhauled, but here's code with new API for
         // future reference
-        if (type == ECesiumFeatureIdType::Attribute) {
+        if (type == ECesiumFeatureIdSetType::Attribute) {
           if (featureTable.AccessType == ECesiumFeatureTableAccessType::Mixed ||
               featureTable.AccessType ==
                   ECesiumFeatureTableAccessType::Texture) {
@@ -230,7 +230,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
           } else {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
           }
-        } else if (type == ECesiumFeatureIdType::Texture) {
+        } else if (type == ECesiumFeatureIdSetType::Texture) {
           if (featureTable.AccessType ==
               ECesiumFeatureTableAccessType::Attribute) {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
