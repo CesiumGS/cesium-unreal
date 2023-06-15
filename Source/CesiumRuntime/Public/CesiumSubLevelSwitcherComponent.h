@@ -94,4 +94,6 @@ private:
   // Save/load this, but don't copy it.
   UPROPERTY(DuplicateTransient, TextExportTransient)
   TWeakObjectPtr<ALevelInstance> _pTarget = nullptr;
+
+  bool _checkIfTargetIsRegistered = false;
 };

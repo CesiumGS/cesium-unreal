@@ -92,10 +92,14 @@ void UCesiumSubLevelComponent::InvalidateResolvedGeoreference() {
 
 void UCesiumSubLevelComponent::SetOriginLongitudeLatitudeHeight(
     const FVector& longitudeLatitudeHeight) {
-  this->OriginLongitude = longitudeLatitudeHeight.X;
-  this->OriginLatitude = longitudeLatitudeHeight.Y;
-  this->OriginHeight = longitudeLatitudeHeight.Z;
-  this->UpdateGeoreferenceIfSubLevelIsActive();
+  if (this->OriginLongitude != longitudeLatitudeHeight.X ||
+      this->OriginLatitude != longitudeLatitudeHeight.Y ||
+      this->OriginHeight != longitudeLatitudeHeight.Z) {
+    this->OriginLongitude = longitudeLatitudeHeight.X;
+    this->OriginLatitude = longitudeLatitudeHeight.Y;
+    this->OriginHeight = longitudeLatitudeHeight.Z;
+    this->UpdateGeoreferenceIfSubLevelIsActive();
+  }
 }
 
 void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {

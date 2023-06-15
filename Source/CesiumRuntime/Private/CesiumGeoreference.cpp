@@ -432,6 +432,23 @@ void ACesiumGeoreference::PostLoad() { Super::PostLoad(); }
 void ACesiumGeoreference::UpdateGeoreference() {
   this->_updateGeoTransforms();
 
+  // If we're in a sub-level, update its origin as well.
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->SubLevelSwitcher;
+  if (IsValid(pSwitcher) && pSwitcher->GetTarget() != nullptr) {
+    if (pSwitcher->GetTarget() == pSwitcher->GetCurrent() ||
+        pSwitcher->GetCurrent() == nullptr) {
+      ALevelInstance* pTarget = pSwitcher->GetTarget();
+      UCesiumSubLevelComponent* pComponent =
+          pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
+      if (IsValid(pComponent)) {
+        pComponent->SetOriginLongitudeLatitudeHeight(FVector(
+            this->OriginLongitude,
+            this->OriginLatitude,
+            this->OriginHeight));
+      }
+    }
+  }
+
   UE_LOG(
       LogCesium,
       Verbose,

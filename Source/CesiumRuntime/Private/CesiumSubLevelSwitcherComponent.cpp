@@ -32,11 +32,14 @@ void UCesiumSubLevelSwitcherComponent::RegisterSubLevel(
 
 void UCesiumSubLevelSwitcherComponent::UnregisterSubLevel(
     ALevelInstance* pSubLevel) noexcept {
-  // If this sub-level is active, deactivate it.
-  if (this->_pTarget == pSubLevel)
-    this->SetTarget(nullptr);
-
   this->_sublevels.Remove(pSubLevel);
+
+  // Next tick, we need to check if the target is still registered, in case this
+  // method call just removed it. But we can't actually do the check here
+  // because the Editor UI goes through an unregister/re-register cycle
+  // _constantly_, and we don't want to forget the target sub-level just because
+  // it was edited in the UI.
+  this->_checkIfTargetIsRegistered = true;
 }
 
 const TArray<TWeakObjectPtr<ALevelInstance>>&
@@ -80,6 +83,16 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
     enum ELevelTick TickType,
     FActorComponentTickFunction* ThisTickFunction) {
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+  if (this->_checkIfTargetIsRegistered) {
+    if (this->_pTarget != nullptr &&
+        this->_sublevels.Find(this->_pTarget) == INDEX_NONE) {
+      // Target level is no longer registered, so the new target is "none".
+      this->SetTarget(nullptr);
+    }
+
+    this->_checkIfTargetIsRegistered = false;
+  }
 
 #if WITH_EDITOR
   UWorld* pWorld = this->GetWorld();
