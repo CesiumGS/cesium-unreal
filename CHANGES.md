@@ -4,6 +4,7 @@
 
 ##### Fixes :wrench:
 
+- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
 - Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
 
 ### v1.27.0 - 2023-06-1
