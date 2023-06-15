@@ -36,7 +36,9 @@ public:
 
   ACesiumCreditSystem();
 
-  void BeginPlay() override;
+  virtual void BeginPlay() override;
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
   virtual void OnConstruction(const FTransform& Transform) override;
   virtual void BeginDestroy() override;
 

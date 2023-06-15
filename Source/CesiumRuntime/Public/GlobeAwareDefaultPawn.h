@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGeospatial/Ellipsoid.h"
 #include "CoreMinimal.h"
 #include "GameFramework/DefaultPawn.h"
 #include <glm/mat3x3.hpp>
@@ -112,11 +113,11 @@ public:
    * the flight interpolation.
    */
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium",
-      meta = (ClampMin = 0.0))
-  float FlyToGranularityDegrees = 0.01f;
+      meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "FlyToGranularityDegrees has been deprecated. This property no longer needs to be set."))
+  float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
   /**
    * A delegate that will be called whenever the pawn finishes flying
@@ -137,8 +138,7 @@ public:
    * (ECEF) destination such that the camera ends at the specified yaw and
    * pitch. The characteristics of the flight can be configured with
    * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
-   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
-   * {@see FlyToGranularityDegrees}.
+   * {@see FlyToMaximumAltitudeCurve}, and {@see FlyToDuration}
    */
   void FlyToLocationECEF(
       const glm::dvec3& ECEFDestination,
@@ -151,8 +151,7 @@ public:
    * (ECEF) destination such that the camera ends at the specified yaw and
    * pitch. The characteristics of the flight can be configured with
    * {@see FlyToAltitudeProfileCurve}, {@see FlyToProgressCurve},
-   * {@see FlyToMaximumAltitudeCurve}, {@see FlyToDuration}, and
-   * {@see FlyToGranularityDegrees}.
+   * {@see FlyToMaximumAltitudeCurve}, and {@see FlyToDuration}
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void FlyToLocationECEF(
@@ -167,7 +166,7 @@ public:
    * ends at the given yaw and pitch. The characteristics of the flight can be
    * configured with {@see FlyToAltitudeProfileCurve},
    * {@see FlyToProgressCurve}, {@see FlyToMaximumAltitudeCurve},
-   * {@see FlyToDuration}, and {@see FlyToGranularityDegrees}.
+   * and {@see FlyToDuration}
    */
   void FlyToLocationLongitudeLatitudeHeight(
       const glm::dvec3& LongitudeLatitudeHeightDestination,
@@ -228,6 +227,7 @@ private:
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
   void _interruptFlight();
+  void _interpolateFlightPosition(double percentage, glm::dvec3& out) const;
 
   /**
    * @brief Advance the camera flight based on the given time delta.
@@ -236,8 +236,7 @@ private:
    * is not valid, then this function will do nothing.
    *
    * The given delta will be added to the _currentFlyTime, and the position
-   * and orientation will be computed by interpolating the _keypoints
-   * and _flyToSourceRotation/_flyToDestinationRotation  based on this time.
+   * and orientation will be computed by interpolating based on this time.
    *
    * The position will be set as the SetECEFCameraLocation, and the
    * orientation will be assigned GetController()->SetControlRotation.
@@ -250,8 +249,19 @@ private:
   bool _bFlyingToLocation = false;
   bool _bCanInterruptFlight = false;
   double _currentFlyTime = 0.0;
+
+  double _flyToSourceAltitude = 0.0;
+  double _flyToDestinationAltitude = 0.0;
+  double _flyToMaxAltitude = 0.0;
+
+  double _flyToTotalAngle = 0.0;
+  glm::dvec3 _flyToSourceDirection;
+  glm::dvec3 _flyToRotationAxis;
+
   FQuat _flyToSourceRotation;
   FQuat _flyToDestinationRotation;
+  glm::dvec3 _flyToECEFDestination;
 
-  std::vector<glm::dvec3> _keypoints;
+  const CesiumGeospatial::Ellipsoid& _ellipsoid =
+      CesiumGeospatial::Ellipsoid::WGS84;
 };
