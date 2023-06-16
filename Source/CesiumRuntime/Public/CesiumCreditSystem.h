@@ -8,6 +8,7 @@
 #include "UObject/Class.h"
 #include "UObject/ConstructorHelpers.h"
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #if WITH_EDITOR
