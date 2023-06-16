@@ -15,7 +15,6 @@
 
 class APlayerCameraManager;
 class FLevelCollectionModel;
-class ACesiumSubLevelInstance;
 class UCesiumSubLevelSwitcherComponent;
 
 /**
