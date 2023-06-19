@@ -11,6 +11,8 @@
 
 - Added ability to set CesiumGeoreference Scale via Blueprints.
 
+### v1.27.1 - 2023-06-19
+
 ##### Fixes :wrench:
 
 - Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
