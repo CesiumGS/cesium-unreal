@@ -11,6 +11,11 @@
 
 - Added ability to set CesiumGeoreference Scale via Blueprints.
 
+##### Fixes :wrench:
+
+- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
+- Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
+
 ### v1.27.0 - 2023-06-1
 
 ##### Additions :tada:
@@ -20,6 +25,7 @@
 - Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
 - `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
 - Added new settings to the Cesium section of the Project Settings, allowing users to control how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
+- Add `ACesiumCameraManager::RemoveCamera`. Available via Blueprints and C++. This complements the existing `ACesiumCameraManager::AddCamera`.
 
 ##### Fixes :wrench:
 

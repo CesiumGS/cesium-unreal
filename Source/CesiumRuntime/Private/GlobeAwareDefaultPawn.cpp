@@ -80,22 +80,32 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
   return this->GetViewRotation();
 }
 
-void AGlobeAwareDefaultPawn::_interpolateFlightPosition(double percentage, glm::dvec3& out) const {
+void AGlobeAwareDefaultPawn::_interpolateFlightPosition(
+    double percentage,
+    glm::dvec3& out) const {
 
   // Rotate our normalized source direction, interpolating with time
-  glm::dvec3 rotatedDirection = glm::rotate(_flyToSourceDirection, percentage * _flyToTotalAngle, _flyToRotationAxis);
+  glm::dvec3 rotatedDirection = glm::rotate(
+      _flyToSourceDirection,
+      percentage * _flyToTotalAngle,
+      _flyToRotationAxis);
 
   // Map the result to a position on our reference ellipsoid
-  if (auto geodeticPosition = this->_ellipsoid.scaleToGeodeticSurface(rotatedDirection)) {
+  if (auto geodeticPosition =
+          this->_ellipsoid.scaleToGeodeticSurface(rotatedDirection)) {
 
     // Calculate the geodetic up at this position
-    glm::dvec3 geodeticUp = this->_ellipsoid.geodeticSurfaceNormal(*geodeticPosition);
+    glm::dvec3 geodeticUp =
+        this->_ellipsoid.geodeticSurfaceNormal(*geodeticPosition);
 
-    // Add the altitude offset. Start with linear path between source and destination
-    // If we have a profile curve, use this as well
-    double altitudeOffset = glm::mix(_flyToSourceAltitude, _flyToDestinationAltitude, percentage);
+    // Add the altitude offset. Start with linear path between source and
+    // destination If we have a profile curve, use this as well
+    double altitudeOffset =
+        glm::mix(_flyToSourceAltitude, _flyToDestinationAltitude, percentage);
     if (_flyToMaxAltitude != 0.0 && this->FlyToAltitudeProfileCurve) {
-      double curveOffset = _flyToMaxAltitude * this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
+      double curveOffset =
+          _flyToMaxAltitude *
+          this->FlyToAltitudeProfileCurve->GetFloatValue(percentage);
       altitudeOffset += curveOffset;
     }
 
@@ -122,7 +132,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   this->_flyToSourceRotation = Controller->GetControlRotation().Quaternion();
   this->_flyToDestinationRotation =
       FRotator(PitchAtDestination, YawAtDestination, 0).Quaternion();
-	this->_flyToECEFDestination = ECEFDestination;
+  this->_flyToECEFDestination = ECEFDestination;
 
   // Compute axis/Angle transform
   glm::dquat flyQuat = glm::rotation(
@@ -148,19 +158,23 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
   //  point smoothly.
   //  - Add as flightProfile offset /-\ defined by a curve.
 
-  // Compute actual altitude at source and destination points by getting their cartographic height
+  // Compute actual altitude at source and destination points by getting their
+  // cartographic height
   _flyToSourceAltitude = 0.0;
   _flyToDestinationAltitude = 0.0;
 
-  if (auto cartographicSource = this->_ellipsoid.cartesianToCartographic(ECEFSource)) {
+  if (auto cartographicSource =
+          this->_ellipsoid.cartesianToCartographic(ECEFSource)) {
     _flyToSourceAltitude = cartographicSource->height;
 
     cartographicSource->height = 0;
-    glm::dvec3 zeroHeightSource = this->_ellipsoid.cartographicToCartesian(*cartographicSource);
+    glm::dvec3 zeroHeightSource =
+        this->_ellipsoid.cartographicToCartesian(*cartographicSource);
 
     _flyToSourceDirection = glm::normalize(zeroHeightSource);
   }
-  if (auto cartographic = this->_ellipsoid.cartesianToCartographic(ECEFDestination)) {
+  if (auto cartographic =
+          this->_ellipsoid.cartesianToCartographic(ECEFDestination)) {
     _flyToDestinationAltitude = cartographic->height;
   }
 
@@ -170,7 +184,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     _flyToMaxAltitude = 30000;
     if (this->FlyToMaximumAltitudeCurve != NULL) {
       double flyToDistance = glm::length(ECEFDestination - ECEFSource);
-      _flyToMaxAltitude = this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
+      _flyToMaxAltitude =
+          this->FlyToMaximumAltitudeCurve->GetFloatValue(flyToDistance);
     }
   }
 

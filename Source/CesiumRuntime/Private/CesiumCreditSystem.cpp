@@ -161,6 +161,11 @@ void ACesiumCreditSystem::BeginPlay() {
   this->updateCreditsViewport(true);
 }
 
+void ACesiumCreditSystem::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+  this->removeCreditsFromViewports();
+  Super::EndPlay(EndPlayReason);
+}
+
 static const FName LevelEditorName("LevelEditor");
 
 void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
@@ -197,8 +202,6 @@ void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumCreditSystem::BeginDestroy() {
-  this->removeCreditsFromViewports();
-
 #if WITH_EDITOR
   FLevelEditorModule* pLevelEditorModule =
       FModuleManager::GetModulePtr<FLevelEditorModule>(LevelEditorName);
