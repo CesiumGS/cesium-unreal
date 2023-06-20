@@ -53,6 +53,8 @@ void UCesiumSubLevelComponent::SetGeoreference(
 
   ALevelInstance* pOwner = this->_getLevelInstance();
   if (pOwner) {
+    this->ResolveGeoreference();
+
     UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
     pSwitcher->RegisterSubLevel(pOwner);
   }
@@ -78,7 +80,7 @@ ACesiumGeoreference* UCesiumSubLevelComponent::ResolveGeoreference() {
 }
 
 void UCesiumSubLevelComponent::InvalidateResolvedGeoreference() {
-  if (this->ResolvedGeoreference) {
+  if (IsValid(this->ResolvedGeoreference)) {
     UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
     if (pSwitcher) {
       ALevelInstance* pOwner = this->_getLevelInstance();
@@ -144,6 +146,8 @@ void UCesiumSubLevelComponent::BeginDestroy() {
 void UCesiumSubLevelComponent::OnComponentCreated() {
   Super::OnComponentCreated();
 
+  this->ResolveGeoreference();
+
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
   if (pSwitcher && this->ResolvedGeoreference) {
     this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
@@ -196,6 +200,8 @@ void UCesiumSubLevelComponent::PostEditChangeProperty(
 void UCesiumSubLevelComponent::BeginPlay() {
   Super::BeginPlay();
 
+  this->ResolveGeoreference();
+
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
   if (!pSwitcher)
     return;
@@ -220,6 +226,8 @@ void UCesiumSubLevelComponent::OnRegister() {
     return;
   }
 
+  this->ResolveGeoreference();
+
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
   if (pSwitcher)
     pSwitcher->RegisterSubLevel(pOwner);
@@ -242,14 +250,12 @@ void UCesiumSubLevelComponent::OnUnregister() {
 
 UCesiumSubLevelSwitcherComponent*
 UCesiumSubLevelComponent::_getSwitcher() noexcept {
-  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
-
   // Ignore transient level instances, like those that are created when dragging
   // from Create Actors but before releasing the mouse button.
-  if (!IsValid(pGeoreference) || this->HasAllFlags(RF_Transient))
+  if (!IsValid(this->ResolvedGeoreference) || this->HasAllFlags(RF_Transient))
     return nullptr;
 
-  return pGeoreference
+  return this->ResolvedGeoreference
       ->FindComponentByClass<UCesiumSubLevelSwitcherComponent>();
 }
 
