@@ -212,13 +212,15 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
 
     for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
       const int64 propertyTableIndex =
-          UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
+          UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
+              featureIDSet);
       if (propertyTableIndex >= 0 &&
           propertyTableIndex < this->FeatureTables.Num()) {
         FFeatureTableDescription& featureTable =
             this->FeatureTables[propertyTableIndex];
         const ECesiumFeatureIdSetType type =
-            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet);
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+                featureIDSet);
 
         // TODO: this will be overhauled, but here's code with new API for
         // future reference

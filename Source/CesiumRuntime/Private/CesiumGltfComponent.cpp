@@ -411,7 +411,8 @@ static TUniquePtr<CesiumTextureUtility::LoadedTextureResult> loadTexture(
     return nullptr;
   }
 
-  const CesiumGltf::Texture& texture = model.textures[gltfTexture.value().index];
+  const CesiumGltf::Texture& texture =
+      model.textures[gltfTexture.value().index];
 
   return loadTextureAnyThreadPart(model, texture, sRGB);
 }
