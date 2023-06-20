@@ -17,11 +17,14 @@ uint NumTexCoords;
 uint bHasPointColors;
 float3 AttenuationParameters;
 
-#if USE_INSTANCING
-// Instanced stereo sets the eye index explicitly for instanced geometry
 #if INSTANCED_STEREO
 uint InstancedEyeIndex;
 #endif
+
+// This function does not exist in UE 5.0, so remove the function call here
+// to avoid compilation errors.
+#ifndef VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK
+#define VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
 #endif
 
 /*
@@ -30,7 +33,11 @@ uint InstancedEyeIndex;
 struct FVertexFactoryInput
 {
   	uint    VertexId    : SV_VertexID;
+#if USE_INSTANCING
   	uint    InstanceId  : SV_InstanceID;
+#else
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+#endif
 };
 
 /** 
@@ -40,6 +47,11 @@ struct FPositionOnlyVertexFactoryInput
 {
   	float4  Position	: ATTRIBUTE0;
   	uint    VertexId	: SV_VertexID;
+#if USE_INSTANCING
+  	uint    InstanceId  : SV_InstanceID;
+#else
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+#endif
 };
 
 /** 
@@ -50,6 +62,11 @@ struct FPositionAndNormalOnlyVertexFactoryInput
   	float4  Position	: ATTRIBUTE0;
   	float4	Normal		: ATTRIBUTE2;
   	uint    VertexId	: SV_VertexID;
+#if USE_INSTANCING
+  	uint    InstanceId  : SV_InstanceID;
+#else
+	VF_INSTANCED_STEREO_DECLARE_INPUT_BLOCK()
+#endif
 };
 
 /** Cached intermediates that would otherwise have to be computed multiple times. */

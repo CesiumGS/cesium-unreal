@@ -218,7 +218,8 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
         FFeatureTableDescription& featureTable =
             this->FeatureTables[propertyTableIndex];
         const ECesiumFeatureIdSetType type =
-            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet);
+            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+                featureIDSet);
 
         // TODO: this will be overhauled, but here's code with new API for
         // future reference
