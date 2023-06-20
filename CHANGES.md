@@ -7,8 +7,13 @@
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 - Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. Flight interpolation is now computed per-frame, so this property is no longer needed. Any code that refers to `FlyToGranularityDegrees` should be removed or changed to `FlyToGranularityDegrees_DEPRECATED` to still compile.
 
+##### Additions :tada:
+
+- Added ability to set CesiumGeoreference Scale via Blueprints.
+
 ##### Fixes :wrench:
 
+- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
 - Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
 
 ### v1.27.0 - 2023-06-1
