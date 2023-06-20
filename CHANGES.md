@@ -15,9 +15,11 @@
 - Added `FCesiumPrimitiveFeatures` and `UCesiumPrimitiveFeaturesBlueprintLibrary`, which can be used to enact on the feature IDs stored in `EXT_mesh_features`.
 - Added `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus`, as well as Blueprints functions to retrieve them. These indicate when something in the feature ID sets is invalid.
 - Added `FCesiumFeatureIdTexture.GetFeatureIDForVertex`, which can retrieve the feature ID of the given vertex if it contains texture coordinates.
+- Added ability to set a `CesiumGeoreference`'s `Scale` via Blueprints.
 
 ##### Fixes :wrench:
 
+- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
 - Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
 
 ##### Deprecated :hourglass_flowing_sand:
