@@ -286,7 +286,7 @@ public:
   GetValueType(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
   /**
-   * Queries the number of metadata entries in the property.
+   * Gets the number of metadata entries in the property.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -296,7 +296,7 @@ public:
   GetPropertySize(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
   /**
-   * Queries the number of elements in an array of this property. Only
+   * Gets the number of elements in an array of this property. Only
    * applicable when the property is an array type.
    */
   UFUNCTION(

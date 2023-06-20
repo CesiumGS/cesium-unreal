@@ -85,7 +85,7 @@ public:
   GetPropertyTableName(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
 
   /**
-   * Gets the number of elements in the property table. In other words, this is
+   * Gets the size of the property table. In other words, this is
    * how many values each property in the table is expected to have. If an error
    * occurred while parsing the property table, this returns zero.
    */
@@ -94,7 +94,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTable")
   static int64
-  GetNumberOfElements(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
+  GetPropertyTableSize(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
 
   /**
    * Gets all the properties of the property table, mapped by property name.
@@ -105,6 +105,29 @@ public:
       Category = "Cesium|Metadata|PropertyTable")
   static const TMap<FString, FCesiumPropertyTableProperty>&
   GetProperties(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
+
+  /**
+   * Gets the names of the properties in this property table.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTable")
+  static const TArray<FString>
+  GetPropertyNames(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
+
+  /**
+   * Retrieve a FCesiumPropertyTableProperty by name. If the property table
+   * does not contain a property with that name, this returns an invalid
+   * FCesiumPropertyTableProperty.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTable")
+  static const FCesiumPropertyTableProperty& FindProperty(
+      UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
+      const FString& PropertyName);
 
   /**
    * Gets all of the property values for a given feature, mapped by property

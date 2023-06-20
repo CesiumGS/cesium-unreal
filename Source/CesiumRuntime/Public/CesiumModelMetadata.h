@@ -57,12 +57,60 @@ public:
   GetPropertyTables(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
 
   /**
-   * Gets an array of all the property textures for this model metadata.
+   * Gets the property table at the specified index for this model metadata. If
+   * the index is out-of-bounds, this returns an invalid property table.
    */
-   UFUNCTION(
+  UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Model|Metadata")
-   static const TArray<FCesiumPropertyTexture>&
-   GetPropertyTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
+  static const FCesiumPropertyTable& GetPropertyTable(
+      UPARAM(ref) const FCesiumModelMetadata& ModelMetadata,
+      const int64 Index);
+
+  /**
+   * Gets the property table at the specified indices for this model metadata.
+   * An invalid property table will be returned for any out-of-bounds index.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Model|Metadata")
+  static const TArray<FCesiumPropertyTable> GetPropertyTablesAtIndices(
+      UPARAM(ref) const FCesiumModelMetadata& ModelMetadata,
+      const TArray<int64>& Indices);
+
+  /**
+   * Gets an array of all the property textures for this model metadata.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Model|Metadata")
+  static const TArray<FCesiumPropertyTexture>&
+  GetPropertyTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
+
+  /**
+   * Gets the property table at the specified index for this model metadata. If
+   * the index is out-of-bounds, this returns an invalid property table.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Model|Metadata")
+  static const FCesiumPropertyTexture& GetPropertyTexture(
+      UPARAM(ref) const FCesiumModelMetadata& ModelMetadata,
+      const int64 Index);
+
+  /**
+   * Gets an array of the property textures at the specified indices for this
+   * model metadata.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Model|Metadata")
+  static const TArray<FCesiumPropertyTexture> GetPropertyTexturesAtIndices(
+      UPARAM(ref) const FCesiumModelMetadata& ModelMetadata,
+      const TArray<int64>& Indices);
 };

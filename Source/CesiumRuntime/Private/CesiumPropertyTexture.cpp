@@ -7,47 +7,66 @@
 
 using namespace CesiumGltf;
 
+static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
+
 FCesiumPropertyTexture::FCesiumPropertyTexture(
     const CesiumGltf::Model& InModel,
     const CesiumGltf::ExtensionExtStructuralMetadataPropertyTexture&
         PropertyTexture)
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidMetadataExtension),
+      _name(PropertyTexture.name.value_or("").c_str()),
       _propertyTextureView(InModel, PropertyTexture) {
   switch (this->_propertyTextureView.status()) {
   case PropertyTextureViewStatus::Valid:
     break;
+  default:
+    return;
     // TODO: isolate the individual property status from the whole status.
   }
 
-  const std::unordered_map<
-      std::string,
-      PropertyTexturePropertyView>& properties =
-      this->_propertyTextureView.getProperties();
-  this->_propertyKeys.Reserve(properties.size());
+  const std::unordered_map<std::string, PropertyTexturePropertyView>&
+      properties = this->_propertyTextureView.getProperties();
+  this->_properties.Reserve(properties.size());
   for (auto propertyView : properties) {
-    this->_propertyKeys.Emplace(UTF8_TO_TCHAR(propertyView.first.c_str()));
+    this->_properties.Emplace(
+        FString(propertyView.first.c_str()),
+        FCesiumPropertyTextureProperty(propertyView.second));
   }
 }
 
-const TArray<FString>& UCesiumPropertyTextureBlueprintLibrary::GetPropertyNames(
+/*static*/ const ECesiumPropertyTextureStatus
+UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureStatus(
     UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture) {
-  return PropertyTexture._propertyKeys;
+  return PropertyTexture._status;
 }
 
-FCesiumPropertyTextureProperty
+/*static*/ const FString&
+UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
+    UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture) {
+  return PropertyTexture._name;
+}
+
+/*static*/ const TArray<FCesiumPropertyTextureProperty>
+UCesiumPropertyTextureBlueprintLibrary::GetProperties(
+    UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture) {
+  TArray<FCesiumPropertyTextureProperty> properties;
+  PropertyTexture._properties.GenerateValueArray(properties);
+  return properties;
+}
+
+/*static*/ const TArray<FString>
+UCesiumPropertyTextureBlueprintLibrary::GetPropertyNames(
+    UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture) {
+  TArray<FString> names;
+  PropertyTexture._properties.GenerateKeyArray(names);
+  return names;
+}
+
+const FCesiumPropertyTextureProperty&
 UCesiumPropertyTextureBlueprintLibrary::FindProperty(
     UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
     const FString& PropertyName) {
-
-  const std::unordered_map<
-      std::string,
-      CesiumGltf::PropertyTexturePropertyView>& properties =
-      PropertyTexture._PropertyTextureView.getProperties();
-
-  auto propertyIt = properties.find(TCHAR_TO_UTF8(*PropertyName));
-  if (propertyIt == properties.end()) {
-    return FCesiumPropertyTextureProperty();
-  }
-
-  return FCesiumPropertyTextureProperty(propertyIt->second);
+  const FCesiumPropertyTextureProperty* property =
+      PropertyTexture._properties.Find(PropertyName);
+  return property ? *property : EmptyPropertyTextureProperty;
 }

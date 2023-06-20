@@ -10,6 +10,11 @@
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataGenericValue.generated.h"
 
+struct UE_DEPRECATED(
+    5.0,
+    "FCesiumMetadataGenericValue is deprecated. Use FCesiumMetadataValue instead.")
+    FCesiumMetadataGenericValue;
+
 /**
  * A Blueprint-accessible wrapper for a glTF metadata value.
  */

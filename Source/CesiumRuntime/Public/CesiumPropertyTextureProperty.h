@@ -54,7 +54,7 @@ public:
 UENUM(BlueprintType)
 enum class ECesiumPropertyTexturePropertyStatus : uint8 {
   Valid = 0,
-  
+
 };
 
 /**
@@ -69,8 +69,7 @@ public:
   FCesiumPropertyTextureProperty() {}
 
   FCesiumPropertyTextureProperty(
-      const CesiumGltf::PropertyTexturePropertyView&
-          Property)
+      const CesiumGltf::PropertyTexturePropertyView& Property)
       : _pPropertyView(&Property) {}
 
 private:
@@ -110,9 +109,9 @@ public:
   GetComponentCount(UPARAM(ref) const FCesiumPropertyTextureProperty& Property);
 
   /**
-   * @brief Get the string representing how the metadata is encoded in a
-   * pixel color. This is useful to unpack the metadata in the correct order of
-   * components from the pixel color.
+   * Get the string representing how the metadata is encoded in a pixel color.
+   * This is useful to unpack the metadata in the correct order of components
+   * from the pixel color.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -122,7 +121,7 @@ public:
                                 const FCesiumPropertyTextureProperty& Property);
 
   /**
-   * @brief Whether the metadata components are to be interpreted as
+   * Whether the metadata components are to be interpreted as
    * normalized values. This only applies when the metadata components have an
    * integer type.
    */
@@ -134,7 +133,7 @@ public:
                                const FCesiumPropertyTextureProperty& Property);
 
   /**
-   * @brief Given texture coordinates from the appropriate texture coordinate
+   * Given texture coordinates from the appropriate texture coordinate
    * set (as indicated by GetTextureCoordinateIndex), returns an integer-based
    * metadata value for the pixel. This automatically unswizzles the pixel
    * color as needed. Only the first GetComponentCount channels are to be used.
@@ -144,12 +143,12 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTextureProperty")
   static FCesiumIntegerColor GetIntegerColorFromTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureTextureProperty& Property,
+      UPARAM(ref) const FCesiumPropertyTextureProperty& Property,
       float u,
       float v);
 
   /**
-   * @brief Given texture coordinates from the appropriate texture coordinate
+   * Given texture coordinates from the appropriate texture coordinate
    * set (as indicated by GetTextureCoordinateIndex), returns an float-based
    * metadata value for the pixel. This automatically unswizzles the pixel
    * color as needed and normalizes it if needed. Only the first
@@ -158,9 +157,9 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|FeatureTextureProperty")
+      Category = "Cesium|Metadata|FCesiumPropertyTextureProperty")
   static FCesiumFloatColor GetFloatColorFromTextureCoordinates(
-      UPARAM(ref) const FCesiumFeatureTextureProperty& Property,
+      UPARAM(ref) const FCesiumPropertyTextureProperty& Property,
       float u,
       float v);
 };

@@ -7,9 +7,10 @@
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
     const FCesiumPrimitiveFeatures& PrimitiveFeatures,
     const FCesiumPrimitiveMetadata& PrimitiveMetadata,
-  const FCesiumModelMetadata& ModelMetadata)
+    const FCesiumModelMetadata& ModelMetadata)
     : _pPrimitiveFeatures(&PrimitiveFeatures),
-      _pPrimitiveMetadata(&PrimitiveMetadata) {}
+      _pPrimitiveMetadata(&PrimitiveMetadata),
+      _pModelMetadata(&ModelMetadata) {}
 
 const TArray<FCesiumFeatureIdAttribute>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
@@ -61,7 +62,7 @@ const TArray<FString>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
   TArray<FString> propertyTextureNames;
-  if (!MetadataPrimitive._pPrimitiveMetadata) {
+  if (!MetadataPrimitive._pPrimitiveMetadata || !MetadataPrimitive._pModelMetadata) {
     return;
   }
 
@@ -69,14 +70,13 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
       UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
           *MetadataPrimitive._pPrimitiveMetadata);
 
-  // this requires model metadata
- /* const TArray<FCesiumPropertyTexture> propertyTextures = UCesiumM
+   const TArray<FCesiumPropertyTexture> propertyTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTexturesAtIndices(*MetadataPrimitive._pModelMetadata, propertyTextureIndices);
 
-  propertyTextureNames.Reserve(propertyTextureIndices.Num());
-  for (const int64 index : propertyTextureIndices) {
-    propertyTextureNames.Add(::GetAsFeatureIDTexture(
-            featureIDSet));
-  }*/
+   propertyTextureNames.Reserve(propertyTextures.Num());
+   for (auto propertyTexture : propertyTextures) {
+     propertyTextureNames.Add(UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(propertyTexture));
+   }
 
   return propertyTextureNames;
 }

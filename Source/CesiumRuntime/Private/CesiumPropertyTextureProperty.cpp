@@ -27,27 +27,27 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
 
 int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
     UPARAM(ref) const FCesiumPropertyTextureProperty& property) {
-  return property._pProperty->getCount();
+  return property._pPropertyView->getCount();
 }
 
 bool UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
     UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
-  return property._pProperty->isNormalized();
+  return property._pPropertyView->isNormalized();
 }
 
-FString UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(
+FString UCesiumPropertyTexturePropertyBlueprintLibrary::GetSwizzle(
     UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
   return UTF8_TO_TCHAR(property._pProperty->getSwizzle().c_str());
 }
 
-FCesiumIntegerColor UCesiumFeatureTexturePropertyBlueprintLibrary::
+FCesiumIntegerColor UCesiumPropertyTexturePropertyBlueprintLibrary::
     GetIntegerColorFromTextureCoordinates(
         UPARAM(ref) const FCesiumFeatureTextureProperty& property,
         float u,
         float v) {
   switch (property._pProperty->getPropertyType()) {
-  case CesiumGltf::FeatureTexturePropertyComponentType::Uint8: {
-    CesiumGltf::FeatureTexturePropertyValue<uint8_t> propertyValue =
+  case CesiumGltf::PropertyTexturePropertyComponentType::Uint8: {
+    CesiumGltf::PropertyTexturePropertyValue<uint8_t> propertyValue =
         property._pProperty->getProperty<uint8_t>(u, v);
     return {
         CesiumMetadataConversions<int32, uint8_t>::convert(
@@ -68,7 +68,7 @@ FCesiumIntegerColor UCesiumFeatureTexturePropertyBlueprintLibrary::
   }
 }
 
-FCesiumFloatColor UCesiumFeatureTexturePropertyBlueprintLibrary::
+FCesiumFloatColor UCesiumPropertyTexturePropertyBlueprintLibrary::
     GetFloatColorFromTextureCoordinates(
         UPARAM(ref) const FCesiumFeatureTextureProperty& property,
         float u,

@@ -7,6 +7,8 @@
 using namespace CesiumGltf;
 using namespace CesiumGltf::StructuralMetadata;
 
+static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
+
 FCesiumPropertyTable::FCesiumPropertyTable(
     const Model& Model,
     const ExtensionExtStructuralMetadataPropertyTable& PropertyTable)
@@ -31,11 +33,11 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   propertyTableView.forEachProperty([&properties = _properties](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
-    // Should we log a warning if invalid? I think it's actually nicer to
-    // include the property but say it's invalid, so the user isn't confused.
+    FString key(UTF8_TO_TCHAR(propertyName.data()));
     if (propertyValue.status() == PropertyTablePropertyViewStatus::Valid) {
-      FString key(UTF8_TO_TCHAR(propertyName.data()));
       properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
+    } else {
+      properties.Add(key, EmptyPropertyTableProperty);
     }
   });
 }
@@ -52,7 +54,7 @@ UCesiumPropertyTableBlueprintLibrary::GetPropertyTableName(
   return PropertyTable._name;
 }
 
-/*static*/ int64 UCesiumPropertyTableBlueprintLibrary::GetNumberOfElements(
+/*static*/ int64 UCesiumPropertyTableBlueprintLibrary::GetPropertyTableSize(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
   if (PropertyTable._status != ECesiumPropertyTableStatus::Valid) {
     return 0;
@@ -67,29 +69,45 @@ UCesiumPropertyTableBlueprintLibrary::GetProperties(
   return PropertyTable._properties;
 }
 
+/*static*/ const TArray<FString>
+UCesiumPropertyTableBlueprintLibrary::GetPropertyNames(UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
+  TArray<FString> names;
+  PropertyTable._properties.GenerateKeyArray(names);
+  return names;
+}
+
+/*static*/ const FCesiumPropertyTableProperty&
+UCesiumPropertyTableBlueprintLibrary::FindProperty(
+  UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
+    const FString& PropertyName) {
+  const FCesiumPropertyTableProperty* property =
+      PropertyTable._properties.Find(PropertyName);
+  return property ? *property : EmptyPropertyTableProperty;
+}
+
 /*static*/ TMap<FString, FCesiumMetadataValue>
 UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureID(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     int64 featureID) {
-  TMap<FString, FCesiumMetadataValue> feature;
+  TMap<FString, FCesiumMetadataValue> values;
   for (const auto& pair : PropertyTable._properties) {
-    feature.Add(
+    values.Add(
         pair.Key,
         UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
             pair.Value,
             featureID));
   }
 
-  return feature;
+  return values;
 }
 
 /*static*/ TMap<FString, FString>
 UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesAsStringsForFeatureID(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     int64 featureID) {
-  TMap<FString, FString> feature;
+  TMap<FString, FString> values;
   for (const auto& pair : PropertyTable._properties) {
-    feature.Add(
+    values.Add(
         pair.Key,
         UCesiumMetadataValueBlueprintLibrary::GetString(
             UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
@@ -98,5 +116,5 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesAsStringsForFeatureID(
             ""));
   }
 
-  return feature;
+  return values;
 }
