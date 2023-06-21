@@ -22,11 +22,11 @@ jobs:
       - name: Set environment variables
         run: |
           choco install -y dotnetcore-sdk
-          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${ENV:CESIUM_UNREAL_VERSION}"
+          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
+          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
