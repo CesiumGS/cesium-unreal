@@ -49,8 +49,55 @@ jobs:
           cp "$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"
       - name: Run tests
         run: |
-          unrealeditor-cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log
-  
+          unrealeditor-cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$ENV:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+      - name: Display test logs
+        continue-on-error: true
+        run: |
+          cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          Get-Content RunTests.log
+          Get-Content index.json
+      - name: Evaluate test results
+        continue-on-error: true
+        run: |
+          $env:TEST_STATUS="Pending"
+          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
+
+          # If output logs not found, assume that the tests errored out
+          cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          if (!(Test-Path -Path 'RunTests.log')) {
+            $env:TEST_STATUS="Error"
+            return
+          }
+          if (!(Test-Path -Path 'index.json')) {
+            $env:TEST_STATUS="Error"
+            return
+          }
+
+          # Define function to parse json recursively
+          function Parse-JsonRecursively($jsonObject) {
+              foreach ($property in $jsonObject.PSObject.Properties) {
+                  $name = $property.Name
+                  $value = $property.Value
+
+                  # If the property value is another object, call function recursively
+                  if ($value -is [PSCustomObject]) {
+                      Parse-JsonRecursively($value)
+                  }
+                  else {
+                      # If "state:fail" entry is found in json, set failure state
+                      if($name -eq "state" -and $value -eq "fail") {
+                          $env:TEST_STATUS="Failure"
+                          return
+                      }
+                  }
+              }
+          }
+
+          $env:TEST_STATUS="Success" # Set status to success at start
+          $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
+          Parse-JsonRecursively -jsonObject $json # Parse json
+          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV # Export result to github environment variables            
+
   Combine50:
     runs-on: ubuntu-latest
     needs: [Windows50]
