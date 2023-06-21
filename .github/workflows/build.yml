@@ -29,9 +29,16 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${env:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
-          # Print to console
+          # Confirm vars to the console
+          echo.
           echo CESIUM_UNREAL_VERSION=$env:CESIUM_UNREAL_VERSION
+          echo env.CESIUM_UNREAL_VERSION="${{ env.CESIUM_UNREAL_VERSION }}"
+          echo.
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
+          echo env.BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME }}"
+          echo.
+          echo env.TEST_ENV_PATH="${{ env.TEST_ENV_PATH }}"
+          echo.
           echo GITHUB_ENV=$env:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
