@@ -95,5 +95,5 @@ private:
   UPROPERTY(DuplicateTransient, TextExportTransient)
   TWeakObjectPtr<ALevelInstance> _pTarget = nullptr;
 
-  bool _checkIfTargetIsRegistered = false;
+  bool _doExtraChecksOnNextTick = false;
 };

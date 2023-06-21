@@ -18,6 +18,10 @@ void UCesiumSubLevelSwitcherComponent::RegisterSubLevel(
     ALevelInstance* pSubLevel) noexcept {
   this->_sublevels.AddUnique(pSubLevel);
 
+  // Do extra checks on the next tick so that if we're in a game and this level
+  // is already loaded and shouldn't be, we can unload it.
+  this->_doExtraChecksOnNextTick = true;
+
   // In the Editor, sub-levels other than the target must initially be hidden.
 #if WITH_EDITOR
   if (GEditor && IsValid(this->GetWorld()) &&
@@ -38,7 +42,7 @@ void UCesiumSubLevelSwitcherComponent::UnregisterSubLevel(
   // because the Editor UI goes through an unregister/re-register cycle
   // _constantly_, and we don't want to forget the target sub-level just because
   // it was edited in the UI.
-  this->_checkIfTargetIsRegistered = true;
+  this->_doExtraChecksOnNextTick = true;
 }
 
 const TArray<TWeakObjectPtr<ALevelInstance>>&
@@ -83,14 +87,57 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
     FActorComponentTickFunction* ThisTickFunction) {
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (this->_checkIfTargetIsRegistered) {
+  if (this->_doExtraChecksOnNextTick) {
     if (this->_pTarget != nullptr &&
         this->_sublevels.Find(this->_pTarget) == INDEX_NONE) {
       // Target level is no longer registered, so the new target is "none".
       this->SetTarget(nullptr);
     }
 
-    this->_checkIfTargetIsRegistered = false;
+    // In game, make sure that any sublevels that aren't pCurrent or pTarget are
+    // unloaded. This is primarily needed because ALevelInstances are loaded by
+    // default and there doesn't seem to be any way to disable this. In the
+    // Editor, levels pretty much stay loaded all the time.
+    if (this->GetWorld()->IsGameWorld()) {
+      bool anyLevelsStillLoaded = false;
+      for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
+        ALevelInstance* pSubLevel = this->_sublevels[i].Get();
+        if (!IsValid(pSubLevel))
+          continue;
+
+        if (pSubLevel == this->_pCurrent || pSubLevel == this->_pTarget)
+          continue;
+
+        ULevelStreaming* pStreaming =
+            this->_getLevelStreamingForSubLevel(pSubLevel);
+        ULevelStreaming::ECurrentState state =
+            IsValid(pStreaming) ? pStreaming->GetCurrentState()
+                                : ULevelStreaming::ECurrentState::Unloaded;
+        switch (state) {
+        case ULevelStreaming::ECurrentState::Loading:
+        case ULevelStreaming::ECurrentState::MakingInvisible:
+        case ULevelStreaming::ECurrentState::MakingVisible:
+          anyLevelsStillLoaded = true;
+          break;
+        case ULevelStreaming::ECurrentState::FailedToLoad:
+        case ULevelStreaming::ECurrentState::LoadedNotVisible:
+        case ULevelStreaming::ECurrentState::LoadedVisible:
+          pSubLevel->UnloadLevelInstance();
+          anyLevelsStillLoaded = true;
+          break;
+        case ULevelStreaming::ECurrentState::Removed:
+        case ULevelStreaming::ECurrentState::Unloaded:
+          break;
+        }
+      }
+
+      if (anyLevelsStillLoaded) {
+        // Don't do anything else until the levels are unloaded.
+        return;
+      }
+    }
+
+    this->_doExtraChecksOnNextTick = false;
   }
 
 #if WITH_EDITOR
@@ -112,45 +159,6 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     // We already match the desired state, so there's nothing to do!
     return;
   }
-
-  // Before we can do anything else, we must make sure that any sublevels that
-  // aren't pCurrent or pTarget are unloaded. This is primarily needed because
-  // ALevelInstances are loaded by default and there doesn't seem to be any way
-  // to disable this.
-  bool anyLevelsStillLoaded = false;
-  for (int32 i = 0; i < this->_sublevels.Num(); ++i) {
-    ALevelInstance* pSubLevel = this->_sublevels[i].Get();
-    if (!IsValid(pSubLevel))
-      continue;
-
-    if (pSubLevel == this->_pCurrent || pSubLevel == this->_pTarget)
-      continue;
-
-    ULevelStreaming* pStreaming =
-        this->_getLevelStreamingForSubLevel(pSubLevel);
-    ULevelStreaming::ECurrentState state =
-        IsValid(pStreaming) ? pStreaming->GetCurrentState()
-                            : ULevelStreaming::ECurrentState::Unloaded;
-    switch (state) {
-    case ULevelStreaming::ECurrentState::Loading:
-    case ULevelStreaming::ECurrentState::MakingInvisible:
-    case ULevelStreaming::ECurrentState::MakingVisible:
-      anyLevelsStillLoaded = true;
-      break;
-    case ULevelStreaming::ECurrentState::FailedToLoad:
-    case ULevelStreaming::ECurrentState::LoadedNotVisible:
-    case ULevelStreaming::ECurrentState::LoadedVisible:
-      pSubLevel->UnloadLevelInstance();
-      anyLevelsStillLoaded = true;
-      break;
-    case ULevelStreaming::ECurrentState::Removed:
-    case ULevelStreaming::ECurrentState::Unloaded:
-      break;
-    }
-  }
-
-  if (anyLevelsStillLoaded)
-    return;
 
   if (this->_pCurrent != nullptr) {
     // Work toward unloading the current level.
