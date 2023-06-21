@@ -44,6 +44,12 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: packages
+      - name: Install to engine
+        run: |
+          cp "$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"
+      - name: Run tests
+        run: |
+          unrealeditor-cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log
   
   Combine50:
     runs-on: ubuntu-latest
