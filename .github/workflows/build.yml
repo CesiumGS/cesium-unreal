@@ -25,8 +25,11 @@ jobs:
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
           # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
+          echo "CESIUM_UNREAL_VERSION=${env:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
+          echo $env:CESIUM_UNREAL_VERSION
+          echo $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
+          echo $env:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
@@ -37,7 +40,7 @@ jobs:
       - name: Build plugin
         run: |
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
-          ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
+          ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
@@ -46,12 +49,12 @@ jobs:
           path: packages
       - name: Install to engine
         run: |
-          cp "$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"      
+          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"      
       - name: Run tests
         continue-on-error: true
         run: |
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
-          ./UnrealEditor-Cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$ENV:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          ./UnrealEditor-Cmd.exe "$env:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
       - name: Display test logs
         run: |
           cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
