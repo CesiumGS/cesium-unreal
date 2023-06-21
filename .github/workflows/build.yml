@@ -13,6 +13,8 @@ jobs:
           npm run format -- --dry-run -Werror
   Windows50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
+    env:
+      TEST_ENV_PATH: myTestValue
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -27,9 +29,10 @@ jobs:
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${env:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
-          echo $env:CESIUM_UNREAL_VERSION
-          echo $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
-          echo $env:GITHUB_ENV
+          # Print to console
+          echo CESIUM_UNREAL_VERSION=$env:CESIUM_UNREAL_VERSION
+          echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
+          echo GITHUB_ENV=$env:GITHUB_ENV
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
