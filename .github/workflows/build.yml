@@ -15,6 +15,7 @@ jobs:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
       - name: Run tests
+        continue-on-error: true
         run: |
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
           ./UnrealEditor-Cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$ENV:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
@@ -25,7 +26,6 @@ jobs:
           Get-Content RunTests.log
           Get-Content index.json
       - name: Evaluate test results
-        continue-on-error: true
         run: |
           $env:TEST_STATUS="Pending"
           echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
