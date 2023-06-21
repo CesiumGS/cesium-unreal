@@ -338,7 +338,7 @@ void FSubLevelsSpec::Define() {
       TestFalse("pSubLevel2 is loaded", pPlaySubLevel2->IsLoaded());
     });
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      GEditor->EndPlayMap();
+      GEditor->RequestEndPlayMap();
     });
   });
 
