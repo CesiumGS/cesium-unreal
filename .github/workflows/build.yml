@@ -17,8 +17,7 @@ jobs:
       - name: Run tests
         run: |
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
-          dir
-          UnrealEditor-Cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$ENV:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          ./UnrealEditor-Cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$ENV:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
       - name: Display test logs
         continue-on-error: true
         run: |
