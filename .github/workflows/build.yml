@@ -13,8 +13,6 @@ jobs:
           npm run format -- --dry-run -Werror
   Windows50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
-    env:
-      TEST_ENV_PATH: myTestValue
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -24,22 +22,24 @@ jobs:
       - name: Set environment variables
         run: |
           choco install -y dotnetcore-sdk
+          
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
+          $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+          $env:UNREAL_BINARIES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
+
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${env:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
+          echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
+          echo "UNREAL_BINARIES_PATH=${env:UNREAL_BINARIES_PATH}" >> $env:GITHUB_ENV
+
           # Confirm vars to the console
           echo ""
           echo CESIUM_UNREAL_VERSION=$env:CESIUM_UNREAL_VERSION
-          echo env.CESIUM_UNREAL_VERSION="${{ env.CESIUM_UNREAL_VERSION }}"
-          echo ""
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
-          echo env.BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME }}"
-          echo ""
-          echo env.TEST_ENV_PATH="${{ env.TEST_ENV_PATH }}"
-          echo ""
-          echo GITHUB_ENV=$env:GITHUB_ENV
+          echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
+          echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
@@ -49,7 +49,7 @@ jobs:
           cmake --build build --config Release --target install -j8
       - name: Build plugin
         run: |
-          cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+          cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
       - name: Publish plugin package artifact
         if: ${{ success() }}
@@ -63,11 +63,11 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          cd "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
+          cd "$env:UNREAL_BINARIES_PATH"
           ./UnrealEditor-Cmd.exe "$env:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
       - name: Display test logs
         run: |
-          cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          cd "$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
           Get-Content RunTests.log
           Get-Content index.json
       - name: Evaluate test results
@@ -75,7 +75,7 @@ jobs:
           $env:TEST_STATUS="Pending"
           echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
 
-          cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          cd "$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
 
           # Define function to parse json recursively
           function Parse-JsonRecursively($jsonObject) {
