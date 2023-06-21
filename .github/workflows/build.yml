@@ -53,7 +53,6 @@ jobs:
           cd "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
           ./UnrealEditor-Cmd.exe "$ENV:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$ENV:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
       - name: Display test logs
-        continue-on-error: true
         run: |
           cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
           Get-Content RunTests.log
@@ -63,16 +62,7 @@ jobs:
           $env:TEST_STATUS="Pending"
           echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
 
-          # If output logs not found, assume that the tests errored out
           cd "$GITHUB_WORKSPACE/TestsProject/Saved/Logs"
-          if (!(Test-Path -Path 'RunTests.log')) {
-            $env:TEST_STATUS="Error"
-            return
-          }
-          if (!(Test-Path -Path 'index.json')) {
-            $env:TEST_STATUS="Error"
-            return
-          }
 
           # Define function to parse json recursively
           function Parse-JsonRecursively($jsonObject) {
