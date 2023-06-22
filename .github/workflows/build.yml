@@ -61,6 +61,7 @@ jobs:
           cmake -B build -S . -A x64
           cmake --build build --config Release --target install -j8
       - name: Build CesiumForUnreal plugin
+        timeout-minutes: 120      
         run: |
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
@@ -76,6 +77,7 @@ jobs:
           cp "$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
       - name: Run Cesium tests
         continue-on-error: true
+        timeout-minutes: 30
         run: |
           cd "$env:UNREAL_BINARIES_PATH"
           ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$env:TESTS_PROJECT_LOGS"
