@@ -27,6 +27,7 @@ jobs:
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           $env:UNREAL_BINARIES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
+          $env:UNREAL_MARKETPLACE_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
 
           # Make these available to subsequent steps
@@ -34,6 +35,7 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BINARIES_PATH=${env:UNREAL_BINARIES_PATH}" >> $env:GITHUB_ENV
+          echo "UNREAL_MARKETPLACE_PATH=${env:UNREAL_MARKETPLACE_PATH}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
@@ -42,6 +44,7 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
+          echo UNREAL_MARKETPLACE_PATH=$env:UNREAL_MARKETPLACE_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
@@ -62,7 +65,10 @@ jobs:
           path: packages
       - name: Install to engine
         run: |
-          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"      
+          dir "$env:GITHUB_WORKSPACE/packages"
+          dir "$env:UNREAL_MARKETPLACE_PATH"
+          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "$env:UNREAL_MARKETPLACE_PATH"      
+          dir "$env:UNREAL_MARKETPLACE_PATH"
       - name: Run tests
         continue-on-error: true
         run: |
