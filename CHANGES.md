@@ -7,9 +7,20 @@
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 - Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. Flight interpolation is now computed per-frame, so this property is no longer needed. Any code that refers to `FlyToGranularityDegrees` should be removed or changed to `FlyToGranularityDegrees_DEPRECATED` to still compile.
 
+##### Additions :tada:
+
+- Added ability to set CesiumGeoreference Scale via Blueprints.
+
 ##### Fixes :wrench:
 
-- Fixed physics bug caused by Unreal 5.1.
+- Added a workaround for an apparent bug in Unreal Engine 5.1 that prevented collisions from working with Cesium3DTilesets.
+
+### v1.27.1 - 2023-06-19
+
+##### Fixes :wrench:
+
+- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
+- Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
 
 ### v1.27.0 - 2023-06-1
 
@@ -20,6 +31,7 @@
 - Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
 - `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
 - Added new settings to the Cesium section of the Project Settings, allowing users to control how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
+- Add `ACesiumCameraManager::RemoveCamera`. Available via Blueprints and C++. This complements the existing `ACesiumCameraManager::AddCamera`.
 
 ##### Fixes :wrench:
 

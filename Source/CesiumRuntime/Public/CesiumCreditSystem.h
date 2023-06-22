@@ -8,6 +8,7 @@
 #include "UObject/Class.h"
 #include "UObject/ConstructorHelpers.h"
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 #if WITH_EDITOR
@@ -36,7 +37,9 @@ public:
 
   ACesiumCreditSystem();
 
-  void BeginPlay() override;
+  virtual void BeginPlay() override;
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
   virtual void OnConstruction(const FTransform& Transform) override;
   virtual void BeginDestroy() override;
 

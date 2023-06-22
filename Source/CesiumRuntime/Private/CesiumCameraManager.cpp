@@ -12,6 +12,10 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
 
 /*static*/ ACesiumCameraManager* ACesiumCameraManager::GetDefaultCameraManager(
     const UObject* WorldContextObject) {
+  // A null world context means a null return value (no camera manager
+  // available)
+  if (WorldContextObject == nullptr)
+    return nullptr;
   UWorld* world = WorldContextObject->GetWorld();
   // This method can be called by actors even when opening the content browser.
   if (!IsValid(world)) {
@@ -79,6 +83,12 @@ int32 ACesiumCameraManager::AddCamera(UPARAM(ref) const FCesiumCamera& camera) {
   int32 cameraId = this->_currentCameraId++;
   this->_cameras.Emplace(cameraId, camera);
   return cameraId;
+}
+
+bool ACesiumCameraManager::RemoveCamera(int32 cameraId) {
+  int32 numRemovedPairs = this->_cameras.Remove(cameraId);
+  bool success = numRemovedPairs > 0;
+  return success;
 }
 
 bool ACesiumCameraManager::UpdateCamera(
