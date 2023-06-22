@@ -27,12 +27,14 @@ jobs:
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           $env:UNREAL_BINARIES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
+          $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
 
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${env:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BINARIES_PATH=${env:UNREAL_BINARIES_PATH}" >> $env:GITHUB_ENV
+          echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
           echo ""
@@ -40,7 +42,8 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
-      - name: Install nasm
+          echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
+     - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
@@ -64,10 +67,11 @@ jobs:
         continue-on-error: true
         run: |
           cd "$env:UNREAL_BINARIES_PATH"
-          ./UnrealEditor-Cmd.exe "$env:GITHUB_WORKSPACE/TestsProject/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$env:TESTS_PROJECT_ROOT/Saved/Logs"
       - name: Display test logs
         run: |
-          cd "$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          cd "$env:TESTS_PROJECT_ROOT/Saved/Logs"
+          dir
           Get-Content RunTests.log
           Get-Content index.json
       - name: Evaluate test results
@@ -75,7 +79,7 @@ jobs:
           $env:TEST_STATUS="Pending"
           echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
 
-          cd "$env:GITHUB_WORKSPACE/TestsProject/Saved/Logs"
+          cd "$env:TESTS_PROJECT_ROOT/Saved/Logs"
 
           # Define function to parse json recursively
           function Parse-JsonRecursively($jsonObject) {
