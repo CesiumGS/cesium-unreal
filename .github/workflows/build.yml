@@ -43,7 +43,7 @@ jobs:
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
-     - name: Install nasm
+      - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
         run: |
