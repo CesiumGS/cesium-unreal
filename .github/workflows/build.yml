@@ -67,7 +67,7 @@ jobs:
       - name: Install to engine
         run: |
           md "$env:UNREAL_PLUGINS_PATH/Marketplace"
-          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace"      
+          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
       - name: Run tests
         continue-on-error: true
         run: |
