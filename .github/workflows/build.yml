@@ -19,15 +19,16 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0 # so that `git describe` works.
-      - name: Set environment variables
+      - name: Install dotnetcore-sdk
         run: |
           choco install -y dotnetcore-sdk
-          
+      - name: Set environment variables
+        run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
           $env:UNREAL_BINARIES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
-          $env:UNREAL_MARKETPLACE_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"
+          $env:UNREAL_PLUGINS_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
 
           # Make these available to subsequent steps
@@ -35,7 +36,7 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BINARIES_PATH=${env:UNREAL_BINARIES_PATH}" >> $env:GITHUB_ENV
-          echo "UNREAL_MARKETPLACE_PATH=${env:UNREAL_MARKETPLACE_PATH}" >> $env:GITHUB_ENV
+          echo "UNREAL_PLUGINS_PATH=${env:UNREAL_PLUGINS_PATH}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
@@ -44,13 +45,8 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
-          echo UNREAL_MARKETPLACE_PATH=$env:UNREAL_MARKETPLACE_PATH
+          echo UNREAL_PLUGINS_PATH=$env:UNREAL_PLUGINS_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
-      - name: Debug check targets
-        run: |
-          dir "C:/Program Files/Epic Games/UE_5.0/Engine"
-          dir "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
-          dir "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
@@ -70,10 +66,8 @@ jobs:
           path: packages
       - name: Install to engine
         run: |
-          dir "$env:GITHUB_WORKSPACE/packages"
-          dir "$env:UNREAL_MARKETPLACE_PATH"
-          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "$env:UNREAL_MARKETPLACE_PATH"      
-          dir "$env:UNREAL_MARKETPLACE_PATH"
+          md "$env:UNREAL_PLUGINS_PATH/Marketplace"
+          cp "$env:GITHUB_WORKSPACE/packages/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace"      
       - name: Run tests
         continue-on-error: true
         run: |
