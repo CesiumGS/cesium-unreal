@@ -46,6 +46,11 @@ jobs:
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
           echo UNREAL_MARKETPLACE_PATH=$env:UNREAL_MARKETPLACE_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
+      - name: Debug check targets
+        run: |
+          dir "C:/Program Files/Epic Games/UE_5.0/Engine"
+          dir "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
+          dir "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins/Marketplace"
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
       - name: Build cesium-native
