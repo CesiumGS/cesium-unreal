@@ -2,7 +2,19 @@ name: Build for Windows
 
 on:
   workflow_call:
-
+    inputs:
+      unreal-batch-files-path:
+        required: true
+        type: string
+        default: ''
+      unreal-binaries-path:
+        required: true
+        type: string
+        default: ''
+      unreal-plugins-path:
+        required: true
+        type: string
+        default: ''
 jobs:
   buildInstallAndTest:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
@@ -20,9 +32,9 @@ jobs:
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
-          $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
-          $env:UNREAL_BINARIES_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
-          $env:UNREAL_PLUGINS_PATH="C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
+          $env:UNREAL_BATCH_FILES_PATH=${{ inputs.unreal-batch-files-path }}
+          $env:UNREAL_BINARIES_PATH=${{ inputs.unreal-binaries-path }}
+          $env:UNREAL_PLUGINS_PATH=${{ inputs.unreal-plugins-path }}
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
           $env:TESTS_PROJECT_LOGS="$env:TESTS_PROJECT_ROOT/Saved/Logs"
 
