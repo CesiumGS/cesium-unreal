@@ -24,7 +24,9 @@
 AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
   PrimaryActorTick.bCanEverTick = true;
 
+#if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
+#endif
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
 }

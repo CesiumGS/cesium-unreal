@@ -100,7 +100,10 @@ ACesium3DTileset::ACesium3DTileset()
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
+#if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
+#endif
+
   this->SetActorEnableCollision(true);
 
   this->RootComponent =

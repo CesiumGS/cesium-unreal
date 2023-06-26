@@ -25,7 +25,9 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
       ESplineCoordinateSpace::Local);
 
   this->MakeLinear();
+#if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
+#endif
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
 }

@@ -76,7 +76,9 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
 }
 
 ACesiumCameraManager::ACesiumCameraManager() : AActor() {
+#if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
+#endif
 }
 
 bool ACesiumCameraManager::ShouldTickIfViewportsOnly() const { return true; }

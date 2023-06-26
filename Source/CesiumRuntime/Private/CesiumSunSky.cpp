@@ -46,7 +46,9 @@
 ACesiumSunSky::ACesiumSunSky() : AActor() {
   PrimaryActorTick.bCanEverTick = true;
 
+#if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
+#endif
 
   Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Scene"));
   SetRootComponent(Scene);

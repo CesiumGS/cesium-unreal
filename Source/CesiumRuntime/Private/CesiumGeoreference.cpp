@@ -129,7 +129,9 @@ ACesiumGeoreference::ACesiumGeoreference()
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 
+#if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
+#endif
   this->SubLevelSwitcher =
       CreateDefaultSubobject<UCesiumSubLevelSwitcherComponent>(
           "SubLevelSwitcher");
