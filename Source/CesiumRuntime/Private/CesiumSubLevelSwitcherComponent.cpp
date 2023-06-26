@@ -207,7 +207,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       // TODO: maybe we can cancel these transitions somehow?
       UE_LOG(
           LogCesium,
-          Display,
+          Log,
           TEXT(
               "Waiting for sub-level %s to transition out of an intermediate state while unloading it."),
           *this->_pCurrent.Get()->GetActorLabel());
@@ -219,7 +219,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       UE_LOG(
           LogCesium,
           Display,
-          TEXT("Starting unloading sub-level %s."),
+          TEXT("Starting unload of sub-level %s."),
           *this->_pCurrent.Get()->GetActorLabel());
       this->_isTransitioningSubLevels = true;
       this->_pCurrent->UnloadLevelInstance();
@@ -269,7 +269,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       // Wait for these transitions to finish before doing anything further.
       UE_LOG(
           LogCesium,
-          Display,
+          Log,
           TEXT(
               "Waiting for sub-level %s to transition out of an intermediate state while loading it."),
           *this->_pTarget.Get()->GetActorLabel());
@@ -299,7 +299,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
       UE_LOG(
           LogCesium,
           Display,
-          TEXT("Starting loading sub-level %s."),
+          TEXT("Starting load of sub-level %s."),
           *this->_pTarget.Get()->GetActorLabel());
       this->_isTransitioningSubLevels = true;
       this->_pTarget.Get()->LoadLevelInstance();
