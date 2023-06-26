@@ -11,6 +11,21 @@
 #include "Editor.h"
 #endif
 
+namespace {
+
+FString GetActorLabel(AActor* pActor) {
+  if (!IsValid(pActor))
+    return TEXT("<none>");
+
+#if WITH_EDITOR
+  return pActor->GetActorLabel();
+#else
+  return pActor->GetName();
+#endif
+}
+
+} // namespace
+
 UCesiumSubLevelSwitcherComponent::UCesiumSubLevelSwitcherComponent() {
   this->PrimaryComponentTick.bCanEverTick = true;
 }
@@ -67,7 +82,7 @@ void UCesiumSubLevelSwitcherComponent::SetTarget(
           LogCesium,
           Display,
           TEXT("New target sub-level %s."),
-          *pLevelInstance->GetActorLabel());
+          *GetActorLabel(pLevelInstance));
     } else {
       UE_LOG(LogCesium, Display, TEXT("New target sub-level <none>"));
     }
@@ -210,7 +225,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           Log,
           TEXT(
               "Waiting for sub-level %s to transition out of an intermediate state while unloading it."),
-          *this->_pCurrent.Get()->GetActorLabel());
+          *GetActorLabel(this->_pCurrent.Get()));
       this->_isTransitioningSubLevels = true;
       break;
     case ULevelStreaming::ECurrentState::FailedToLoad:
@@ -220,7 +235,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           LogCesium,
           Display,
           TEXT("Starting unload of sub-level %s."),
-          *this->_pCurrent.Get()->GetActorLabel());
+          *GetActorLabel(this->_pCurrent.Get()));
       this->_isTransitioningSubLevels = true;
       this->_pCurrent->UnloadLevelInstance();
       break;
@@ -230,7 +245,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           LogCesium,
           Display,
           TEXT("Finished unloading sub-level %s."),
-          *this->_pCurrent.Get()->GetActorLabel());
+          *GetActorLabel(this->_pCurrent.Get()));
       this->_pCurrent = nullptr;
       break;
     }
@@ -272,7 +287,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           Log,
           TEXT(
               "Waiting for sub-level %s to transition out of an intermediate state while loading it."),
-          *this->_pTarget.Get()->GetActorLabel());
+          *GetActorLabel(this->_pTarget.Get()));
       this->_isTransitioningSubLevels = true;
       break;
     case ULevelStreaming::ECurrentState::FailedToLoad:
@@ -283,7 +298,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           LogCesium,
           Display,
           TEXT("Finished loading sub-level %s."),
-          *this->_pTarget.Get()->GetActorLabel());
+          *GetActorLabel(this->_pTarget.Get()));
 
       // Double-check that we're not actively trying to unload this level
       // already. If we are, wait longer.
@@ -300,7 +315,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           LogCesium,
           Display,
           TEXT("Starting load of sub-level %s."),
-          *this->_pTarget.Get()->GetActorLabel());
+          *GetActorLabel(this->_pTarget.Get()));
       this->_isTransitioningSubLevels = true;
       this->_pTarget.Get()->LoadLevelInstance();
       break;
