@@ -1,5 +1,6 @@
 #include "CesiumSubLevelComponent.h"
 #include "CesiumGeoreference.h"
+#include "CesiumRuntime.h"
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "LevelInstance/LevelInstanceActor.h"
 
@@ -225,6 +226,37 @@ void UCesiumSubLevelComponent::OnRegister() {
   if (!pOwner) {
     return;
   }
+
+#if WITH_EDITOR
+  if (pOwner->GetIsSpatiallyLoaded() ||
+      pOwner->DesiredRuntimeBehavior !=
+          ELevelInstanceRuntimeBehavior::LevelStreaming) {
+    pOwner->Modify();
+
+    // Cesium sub-levels must not be loaded and unloaded by the World Partition
+    // system.
+    if (pOwner->GetIsSpatiallyLoaded()) {
+      pOwner->SetIsSpatiallyLoaded(false);
+    }
+
+    // Cesium sub-levels must use LevelStreaming behavior). The default
+    // (Partitioned), will dump the actors in the sub-level into the main level,
+    // which will prevent us from being to turn the sub-level on and off at
+    // runtime.
+    pOwner->DesiredRuntimeBehavior =
+        ELevelInstanceRuntimeBehavior::LevelStreaming;
+
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Cesium changed the \"Is Spatially Loaded\" or \"Desired Runtime Behavior\" "
+            "settings on Level Instance %s in order to work as a Cesium sub-level. If "
+            "you're using World Partition, you may need to reload the main level in order "
+            "for these changes to take effect."),
+        *pOwner->GetName());
+  }
+#endif
 
   this->ResolveGeoreference();
 

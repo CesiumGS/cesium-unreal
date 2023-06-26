@@ -43,8 +43,10 @@
 //  * In between these two extremes, we need to blend smoothly.
 
 // Sets default values
-ACesiumSunSky::ACesiumSunSky() {
+ACesiumSunSky::ACesiumSunSky() : AActor() {
   PrimaryActorTick.bCanEverTick = true;
+
+  this->SetIsSpatiallyLoaded(false);
 
   Scene = CreateDefaultSubobject<USceneComponent>(TEXT("Scene"));
   SetRootComponent(Scene);

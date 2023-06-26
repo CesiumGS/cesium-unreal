@@ -75,6 +75,10 @@ FName ACesiumCameraManager::DEFAULT_CAMERAMANAGER_TAG =
   return pCameraManager;
 }
 
+ACesiumCameraManager::ACesiumCameraManager() : AActor() {
+  this->SetIsSpatiallyLoaded(false);
+}
+
 bool ACesiumCameraManager::ShouldTickIfViewportsOnly() const { return true; }
 
 void ACesiumCameraManager::Tick(float DeltaTime) { Super::Tick(DeltaTime); }

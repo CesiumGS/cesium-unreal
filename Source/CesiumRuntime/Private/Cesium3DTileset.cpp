@@ -72,7 +72,8 @@ FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 
 // Sets default values
 ACesium3DTileset::ACesium3DTileset()
-    : Georeference(nullptr),
+    : AActor(),
+      Georeference(nullptr),
       ResolvedGeoreference(nullptr),
       CreditSystem(nullptr),
 
@@ -99,6 +100,7 @@ ACesium3DTileset::ACesium3DTileset()
   PrimaryActorTick.bCanEverTick = true;
   PrimaryActorTick.TickGroup = ETickingGroup::TG_PostUpdateWork;
 
+  this->SetIsSpatiallyLoaded(false);
   this->SetActorEnableCollision(true);
 
   this->RootComponent =

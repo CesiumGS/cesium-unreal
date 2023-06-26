@@ -120,14 +120,16 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _ellipsoidRadii{
-        CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
-        CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
-        CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
+    : AActor(),
+      _ellipsoidRadii{
+          CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
+          CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
+          CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
       _geoTransforms(),
       _insideSublevel(false) {
   PrimaryActorTick.bCanEverTick = true;
 
+  this->SetIsSpatiallyLoaded(false);
   this->SubLevelSwitcher =
       CreateDefaultSubobject<UCesiumSubLevelSwitcherComponent>(
           "SubLevelSwitcher");
@@ -271,6 +273,9 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
         FVector::ZeroVector,
         FRotator::ZeroRotator,
         spawnParameters);
+    pLevelInstance->SetIsSpatiallyLoaded(false);
+    pLevelInstance->DesiredRuntimeBehavior =
+        ELevelInstanceRuntimeBehavior::LevelStreaming;
     pLevelInstance->SetActorLabel(pFound->LevelName);
 
     FString levelPath = level.PackageName.ToString() + "." +

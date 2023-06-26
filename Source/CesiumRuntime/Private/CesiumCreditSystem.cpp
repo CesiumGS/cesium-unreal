@@ -151,9 +151,11 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
 }
 
 ACesiumCreditSystem::ACesiumCreditSystem()
-    : _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
+    : AActor(),
+      _pCreditSystem(std::make_shared<Cesium3DTilesSelection::CreditSystem>()),
       _lastCreditsCount(0) {
   PrimaryActorTick.bCanEverTick = true;
+  this->SetIsSpatiallyLoaded(false);
 }
 
 void ACesiumCreditSystem::BeginPlay() {
