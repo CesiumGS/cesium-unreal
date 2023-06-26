@@ -2,6 +2,7 @@
 #include "CesiumSubLevelComponent.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
+#include "LevelInstance/LevelInstanceActor.h"
 #include "LevelInstance/LevelInstanceLevelStreaming.h"
 #include "LevelInstance/LevelInstanceSubsystem.h"
 #include "Runtime/Launch/Resources/Version.h"
@@ -60,7 +61,23 @@ ALevelInstance* UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
 
 void UCesiumSubLevelSwitcherComponent::SetTarget(
     ALevelInstance* pLevelInstance) noexcept {
-  this->_pTarget = pLevelInstance;
+  if (this->_pTarget != pLevelInstance) {
+    if (pLevelInstance) {
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT("New target sub-level %s."),
+          *pLevelInstance->GetActorLabel());
+    } else {
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT("New target sub-level <none>"));
+    }
+
+    this->_pTarget = pLevelInstance;
+    this->_isTransitioningSubLevels = true;
+  }
 }
 
 #if WITH_EDITOR
@@ -72,7 +89,7 @@ void UCesiumSubLevelSwitcherComponent::
   if (bIsHidden) {
     // The previous target level has been hidden, so clear out the target.
     if (this->_pTarget == pLevelInstance) {
-      this->_pTarget = nullptr;
+      this->SetTarget(nullptr);
     }
   } else {
     this->SetTarget(pLevelInstance);
@@ -155,10 +172,19 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
 }
 
 void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
+  if (this->_isTransitioningSubLevels && this->_pCurrent == this->_pTarget) {
+   // It's possible that the pCurrent sub-level was active, then we briefly set
+   // pTarget to something else to trigger an unload of pCurrent, and then
+   // immediately set pTarget back to pCurrent. So we detect that here.
+   this->_pCurrent = nullptr;
+  }
+
   if (this->_pTarget == this->_pCurrent) {
     // We already match the desired state, so there's nothing to do!
     return;
   }
+
+  this->_isTransitioningSubLevels = false;
 
   if (this->_pCurrent != nullptr) {
     // Work toward unloading the current level.
@@ -182,14 +208,32 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     case ULevelStreaming::ECurrentState::MakingVisible:
       // Wait for these transitions to finish before doing anything further.
       // TODO: maybe we can cancel these transitions somehow?
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT(
+              "Waiting for sub-level %s to transition out of an intermediate state before unloading it."),
+          *this->_pCurrent.Get()->GetActorLabel());
+      this->_isTransitioningSubLevels = true;
       break;
     case ULevelStreaming::ECurrentState::FailedToLoad:
     case ULevelStreaming::ECurrentState::LoadedNotVisible:
     case ULevelStreaming::ECurrentState::LoadedVisible:
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT("Starting unloading sub-level %s."),
+          *this->_pCurrent.Get()->GetActorLabel());
+      this->_isTransitioningSubLevels = true;
       this->_pCurrent->UnloadLevelInstance();
       break;
     case ULevelStreaming::ECurrentState::Removed:
     case ULevelStreaming::ECurrentState::Unloaded:
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT("Finished unloading sub-level %s."),
+          *this->_pCurrent.Get()->GetActorLabel());
       this->_pCurrent = nullptr;
       break;
     }
@@ -226,16 +270,41 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     case ULevelStreaming::ECurrentState::MakingInvisible:
     case ULevelStreaming::ECurrentState::MakingVisible:
       // Wait for these transitions to finish before doing anything further.
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT(
+              "Waiting for sub-level %s to transition out of an intermediate state before loading it."),
+          *this->_pTarget.Get()->GetActorLabel());
+      this->_isTransitioningSubLevels = true;
       break;
     case ULevelStreaming::ECurrentState::FailedToLoad:
     case ULevelStreaming::ECurrentState::LoadedNotVisible:
     case ULevelStreaming::ECurrentState::LoadedVisible:
       // Loading complete!
-      this->_pCurrent = this->_pTarget;
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT("Finished loading sub-level %s."),
+          *this->_pTarget.Get()->GetActorLabel());
+
+      // Double-check that we're not actively trying to unload this level
+      // already. If we are, wait longer.
+      if (IsValid(pStreaming) && pStreaming->ShouldBeLoaded()) {
+        this->_pCurrent = this->_pTarget;
+      } else {
+        this->_isTransitioningSubLevels = true;
+      }
       break;
     case ULevelStreaming::ECurrentState::Removed:
     case ULevelStreaming::ECurrentState::Unloaded:
       // Start loading this level
+      UE_LOG(
+          LogCesium,
+          Display,
+          TEXT("Starting loading sub-level %s."),
+          *this->_pTarget.Get()->GetActorLabel());
+      this->_isTransitioningSubLevels = true;
       this->_pTarget.Get()->LoadLevelInstance();
       break;
     }

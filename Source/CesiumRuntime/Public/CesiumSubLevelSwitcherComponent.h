@@ -96,4 +96,5 @@ private:
   TWeakObjectPtr<ALevelInstance> _pTarget = nullptr;
 
   bool _doExtraChecksOnNextTick = false;
+  bool _isTransitioningSubLevels = false;
 };
