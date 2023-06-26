@@ -14,6 +14,8 @@ jobs:
   Windows50:
     uses: ./.github/workflows/buildForWindows.yml    
     with:
+      unreal-runner-label: "unreal-50"
+      base-package-name: "CesiumForUnreal-50-windows"
       unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
       unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
       unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"

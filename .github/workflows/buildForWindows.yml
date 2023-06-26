@@ -3,21 +3,24 @@ name: Build for Windows
 on:
   workflow_call:
     inputs:
+      upload-package-base-name:
+        required: true
+        type: string
+      unreal-runner-label:
+        required: true
+        type: string
       unreal-batch-files-path:
         required: true
         type: string
-        default: ''
       unreal-binaries-path:
         required: true
         type: string
-        default: ''
       unreal-plugins-path:
         required: true
         type: string
-        default: ''
 jobs:
   buildInstallAndTest:
-    runs-on: ["self-hosted","windows","x64","unreal-50"]
+    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -30,7 +33,7 @@ jobs:
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
-          $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${env:CESIUM_UNREAL_VERSION}"
+          $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
           $env:UNREAL_BATCH_FILES_PATH="${{ inputs.unreal-batch-files-path }}"
           $env:UNREAL_BINARIES_PATH="${{ inputs.unreal-binaries-path }}"
