@@ -3,7 +3,7 @@ name: Build for Windows
 on:
   workflow_call:
     inputs:
-      upload-package-base-name:
+      unreal-engine-version:
         required: true
         type: string
       unreal-runner-label:
@@ -16,6 +16,9 @@ on:
         required: true
         type: string
       unreal-plugins-path:
+        required: true
+        type: string
+      upload-package-base-name:
         required: true
         type: string
 jobs:
@@ -59,6 +62,7 @@ jobs:
       - name: Build CesiumForUnreal plugin
         timeout-minutes: 120      
         run: |
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
       - name: Publish plugin package artifact
@@ -69,6 +73,7 @@ jobs:
           path: packages
   test:
     runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    needs: [buildAndUpload]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
