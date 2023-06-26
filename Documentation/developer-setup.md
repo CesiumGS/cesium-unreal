@@ -29,3 +29,13 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 
 * The [Packaging Guide](packaging-guide.md) describes how to create a package and use it in a local Unreal installation. This is similar to installing it from the Unreal Engine Marketplace, but allows testing non-release branches.
 * The [Release Process](release-process.md) describes the necessary steps to publish a new version of the plugin to the Unreal Marketplace.
+
+## Run the tests
+
+- Open `cesium-unreal/TestsProject/TestsProject.uproject` in Unreal Engine
+- From the menu, select Tools -> Test Automation
+- In the Session Frontend Window, look for the Automation tab, and find the "Cesium" group of tests
+- Check the Cesium group
+- Click on "Start Tests"
+
+> Note: The TestsProject uses the Cesium and Functional Testing Editor plugins. You can run the tests from any project as long as you have both of these plugins enabled
