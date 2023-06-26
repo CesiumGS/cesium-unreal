@@ -1,3 +1,5 @@
+#if WITH_EDITOR
+
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumGeoreference.h"
 #include "CesiumSubLevelComponent.h"
@@ -552,3 +554,5 @@ void FSubLevelsSpec::Define() {
   //      // waitForAsync(done, pWorld, asyncSystem, std::move(future));
   //    });
 }
+
+#endif // #if WITH_EDITOR
