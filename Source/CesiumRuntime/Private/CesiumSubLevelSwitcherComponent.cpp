@@ -69,10 +69,7 @@ void UCesiumSubLevelSwitcherComponent::SetTarget(
           TEXT("New target sub-level %s."),
           *pLevelInstance->GetActorLabel());
     } else {
-      UE_LOG(
-          LogCesium,
-          Display,
-          TEXT("New target sub-level <none>"));
+      UE_LOG(LogCesium, Display, TEXT("New target sub-level <none>"));
     }
 
     this->_pTarget = pLevelInstance;
@@ -173,10 +170,10 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
 
 void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
   if (this->_isTransitioningSubLevels && this->_pCurrent == this->_pTarget) {
-   // It's possible that the pCurrent sub-level was active, then we briefly set
-   // pTarget to something else to trigger an unload of pCurrent, and then
-   // immediately set pTarget back to pCurrent. So we detect that here.
-   this->_pCurrent = nullptr;
+    // It's possible that the pCurrent sub-level was active, then we briefly set
+    // pTarget to something else to trigger an unload of pCurrent, and then
+    // immediately set pTarget back to pCurrent. So we detect that here.
+    this->_pCurrent = nullptr;
   }
 
   if (this->_pTarget == this->_pCurrent) {
@@ -212,7 +209,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           LogCesium,
           Display,
           TEXT(
-              "Waiting for sub-level %s to transition out of an intermediate state before unloading it."),
+              "Waiting for sub-level %s to transition out of an intermediate state while unloading it."),
           *this->_pCurrent.Get()->GetActorLabel());
       this->_isTransitioningSubLevels = true;
       break;
@@ -274,7 +271,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
           LogCesium,
           Display,
           TEXT(
-              "Waiting for sub-level %s to transition out of an intermediate state before loading it."),
+              "Waiting for sub-level %s to transition out of an intermediate state while loading it."),
           *this->_pTarget.Get()->GetActorLabel());
       this->_isTransitioningSubLevels = true;
       break;
