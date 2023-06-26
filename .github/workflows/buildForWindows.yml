@@ -65,7 +65,7 @@ jobs:
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
-      - name: Publish plugin package artifact
+      - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
@@ -83,7 +83,7 @@ jobs:
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
-          $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
+          $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:UNREAL_BATCH_FILES_PATH="${{ inputs.unreal-batch-files-path }}"
           $env:UNREAL_BINARIES_PATH="${{ inputs.unreal-binaries-path }}"
           $env:UNREAL_PLUGINS_PATH="${{ inputs.unreal-plugins-path }}"
@@ -92,7 +92,7 @@ jobs:
 
           # Make these available to subsequent steps
           echo "CESIUM_UNREAL_VERSION=${env:CESIUM_UNREAL_VERSION}" >> $env:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_PATH=${env:BUILD_CESIUM_UNREAL_PACKAGE_PATH}" >> $env:GITHUB_ENV
+          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BINARIES_PATH=${env:UNREAL_BINARIES_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_PLUGINS_PATH=${env:UNREAL_PLUGINS_PATH}" >> $env:GITHUB_ENV
@@ -102,16 +102,24 @@ jobs:
           # Confirm vars to the console
           echo ""
           echo CESIUM_UNREAL_VERSION=$env:CESIUM_UNREAL_VERSION
-          echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
+          echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME          
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
           echo UNREAL_PLUGINS_PATH=$env:UNREAL_PLUGINS_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
           echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
+      - name: Download plugin artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          path: download          
+      - name: Unzip artifact
+        run: |
+          7z x download/*.zip -ounzipped
       - name: Install plugin to Unreal Engine
         run: |
           md "$env:UNREAL_PLUGINS_PATH/Marketplace"
-          cp "$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
+          cp "unzipped/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
       - name: Run Cesium tests
         continue-on-error: true
         timeout-minutes: 30
