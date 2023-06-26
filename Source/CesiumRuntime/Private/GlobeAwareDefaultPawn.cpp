@@ -82,7 +82,7 @@ FRotator AGlobeAwareDefaultPawn::GetBaseAimRotation() const {
 }
 
 void AGlobeAwareDefaultPawn::_interpolateFlightPosition(
-    double percentage,
+    float percentage,
     glm::dvec3& out) const {
 
   // Rotate our normalized source direction, interpolating with time
@@ -266,14 +266,30 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
     return;
   }
 
-  this->_currentFlyTime += static_cast<double>(DeltaSeconds);
+  this->_currentFlyTime += DeltaSeconds;
 
-  // If we reached the end, set actual destination location and orientation
-  if (this->_currentFlyTime >= static_cast<double>(this->FlyToDuration)) {
+  // In order to accelerate at start and slow down at end, we use a progress
+  // profile curve
+  float flyPercentage;
+  if (this->_currentFlyTime >= this->FlyToDuration) {
+    flyPercentage = 1.0f;
+  } else if (this->FlyToProgressCurve) {
+    flyPercentage = glm::clamp(
+        this->FlyToProgressCurve->GetFloatValue(
+            this->_currentFlyTime / this->FlyToDuration),
+        0.0f,
+        1.0f);
+  } else {
+    flyPercentage = this->_currentFlyTime / this->FlyToDuration;
+  }
+
+  // If we reached the end, set actual destination location and
+  // orientation
+  if (flyPercentage >= 1.0f) {
     this->GlobeAnchor->MoveToECEF(this->_flyToECEFDestination);
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
-    this->_currentFlyTime = 0.0;
+    this->_currentFlyTime = 0.0f;
 
     // Trigger callback accessible from BP
     UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnFlightComplete"));
@@ -283,20 +299,6 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   }
 
   // We're currently in flight. Interpolate the position and orientation:
-
-  double rawPercentage =
-      this->_currentFlyTime / static_cast<double>(this->FlyToDuration);
-
-  // In order to accelerate at start and slow down at end, we use a progress
-  // profile curve
-  double flyPercentage = rawPercentage;
-  if (this->FlyToProgressCurve != NULL) {
-    flyPercentage = glm::clamp(
-        static_cast<double>(
-            this->FlyToProgressCurve->GetFloatValue(rawPercentage)),
-        0.0,
-        1.0);
-  }
 
   // Get the current position by interpolating with flyPercentage
   glm::dvec3 currentPosition;
