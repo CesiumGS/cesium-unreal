@@ -245,133 +245,133 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
     this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
     this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
   }
+}
 
 #if WITH_EDITOR
 
-  void UCesiumSubLevelComponent::PostEditChangeProperty(
-      FPropertyChangedEvent & PropertyChangedEvent) {
-    Super::PostEditChangeProperty(PropertyChangedEvent);
+void UCesiumSubLevelComponent::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
 
-    if (!PropertyChangedEvent.Property) {
-      return;
-    }
-
-    FName propertyName = PropertyChangedEvent.Property->GetFName();
-
-    if (propertyName == GET_MEMBER_NAME_CHECKED(
-                            UCesiumSubLevelComponent,
-                            OriginLongitude) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginLatitude) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginHeight)) {
-      this->UpdateGeoreferenceIfSubLevelIsActive();
-    }
+  if (!PropertyChangedEvent.Property) {
+    return;
   }
 
-#endif
+  FName propertyName = PropertyChangedEvent.Property->GetFName();
 
-  void UCesiumSubLevelComponent::BeginPlay() {
-    Super::BeginPlay();
-
-    this->ResolveGeoreference();
-
-    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-    if (!pSwitcher)
-      return;
-
-    ALevelInstance* pLevel = this->_getLevelInstance();
-    if (!pLevel)
-      return;
-
-    pSwitcher->RegisterSubLevel(pLevel);
-  }
-
-  void UCesiumSubLevelComponent::OnRegister() {
-    Super::OnRegister();
-
-    // We set this to true here so that the CesiumEditorSubLevelMutex in the
-    // CesiumEditor module is invoked for this component when the
-    // ALevelInstance's visibility is toggled in the Editor.
-    bRenderStateCreated = true;
-
-    ALevelInstance* pOwner = this->_getLevelInstance();
-    if (!pOwner) {
-      return;
-    }
-
-#if WITH_EDITOR
-    if (pOwner->GetIsSpatiallyLoaded() ||
-        pOwner->DesiredRuntimeBehavior !=
-            ELevelInstanceRuntimeBehavior::LevelStreaming) {
-      pOwner->Modify();
-
-      // Cesium sub-levels must not be loaded and unloaded by the World
-      // Partition system.
-      if (pOwner->GetIsSpatiallyLoaded()) {
-        pOwner->SetIsSpatiallyLoaded(false);
-      }
-
-      // Cesium sub-levels must use LevelStreaming behavior). The default
-      // (Partitioned), will dump the actors in the sub-level into the main
-      // level, which will prevent us from being to turn the sub-level on and
-      // off at runtime.
-      pOwner->DesiredRuntimeBehavior =
-          ELevelInstanceRuntimeBehavior::LevelStreaming;
-
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "Cesium changed the \"Is Spatially Loaded\" or \"Desired Runtime Behavior\" "
-              "settings on Level Instance %s in order to work as a Cesium sub-level. If "
-              "you're using World Partition, you may need to reload the main level in order "
-              "for these changes to take effect."),
-          *pOwner->GetName());
-    }
-#endif
-
-    this->ResolveGeoreference();
-
-    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-    if (pSwitcher)
-      pSwitcher->RegisterSubLevel(pOwner);
-
+  if (propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginLongitude) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginLatitude) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumSubLevelComponent, OriginHeight)) {
     this->UpdateGeoreferenceIfSubLevelIsActive();
   }
+}
 
-  void UCesiumSubLevelComponent::OnUnregister() {
-    Super::OnUnregister();
+#endif
 
-    ALevelInstance* pOwner = this->_getLevelInstance();
-    if (!pOwner) {
-      return;
+void UCesiumSubLevelComponent::BeginPlay() {
+  Super::BeginPlay();
+
+  this->ResolveGeoreference();
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (!pSwitcher)
+    return;
+
+  ALevelInstance* pLevel = this->_getLevelInstance();
+  if (!pLevel)
+    return;
+
+  pSwitcher->RegisterSubLevel(pLevel);
+}
+
+void UCesiumSubLevelComponent::OnRegister() {
+  Super::OnRegister();
+
+  // We set this to true here so that the CesiumEditorSubLevelMutex in the
+  // CesiumEditor module is invoked for this component when the
+  // ALevelInstance's visibility is toggled in the Editor.
+  bRenderStateCreated = true;
+
+  ALevelInstance* pOwner = this->_getLevelInstance();
+  if (!pOwner) {
+    return;
+  }
+
+#if WITH_EDITOR
+  if (pOwner->GetIsSpatiallyLoaded() ||
+      pOwner->DesiredRuntimeBehavior !=
+          ELevelInstanceRuntimeBehavior::LevelStreaming) {
+    pOwner->Modify();
+
+    // Cesium sub-levels must not be loaded and unloaded by the World
+    // Partition system.
+    if (pOwner->GetIsSpatiallyLoaded()) {
+      pOwner->SetIsSpatiallyLoaded(false);
     }
 
-    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-    if (pSwitcher)
-      pSwitcher->UnregisterSubLevel(pOwner);
+    // Cesium sub-levels must use LevelStreaming behavior). The default
+    // (Partitioned), will dump the actors in the sub-level into the main
+    // level, which will prevent us from being to turn the sub-level on and
+    // off at runtime.
+    pOwner->DesiredRuntimeBehavior =
+        ELevelInstanceRuntimeBehavior::LevelStreaming;
+
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Cesium changed the \"Is Spatially Loaded\" or \"Desired Runtime Behavior\" "
+            "settings on Level Instance %s in order to work as a Cesium sub-level. If "
+            "you're using World Partition, you may need to reload the main level in order "
+            "for these changes to take effect."),
+        *pOwner->GetName());
+  }
+#endif
+
+  this->ResolveGeoreference();
+
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->RegisterSubLevel(pOwner);
+
+  this->UpdateGeoreferenceIfSubLevelIsActive();
+}
+
+void UCesiumSubLevelComponent::OnUnregister() {
+  Super::OnUnregister();
+
+  ALevelInstance* pOwner = this->_getLevelInstance();
+  if (!pOwner) {
+    return;
   }
 
-  UCesiumSubLevelSwitcherComponent*
-  UCesiumSubLevelComponent::_getSwitcher() noexcept {
-    // Ignore transient level instances, like those that are created when
-    // dragging from Create Actors but before releasing the mouse button.
-    if (!IsValid(this->ResolvedGeoreference) || this->HasAllFlags(RF_Transient))
-      return nullptr;
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+  if (pSwitcher)
+    pSwitcher->UnregisterSubLevel(pOwner);
+}
 
-    return this->ResolvedGeoreference
-        ->FindComponentByClass<UCesiumSubLevelSwitcherComponent>();
-  }
+UCesiumSubLevelSwitcherComponent*
+UCesiumSubLevelComponent::_getSwitcher() noexcept {
+  // Ignore transient level instances, like those that are created when
+  // dragging from Create Actors but before releasing the mouse button.
+  if (!IsValid(this->ResolvedGeoreference) || this->HasAllFlags(RF_Transient))
+    return nullptr;
 
-  ALevelInstance* UCesiumSubLevelComponent::_getLevelInstance() const noexcept {
-    ALevelInstance* pOwner = Cast<ALevelInstance>(this->GetOwner());
-    if (!pOwner) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "A CesiumSubLevelComponent can only be attached a LevelInstance Actor."));
-    }
-    return pOwner;
+  return this->ResolvedGeoreference
+      ->FindComponentByClass<UCesiumSubLevelSwitcherComponent>();
+}
+
+ALevelInstance* UCesiumSubLevelComponent::_getLevelInstance() const noexcept {
+  ALevelInstance* pOwner = Cast<ALevelInstance>(this->GetOwner());
+  if (!pOwner) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "A CesiumSubLevelComponent can only be attached a LevelInstance Actor."));
   }
+  return pOwner;
+}
