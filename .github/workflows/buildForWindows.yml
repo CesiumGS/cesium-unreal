@@ -115,9 +115,8 @@ jobs:
           path: download          
       - name: Unzip artifact
         run: |
-          dir
-          cd "$env:GITHUB_WORKSPACE"
-          7z x download/*.zip -ounzipped
+          dir download
+          7z x "$env:GITHUB_WORKSPACE/download/*.zip" -o"$env:GITHUB_WORKSPACE/unzipped"
       - name: Install plugin to Unreal Engine
         run: |
           md "$env:UNREAL_PLUGINS_PATH/Marketplace"
