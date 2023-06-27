@@ -115,11 +115,13 @@ jobs:
           path: download          
       - name: Unzip artifact
         run: |
+          dir
+          cd "$env:GITHUB_WORKSPACE"
           7z x download/*.zip -ounzipped
       - name: Install plugin to Unreal Engine
         run: |
           md "$env:UNREAL_PLUGINS_PATH/Marketplace"
-          cp "unzipped/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
+          cp "$env:GITHUB_WORKSPACE/unzipped/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
       - name: Run Cesium tests
         continue-on-error: true
         timeout-minutes: 30
