@@ -127,6 +127,8 @@ jobs:
         run: |
           export UNREAL_ENGINE_DIR=$HOME/UE_5.0
           cd $UNREAL_ENGINE_DIR/Engine/Build/BatchFiles
+          ./RunUAT.sh BuildPlugin -Plugin="$GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Mac
+      - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
