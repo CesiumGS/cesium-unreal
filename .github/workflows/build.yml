@@ -466,12 +466,6 @@ jobs:
         with:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
           path: combine
-      - name: Publish combined package artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
-          path: combine
   Windows52:
     uses: ./.github/workflows/buildForWindows.yml    
     with:
