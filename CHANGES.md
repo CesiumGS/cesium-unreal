@@ -11,6 +11,10 @@
 
 - Added ability to set CesiumGeoreference Scale via Blueprints.
 
+##### Fixes :wrench:
+
+- Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
+
 ### v1.27.1 - 2023-06-19
 
 ##### Fixes :wrench:

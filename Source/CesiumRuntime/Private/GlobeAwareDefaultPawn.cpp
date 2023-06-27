@@ -132,7 +132,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
-  this->_flyToSourceRotation = Controller->GetControlRotation().Quaternion();
+  this->_flyToSourceRotation =
+      IsValid(Controller) ? Controller->GetControlRotation().Quaternion()
+                          : FQuat::Identity;
   this->_flyToDestinationRotation =
       FRotator(PitchAtDestination, YawAtDestination, 0).Quaternion();
   this->_flyToECEFDestination = ECEFDestination;

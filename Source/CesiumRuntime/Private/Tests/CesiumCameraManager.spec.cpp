@@ -1,5 +1,7 @@
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
 #include "CesiumCameraManager.h"
-#include "Engine/Engine.h"
+#include "CesiumTestHelpers.h"
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 
@@ -10,18 +12,11 @@ BEGIN_DEFINE_SPEC(
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumCameraManagerSpec)
 
-UWorld* getGlobalWorldContext() {
-  const TIndirectArray<FWorldContext>& worldContexts =
-      GEngine->GetWorldContexts();
-  FWorldContext firstWorldContext = worldContexts[0];
-  return firstWorldContext.World();
-}
-
 void FCesiumCameraManagerSpec::Define() {
 
   Describe("GetDefaultCameraManager", [this]() {
     It("should get the default camera manager", [this]() {
-      UWorld* world = getGlobalWorldContext();
+      UWorld* world = CesiumTestHelpers::getGlobalWorldContext();
       ACesiumCameraManager* cameraManager =
           ACesiumCameraManager::GetDefaultCameraManager(world);
       TestNotNull("Returned pointer is valid", cameraManager);
@@ -37,7 +32,7 @@ void FCesiumCameraManagerSpec::Define() {
 
   Describe("AddCamera", [this]() {
     It("should add and remove a single camera", [this]() {
-      UWorld* world = getGlobalWorldContext();
+      UWorld* world = CesiumTestHelpers::getGlobalWorldContext();
       ACesiumCameraManager* cameraManager =
           ACesiumCameraManager::GetDefaultCameraManager(world);
       TestNotNull("Returned pointer is valid", cameraManager);
@@ -59,7 +54,7 @@ void FCesiumCameraManagerSpec::Define() {
     });
 
     It("should fail to remove a camera, when the id is invalid", [this]() {
-      UWorld* world = getGlobalWorldContext();
+      UWorld* world = CesiumTestHelpers::getGlobalWorldContext();
       ACesiumCameraManager* cameraManager =
           ACesiumCameraManager::GetDefaultCameraManager(world);
       TestNotNull("Returned pointer is valid", cameraManager);
