@@ -93,6 +93,21 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetOriginLongitudeLatitudeHeight(const FVector& longitudeLatitudeHeight);
 
+#if WITH_EDITOR
+  /**
+   * Places the georeference origin at the origin of the sub-level and sets the
+   * Level Instance's Location to (0,0,0). This improves the precision of the
+   * objects in the sub-level as well as makes the Load Radius more sensible.
+   *
+   * Warning: Before clicking, ensure that all non-Cesium objects in the
+   * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
+   * or attached to an actor with that component. Ensure that static actors only
+   * exist in georeferenced sublevels.
+   */
+  UFUNCTION(CallInEditor, Category = "Cesium")
+  void PlaceGeoreferenceOriginAtSubLevelOrigin();
+#endif
+
   /**
    * If this sub-level is currently the active one, this method will copy its
    * origin to the georeference's origin. Otherwise, it does nothing.
