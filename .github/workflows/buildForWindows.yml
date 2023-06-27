@@ -69,7 +69,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   test:
     runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
@@ -111,7 +111,7 @@ jobs:
       - name: Download plugin artifact
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: download          
       - name: Install plugin to Unreal Engine
         run: |
