@@ -23,7 +23,7 @@ END_DEFINE_SPEC(FGlobeAwareDefaultPawnSpec)
 
 void FGlobeAwareDefaultPawnSpec::Define() {
   Describe(
-      "does not spike altitude when very close to final destination",
+      "should not spike altitude when very close to final destination",
       [this]() {
         LatentBeforeEach(
             EAsyncExecution::TaskGraphMainThread,
