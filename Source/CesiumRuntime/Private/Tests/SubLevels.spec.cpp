@@ -1,6 +1,5 @@
 #if WITH_EDITOR
 
-#include "CesiumAsync/AsyncSystem.h"
 #include "CesiumGeoreference.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumTestHelpers.h"
@@ -9,12 +8,9 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GlobeAwareDefaultPawn.h"
-#include "Kismet/GameplayStatics.h"
 #include "LevelInstance/LevelInstanceActor.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationEditorCommon.h"
-#include "TimerManager.h"
-#include <functional>
 
 BEGIN_DEFINE_SPEC(
     FSubLevelsSpec,
@@ -22,7 +18,6 @@ BEGIN_DEFINE_SPEC(
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 
-CesiumAsync::AsyncSystem asyncSystem{nullptr};
 TObjectPtr<UWorld> pWorld;
 TObjectPtr<ALevelInstance> pSubLevel1;
 TObjectPtr<UCesiumSubLevelComponent> pLevelComponent1;

@@ -2,6 +2,12 @@
 
 #pragma once
 
+#include "Editor.h"
+#include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
+#include "Misc/AutomationTest.h"
+#include "TimerManager.h"
+
 class UWorld;
 
 namespace CesiumTestHelpers {
