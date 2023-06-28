@@ -2,11 +2,14 @@
 
 #pragma once
 
-#include "Editor.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 #include "TimerManager.h"
+
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
 
 class UWorld;
 
@@ -107,6 +110,8 @@ FName getUniqueTag(AActor* pActor);
 /// <returns>The unique tag.</returns>
 FName getUniqueTag(UActorComponent* pComponent);
 
+#if WITH_EDITOR
+
 /// <summary>
 /// Tracks a provided Edit-mode Actor, so the equivalent object can later be
 /// found in Play mode.
@@ -158,5 +163,7 @@ template <typename T> T* findInPlay(T* pEditorObject) {
 template <typename T> T* findInPlay(TObjectPtr<T> pEditorObject) {
   return findInPlay<T>(pEditorObject.Get());
 }
+
+#endif // #if WITH_EDITOR
 
 } // namespace CesiumTestHelpers
