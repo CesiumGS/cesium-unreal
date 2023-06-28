@@ -6,8 +6,11 @@
 #include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumUtility/Math.h"
 #include "LevelInstance/LevelInstanceActor.h"
-#include "ScopedTransaction.h"
 #include "VecMath.h"
+
+#if WITH_EDITOR
+#include "ScopedTransaction.h"
+#endif
 
 using namespace CesiumGeospatial;
 
