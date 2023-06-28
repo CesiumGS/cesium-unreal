@@ -1,4 +1,4 @@
-name: Test Windows
+name: Test Package On Windows
 
 on:
   workflow_call:
@@ -7,6 +7,9 @@ on:
         required: true
         type: string
       unreal-binaries-path:
+        required: true
+        type: string
+      unreal-batch-files-path:
         required: true
         type: string
       unreal-plugins-path:
@@ -31,24 +34,24 @@ jobs:
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:PLUGIN_PACKAGE_NAME="${{ inputs.test-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:UNREAL_BINARIES_PATH="${{ inputs.unreal-binaries-path }}"
+          $env:UNREAL_BATCH_FILES_PATH="${{ inputs.unreal-batch-files-path }}"
           $env:UNREAL_PLUGINS_PATH="${{ inputs.unreal-plugins-path }}"
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
-          $env:TESTS_PROJECT_LOGS="$env:TESTS_PROJECT_ROOT/Saved/Logs"
 
           # Make these available to subsequent steps
           echo "PLUGIN_PACKAGE_NAME=${env:PLUGIN_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "UNREAL_BINARIES_PATH=${env:UNREAL_BINARIES_PATH}" >> $env:GITHUB_ENV
+          echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_PLUGINS_PATH=${env:UNREAL_PLUGINS_PATH}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
-          echo "TESTS_PROJECT_LOGS=${env:TESTS_PROJECT_LOGS}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
           echo ""
           echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
           echo UNREAL_BINARIES_PATH=$env:UNREAL_BINARIES_PATH
+          echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
           echo UNREAL_PLUGINS_PATH=$env:UNREAL_PLUGINS_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
-          echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
       - name: Download plugin artifact
         uses: actions/download-artifact@v3
         with:
@@ -59,49 +62,10 @@ jobs:
           dir download/CesiumForUnreal
           md "$env:UNREAL_PLUGINS_PATH/Marketplace"
           cp "download/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
-      - name: Run Cesium tests
-        continue-on-error: true
-        timeout-minutes: 30
+      - name: Run packaging test
         run: |
-          cd "$env:UNREAL_BINARIES_PATH"
-          ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash log=RunTests.log -ReportExportPath="$env:TESTS_PROJECT_LOGS"
-      - name: Display tests log
+          cd "$env:UNREAL_BATCH_FILES_PATH"
+          ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="$env:UNREAL_BINARIES_PATH/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:TESTS_PROJECT_ROOT/PackageTest" -nocompile
+      - name: Sanity check
         run: |
-          cd "$env:TESTS_PROJECT_LOGS"
-          dir
-          Get-Content RunTests.log
-      - name: Display tests report
-        run: |
-          cd "$env:TESTS_PROJECT_LOGS"
-          Get-Content index.json
-      - name: Evaluate tests results
-        run: |
-          $env:TEST_STATUS="Pending"
-          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
-
-          cd "$env:TESTS_PROJECT_LOGS"
-
-          # Define function to parse json recursively
-          function Parse-JsonRecursively($jsonObject) {
-              foreach ($property in $jsonObject.PSObject.Properties) {
-                  $name = $property.Name
-                  $value = $property.Value
-
-                  # If the property value is another object, call function recursively
-                  if ($value -is [PSCustomObject]) {
-                      Parse-JsonRecursively($value)
-                  }
-                  else {
-                      # If "state:fail" entry is found in json, set failure state
-                      if($name -eq "state" -and $value -eq "fail") {
-                          $env:TEST_STATUS="Failure"
-                          return
-                      }
-                  }
-              }
-          }
-
-          $env:TEST_STATUS="Success" # Set status to success at start
-          $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
-          Parse-JsonRecursively -jsonObject $json # Parse json
-          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV # Export result to github environment variables          
+          Test-Path "$env:TESTS_PROJECT_ROOT/PackageTest/Windows/TestsProject.exe"

@@ -16,7 +16,7 @@ on:
         required: true
         type: string
 jobs:
-  buildAndUpload:
+  build:
     runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
     steps:
       - name: Check out repository code
