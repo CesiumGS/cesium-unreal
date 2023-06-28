@@ -12,13 +12,19 @@ jobs:
           npm install
           npm run format -- --dry-run -Werror
   Windows50:
-    uses: ./.github/workflows/buildForWindows.yml    
+    uses: ./.github/workflows/buildWindows.yml    
     with:
       unreal-engine-version: "5.0.0"
       unreal-runner-label: "unreal-50"
       unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+      upload-package-base-name: "CesiumForUnreal-50-windows"
+    secrets: inherit    
+  TestWindows50:
+    needs: [Windows50]
+    uses: ./.github/workflows/testWindows.yml    
+    with:
+      unreal-runner-label: "unreal-50"
       unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
       unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
       upload-package-base-name: "CesiumForUnreal-50-windows"
     secrets: inherit    
-    
