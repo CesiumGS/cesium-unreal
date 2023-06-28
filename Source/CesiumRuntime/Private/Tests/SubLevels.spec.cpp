@@ -137,6 +137,49 @@ template <typename T> T* GetActorWithTag(UWorld* pWorld, const FName& tag) {
   return Cast<T>(temp[0]);
 }
 
+template <typename T> T* GetComponentWithTag(AActor* pOwner, const FName& tag) {
+  TArray<UActorComponent*> components =
+      pOwner->GetComponentsByTag(T::StaticClass(), tag);
+  if (components.Num() < 1)
+    return nullptr;
+
+  return Cast<T>(components[0]);
+}
+
+FName GetTag(AActor* pActor) {
+  return FName(FString::Printf(TEXT("%lld"), pActor));
+}
+
+FName GetTag(UActorComponent* pComponent) {
+  return FName(FString::Printf(TEXT("%lld"), pComponent));
+}
+
+void Track(AActor* pActor) { pActor->Tags.Add(GetTag(pActor)); }
+
+void Track(UActorComponent* pComponent) {
+  Track(pComponent->GetOwner());
+  pComponent->ComponentTags.Add(GetTag(pComponent));
+}
+
+template <typename T> T* FindInPlay(T* pEditorObject) {
+  UWorld* pWorld = GEditor->PlayWorld;
+  if constexpr (std::is_base_of_v<AActor, T>) {
+    return GetActorWithTag<T>(pWorld, GetTag(pEditorObject));
+  } else if constexpr (std::is_base_of_v<UActorComponent, T>) {
+    AActor* pEditorOwner = pEditorObject->GetOwner();
+    if (!pEditorOwner)
+      return nullptr;
+    AActor* pPlayOwner = FindInPlay(pEditorOwner);
+    if (!pPlayOwner)
+      return nullptr;
+    return GetComponentWithTag<T>(pPlayOwner, GetTag(pEditorObject));
+  }
+}
+
+template <typename T> T* FindInPlay(TObjectPtr<T> pEditorObject) {
+  return FindInPlay<T>(pEditorObject.Get());
+}
+
 } // namespace
 
 void FSubLevelsSpec::Define() {
@@ -150,7 +193,7 @@ void FSubLevelsSpec::Define() {
     pWorld = FAutomationEditorCommonUtils::CreateNewMap();
 
     pSubLevel1 = pWorld->SpawnActor<ALevelInstance>();
-    pSubLevel1->Tags.Add("pSubLevel1");
+    Track(pSubLevel1);
     pSubLevel1->SetWorldAsset(TSoftObjectPtr<UWorld>(
         FSoftObjectPath("/CesiumForUnreal/Tests/Maps/SingleCube.SingleCube")));
     pLevelComponent1 =
@@ -159,13 +202,13 @@ void FSubLevelsSpec::Define() {
             false,
             FTransform::Identity,
             false));
-    pLevelComponent1->ComponentTags.Add("pLevelComponent1");
+    Track(pLevelComponent1);
     pLevelComponent1->SetOriginLongitudeLatitudeHeight(
         FVector(10.0, 20.0, 1000.0));
     pSubLevel1->AddInstanceComponent(pLevelComponent1);
 
     pSubLevel2 = pWorld->SpawnActor<ALevelInstance>();
-    pSubLevel2->Tags.Add("pSubLevel2");
+    Track(pSubLevel2);
     pSubLevel2->SetWorldAsset(TSoftObjectPtr<UWorld>(FSoftObjectPath(
         "/CesiumForUnreal/Tests/Maps/ConeAndCylinder.ConeAndCylinder")));
     pLevelComponent2 =
@@ -174,7 +217,7 @@ void FSubLevelsSpec::Define() {
             false,
             FTransform::Identity,
             false));
-    pLevelComponent2->ComponentTags.Add("pLevelComponent2");
+    Track(pLevelComponent2);
     pLevelComponent2->SetOriginLongitudeLatitudeHeight(
         FVector(-25.0, 15.0, -5000.0));
     pSubLevel2->AddInstanceComponent(pLevelComponent2);
@@ -187,10 +230,10 @@ void FSubLevelsSpec::Define() {
       pGeoreference = *it;
     }
 
-    pGeoreference->Tags.Add("pGeoreference");
+    Track(pGeoreference);
 
     pPawn = pWorld->SpawnActor<AGlobeAwareDefaultPawn>();
-    pPawn->Tags.Add("pPawn");
+    Track(pPawn);
     pPawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
   });
 
@@ -253,91 +296,35 @@ void FSubLevelsSpec::Define() {
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          UWorld* pPlayWorld = GEditor->PlayWorld;
-
-          ALevelInstance* pPlaySubLevel1 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-          if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-            return;
-          ALevelInstance* pPlaySubLevel2 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-          if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-            return;
-
-          WaitFor(
-              done,
-              pPlayWorld,
-              5.0f,
-              [this, pPlaySubLevel1, pPlaySubLevel2]() {
-                return !pPlaySubLevel1->IsLoaded() &&
-                       !pPlaySubLevel2->IsLoaded();
-              });
+          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return !FindInPlay(pSubLevel1)->IsLoaded() &&
+                   !FindInPlay(pSubLevel2)->IsLoaded();
+          });
         });
     BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      UWorld* pPlayWorld = GEditor->PlayWorld;
-
-      ALevelInstance* pPlaySubLevel1 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-      if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-        return;
-      ALevelInstance* pPlaySubLevel2 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-      if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-        return;
-
-      TestFalse("pSubLevel1 is loaded", pPlaySubLevel1->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", pPlaySubLevel2->IsLoaded());
-
-      ACesiumGeoreference* pPlayGeoreference =
-          GetActorWithTag<ACesiumGeoreference>(pPlayWorld, "pGeoreference");
-      if (!TestNotNull("pGeoreference exists in PIE world", pPlayGeoreference))
-        return;
-      AGlobeAwareDefaultPawn* pPlayPawn =
-          GetActorWithTag<AGlobeAwareDefaultPawn>(pPlayWorld, "pPawn");
-      if (!TestNotNull("pPawn exists in PIE world", pPlayPawn))
-        return;
-
-      UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          pPlaySubLevel1->FindComponentByClass<UCesiumSubLevelComponent>();
-      if (!TestNotNull("pSubLevel1 has component", pPlayLevelComponent1))
-        return;
+      TestFalse("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
 
       // Move the player within range of the first sub-level
-      FVector origin1 =
-          pPlayGeoreference->TransformLongitudeLatitudeHeightToUnreal(FVector(
-              pPlayLevelComponent1->GetOriginLongitude(),
-              pPlayLevelComponent1->GetOriginLatitude(),
-              pPlayLevelComponent1->GetOriginHeight()));
-      pPlayPawn->SetActorLocation(origin1);
+      UCesiumSubLevelComponent* pPlayLevelComponent1 =
+          FindInPlay(pLevelComponent1);
+      FVector origin1 = FindInPlay(pGeoreference)
+                            ->TransformLongitudeLatitudeHeightToUnreal(FVector(
+                                pPlayLevelComponent1->GetOriginLongitude(),
+                                pPlayLevelComponent1->GetOriginLatitude(),
+                                pPlayLevelComponent1->GetOriginHeight()));
+      FindInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          UWorld* pPlayWorld = GEditor->PlayWorld;
-
-          ALevelInstance* pPlaySubLevel1 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-          if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-            return;
-
-          WaitFor(done, pPlayWorld, 5.0f, [this, pPlaySubLevel1]() {
-            return pPlaySubLevel1->IsLoaded();
+          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return FindInPlay(pSubLevel1)->IsLoaded();
           });
         });
     It("", EAsyncExecution::TaskGraphMainThread, [this]() {
-      UWorld* pPlayWorld = GEditor->PlayWorld;
-
-      ALevelInstance* pPlaySubLevel1 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-      if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-        return;
-      ALevelInstance* pPlaySubLevel2 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-      if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-        return;
-
-      TestTrue("pSubLevel1 is loaded", pPlaySubLevel1->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", pPlaySubLevel2->IsLoaded());
+      TestTrue("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
     });
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       GEditor->RequestEndPlayMap();
@@ -360,199 +347,73 @@ void FSubLevelsSpec::Define() {
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          UWorld* pPlayWorld = GEditor->PlayWorld;
-
-          ALevelInstance* pPlaySubLevel1 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-          if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-            return;
-          ALevelInstance* pPlaySubLevel2 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-          if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-            return;
-
-          WaitFor(
-              done,
-              pPlayWorld,
-              5.0f,
-              [this, pPlaySubLevel1, pPlaySubLevel2]() {
-                return !pPlaySubLevel1->IsLoaded() &&
-                       !pPlaySubLevel2->IsLoaded();
-              });
-        });
-    BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      UWorld* pPlayWorld = GEditor->PlayWorld;
-
-      ALevelInstance* pPlaySubLevel1 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-      if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-        return;
-      ALevelInstance* pPlaySubLevel2 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-      if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-        return;
-
-      TestFalse("pSubLevel1 is loaded", pPlaySubLevel1->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", pPlaySubLevel2->IsLoaded());
-
-      ACesiumGeoreference* pPlayGeoreference =
-          GetActorWithTag<ACesiumGeoreference>(pPlayWorld, "pGeoreference");
-      if (!TestNotNull("pGeoreference exists in PIE world", pPlayGeoreference))
-        return;
-      AGlobeAwareDefaultPawn* pPlayPawn =
-          GetActorWithTag<AGlobeAwareDefaultPawn>(pPlayWorld, "pPawn");
-      if (!TestNotNull("pPawn exists in PIE world", pPlayPawn))
-        return;
-
-      UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          pPlaySubLevel1->FindComponentByClass<UCesiumSubLevelComponent>();
-      if (!TestNotNull("pSubLevel1 has component", pPlayLevelComponent1))
-        return;
-
-      // Move the player within range of the first sub-level
-      FVector origin1 =
-          pPlayGeoreference->TransformLongitudeLatitudeHeightToUnreal(FVector(
-              pPlayLevelComponent1->GetOriginLongitude(),
-              pPlayLevelComponent1->GetOriginLatitude(),
-              pPlayLevelComponent1->GetOriginHeight()));
-      pPlayPawn->SetActorLocation(origin1);
-    });
-    LatentBeforeEach(
-        EAsyncExecution::TaskGraphMainThread,
-        [this](const FDoneDelegate& done) {
-          UWorld* pPlayWorld = GEditor->PlayWorld;
-
-          ALevelInstance* pPlaySubLevel1 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-          if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-            return;
-
-          // Wait for the level to load.
-          WaitFor(done, pPlayWorld, 5.0f, [this, pPlaySubLevel1]() {
-            return pPlaySubLevel1->IsLoaded();
+          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return !FindInPlay(pSubLevel1)->IsLoaded() &&
+                   !FindInPlay(pSubLevel2)->IsLoaded();
           });
         });
     BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      UWorld* pPlayWorld = GEditor->PlayWorld;
+      TestFalse("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
 
-      ALevelInstance* pPlaySubLevel1 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-      if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-        return;
-      ALevelInstance* pPlaySubLevel2 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-      if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-        return;
-
-      ACesiumGeoreference* pPlayGeoreference =
-          GetActorWithTag<ACesiumGeoreference>(pPlayWorld, "pGeoreference");
-      if (!TestNotNull("pGeoreference exists in PIE world", pPlayGeoreference))
-        return;
-      AGlobeAwareDefaultPawn* pPlayPawn =
-          GetActorWithTag<AGlobeAwareDefaultPawn>(pPlayWorld, "pPawn");
-      if (!TestNotNull("pPawn exists in PIE world", pPlayPawn))
-        return;
-
+      // Move the player within range of the first sub-level
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          pPlaySubLevel1->FindComponentByClass<UCesiumSubLevelComponent>();
-      if (!TestNotNull("pSubLevel1 has component", pPlayLevelComponent1))
-        return;
-
-      // Move the player outside the sub-level, triggering an unload.
-      FVector origin1 =
-          pPlayGeoreference->TransformLongitudeLatitudeHeightToUnreal(FVector(
-              pPlayLevelComponent1->GetOriginLongitude(),
-              pPlayLevelComponent1->GetOriginLatitude(),
-              pPlayLevelComponent1->GetOriginHeight() + 100000.0));
-      pPlayPawn->SetActorLocation(origin1);
-    });
-    BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      UWorld* pPlayWorld = GEditor->PlayWorld;
-
-      ALevelInstance* pPlaySubLevel1 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-      if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-        return;
-      ALevelInstance* pPlaySubLevel2 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-      if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-        return;
-
-      ACesiumGeoreference* pPlayGeoreference =
-          GetActorWithTag<ACesiumGeoreference>(pPlayWorld, "pGeoreference");
-      if (!TestNotNull("pGeoreference exists in PIE world", pPlayGeoreference))
-        return;
-      AGlobeAwareDefaultPawn* pPlayPawn =
-          GetActorWithTag<AGlobeAwareDefaultPawn>(pPlayWorld, "pPawn");
-      if (!TestNotNull("pPawn exists in PIE world", pPlayPawn))
-        return;
-
-      UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          pPlaySubLevel1->FindComponentByClass<UCesiumSubLevelComponent>();
-      if (!TestNotNull("pSubLevel1 has component", pPlayLevelComponent1))
-        return;
-
-      // Without waiting for the level to finish unloading, move the player back
-      // inside it.
-      FVector origin1 =
-          pPlayGeoreference->TransformLongitudeLatitudeHeightToUnreal(FVector(
-              pPlayLevelComponent1->GetOriginLongitude(),
-              pPlayLevelComponent1->GetOriginLatitude(),
-              pPlayLevelComponent1->GetOriginHeight()));
-      pPlayPawn->SetActorLocation(origin1);
+          FindInPlay(pLevelComponent1);
+      FVector origin1 = FindInPlay(pGeoreference)
+                            ->TransformLongitudeLatitudeHeightToUnreal(FVector(
+                                pPlayLevelComponent1->GetOriginLongitude(),
+                                pPlayLevelComponent1->GetOriginLatitude(),
+                                pPlayLevelComponent1->GetOriginHeight()));
+      FindInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          UWorld* pPlayWorld = GEditor->PlayWorld;
-
-          ALevelInstance* pPlaySubLevel1 =
-              GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-          if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-            return;
-
           // Wait for the level to load.
-          WaitFor(done, pPlayWorld, 5.0f, [this, pPlaySubLevel1]() {
-            return pPlaySubLevel1->IsLoaded();
+          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return FindInPlay(pSubLevel1)->IsLoaded();
+          });
+        });
+    BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+      // Move the player outside the sub-level, triggering an unload.
+      UCesiumSubLevelComponent* pPlayLevelComponent1 =
+          FindInPlay(pLevelComponent1);
+      FVector origin1 =
+          FindInPlay(pGeoreference)
+              ->TransformLongitudeLatitudeHeightToUnreal(FVector(
+                  pPlayLevelComponent1->GetOriginLongitude(),
+                  pPlayLevelComponent1->GetOriginLatitude(),
+                  pPlayLevelComponent1->GetOriginHeight() + 100000.0));
+      FindInPlay(pPawn)->SetActorLocation(origin1);
+    });
+    BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+      // Without waiting for the level to finish unloading, move the player back
+      // inside it.
+      UCesiumSubLevelComponent* pPlayLevelComponent1 =
+          FindInPlay(pLevelComponent1);
+      FVector origin1 = FindInPlay(pGeoreference)
+                            ->TransformLongitudeLatitudeHeightToUnreal(FVector(
+                                pPlayLevelComponent1->GetOriginLongitude(),
+                                pPlayLevelComponent1->GetOriginLatitude(),
+                                pPlayLevelComponent1->GetOriginHeight()));
+      FindInPlay(pPawn)->SetActorLocation(origin1);
+    });
+    LatentBeforeEach(
+        EAsyncExecution::TaskGraphMainThread,
+        [this](const FDoneDelegate& done) {
+          // Wait for the level to load.
+          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return FindInPlay(pSubLevel1)->IsLoaded();
           });
         });
     It("", EAsyncExecution::TaskGraphMainThread, [this]() {
-      UWorld* pPlayWorld = GEditor->PlayWorld;
-
-      ALevelInstance* pPlaySubLevel1 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel1");
-      if (!TestNotNull("pSubLevel1 exists in PIE world", pPlaySubLevel1))
-        return;
-      ALevelInstance* pPlaySubLevel2 =
-          GetActorWithTag<ALevelInstance>(pPlayWorld, "pSubLevel2");
-      if (!TestNotNull("pSubLevel2 exists in PIE world", pPlaySubLevel2))
-        return;
-
-      TestTrue("pSubLevel1 is loaded", pPlaySubLevel1->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", pPlaySubLevel2->IsLoaded());
+      TestTrue("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
     });
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       GEditor->RequestEndPlayMap();
     });
   });
-
-  // LatentIt(
-  //     "initially deactivates all levels in play mode",
-  //     [this](const FDoneDelegate& done) {
-  //       // auto future =
-  //       //     asyncSystem.createResolvedFuture()
-  //       //         .thenImmediately(
-  //       //             [this]() { FAutomationEditorCommonUtils::RunPIE();
-  //       })
-  //       //         .thenImmediately(waitForNextFrame<void>(pWorld,
-  //       //         asyncSystem)) .thenImmediately([this]() {
-  //       //           TestFalse("pSubLevel1 is loaded",
-  //       //           pSubLevel1->IsLoaded()); TestFalse("pSubLevel2 is
-  //       //           loaded", pSubLevel2->IsLoaded());
-  //       //         });
-
-  //      // waitForAsync(done, pWorld, asyncSystem, std::move(future));
-  //    });
 }
 
 #endif // #if WITH_EDITOR
