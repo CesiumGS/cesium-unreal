@@ -123,6 +123,19 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     bool CanInterruptByMoving) {
 
   if (this->_bFlyingToLocation) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("Cannot start a flight because one is already in progress."));
+    return;
+  }
+
+  if (!IsValid(this->Controller)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot start a flight because the pawn does not have a Controller. You probably need to \"possess\" it before attempting to initiate a flight."));
     return;
   }
 
@@ -132,9 +145,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
-  this->_flyToSourceRotation =
-      IsValid(Controller) ? Controller->GetControlRotation().Quaternion()
-                          : FQuat::Identity;
+  this->_flyToSourceRotation = Controller->GetControlRotation().Quaternion();
   this->_flyToDestinationRotation =
       FRotator(PitchAtDestination, YawAtDestination, 0).Quaternion();
   this->_flyToECEFDestination = ECEFDestination;
