@@ -25,7 +25,7 @@ jobs:
     with:
       unreal-runner-label: "unreal-50"
       unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
       upload-package-base-name: "CesiumForUnreal-50-windows"
     secrets: inherit    
   Android50:
@@ -237,7 +237,6 @@ jobs:
     with:
       unreal-engine-version: "5.1.0"
       unreal-runner-label: "unreal-51"
-      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Plugins"
       unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
       upload-package-base-name: "CesiumForUnreal-51-windows"
     secrets: inherit    
