@@ -1219,7 +1219,9 @@ static void loadPrimitive(
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
 
-  static constexpr glm::dmat4 scaleMatrix = {
+  // This matrix converts from right-handed Z-up to Unreal
+  // left-handed Z-up by flipping the Y axis
+  static constexpr glm::dmat4 yInvertMatrix = {
       1.0,
       0.0,
       0.0,
@@ -1237,7 +1239,7 @@ static void loadPrimitive(
       0.0,
       1.0};
 
-  primitiveResult.transform = transform * scaleMatrix;
+  primitiveResult.transform = transform * yInvertMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {
