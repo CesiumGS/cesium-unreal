@@ -10,6 +10,40 @@ class ACesiumGeoreference;
 class ALevelInstance;
 class UCesiumSubLevelSwitcherComponent;
 
+/**
+ * A component intended to be attached to a Level Instance Actor that turns that
+ * Level Instance into a Cesium sub-level. Only a single Cesium sub-level can be
+ * active (visible) at any given time.
+ *
+ * A globe (like the planet Earth) is an unusual sort of level in Unreal in that
+ * it has truly massive coordinate values and the "up" direction depends on
+ * where exactly on the globe you're located. Many things in the Unreal
+ * ecosystem, such as the gravity system, don't expect this situation and will
+ * have incorrect and surprising behavior when used on a globe.
+ *
+ * Cesium sub-levels help to mitigate this. Only one sub-level can be active at
+ * any given time, and when it is, that sub-level's origin becomes the origin of
+ * the Unreal world. Furthermore, at the origin location, Unreal's +X axis
+ * points East, its +Y axis points South, and its +Z axis points Up. Thus,
+ * within a sub-level, gravity works in the normal way that Unreal objects
+ * expect, and coordinate values stay relatively small. This allows you to use
+ * just about any Unreal object within a sub-level without worrying about
+ * surprising behavior.
+ *
+ * Globe-aware objects, particularly those with a "Cesium Globe Anchor"
+ * component attached to them, are allowed to exist outside sub-levels and even
+ * move between them. If all your objects are globe aware, there's no need to
+ * use sub-levels at all.
+ *
+ * In the Editor, the currently-active sub-level is selected by clicking the
+ * "Eye" icon next to the Level Instance in the Outliner.
+ *
+ * At runtime, the currently-active sub-level is selected by the object
+ * identified by the "Sub Level Camera" property on the "Cesium Georeference".
+ * Only if the "Sub Level Camera" is inside a sub-level's "Load Radius" will
+ * that sub-level be activated. If multiple sub-levels are in range, only the
+ * closest one will be activated.
+ */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
   GENERATED_BODY()

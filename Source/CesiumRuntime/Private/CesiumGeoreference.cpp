@@ -353,11 +353,6 @@ ACesiumGeoreference::GetGeoreferenceOriginLongitudeLatitudeHeight() const {
 
 void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
     const glm::dvec3& targetLongitudeLatitudeHeight) {
-  // Should not allow externally initiated georeference origin changing if we
-  // are inside a sublevel
-  // if (this->_insideSublevel) {
-  //  return;
-  //}
   this->_setGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.x,
       targetLongitudeLatitudeHeight.y,
@@ -444,8 +439,6 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumGeoreference::BeginDestroy() { Super::BeginDestroy(); }
-
-void ACesiumGeoreference::PostLoad() { Super::PostLoad(); }
 
 void ACesiumGeoreference::UpdateGeoreference() {
   this->_updateGeoTransforms();

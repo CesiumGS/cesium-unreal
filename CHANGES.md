@@ -6,6 +6,7 @@
 
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 - Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. Flight interpolation is now computed per-frame, so this property is no longer needed. Any code that refers to `FlyToGranularityDegrees` should be removed or changed to `FlyToGranularityDegrees_DEPRECATED` to still compile.
+- The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
 
 ##### Additions :tada:
 
@@ -14,6 +15,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
+- Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
 
 ### v1.27.1 - 2023-06-19
 

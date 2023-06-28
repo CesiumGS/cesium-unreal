@@ -207,7 +207,8 @@ public:
    * the origin.
    *
    * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sublevel, then this call has no effect.
+   * the bounds of a sublevel, calling this method will update the sublevel's
+   * origin as well.
    */
   void SetGeoreferenceOriginLongitudeLatitudeHeight(
       const glm::dvec3& TargetLongitudeLatitudeHeight);
@@ -481,7 +482,6 @@ protected:
   virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
   virtual void OnConstruction(const FTransform& Transform) override;
   virtual void BeginDestroy() override;
-  virtual void PostLoad() override;
 
 #if WITH_EDITOR
   virtual void
