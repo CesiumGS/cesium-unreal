@@ -229,14 +229,11 @@ void UScreenCreditsWidget::HandleImageRequest(
     int32 SizeY = texture->PlatformData->SizeY;
 #endif
     _creditImages[id] = new FSlateImageBrush(texture, FVector2D(SizeX, SizeY));
-    // Only update credits after all of the images are done loading.
-    --_numImagesLoading;
-    if (_numImagesLoading == 0) {
-      SetCredits(_credits, _onScreenCredits);
-    }
-    return;
-  } else {
-    --_numImagesLoading;
+  }
+  // Only update credits after all of the images are done loading.
+  --_numImagesLoading;
+  if (_numImagesLoading == 0) {
+    SetCredits(_credits, _onScreenCredits);
   }
 }
 
