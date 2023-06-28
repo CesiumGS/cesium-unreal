@@ -227,7 +227,7 @@ private:
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
   void _interruptFlight();
-  void _interpolateFlightPosition(double percentage, glm::dvec3& out) const;
+  void _interpolateFlightPosition(float percentage, glm::dvec3& out) const;
 
   /**
    * @brief Advance the camera flight based on the given time delta.
@@ -248,7 +248,7 @@ private:
   // helper variables for FlyToLocation
   bool _bFlyingToLocation = false;
   bool _bCanInterruptFlight = false;
-  double _currentFlyTime = 0.0;
+  float _currentFlyTime = 0.0f;
 
   double _flyToSourceAltitude = 0.0;
   double _flyToDestinationAltitude = 0.0;
