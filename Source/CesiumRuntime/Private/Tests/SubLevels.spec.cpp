@@ -3,6 +3,7 @@
 #include "CesiumAsync/AsyncSystem.h"
 #include "CesiumGeoreference.h"
 #include "CesiumSubLevelComponent.h"
+#include "CesiumTestHelpers.h"
 #include "Editor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -32,6 +33,8 @@ TObjectPtr<AGlobeAwareDefaultPawn> pPawn;
 FDelegateHandle subscriptionPostPIEStarted;
 
 END_DEFINE_SPEC(FSubLevelsSpec)
+
+using namespace CesiumTestHelpers;
 
 namespace {
 
@@ -92,94 +95,6 @@ namespace {
 //   };
 // }
 
-template <typename T>
-void WaitForImpl(
-    const FDoneDelegate& done,
-    UWorld* pWorld,
-    T&& condition,
-    FTimerHandle& timerHandle) {
-  if (condition()) {
-    pWorld->GetTimerManager().ClearTimer(timerHandle);
-    done.Execute();
-  } else if (pWorld->GetTimerManager().GetTimerRemaining(timerHandle) <= 0.0f) {
-    // Timeout
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT("Timed out waiting for a condition to become true."));
-    pWorld->GetTimerManager().ClearTimer(timerHandle);
-    done.Execute();
-  } else {
-    pWorld->GetTimerManager().SetTimerForNextTick(
-        [done, pWorld, condition, timerHandle]() mutable {
-          WaitForImpl<T>(done, pWorld, std::move(condition), timerHandle);
-        });
-  }
-}
-
-template <typename T>
-void WaitFor(
-    const FDoneDelegate& done,
-    UWorld* pWorld,
-    float timeoutSeconds,
-    T&& condition) {
-  FTimerHandle timerHandle;
-  pWorld->GetTimerManager().SetTimer(timerHandle, timeoutSeconds, false);
-  WaitForImpl<T>(done, pWorld, std::forward<T>(condition), timerHandle);
-}
-
-template <typename T> T* GetActorWithTag(UWorld* pWorld, const FName& tag) {
-  TArray<AActor*> temp;
-  UGameplayStatics::GetAllActorsWithTag(pWorld, tag, temp);
-  if (temp.Num() < 1)
-    return nullptr;
-
-  return Cast<T>(temp[0]);
-}
-
-template <typename T> T* GetComponentWithTag(AActor* pOwner, const FName& tag) {
-  TArray<UActorComponent*> components =
-      pOwner->GetComponentsByTag(T::StaticClass(), tag);
-  if (components.Num() < 1)
-    return nullptr;
-
-  return Cast<T>(components[0]);
-}
-
-FName GetTag(AActor* pActor) {
-  return FName(FString::Printf(TEXT("%lld"), pActor));
-}
-
-FName GetTag(UActorComponent* pComponent) {
-  return FName(FString::Printf(TEXT("%lld"), pComponent));
-}
-
-void Track(AActor* pActor) { pActor->Tags.Add(GetTag(pActor)); }
-
-void Track(UActorComponent* pComponent) {
-  Track(pComponent->GetOwner());
-  pComponent->ComponentTags.Add(GetTag(pComponent));
-}
-
-template <typename T> T* FindInPlay(T* pEditorObject) {
-  UWorld* pWorld = GEditor->PlayWorld;
-  if constexpr (std::is_base_of_v<AActor, T>) {
-    return GetActorWithTag<T>(pWorld, GetTag(pEditorObject));
-  } else if constexpr (std::is_base_of_v<UActorComponent, T>) {
-    AActor* pEditorOwner = pEditorObject->GetOwner();
-    if (!pEditorOwner)
-      return nullptr;
-    AActor* pPlayOwner = FindInPlay(pEditorOwner);
-    if (!pPlayOwner)
-      return nullptr;
-    return GetComponentWithTag<T>(pPlayOwner, GetTag(pEditorObject));
-  }
-}
-
-template <typename T> T* FindInPlay(TObjectPtr<T> pEditorObject) {
-  return FindInPlay<T>(pEditorObject.Get());
-}
-
 } // namespace
 
 void FSubLevelsSpec::Define() {
@@ -193,7 +108,7 @@ void FSubLevelsSpec::Define() {
     pWorld = FAutomationEditorCommonUtils::CreateNewMap();
 
     pSubLevel1 = pWorld->SpawnActor<ALevelInstance>();
-    Track(pSubLevel1);
+    trackForPlay(pSubLevel1);
     pSubLevel1->SetWorldAsset(TSoftObjectPtr<UWorld>(
         FSoftObjectPath("/CesiumForUnreal/Tests/Maps/SingleCube.SingleCube")));
     pLevelComponent1 =
@@ -202,13 +117,13 @@ void FSubLevelsSpec::Define() {
             false,
             FTransform::Identity,
             false));
-    Track(pLevelComponent1);
+    trackForPlay(pLevelComponent1);
     pLevelComponent1->SetOriginLongitudeLatitudeHeight(
         FVector(10.0, 20.0, 1000.0));
     pSubLevel1->AddInstanceComponent(pLevelComponent1);
 
     pSubLevel2 = pWorld->SpawnActor<ALevelInstance>();
-    Track(pSubLevel2);
+    trackForPlay(pSubLevel2);
     pSubLevel2->SetWorldAsset(TSoftObjectPtr<UWorld>(FSoftObjectPath(
         "/CesiumForUnreal/Tests/Maps/ConeAndCylinder.ConeAndCylinder")));
     pLevelComponent2 =
@@ -217,7 +132,7 @@ void FSubLevelsSpec::Define() {
             false,
             FTransform::Identity,
             false));
-    Track(pLevelComponent2);
+    trackForPlay(pLevelComponent2);
     pLevelComponent2->SetOriginLongitudeLatitudeHeight(
         FVector(-25.0, 15.0, -5000.0));
     pSubLevel2->AddInstanceComponent(pLevelComponent2);
@@ -230,10 +145,10 @@ void FSubLevelsSpec::Define() {
       pGeoreference = *it;
     }
 
-    Track(pGeoreference);
+    trackForPlay(pGeoreference);
 
     pPawn = pWorld->SpawnActor<AGlobeAwareDefaultPawn>();
-    Track(pPawn);
+    trackForPlay(pPawn);
     pPawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
   });
 
@@ -296,35 +211,35 @@ void FSubLevelsSpec::Define() {
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
-            return !FindInPlay(pSubLevel1)->IsLoaded() &&
-                   !FindInPlay(pSubLevel2)->IsLoaded();
+          waitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return !findInPlay(pSubLevel1)->IsLoaded() &&
+                   !findInPlay(pSubLevel2)->IsLoaded();
           });
         });
     BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      TestFalse("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
+      TestFalse("pSubLevel1 is loaded", findInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", findInPlay(pSubLevel2)->IsLoaded());
 
       // Move the player within range of the first sub-level
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          FindInPlay(pLevelComponent1);
-      FVector origin1 = FindInPlay(pGeoreference)
+          findInPlay(pLevelComponent1);
+      FVector origin1 = findInPlay(pGeoreference)
                             ->TransformLongitudeLatitudeHeightToUnreal(FVector(
                                 pPlayLevelComponent1->GetOriginLongitude(),
                                 pPlayLevelComponent1->GetOriginLatitude(),
                                 pPlayLevelComponent1->GetOriginHeight()));
-      FindInPlay(pPawn)->SetActorLocation(origin1);
+      findInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
-            return FindInPlay(pSubLevel1)->IsLoaded();
+          waitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return findInPlay(pSubLevel1)->IsLoaded();
           });
         });
     It("", EAsyncExecution::TaskGraphMainThread, [this]() {
-      TestTrue("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
+      TestTrue("pSubLevel1 is loaded", findInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", findInPlay(pSubLevel2)->IsLoaded());
     });
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       GEditor->RequestEndPlayMap();
@@ -347,68 +262,68 @@ void FSubLevelsSpec::Define() {
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
-          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
-            return !FindInPlay(pSubLevel1)->IsLoaded() &&
-                   !FindInPlay(pSubLevel2)->IsLoaded();
+          waitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return !findInPlay(pSubLevel1)->IsLoaded() &&
+                   !findInPlay(pSubLevel2)->IsLoaded();
           });
         });
     BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
-      TestFalse("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
+      TestFalse("pSubLevel1 is loaded", findInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", findInPlay(pSubLevel2)->IsLoaded());
 
       // Move the player within range of the first sub-level
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          FindInPlay(pLevelComponent1);
-      FVector origin1 = FindInPlay(pGeoreference)
+          findInPlay(pLevelComponent1);
+      FVector origin1 = findInPlay(pGeoreference)
                             ->TransformLongitudeLatitudeHeightToUnreal(FVector(
                                 pPlayLevelComponent1->GetOriginLongitude(),
                                 pPlayLevelComponent1->GetOriginLatitude(),
                                 pPlayLevelComponent1->GetOriginHeight()));
-      FindInPlay(pPawn)->SetActorLocation(origin1);
+      findInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
           // Wait for the level to load.
-          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
-            return FindInPlay(pSubLevel1)->IsLoaded();
+          waitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return findInPlay(pSubLevel1)->IsLoaded();
           });
         });
     BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       // Move the player outside the sub-level, triggering an unload.
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          FindInPlay(pLevelComponent1);
+          findInPlay(pLevelComponent1);
       FVector origin1 =
-          FindInPlay(pGeoreference)
+          findInPlay(pGeoreference)
               ->TransformLongitudeLatitudeHeightToUnreal(FVector(
                   pPlayLevelComponent1->GetOriginLongitude(),
                   pPlayLevelComponent1->GetOriginLatitude(),
                   pPlayLevelComponent1->GetOriginHeight() + 100000.0));
-      FindInPlay(pPawn)->SetActorLocation(origin1);
+      findInPlay(pPawn)->SetActorLocation(origin1);
     });
     BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       // Without waiting for the level to finish unloading, move the player back
       // inside it.
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
-          FindInPlay(pLevelComponent1);
-      FVector origin1 = FindInPlay(pGeoreference)
+          findInPlay(pLevelComponent1);
+      FVector origin1 = findInPlay(pGeoreference)
                             ->TransformLongitudeLatitudeHeightToUnreal(FVector(
                                 pPlayLevelComponent1->GetOriginLongitude(),
                                 pPlayLevelComponent1->GetOriginLatitude(),
                                 pPlayLevelComponent1->GetOriginHeight()));
-      FindInPlay(pPawn)->SetActorLocation(origin1);
+      findInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
         EAsyncExecution::TaskGraphMainThread,
         [this](const FDoneDelegate& done) {
           // Wait for the level to load.
-          WaitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
-            return FindInPlay(pSubLevel1)->IsLoaded();
+          waitFor(done, GEditor->PlayWorld, 5.0f, [this]() {
+            return findInPlay(pSubLevel1)->IsLoaded();
           });
         });
     It("", EAsyncExecution::TaskGraphMainThread, [this]() {
-      TestTrue("pSubLevel1 is loaded", FindInPlay(pSubLevel1)->IsLoaded());
-      TestFalse("pSubLevel2 is loaded", FindInPlay(pSubLevel2)->IsLoaded());
+      TestTrue("pSubLevel1 is loaded", findInPlay(pSubLevel1)->IsLoaded());
+      TestFalse("pSubLevel2 is loaded", findInPlay(pSubLevel2)->IsLoaded());
     });
     AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
       GEditor->RequestEndPlayMap();
