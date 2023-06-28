@@ -36,70 +36,9 @@ END_DEFINE_SPEC(FSubLevelsSpec)
 
 using namespace CesiumTestHelpers;
 
-namespace {
-
-// template <typename T>
-// void waitForAsync(
-//     const FDoneDelegate& done,
-//     UWorld* pWorld,
-//     CesiumAsync::AsyncSystem& asyncSystem,
-//     CesiumAsync::Future<T>&& future) {
-//   struct WaitDetails {
-//     CesiumAsync::AsyncSystem asyncSystem;
-//     bool terminate;
-//     const FDoneDelegate done;
-//     std::function<void()> tick;
-//   };
-//
-//   auto pDetails = std::make_shared<WaitDetails>(
-//       WaitDetails{asyncSystem, false, done, std::function<void()>()});
-//
-//   pDetails->tick = [pDetails, pWorld]() {
-//     if (pDetails->terminate) {
-//       pDetails->done.Execute();
-//     } else {
-//       pWorld->GetTimerManager().SetTimerForNextTick([pDetails]() {
-//         pDetails->asyncSystem.dispatchMainThreadTasks();
-//         pDetails->tick();
-//       });
-//     }
-//   };
-//
-//   std::move(future).thenInMainThread(
-//       [pDetails]() { pDetails->terminate = true; });
-//
-//   pDetails->tick();
-// }
-//
-// template <typename T>
-// auto waitForNextFrame(
-//     UWorld* pWorld,
-//     const CesiumAsync::AsyncSystem& asyncSystem) {
-//   return [asyncSystem, pWorld](T&& value) {
-//     CesiumAsync::Promise<T> promise = asyncSystem.createPromise<T>();
-//     pWorld->GetTimerManager().SetTimerForNextTick(
-//         [promise, value]() { promise.resolve(std::move(value)); });
-//     return promise.getFuture();
-//   };
-// }
-//
-// template <>
-// auto waitForNextFrame<void>(
-//     UWorld* pWorld,
-//     const CesiumAsync::AsyncSystem& asyncSystem) {
-//   return [asyncSystem, pWorld]() {
-//     CesiumAsync::Promise<void> promise = asyncSystem.createPromise<void>();
-//     pWorld->GetTimerManager().SetTimerForNextTick(
-//         [promise]() { promise.resolve(); });
-//     return promise.getFuture();
-//   };
-// }
-
-} // namespace
-
 void FSubLevelsSpec::Define() {
   BeforeEach([this]() {
-    if (pWorld != nullptr) {
+    if (IsValid(pWorld)) {
       // Only run the below once in order to save time loading/unloading
       // levels for every little test.
       return;
@@ -168,6 +107,76 @@ void FSubLevelsSpec::Define() {
         "pSubLevel2 is hidden",
         pSubLevel1->IsTemporarilyHiddenInEditor(true));
   });
+
+  Describe(
+      "copies CesiumGeoreference origin changes to the active sub-level in the Editor",
+      [this]() {
+        BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          pSubLevel1->SetIsTemporarilyHiddenInEditor(false);
+        });
+        It("", EAsyncExecution::TaskGraphMainThread, [this]() {
+          TestFalse(
+              "pSubLevel1 is hidden",
+              pSubLevel1->IsTemporarilyHiddenInEditor(true));
+
+          pGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+              FVector(1.0, 2.0, 3.0));
+          TestEqual("Longitude", pLevelComponent1->GetOriginLongitude(), 1.0);
+          TestEqual("Latitude", pLevelComponent1->GetOriginLatitude(), 2.0);
+          TestEqual("Height", pLevelComponent1->GetOriginHeight(), 3.0);
+        });
+      });
+
+  Describe(
+      "copies active sub-level origin changes to the CesiumGeoreference in the Editor",
+      [this]() {
+        BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          pSubLevel1->SetIsTemporarilyHiddenInEditor(false);
+        });
+        It("", EAsyncExecution::TaskGraphMainThread, [this]() {
+          TestFalse(
+              "pSubLevel1 is hidden",
+              pSubLevel1->IsTemporarilyHiddenInEditor(true));
+
+          pLevelComponent1->SetOriginLongitudeLatitudeHeight(
+              FVector(4.0, 5.0, 6.0));
+          TestEqual("Longitude", pGeoreference->OriginLongitude, 4.0);
+          TestEqual("Latitude", pGeoreference->OriginLatitude, 5.0);
+          TestEqual("Height", pGeoreference->OriginHeight, 6.0);
+        });
+      });
+
+  Describe(
+      "does not copy inactive sub-level origin changes to the CesiumGeoreference in the Editor",
+      [this]() {
+        BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          pSubLevel1->SetIsTemporarilyHiddenInEditor(false);
+        });
+        BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          pSubLevel1->SetIsTemporarilyHiddenInEditor(true);
+        });
+        It("", EAsyncExecution::TaskGraphMainThread, [this]() {
+          double expectedLongitude = pGeoreference->OriginLongitude;
+          double expectedLatitude = pGeoreference->OriginLatitude;
+          double expectedHeight = pGeoreference->OriginHeight;
+
+          TestNotEqual("Longitude", expectedLongitude, 7.0);
+          TestNotEqual("Latitude", expectedLatitude, 8.0);
+          TestNotEqual("Height", expectedHeight, 9.0);
+
+          pLevelComponent1->SetOriginLongitudeLatitudeHeight(
+              FVector(7.0, 8.0, 9.0));
+          TestEqual(
+              "Longitude",
+              pGeoreference->OriginLongitude,
+              expectedLongitude);
+          TestEqual(
+              "Latitude",
+              pGeoreference->OriginLatitude,
+              expectedLatitude);
+          TestEqual("Height", pGeoreference->OriginHeight, expectedHeight);
+        });
+      });
 
   Describe(
       "ensures only one sub-level instance is visible in the editor at a time",
