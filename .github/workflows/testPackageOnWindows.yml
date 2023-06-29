@@ -57,6 +57,10 @@ jobs:
         with:
           name: ${{ env.PLUGIN_PACKAGE_NAME}}
           path: download          
+      - name: Verify plugin engine version
+        run: |
+          dir download/CesiumForUnreal
+          Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
@@ -68,4 +72,5 @@ jobs:
           ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="$env:UNREAL_BINARIES_PATH/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:GITHUB_ENV/TestPackaging" -nocompile
       - name: Sanity check
         run: |
-          Test-Path "$env:GITHUB_ENV/TestPackaging/Windows/TestsProject.exe"
+          if (Test-Path "$env:GITHUB_ENV/TestPackaging/Windows/TestsProject.exe")  { 0 } Else {-1}
+          

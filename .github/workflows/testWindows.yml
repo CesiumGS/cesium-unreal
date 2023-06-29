@@ -54,6 +54,10 @@ jobs:
         with:
           name: ${{ env.PLUGIN_PACKAGE_NAME}}
           path: download          
+      - name: Verify plugin engine version
+        run: |
+          dir download/CesiumForUnreal
+          Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
