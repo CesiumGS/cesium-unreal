@@ -243,7 +243,7 @@ jobs:
       test-package-base-name: "CesiumForUnreal-50"
     secrets: inherit    
   Windows51:
-    uses: ./.github/workflows/buildForWindows.yml    
+    uses: ./.github/workflows/buildWindows.yml    
     with:
       unreal-engine-version: "5.1.0"
       unreal-runner-label: "unreal-51"
@@ -501,7 +501,7 @@ jobs:
       test-package-base-name: "CesiumForUnreal-51"
     secrets: inherit    
   Windows52:
-    uses: ./.github/workflows/buildForWindows.yml    
+    uses: ./.github/workflows/buildWindows.yml    
     with:
       unreal-engine-version: "5.2.0"
       unreal-runner-label: "unreal-52"
