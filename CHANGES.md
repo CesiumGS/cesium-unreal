@@ -14,6 +14,7 @@
 ##### Fixes :wrench:
 
 - Added a workaround for an apparent bug in Unreal Engine 5.1 that prevented collisions from working with Cesium3DTilesets.
+- Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
 
 ### v1.27.1 - 2023-06-19
 
