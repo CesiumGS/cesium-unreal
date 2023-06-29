@@ -9,6 +9,7 @@
 #include "VecMath.h"
 
 #if WITH_EDITOR
+#include "EditorViewportClient.h"
 #include "ScopedTransaction.h"
 #endif
 
@@ -194,6 +195,38 @@ void UCesiumSubLevelComponent::PlaceGeoreferenceOriginAtSubLevelOrigin() {
       CesiumUtility::Math::radiansToDegrees(maybeCartographic->longitude),
       CesiumUtility::Math::radiansToDegrees(maybeCartographic->latitude),
       maybeCartographic->height));
+
+  // Also update the viewport so the level doesn't appear to shift.
+  FViewport* pViewport = GEditor->GetActiveViewport();
+  FViewportClient* pViewportClient = pViewport->GetClient();
+  FEditorViewportClient* pEditorViewportClient =
+      static_cast<FEditorViewportClient*>(pViewportClient);
+
+  glm::dvec3 viewLocation =
+      VecMath::createVector3D(pEditorViewportClient->GetViewLocation());
+  viewLocation = glm::dvec3(oldToNew * glm::dvec4(viewLocation, 1.0));
+  pEditorViewportClient->SetViewLocation(VecMath::createVector(viewLocation));
+
+  glm::dmat4 viewportRotation = VecMath::createMatrix4D(
+      pEditorViewportClient->GetViewRotation().Quaternion().ToMatrix());
+  viewportRotation = oldToNew * viewportRotation;
+
+  // At this point, viewportRotation will keep the viewport orientation in ECEF
+  // exactly as it was before. But that means if it was tilted before, it will
+  // still be tilted. We instead want an orientation that maintains the exact
+  // same forward direction but has an "up" direction aligned with +Z.
+  glm::dvec3 cameraFront = glm::normalize(glm::dvec3(viewportRotation[0]));
+  glm::dvec3 cameraRight =
+      glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), cameraFront));
+  glm::dvec3 cameraUp = glm::normalize(glm::cross(cameraFront, cameraRight));
+
+  pEditorViewportClient->SetViewRotation(
+      FMatrix(
+          FVector(cameraFront.x, cameraFront.y, cameraFront.z),
+          FVector(cameraRight.x, cameraRight.y, cameraRight.z),
+          FVector(cameraUp.x, cameraUp.y, cameraUp.z),
+          FVector::ZeroVector)
+          .Rotator());
 }
 
 #endif // #if WITH_EDITOR
