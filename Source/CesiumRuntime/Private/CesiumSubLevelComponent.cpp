@@ -280,6 +280,11 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
     this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
     this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
     this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
+
+    ALevelInstance* pOwner = Cast<ALevelInstance>(this->GetOwner());
+    if (IsValid(pOwner)) {
+      pSwitcher->SetTarget(pOwner);
+    }
   }
 }
 
