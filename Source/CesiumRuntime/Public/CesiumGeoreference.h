@@ -533,7 +533,6 @@ private:
       double targetLongitude,
       double targetLatitude,
       double targetHeight);
-  void _jumpToLevel(const FCesiumSubLevel& level);
 
 #if WITH_EDITOR
   /**
@@ -593,15 +592,6 @@ private:
    * exist.
    */
   ULevelStreaming* _findLevelStreamingByName(const FString& name);
-
-  FCesiumSubLevel* _findCesiumSubLevelByName(
-      const FName& packageName,
-      bool createIfDoesNotExist);
-
-#if WITH_EDITOR
-  void _onNewCurrentLevel();
-  void _enableAndGeoreferenceCurrentSubLevel();
-#endif
 
   /**
    * Determines if this Georeference should manage sub-level switching.

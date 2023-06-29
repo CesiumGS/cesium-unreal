@@ -11,6 +11,7 @@
 ##### Additions :tada:
 
 - Added ability to set CesiumGeoreference Scale via Blueprints.
+- The "Place Georeference Origin Here" action on CesiumGeoreference is now undoable.
 
 ##### Fixes :wrench:
 

@@ -146,6 +146,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
     return;
   }
 
+  this->Modify();
+
   FViewport* pViewport = GEditor->GetActiveViewport();
   FViewportClient* pViewportClient = pViewport->GetClient();
   FEditorViewportClient* pEditorViewportClient =
@@ -210,8 +212,6 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
-
-  this->_enableAndGeoreferenceCurrentSubLevel();
 }
 
 #endif
@@ -487,7 +487,6 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)) {
-    this->_enableAndGeoreferenceCurrentSubLevel();
     this->UpdateGeoreference();
     return;
   } else if (
@@ -881,13 +880,6 @@ void ACesiumGeoreference::_setGeoreferenceOrigin(
   this->UpdateGeoreference();
 }
 
-void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
-  this->_setGeoreferenceOrigin(
-      level.LevelLongitude,
-      level.LevelLatitude,
-      level.LevelHeight);
-}
-
 // TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal
 // raycast seems to be inaccurate at glancing angles, perhaps due to the large
 // single-precision distances.
@@ -946,59 +938,6 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
     Success = true;
   }
 }
-#endif
-
-FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
-    const FName& packageName,
-    bool createIfDoesNotExist) {
-  FString cesiumName =
-      longPackageNameToCesiumName(this->GetWorld(), packageName);
-
-  FCesiumSubLevel* pCesiumLevel =
-      this->CesiumSubLevels_DEPRECATED.FindByPredicate(
-          [cesiumName](const FCesiumSubLevel& level) {
-            return cesiumName == level.LevelName;
-          });
-
-  if (!pCesiumLevel && createIfDoesNotExist) {
-    // No Cesium sub-level exists, so create it now.
-    this->CesiumSubLevels_DEPRECATED.Add(FCesiumSubLevel{
-        cesiumName,
-        true,
-        this->OriginLatitude,
-        this->OriginLongitude,
-        this->OriginHeight,
-        1000.0,
-        true});
-    pCesiumLevel = &this->CesiumSubLevels_DEPRECATED.Last();
-  }
-
-  return pCesiumLevel;
-}
-
-#if WITH_EDITOR
-
-void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
-  // If a sub-level is the current one, enable it and also update the
-  // sub-level's location.
-  ULevel* pCurrent = this->GetWorld()->GetCurrentLevel();
-  if (!pCurrent || pCurrent->IsPersistentLevel()) {
-    return;
-  }
-
-  UPackage* pLevelPackage = pCurrent->GetOutermost();
-  FCesiumSubLevel* pLevel =
-      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), false);
-
-  if (pLevel) {
-    pLevel->LevelLongitude = this->OriginLongitude;
-    pLevel->LevelLatitude = this->OriginLatitude;
-    pLevel->LevelHeight = this->OriginHeight;
-
-    pLevel->Enabled = pLevel->CanBeEnabled;
-  }
-}
-
 #endif
 
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
