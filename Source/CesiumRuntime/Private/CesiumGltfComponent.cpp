@@ -1220,7 +1220,11 @@ static void loadPrimitive(
   primitiveResult.pCollisionMesh = nullptr;
 
   // This matrix converts from right-handed Z-up to Unreal
-  // left-handed Z-up by flipping the Y axis
+  // left-handed Z-up by flipping the Y axis. It effectively undoes the Y-axis
+  // flipping that we did when creating the mesh in the first place. This is
+  // necessary to work around a problem in UE 5.1 where negatively-scaled meshes
+  // don't work correctly for collision.
+  // See https://github.com/CesiumGS/cesium-unreal/pull/1126
   static constexpr glm::dmat4 yInvertMatrix = {
       1.0,
       0.0,
