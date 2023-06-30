@@ -3,6 +3,9 @@ name: Test Package On Windows
 on:
   workflow_call:
     inputs:
+      unreal-engine-association:
+        required: true
+        type: string
       unreal-runner-label:
         required: true
         type: string
@@ -73,6 +76,9 @@ jobs:
         run: |
           dir "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache" 
           cp "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache" "$env:USER_DATA_CACHE" -r
+      - name: Overwrite tests project engine association
+        run: |
+          ((Get-Content -path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -Raw) -replace '"EngineAssociation": "5.0"','"EngineAssociation": "${{ inputs.unreal-engine-association }}"') | Set-Content -Path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject"
       - name: Run packaging test
         run: |
           cd "$env:UNREAL_BATCH_FILES_PATH"
