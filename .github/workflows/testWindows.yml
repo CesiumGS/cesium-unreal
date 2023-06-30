@@ -75,7 +75,12 @@ jobs:
         timeout-minutes: 30
         run: |
           cd "$env:UNREAL_BINARIES_PATH"
-          ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash -log -ReportExportPath="$env:TESTS_PROJECT_LOGS"
+          ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
+      - name: Display tests log 
+        run: |
+          cd "$env:TESTS_PROJECT_LOGS"  
+          dir 
+          Get-Content TestsProject.log          
       - name: Display tests report
         run: |
           cd "$env:TESTS_PROJECT_LOGS"
