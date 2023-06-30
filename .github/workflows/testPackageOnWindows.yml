@@ -88,7 +88,7 @@ jobs:
       - name: Run packaging test
         run: |
           cd "$env:UNREAL_BATCH_FILES_PATH"
-          ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="$env:UNREAL_BINARIES_PATH/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:GITHUB_WORKSPACE/TestPackaging" -nocompile
+          ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cookonthefly  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="$env:UNREAL_BINARIES_PATH/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:GITHUB_WORKSPACE/TestPackaging" -nocompile
       - name: Sanity check
         run: |
           if (Test-Path "$env:GITHUB_WORKSPACE/TestPackaging/Windows/TestsProject.exe")  { exit 0 } Else { exit 1 }
