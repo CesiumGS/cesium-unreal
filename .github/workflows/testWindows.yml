@@ -34,6 +34,7 @@ jobs:
           $env:UNREAL_PLUGINS_PATH="${{ inputs.unreal-plugins-path }}"
           $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
           $env:TESTS_PROJECT_LOGS="$env:TESTS_PROJECT_ROOT/Saved/Logs"
+          $env:USER_DATA_CACHE="C:/Users/ec2-user/AppData/Local/UnrealEngine/Common/DerivedDataCache"
 
           # Make these available to subsequent steps
           echo "PLUGIN_PACKAGE_NAME=${env:PLUGIN_PACKAGE_NAME}" >> $env:GITHUB_ENV
@@ -41,6 +42,7 @@ jobs:
           echo "UNREAL_PLUGINS_PATH=${env:UNREAL_PLUGINS_PATH}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
           echo "TESTS_PROJECT_LOGS=${env:TESTS_PROJECT_LOGS}" >> $env:GITHUB_ENV
+          echo "USER_DATA_CACHE=${env:USER_DATA_CACHE}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
           echo ""
@@ -49,20 +51,25 @@ jobs:
           echo UNREAL_PLUGINS_PATH=$env:UNREAL_PLUGINS_PATH
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
           echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
+          echo USER_DATA_CACHE=$env:USER_DATA_CACHE
       - name: Download plugin artifact
         uses: actions/download-artifact@v3
         with:
           name: ${{ env.PLUGIN_PACKAGE_NAME}}
           path: download          
-      - name: Verify plugin engine version
-        run: |
-          dir download/CesiumForUnreal
-          Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Install plugin to Unreal Engine
         run: |
           dir download/CesiumForUnreal
           md "$env:UNREAL_PLUGINS_PATH/Marketplace"
           cp "download/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
+      - name: Prime user cook cache for speed # for faster shader compiles
+        run: |
+          dir "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache" 
+          cp "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache" "$env:USER_DATA_CACHE" -r
+      - name: Verify plugin engine version
+        run: |
+          dir download/CesiumForUnreal
+          Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Run Cesium tests
         continue-on-error: true
         timeout-minutes: 30
