@@ -51,10 +51,12 @@ jobs:
           cd extern
           cmake -B build -S . -A x64
           cmake --build build --config Release --target install -j8
+      - name: Overwrite plugin engine version
+        run: |
+          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Build CesiumForUnreal plugin
         timeout-minutes: 120      
         run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
       - name: Upload plugin artifact
