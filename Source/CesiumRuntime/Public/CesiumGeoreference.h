@@ -79,7 +79,7 @@ public:
   bool SwitchToLevel(int32 Index);
 
   /*
-   * The list of georeferenced sublevels. Each of these has a corresponding
+   * The list of georeferenced sub-levels. Each of these has a corresponding
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
    *
@@ -165,7 +165,7 @@ public:
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
    * or attached to an actor with that component. Ensure that static actors only
-   * exist in georeferenced sublevels.
+   * exist in georeferenced sub-levels.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
@@ -207,7 +207,7 @@ public:
    * the origin.
    *
    * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sublevel, calling this method will update the sublevel's
+   * the bounds of a sub-level, calling this method will update the sub-level's
    * origin as well.
    */
   void SetGeoreferenceOriginLongitudeLatitudeHeight(
@@ -225,7 +225,7 @@ public:
    * exactly fall on the origin.
    *
    * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sublevel, then this call has no effect.
+   * the bounds of a sub-level, then this call has no effect.
    */
   void SetGeoreferenceOriginEcef(const glm::dvec3& TargetEcef);
 
@@ -236,7 +236,7 @@ public:
    * the origin.
    *
    * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sublevel, then this call has no effect.
+   * the bounds of a sub-level, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetGeoreferenceOriginLongitudeLatitudeHeight(
@@ -248,7 +248,7 @@ public:
    * exactly fall on the origin.
    *
    * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sublevel, then this call has no effect.
+   * the bounds of a sub-level, then this call has no effect.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetGeoreferenceOriginEcef(const FVector& TargetEcef);
@@ -569,13 +569,13 @@ private:
 #endif
 
   /**
-   * @brief Updates the load state of sublevels.
+   * @brief Updates the load state of sub-levels.
    *
-   * This checks all sublevels whether their load radius contains the
-   * `SubLevelCamera`, in ECEF coordinates. The sublevels that
+   * This checks all sub-levels whether their load radius contains the
+   * `SubLevelCamera`, in ECEF coordinates. The sub-levels that
    * contain the camera will be loaded. All others will be unloaded.
    *
-   * @return Whether the camera is contained in *any* sublevel.
+   * @return Whether the camera is contained in *any* sub-level.
    */
   bool _updateSublevelState();
 

@@ -78,7 +78,7 @@ private:
 
   /**
    * Finds the ULevelStreaming instance, if any, associated with a given
-   * sublevel.
+   * sub-level.
    */
   ULevelStreaming*
   _getLevelStreamingForSubLevel(ALevelInstance* SubLevel) const;

@@ -123,9 +123,9 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
       this->SetTarget(nullptr);
     }
 
-    // In game, make sure that any sublevels that aren't pCurrent or pTarget are
-    // unloaded. This is primarily needed because ALevelInstances are loaded by
-    // default and there doesn't seem to be any way to disable this. In the
+    // In game, make sure that any sub-levels that aren't pCurrent or pTarget
+    // are unloaded. This is primarily needed because ALevelInstances are loaded
+    // by default and there doesn't seem to be any way to disable this. In the
     // Editor, levels pretty much stay loaded all the time.
     if (this->GetWorld()->IsGameWorld()) {
       bool anyLevelsStillLoaded = false;
@@ -191,7 +191,7 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
     this->_pCurrent = nullptr;
   }
 
-  if (this->_pTarget == this->_pCurrent) {
+  if (this->_pCurrent == this->_pTarget) {
     // We already match the desired state, so there's nothing to do!
     return;
   }

@@ -248,7 +248,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 
   this->Modify();
 
-  // Convert old-style sublevels (using World Composition) to new style
+  // Convert old-style sub-levels (using World Composition) to new style
   // sub-levels (level instances)
   UWorldComposition::FTilesList& allLevels =
       pWorld->WorldComposition->GetTilesList();
@@ -610,7 +610,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
       this->SubLevelSwitcher->GetRegisteredSubLevels();
 
   if (sublevels.Num() == 0) {
-    // If we don't have any known sublevels, bail quickly to save ourselves a
+    // If we don't have any known sub-levels, bail quickly to save ourselves a
     // little work.
     return false;
   }

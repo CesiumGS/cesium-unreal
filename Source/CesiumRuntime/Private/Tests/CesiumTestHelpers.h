@@ -51,7 +51,8 @@ void waitForImpl(
 /// LatentBeforeEach. It will be invoked when the condition is true.</param>
 /// <param name="pWorld">The world in which to check the condition.</param>
 /// <param name="timeoutSeconds">The maximum time to wait for the condition to
-/// become true.</param> <param name="condition">A lambda that is invoked each
+/// become true.</param>
+/// <param name="condition">A lambda that is invoked each
 /// frame. If this function returns false, waiting continues.</param>
 template <typename T>
 void waitFor(
@@ -134,8 +135,8 @@ void trackForPlay(UActorComponent* pEditorComponent);
 /// </summary>
 /// <typeparam name="T">The type of the object to find.</typeparam>
 /// <param name="pEditorObject">The Editor object for which to find a Play-mode
-/// equivalent.</param> <returns>The play mode equivalent, or nullptr is one is
-/// not found.</returns>
+/// equivalent.</param>
+/// <returns>The play mode equivalent, or nullptr is one is not found.</returns>
 template <typename T> T* findInPlay(T* pEditorObject) {
   UWorld* pWorld = GEditor->PlayWorld;
   if constexpr (std::is_base_of_v<AActor, T>) {
@@ -158,7 +159,8 @@ template <typename T> T* findInPlay(T* pEditorObject) {
 /// </summary>
 /// <typeparam name="T">The type of the object to find.</typeparam>
 /// <param name="pEditorObject">The Editor object for which to find a Play-mode
-/// equivalent.</param> <returns>The play mode equivalent, or nullptr is one is
+/// equivalent.</param>
+/// <returns>The play mode equivalent, or nullptr is one is
 /// not found.</returns>
 template <typename T> T* findInPlay(TObjectPtr<T> pEditorObject) {
   return findInPlay<T>(pEditorObject.Get());

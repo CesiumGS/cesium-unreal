@@ -136,7 +136,7 @@ public:
    * Warning: Before clicking, ensure that all non-Cesium objects in the
    * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
    * or attached to an actor with that component. Ensure that static actors only
-   * exist in georeferenced sublevels.
+   * exist in georeferenced sub-levels.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginAtSubLevelOrigin();
@@ -196,7 +196,7 @@ private:
   bool Enabled = true;
 
   /**
-   * The latitude of the georeference origin for this sublevel in degrees, in
+   * The latitude of the georeference origin for this sub-level in degrees, in
    * the range [-90, 90]. When this sub-level is active, the CesiumGeoreference
    * will adopt this origin.
    */
@@ -210,7 +210,7 @@ private:
   double OriginLatitude = 39.736401;
 
   /**
-   * The longitude of the georeference origin for this sublevel in degrees, in
+   * The longitude of the georeference origin for this sub-level in degrees, in
    * the range [-180, 180]. When this sub-level is active, the
    * CesiumGeoreference will adopt this origin.
    */
@@ -224,8 +224,8 @@ private:
   double OriginLongitude = -105.25737;
 
   /**
-   * The height of the georeference origin for this sublevel in meters above the
-   * WGS84 ellipsoid. This height should not be confused with a height above
+   * The height of the georeference origin for this sub-level in meters above
+   * the WGS84 ellipsoid. This height should not be confused with a height above
    * Mean Sea Level. When this sub-level is active, the CesiumGeoreference will
    * adopt this origin.
    */
@@ -239,7 +239,7 @@ private:
   double OriginHeight = 2250.0;
 
   /**
-   * How close to the sublevel local origin the camera needs to be to load the
+   * How close to the sub-level local origin the camera needs to be to load the
    * level.
    */
   UPROPERTY(
@@ -272,7 +272,7 @@ private:
   /**
    * The resolved georeference used by this sub-level. This is not serialized
    * because it may point to a Georeference in the PersistentLevel while this
-   * Actor is in a sublevel. If the Georeference property is specified,
+   * Actor is in a sub-level. If the Georeference property is specified,
    * however then this property will have the same value.
    *
    * This property will be null before ResolveGeoreference is called.
