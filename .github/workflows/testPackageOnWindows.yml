@@ -70,8 +70,8 @@ jobs:
           cp "download/CesiumForUnreal" "$env:UNREAL_PLUGINS_PATH/Marketplace" -r      
       - name: Prime user cook cache for speed # for faster shader compiles
         run: |
-          dir "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache" 
-          cp "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache" "$env:USER_DATA_CACHE" -r
+          dir "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache/${{ inputs.unreal-runner-label }}" 
+          cp "$env:TESTS_PROJECT_ROOT/UserDerivedDataCache/${{ inputs.unreal-runner-label }}" "$env:USER_DATA_CACHE" -r
       - name: Overwrite tests project engine association
         run: |
           ((Get-Content -path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -Raw) -replace '"EngineAssociation": "5.0"','"EngineAssociation": "${{ inputs.unreal-engine-association }}"') | Set-Content -Path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject"
