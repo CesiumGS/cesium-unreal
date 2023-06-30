@@ -513,7 +513,6 @@ jobs:
     needs: [Windows52]
     uses: ./.github/workflows/testWindows.yml    
     with:
-      unreal-engine-association: "5.2"
       unreal-runner-label: "unreal-52"
       unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64"
       unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Plugins"
@@ -756,6 +755,7 @@ jobs:
     needs: [Combine52]
     uses: ./.github/workflows/testPackageOnWindows.yml    
     with:
+      unreal-engine-association: "5.2"
       unreal-runner-label: "unreal-52"
       unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64"
       unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
