@@ -55,7 +55,7 @@ jobs:
           dir download/CesiumForUnreal
           md "${{ inputs.unreal-plugins-path }}/Marketplace"
           cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r      
-      - name: Verify plugin engine version
+      - name: Show plugin engine version
         run: |
           cd download/CesiumForUnreal
           dir

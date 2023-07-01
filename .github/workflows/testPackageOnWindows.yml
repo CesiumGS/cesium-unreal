@@ -65,12 +65,12 @@ jobs:
       - name: Overwrite tests project engine association
         run: |
           ((Get-Content -path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -Raw) -replace '"EngineAssociation": "5.0"','"EngineAssociation": "${{ inputs.unreal-engine-association }}"') | Set-Content -Path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject"
-      - name: Verify tests engine association
+      - name: Display tests engine association
         run: |
           cd download/CesiumForUnreal
           dir
           Get-Content "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" | select-string -pattern "EngineAssociation"
-      - name: Verify plugin engine version
+      - name: Display plugin engine version
         run: |
           cd download/CesiumForUnreal
           dir
