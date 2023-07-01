@@ -40,9 +40,9 @@ jobs:
 
           # Confirm vars to the console
           echo ""
+          echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
+          echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
           echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
-          echo unreal-binaries-path=${{ inputs.unreal-binaries-path }}
-          echo unreal-plugins-path=${{ inputs.unreal-plugins-path }}
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
           echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
       - name: Download plugin artifact

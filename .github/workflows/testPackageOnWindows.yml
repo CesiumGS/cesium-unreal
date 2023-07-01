@@ -46,10 +46,10 @@ jobs:
 
           # Confirm vars to the console
           echo ""
+          echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
+          echo unreal-batch-files-path="${{ inputs.unreal-batch-files-path }}"
+          echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
           echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
-          echo unreal-binaries-path=${{ inputs.unreal-binaries-path }}
-          echo unreal-batch-files-path=${{ inputs.unreal-batch-files-path }}
-          echo unreal-plugins-path=${{ inputs.unreal-plugins-path }}
           echo UNREAL_COOK_PARAM=$env:UNREAL_COOK_PARAM
           echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
       - name: Download plugin artifact
