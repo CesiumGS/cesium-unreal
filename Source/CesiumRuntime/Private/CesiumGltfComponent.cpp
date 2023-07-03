@@ -302,9 +302,17 @@ static void computeFlatNormals(
     FStaticMeshBuildVertex& v1 = vertices[i + 1];
     FStaticMeshBuildVertex& v2 = vertices[i + 2];
 
+    // The Y axis has previously been inverted, so undo that before
+    // computing the normal direction. Then invert the Y coordinate of the
+    // normal, too.
+
     TMeshVector3 v01 = v1.Position - v0.Position;
+    v01.Y = -v01.Y;
     TMeshVector3 v02 = v2.Position - v0.Position;
+    v02.Y = -v02.Y;
     TMeshVector3 normal = TMeshVector3::CrossProduct(v01, v02);
+
+    normal.Y = -normal.Y;
 
     v0.TangentX = v1.TangentX = v2.TangentX = TMeshVector3(0.0f);
     v0.TangentY = v1.TangentY = v2.TangentY = TMeshVector3(0.0f);
