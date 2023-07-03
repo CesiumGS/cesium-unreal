@@ -44,6 +44,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     return;
   }
 
+  // clang-format off
   // for (const UActorComponent* pComponent : pOwner->GetComponents()) {
   //   const UCesiumGltfComponent* pGltf =
   //   Cast<UCesiumGltfComponent>(pComponent); if (!pGltf) {
@@ -199,6 +200,8 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
   //  }
   //}
 
+  // clang-format on
+
   for (const UActorComponent* pComponent : pOwner->GetComponents()) {
     const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
         Cast<UCesiumGltfPrimitiveComponent>(pComponent);
@@ -240,6 +243,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
               featureTable.AccessType ==
               ECesiumFeatureTableAccessType::Unknown) {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
+            // clang-format off
             // switch (texture.getFeatureIdTextureView().getChannel()) {
             // case 1:
             //   featureTable.Channel = "g";
@@ -254,6 +258,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
             // default:
             //   featureTable.Channel = "r";
             // }
+            // clang-format on
           }
         }
       }

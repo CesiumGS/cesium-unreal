@@ -58,7 +58,7 @@ public:
   /**
    * @brief Constructs a feature ID attribute instance.
    *
-   * @param InModel The model.
+   * @param Model The model.
    * @param Primitive The mesh primitive containing the feature ID attribute.
    * @param FeatureIDAttribute The attribute index specified by the
    * ExtensionExtMeshFeaturesFeatureId.
@@ -66,8 +66,8 @@ public:
    * corresponds to, if one exists, for backwards compatibility.
    */
   FCesiumFeatureIdAttribute(
-      const CesiumGltf::Model& InModel,
-      const CesiumGltf::MeshPrimitive Primitive,
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::MeshPrimitive& Primitive,
       const int64 FeatureIDAttribute,
       const FString& PropertyTableName);
 

@@ -40,8 +40,8 @@ struct VertexCountFromAccessor {
 } // namespace
 
 FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
-    const Model& InModel,
-    const MeshPrimitive Primitive,
+    const Model& Model,
+    const MeshPrimitive& Primitive,
     const int64 FeatureIDAttribute,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdAttributeStatus::ErrorInvalidAttribute),
@@ -56,7 +56,7 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
   }
 
   const Accessor* accessor =
-      InModel.getSafe<Accessor>(&InModel.accessors, featureID->second);
+      Model.getSafe<Accessor>(&Model.accessors, featureID->second);
   if (!accessor || accessor->type != Accessor::Type::SCALAR) {
     _status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
     return;
@@ -65,23 +65,23 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
   switch (accessor->componentType) {
   case Accessor::ComponentType::BYTE:
     this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<int8_t>>(InModel, *accessor);
+        AccessorView<AccessorTypes::SCALAR<int8_t>>(Model, *accessor);
     break;
   case Accessor::ComponentType::UNSIGNED_BYTE:
     this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint8_t>>(InModel, *accessor);
+        AccessorView<AccessorTypes::SCALAR<uint8_t>>(Model, *accessor);
     break;
   case Accessor::ComponentType::SHORT:
     this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<int16_t>>(InModel, *accessor);
+        AccessorView<AccessorTypes::SCALAR<int16_t>>(Model, *accessor);
     break;
   case Accessor::ComponentType::UNSIGNED_SHORT:
     this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint16_t>>(InModel, *accessor);
+        AccessorView<AccessorTypes::SCALAR<uint16_t>>(Model, *accessor);
     break;
   case Accessor::ComponentType::FLOAT:
     this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<float>>(InModel, *accessor);
+        AccessorView<AccessorTypes::SCALAR<float>>(Model, *accessor);
     break;
   default:
     _status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;
