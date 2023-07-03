@@ -221,7 +221,7 @@ static void mikkGetPosition(
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   const TMeshVector3& position = vertices[FaceIdx * 3 + VertIdx].Position;
   Position[0] = position.X;
-  Position[1] = position.Y;
+  Position[1] = -position.Y;
   Position[2] = position.Z;
 }
 
@@ -234,7 +234,7 @@ static void mikkGetNormal(
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   const TMeshVector3& normal = vertices[FaceIdx * 3 + VertIdx].TangentZ;
   Normal[0] = normal.X;
-  Normal[1] = normal.Y;
+  Normal[1] = -normal.Y;
   Normal[2] = normal.Z;
 }
 
@@ -259,10 +259,19 @@ static void mikkSetTSpaceBasic(
   TArray<FStaticMeshBuildVertex>& vertices =
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   FStaticMeshBuildVertex& vertex = vertices[FaceIdx * 3 + VertIdx];
-  vertex.TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
-  vertex.TangentY =
-      BitangentSign *
-      TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX);
+
+  FVector3f TangentZ = vertex.TangentZ;
+  TangentZ.Y = -TangentZ.Y;
+
+  FVector3f TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
+  FVector3f TangentY =
+      BitangentSign * TMeshVector3::CrossProduct(TangentZ, TangentX);
+
+  TangentX.Y = -TangentX.Y;
+  TangentY.Y = -TangentY.Y;
+
+  vertex.TangentX = TangentX;
+  vertex.TangentY = TangentY;
 }
 
 static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
