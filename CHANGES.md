@@ -6,8 +6,6 @@
 
 - Feature IDs are now parsed through the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
 - Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
-- Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
-- Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. Flight interpolation is now computed per-frame, so this property is no longer needed. Any code that refers to `FlyToGranularityDegrees` should be removed or changed to `FlyToGranularityDegrees_DEPRECATED` to still compile.
 
 ##### Additions :tada:
 
@@ -15,12 +13,6 @@
 - Added `FCesiumPrimitiveFeatures` and `UCesiumPrimitiveFeaturesBlueprintLibrary`, which can be used to enact on the feature IDs stored in `EXT_mesh_features`.
 - Added `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus`, as well as Blueprints functions to retrieve them. These indicate when something in the feature ID sets is invalid.
 - Added `FCesiumFeatureIdTexture.GetFeatureIDForVertex`, which can retrieve the feature ID of the given vertex if it contains texture coordinates.
-- Added ability to set a `CesiumGeoreference`'s `Scale` via Blueprints.
-
-##### Fixes :wrench:
-
-- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
-- Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
 
 ##### Deprecated :hourglass_flowing_sand:
 
@@ -28,6 +20,32 @@
 - `UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are less applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
 - `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
 -`UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace` instead.
+
+### v1.28.0 - 2023-07-03
+
+##### Breaking Changes :mega:
+
+- Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
+- Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. Flight interpolation is now computed per-frame, so this property is no longer needed. Any code that refers to `FlyToGranularityDegrees` should be removed or changed to `FlyToGranularityDegrees_DEPRECATED` to still compile.
+
+##### Additions :tada:
+
+- Added the ability to set the CesiumGeoreference `Scale` via Blueprints.
+- Added `ACesiumCameraManager::RemoveCamera`. It is available via both Blueprints and C++. This complements the existing `ACesiumCameraManager::AddCamera`.
+
+##### Fixes :wrench:
+
+- Added a workaround for an apparent bug in Unreal Engine 5.1 that prevented collisions from working with Cesium3DTilesets.
+- Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.25.0 to v0.25.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
+### v1.27.1 - 2023-06-19
+
+##### Fixes :wrench:
+
+- Fixed a shader compilation error introduced in v1.27.0 that prevented projects from opening in Unreal Engine 5.1 and 5.2.
+- Fixed a debug assertion `!IsGarbageCollecting()` that could occur within `ACesiumCreditSystem` when flying to different sublevels.
 
 ### v1.27.0 - 2023-06-1
 
@@ -38,7 +56,6 @@
 - Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
 - `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
 - Added new settings to the Cesium section of the Project Settings, allowing users to control how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
-- Add `ACesiumCameraManager::RemoveCamera`. Available via Blueprints and C++. This complements the existing `ACesiumCameraManager::AddCamera`.
 
 ##### Fixes :wrench:
 

@@ -1,3 +1,5 @@
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
 #include "CesiumGeospatial/Ellipsoid.h"
 #include "CesiumUtility/Math.h"
 #include "GeoTransforms.h"

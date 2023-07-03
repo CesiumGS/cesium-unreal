@@ -1,0 +1,86 @@
+name: Test Package On Windows
+
+on:
+  workflow_call:
+    inputs:
+      unreal-engine-association:
+        required: true
+        type: string
+      unreal-runner-label:
+        required: true
+        type: string
+      unreal-binaries-path:
+        required: true
+        type: string
+      unreal-batch-files-path:
+        required: true
+        type: string
+      unreal-plugins-path:
+        required: true
+        type: string
+      test-package-base-name:
+        required: true
+        type: string
+jobs:
+  test:
+    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # so that `git describe` works.
+          sparse-checkout: |
+            .github
+            TestsProject      
+      - name: Set environment variables
+        run: |
+          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:PLUGIN_PACKAGE_NAME="${{ inputs.test-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
+          $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
+
+          # Use "cookonthefly" to skip cook step, "cook" to do cook (shader compile, very slow)
+          $env:UNREAL_COOK_PARAM="cookonthefly"
+
+          # Make these available to subsequent steps
+          echo "PLUGIN_PACKAGE_NAME=${env:PLUGIN_PACKAGE_NAME}" >> $env:GITHUB_ENV
+          echo "UNREAL_COOK_PARAM=${env:UNREAL_COOK_PARAM}" >> $env:GITHUB_ENV
+          echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
+
+          # Confirm vars to the console
+          echo ""
+          echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
+          echo unreal-batch-files-path="${{ inputs.unreal-batch-files-path }}"
+          echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
+          echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
+          echo UNREAL_COOK_PARAM=$env:UNREAL_COOK_PARAM
+          echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
+      - name: Download plugin artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.PLUGIN_PACKAGE_NAME}}
+          path: download          
+      - name: Install plugin to Unreal Engine
+        run: |
+          dir download/CesiumForUnreal
+          md "${{ inputs.unreal-plugins-path }}/Marketplace"
+          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r      
+      - name: Overwrite tests project engine association
+        run: |
+          ((Get-Content -path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -Raw) -replace '"EngineAssociation": "5.0"','"EngineAssociation": "${{ inputs.unreal-engine-association }}"') | Set-Content -Path "$env:TESTS_PROJECT_ROOT/TestsProject.uproject"
+      - name: Display tests engine association
+        run: |
+          cd download/CesiumForUnreal
+          dir
+          Get-Content "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" | select-string -pattern "EngineAssociation"
+      - name: Display plugin engine version
+        run: |
+          cd download/CesiumForUnreal
+          dir
+          Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
+      - name: Run packaging test
+        run: |
+          cd "${{ inputs.unreal-batch-files-path }}"
+          ./RunUAT.bat -ScriptsForProject="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" Turnkey -command=VerifySdk -platform=Win64 -UpdateIfNeeded -EditorIO -EditorIOPort=54342  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject" BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -$env:UNREAL_COOK_PARAM  -project="$env:TESTS_PROJECT_ROOT/TestsProject.uproject"  -unrealexe="${{ inputs.unreal-binaries-path }}/UnrealEditor-Cmd.exe" -platform=Win64 -ddc=InstalledDerivedDataBackendGraph -installed -stage -archive -package -build -compressed -iostore -pak -prereqs -archivedirectory="$env:GITHUB_WORKSPACE/TestPackaging" -nocompile
+      - name: Sanity check output
+        run: |
+          if (!(Test-Path "$env:GITHUB_WORKSPACE/TestPackaging/Windows/TestsProject.exe") ) { exit -1 }
