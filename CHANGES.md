@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v1.28.0 - 2023-07-03
 
 ##### Breaking Changes :mega:
 
@@ -9,12 +9,15 @@
 
 ##### Additions :tada:
 
-- Added ability to set CesiumGeoreference Scale via Blueprints.
+- Added the ability to set the CesiumGeoreference `Scale` via Blueprints.
+- Added `ACesiumCameraManager::RemoveCamera`. It is available via both Blueprints and C++. This complements the existing `ACesiumCameraManager::AddCamera`.
 
 ##### Fixes :wrench:
 
 - Added a workaround for an apparent bug in Unreal Engine 5.1 that prevented collisions from working with Cesium3DTilesets.
 - Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.25.0 to v0.25.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.27.1 - 2023-06-19
 
@@ -32,7 +35,6 @@
 - Added point cloud shading options to `Cesium3DTileset`, which allow point cloud tilesets to be rendered with attenuation based on geometric error.
 - `ACesium3DTileset` now emits a warning if the "Enable World Bounds Checks" option is enabled. That option can make the camera fly toward the origin unexpectedly.
 - Added new settings to the Cesium section of the Project Settings, allowing users to control how many requests to handle before pruning and also how many elements to keep in the cache after pruning.
-- Add `ACesiumCameraManager::RemoveCamera`. Available via Blueprints and C++. This complements the existing `ACesiumCameraManager::AddCamera`.
 
 ##### Fixes :wrench:
 
