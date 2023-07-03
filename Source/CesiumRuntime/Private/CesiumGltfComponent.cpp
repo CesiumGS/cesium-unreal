@@ -221,7 +221,7 @@ static void mikkGetPosition(
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   const TMeshVector3& position = vertices[FaceIdx * 3 + VertIdx].Position;
   Position[0] = position.X;
-  Position[1] = position.Y;
+  Position[1] = -position.Y;
   Position[2] = position.Z;
 }
 
@@ -234,7 +234,7 @@ static void mikkGetNormal(
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   const TMeshVector3& normal = vertices[FaceIdx * 3 + VertIdx].TangentZ;
   Normal[0] = normal.X;
-  Normal[1] = normal.Y;
+  Normal[1] = -normal.Y;
   Normal[2] = normal.Z;
 }
 
@@ -259,10 +259,19 @@ static void mikkSetTSpaceBasic(
   TArray<FStaticMeshBuildVertex>& vertices =
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   FStaticMeshBuildVertex& vertex = vertices[FaceIdx * 3 + VertIdx];
-  vertex.TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
-  vertex.TangentY =
-      BitangentSign *
-      TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX);
+
+  FVector3f TangentZ = vertex.TangentZ;
+  TangentZ.Y = -TangentZ.Y;
+
+  FVector3f TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
+  FVector3f TangentY =
+      BitangentSign * TMeshVector3::CrossProduct(TangentZ, TangentX);
+
+  TangentX.Y = -TangentX.Y;
+  TangentY.Y = -TangentY.Y;
+
+  vertex.TangentX = TangentX;
+  vertex.TangentY = TangentY;
 }
 
 static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
@@ -302,9 +311,17 @@ static void computeFlatNormals(
     FStaticMeshBuildVertex& v1 = vertices[i + 1];
     FStaticMeshBuildVertex& v2 = vertices[i + 2];
 
+    // The Y axis has previously been inverted, so undo that before
+    // computing the normal direction. Then invert the Y coordinate of the
+    // normal, too.
+
     TMeshVector3 v01 = v1.Position - v0.Position;
+    v01.Y = -v01.Y;
     TMeshVector3 v02 = v2.Position - v0.Position;
+    v02.Y = -v02.Y;
     TMeshVector3 normal = TMeshVector3::CrossProduct(v01, v02);
+
+    normal.Y = -normal.Y;
 
     v0.TangentX = v1.TangentX = v2.TangentX = TMeshVector3(0.0f);
     v0.TangentY = v1.TangentY = v2.TangentY = TMeshVector3(0.0f);
