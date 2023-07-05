@@ -37,24 +37,24 @@ struct VertexIndexFromAccessor {
 } // namespace
 
 FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
-    const Model& InModel,
+    const Model& Model,
     const MeshPrimitive& Primitive,
     const ExtensionExtMeshFeatures& Features)
     : _vertexCount(0) {
   const Accessor& indicesAccessor =
-      InModel.getSafe(InModel.accessors, Primitive.indices);
+      Model.getSafe(Model.accessors, Primitive.indices);
   switch (indicesAccessor.componentType) {
   case Accessor::ComponentType::UNSIGNED_BYTE:
     _vertexIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint8_t>>(InModel, indicesAccessor);
+        AccessorView<AccessorTypes::SCALAR<uint8_t>>(Model, indicesAccessor);
     break;
   case Accessor::ComponentType::UNSIGNED_SHORT:
     _vertexIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint16_t>>(InModel, indicesAccessor);
+        AccessorView<AccessorTypes::SCALAR<uint16_t>>(Model, indicesAccessor);
     break;
   case Accessor::ComponentType::UNSIGNED_INT:
     _vertexIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint32_t>>(InModel, indicesAccessor);
+        AccessorView<AccessorTypes::SCALAR<uint32_t>>(Model, indicesAccessor);
     break;
   default:
     break;
@@ -63,14 +63,14 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
   auto positionIt = Primitive.attributes.find("POSITION");
   if (positionIt != Primitive.attributes.end()) {
     const Accessor& positionAccessor =
-        InModel.getSafe(InModel.accessors, positionIt->second);
+        Model.getSafe(Model.accessors, positionIt->second);
     _vertexCount = positionAccessor.count;
   }
 
   for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
        Features.featureIds) {
     this->_featureIDSets.Add(
-        FCesiumFeatureIdSet(InModel, Primitive, FeatureId));
+        FCesiumFeatureIdSet(Model, Primitive, FeatureId));
   }
 }
 
@@ -88,8 +88,8 @@ UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
   for (int32 i = 0; i < PrimitiveFeatures._featureIDSets.Num(); i++) {
     const FCesiumFeatureIdSet& featureIDSet =
         PrimitiveFeatures._featureIDSets[i];
-    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(featureIDSet) ==
-        Type) {
+    if (UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+            featureIDSet) == Type) {
       featureIDSets.Add(featureIDSet);
     }
   }

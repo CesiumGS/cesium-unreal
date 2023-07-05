@@ -35,16 +35,16 @@ public:
   /**
    * Constructs a primitive features instance.
    *
-   * @param model The model that contains the EXT_mesh_features extension
-   * @param primitive The mesh primitive that stores EXT_mesh_features
+   * @param Model The model that contains the EXT_mesh_features extension
+   * @param Primitive The mesh primitive that stores EXT_mesh_features
    * extension
-   * @param features The EXT_mesh_features of the gltf mesh primitive.
+   * @param Features The EXT_mesh_features of the gltf mesh primitive.
    * primitive
    */
   FCesiumPrimitiveFeatures(
-      const CesiumGltf::Model& model,
-      const CesiumGltf::MeshPrimitive& primitive,
-      const CesiumGltf::ExtensionExtMeshFeatures& features);
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::MeshPrimitive& Primitive,
+      const CesiumGltf::ExtensionExtMeshFeatures& Features);
 
 private:
   TArray<FCesiumFeatureIdSet> _featureIDSets;

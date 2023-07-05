@@ -40,6 +40,11 @@ public:
   /**
    * Constructs a primitive metadata instance.
    *
+   * This class exists for backwards compatibility, so it requires a
+   * FCesiumPrimitiveFeatures to have been constructed beforehand. It assumes
+   * the given FCesiumPrimitiveFeatures will have the same lifetime as this
+   * instance.
+   *
    * @param model The model that stores EXT_feature_metadata extension
    * @param primitive The mesh primitive that stores EXT_feature_metadata
    * extension
@@ -112,7 +117,7 @@ public:
           (DeprecatedFunction,
            DeprecatedMessage =
                "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated."))
-    // TODO: properly deprecate this function when metadata is overhauled
+  // TODO: properly deprecate this function when metadata is overhauled
   static const TArray<FString>&
   GetFeatureTextureNames(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
