@@ -1,5 +1,16 @@
 # Change Log
 
+### ? - ?
+
+##### Breaking Changes :mega:
+
+- The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
+
+##### Additions :tada:
+
+- The "Place Georeference Origin Here" action on CesiumGeoreference is now undoable.
+- Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
+
 ### v1.28.0 - 2023-07-03
 
 ##### Breaking Changes :mega:

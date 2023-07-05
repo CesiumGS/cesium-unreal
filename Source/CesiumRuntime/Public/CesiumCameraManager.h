@@ -27,7 +27,7 @@ public:
   static ACesiumCameraManager*
   GetDefaultCameraManager(const UObject* WorldContextObject);
 
-  ACesiumCameraManager() {}
+  ACesiumCameraManager();
 
   /**
    * @brief Register a new camera with the camera manager.
