@@ -49,46 +49,114 @@ class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
   GENERATED_BODY()
 
 public:
-  /** @copydoc UCesiumSubLevelComponent::Enabled */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  /**
+   * Gets whether this sub-level is enabled. An enabled sub-level will be
+   * automatically loaded when the camera moves within its LoadRadius and
+   * no other levels are closer, and the Georeference will be updated so that
+   * this level's Longitude, Latitude, and Height become (0, 0, 0) in the Unreal
+   * World. A sub-level that is not enabled will be ignored by Cesium at
+   * runtime.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   bool GetEnabled() const;
-  /** @copydoc UCesiumSubLevelComponent::Enabled */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+
+  /**
+   * Sets whether this sub-level is enabled. An enabled sub-level will be
+   * automatically loaded when the camera moves within its LoadRadius and
+   * no other levels are closer, and the Georeference will be updated so that
+   * this level's Longitude, Latitude, and Height become (0, 0, 0) in the Unreal
+   * World. A sub-level that is not enabled will be ignored by Cesium at
+   * runtime.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetEnabled(bool value);
 
-  /** @copydoc UCesiumSubLevelComponent::OriginLongitude */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  /**
+   * Gets the longitude of the georeference origin for this sub-level in
+   * degrees, in the range [-180, 180]. When this sub-level is active, the
+   * CesiumGeoreference will adopt this origin.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   double GetOriginLongitude() const;
-  /** @copydoc UCesiumSubLevelComponent::OriginLongitude */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+
+  /**
+   * Sets the longitude of the georeference origin for this sub-level in
+   * degrees, in the range [-180, 180]. When this sub-level is active, the
+   * CesiumGeoreference will adopt this origin.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetOriginLongitude(double value);
 
-  /** @copydoc UCesiumSubLevelComponent::OriginLatitude */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  /**
+   * Gets the latitude of the georeference origin for this sub-level in degrees,
+   * in the range [-90, 90]. When this sub-level is active, the
+   * CesiumGeoreference will adopt this origin.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   double GetOriginLatitude() const;
-  /** @copydoc UCesiumSubLevelComponent::OriginLatitude */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+
+  /**
+   * Sets the latitude of the georeference origin for this sub-level in degrees,
+   * in the range [-90, 90]. When this sub-level is active, the
+   * CesiumGeoreference will adopt this origin.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetOriginLatitude(double value);
 
-  /** @copydoc UCesiumSubLevelComponent::OriginHeight */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  /**
+   * Gets the height of the georeference origin for this sub-level in meters
+   * above the WGS84 ellipsoid. This height should not be confused with a height
+   * above Mean Sea Level. When this sub-level is active, the CesiumGeoreference
+   * will adopt this origin.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   double GetOriginHeight() const;
-  /** @copydoc UCesiumSubLevelComponent::OriginHeight */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+
+  /**
+   * Sets the height of the georeference origin for this sub-level in meters
+   * above the WGS84 ellipsoid. This height should not be confused with a height
+   * above Mean Sea Level. When this sub-level is active, the CesiumGeoreference
+   * will adopt this origin.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetOriginHeight(double value);
 
-  /** @copydoc UCesiumSubLevelComponent::LoadRadius */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  /**
+   * Gets how close to the sub-level local origin, in meters, the camera needs
+   * to be to load the level.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   double GetLoadRadius() const;
-  /** @copydoc UCesiumSubLevelComponent::LoadRadius */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+
+  /**
+   * Sets how close to the sub-level local origin, in meters, the camera needs
+   * to be to load the level.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetLoadRadius(double value);
 
-  /** @copydoc UCesiumSubLevelComponent::Georeference */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  /**
+   * Gets the designated georeference actor controlling how the actor's
+   * coordinate system relates to the coordinate system in this Unreal Engine
+   * level.
+   *
+   * If this is null, the sub-level will find and use the first Georeference
+   * Actor in the level, or create one if necessary. To get the active/effective
+   * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ACesiumGeoreference* GetGeoreference() const;
-  /** @copydoc UCesiumSubLevelComponent::Georeference */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+
+  /**
+   * Sets the designated georeference actor controlling how the actor's
+   * coordinate system relates to the coordinate system in this Unreal Engine
+   * level.
+   *
+   * If this is null, the sub-level will find and use the first Georeference
+   * Actor in the level, or create one if necessary. To get the active/effective
+   * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
   void SetGeoreference(ACesiumGeoreference* NewGeoreference);
 
   /**
@@ -96,7 +164,7 @@ public:
    * property, except that it will return null if a georeference has not yet
    * been resolved.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
   ACesiumGeoreference* GetResolvedGeoreference() const;
 
   /**
@@ -204,8 +272,8 @@ private:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      BlueprintGetter = GetOriginLongitude,
-      BlueprintSetter = SetOriginLongitude,
+      BlueprintGetter = GetOriginLatitude,
+      BlueprintSetter = SetOriginLatitude,
       meta = (ClampMin = -90.0, ClampMax = 90.0, AllowPrivateAccess = true))
   double OriginLatitude = 39.736401;
 
@@ -218,8 +286,8 @@ private:
       EditAnywhere,
       BlueprintReadWrite,
       Category = "Cesium",
-      BlueprintGetter = GetOriginLatitude,
-      BlueprintSetter = SetOriginLatitude,
+      BlueprintGetter = GetOriginLongitude,
+      BlueprintSetter = SetOriginLongitude,
       meta = (ClampMin = -180.0, ClampMax = 180.0, AllowPrivateAccess = true))
   double OriginLongitude = -105.25737;
 
@@ -239,8 +307,8 @@ private:
   double OriginHeight = 2250.0;
 
   /**
-   * How close to the sub-level local origin the camera needs to be to load the
-   * level.
+   * How close to the sub-level local origin, in meters, the camera needs to be
+   * to load the level.
    */
   UPROPERTY(
       EditAnywhere,
@@ -280,6 +348,7 @@ private:
   UPROPERTY(
       Transient,
       BlueprintReadOnly,
+      BlueprintGetter = GetResolvedGeoreference,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;

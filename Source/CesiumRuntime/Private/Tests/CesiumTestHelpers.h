@@ -44,11 +44,14 @@ void waitForImpl(
 
 /// <summary>
 /// Waits for a provided lambda function to become true, ticking through render
-/// frames in the meantime.
+/// frames in the meantime. If the timeout elapses before the condition becomes
+/// true, an error is logged (which will cause a test failure) and the done
+/// delegate is invoked anyway.
 /// </summary>
 /// <typeparam name="T"></typeparam>
 /// <param name="done">The done delegate provided by a LatentIt or
-/// LatentBeforeEach. It will be invoked when the condition is true.</param>
+/// LatentBeforeEach. It will be invoked when the condition is true or when the
+/// timeout elapses.</param>
 /// <param name="pWorld">The world in which to check the condition.</param>
 /// <param name="timeoutSeconds">The maximum time to wait for the condition to
 /// become true.</param>

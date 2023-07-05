@@ -63,22 +63,6 @@ public:
   bool ShowLoadRadii = true;
 
   /*
-   * Switches to the specified level. Sets the georeference origin to the given
-   * level's origin, shows the given level, and hides all other levels.
-   *
-   * If Index is negative or otherwise outside the range of valid indices, all
-   * levels other than the PersistentLevel are deactivated.
-   *
-   * This function is meant to be called from within the game, not in the
-   * Editor.
-   *
-   * @returns true if a new sub-level is active, or false if the Index was
-   * outside the valid range and so no sub-level is active.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium|Cesium Sublevels")
-  bool SwitchToLevel(int32 Index);
-
-  /*
    * The list of georeferenced sub-levels. Each of these has a corresponding
    * world location that can be jumped to. Only one level can be worked on in
    * the editor at a time.
@@ -175,7 +159,7 @@ public:
    * The camera to use to determine which sub-level is closest, so that one can
    * be activated and all others deactivated.
    */
-  UPROPERTY(EditAnywhere, Category = "CesiumSublevels")
+  UPROPERTY(EditAnywhere, Category = "Cesium|Cesium Sublevels")
   APlayerCameraManager* SubLevelCamera = nullptr;
 
   /**
@@ -518,8 +502,6 @@ private:
   double _ellipsoidRadii[3];
 
   GeoTransforms _geoTransforms;
-
-  bool _insideSublevel;
 
   UPROPERTY()
   UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;

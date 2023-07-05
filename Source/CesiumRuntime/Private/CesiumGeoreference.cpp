@@ -125,8 +125,7 @@ ACesiumGeoreference::ACesiumGeoreference()
           CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
           CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
           CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
-      _geoTransforms(),
-      _insideSublevel(false) {
+      _geoTransforms() {
   PrimaryActorTick.bCanEverTick = true;
 
 #if WITH_EDITOR
@@ -264,6 +263,8 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
           return levelName.Equals(subLevel.LevelName);
         });
 
+    // A sub-level that can't be enabled is being controlled by Unreal Engine,
+    // based on its own distance-based system. Ignore it.
     if (pFound == nullptr || !pFound->CanBeEnabled)
       continue;
 
@@ -304,7 +305,7 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     pLevelComponent->SetEnabled(pFound->Enabled);
     pLevelComponent->SetLoadRadius(pFound->LoadRadius);
 
-    // But if the georeference origin is close to this sub-levels origin, make
+    // But if the georeference origin is close to this sub-level's origin, make
     // this the active sub-level.
     if (FMath::IsNearlyEqual(
             this->OriginLongitude,
@@ -332,8 +333,6 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
           "Cesium sub-levels based on World Composition have been converted to Level Instances. Save the level to keep these changes. We recommend disabling World Composition in the World Settings, as it is now obsolete."));
 }
 #endif
-
-bool ACesiumGeoreference::SwitchToLevel(int32 Index) { return false; }
 
 void ACesiumGeoreference::SetScale(double NewScale) {
   if (NewScale < 1e-6) {
@@ -701,7 +700,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
 #endif
 
   if (this->_shouldManageSubLevels()) {
-    this->_insideSublevel = _updateSublevelState();
+    _updateSublevelState();
   }
 }
 

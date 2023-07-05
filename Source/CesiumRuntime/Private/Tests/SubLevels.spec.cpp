@@ -145,12 +145,16 @@ void FSubLevelsSpec::Define() {
       "does not copy inactive sub-level origin changes to the CesiumGeoreference in the Editor",
       [this]() {
         BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          // Set the sub-level active, wait a frame so it becomes so.
           pSubLevel1->SetIsTemporarilyHiddenInEditor(false);
         });
         BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          // Set the sub-level inactive, wait a frame so it becomes so.
           pSubLevel1->SetIsTemporarilyHiddenInEditor(true);
         });
         It("", EAsyncExecution::TaskGraphMainThread, [this]() {
+          // Verify that the previously-active sub-level isn't affected by
+          // georeference origin changes.
           double expectedLongitude = pGeoreference->OriginLongitude;
           double expectedLatitude = pGeoreference->OriginLatitude;
           double expectedHeight = pGeoreference->OriginHeight;
