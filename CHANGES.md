@@ -2,9 +2,14 @@
 
 ### ? - ?
 
+##### Breaking Changes :mega:
+
+- The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
+
 ##### Additions :tada:
 
 - The "Place Georeference Origin Here" action on CesiumGeoreference is now undoable.
+- Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
 
 ### v1.28.0 - 2023-07-03
 
@@ -12,7 +17,6 @@
 
 - Removed the `GetGeoreferencedToEllipsoidCenteredTransform` and `GetEllipsoidCenteredToGeoreferencedTransform` methods from `GeoTransforms`. Because these were transformations between two right-handed coordinate systems, they are not of much use with Unreal's left-handed coordinate system.
 - Deprecated the `FlyToGranularityDegrees` property for `AGlobeAwareDefaultPawn`. Flight interpolation is now computed per-frame, so this property is no longer needed. Any code that refers to `FlyToGranularityDegrees` should be removed or changed to `FlyToGranularityDegrees_DEPRECATED` to still compile.
-- The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
 
 ##### Additions :tada:
 
@@ -23,7 +27,6 @@
 
 - Added a workaround for an apparent bug in Unreal Engine 5.1 that prevented collisions from working with Cesium3DTilesets.
 - Fixed a bug that could cause the `AGlobeAwareDefaultPawn` / `DynamicPawn`  to suddenly move to a very high height for one render frame just as it arrives at its destination during a flight.
-- Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
 
 In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.25.0 to v0.25.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
