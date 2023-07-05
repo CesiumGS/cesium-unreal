@@ -141,6 +141,9 @@ void trackForPlay(UActorComponent* pEditorComponent);
 /// equivalent.</param>
 /// <returns>The play mode equivalent, or nullptr is one is not found.</returns>
 template <typename T> T* findInPlay(T* pEditorObject) {
+  if (!IsValid(pEditorObject))
+    return nullptr;
+
   UWorld* pWorld = GEditor->PlayWorld;
   if constexpr (std::is_base_of_v<AActor, T>) {
     return getActorWithTag<T>(pWorld, getUniqueTag(pEditorObject));

@@ -281,12 +281,13 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
     this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
     this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
 
-    // In Editor worlds, make the newly-created sub-level the active one.
+    // In Editor worlds, make the newly-created sub-level the active one. Unless
+    // it's already hidden.
 #if WITH_EDITOR
     if (GEditor && IsValid(this->GetWorld()) &&
         !this->GetWorld()->IsGameWorld()) {
       ALevelInstance* pOwner = Cast<ALevelInstance>(this->GetOwner());
-      if (IsValid(pOwner)) {
+      if (IsValid(pOwner) && !pOwner->IsTemporarilyHiddenInEditor(true)) {
         pSwitcher->SetTarget(pOwner);
       }
     }
