@@ -69,8 +69,7 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
 
   for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
        Features.featureIds) {
-    this->_featureIDSets.Add(
-        FCesiumFeatureIdSet(Model, Primitive, FeatureId));
+    this->_featureIDSets.Add(FCesiumFeatureIdSet(Model, Primitive, FeatureId));
   }
 }
 
