@@ -8,7 +8,7 @@
 
 using namespace CesiumGeospatial;
 
-ACesiumCartographicPolygon::ACesiumCartographicPolygon() {
+ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
   PrimaryActorTick.bCanEverTick = false;
 
   this->Polygon = CreateDefaultSubobject<USplineComponent>(TEXT("Selection"));
@@ -25,7 +25,9 @@ ACesiumCartographicPolygon::ACesiumCartographicPolygon() {
       ESplineCoordinateSpace::Local);
 
   this->MakeLinear();
-
+#if WITH_EDITOR
+  this->SetIsSpatiallyLoaded(false);
+#endif
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
 }

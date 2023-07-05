@@ -5,6 +5,8 @@
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
 #include "CesiumRuntime.h"
+#include "CesiumSubLevelComponent.h"
+#include "CesiumSubLevelSwitcherComponent.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
 #include "Engine/LevelStreaming.h"
@@ -13,6 +15,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "GeoTransforms.h"
+#include "LevelInstance/LevelInstanceActor.h"
 #include "Math/Matrix.h"
 #include "Math/RotationTranslationMatrix.h"
 #include "Math/Rotator.h"
@@ -117,22 +120,32 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
 }
 
 ACesiumGeoreference::ACesiumGeoreference()
-    : _ellipsoidRadii{
-        CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
-        CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
-        CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
-      _geoTransforms(),
-      _insideSublevel(false) {
+    : AActor(),
+      _ellipsoidRadii{
+          CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
+          CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
+          CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
+      _geoTransforms() {
   PrimaryActorTick.bCanEverTick = true;
+
+#if WITH_EDITOR
+  this->SetIsSpatiallyLoaded(false);
+#endif
+  this->SubLevelSwitcher =
+      CreateDefaultSubobject<UCesiumSubLevelSwitcherComponent>(
+          "SubLevelSwitcher");
 }
 
 #if WITH_EDITOR
+
 void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
   // If this is PIE mode, ignore
   UWorld* pWorld = this->GetWorld();
   if (!GEditor || pWorld->IsGameWorld()) {
     return;
   }
+
+  this->Modify();
 
   FViewport* pViewport = GEditor->GetActiveViewport();
   FViewportClient* pViewportClient = pViewport->GetClient();
@@ -198,9 +211,8 @@ void ACesiumGeoreference::PlaceGeoreferenceOriginHere() {
           .Rotator());
   pEditorViewportClient->SetViewLocation(
       FVector(-originLocation.X, -originLocation.Y, -originLocation.Z));
-
-  this->_enableAndGeoreferenceCurrentSubLevel();
 }
+
 #endif
 
 namespace {
@@ -210,36 +222,6 @@ FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
   FString levelName = FPackageName::GetShortName(name);
   levelName.RemoveFromStart(pWorld->StreamingLevelsPrefix);
   return levelName;
-}
-
-struct WorldCompositionLevelPair {
-  FWorldCompositionTile* pTile;
-  ULevelStreaming* pLevelStreaming;
-};
-
-WorldCompositionLevelPair findWorldCompositionLevel(
-    UWorldComposition* pWorldComposition,
-    const FName& packageName) {
-
-  UWorldComposition::FTilesList& tiles = pWorldComposition->GetTilesList();
-  const TArray<ULevelStreaming*>& levels = pWorldComposition->TilesStreaming;
-
-  for (int32 i = 0; i < tiles.Num(); ++i) {
-    FWorldCompositionTile& tile = tiles[i];
-
-    if (tile.Info.Layer.DistanceStreamingEnabled) {
-      // UE itself is managing distance-based streaming for this level, ignore
-      // it.
-      continue;
-    }
-
-    if (tile.PackageName == packageName) {
-      assert(i < levels.Num());
-      return {&tile, levels[i]};
-    }
-  }
-
-  return {nullptr, nullptr};
 }
 
 } // namespace
@@ -259,166 +241,98 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
     return;
   }
 
-  const UWorldComposition::FTilesList& allLevels =
+  if (this->CesiumSubLevels_DEPRECATED.IsEmpty() ||
+      !this->_shouldManageSubLevels())
+    return;
+
+  this->Modify();
+
+  // Convert old-style sub-levels (using World Composition) to new style
+  // sub-levels (level instances)
+  UWorldComposition::FTilesList& allLevels =
       pWorld->WorldComposition->GetTilesList();
 
-  TArray<int32> newSubLevels;
-  TArray<int32> missingSubLevels;
+  ALevelInstance* pActiveSubLevel = nullptr;
 
-  bool checkForNewCurrentLevel = false;
-
-  // Find new sub-levels that we don't know about on the Cesium side.
-  for (int32 i = 0; i < allLevels.Num(); ++i) {
-    const FWorldCompositionTile& level = allLevels[i];
-
+  for (const FWorldCompositionTile& level : allLevels) {
     FString levelName = longPackageNameToCesiumName(pWorld, level.PackageName);
 
     // Check if the level is already known
-    FCesiumSubLevel* pFound = this->CesiumSubLevels.FindByPredicate(
+    FCesiumSubLevel* pFound = this->CesiumSubLevels_DEPRECATED.FindByPredicate(
         [&levelName](FCesiumSubLevel& subLevel) {
           return levelName.Equals(subLevel.LevelName);
         });
 
-    if (pFound) {
-      bool newCanBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
-      if (pFound->CanBeEnabled != newCanBeEnabled) {
-        pFound->CanBeEnabled = newCanBeEnabled;
+    // A sub-level that can't be enabled is being controlled by Unreal Engine,
+    // based on its own distance-based system. Ignore it.
+    if (pFound == nullptr || !pFound->CanBeEnabled)
+      continue;
 
-        // If this level can't be enabled, make sure it's not enabled.
-        if (!pFound->CanBeEnabled) {
-          pFound->Enabled = false;
-        }
+    FActorSpawnParameters spawnParameters{};
+    spawnParameters.Name = FName(pFound->LevelName);
+    spawnParameters.ObjectFlags = RF_Transactional;
 
-        if (newCanBeEnabled) {
-          // This level existed before but is newly enable-able, probably
-          // because it was just added to the right streaming layer. If it also
-          // happens to be the current level, we'll want to immediately hide
-          // other levels. Set a flag to do that later.
-          checkForNewCurrentLevel = true;
-        }
-      }
-    } else {
-      newSubLevels.Add(i);
+    ALevelInstance* pLevelInstance = pWorld->SpawnActor<ALevelInstance>(
+        FVector::ZeroVector,
+        FRotator::ZeroRotator,
+        spawnParameters);
+    pLevelInstance->SetIsSpatiallyLoaded(false);
+    pLevelInstance->DesiredRuntimeBehavior =
+        ELevelInstanceRuntimeBehavior::LevelStreaming;
+    pLevelInstance->SetActorLabel(pFound->LevelName);
+
+    FString levelPath = level.PackageName.ToString() + "." +
+                        FPackageName::GetShortName(level.PackageName);
+    TSoftObjectPtr<UWorld> asset{FSoftObjectPath(levelPath)};
+    pLevelInstance->SetWorldAsset(asset);
+
+    // Initially mark all sub-levels hidden in the Editor.
+    pLevelInstance->SetIsTemporarilyHiddenInEditor(true);
+
+    UCesiumSubLevelComponent* pLevelComponent =
+        Cast<UCesiumSubLevelComponent>(pLevelInstance->AddComponentByClass(
+            UCesiumSubLevelComponent::StaticClass(),
+            false,
+            FTransform::Identity,
+            false));
+    pLevelComponent->SetFlags(RF_Transactional);
+    pLevelInstance->AddInstanceComponent(pLevelComponent);
+
+    pLevelComponent->SetOriginLongitudeLatitudeHeight(FVector(
+        pFound->LevelLongitude,
+        pFound->LevelLatitude,
+        pFound->LevelHeight));
+    pLevelComponent->SetEnabled(pFound->Enabled);
+    pLevelComponent->SetLoadRadius(pFound->LoadRadius);
+
+    // But if the georeference origin is close to this sub-level's origin, make
+    // this the active sub-level.
+    if (FMath::IsNearlyEqual(
+            this->OriginLongitude,
+            pFound->LevelLongitude,
+            1e-8) &&
+        FMath::IsNearlyEqual(
+            this->OriginLatitude,
+            pFound->LevelLatitude,
+            1e-8) &&
+        FMath::IsNearlyEqual(this->OriginHeight, pFound->LevelHeight, 1e-3)) {
+      pActiveSubLevel = pLevelInstance;
     }
+
+    pLevelInstance->LoadLevelInstance();
   }
 
-  // Find any Cesium sub-levels that don't exist anymore.
-  for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
-    FCesiumSubLevel& cesiumLevel = this->CesiumSubLevels[i];
+  this->SubLevelSwitcher->SetTarget(pActiveSubLevel);
 
-    const FWorldCompositionTile* pLevel = allLevels.FindByPredicate(
-        [&cesiumLevel, pWorld](const FWorldCompositionTile& level) {
-          return longPackageNameToCesiumName(pWorld, level.PackageName) ==
-                 cesiumLevel.LevelName;
-        });
+  this->CesiumSubLevels_DEPRECATED.Empty();
 
-    if (!pLevel) {
-      missingSubLevels.Add(i);
-    }
-  }
-
-  if (newSubLevels.Num() == 1 && missingSubLevels.Num() == 1) {
-    // There is exactly one missing and one new, assume it's been renamed.
-    const FWorldCompositionTile& level = allLevels[newSubLevels[0]];
-    this->CesiumSubLevels[missingSubLevels[0]].LevelName =
-        longPackageNameToCesiumName(pWorld, level.PackageName);
-  } else if (newSubLevels.Num() > 0 || missingSubLevels.Num() > 0) {
-    // Remove our record of the sub-levels that no longer exist.
-    // Do this in reverse order so the indices don't get invalidated.
-    for (int32 i = missingSubLevels.Num() - 1; i >= 0; --i) {
-      this->CesiumSubLevels.RemoveAt(missingSubLevels[i]);
-    }
-
-    // Add new Cesium records for the new sub-levels
-    for (int32 i = 0; i < newSubLevels.Num(); ++i) {
-      const FWorldCompositionTile& level = allLevels[newSubLevels[i]];
-      bool canBeEnabled = !level.Info.Layer.DistanceStreamingEnabled;
-      this->CesiumSubLevels.Add(FCesiumSubLevel{
-          longPackageNameToCesiumName(pWorld, level.PackageName),
-          canBeEnabled,
-          OriginLatitude,
-          OriginLongitude,
-          OriginHeight,
-          1000.0,
-          canBeEnabled});
-    }
-  }
-
-  if (checkForNewCurrentLevel) {
-    this->_onNewCurrentLevel();
-  }
+  UE_LOG(
+      LogCesium,
+      Warning,
+      TEXT(
+          "Cesium sub-levels based on World Composition have been converted to Level Instances. Save the level to keep these changes. We recommend disabling World Composition in the World Settings, as it is now obsolete."));
 }
 #endif
-
-bool ACesiumGeoreference::SwitchToLevel(int32 Index) {
-  FCesiumSubLevel* pLevel = nullptr;
-
-  if (Index >= 0 && Index < this->CesiumSubLevels.Num()) {
-    pLevel = &this->CesiumSubLevels[Index];
-  }
-
-  UWorld* pWorld = this->GetWorld();
-  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
-
-  ULevelStreaming* pStreamedLevel = nullptr;
-
-  if (pLevel) {
-    // Find the streaming level with this name.
-    pStreamedLevel = this->_findLevelStreamingByName(pLevel->LevelName);
-    if (!pStreamedLevel) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT("No streaming level found with name %s"),
-          *pLevel->LevelName);
-    }
-  }
-
-  // Deactivate all other streaming levels controlled by Cesium
-  for (const FCesiumSubLevel& subLevel : this->CesiumSubLevels) {
-    if (&subLevel == pLevel) {
-      continue;
-    }
-
-    if (!subLevel.CanBeEnabled) {
-      // A sub-level that can't be enabled is being controled by Unreal Engine,
-      // based on its own distance-based system, so we have no business trying
-      // to disable it. Ignore it.
-      continue;
-    }
-
-    ULevelStreaming* pOtherLevel =
-        this->_findLevelStreamingByName(subLevel.LevelName);
-
-    if (pOtherLevel->ShouldBeVisible() || pOtherLevel->ShouldBeLoaded()) {
-      // We need to unload immediately, not over the course of several frames.
-      // If we don't unload immediately, objects in the old level will still be
-      // visible, but they will be positioned incorrectly.
-      // If this causes an objectionable pause, we can do something much more
-      // complicated like defer the georeference switch and activation of the
-      // new level until after the old one has finished asynchronously
-      // unloading. We're considering that a future feature for the moment,
-      // though.
-      pOtherLevel->bShouldBlockOnUnload = true;
-      pOtherLevel->SetShouldBeLoaded(false);
-      pOtherLevel->SetShouldBeVisible(false);
-    }
-  }
-
-  // Activate the new streaming level if it's not already active.
-  if (pStreamedLevel && (!pStreamedLevel->ShouldBeVisible() ||
-                         !pStreamedLevel->ShouldBeLoaded())) {
-    this->_setGeoreferenceOrigin(
-        pLevel->LevelLongitude,
-        pLevel->LevelLatitude,
-        pLevel->LevelHeight);
-
-    pStreamedLevel->SetShouldBeLoaded(true);
-    pStreamedLevel->SetShouldBeVisible(true);
-  }
-
-  return pStreamedLevel != nullptr;
-}
 
 void ACesiumGeoreference::SetScale(double NewScale) {
   if (NewScale < 1e-6) {
@@ -438,11 +352,6 @@ ACesiumGeoreference::GetGeoreferenceOriginLongitudeLatitudeHeight() const {
 
 void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
     const glm::dvec3& targetLongitudeLatitudeHeight) {
-  // Should not allow externally initiated georeference origin changing if we
-  // are inside a sublevel
-  if (this->_insideSublevel) {
-    return;
-  }
   this->_setGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.x,
       targetLongitudeLatitudeHeight.y,
@@ -525,32 +434,30 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
       TEXT("Called OnConstruction on actor %s"),
       *this->GetName());
 
-#if WITH_EDITOR
-  if (!this->_newCurrentLevelSubscription.IsValid()) {
-    this->_newCurrentLevelSubscription =
-        FEditorDelegates::NewCurrentLevel.AddUObject(
-            this,
-            &ACesiumGeoreference::_onNewCurrentLevel);
-  }
-#endif
-
   this->UpdateGeoreference();
 }
 
-void ACesiumGeoreference::BeginDestroy() {
-#if WITH_EDITOR
-  if (this->_newCurrentLevelSubscription.IsValid()) {
-    FEditorDelegates::NewCurrentLevel.Remove(
-        this->_newCurrentLevelSubscription);
-    this->_newCurrentLevelSubscription.Reset();
-  }
-#endif
-
-  Super::BeginDestroy();
-}
+void ACesiumGeoreference::BeginDestroy() { Super::BeginDestroy(); }
 
 void ACesiumGeoreference::UpdateGeoreference() {
   this->_updateGeoTransforms();
+
+  // If we're in a sub-level, update its origin as well.
+  UCesiumSubLevelSwitcherComponent* pSwitcher = this->SubLevelSwitcher;
+  if (IsValid(pSwitcher) && pSwitcher->GetTarget() != nullptr) {
+    if (pSwitcher->GetTarget() == pSwitcher->GetCurrent() ||
+        pSwitcher->GetCurrent() == nullptr) {
+      ALevelInstance* pTarget = pSwitcher->GetTarget();
+      UCesiumSubLevelComponent* pComponent =
+          pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
+      if (IsValid(pComponent)) {
+        pComponent->SetOriginLongitudeLatitudeHeight(FVector(
+            this->OriginLongitude,
+            this->OriginLatitude,
+            this->OriginHeight));
+      }
+    }
+  }
 
   UE_LOG(
       LogCesium,
@@ -579,15 +486,11 @@ void ACesiumGeoreference::PostEditChangeProperty(FPropertyChangedEvent& event) {
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight)) {
-    this->_enableAndGeoreferenceCurrentSubLevel();
     this->UpdateGeoreference();
     return;
   } else if (
       propertyName == GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, Scale)) {
     this->SetScale(Scale);
-  } else if (
-      propertyName ==
-      GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, CesiumSubLevels)) {
   }
 }
 #endif
@@ -605,12 +508,20 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   }
   const glm::dvec4 originLocation =
       glm::dvec4(VecMath::createVector3D(world->OriginLocation), 1.0);
-  for (const FCesiumSubLevel& level : this->CesiumSubLevels) {
+  for (const auto& pLevelWeak :
+       this->SubLevelSwitcher->GetRegisteredSubLevels()) {
+    ALevelInstance* pLevel = pLevelWeak.Get();
+    if (!IsValid(pLevel))
+      continue;
+
+    UCesiumSubLevelComponent* pComponent =
+        pLevel->FindComponentByClass<UCesiumSubLevelComponent>();
+
     glm::dvec3 levelECEF =
         _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-            level.LevelLongitude,
-            level.LevelLatitude,
-            level.LevelHeight));
+            pComponent->GetOriginLongitude(),
+            pComponent->GetOriginLatitude(),
+            pComponent->GetOriginHeight()));
 
     glm::dvec4 levelAbs =
         this->_geoTransforms
@@ -620,7 +531,7 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
     DrawDebugSphere(
         world,
         levelRelative,
-        100.0 * level.LoadRadius,
+        100.0 * pComponent->GetLoadRadius(),
         100,
         FColor::Blue);
   }
@@ -694,8 +605,11 @@ int32 clampedAdd(double f, int32 i) {
 } // namespace
 
 bool ACesiumGeoreference::_updateSublevelState() {
-  if (this->CesiumSubLevels.Num() == 0) {
-    // If we don't have any known sublevels, bail quickly to save ourselves a
+  const TArray<TWeakObjectPtr<ALevelInstance>>& sublevels =
+      this->SubLevelSwitcher->GetRegisteredSubLevels();
+
+  if (sublevels.Num() == 0) {
+    // If we don't have any known sub-levels, bail quickly to save ourselves a
     // little work.
     return false;
   }
@@ -716,30 +630,39 @@ bool ACesiumGeoreference::_updateSublevelState() {
           .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
       cameraAbsolute);
 
-  int32 activeLevel = -1;
+  ALevelInstance* pClosestActiveLevel = nullptr;
   double closestLevelDistance = std::numeric_limits<double>::max();
 
-  for (int32 i = 0; i < this->CesiumSubLevels.Num(); ++i) {
-    const FCesiumSubLevel& level = this->CesiumSubLevels[i];
-    if (!level.Enabled) {
+  for (int32 i = 0; i < sublevels.Num(); ++i) {
+    ALevelInstance* pCurrent = sublevels[i].Get();
+    if (!IsValid(pCurrent))
       continue;
-    }
+
+    UCesiumSubLevelComponent* pComponent =
+        pCurrent->FindComponentByClass<UCesiumSubLevelComponent>();
+    if (!IsValid(pComponent))
+      continue;
+
+    if (!pComponent->GetEnabled())
+      continue;
 
     glm::dvec3 levelECEF =
         _geoTransforms.TransformLongitudeLatitudeHeightToEcef(glm::dvec3(
-            level.LevelLongitude,
-            level.LevelLatitude,
-            level.LevelHeight));
+            pComponent->GetOriginLongitude(),
+            pComponent->GetOriginLatitude(),
+            pComponent->GetOriginHeight()));
 
     double levelDistance = glm::length(levelECEF - cameraECEF);
-    if (levelDistance < level.LoadRadius &&
+    if (levelDistance < pComponent->GetLoadRadius() &&
         levelDistance < closestLevelDistance) {
-      activeLevel = i;
+      pClosestActiveLevel = pCurrent;
+      closestLevelDistance = levelDistance;
     }
   }
 
-  // activeLevel may be -1, in which case all levels will be deactivated.
-  return this->SwitchToLevel(activeLevel);
+  this->SubLevelSwitcher->SetTarget(pClosestActiveLevel);
+
+  return pClosestActiveLevel != nullptr;
 }
 
 void ACesiumGeoreference::_updateGeoTransforms() {
@@ -776,8 +699,8 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   _handleViewportOriginEditing();
 #endif
 
-  if (!this->_shouldManageSubLevels()) {
-    this->_insideSublevel = _updateSublevelState();
+  if (this->_shouldManageSubLevels()) {
+    _updateSublevelState();
   }
 }
 
@@ -956,13 +879,6 @@ void ACesiumGeoreference::_setGeoreferenceOrigin(
   this->UpdateGeoreference();
 }
 
-void ACesiumGeoreference::_jumpToLevel(const FCesiumSubLevel& level) {
-  this->_setGeoreferenceOrigin(
-      level.LevelLongitude,
-      level.LevelLatitude,
-      level.LevelHeight);
-}
-
 // TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal
 // raycast seems to be inaccurate at glancing angles, perhaps due to the large
 // single-precision distances.
@@ -1023,170 +939,7 @@ void ACesiumGeoreference::_lineTraceViewportMouse(
 }
 #endif
 
-ULevelStreaming*
-ACesiumGeoreference::_findLevelStreamingByName(const FString& name) {
-  UWorld* pWorld = this->GetWorld();
-  const TArray<ULevelStreaming*>& levels = pWorld->GetStreamingLevels();
-  const FString& streamingLevelPrefix = pWorld->StreamingLevelsPrefix;
-
-  ULevelStreaming* const* ppStreamedLevel =
-      levels.FindByPredicate([&name, pWorld](ULevelStreaming* pStreamedLevel) {
-        return longPackageNameToCesiumName(
-                   pWorld,
-                   pStreamedLevel->GetWorldAssetPackageName()) == name;
-      });
-
-  if (ppStreamedLevel == nullptr) {
-    return nullptr;
-  } else {
-    return *ppStreamedLevel;
-  }
-}
-
-FCesiumSubLevel* ACesiumGeoreference::_findCesiumSubLevelByName(
-    const FName& packageName,
-    bool createIfDoesNotExist) {
-  FString cesiumName =
-      longPackageNameToCesiumName(this->GetWorld(), packageName);
-
-  FCesiumSubLevel* pCesiumLevel = this->CesiumSubLevels.FindByPredicate(
-      [cesiumName](const FCesiumSubLevel& level) {
-        return cesiumName == level.LevelName;
-      });
-
-  if (!pCesiumLevel && createIfDoesNotExist) {
-    // No Cesium sub-level exists, so create it now.
-    this->CesiumSubLevels.Add(FCesiumSubLevel{
-        cesiumName,
-        true,
-        this->OriginLatitude,
-        this->OriginLongitude,
-        this->OriginHeight,
-        1000.0,
-        true});
-    pCesiumLevel = &this->CesiumSubLevels.Last();
-  }
-
-  return pCesiumLevel;
-}
-
-#if WITH_EDITOR
-
-void ACesiumGeoreference::_onNewCurrentLevel() {
-  UWorld* pWorld = this->GetWorld();
-  if (!pWorld) {
-    return;
-  }
-
-  UWorldComposition* pWorldComposition = pWorld->WorldComposition;
-  if (!pWorldComposition) {
-    return;
-  }
-
-  ULevel* pCurrent = pWorld->GetCurrentLevel();
-  UPackage* pLevelPackage = pCurrent->GetOutermost();
-
-  // Find the world composition details for the new level.
-  WorldCompositionLevelPair worldCompositionLevelPair =
-      findWorldCompositionLevel(pWorldComposition, pLevelPackage->GetFName());
-
-  FWorldCompositionTile* pTile = worldCompositionLevelPair.pTile;
-  ULevelStreaming* pLevelStreaming = worldCompositionLevelPair.pLevelStreaming;
-
-  if (!pTile || !pLevelStreaming) {
-    // The new level doesn't appear to participate in world composition, so
-    // ignore it.
-    return;
-  }
-
-  // Find the corresponding FCesiumSubLevel, creating it if necessary.
-  FCesiumSubLevel* pCesiumLevel =
-      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), true);
-
-  // Hide all other levels.
-  // I initially thought we could call handy methods like SetShouldBeVisible
-  // here, but I was wrong. That works ok in a game, but in the Editor
-  // there's a much more elaborate dance required. Rather than try to figure out
-  // all the steps, let's just ask the Editor to do it for us.
-  FWorldBrowserModule& worldBrowserModule =
-      FModuleManager::GetModuleChecked<FWorldBrowserModule>("WorldBrowser");
-  TSharedPtr<FLevelCollectionModel> pWorldModel =
-      worldBrowserModule.SharedWorldModel(pWorld);
-  if (!pWorldModel) {
-    return;
-  }
-
-  // Build a list of levels to hide, starting with _all_ the levels.
-  const FLevelModelList& allLevels = pWorldModel->GetAllLevels();
-  FLevelModelList levelsToHide = allLevels;
-
-  // Remove levels from the list that we don't want to hide for various reasons.
-  levelsToHide.RemoveAll(
-      [pCurrent, pWorldComposition](const TSharedPtr<FLevelModel>& pLevel) {
-        // Remove persistent levels.
-        if (pLevel->IsPersistent()) {
-          return true;
-        }
-
-        // Remove the now-current level.
-        if (pLevel->GetLevelObject() == pCurrent) {
-          return true;
-        }
-
-        WorldCompositionLevelPair compositionLevel = findWorldCompositionLevel(
-            pWorldComposition,
-            pLevel->GetLongPackageName());
-
-        // Remove levels that are not part of the world composition.
-        if (!compositionLevel.pLevelStreaming || !compositionLevel.pTile) {
-          return true;
-        }
-
-        // Remove levels that Unreal Engine is handling distance-based streaming
-        // for. Hiding such a level that UE thinks should be shown would cause
-        // the level to toggle on and off continually.
-        if (compositionLevel.pTile->Info.Layer.DistanceStreamingEnabled) {
-          return true;
-        }
-
-        return false;
-      });
-
-  pWorldModel->HideLevels(levelsToHide);
-
-  // Set the georeference origin for the new level if it's enabled.
-  if (pCesiumLevel->Enabled) {
-    this->_setGeoreferenceOrigin(
-        pCesiumLevel->LevelLongitude,
-        pCesiumLevel->LevelLatitude,
-        pCesiumLevel->LevelHeight);
-  }
-}
-
-void ACesiumGeoreference::_enableAndGeoreferenceCurrentSubLevel() {
-  // If a sub-level is the current one, enable it and also update the
-  // sub-level's location.
-  ULevel* pCurrent = this->GetWorld()->GetCurrentLevel();
-  if (!pCurrent || pCurrent->IsPersistentLevel()) {
-    return;
-  }
-
-  UPackage* pLevelPackage = pCurrent->GetOutermost();
-  FCesiumSubLevel* pLevel =
-      this->_findCesiumSubLevelByName(pLevelPackage->GetFName(), false);
-
-  if (pLevel) {
-    pLevel->LevelLongitude = this->OriginLongitude;
-    pLevel->LevelLatitude = this->OriginLatitude;
-    pLevel->LevelHeight = this->OriginHeight;
-
-    pLevel->Enabled = pLevel->CanBeEnabled;
-  }
-}
-
-#endif
-
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
   // Only a Georeference in the PersistentLevel should manage sub-levels.
-  return !this->GetLevel()->IsPersistentLevel();
+  return this->GetLevel()->IsPersistentLevel();
 }
