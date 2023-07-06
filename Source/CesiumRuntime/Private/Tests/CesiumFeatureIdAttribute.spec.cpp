@@ -1,6 +1,6 @@
 #include "CesiumFeatureIdAttribute.h"
-#include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumFeatureIdSpecUtility.h"
+#include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;

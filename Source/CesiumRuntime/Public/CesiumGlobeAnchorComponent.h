@@ -45,7 +45,7 @@ private:
   /**
    * The resolved georeference used by this component. This is not serialized
    * because it may point to a Georeference in the PersistentLevel while this
-   * component is in a sublevel. If the Georeference property is specified,
+   * component is in a sub-level. If the Georeference property is specified,
    * however then this property will have the same value.
    *
    * This property will be null before ResolveGeoreference is called, which

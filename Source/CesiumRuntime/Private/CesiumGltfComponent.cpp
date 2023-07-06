@@ -212,7 +212,7 @@ static void mikkGetPosition(
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   const TMeshVector3& position = vertices[FaceIdx * 3 + VertIdx].Position;
   Position[0] = position.X;
-  Position[1] = position.Y;
+  Position[1] = -position.Y;
   Position[2] = position.Z;
 }
 
@@ -225,7 +225,7 @@ static void mikkGetNormal(
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   const TMeshVector3& normal = vertices[FaceIdx * 3 + VertIdx].TangentZ;
   Normal[0] = normal.X;
-  Normal[1] = normal.Y;
+  Normal[1] = -normal.Y;
   Normal[2] = normal.Z;
 }
 
@@ -250,10 +250,19 @@ static void mikkSetTSpaceBasic(
   TArray<FStaticMeshBuildVertex>& vertices =
       *reinterpret_cast<TArray<FStaticMeshBuildVertex>*>(Context->m_pUserData);
   FStaticMeshBuildVertex& vertex = vertices[FaceIdx * 3 + VertIdx];
-  vertex.TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
-  vertex.TangentY =
-      BitangentSign *
-      TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX);
+
+  FVector3f TangentZ = vertex.TangentZ;
+  TangentZ.Y = -TangentZ.Y;
+
+  FVector3f TangentX = TMeshVector3(Tangent[0], Tangent[1], Tangent[2]);
+  FVector3f TangentY =
+      BitangentSign * TMeshVector3::CrossProduct(TangentZ, TangentX);
+
+  TangentX.Y = -TangentX.Y;
+  TangentY.Y = -TangentY.Y;
+
+  vertex.TangentX = TangentX;
+  vertex.TangentY = TangentY;
 }
 
 static void computeTangentSpace(TArray<FStaticMeshBuildVertex>& vertices) {
@@ -293,9 +302,17 @@ static void computeFlatNormals(
     FStaticMeshBuildVertex& v1 = vertices[i + 1];
     FStaticMeshBuildVertex& v2 = vertices[i + 2];
 
+    // The Y axis has previously been inverted, so undo that before
+    // computing the normal direction. Then invert the Y coordinate of the
+    // normal, too.
+
     TMeshVector3 v01 = v1.Position - v0.Position;
+    v01.Y = -v01.Y;
     TMeshVector3 v02 = v2.Position - v0.Position;
+    v02.Y = -v02.Y;
     TMeshVector3 normal = TMeshVector3::CrossProduct(v01, v02);
+
+    normal.Y = -normal.Y;
 
     v0.TangentX = v1.TangentX = v2.TangentX = TMeshVector3(0.0f);
     v0.TangentY = v1.TangentY = v2.TangentY = TMeshVector3(0.0f);
@@ -833,8 +850,8 @@ static void loadPrimitive(
         glm::vec3(transform * glm::dvec4(maxPosition - minPosition, 0));
 
     FBox aaBox(
-        FVector3d(minPosition.x, minPosition.y, minPosition.z),
-        FVector3d(maxPosition.x, maxPosition.y, maxPosition.z));
+        FVector3d(minPosition.x, -minPosition.y, minPosition.z),
+        FVector3d(maxPosition.x, -maxPosition.y, maxPosition.z));
 
     aaBox.GetCenterAndExtents(
         RenderData->Bounds.Origin,
@@ -889,7 +906,10 @@ static void loadPrimitive(
       for (int i = 0; i < indices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
-        vertex.Position = positionView[vertexIndex];
+        const TMeshVector3& pos = positionView[vertexIndex];
+        vertex.Position.X = pos.X;
+        vertex.Position.Y = -pos.Y;
+        vertex.Position.Z = pos.Z;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -900,7 +920,10 @@ static void loadPrimitive(
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyPositions)
       for (int i = 0; i < StaticMeshBuildVertices.Num(); ++i) {
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
-        vertex.Position = positionView[i];
+        const TMeshVector3& pos = positionView[i];
+        vertex.Position.X = pos.X;
+        vertex.Position.Y = -pos.Y;
+        vertex.Position.Z = pos.Z;
         vertex.UVs[0] = TMeshVector2(0.0f, 0.0f);
         vertex.UVs[2] = TMeshVector2(0.0f, 0.0f);
         RenderData->Bounds.SphereRadius = FMath::Max(
@@ -1061,7 +1084,10 @@ static void loadPrimitive(
         uint32 vertexIndex = indices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
         vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[vertexIndex];
+        const TMeshVector3& normal = normalAccessor[vertexIndex];
+        vertex.TangentZ.X = normal.X;
+        vertex.TangentZ.Y = -normal.Y;
+        vertex.TangentZ.Z = normal.Z;
       }
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::CopyNormals)
@@ -1069,7 +1095,10 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         vertex.TangentX = TMeshVector3(0.0f, 0.0f, 0.0f);
         vertex.TangentY = TMeshVector3(0.0f, 0.0f, 0.0f);
-        vertex.TangentZ = normalAccessor[i];
+        const TMeshVector3& normal = normalAccessor[i];
+        vertex.TangentZ.X = normal.X;
+        vertex.TangentZ.Y = -normal.Y;
+        vertex.TangentZ.Z = normal.Z;
       }
     }
   } else {
@@ -1083,6 +1112,7 @@ static void loadPrimitive(
               CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
                   glm::dvec3(ecefCenter)),
               0.0)));
+      upDir.Y *= -1;
       setUniformNormals(indices, StaticMeshBuildVertices, upDir);
     } else {
       TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ComputeFlatNormals)
@@ -1097,7 +1127,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         uint32 vertexIndex = indices[i];
         const TMeshVector4& tangent = tangentAccessor[vertexIndex];
-        vertex.TangentX = tangent;
+        vertex.TangentX.X = tangent.X;
+        vertex.TangentX.Y = -tangent.Y;
+        vertex.TangentX.Z = tangent.Z;
         vertex.TangentY =
             TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
             tangent.W;
@@ -1108,6 +1140,9 @@ static void loadPrimitive(
         FStaticMeshBuildVertex& vertex = StaticMeshBuildVertices[i];
         const TMeshVector4& tangent = tangentAccessor[i];
         vertex.TangentX = tangent;
+        vertex.TangentX.X = tangent.X;
+        vertex.TangentX.Y = -tangent.Y;
+        vertex.TangentX.Z = tangent.Z;
         vertex.TangentY =
             TMeshVector3::CrossProduct(vertex.TangentZ, vertex.TangentX) *
             tangent.W;
@@ -1158,22 +1193,10 @@ static void loadPrimitive(
   section.bCastShadow = true;
   section.MaterialIndex = 0;
 
-  // Note that we're reversing the order of the indices, because the change
-  // from the glTF right-handed to the Unreal left-handed coordinate system
-  // reverses the winding order.
-  // Note also that we don't want to just flip the index buffer, since that
-  // will change the order of the faces.
   if (duplicateVertices) {
     TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 2; i < indices.Num(); i += 3) {
-      indices[i - 2] = i;
-      indices[i - 1] = i - 1;
-      indices[i] = i - 2;
-    }
-  } else {
-    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::ReverseWindingOrder)
-    for (int32 i = 2; i < indices.Num(); i += 3) {
-      std::swap(indices[i - 2], indices[i]);
+    for (int32 i = 0; i < indices.Num(); i++) {
+      indices[i] = i;
     }
   }
 
@@ -1196,9 +1219,34 @@ static void loadPrimitive(
   primitiveResult.pModel = &model;
   primitiveResult.pMeshPrimitive = &primitive;
   primitiveResult.RenderData = std::move(RenderData);
-  primitiveResult.transform = transform;
   primitiveResult.pMaterial = &material;
   primitiveResult.pCollisionMesh = nullptr;
+
+  // This matrix converts from right-handed Z-up to Unreal
+  // left-handed Z-up by flipping the Y axis. It effectively undoes the Y-axis
+  // flipping that we did when creating the mesh in the first place. This is
+  // necessary to work around a problem in UE 5.1 where negatively-scaled meshes
+  // don't work correctly for collision.
+  // See https://github.com/CesiumGS/cesium-unreal/pull/1126
+  static constexpr glm::dmat4 yInvertMatrix = {
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0};
+
+  primitiveResult.transform = transform * yInvertMatrix;
 
   if (primitive.mode != MeshPrimitive::Mode::POINTS &&
       options.pMeshOptions->pNodeOptions->pModelOptions->createPhysicsMeshes) {

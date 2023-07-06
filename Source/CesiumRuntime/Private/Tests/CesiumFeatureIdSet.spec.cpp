@@ -86,9 +86,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -239,9 +239,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -251,7 +251,8 @@ void FCesiumFeatureIdSetSpec::Define() {
               4,
               2,
               2,
-              texCoords, 0);
+              texCoords,
+              0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       const FCesiumFeatureIdTexture texture =
@@ -348,9 +349,9 @@ void FCesiumFeatureIdSetSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -360,7 +361,8 @@ void FCesiumFeatureIdSetSpec::Define() {
               4,
               2,
               2,
-              texCoords, 0);
+              texCoords,
+              0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       for (size_t i = 0; i < featureIDs.size(); i++) {
@@ -423,9 +425,9 @@ void FCesiumFeatureIdSetSpec::Define() {
          const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
          const std::vector<glm::vec2> texCoords{
              glm::vec2(0, 0),
-             glm::vec2(0.45, 0),
-             glm::vec2(0, 0.45),
-             glm::vec2(0.6, 0.6)};
+             glm::vec2(0.5, 0),
+             glm::vec2(0, 0.5),
+             glm::vec2(0.5, 0.5)};
 
          ExtensionExtMeshFeaturesFeatureId& featureId =
              AddFeatureIDsAsTextureToModel(
@@ -435,7 +437,8 @@ void FCesiumFeatureIdSetSpec::Define() {
                  4,
                  2,
                  2,
-                 texCoords, 0);
+                 texCoords,
+                 0);
          featureId.propertyTable = 0;
 
          const std::string expectedName = "PropertyTableName";

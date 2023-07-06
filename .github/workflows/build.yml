@@ -12,38 +12,22 @@ jobs:
           npm install
           npm run format -- --dry-run -Werror
   Windows50:
-    runs-on: ["self-hosted","windows","x64","unreal-50"]
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0 # so that `git describe` works.
-      - name: Set environment variables
-        run: |
-          choco install -y dotnetcore-sdk
-          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-50-windows-${ENV:CESIUM_UNREAL_VERSION}"
-          # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-      - name: Install nasm
-        uses: ilammy/setup-nasm@v1.4.0
-      - name: Build cesium-native
-        run: |
-          cd extern
-          cmake -B build -S . -A x64
-          cmake --build build --config Release --target install -j8
-      - name: Build plugin
-        run: |
-          cd "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
-          ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
-      - name: Publish plugin package artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
-          path: packages
+    uses: ./.github/workflows/buildWindows.yml
+    with:
+      unreal-engine-version: "5.0.0"
+      unreal-runner-label: "unreal-50"
+      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+      upload-package-base-name: "CesiumForUnreal-50-windows"
+    secrets: inherit
+  TestWindows50:
+    needs: [Windows50]
+    uses: ./.github/workflows/testWindows.yml
+    with:
+      unreal-runner-label: "unreal-50"
+      unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
+      test-package-base-name: "CesiumForUnreal-50-windows"
+    secrets: inherit
   Android50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
     steps:
@@ -74,7 +58,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   Linux50:
     runs-on: ["self-hosted","windows","x64","unreal-50"]
@@ -110,7 +94,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   macOS50:
     runs-on: macos-11
@@ -155,7 +139,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   iOS50:
     runs-on: macos-11
@@ -200,7 +184,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   Combine50:
     runs-on: ubuntu-latest
@@ -220,67 +204,62 @@ jobs:
       - name: Download iOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-50-ios-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-50-ios-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download macOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-50-macos-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-50-macos-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-50-android-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-50-android-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Linux build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-50-linux-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-50-linux-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Windows build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-50-windows-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-50-windows-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Publish combined package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
+  TestPackage50:
+    needs: [Combine50]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    with:
+      unreal-engine-association: "5.0"
+      unreal-runner-label: "unreal-50"
+      unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Binaries/Win64"
+      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Build/BatchFiles"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.0/Engine/Plugins"
+      test-package-base-name: "CesiumForUnreal-50"
+    secrets: inherit
   Windows51:
-    runs-on: ["self-hosted","windows","x64","unreal-51"]
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0 # so that `git describe` works.
-      - name: Set environment variables
-        run: |
-          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-51-windows-${ENV:CESIUM_UNREAL_VERSION}"
-          # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-      - name: Install nasm
-        uses: ilammy/setup-nasm@v1.4.0
-      - name: Build cesium-native
-        run: |
-          cd extern
-          cmake -B build -S . -A x64
-          cmake --build build --config Release --target install -j8
-      - name: Build plugin
-        run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "5.1.0"') | Set-Content -Path CesiumForUnreal.uplugin
-          cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
-          ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
-      - name: Publish plugin package artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
-          path: packages
+    uses: ./.github/workflows/buildWindows.yml
+    with:
+      unreal-engine-version: "5.1.0"
+      unreal-runner-label: "unreal-51"
+      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
+      upload-package-base-name: "CesiumForUnreal-51-windows"
+    secrets: inherit
+  TestWindows51:
+    needs: [Windows51]
+    uses: ./.github/workflows/testWindows.yml
+    with:
+      unreal-runner-label: "unreal-51"
+      unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Plugins"
+      test-package-base-name: "CesiumForUnreal-51-windows"
+    secrets: inherit
   Android51:
     runs-on: ["self-hosted","windows","x64","unreal-51"]
     steps:
@@ -306,31 +285,13 @@ jobs:
       - name: Build plugin
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "5.1.0"') | Set-Content -Path CesiumForUnreal.uplugin
-          # UE 5.1 seems to have a bug where the Android precompiled files are in the wrong place.
-          # See https://forums.unrealengine.com/t/5-1-missing-precompiled-manifest-error-when-building-code-plugin-for-android/691983
-          # So we fix it here.
-          mkdir -p "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\arm64"
-          New-Item -ItemType Junction -Path "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\arm64\UnrealGame" -Target "C:\Program Files\Epic Games\UE_5.1\Engine\Intermediate\Build\Android\UnrealGame"
-          cd "C:\Program Files\Epic Games\UE_5.1\Engine\Plugins"
-          Get-ChildItem -Recurse -Directory -Name | Where-Object {$_.EndsWith("Android\UnrealGame")} | ForEach-Object {
-            $oldPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_))
-            $newPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD, $_, "..", "arm64"))
-            mkdir -p "$newPath"
-            New-Item -ItemType Junction -Path "$newPath\UnrealGame" -Target "$oldPath"
-          }
-
-          # Do the actual plugin build
           cd "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
           ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Android -NoHostPlatform
-
-          # But then the built plugin will have `Intermediate/Build/Android/arm64/UnrealGame` instead of `Intermediate/Build/Android/arm64/UnrealGame`
-          # which will cause problems when we try to package a game for Android. So fix that up.
-          mv $ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal/Intermediate/Build/Android/arm64/UnrealGame $ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal/Intermediate/Build/Android/UnrealGame
       - name: Publish plugin package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   Linux51:
     runs-on: ["self-hosted","windows","x64","unreal-51"]
@@ -368,7 +329,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   macOS51:
     runs-on: macos-12
@@ -414,7 +375,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   iOS51:
     runs-on: macos-12
@@ -464,7 +425,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   Combine51:
     runs-on: ubuntu-latest
@@ -484,67 +445,61 @@ jobs:
       - name: Download iOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-51-ios-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-51-ios-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download macOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-51-macos-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-51-macos-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-51-android-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-51-android-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Linux build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-51-linux-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-51-linux-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Windows build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-51-windows-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-51-windows-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Publish combined package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
+  TestPackage51:
+    needs: [Combine51]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    with:
+      unreal-engine-association: "5.1"
+      unreal-runner-label: "unreal-51"
+      unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64"
+      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Plugins"
+      test-package-base-name: "CesiumForUnreal-51"
+    secrets: inherit
   Windows52:
-    runs-on: ["self-hosted","windows","x64","unreal-52"]
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 0 # so that `git describe` works.
-      - name: Set environment variables
-        run: |
-          $ENV:CESIUM_UNREAL_VERSION=$(git describe)
-          $ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME="CesiumForUnreal-52-windows-${ENV:CESIUM_UNREAL_VERSION}"
-          # Make these available to subsequent steps
-          echo "CESIUM_UNREAL_VERSION=${ENV:CESIUM_UNREAL_VERSION}" >> $ENV:GITHUB_ENV
-          echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${ENV:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $ENV:GITHUB_ENV
-      - name: Install nasm
-        uses: ilammy/setup-nasm@v1.4.0
-      - name: Build cesium-native
-        run: |
-          cd extern
-          cmake -B build -S . -A x64
-          cmake --build build --config Release --target install -j8
-      - name: Build plugin
-        run: |
-          ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "5.2.0"') | Set-Content -Path CesiumForUnreal.uplugin
-          cd "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
-          ./RunUAT.bat BuildPlugin -Plugin="$ENV:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$ENV:GITHUB_WORKSPACE/packages/CesiumForUnreal" -CreateSubFolder -TargetPlatforms=Win64
-      - name: Publish plugin package artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
-          path: packages
+    uses: ./.github/workflows/buildWindows.yml
+    with:
+      unreal-engine-version: "5.2.0"
+      unreal-runner-label: "unreal-52"
+      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
+      upload-package-base-name: "CesiumForUnreal-52-windows"
+  TestWindows52:
+    needs: [Windows52]
+    uses: ./.github/workflows/testWindows.yml
+    with:
+      unreal-runner-label: "unreal-52"
+      unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Plugins"
+      test-package-base-name: "CesiumForUnreal-52-windows"
+    secrets: inherit
   Android52:
     runs-on: ["self-hosted","windows","x64","unreal-52"]
     steps:
@@ -576,7 +531,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   Linux52:
     runs-on: ["self-hosted","linux","x64","unreal-52"]
@@ -628,7 +583,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   macOS52:
     runs-on: macos-12
@@ -684,7 +639,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   iOS52:
     runs-on: macos-13
@@ -730,7 +685,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   Combine52:
     runs-on: ubuntu-latest
@@ -750,31 +705,42 @@ jobs:
       - name: Download iOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-52-ios-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-52-ios-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download macOS build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-52-macos-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-52-macos-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Android build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-52-android-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-52-android-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Linux build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-52-linux-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-52-linux-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Download Windows build
         uses: actions/download-artifact@v3
         with:
-          name: CesiumForUnreal-52-windows-${{ env.CESIUM_UNREAL_VERSION}}.zip
+          name: CesiumForUnreal-52-windows-${{ env.CESIUM_UNREAL_VERSION}}
           path: combine
       - name: Publish combined package artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}.zip
+          name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: combine
+  TestPackage52:
+    needs: [Combine52]
+    uses: ./.github/workflows/testPackageOnWindows.yml
+    with:
+      unreal-engine-association: "5.2"
+      unreal-runner-label: "unreal-52"
+      unreal-binaries-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64"
+      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
+      unreal-plugins-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Plugins"
+      test-package-base-name: "CesiumForUnreal-52"
+    secrets: inherit

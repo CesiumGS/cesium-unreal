@@ -1,6 +1,6 @@
-#include "CesiumPrimitiveFeatures.h"
 #include "CesiumFeatureIdSpecUtility.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;
@@ -68,8 +68,8 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       const std::vector<uint8_t> textureIDs{1, 2, 3};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0.86, 0)};
+          glm::vec2(0.34, 0),
+          glm::vec2(0.67, 0)};
       AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,
@@ -128,8 +128,8 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       const std::vector<uint8_t> textureIDs{1, 2, 3};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(1, 0)};
+          glm::vec2(0.34, 0),
+          glm::vec2(0.67, 0)};
       AddFeatureIDsAsTextureToModel(
           model,
           *pPrimitive,

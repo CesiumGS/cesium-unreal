@@ -1,0 +1,108 @@
+name: Test Windows
+
+on:
+  workflow_call:
+    inputs:
+      unreal-runner-label:
+        required: true
+        type: string
+      unreal-binaries-path:
+        required: true
+        type: string
+      unreal-plugins-path:
+        required: true
+        type: string
+      test-package-base-name:
+        required: true
+        type: string
+jobs:
+  test:
+    runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # so that `git describe` works.
+          sparse-checkout: |
+            .github
+            TestsProject      
+      - name: Set environment variables
+        run: |
+          $env:CESIUM_UNREAL_VERSION=$(git describe)
+          $env:PLUGIN_PACKAGE_NAME="${{ inputs.test-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
+          $env:TESTS_PROJECT_ROOT="$env:GITHUB_WORKSPACE/TestsProject"
+          $env:TESTS_PROJECT_LOGS="$env:TESTS_PROJECT_ROOT/Saved/Logs"
+
+          # Make these available to subsequent steps
+          echo "PLUGIN_PACKAGE_NAME=${env:PLUGIN_PACKAGE_NAME}" >> $env:GITHUB_ENV
+          echo "TESTS_PROJECT_ROOT=${env:TESTS_PROJECT_ROOT}" >> $env:GITHUB_ENV
+          echo "TESTS_PROJECT_LOGS=${env:TESTS_PROJECT_LOGS}" >> $env:GITHUB_ENV
+
+          # Confirm vars to the console
+          echo ""
+          echo unreal-binaries-path="${{ inputs.unreal-binaries-path }}"
+          echo unreal-plugins-path="${{ inputs.unreal-plugins-path }}"
+          echo PLUGIN_PACKAGE_NAME=$env:PLUGIN_PACKAGE_NAME          
+          echo TESTS_PROJECT_ROOT=$env:TESTS_PROJECT_ROOT
+          echo TESTS_PROJECT_LOGS=$env:TESTS_PROJECT_LOGS
+      - name: Download plugin artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.PLUGIN_PACKAGE_NAME}}
+          path: download          
+      - name: Install plugin to Unreal Engine
+        run: |
+          dir download/CesiumForUnreal
+          md "${{ inputs.unreal-plugins-path }}/Marketplace"
+          cp "download/CesiumForUnreal" "${{ inputs.unreal-plugins-path }}/Marketplace" -r      
+      - name: Show plugin engine version
+        run: |
+          cd download/CesiumForUnreal
+          dir
+          Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
+      - name: Run Cesium tests
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          cd "${{ inputs.unreal-binaries-path }}"
+          ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
+      - name: Display tests log 
+        run: |
+          cd "$env:TESTS_PROJECT_LOGS"  
+          dir 
+          Get-Content TestsProject.log          
+      - name: Display tests report
+        run: |
+          cd "$env:TESTS_PROJECT_LOGS"
+          Get-Content index.json
+      - name: Evaluate tests results
+        run: |
+          $env:TEST_STATUS="Pending"
+          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
+
+          cd "$env:TESTS_PROJECT_LOGS"
+
+          # Define function to parse json recursively
+          function Parse-JsonRecursively($jsonObject) {
+              foreach ($property in $jsonObject.PSObject.Properties) {
+                  $name = $property.Name
+                  $value = $property.Value
+
+                  # If the property value is another object, call function recursively
+                  if ($value -is [PSCustomObject]) {
+                      Parse-JsonRecursively($value)
+                  }
+                  else {
+                      # If "state:fail" entry is found in json, set failure state
+                      if($name -eq "state" -and $value -eq "fail") {
+                          $env:TEST_STATUS="Failure"
+                          return
+                      }
+                  }
+              }
+          }
+
+          $env:TEST_STATUS="Success" # Set status to success at start
+          $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
+          Parse-JsonRecursively -jsonObject $json # Parse json
+          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV # Export result to github environment variables          

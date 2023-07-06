@@ -442,6 +442,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
 
   EncodedMetadataPrimitive result;
 
+  // clang-format off
   //const TArray<FCesiumFeatureIdTexture>& featureIdTextures =
   //    UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(primitive);
   //const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes =
@@ -583,6 +584,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
   //    }
   //  }
   //}
+  // clang-format on
 
   return result;
 }

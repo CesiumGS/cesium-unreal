@@ -21,7 +21,7 @@ UENUM(BlueprintType)
 enum ECesiumFeatureIdTextureStatus {
   /* The feature ID texture is valid. */
   Valid = 0,
-  /* The feature ID texture cannot be found in the glTF, of the texture itself
+  /* The feature ID texture cannot be found in the glTF, or the texture itself
      has errors. */
   ErrorInvalidTexture,
   /* The feature ID texture is being read in an invalid way -- for example,
@@ -57,7 +57,7 @@ public:
   /**
    * @brief Constructs a feature ID texture instance.
    *
-   * @param InModel The model.
+   * @param Model The model.
    * @param Primitive The mesh primitive containing the feature ID texture.
    * @param FeatureIdTexture The texture specified by the
    * ExtensionExtMeshFeaturesFeatureId.
@@ -65,8 +65,8 @@ public:
    * corresponds to, if one exists, for backwards compatibility.
    */
   FCesiumFeatureIdTexture(
-      const CesiumGltf::Model& InModel,
-      const CesiumGltf::MeshPrimitive Primitive,
+      const CesiumGltf::Model& Model,
+      const CesiumGltf::MeshPrimitive& Primitive,
       const CesiumGltf::ExtensionExtMeshFeaturesFeatureIdTexture&
           FeatureIdTexture,
       const FString& PropertyTableName);

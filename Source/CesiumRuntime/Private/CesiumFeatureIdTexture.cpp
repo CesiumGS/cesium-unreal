@@ -60,12 +60,12 @@ struct TexCoordFromAccessor {
 } // namespace
 
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
-    const Model& InModel,
-    const MeshPrimitive Primitive,
+    const Model& Model,
+    const MeshPrimitive& Primitive,
     const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
-      _featureIdTextureView(InModel, FeatureIdTexture),
+      _featureIdTextureView(Model, FeatureIdTexture),
       _texCoordAccessor(),
       _textureCoordinateIndex(FeatureIdTexture.texCoord),
       _propertyTableName(PropertyTableName) {
@@ -97,7 +97,7 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
   }
 
   const Accessor* accessor =
-      InModel.getSafe<Accessor>(&InModel.accessors, texCoord->second);
+      Model.getSafe<Accessor>(&Model.accessors, texCoord->second);
   if (!accessor || accessor->type != Accessor::Type::VEC2) {
     return;
   }
@@ -110,7 +110,7 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     }
     this->_texCoordAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint8_t>>(
-            InModel,
+            Model,
             *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::UNSIGNED_SHORT:
@@ -120,13 +120,13 @@ FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     }
     this->_texCoordAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<uint16_t>>(
-            InModel,
+            Model,
             *accessor);
     break;
   case CesiumGltf::Accessor::ComponentType::FLOAT:
     this->_texCoordAccessor =
         CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::VEC2<float>>(
-            InModel,
+            Model,
             *accessor);
     break;
   default:

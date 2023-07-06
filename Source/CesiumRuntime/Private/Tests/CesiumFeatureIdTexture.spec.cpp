@@ -1,5 +1,5 @@
-#include "CesiumFeatureIdTexture.h"
 #include "CesiumFeatureIdSpecUtility.h"
+#include "CesiumFeatureIdTexture.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "Misc/AutomationTest.h"
 
@@ -94,9 +94,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.9, 0.9)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -238,9 +238,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -314,9 +314,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -360,9 +360,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoords{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
@@ -400,9 +400,9 @@ void FCesiumFeatureIdTextureSpec::Define() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
       const std::vector<glm::vec2> texCoord0{
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0, 0.45),
-          glm::vec2(0.6, 0.6)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0, 0.5),
+          glm::vec2(0.5, 0.5)};
 
       std::vector<std::byte> values(texCoord0.size());
       std::memcpy(values.data(), texCoord0.data(), values.size());
@@ -416,10 +416,10 @@ void FCesiumFeatureIdTextureSpec::Define() {
           std::move(values));
 
       const std::vector<glm::vec2> texCoord1{
-          glm::vec2(0.6, 0.6),
+          glm::vec2(0.5, 0.5),
           glm::vec2(0, 0),
-          glm::vec2(0.45, 0),
-          glm::vec2(0.0, 0.45)};
+          glm::vec2(0.5, 0),
+          glm::vec2(0.0, 0.5)};
 
       ExtensionExtMeshFeaturesFeatureId& featureId =
           AddFeatureIDsAsTextureToModel(

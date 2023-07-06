@@ -239,6 +239,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
               featureTable.AccessType ==
               ECesiumFeatureTableAccessType::Unknown) {
             featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
+            // clang-format off
             // switch (texture.getFeatureIdTextureView().getChannel()) {
             // case 1:
             //   featureTable.Channel = "g";
@@ -253,6 +254,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
             // default:
             //   featureTable.Channel = "r";
             // }
+            // clang-format on
           }
         }
       }

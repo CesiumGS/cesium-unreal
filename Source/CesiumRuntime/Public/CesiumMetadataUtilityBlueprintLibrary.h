@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CesiumFeatureTable.h"
 #include "CesiumFeatureIdAttribute.h"
+#include "CesiumFeatureTable.h"
 #include "CesiumMetadataGenericValue.h"
 #include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"

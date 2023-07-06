@@ -29,11 +29,18 @@ public:
    * Construct an empty primitive metadata instance.
    */
   FCesiumMetadataPrimitive()
-      : _pPrimitiveFeatures(nullptr), _pPrimitiveMetadata(nullptr) {}
+      : _pPrimitiveFeatures(nullptr),
+        _pPrimitiveMetadata(nullptr),
+        _pModelMetadata(nullptr) {}
 
   /**
    * Constructs a primitive metadata instance from the new features / metadata
    * implementations for backwards compatibility.
+   *
+   * This class exists for backwards compatibility, so it requires a
+   * FCesiumPrimitiveFeatures to have been constructed beforehand. It assumes
+   * the given FCesiumPrimitiveFeatures will have the same lifetime as this
+   * instance.
    *
    * @param PrimitiveFeatures The FCesiumPrimitiveFeatures denoting the feature
    * IDs in the glTF mesh primitive.
@@ -43,7 +50,7 @@ public:
   FCesiumMetadataPrimitive(
       const FCesiumPrimitiveFeatures& PrimitiveFeatures,
       const FCesiumPrimitiveMetadata& PrimitiveMetadata,
-    const FCesiumModelMetadata& ModelMetadata);
+      const FCesiumModelMetadata& ModelMetadata);
 
 private:
   const FCesiumPrimitiveFeatures* _pPrimitiveFeatures;
