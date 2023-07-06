@@ -61,6 +61,20 @@ ACesiumCreditSystem* findValidDefaultCreditSystem(ULevel* Level) {
   AActor* DefaultCreditSystem = *DefaultCreditSystemPtr;
   return Cast<ACesiumCreditSystem>(DefaultCreditSystem);
 }
+
+bool checkIfInSubLevel(ACesiumCreditSystem* pCreditSystem) {
+  if (pCreditSystem->GetLevel() != pCreditSystem->GetWorld()->PersistentLevel) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumCreditSystem should only exist in the Persistent Level. Adding it to a sub-level may cause credits to be lost."));
+    return true;
+  } else {
+    return false;
+  }
+}
+
 } // namespace
 
 FName ACesiumCreditSystem::DEFAULT_CREDITSYSTEM_TAG =
@@ -164,6 +178,10 @@ ACesiumCreditSystem::ACesiumCreditSystem()
 
 void ACesiumCreditSystem::BeginPlay() {
   Super::BeginPlay();
+
+  if (checkIfInSubLevel(this))
+    return;
+
   this->updateCreditsViewport(true);
 }
 
@@ -176,6 +194,9 @@ static const FName LevelEditorName("LevelEditor");
 
 void ACesiumCreditSystem::OnConstruction(const FTransform& Transform) {
   Super::OnConstruction(Transform);
+
+  if (checkIfInSubLevel(this))
+    return;
 
   this->updateCreditsViewport(false);
 
