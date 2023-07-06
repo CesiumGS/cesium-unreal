@@ -74,7 +74,8 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
        actorIterator;
        ++actorIterator) {
     AActor* actor = *actorIterator;
-    if (actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
+    if (actor->GetLevel() == world->PersistentLevel &&
+        actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
       pGeoreference = Cast<ACesiumGeoreference>(actor);
       break;
     }
@@ -101,6 +102,7 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    spawnParameters.OverrideLevel = world->PersistentLevel;
     pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
     // Null check so the editor doesn't crash when it makes arbitrary calls to
     // this function without a valid world context object.

@@ -105,7 +105,8 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
        actorIterator;
        ++actorIterator) {
     AActor* actor = *actorIterator;
-    if (actor->ActorHasTag(DEFAULT_CREDITSYSTEM_TAG)) {
+    if (actor->GetLevel() == world->PersistentLevel &&
+        actor->ActorHasTag(DEFAULT_CREDITSYSTEM_TAG)) {
       pCreditSystem = Cast<ACesiumCreditSystem>(actor);
       break;
     }
@@ -131,6 +132,7 @@ ACesiumCreditSystem::GetDefaultCreditSystem(const UObject* WorldContextObject) {
     FActorSpawnParameters spawnParameters;
     spawnParameters.SpawnCollisionHandlingOverride =
         ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    spawnParameters.OverrideLevel = world->PersistentLevel;
     pCreditSystem = world->SpawnActor<ACesiumCreditSystem>(
         Cast<UClass>(CesiumCreditSystemBP),
         spawnParameters);
