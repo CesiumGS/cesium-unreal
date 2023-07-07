@@ -40,7 +40,7 @@ private:
       BlueprintSetter = SetGeoreference,
       Category = "Cesium|Georeference",
       Meta = (AllowPrivateAccess))
-  ACesiumGeoreference* Georeference = nullptr;
+  TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -60,12 +60,12 @@ private:
 
 public:
   /** @copydoc UCesiumGlobeAnchorComponent::Georeference */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* GetGeoreference() const;
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  TSoftObjectPtr<ACesiumGeoreference> GetGeoreference() const;
 
   /** @copydoc UCesiumGlobeAnchorComponent::Georeference */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetGeoreference(ACesiumGeoreference* NewGeoreference);
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
 
   /**
    * Resolves the Cesium Georeference to use with this Component. Returns

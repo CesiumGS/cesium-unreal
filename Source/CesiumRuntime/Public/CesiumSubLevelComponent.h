@@ -145,7 +145,7 @@ public:
    * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
   UFUNCTION(BlueprintGetter, Category = "Cesium")
-  ACesiumGeoreference* GetGeoreference() const;
+  TSoftObjectPtr<ACesiumGeoreference> GetGeoreference() const;
 
   /**
    * Sets the designated georeference actor controlling how the actor's
@@ -157,7 +157,7 @@ public:
    * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
   UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetGeoreference(ACesiumGeoreference* NewGeoreference);
+  void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
 
   /**
    * Gets the resolved georeference, just like calling the ResolveGeoreference
@@ -335,7 +335,7 @@ private:
       BlueprintSetter = SetGeoreference,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
-  ACesiumGeoreference* Georeference;
+  TSoftObjectPtr<ACesiumGeoreference> Georeference;
 
   /**
    * The resolved georeference used by this sub-level. This is not serialized

@@ -54,12 +54,13 @@ void UCesiumSubLevelComponent::SetLoadRadius(double value) {
   this->LoadRadius = value;
 }
 
-ACesiumGeoreference* UCesiumSubLevelComponent::GetGeoreference() const {
+TSoftObjectPtr<ACesiumGeoreference>
+UCesiumSubLevelComponent::GetGeoreference() const {
   return this->Georeference;
 }
 
 void UCesiumSubLevelComponent::SetGeoreference(
-    ACesiumGeoreference* NewGeoreference) {
+    TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
   this->Georeference = NewGeoreference;
   this->InvalidateResolvedGeoreference();
 
@@ -81,8 +82,8 @@ ACesiumGeoreference* UCesiumSubLevelComponent::ResolveGeoreference() {
     return this->ResolvedGeoreference;
   }
 
-  if (IsValid(this->Georeference)) {
-    this->ResolvedGeoreference = this->Georeference;
+  if (IsValid(this->Georeference.Get())) {
+    this->ResolvedGeoreference = this->Georeference.Get();
   } else {
     this->ResolvedGeoreference =
         ACesiumGeoreference::GetDefaultGeoreference(this);
