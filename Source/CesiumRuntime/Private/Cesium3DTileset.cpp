@@ -606,6 +606,10 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
 void ACesium3DTileset::BeginPlay() {
   Super::BeginPlay();
 
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
+
   this->LoadTileset();
 
   // Search for level sequence.
@@ -632,6 +636,10 @@ void ACesium3DTileset::BeginPlay() {
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
+
   this->LoadTileset();
 
   // Hide all existing tiles. The still-visible ones will be shown next time we
