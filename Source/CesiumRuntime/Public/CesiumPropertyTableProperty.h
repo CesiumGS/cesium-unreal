@@ -274,9 +274,9 @@ public:
       UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
   /**
-   * Gets the true metadata value type of the property. Many of these types are not
-   * accessible from Blueprints, but can be converted to a Blueprint-accessible
-   * type.
+   * Gets the true metadata value type of the property. Many of these types are
+   * not accessible from Blueprints, but can be converted to a
+   * Blueprint-accessible type.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -297,7 +297,7 @@ public:
 
   /**
    * Gets the number of elements in an array of this property. Only
-   * applicable when the property is an array type.
+   * applicable when the property is a fixed-length array type.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -570,7 +570,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Property")
-  static FCesiumMetadataValue GetGenericValue(
+  static FCesiumMetadataValue GetValue(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID);
 

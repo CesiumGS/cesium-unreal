@@ -2,7 +2,7 @@
 
 #include "CesiumFeatureIdTexture.h"
 
-#include "CesiumGltf/ExtensionExtMeshFeaturesFeatureIdTexture.h"
+#include "CesiumGltf/FeatureIdTexture.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
@@ -62,7 +62,7 @@ struct TexCoordFromAccessor {
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const Model& Model,
     const MeshPrimitive& Primitive,
-    const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture,
+    const FeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
       _featureIdTextureView(Model, FeatureIdTexture),

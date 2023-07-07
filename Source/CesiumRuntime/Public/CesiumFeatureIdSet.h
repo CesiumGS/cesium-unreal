@@ -10,7 +10,7 @@
 
 namespace CesiumGltf {
 struct Model;
-struct ExtensionExtMeshFeaturesFeatureId;
+struct FeatureId;
 } // namespace CesiumGltf
 
 /**
@@ -43,7 +43,7 @@ public:
   FCesiumFeatureIdSet(
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
-      const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId);
+      const CesiumGltf::FeatureId& FeatureId);
 
 private:
   FeatureIDType _featureID;

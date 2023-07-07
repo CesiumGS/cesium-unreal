@@ -47,7 +47,7 @@ void CreateIndicesForPrimitive(
  *
  * @returns The newly created feature ID in the primitive extension.
  */
-ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
+FeatureId& AddFeatureIDsAsAttributeToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
@@ -62,7 +62,7 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
  *
  * @returns The newly created feature ID in the primitive extension.
  */
-ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
+FeatureId& AddFeatureIDsAsTextureToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,

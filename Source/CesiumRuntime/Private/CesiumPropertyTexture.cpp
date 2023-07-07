@@ -10,20 +10,30 @@ using namespace CesiumGltf;
 static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 
 FCesiumPropertyTexture::FCesiumPropertyTexture(
-    const CesiumGltf::Model& InModel,
-    const CesiumGltf::ExtensionExtStructuralMetadataPropertyTexture&
-        PropertyTexture)
+    const CesiumGltf::Model& Model,
+    const CesiumGltf::PropertyTexture& PropertyTexture)
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidMetadataExtension),
       _name(PropertyTexture.name.value_or("").c_str()),
-      _propertyTextureView(InModel, PropertyTexture) {
+      _propertyTextureView(Model, PropertyTexture) {
   switch (this->_propertyTextureView.status()) {
   case PropertyTextureViewStatus::Valid:
     break;
+  case PropertyTextureViewStatus::ErrorMissingMetadataExtension:
   default:
     return;
     // TODO: isolate the individual property status from the whole status.
   }
 
+  //propertyTableView.forEachProperty([&properties = _properties](
+  //                                      const std::string& propertyName,
+  //                                      auto propertyValue) mutable {
+  //  FString key(UTF8_TO_TCHAR(propertyName.data()));
+  //  if (propertyValue.status() == PropertyTablePropertyViewStatus::Valid) {
+  //    properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
+  //  } else {
+  //    properties.Add(key, EmptyPropertyTableProperty);
+  //  }
+  //});
   const std::unordered_map<std::string, PropertyTexturePropertyView>&
       properties = this->_propertyTextureView.getProperties();
   this->_properties.Reserve(properties.size());

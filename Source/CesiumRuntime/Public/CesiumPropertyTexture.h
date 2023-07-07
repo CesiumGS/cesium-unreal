@@ -10,7 +10,7 @@
 
 namespace CesiumGltf {
 struct Model;
-struct ExtensionExtStructuralMetadataPropertyTexture;
+struct PropertyTexture;
 }; // namespace CesiumGltf
 
 enum class ECesiumPropertyTextureStatus : uint8 {
@@ -34,7 +34,7 @@ public:
 
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::ExtensionExtStructuralMetadataPropertyTexture&
+      const CesiumGltf::PropertyTexture&
           PropertyTexture);
 
   const CesiumGltf::PropertyTextureView& getPropertyTextureView() const {

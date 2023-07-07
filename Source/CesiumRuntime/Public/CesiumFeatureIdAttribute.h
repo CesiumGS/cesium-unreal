@@ -60,8 +60,7 @@ public:
    *
    * @param Model The model.
    * @param Primitive The mesh primitive containing the feature ID attribute.
-   * @param FeatureIDAttribute The attribute index specified by the
-   * ExtensionExtMeshFeaturesFeatureId.
+   * @param FeatureIDAttribute The attribute index specified by the FeatureId.
    * @param PropertyTableName The name of the property table this attribute
    * corresponds to, if one exists, for backwards compatibility.
    */

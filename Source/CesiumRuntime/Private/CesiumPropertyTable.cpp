@@ -11,7 +11,7 @@ static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 
 FCesiumPropertyTable::FCesiumPropertyTable(
     const Model& Model,
-    const ExtensionExtStructuralMetadataPropertyTable& PropertyTable)
+    const PropertyTable& PropertyTable)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidMetadataExtension),
       _count(PropertyTable.count),
       _name(),

@@ -7,6 +7,7 @@
 #include "CesiumUtility/JsonValue.h"
 #include <cstdlib>
 #include <glm/common.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <type_traits>
 
 // Remove? Looks like this function was always typoed...
@@ -34,16 +35,14 @@ template <typename T> struct CesiumMetadataConversions<T, T> {
   static T convert(T from, T defaultValue) { return from; }
 };
 
-//
-// Conversions to boolean
-//
+#pragma region Conversions to boolean
 
-// numeric -> bool
+// scalar -> bool
 template <typename TFrom>
 struct CesiumMetadataConversions<
     bool,
     TFrom,
-    std::enable_if_t<CesiumGltf::IsMetadataNumeric<TFrom>::value>> {
+    std::enable_if_t<CesiumGltf::IsMetadataScalar<TFrom>::value>> {
   static bool convert(TFrom from, bool defaultValue) {
     return from != static_cast<TFrom>(0);
   }
@@ -53,24 +52,26 @@ struct CesiumMetadataConversions<
 template <> struct CesiumMetadataConversions<bool, std::string_view> {
   static bool convert(const std::string_view& from, bool defaultValue) {
     FString f(from.size(), from.data());
+
     if (f.Compare("1", ESearchCase::IgnoreCase) == 0 ||
         f.Compare("true", ESearchCase::IgnoreCase) == 0 ||
         f.Compare("yes", ESearchCase::IgnoreCase) == 0) {
       return true;
-    } else if (
-        f.Compare("0", ESearchCase::IgnoreCase) == 0 ||
+    }
+
+    if (f.Compare("0", ESearchCase::IgnoreCase) == 0 ||
         f.Compare("false", ESearchCase::IgnoreCase) == 0 ||
         f.Compare("no", ESearchCase::IgnoreCase) == 0) {
       return false;
-    } else {
-      return defaultValue;
     }
+
+    return defaultValue;
   }
 };
 
-//
-// Conversions to integer
-//
+#pragma endregion
+
+#pragma region Conversions to integer
 
 // any integer -> any integer
 template <typename TTo, typename TFrom>
@@ -196,9 +197,9 @@ struct CesiumMetadataConversions<
   static TTo convert(bool from, TTo defaultValue) { return from ? 1 : 0; }
 };
 
-//
-// Conversions to string
-//
+#pragma endregion
+
+#pragma region Conversions to string
 
 // bool -> string
 template <> struct CesiumMetadataConversions<FString, bool> {
@@ -207,14 +208,25 @@ template <> struct CesiumMetadataConversions<FString, bool> {
   }
 };
 
-// numeric -> string
+// scalar -> string
 template <typename TFrom>
 struct CesiumMetadataConversions<
     FString,
     TFrom,
-    std::enable_if_t<CesiumGltf::IsMetadataNumeric<TFrom>::value>> {
+    std::enable_if_t<CesiumGltf::IsMetadataScalar<TFrom>::value>> {
   static FString convert(TFrom from, const FString& defaultValue) {
     return FString(std::to_string(from).c_str());
+  }
+};
+
+// vecN -> string
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FString,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataVecN<TFrom>::value>> {
+  static FString convert(TFrom from, const FString& defaultValue) {
+    return FString(glm::to_string(from).c_str());
   }
 };
 
@@ -226,9 +238,9 @@ template <> struct CesiumMetadataConversions<FString, std::string_view> {
   }
 };
 
-//
-// Conversions to float
-//
+#pragma endregion
+
+#pragma region Conversions to float
 
 // bool -> float
 template <> struct CesiumMetadataConversions<float, bool> {
@@ -280,9 +292,9 @@ template <> struct CesiumMetadataConversions<float, std::string_view> {
   }
 };
 
-//
-// Conversions to double
-//
+#pragma endregion
+
+#pragma region Conversions to double
 
 // bool -> double
 template <> struct CesiumMetadataConversions<double, bool> {
@@ -330,4 +342,4 @@ template <> struct CesiumMetadataConversions<double, std::string_view> {
   }
 };
 
-// TODO: conversions between vecn / matn and strings?
+#pragma endregion

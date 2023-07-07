@@ -171,31 +171,22 @@ private:
 
 public:
   /**
-   * Constructs an empty value with unknown type.
+   * Constructs an empty metadata value with unknown type.
    */
-  FCesiumMetadataValue()
-      : _value(std::monostate{}),
-        _valueType(
-            {ECesiumMetadataType::Invalid,
-             ECesiumMetadataComponentType::None,
-             false}) {}
+  FCesiumMetadataValue() : _value(std::monostate{}), _valueType() {}
 
   /**
-   * Constructs a value.
+   * Constructs a metadata value with the given input.
    *
-   * @param Value The value to be stored in this struct
+   * @param Value The value to be stored in this struct.
    */
   template <typename T>
-  explicit FCesiumMetadataValue(const T& Value)
-      : _value(Value),
-        _types(
-            {ECesiumMetadataType::Invalid,
-             ECesiumMetadataComponentType::None,
-             false}) {
+  explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
     ECesiumMetadataType type;
     ECesiumMetadataComponentType componentType;
     bool isArray;
-    if constexpr (CesiumGltf::IsMetadataArray<T>()) {
+
+    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
       using ArrayType = CesiumGltf::MetadataArrayType<T>::type;
       type =
           ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
@@ -238,8 +229,8 @@ public:
   GetBlueprintType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets best-fitting Blueprints type for the elements of this array. If this
-   * value is not an array, returns None.
+   * Gets best-fitting Blueprints type for the elements of this array value. If
+   * the given value is not an array, this returns None.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -249,9 +240,10 @@ public:
   GetArrayElementBlueprintType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets the true type of the metadata value as it is defined in the
-   * EXT_structural_metadata extension. Many of these types are not accessible
-   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   * Gets the true type of the metadata value as defined by in
+   * EXT_structural_metadata extension. Many of these types are not directly
+   * accessible from Blueprints, but can be converted to a Blueprint-accessible
+   * type.
    */
   UFUNCTION(
       BlueprintCallable,

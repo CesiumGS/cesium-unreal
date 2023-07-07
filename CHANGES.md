@@ -5,7 +5,7 @@
 ##### Breaking Changes :mega:
 
 - ECesiumMetadataTrueType is deprecated. Use 
-- FCesiumMetadataGenericValue deprecated. Use FCesiumMetadataValue instead.
+- Renamed `FCesiumMetadataGenericValue` to `FCesiumMetadataValue`.
 
 - Feature IDs are now parsed through the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`.
 - Metadata is now parsed through the `EXT_structural_metadata` extension. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.

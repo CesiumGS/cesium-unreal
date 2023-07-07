@@ -48,9 +48,9 @@ UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(
 
   for (const FCesiumPropertyTexture& propertyTexture : propertyTextures) {
     const FString& name =
-        UCesiumPropertyTableBlueprintLibrary::GetPropertyTableName(
-            propertyTable);
-    result.Emplace(name, propertyTable);
+        UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
+            propertyTexture);
+    result.Emplace(name, propertyTexture);
   }
 
   return result;

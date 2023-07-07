@@ -67,8 +67,7 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     _vertexCount = positionAccessor.count;
   }
 
-  for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
-       Features.featureIds) {
+  for (const CesiumGltf::FeatureId& FeatureId : Features.featureIds) {
     this->_featureIDSets.Add(FCesiumFeatureIdSet(Model, Primitive, FeatureId));
   }
 }

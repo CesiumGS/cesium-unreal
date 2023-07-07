@@ -10,7 +10,7 @@
 
 namespace CesiumGltf {
 struct Model;
-struct ExtensionExtStructuralMetadataPropertyTable;
+struct PropertyTable;
 } // namespace CesiumGltf
 
 UENUM(BlueprintType)
@@ -44,8 +44,7 @@ public:
    */
   FCesiumPropertyTable(
       const CesiumGltf::Model& Model,
-      const CesiumGltf::ExtensionExtStructuralMetadataPropertyTable&
-          PropertyTable);
+      const CesiumGltf::PropertyTable& PropertyTable);
 
 private:
   ECesiumPropertyTableStatus _status;

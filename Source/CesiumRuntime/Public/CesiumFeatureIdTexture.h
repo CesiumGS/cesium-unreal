@@ -10,7 +10,7 @@
 
 namespace CesiumGltf {
 struct Model;
-struct ExtensionExtMeshFeaturesFeatureIdTexture;
+struct FeatureIdTexture;
 } // namespace CesiumGltf
 
 /**
@@ -59,16 +59,14 @@ public:
    *
    * @param Model The model.
    * @param Primitive The mesh primitive containing the feature ID texture.
-   * @param FeatureIdTexture The texture specified by the
-   * ExtensionExtMeshFeaturesFeatureId.
+   * @param FeatureIdTexture The texture specified by the FeatureId.
    * @param PropertyTableName The name of the property table this texture
    * corresponds to, if one exists, for backwards compatibility.
    */
   FCesiumFeatureIdTexture(
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
-      const CesiumGltf::ExtensionExtMeshFeaturesFeatureIdTexture&
-          FeatureIdTexture,
+      const CesiumGltf::FeatureIdTexture& FeatureIdTexture,
       const FString& PropertyTableName);
 
   /**

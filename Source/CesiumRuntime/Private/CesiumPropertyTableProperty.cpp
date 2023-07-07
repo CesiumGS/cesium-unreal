@@ -185,7 +185,7 @@ FCesiumMetadataArray UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
 }
 
 FCesiumMetadataValue
-UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
+UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 featureID) {
   return std::visit(

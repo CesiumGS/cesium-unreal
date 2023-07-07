@@ -7,7 +7,7 @@
 ECesiumMetadataBlueprintType
 UCesiumMetadataValueBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
-  return CesiumMetadataTypesToBlueprintType(Value._valueType);
+  return CesiumMetadataValueTypeToBlueprintType(Value._valueType);
 }
 
 ECesiumMetadataBlueprintType
@@ -20,7 +20,7 @@ UCesiumMetadataValueBlueprintLibrary::GetArrayElementBlueprintType(
   FCesiumMetadataValueType types(Value._valueType);
   types.bIsArray = false;
 
-  return CesiumMetadataTypesToBlueprintType(types);
+  return CesiumMetadataValueTypeToBlueprintType(types);
 }
 
 FCesiumMetadataValueType UCesiumMetadataValueBlueprintLibrary::GetValueType(

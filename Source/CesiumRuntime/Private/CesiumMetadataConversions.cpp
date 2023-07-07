@@ -56,7 +56,6 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
     case ECesiumMetadataComponentType::Int16:
     case ECesiumMetadataComponentType::Uint16:
     case ECesiumMetadataComponentType::Int32:
-    // TODO: remove this one -- why?
     case ECesiumMetadataComponentType::Uint32:
       return ECesiumMetadataBlueprintType::Integer;
     case ECesiumMetadataComponentType::Int64:
@@ -69,6 +68,16 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
       return ECesiumMetadataBlueprintType::String;
     }
   }
+
+  if (type == ECesiumMetadataType::Vec3) {
+    switch (componentType) {
+    case ECesiumMetadataComponentType::Float32:
+      return ECesiumMetadataBlueprintType::FVector3f;
+    case ECesiumMetadataComponentType::Float64:
+      return ECesiumMetadataBlueprintType::FVector3;
+    }
+  }
+
   // TODO: vec and mat
 
   return ECesiumMetadataBlueprintType::None;

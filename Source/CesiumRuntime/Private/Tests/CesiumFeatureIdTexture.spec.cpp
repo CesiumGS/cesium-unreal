@@ -38,7 +38,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
     });
 
     It("constructs invalid instance for nonexistent texture", [this]() {
-      ExtensionExtMeshFeaturesFeatureIdTexture texture;
+      FeatureIdTexture texture;
       texture.index = -1;
       texture.texCoord = 0;
       texture.channels = {0};
@@ -66,7 +66,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
       gltfTexture.source = -1;
 
-      ExtensionExtMeshFeaturesFeatureIdTexture texture;
+      FeatureIdTexture texture;
       texture.index = 0;
       texture.texCoord = 0;
       texture.channels = {0};
@@ -98,7 +98,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
+      FeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
               model,
               *pPrimitive,
@@ -138,7 +138,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
          CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
          gltfTexture.source = 0;
 
-         ExtensionExtMeshFeaturesFeatureIdTexture texture;
+         FeatureIdTexture texture;
          texture.index = 0;
          texture.texCoord = 0;
          texture.channels = {0};
@@ -172,7 +172,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
          CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
          gltfTexture.source = 0;
 
-         ExtensionExtMeshFeaturesFeatureIdTexture texture;
+         FeatureIdTexture texture;
          texture.index = 0;
          texture.texCoord = 0;
          texture.channels = {0};
@@ -210,7 +210,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
       CesiumGltf::Texture& gltfTexture = model.textures.emplace_back();
       gltfTexture.source = -1;
 
-      ExtensionExtMeshFeaturesFeatureIdTexture texture;
+      FeatureIdTexture texture;
       texture.index = 0;
       texture.texCoord = 0;
       texture.channels = {0};
@@ -242,7 +242,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
+      FeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
               model,
               *pPrimitive,
@@ -285,7 +285,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
     });
 
     It("returns -1 for invalid texture", [this]() {
-      ExtensionExtMeshFeaturesFeatureIdTexture texture;
+      FeatureIdTexture texture;
       texture.index = -1;
       texture.texCoord = 0;
       texture.channels = {0};
@@ -318,7 +318,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
+      FeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
               model,
               *pPrimitive,
@@ -364,7 +364,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
+      FeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
               model,
               *pPrimitive,
@@ -421,7 +421,7 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0.5, 0),
           glm::vec2(0.0, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
+      FeatureId& featureId =
           AddFeatureIDsAsTextureToModel(
               model,
               *pPrimitive,

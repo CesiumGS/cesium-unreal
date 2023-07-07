@@ -57,6 +57,9 @@ enum class ECesiumMetadataTrueType : uint8 {
   Array
 };
 
+/**
+ * The type of a metadata property in EXT_structural_metadata.
+ */
 UENUM(BlueprintType)
 enum class ECesiumMetadataType : uint8 {
   Invalid = 0,
@@ -72,6 +75,9 @@ enum class ECesiumMetadataType : uint8 {
   String = int(CesiumGltf::PropertyType::String),
 };
 
+/**
+ * The component type of a metadata property in EXT_structural_metadata.
+ */
 UENUM(BlueprintType)
 enum class ECesiumMetadataComponentType : uint8 {
   None = 0,

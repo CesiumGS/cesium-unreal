@@ -35,7 +35,7 @@ public:
 private:
   TArray<FCesiumPropertyTable> _propertyTables;
   TArray<FCesiumPropertyTexture> _propertyTextures;
-  //  TODO: property attributes?
+  // TODO: property attributes
 
   friend class UCesiumModelMetadataBlueprintLibrary;
 };

@@ -66,7 +66,7 @@ void CreateIndicesForPrimitive(
   primitive.indices = accessor;
 }
 
-ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
+FeatureId& AddFeatureIDsAsAttributeToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
@@ -89,15 +89,14 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsAttributeToModel(
     pExtension = &primitive.addExtension<ExtensionExtMeshFeatures>();
   }
 
-  ExtensionExtMeshFeaturesFeatureId& featureID =
-      pExtension->featureIds.emplace_back();
+  FeatureId& featureID = pExtension->featureIds.emplace_back();
   featureID.featureCount = featureCount;
   featureID.attribute = attributeIndex;
 
   return featureID;
 }
 
-ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
+FeatureId& AddFeatureIDsAsTextureToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
@@ -138,11 +137,10 @@ ExtensionExtMeshFeaturesFeatureId& AddFeatureIDsAsTextureToModel(
     pExtension = &primitive.addExtension<ExtensionExtMeshFeatures>();
   }
 
-  ExtensionExtMeshFeaturesFeatureId& featureID =
-      pExtension->featureIds.emplace_back();
+  FeatureId& featureID = pExtension->featureIds.emplace_back();
   featureID.featureCount = featureCount;
 
-  ExtensionExtMeshFeaturesFeatureIdTexture featureIDTexture;
+  FeatureIdTexture featureIDTexture;
   featureIDTexture.channels = {0};
   featureIDTexture.index = 0;
   featureIDTexture.texCoord = texcoordSetIndex;

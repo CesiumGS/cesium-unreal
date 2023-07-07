@@ -29,7 +29,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("constructs from empty feature ID set", [this]() {
       // This is technically disallowed by the spec, but just make sure it's
       // handled reasonably.
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
@@ -44,7 +44,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("constructs implicit feature ID set", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -62,13 +62,12 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("constructs set with feature ID attribute", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      ExtensionExtMeshFeaturesFeatureId& featureID =
-          AddFeatureIDsAsAttributeToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              attributeIndex);
+      FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          attributeIndex);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
       TestEqual(
@@ -90,16 +89,15 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       TestEqual(
@@ -114,7 +112,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("constructs with null feature ID", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
       featureId.nullFeatureId = 0;
 
@@ -135,7 +133,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("constructs with property table index", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
       featureId.propertyTable = 1;
 
@@ -165,7 +163,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns empty instance for non-attribute feature ID set", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -183,13 +181,12 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("returns valid instance for attribute feature ID set", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      ExtensionExtMeshFeaturesFeatureId& featureID =
-          AddFeatureIDsAsAttributeToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              attributeIndex);
+      FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          attributeIndex);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
       const FCesiumFeatureIdAttribute attribute =
@@ -215,7 +212,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns empty instance for non-texture feature ID set", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -243,16 +240,15 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
       const FCesiumFeatureIdTexture texture =
@@ -290,7 +286,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns -1 for out of bounds index", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -309,7 +305,7 @@ void FCesiumFeatureIdSetSpec::Define() {
     });
 
     It("returns correct value for implicit set", [this]() {
-      ExtensionExtMeshFeaturesFeatureId featureId;
+      FeatureId featureId;
       featureId.featureCount = 10;
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
@@ -326,13 +322,12 @@ void FCesiumFeatureIdSetSpec::Define() {
     It("returns correct value for attribute set", [this]() {
       const int64 attributeIndex = 0;
       const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-      ExtensionExtMeshFeaturesFeatureId& featureID =
-          AddFeatureIDsAsAttributeToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              attributeIndex);
+      FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          attributeIndex);
 
       FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
       for (size_t i = 0; i < featureIDs.size(); i++) {
@@ -353,18 +348,17 @@ void FCesiumFeatureIdSetSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      ExtensionExtMeshFeaturesFeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureID = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
-      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+      FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
       for (size_t i = 0; i < featureIDs.size(); i++) {
         TestEqual(
             "FeatureIDForVertex",
@@ -387,20 +381,19 @@ void FCesiumFeatureIdSetSpec::Define() {
        [this]() {
          const int64 attributeIndex = 0;
          const std::vector<uint8_t> featureIDs{0, 0, 0, 1, 1, 1};
-         ExtensionExtMeshFeaturesFeatureId& featureID =
-             AddFeatureIDsAsAttributeToModel(
-                 model,
-                 *pPrimitive,
-                 featureIDs,
-                 4,
-                 attributeIndex);
+         FeatureId& featureID = AddFeatureIDsAsAttributeToModel(
+             model,
+             *pPrimitive,
+             featureIDs,
+             4,
+             attributeIndex);
          featureID.propertyTable = 0;
 
          const std::string expectedName = "PropertyTableName";
 
          ExtensionModelExtStructuralMetadata& metadataExtension =
              model.addExtension<ExtensionModelExtStructuralMetadata>();
-         ExtensionExtStructuralMetadataPropertyTable& propertyTable =
+         PropertyTable& propertyTable =
              metadataExtension.propertyTables.emplace_back();
          propertyTable.name = expectedName;
 
@@ -429,27 +422,26 @@ void FCesiumFeatureIdSetSpec::Define() {
              glm::vec2(0, 0.5),
              glm::vec2(0.5, 0.5)};
 
-         ExtensionExtMeshFeaturesFeatureId& featureId =
-             AddFeatureIDsAsTextureToModel(
-                 model,
-                 *pPrimitive,
-                 featureIDs,
-                 4,
-                 2,
-                 2,
-                 texCoords,
-                 0);
-         featureId.propertyTable = 0;
+         FeatureId& featureID = AddFeatureIDsAsTextureToModel(
+             model,
+             *pPrimitive,
+             featureIDs,
+             4,
+             2,
+             2,
+             texCoords,
+             0);
+         featureID.propertyTable = 0;
 
          const std::string expectedName = "PropertyTableName";
 
          ExtensionModelExtStructuralMetadata& metadataExtension =
              model.addExtension<ExtensionModelExtStructuralMetadata>();
-         ExtensionExtStructuralMetadataPropertyTable& propertyTable =
+         PropertyTable& propertyTable =
              metadataExtension.propertyTables.emplace_back();
          propertyTable.name = expectedName;
 
-         FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureId);
+         FCesiumFeatureIdSet featureIDSet(model, *pPrimitive, featureID);
          const FCesiumFeatureIdTexture texture =
              UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture(
                  featureIDSet);
