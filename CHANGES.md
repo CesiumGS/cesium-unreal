@@ -10,6 +10,14 @@
 
 - The "Place Georeference Origin Here" action on CesiumGeoreference is now undoable.
 - Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
+- The `CesiumCameraManager` instance to use with a `Cesium3DTileset` can now be specified with a property on the tileset. In addition to offering more flexibility, this avoids the work of finding the camera manager in the level every frame.
+- Cesium Actors created with the Quick Add or Cesium ion panels are now created inside the active sub-level, if there is one.
+- Cesium objects in sub-levels can now explicitly reference `ACesiumGeoreference`, `ACesiumCreditSystem`, and `ACesiumCameraManager` instances in the Persistent Level.
+
+##### Fixes :wrench:
+
+- Fixed a bug in `ACesiumSunSky` that could cause an error when it was created inside a sub-level.
+- `ACesiumGeoreference`, `ACesiumCameraManager`, and `ACesiumCreditSystem` are now created in the Persistent Level, even if the object that triggered their automatic creation (such as `ACesium3DTileset`) exists in a sub-level. It is very rarely useful to have instances of these objects within a sub-level.
 
 ### v1.28.0 - 2023-07-03
 

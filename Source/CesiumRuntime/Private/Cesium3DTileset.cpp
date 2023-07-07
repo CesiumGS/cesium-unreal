@@ -999,7 +999,7 @@ void ACesium3DTileset::LoadTileset() {
     this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
   }
 
-  ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
+  ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
