@@ -56,6 +56,7 @@
 #include "PixelFormat.h"
 #include "SceneTypes.h"
 #include "StereoRendering.h"
+#include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/trigonometric.hpp>
@@ -1551,8 +1552,6 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
     return {};
   }
 
-  const FTransform& tilesetToWorld = this->GetActorTransform();
-
   const TArray<FEditorViewportClient*>& viewportClients =
       GEditor->GetAllViewportClients();
 
@@ -1579,16 +1578,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       rotation = pEditorViewportClient->GetViewRotation();
     }
 
-    const FVector& worldLocation = pEditorViewportClient->GetViewLocation();
-
-    // The camera location/rotation is in world coordinates. Transform it to
-    // tileset coordinates.
-    FVector tilesetLocation =
-        tilesetToWorld.InverseTransformPosition(worldLocation);
-    FRotator tilesetRotation =
-        tilesetToWorld.InverseTransformRotation(rotation.Quaternion())
-            .Rotator();
-
+    const FVector& location = pEditorViewportClient->GetViewLocation();
     double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
@@ -1607,12 +1597,12 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
       cameras.emplace_back(
           size,
-          tilesetLocation,
-          tilesetRotation,
+          location,
+          rotation,
           fov,
           pEditorViewportClient->AspectRatio);
     } else {
-      cameras.emplace_back(size, tilesetLocation, tilesetRotation, fov);
+      cameras.emplace_back(size, location, rotation, fov);
     }
   }
 
@@ -2027,13 +2017,18 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  glm::dmat4 unrealWorldToTileset = glm::affineInverse(
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+  glm::dmat4 ueTilesetToUeWorld =
+      VecMath::createMatrix4D(this->GetActorTransform().ToMatrixWithScale());
+
+  const glm::dmat4& cesiumTilesetToUeTileset =
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
+  glm::dmat4 unrealWorldToCesiumTileset =
+      glm::affineInverse(ueTilesetToUeWorld * cesiumTilesetToUeTileset);
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(
-        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+        CreateViewStateFromViewParameters(camera, unrealWorldToCesiumTileset));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
