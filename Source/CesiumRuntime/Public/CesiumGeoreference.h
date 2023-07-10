@@ -55,6 +55,9 @@ public:
 
   ACesiumGeoreference();
 
+  UPROPERTY(VisibleAnywhere)
+  USceneComponent* Root;
+
   /*
    * Whether to visualize the level loading radii in the editor. Helpful for
    * initially positioning the level and choosing a load radius.

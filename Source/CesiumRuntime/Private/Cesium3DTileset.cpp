@@ -995,7 +995,6 @@ void ACesium3DTileset::LoadTileset() {
         GetCesiumTilesetToUnrealRelativeWorldTransform();
     this->BoundingVolumePoolComponent =
         NewObject<UCesiumBoundingVolumePoolComponent>(this);
-    this->BoundingVolumePoolComponent->SetUsingAbsoluteLocation(true);
     this->BoundingVolumePoolComponent->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     this->BoundingVolumePoolComponent->RegisterComponent();
@@ -1552,6 +1551,8 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
     return {};
   }
 
+  const FTransform& tilesetToWorld = this->GetActorTransform();
+
   const TArray<FEditorViewportClient*>& viewportClients =
       GEditor->GetAllViewportClients();
 
@@ -1578,7 +1579,16 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
       rotation = pEditorViewportClient->GetViewRotation();
     }
 
-    const FVector& location = pEditorViewportClient->GetViewLocation();
+    const FVector& worldLocation = pEditorViewportClient->GetViewLocation();
+
+    // The camera location/rotation is in world coordinates. Transform it to
+    // tileset coordinates.
+    FVector tilesetLocation =
+        tilesetToWorld.InverseTransformPosition(worldLocation);
+    FRotator tilesetRotation =
+        tilesetToWorld.InverseTransformRotation(rotation.Quaternion())
+            .Rotator();
+
     double fov = pEditorViewportClient->ViewFOV;
     FIntPoint offset;
     FIntPoint size;
@@ -1597,12 +1607,12 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetEditorCameras() const {
     if (pEditorViewportClient->IsAspectRatioConstrained()) {
       cameras.emplace_back(
           size,
-          location,
-          rotation,
+          tilesetLocation,
+          tilesetRotation,
           fov,
           pEditorViewportClient->AspectRatio);
     } else {
-      cameras.emplace_back(size, location, rotation, fov);
+      cameras.emplace_back(size, tilesetLocation, tilesetRotation, fov);
     }
   }
 

@@ -441,7 +441,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
   // Adjust the new rotation by the surface normal rotation
   const glm::dquat rotation = VecMath::createQuaternion(
-      InRootComponent->GetComponentRotation().Quaternion());
+      InRootComponent->GetRelativeRotation().Quaternion());
   const glm::dquat adjustedRotation = ellipsoidNormalRotation * rotation;
 
 #if WITH_EDITOR
@@ -451,7 +451,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
   // Set the new Actor transform, taking care not to do this recursively.
   this->_updatingActorTransform = true;
-  InRootComponent->SetWorldRotation(
+  InRootComponent->SetRelativeRotation(
       VecMath::createQuaternion(adjustedRotation),
       false,
       nullptr,
@@ -507,7 +507,7 @@ UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
 
   // Get the relative world transform.
   glm::dmat4 actorTransform = VecMath::createMatrix4D(
-      pOwnerRoot->GetComponentTransform().ToMatrixWithScale());
+      pOwnerRoot->GetRelativeTransform().ToMatrixWithScale());
 
   // Convert to an absolute world transform
   actorTransform[3] += CesiumActors::getWorldOrigin4D(pOwner);
@@ -562,7 +562,7 @@ FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
         TEXT(
             "UCesiumGlobeAnchorComponent %s cannot update Actor transform from Globe transform because the Globe transform is not known."),
         *this->GetName());
-    return pOwnerRoot->GetComponentTransform();
+    return pOwnerRoot->GetRelativeTransform();
   }
 
   const GeoTransforms& geoTransforms =
@@ -587,7 +587,7 @@ FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
 
   // Set the Actor transform
   this->_updatingActorTransform = true;
-  pOwnerRoot->SetWorldTransform(
+  pOwnerRoot->SetRelativeTransform(
       actorTransform,
       false,
       nullptr,

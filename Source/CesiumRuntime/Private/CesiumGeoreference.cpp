@@ -130,6 +130,9 @@ ACesiumGeoreference::ACesiumGeoreference()
       _geoTransforms() {
   PrimaryActorTick.bCanEverTick = true;
 
+  this->Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+  this->RootComponent = this->Root;
+
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
 #endif
