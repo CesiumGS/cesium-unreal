@@ -55,7 +55,7 @@ public:
 
   ACesiumGeoreference();
 
-  UPROPERTY(VisibleAnywhere)
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
   USceneComponent* Root;
 
   /*
