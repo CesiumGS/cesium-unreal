@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CesiumGltf/PropertyType.h"
-#include "CesiumGltf/StructuralMetadataPropertyType.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataValueType.generated.h"
 
@@ -12,19 +11,43 @@
  */
 UENUM(BlueprintType)
 enum class ECesiumMetadataBlueprintType : uint8 {
+  /* Indicates a value cannot be represented in Blueprints. */
   None,
+  /* Indicates a value is best represented as a Boolean. */
   Boolean,
+  /* Indicates a value is best represented as a Byte (8-bit unsigned integer).
+   */
   Byte,
+  /* Indicates a value is best represented as a Integer (32-bit signed). */
   Integer,
+  /* Indicates a value is best represented as a Integer64 (64-bit signed). */
   Integer64,
+  /* Indicates a value is best represented as a Float (32-bit). */
   Float,
+  /* Indicates a value is best represented as a Float64 (64-bit). */
   Float64,
-  IntVector,
+  /* Indicates a value is best represented as a FVector2D (2-dimensional
+     double-precision vector). */
+  FVector2D,
+  /* Indicates a value is best represented as a FIntVector (3-dimensional
+     integer vector). */
+  FIntVector,
+  /* Indicates a value is best represented as a FVector3f (3-dimensional
+     single-precision vector). */
   FVector3f,
+  /* Indicates a value is best represented as a FVector3 (3-dimensional
+     double-precision vector). */
   FVector3,
+  /* Indicates a value is best represented as a FVector4 (4-dimensional
+     double-precision vector). */
   FVector4,
-  Matrix,
+  /* Indicates a value is best represented as a FMatrix (4-by-4 double-precision
+     matrix). */
+  FMatrix,
+  /* Indicates a value is best represented as a FString. This can be used as a
+     fallback for types with no proper Blueprints representation. */
   String,
+  /* Indicates a value is best represented as a CesiumMetadataArray. */
   Array
 };
 
@@ -37,24 +60,28 @@ enum class ECesiumMetadataPackedGpuType : uint8 { None, Uint8, Float };
 static_assert(int(CesiumGltf::PropertyType::Invalid) == 0);
 static_assert(int(CesiumGltf::PropertyComponentType::None) == 0);
 
-// TODO: deprecate
+/**
+ * The type of a metadata property in EXT_feature_metadata. This has been
+ * deprecated; use FCesiumMetadataValueType to get the complete type information
+ * of a metadata property instead.
+ */
 UENUM(BlueprintType)
-enum class ECesiumMetadataTrueType : uint8 {
-  None = 0,
-  Int8,
-  Uint8,
-  Int16,
-  Uint16,
-  Int32,
-  Uint32,
-  Int64,
-  Uint64,
-  Float32,
-  Float64,
-  Boolean,
-  Enum,
-  String,
-  Array
+enum class ECesiumMetadataTrueType_DEPRECATED : uint8 {
+  None_DEPRECATED = 0,
+  Int8_DEPRECATED,
+  Uint8_DEPRECATED,
+  Int16_DEPRECATED,
+  Uint16_DEPRECATED,
+  Int32_DEPRECATED,
+  Uint32_DEPRECATED,
+  Int64_DEPRECATED,
+  Uint64_DEPRECATED,
+  Float32_DEPRECATED,
+  Float64_DEPRECATED,
+  Boolean_DEPRECATED,
+  Enum_DEPRECATED,
+  String_DEPRECATED,
+  Array_DEPRECATED
 };
 
 /**
@@ -76,7 +103,8 @@ enum class ECesiumMetadataType : uint8 {
 };
 
 /**
- * The component type of a metadata property in EXT_structural_metadata.
+ * The component type of a metadata property in EXT_structural_metadata. Only
+ * applicable if the property has a Scalar, VecN, or MatN type.
  */
 UENUM(BlueprintType)
 enum class ECesiumMetadataComponentType : uint8 {
@@ -94,8 +122,8 @@ enum class ECesiumMetadataComponentType : uint8 {
 };
 
 /**
- * Represents the true value type of a metadata property according to how the
- * property is defined in EXT_structural_metadata.
+ * Represents the true value type of a metadata property or value, according to
+ * how the property is defined in EXT_structural_metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataValueType {
@@ -112,7 +140,28 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
       bool IsArray)
       : Type(InType), ComponentType(InComponentType), bIsArray(IsArray) {}
 
+  /**
+   * The type of the metadata property or value.
+   */
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   ECesiumMetadataType Type;
+
+  /**
+   * The component of the metadata property or value. Only applies when the type
+   * is a Scalar, VecN, or MatN type.
+   */
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   ECesiumMetadataComponentType ComponentType;
+
+  /**
+   * Whether or not this represents an array containing elements of the
+   * specified types.
+   */
+  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
   bool bIsArray;
+
+  inline bool operator==(const FCesiumMetadataValueType& ValueType) {
+    return Type == ValueType.Type && ComponentType == ValueType.ComponentType &&
+           bIsArray == ValueType.bIsArray;
+  }
 };

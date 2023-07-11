@@ -15,6 +15,22 @@
 #include "CesiumPropertyTableProperty.generated.h"
 
 /**
+ * @brief Reports the status of a FCesiumPropertyTableProperty. If the property
+ * table property cannot be accessed, this briefly indicates why.
+ */
+UENUM(BlueprintType)
+enum class ECesiumPropertyTablePropertyStatus : uint8 {
+  /* The property table property is valid. */
+  Valid = 0,
+  /* The property table property does not exist in the glTF, or the property
+     definition itself contains errors. */
+  ErrorInvalidProperty,
+  /* The data associated with the property table property is malformed and
+     cannot be retrieved. */
+  ErrorInvalidPropertyData
+};
+
+/**
  * A Blueprint-accessible wrapper for a metadata property in a glTF property
  * table. A property has a specific type, such as int64 or string, and a value
  * of that type for each feature in the mesh.
@@ -181,10 +197,11 @@ private:
 
 public:
   /**
-   * Construct an empty property with unknown type.
+   * Construct an invalid property with unknown type.
    */
   FCesiumPropertyTableProperty()
-      : _property(),
+      : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
+        _property(),
         _valueType(
             ECesiumMetadataType::Invalid,
             ECesiumMetadataComponentType::None,
@@ -200,13 +217,31 @@ public:
   template <typename T>
   FCesiumPropertyTableProperty(
       const CesiumGltf::PropertyTablePropertyView<T>& value)
-      : _property(value),
-        _types{
+      : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
+        _property(value),
+        _valueType(
             ECesiumMetadataType::Invalid,
             ECesiumMetadataComponentType::None,
-            false},
-        _count(value.getArrayCount()),
-        _normalized(value.isNormalized()) {
+            false),
+        _count(0),
+        _normalized(false) {
+    switch (value.status()) {
+    case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
+      _status = ECesiumPropertyTablePropertyStatus::Valid;
+      break;
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidPropertyTable:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorPropertyDoesNotExist:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorTypeMismatch:
+    case CesiumGltf::PropertyTablePropertyViewStatus::
+        ErrorComponentTypeMismatch:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorArrayTypeMismatch:
+      // The status was already set in the initializer list.
+      return;
+    default:
+      _status = ECesiumPropertyTablePropertyStatus::ErrorInvalidPropertyData;
+      return;
+    }
+
     ECesiumMetadataType type;
     ECesiumMetadataComponentType componentType;
     bool isArray;
@@ -225,6 +260,8 @@ public:
     }
 
     _valueType = {type, componentType, isArray};
+    _count = value.getArrayCount();
+    _normalized = value.isNormalized();
   }
 
 private:
@@ -235,6 +272,7 @@ private:
         variant);
   }
 
+  ECesiumPropertyTablePropertyStatus _status;
   PropertyType _property;
   FCesiumMetadataValueType _valueType;
   int64 _count;
@@ -249,6 +287,17 @@ class CESIUMRUNTIME_API UCesiumPropertyTablePropertyBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  /**
+   * Gets the status of the property table property. If this property table
+   * property is invalid in any way, this will briefly indicate why.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static ECesiumPropertyTablePropertyStatus GetPropertyTablePropertyStatus(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
   /**
    * Gets best-fitting type for the property table property that is accessible
    * from Blueprints. For the most precise representation of the value possible

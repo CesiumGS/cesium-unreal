@@ -38,7 +38,7 @@ public:
   /**
    * Constructs an empty array instance with unknown type.
    */
-  FCesiumMetadataArray() : _value(), _type(ECesiumMetadataTrueType::None) {}
+  FCesiumMetadataArray() : _value(), _type() {}
 
   /**
    * Constructs a non-empty array instance.
@@ -46,10 +46,8 @@ public:
    */
   template <typename T>
   FCesiumMetadataArray(CesiumGltf::PropertyArrayView<T> value)
-      : _value(value), _type() {
-    _type =
-        ECesiumMetadataTrueType(CesiumGltf::TypeToPropertyType<
-                                CesiumGltf::PropertyArrayView<T>>::component);
+      : _value(), _type() {
+    // TODO _type = ... and value
   }
 
 private:
@@ -60,7 +58,7 @@ private:
   }
 
   ArrayType _value;
-  FCesiumMetadataTypes _type;
+  FCesiumMetadataValueType _type;
 
   friend class UCesiumMetadataArrayBlueprintLibrary;
 };
@@ -72,15 +70,28 @@ class CESIUMRUNTIME_API UCesiumMetadataArrayBlueprintLibrary
 
 public:
   /**
-   * Gets best-fitting Blueprints type for the elements of this array.
+   * Gets the best-fitting Blueprints type for the elements of this array.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Array")
   static ECesiumMetadataBlueprintType
-  GetBlueprintComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+  GetElementBlueprintType(UPARAM(ref) const FCesiumMetadataArray& array);
 
+  /**
+   * Gets the true value type of the elements in the array. Many of these types
+   * are not accessible from Blueprints, but can be converted to a
+   * Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array")
+  static FCesiumMetadataValueType
+  GetElementValueType(UPARAM(ref) const FCesiumMetadataArray& array);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets true type of the elements in the array. Many of these types are not
    * accessible from Blueprints, but can be converted to a Blueprint-accessible
@@ -89,9 +100,14 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
-  static ECesiumMetadataTrueType
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "ECesiumMetadataTrueType and UCesiumMetadataArrayBlueprintLibrary.GetTrueComponentType is deprecated. Use FCesiumMetadataValueType and UCesiumMetadataArrayBlueprintLibrary.GetElementValueType instead."))
+  static ECesiumMetadataTrueType_DEPRECATED
   GetTrueComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * Queries the number of elements in the array.

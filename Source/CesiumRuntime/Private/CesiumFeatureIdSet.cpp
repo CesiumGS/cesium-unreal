@@ -1,7 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeatureIdSet.h"
-#include "CesiumFeatureTable.h"
 #include "CesiumGltf/Accessor.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/FeatureId.h"

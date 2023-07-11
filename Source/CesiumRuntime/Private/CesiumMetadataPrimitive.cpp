@@ -63,7 +63,7 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
   TArray<FString> propertyTextureNames;
   if (!MetadataPrimitive._pPrimitiveMetadata || !MetadataPrimitive._pModelMetadata) {
-    return;
+    return TArray<FString>();
   }
 
   const TArray<int64>& propertyTextureIndices =

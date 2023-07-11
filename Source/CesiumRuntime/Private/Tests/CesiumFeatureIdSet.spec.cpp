@@ -22,8 +22,7 @@ void FCesiumFeatureIdSetSpec::Define() {
       model = Model();
       Mesh& mesh = model.meshes.emplace_back();
       pPrimitive = &mesh.primitives.emplace_back();
-      ExtensionExtMeshFeatures& extension =
-          pPrimitive->addExtension<ExtensionExtMeshFeatures>();
+      pPrimitive->addExtension<ExtensionExtMeshFeatures>();
     });
 
     It("constructs from empty feature ID set", [this]() {

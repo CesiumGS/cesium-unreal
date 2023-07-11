@@ -1,7 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumMetadataValue.h"
-#include "CesiumGltf/StructuralMetadataPropertyTypeTraits.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataConversions.h"
 
 ECesiumMetadataBlueprintType

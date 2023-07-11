@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -10,46 +10,68 @@
 #include <glm/gtx/string_cast.hpp>
 #include <type_traits>
 
-// Remove? Looks like this function was always typoed...
+/**
+ * Converts a FCesiumMetadataValueType to the best-fitting Blueprints type.
+ *
+ * @param ValueType The input metadata value type.
+ */
 ECesiumMetadataBlueprintType
-CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType);
+CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType);
 
-ECesiumMetadataBlueprintType
-CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType valueType);
+ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
+    FCesiumMetadataValueType ValueType);
 
-// Remove
-ECesiumMetadataPackedGpuType
-CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType);
-
-ECesiumMetadataPackedGpuType
-CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataValueType valueType);
-
-// Default conversion, just returns the default value.
+/**
+ * Default conversion, just returns the default value.
+ */
 template <typename TTo, typename TFrom, typename Enable = void>
 struct CesiumMetadataConversions {
   static TTo convert(TFrom from, TTo defaultValue) { return defaultValue; }
 };
 
-// Trivially convert any type to itself.
+/**
+ * Trivially converts any type to itself.
+ */
 template <typename T> struct CesiumMetadataConversions<T, T> {
   static T convert(T from, T defaultValue) { return from; }
 };
 
 #pragma region Conversions to boolean
 
-// scalar -> bool
+/**
+ * Converts from a scalar to a bool.
+ */
 template <typename TFrom>
 struct CesiumMetadataConversions<
     bool,
     TFrom,
     std::enable_if_t<CesiumGltf::IsMetadataScalar<TFrom>::value>> {
+  /**
+   * Converts a scalar to a boolean. Zero is converted to false, while any other
+   * value is converted to true.
+   *
+   * @param from The scalar to convert from.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
   static bool convert(TFrom from, bool defaultValue) {
     return from != static_cast<TFrom>(0);
   }
 };
 
-// string -> bool
+/**
+ * Converts from std::string_view to a bool.
+ */
 template <> struct CesiumMetadataConversions<bool, std::string_view> {
+  /**
+   * Converts the contents of a string_view to a boolean.
+   *
+   * "0", "false", and "no" (case-insensitive) are converted to false, while
+   * "1", "true", and "yes" are converted to true. All other strings will return
+   * the default value.
+   *
+   * @param from The string_view to convert from.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
   static bool convert(const std::string_view& from, bool defaultValue) {
     FString f(from.size(), from.data());
 
@@ -225,6 +247,17 @@ struct CesiumMetadataConversions<
     FString,
     TFrom,
     std::enable_if_t<CesiumGltf::IsMetadataVecN<TFrom>::value>> {
+  static FString convert(TFrom from, const FString& defaultValue) {
+    return FString(glm::to_string(from).c_str());
+  }
+};
+
+// matN -> string
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FString,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataMatN<TFrom>::value>> {
   static FString convert(TFrom from, const FString& defaultValue) {
     return FString(glm::to_string(from).c_str());
   }

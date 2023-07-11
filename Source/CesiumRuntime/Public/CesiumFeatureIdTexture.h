@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumFeatureTable.h"
 #include "CesiumGltf/FeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -32,7 +31,7 @@ enum ECesiumFeatureIdTextureStatus {
 /**
  * @brief A blueprint-accessible wrapper for a feature ID texture from a glTF
  * primitive. Provides access to per-pixel feature IDs, which can be used with
- * the corresponding {@link FCesiumFeatureTable} to access per-pixel metadata.
+ * the corresponding {@link FCesiumPropertyTable} to access per-pixel metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
@@ -140,7 +139,7 @@ public:
 
   /**
    * Gets the feature ID corresponding to the pixel specified by the texture
-   * coordinates. The feature ID can be used with a FCesiumFeatureTable to
+   * coordinates. The feature ID can be used with a FCesiumPropertyTable to
    * retrieve the per-pixel metadata.
    *
    * This assumes the given texture coordinates are from the appropriate
@@ -158,7 +157,7 @@ public:
 
   /**
    * Gets the feature ID associated with the given vertex. The
-   * feature ID can be used with a FCesiumFeatureTable to retrieve the
+   * feature ID can be used with a FCesiumPropertyTable to retrieve the
    * per-vertex metadata.
    *
    * This works if the vertex contains texture coordinates for the relevant

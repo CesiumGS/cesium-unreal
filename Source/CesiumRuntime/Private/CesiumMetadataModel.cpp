@@ -9,10 +9,10 @@ FCesiumMetadataModel::FCesiumMetadataModel(
     : _pModelMetadata(&ModelMetadata) {}
 
 /*static*/
-const TMap<FString, FCesiumPropertyTable&>
+const TMap<FString, FCesiumPropertyTable>
 UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(
     UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
-  TMap<FString, FCesiumPropertyTable&> result;
+  TMap<FString, FCesiumPropertyTable> result;
   if (!MetadataModel._pModelMetadata) {
     return result;
   }
@@ -33,10 +33,10 @@ UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(
 }
 
 /*static*/
-const TMap<FString, FCesiumPropertyTexture&>
+const TMap<FString, FCesiumPropertyTexture>
 UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(
     UPARAM(ref) const FCesiumMetadataModel& MetadataModel) {
-  TMap<FString, FCesiumPropertyTexture&> result;
+  TMap<FString, FCesiumPropertyTexture> result;
   if (!MetadataModel._pModelMetadata) {
     return result;
   }

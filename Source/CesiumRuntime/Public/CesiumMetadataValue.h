@@ -20,7 +20,6 @@ struct CESIUMRUNTIME_API FCesiumMetadataValue {
 
 private:
 #pragma region ValueType declaration
-  template <typename T> using ArrayView = CesiumGltf::PropertyArrayView<T>;
   using ValueType = std::variant<
       std::monostate,
       int8_t,
@@ -95,78 +94,78 @@ private:
       glm::mat<4, 4, uint64_t>,
       glm::mat<4, 4, float>,
       glm::mat<4, 4, double>,
-      ArrayView<int8_t>,
-      ArrayView<uint8_t>,
-      ArrayView<int16_t>,
-      ArrayView<uint16_t>,
-      ArrayView<int32_t>,
-      ArrayView<uint32_t>,
-      ArrayView<int64_t>,
-      ArrayView<uint64_t>,
-      ArrayView<float>,
-      ArrayView<double>,
-      ArrayView<bool>,
-      ArrayView<std::string_view>,
-      ArrayView<glm::vec<2, int8_t>>,
-      ArrayView<glm::vec<2, uint8_t>>,
-      ArrayView<glm::vec<2, int16_t>>,
-      ArrayView<glm::vec<2, uint16_t>>,
-      ArrayView<glm::vec<2, int32_t>>,
-      ArrayView<glm::vec<2, uint32_t>>,
-      ArrayView<glm::vec<2, int64_t>>,
-      ArrayView<glm::vec<2, uint64_t>>,
-      ArrayView<glm::vec<2, float>>,
-      ArrayView<glm::vec<2, double>>,
-      ArrayView<glm::vec<3, int8_t>>,
-      ArrayView<glm::vec<3, uint8_t>>,
-      ArrayView<glm::vec<3, int16_t>>,
-      ArrayView<glm::vec<3, uint16_t>>,
-      ArrayView<glm::vec<3, int32_t>>,
-      ArrayView<glm::vec<3, uint32_t>>,
-      ArrayView<glm::vec<3, int64_t>>,
-      ArrayView<glm::vec<3, uint64_t>>,
-      ArrayView<glm::vec<3, float>>,
-      ArrayView<glm::vec<3, double>>,
-      ArrayView<glm::vec<4, int8_t>>,
-      ArrayView<glm::vec<4, uint8_t>>,
-      ArrayView<glm::vec<4, int16_t>>,
-      ArrayView<glm::vec<4, uint16_t>>,
-      ArrayView<glm::vec<4, int32_t>>,
-      ArrayView<glm::vec<4, uint32_t>>,
-      ArrayView<glm::vec<4, int64_t>>,
-      ArrayView<glm::vec<4, uint64_t>>,
-      ArrayView<glm::vec<4, float>>,
-      ArrayView<glm::vec<4, double>>,
-      ArrayView<glm::mat<2, 2, int8_t>>,
-      ArrayView<glm::mat<2, 2, uint8_t>>,
-      ArrayView<glm::mat<2, 2, int16_t>>,
-      ArrayView<glm::mat<2, 2, uint16_t>>,
-      ArrayView<glm::mat<2, 2, int32_t>>,
-      ArrayView<glm::mat<2, 2, uint32_t>>,
-      ArrayView<glm::mat<2, 2, int64_t>>,
-      ArrayView<glm::mat<2, 2, uint64_t>>,
-      ArrayView<glm::mat<2, 2, float>>,
-      ArrayView<glm::mat<2, 2, double>>,
-      ArrayView<glm::mat<3, 3, int8_t>>,
-      ArrayView<glm::mat<3, 3, uint8_t>>,
-      ArrayView<glm::mat<3, 3, int16_t>>,
-      ArrayView<glm::mat<3, 3, uint16_t>>,
-      ArrayView<glm::mat<3, 3, int32_t>>,
-      ArrayView<glm::mat<3, 3, uint32_t>>,
-      ArrayView<glm::mat<3, 3, int64_t>>,
-      ArrayView<glm::mat<3, 3, uint64_t>>,
-      ArrayView<glm::mat<3, 3, float>>,
-      ArrayView<glm::mat<3, 3, double>>,
-      ArrayView<glm::mat<4, 4, int8_t>>,
-      ArrayView<glm::mat<4, 4, uint8_t>>,
-      ArrayView<glm::mat<4, 4, int16_t>>,
-      ArrayView<glm::mat<4, 4, uint16_t>>,
-      ArrayView<glm::mat<4, 4, int32_t>>,
-      ArrayView<glm::mat<4, 4, uint32_t>>,
-      ArrayView<glm::mat<4, 4, int64_t>>,
-      ArrayView<glm::mat<4, 4, uint64_t>>,
-      ArrayView<glm::mat<4, 4, float>>,
-      ArrayView<glm::mat<4, 4, double>>>;
+      CesiumGltf::PropertyArrayView<int8_t>,
+      CesiumGltf::PropertyArrayView<uint8_t>,
+      CesiumGltf::PropertyArrayView<int16_t>,
+      CesiumGltf::PropertyArrayView<uint16_t>,
+      CesiumGltf::PropertyArrayView<int32_t>,
+      CesiumGltf::PropertyArrayView<uint32_t>,
+      CesiumGltf::PropertyArrayView<int64_t>,
+      CesiumGltf::PropertyArrayView<uint64_t>,
+      CesiumGltf::PropertyArrayView<float>,
+      CesiumGltf::PropertyArrayView<double>,
+      CesiumGltf::PropertyArrayView<bool>,
+      CesiumGltf::PropertyArrayView<std::string_view>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, int8_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, uint8_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, int16_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, uint16_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, int32_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, uint32_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, int64_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, uint64_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, float>>,
+      CesiumGltf::PropertyArrayView<glm::vec<2, double>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, int8_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, uint8_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, int16_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, uint16_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, int32_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, uint32_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, int64_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, uint64_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, float>>,
+      CesiumGltf::PropertyArrayView<glm::vec<3, double>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, int8_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, uint8_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, int16_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, uint16_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, int32_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, uint32_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, int64_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, uint64_t>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, float>>,
+      CesiumGltf::PropertyArrayView<glm::vec<4, double>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, int8_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, uint8_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, int16_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, uint16_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, int32_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, uint32_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, int64_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, uint64_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, float>>,
+      CesiumGltf::PropertyArrayView<glm::mat<2, 2, double>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, int8_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, uint8_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, int16_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, uint16_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, int32_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, uint32_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, int64_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, uint64_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, float>>,
+      CesiumGltf::PropertyArrayView<glm::mat<3, 3, double>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, int8_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, uint8_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, int16_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, uint16_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, int32_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, uint32_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, int64_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, uint64_t>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, float>>,
+      CesiumGltf::PropertyArrayView<glm::mat<4, 4, double>>>;
 #pragma endregion
 
 public:
@@ -182,23 +181,26 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
-    ECesiumMetadataType type;
-    ECesiumMetadataComponentType componentType;
-    bool isArray;
+    ECesiumMetadataType type(CesiumGltf::TypeToPropertyType<T>::value);
+    ECesiumMetadataComponentType componentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    bool isArray = false;
 
-    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = CesiumGltf::MetadataArrayType<T>::type;
-      type =
-          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<ArrayType>::component);
-      isArray = true;
-    } else {
-      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
-      isArray = false;
-    }
+    _valueType = {type, componentType, isArray};
+  }
+
+  /**
+   * Constructs a metadata value with the given array input.
+   *
+   * @param Value The array value to be stored in this struct.
+   */
+  template <typename T>
+  explicit FCesiumMetadataValue(const CesiumGltf::PropertyArrayView<T>& Value)
+      : _value(Value), _valueType() {
+    ECesiumMetadataType type(CesiumGltf::TypeToPropertyType<T>::value);
+    ECesiumMetadataComponentType componentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    bool isArray = true;
 
     _valueType = {type, componentType, isArray};
   }
@@ -217,7 +219,7 @@ class CESIUMRUNTIME_API UCesiumMetadataValueBlueprintLibrary
 
 public:
   /**
-   * Gets best-fitting Blueprints type for the value. For the most precise
+   * Gets the best-fitting Blueprints type for this value. For the most precise
    * representation of the value possible from Blueprints, you should retrieve
    * it using this type.
    */
@@ -229,8 +231,8 @@ public:
   GetBlueprintType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets best-fitting Blueprints type for the elements of this array value. If
-   * the given value is not an array, this returns None.
+   * Gets the best-fitting Blueprints type for the elements of this array value.
+   * If the given value is not of an array type, this returns None.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -240,10 +242,9 @@ public:
   GetArrayElementBlueprintType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets the true type of the metadata value as defined by in
-   * EXT_structural_metadata extension. Many of these types are not directly
-   * accessible from Blueprints, but can be converted to a Blueprint-accessible
-   * type.
+   * Gets the true type of the metadata value as defined in the
+   * EXT_structural_metadata extension. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -253,11 +254,11 @@ public:
   GetValueType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets the value and attempts to convert it to a Boolean value.
+   * Attempts to retrieve the value as a Boolean.
    *
-   * If the value is boolean, it is returned directly.
+   * If the value is a boolean, it is returned directly.
    *
-   * If the value is numeric, zero is converted to false, while any other
+   * If the value is a scalar, zero is converted to false, while any other
    * value is converted to true.
    *
    * If the value is a string, "0", "false", and "no" (case-insensitive) are
@@ -265,11 +266,11 @@ public:
    * All other strings, including strings that can be converted to numbers,
    * will return the default value.
    *
-   * Other types of values will return the default value.
+   * All other types return the default value.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The value.
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a Boolean.
+   * @return The value as a Boolean.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -279,27 +280,26 @@ public:
   GetBoolean(UPARAM(ref) const FCesiumMetadataValue& value, bool DefaultValue);
 
   /**
-   * Gets the value and attempts to convert it to an unsigned 8-bit integer
-   * value.
+   * Attempts to retrieve the value as a Byte (unsigned 8-bit integer).
    *
-   * If the value is an integer and between 0 and 255, it is returned
+   * If the value is an integer between 0 and 255, it is returned
    * directly.
    *
    * If the value is a floating-point number in the range `(-1, 256)`, it is
    * truncated (rounded toward zero).
    *
-   * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
+   * If the value is a boolean, 0 is returned for false and 1 for true.
    *
    * If the value is a string and the entire string can be parsed as an
    * integer between 0 and 255, the parsed value is returned. The string is
    * parsed in a locale-independent way and does not support use of a comma or
-   * other character to group digits.
+   * other delimiter to group digits.
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a Byte.
+   * @return The value as a Byte.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -328,9 +328,9 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
+   * @param DefaultValue The default value to use if the metadata value cannot
+   * be converted.
+   * @return The value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -359,9 +359,9 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
+   * @param DefaultValue The default value to use if the metadata value cannot
+   * be converted.
+   * @return The value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -390,9 +390,9 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
+   * @param DefaultValue The default value to use if the metadata value cannot
+   * be converted.
+   * @return The value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -420,9 +420,9 @@ public:
    *
    * Otherwise, the default value is returned.
    *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
+   * @param DefaultValue The default value to use if the metadata value cannot
+   * be converted.
+   * @return The value.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -432,39 +432,40 @@ public:
       UPARAM(ref) const FCesiumMetadataValue& Value,
       double DefaultValue);
 
-  /**
-   * Gets the value and attempts to convert it to a Vector3f.
-   *
-   * If the value is a vector with three single-precision floating-point
-   * components, it is returned.
-   *
-   * Otherwise, if the value is a 3-dimensional vector but with integer or
-   * double-precision components, each component will be converted to the
-   * closest representable single-precision floating-point number.
-   *
-   * Otherwise, if the value is a 4-dimensional vector, a 3-dimensional vector
-   * containing the first three components will be returned.
-   *
-   * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
-   *
-   * If the value is a string and the entire string can be parsed as a
-   * number, the parsed value is returned. The string is parsed in a
-   * locale-independent way and does not support use of a comma or other
-   * character to group digits.
-   *
-   * Otherwise, the default value is returned.
-   *
-   * @param DefaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|GenericValue")
-  static FVector3f GetVector3f(
-      UPARAM(ref) const FCesiumMetadataValue& Value,
-      FVector3f DefaultValue);
+  ///**
+  // * Gets the value and attempts to convert it to a Vector3f.
+  // *
+  // * If the value is a 3-dimensional vector with single-precision
+  // floating-point
+  // * components, it is returned.
+  // *
+  // * Otherwise, if the value is a 3-dimensional vector but with integer or
+  // * double-precision components, each component will be converted to the
+  // * closest representable single-precision floating-point number.
+  // *
+  // * Otherwise, if the value is a 4-dimensional vector, a 3-dimensional vector
+  // * containing the first three components will be returned.
+  // *
+  // * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
+  // *
+  // * If the value is a string and the entire string can be parsed as a
+  // * number, the parsed value is returned. The string is parsed in a
+  // * locale-independent way and does not support use of a comma or other
+  // * character to group digits.
+  // *
+  // * Otherwise, the default value is returned.
+  // *
+  // * @param DefaultValue The default value to use if the metadata value cannot
+  // * be converted.
+  // * @return The value.
+  // */
+  // UFUNCTION(
+  //    BlueprintCallable,
+  //    BlueprintPure,
+  //    Category = "Cesium|Metadata|Value")
+  // static FVector3f GetVector3f(
+  //    UPARAM(ref) const FCesiumMetadataValue& Value,
+  //    FVector3f DefaultValue);
 
   /**
    * Gets the value and attempts to convert it to a string value.
@@ -491,8 +492,8 @@ public:
       const FString& DefaultValue);
 
   /**
-   * Gets the value as an array.
-   * If the property is not an array type, this method returns an empty array.
+   * Gets the value as a metadata array. If the property is not an array type,
+   * the returned array will be empty.
    *
    * @return The property value.
    */

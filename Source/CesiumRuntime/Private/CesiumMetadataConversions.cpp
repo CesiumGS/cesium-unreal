@@ -3,40 +3,11 @@
 #include "CesiumMetadataConversions.h"
 
 ECesiumMetadataBlueprintType
-CesiuMetadataTrueTypeToBlueprintType(ECesiumMetadataTrueType trueType) {
-  switch (trueType) {
-  case ECesiumMetadataTrueType::Boolean:
-    return ECesiumMetadataBlueprintType::Boolean;
-  case ECesiumMetadataTrueType::Uint8:
-    return ECesiumMetadataBlueprintType::Byte;
-  case ECesiumMetadataTrueType::Int8:
-  case ECesiumMetadataTrueType::Int16:
-  case ECesiumMetadataTrueType::Uint16:
-  case ECesiumMetadataTrueType::Int32:
-  // TODO: remove this one
-  case ECesiumMetadataTrueType::Uint32:
-    return ECesiumMetadataBlueprintType::Integer;
-  case ECesiumMetadataTrueType::Int64:
-    return ECesiumMetadataBlueprintType::Integer64;
-  case ECesiumMetadataTrueType::Float32:
-    return ECesiumMetadataBlueprintType::Float;
-  case ECesiumMetadataTrueType::Float64:
-    return ECesiumMetadataBlueprintType::Float64;
-  case ECesiumMetadataTrueType::Uint64:
-  case ECesiumMetadataTrueType::String:
-    return ECesiumMetadataBlueprintType::String;
-  case ECesiumMetadataTrueType::Array:
-    return ECesiumMetadataBlueprintType::Array;
-  default:
-    return ECesiumMetadataBlueprintType::None;
-  }
-}
-
-ECesiumMetadataBlueprintType
 CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
   if (ValueType.bIsArray) {
     return ECesiumMetadataBlueprintType::Array;
   }
+
   ECesiumMetadataType type = ValueType.Type;
   ECesiumMetadataComponentType componentType = ValueType.ComponentType;
 
@@ -56,8 +27,8 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
     case ECesiumMetadataComponentType::Int16:
     case ECesiumMetadataComponentType::Uint16:
     case ECesiumMetadataComponentType::Int32:
-    case ECesiumMetadataComponentType::Uint32:
       return ECesiumMetadataBlueprintType::Integer;
+    case ECesiumMetadataComponentType::Uint32:
     case ECesiumMetadataComponentType::Int64:
       return ECesiumMetadataBlueprintType::Integer64;
     case ECesiumMetadataComponentType::Float32:
@@ -69,8 +40,18 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
     }
   }
 
+  if (type == ECesiumMetadataType::Vec2) {
+    return ECesiumMetadataBlueprintType::FVector2D;
+  }
+
   if (type == ECesiumMetadataType::Vec3) {
     switch (componentType) {
+    case ECesiumMetadataComponentType::Uint8:
+    case ECesiumMetadataComponentType::Int8:
+    case ECesiumMetadataComponentType::Int16:
+    case ECesiumMetadataComponentType::Uint16:
+    case ECesiumMetadataComponentType::Int32:
+      return ECesiumMetadataBlueprintType::FIntVector;
     case ECesiumMetadataComponentType::Float32:
       return ECesiumMetadataBlueprintType::FVector3f;
     case ECesiumMetadataComponentType::Float64:
@@ -78,34 +59,24 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
     }
   }
 
-  // TODO: vec and mat
+  if (type == ECesiumMetadataType::Vec4) {
+    return ECesiumMetadataBlueprintType::FVector4;
+  }
+
+  if (type == ECesiumMetadataType::Mat4) {
+    return ECesiumMetadataBlueprintType::FMatrix;
+  }
+
+  // Other matrix types can only be printed as strings.
+  if (type == ECesiumMetadataType::Mat2 || type == ECesiumMetadataType::Mat3) {
+    return ECesiumMetadataBlueprintType::String;
+  }
 
   return ECesiumMetadataBlueprintType::None;
 }
 
-ECesiumMetadataPackedGpuType
-CesiumMetadataTrueTypeToDefaultPackedGpuType(ECesiumMetadataTrueType trueType) {
-  switch (trueType) {
-  case ECesiumMetadataTrueType::Boolean:
-  case ECesiumMetadataTrueType::Int8: // lossy or reinterpreted
-  case ECesiumMetadataTrueType::Uint8:
-    return ECesiumMetadataPackedGpuType::Uint8;
-  case ECesiumMetadataTrueType::Float32:
-  case ECesiumMetadataTrueType::Float64: // lossy
-  case ECesiumMetadataTrueType::Int16:
-  case ECesiumMetadataTrueType::Uint16:
-  case ECesiumMetadataTrueType::Int32:  // lossy or reinterpreted
-  case ECesiumMetadataTrueType::Uint32: // lossy or reinterpreted
-  case ECesiumMetadataTrueType::Int64:  // lossy
-  case ECesiumMetadataTrueType::Uint64: // lossy
-    return ECesiumMetadataPackedGpuType::Float;
-  default:
-    return ECesiumMetadataPackedGpuType::None;
-  }
-}
-
-ECesiumMetadataPackedGpuType
-CesiumMetadataTypesToDefaultPackedGpuType(FCesiumMetadataValueType ValueType) {
+ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
+    FCesiumMetadataValueType ValueType) {
   ECesiumMetadataType type = ValueType.Type;
   ECesiumMetadataComponentType componentType = ValueType.ComponentType;
 

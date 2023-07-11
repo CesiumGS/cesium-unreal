@@ -131,8 +131,8 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
       }
     }
 
-    CesiumEncodedMetadataUtility::destroyEncodedMetadataPrimitive(
-        this->EncodedMetadata);
+    CesiumEncodedMetadataUtility::destroyEncodedPrimitiveMetadata(
+        this->EncodedPrimitiveMetadata);
 
     CesiumLifetime::destroy(pMaterial);
   }

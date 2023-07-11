@@ -33,9 +33,9 @@ struct LoadPrimitiveResult {
 
   // For backwards compatibility. Does not actually parse EXT_feature_metadata
   // implementation.
-  FCesiumMetadataPrimitive MetadataDeprecated{};
+  FCesiumMetadataPrimitive Metadata_DEPRECATED{};
 
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
+  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata EncodedPrimitiveMetadata{};
   TMap<FString, uint32_t> metadataTextureCoordinateParameters;
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
@@ -82,6 +82,6 @@ struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
   // Parses the root EXT_structural_metadata extension.
   FCesiumModelMetadata Metadata{};
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
+  CesiumEncodedMetadataUtility::EncodedModelMetadata EncodedModelMetadata{};
 };
 } // namespace LoadGltfResult

@@ -13,11 +13,12 @@ struct Model;
 struct PropertyTexture;
 }; // namespace CesiumGltf
 
+UENUM(BlueprintType)
 enum class ECesiumPropertyTextureStatus : uint8 {
-Valid = 0,
-ErrorInvalidMetadataExtension,
-ErrorInvalidPropertyTextureClass
-}
+  Valid = 0,
+  ErrorInvalidMetadataExtension,
+  ErrorInvalidPropertyTextureClass
+};
 
 /**
  * @brief A blueprint-accessible wrapper of a property texture from a glTF.

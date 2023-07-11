@@ -28,9 +28,9 @@ public:
 
   FCesiumPrimitiveFeatures Features;
   FCesiumPrimitiveMetadata Metadata;
-  FCesiumMetadataPrimitive MetadataDeprecated;
+  FCesiumMetadataPrimitive Metadata_DEPRECATED;
 
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
+  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata EncodedPrimitiveMetadata;
 
   ACesium3DTileset* pTilesetActor;
 

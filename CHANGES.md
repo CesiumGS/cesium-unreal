@@ -5,17 +5,17 @@
 ##### Breaking Changes :mega:
 
 - ECesiumMetadataTrueType is deprecated. Use 
-- Renamed `FCesiumMetadataGenericValue` to `FCesiumMetadataValue`.
 
 - Feature IDs are now parsed through the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`.
 - Metadata is now parsed through the `EXT_structural_metadata` extension. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
   - Renamed `FCesiumFeatureTable` to `FCesiumPropertyTable`.
-  - Renamed `UCesiumFeatureTableBlueprintLibrary` to `UCesiumPropertyTableBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertyTableSize`.
+  - Renamed `UCesiumFeatureTableBlueprintLibrary` to `UCesiumPropertyTableBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertyTableSize`, `GetMetadataValuesForFeatureID` is now `GetMetadataValuesForFeature`, and `GetMetadataValuesAsStringForFeatureID` is now `GetMetadataValuesForFeatureAsStrings`.
   - Renamed `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty`. 
   - Renamed `UCesiumMetadataPropertyBlueprintLibrary` to `UCesiumPropertyTablePropertyBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertySize`,`GetComponentCount` is now `GetPropertyArraySize`, and `GetBlueprintComponentType` is now `GetArrayElementBlueprintType`.
   - Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
   - Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
   - Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` is now `GetPropertyNames`.
+  - Renamed `FCesiumMetadataGenericValue` to `FCesiumMetadataValue`.
 - Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
 - The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
 

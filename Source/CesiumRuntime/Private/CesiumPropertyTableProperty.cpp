@@ -6,10 +6,16 @@
 
 using namespace CesiumGltf;
 
+ECesiumPropertyTablePropertyStatus
+UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertyTablePropertyStatus(
+  UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
+  return Property._status;
+}
+
 ECesiumMetadataBlueprintType
 UCesiumPropertyTablePropertyBlueprintLibrary::GetBlueprintType(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  return CesiumMetadataTypesToBlueprintType(Property._valueType);
+  return CesiumMetadataValueTypeToBlueprintType(Property._valueType);
 }
 
 ECesiumMetadataBlueprintType
@@ -22,7 +28,7 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetArrayElementBlueprintType(
   FCesiumMetadataValueType valueType(Property._valueType);
   valueType.bIsArray = false;
 
-  return CesiumMetadataTypesToBlueprintType(valueType);
+  return CesiumMetadataValueTypeToBlueprintType(valueType);
 }
 
 FCesiumMetadataValueType

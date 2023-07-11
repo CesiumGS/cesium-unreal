@@ -1,11 +1,9 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTable.h"
-#include "CesiumGltf/StructuralMetadataPropertyTableView.h"
-#include "CesiumMetadataPrimitive.h"
+#include "CesiumGltf/PropertyTableView.h"
 
 using namespace CesiumGltf;
-using namespace CesiumGltf::StructuralMetadata;
 
 static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 
@@ -70,7 +68,8 @@ UCesiumPropertyTableBlueprintLibrary::GetProperties(
 }
 
 /*static*/ const TArray<FString>
-UCesiumPropertyTableBlueprintLibrary::GetPropertyNames(UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
+UCesiumPropertyTableBlueprintLibrary::GetPropertyNames(
+    UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
   TArray<FString> names;
   PropertyTable._properties.GenerateKeyArray(names);
   return names;
@@ -78,7 +77,7 @@ UCesiumPropertyTableBlueprintLibrary::GetPropertyNames(UPARAM(ref) const FCesium
 
 /*static*/ const FCesiumPropertyTableProperty&
 UCesiumPropertyTableBlueprintLibrary::FindProperty(
-  UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
+    UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     const FString& PropertyName) {
   const FCesiumPropertyTableProperty* property =
       PropertyTable._properties.Find(PropertyName);
@@ -86,14 +85,14 @@ UCesiumPropertyTableBlueprintLibrary::FindProperty(
 }
 
 /*static*/ TMap<FString, FCesiumMetadataValue>
-UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureID(
+UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     int64 featureID) {
   TMap<FString, FCesiumMetadataValue> values;
   for (const auto& pair : PropertyTable._properties) {
     values.Add(
         pair.Key,
-        UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
             pair.Value,
             featureID));
   }
@@ -102,18 +101,16 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureID(
 }
 
 /*static*/ TMap<FString, FString>
-UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesAsStringsForFeatureID(
+UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
     int64 featureID) {
   TMap<FString, FString> values;
   for (const auto& pair : PropertyTable._properties) {
     values.Add(
         pair.Key,
-        UCesiumMetadataValueBlueprintLibrary::GetString(
-            UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
-                pair.Value,
-                featureID),
-            ""));
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
+            pair.Value,
+            featureID));
   }
 
   return values;

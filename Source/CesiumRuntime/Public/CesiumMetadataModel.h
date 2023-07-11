@@ -53,7 +53,7 @@ public:
           (DeprecatedFunction,
            DeprecatedMessage =
                "UCesiumMetadataModelBlueprintLibrary is deprecated. Use UCesiumModelMetadataBlueprintLibrary to get FCesiumPropertyTables from FCesiumModelMetadata instead."))
-  static const TMap<FString, FCesiumPropertyTable&>
+  static const TMap<FString, FCesiumPropertyTable>
   GetFeatureTables(UPARAM(ref) const FCesiumMetadataModel& MetadataModel);
 
   /**
@@ -67,7 +67,7 @@ public:
           (DeprecatedFunction,
            DeprecatedMessage =
                "UCesiumMetadataModelBlueprintLibrary is deprecated. Use UCesiumModelMetadataBlueprintLibrary to get FCesiumPropertyTextures from FCesiumModelMetadata instead."))
-  static const TMap<FString, FCesiumPropertyTexture&>
+  static const TMap<FString, FCesiumPropertyTexture>
   GetFeatureTextures(UPARAM(ref) const FCesiumMetadataModel& MetadataModel);
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

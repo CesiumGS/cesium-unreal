@@ -3,10 +3,9 @@
 #pragma once
 
 #include "CesiumFeatureIdAttribute.h"
-#include "CesiumFeatureTable.h"
-#include "CesiumMetadataGenericValue.h"
-#include "CesiumMetadataModel.h"
-#include "CesiumMetadataPrimitive.h"
+#include "CesiumMetadataValue.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPrimitiveMetadata.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
@@ -29,7 +28,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
-  static const FCesiumMetadataModel&
+  static const FCesiumModelMetadata&
   GetModelMetadata(const UPrimitiveComponent* component);
 
   /**
@@ -40,7 +39,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
-  static const FCesiumMetadataPrimitive&
+  static const FCesiumPrimitiveMetadata&
   GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
@@ -53,7 +52,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Utility")
-  static TMap<FString, FCesiumMetadataGenericValue>
+  static TMap<FString, FCesiumMetadataValue>
   GetMetadataValuesForFace(const UPrimitiveComponent* component, int64 faceID);
 
   /**
@@ -78,7 +77,6 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility",
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
