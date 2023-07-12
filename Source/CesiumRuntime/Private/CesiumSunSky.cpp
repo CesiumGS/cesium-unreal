@@ -37,7 +37,7 @@
 //  guaranteed to be below it. Rather than actually calculate sea level, a WGS84
 //  height of -100meters will be close enough.
 //  * When far from the surface, we can see a lot of the Earth, and it's
-//  essential that no bits of the surface extend into the atmosphere, because
+//  essential that no bits of the surface extend outside the atmosphere, because
 //  that creates a very distracting artifact. So we want to choose a globe
 //  radius that is guaranteed to encapsulate all visible parts of the globe.
 //  * In between these two extremes, we need to blend smoothly.
@@ -72,11 +72,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
   DirectionalLight->bUsedAsAtmosphereSunLight = true;
 #endif
 
-  // The location of the DirectionalLight should never matter, but by making it
-  // absolute we do less math when the Actor moves as a result of the
-  // GlobeAnchorComponent.
-  DirectionalLight->SetUsingAbsoluteLocation(true);
-  DirectionalLight->SetWorldLocation(FVector(0, 0, 0));
+  DirectionalLight->SetRelativeLocation(FVector(0, 0, 0));
 
   if (!SkySphereClass) {
     static ConstructorHelpers::FClassFinder<AActor> skySphereFinder(
@@ -103,8 +99,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
 
   // The Sky Light is fixed at the Georeference origin.
   // TODO: should it follow the player?
-  SkyLight->SetUsingAbsoluteLocation(true);
-  SkyLight->SetWorldLocation(FVector(0, 0, 0));
+  SkyLight->SetRelativeLocation(FVector(0, 0, 0));
 
   // The Sky Atmosphere should be positioned relative to the
   // Scene/RootComponent, which is kept at the center of the Earth by the
@@ -184,6 +179,12 @@ void ACesiumSunSky::_spawnSkySphere() {
   _setSkySphereDirectionalLight();
 }
 
+double ACesiumSunSky::_computeScale() const {
+  // The SkyAtmosphere is not affected by Actor scaling, so we do it manually.
+  FVector actorScale = this->GetActorScale();
+  return actorScale.GetMax() * (this->GetGeoreference()->GetScale() / 100.0);
+}
+
 void ACesiumSunSky::UpdateSkySphere() {
   if (!UseMobileRendering || !SkySphereActor) {
     return;
@@ -211,6 +212,9 @@ void ACesiumSunSky::BeginPlay() {
 
   if (this->UpdateAtmosphereAtRuntime) {
     this->UpdateAtmosphereRadius();
+  }
+
+  if (this->SkyAtmosphere->AtmosphereHeight != this->AtmosphereHeight) {
   }
 }
 
@@ -253,6 +257,14 @@ void ACesiumSunSky::Tick(float DeltaSeconds) {
 
   if (this->UpdateAtmosphereAtRuntime) {
     this->UpdateAtmosphereRadius();
+  }
+
+  if (IsValid(this->SkyAtmosphere)) {
+    float atmosphereHeight =
+        float(this->_computeScale() * this->AtmosphereHeight);
+    if (atmosphereHeight != this->SkyAtmosphere->AtmosphereHeight) {
+      this->SkyAtmosphere->SetAtmosphereHeight(atmosphereHeight);
+    }
   }
 }
 
@@ -401,10 +413,10 @@ void ACesiumSunSky::UpdateSun_Implementation() {
   // Orient sun / directional light
   if (this->UseLevelDirectionalLight && IsValid(this->LevelDirectionalLight) &&
       IsValid(this->LevelDirectionalLight->GetRootComponent())) {
-    this->LevelDirectionalLight->GetRootComponent()->SetWorldRotation(
+    this->LevelDirectionalLight->GetRootComponent()->SetRelativeRotation(
         newRotation);
   } else {
-    this->DirectionalLight->SetWorldRotation(newRotation);
+    this->DirectionalLight->SetRelativeRotation(newRotation);
   }
 
   // Mobile only
@@ -442,12 +454,12 @@ FVector getViewLocation(UWorld* pWorld) {
 } // namespace
 
 void ACesiumSunSky::UpdateAtmosphereRadius() {
-  FVector location = getViewLocation(this->GetWorld());
+  const FTransform& transform = this->GetActorTransform().Inverse();
+  FVector location =
+      transform.TransformPosition(getViewLocation(this->GetWorld()));
   glm::dvec3 llh =
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(
           VecMath::createVector3D(location));
-
-  double scale = this->GetGeoreference()->GetScale() / 100.0;
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
   double maxRadius = 6387000.0;
@@ -455,7 +467,7 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
   if (llh.z / 1000.0 > this->CircumscribedGroundThreshold) {
     this->SetSkyAtmosphereGroundRadius(
         this->SkyAtmosphere,
-        maxRadius * scale / 1000.0);
+        maxRadius * this->_computeScale() / 1000.0);
   } else {
     // Find the ellipsoid radius 100m below the surface at this location. See
     // the comment at the top of this file.
@@ -468,7 +480,7 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     if (llh.z / 1000.0 < this->InscribedGroundThreshold) {
       this->SetSkyAtmosphereGroundRadius(
           this->SkyAtmosphere,
-          minRadius * scale / 1000.0);
+          minRadius * this->_computeScale() / 1000.0);
     } else {
       double t =
           ((llh.z / 1000.0) - this->InscribedGroundThreshold) /
@@ -476,7 +488,7 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
       double radius = glm::mix(minRadius, maxRadius, t);
       this->SetSkyAtmosphereGroundRadius(
           this->SkyAtmosphere,
-          radius * scale / 1000.0);
+          radius * this->_computeScale() / 1000.0);
     }
   }
 }
