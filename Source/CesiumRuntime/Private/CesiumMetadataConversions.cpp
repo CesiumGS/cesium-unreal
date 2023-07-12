@@ -41,7 +41,16 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
   }
 
   if (type == ECesiumMetadataType::Vec2) {
-    return ECesiumMetadataBlueprintType::FVector2D;
+    switch (componentType) {
+    case ECesiumMetadataComponentType::Uint8:
+    case ECesiumMetadataComponentType::Int8:
+    case ECesiumMetadataComponentType::Int16:
+    case ECesiumMetadataComponentType::Uint16:
+    case ECesiumMetadataComponentType::Int32:
+      return ECesiumMetadataBlueprintType::FIntPoint;
+    default:
+      return ECesiumMetadataBlueprintType::FVector2D;
+    }
   }
 
   if (type == ECesiumMetadataType::Vec3) {

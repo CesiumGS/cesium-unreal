@@ -169,7 +169,7 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::
         const FCesiumFeatureIdTexture& FeatureIDTexture,
         float U,
         float V) {
-  return FeatureIDTexture._featureIdTextureView.getFeatureId(U, V);
+  return FeatureIDTexture._featureIdTextureView.getFeatureID(U, V);
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(

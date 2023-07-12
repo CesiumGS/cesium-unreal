@@ -295,8 +295,8 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
 
   EncodedPropertyTexture encodedPropertyTexture;
 
-  const CesiumGltf::PropertyTextureView& propertyTextureView =
-      propertyTexture.getPropertyTextureView();
+  //const CesiumGltf::PropertyTextureView& propertyTextureView =
+  //    propertyTexture.getPropertyTextureView();
   // const std::unordered_map<std::string,
   // CesiumGltf::FeatureTexturePropertyView>&
   //    properties = featureTextureView.getProperties();

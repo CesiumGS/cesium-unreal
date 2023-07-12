@@ -32,11 +32,7 @@ FCesiumPropertyTable::FCesiumPropertyTable(
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
-    if (propertyValue.status() == PropertyTablePropertyViewStatus::Valid) {
-      properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
-    } else {
-      properties.Add(key, EmptyPropertyTableProperty);
-    }
+    properties.Add(key, FCesiumPropertyTableProperty(propertyValue));
   });
 }
 

@@ -1,7 +1,7 @@
 #include "CesiumMetadataValue.h"
 #include "Misc/AutomationTest.h"
 
-#include <vector>
+#include <limits>
 
 using namespace CesiumGltf;
 
@@ -87,7 +87,7 @@ void FCesiumMetadataValueSpec::Define() {
     });
 
     It("constructs array value with correct type", [this]() {
-      PropertyArrayView<uint8_t> arrayView(std::vector<std::byte>());
+      PropertyArrayView<uint8_t> arrayView;
       FCesiumMetadataValue value(arrayView);
       FCesiumMetadataValueType valueType =
           UCesiumMetadataValueBlueprintLibrary::GetValueType(value);
@@ -133,38 +133,314 @@ void FCesiumMetadataValueSpec::Define() {
           "matN",
           UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, false));
 
-      //value = FCesiumMetadataValue(PropertyArrayView<bool>());
+      value = FCesiumMetadataValue(PropertyArrayView<bool>());
       TestFalse(
           "array",
           UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, false));
     });
   });
 
-  // Describe("integer", [this]() {
-  //  It("converts from integer", [this]() {
-  //    TestEqual(
-  //        "same type",
-  //        CesiumMetadataConversions<int32_t, int32_t>::convert(50, 0),
-  //        50);
+  Describe("GetByte", [this]() {
+    It("gets from uint8", [this]() {
+      FCesiumMetadataValue value(static_cast<uint8_t>(23));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          23);
+    });
 
-  //    TestEqual(
-  //        "different sign",
-  //        CesiumMetadataConversions<int32_t, uint32_t>::convert(50, 0),
-  //        50);
-  //  });
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          1);
+    });
 
-  //  It("converts from in-range floating point number", [this]() {
-  //    TestEqual(
-  //        "single-precision",
-  //        CesiumMetadataConversions<int32_t, float>::convert(50.125f, 0),
-  //        50);
+    It("gets from in-range integers", [this]() {
+      FCesiumMetadataValue value(static_cast<int32_t>(255));
+      TestEqual(
+          "larger signed integer",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          255);
 
-  //    TestEqual(
-  //        "double-precision",
-  //        CesiumMetadataConversions<int32_t, double>::convert(1234.05678f, 0),
-  //        1234);
-  //  });
-  //});
+      value = FCesiumMetadataValue(static_cast<uint64_t>(255));
+      TestEqual(
+          "larger unsigned integer",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          255);
+    });
+
+    It("gets from in-range floating-point numbers", [this]() {
+      FCesiumMetadataValue value(254.5f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          254);
+
+      value = FCesiumMetadataValue(0.85);
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 255),
+          0);
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("123"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          123);
+    });
+
+    It("returns default value for out-of-range numbers", [this]() {
+      FCesiumMetadataValue value(static_cast<int8_t>(-1));
+      TestEqual(
+          "negative integer",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 255),
+          255);
+
+      value = FCesiumMetadataValue(-1.0);
+      TestEqual(
+          "negative floating-point number",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 255),
+          255);
+
+      value = FCesiumMetadataValue(256);
+      TestEqual(
+          "positive integer",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(255.5f);
+      TestEqual(
+          "positive floating-point number",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          0);
+    });
+
+    It("returns default value for incompatible types", [this]() {
+      FCesiumMetadataValue value(glm::u16vec2(1, 1));
+      TestEqual(
+          "vecN",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(glm::mat2(1.0f, 1.0f, 1.0f, 1.0f));
+      TestEqual(
+          "matN",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(PropertyArrayView<uint8_t>());
+      TestEqual(
+          "array",
+          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
+          0);
+    });
+  });
+
+  Describe("GetInteger", [this]() {
+    It("gets from in-range integers", [this]() {
+      FCesiumMetadataValue value(static_cast<int32_t>(123));
+      TestEqual(
+          "int32_t",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          123);
+
+      value = FCesiumMetadataValue(static_cast<int16_t>(-25));
+      TestEqual(
+          "smaller signed integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          -25);
+
+      value = FCesiumMetadataValue(static_cast<uint8_t>(5));
+      TestEqual(
+          "smaller unsigned integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          5);
+
+      value = FCesiumMetadataValue(static_cast<int64_t>(-123));
+      TestEqual(
+          "larger signed integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          -123);
+
+      value = FCesiumMetadataValue(static_cast<int64_t>(456));
+      TestEqual(
+          "larger unsigned integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          456);
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(false);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, -1),
+          0);
+    });
+
+    It("gets from in-range floating point number", [this]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          1234);
+
+      value = FCesiumMetadataValue(-78.9);
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          -78);
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("-1234"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          -1234);
+    });
+
+    It("returns default value for out-of-range numbers", [this]() {
+      FCesiumMetadataValue value(std::numeric_limits<int64_t>::min());
+      TestEqual(
+          "negative integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(std::numeric_limits<float>::lowest());
+      TestEqual(
+          "negative floating-point number",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(std::numeric_limits<int64_t>::max());
+      TestEqual(
+          "positive integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(std::numeric_limits<float>::max());
+      TestEqual(
+          "positive floating-point number",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+    });
+
+    It("returns default value for incompatible types", [this]() {
+      FCesiumMetadataValue value(glm::ivec2(1, 1));
+      TestEqual(
+          "vecN",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(glm::i32mat2x2(1, 1, 1, 1));
+      TestEqual(
+          "matN",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(PropertyArrayView<int32_t>());
+      TestEqual(
+          "array",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
+          0);
+    });
+  });
+
+  Describe("GetInteger64", [this]() {
+    It("gets from in-range integers", [this]() {
+      FCesiumMetadataValue value(std::numeric_limits<int64_t>::max() - 1);
+      TestEqual(
+          "int64_t",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          std::numeric_limits<int64_t>::max() - 1);
+
+      value = FCesiumMetadataValue(static_cast<int16_t>(-12345));
+      TestEqual(
+          "smaller signed integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          -12345);
+
+      value = FCesiumMetadataValue(static_cast<uint8_t>(255));
+      TestEqual(
+          "smaller unsigned integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          255);
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, -1),
+          1);
+    });
+
+    It("gets from in-range floating point number", [this]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          1234);
+
+      value = FCesiumMetadataValue(-78.9);
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          -78);
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("-1234"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          -1234);
+    });
+
+    It("returns default value for out-of-range numbers", [this]() {
+      FCesiumMetadataValue value(std::numeric_limits<float>::lowest());
+      TestEqual(
+          "negative floating-point number",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(std::numeric_limits<uint64_t>::max());
+      TestEqual(
+          "positive integer",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(std::numeric_limits<float>::max());
+      TestEqual(
+          "positive floating-point number",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          0);
+    });
+
+    It("returns default value for incompatible types", [this]() {
+      FCesiumMetadataValue value(glm::u64vec2(1, 1));
+      TestEqual(
+          "vecN",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(glm::mat2(1.0f, 1.0f, 1.0f, 1.0f));
+      TestEqual(
+          "matN",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          0);
+
+      value = FCesiumMetadataValue(PropertyArrayView<int64_t>());
+      TestEqual(
+          "array",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          0);
+    });
+  });
 
   // Describe("FString", [this]() {
   //  It("converts from string", [this]() {

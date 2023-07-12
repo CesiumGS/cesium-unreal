@@ -10,7 +10,8 @@
 int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* Component,
     UPARAM(ref) const FCesiumPropertyTextureProperty& Property) {
-  const UCesiumGltfPrimitiveComponent* pPrimitive =
+  return -1;
+  /*const UCesiumGltfPrimitiveComponent* pPrimitive =
       Cast<UCesiumGltfPrimitiveComponent>(Component);
   if (!pPrimitive) {
     return -1;
@@ -22,12 +23,13 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
     return -1;
   }
 
-  return textureCoordinateIndexIt->second;
+  return textureCoordinateIndexIt->second;*/
 }
 
 int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
     UPARAM(ref) const FCesiumPropertyTextureProperty& property) {
-  return property._pPropertyView->getCount();
+  return 0;
+  //property._pPropertyView->getCount();
 }
 //
 //bool UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(

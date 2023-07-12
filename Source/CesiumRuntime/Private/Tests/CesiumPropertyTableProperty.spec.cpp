@@ -31,7 +31,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
     });
 
-    It("constructs invalid instance from empty property view", [this]() {
+    //It("constructs invalid instance from empty property view", [this]() {
       //PropertyTablePropertyView<int8_t> propertyView(
       //    PropertyTablePropertyViewStatus::ErrorArrayTypeMismatch);
       //FCesiumPropertyTableProperty property;
@@ -40,6 +40,6 @@ void FCesiumPropertyTablePropertySpec::Define() {
       //    UCesiumPropertyTablePropertyBlueprintLibrary::
       //        GetPropertyTablePropertyStatus(property),
       //    ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-    });
+    //});
   });
 }

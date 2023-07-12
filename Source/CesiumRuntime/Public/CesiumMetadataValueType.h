@@ -27,6 +27,9 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   /* Indicates a value is best represented as a Float64 (64-bit). */
   Float64,
   /* Indicates a value is best represented as a FVector2D (2-dimensional
+     integer vector). */
+  FIntPoint,
+  /* Indicates a value is best represented as a FVector2D (2-dimensional
      double-precision vector). */
   FVector2D,
   /* Indicates a value is best represented as a FIntVector (3-dimensional

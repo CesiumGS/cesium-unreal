@@ -38,14 +38,9 @@ public:
       const CesiumGltf::PropertyTexture&
           PropertyTexture);
 
-  const CesiumGltf::PropertyTextureView& getPropertyTextureView() const {
-    return this->_propertyTextureView;
-  }
-
 private:
   ECesiumPropertyTextureStatus _status;
   FString _name;
-  CesiumGltf::PropertyTextureView _propertyTextureView;
   TMap<FString, FCesiumPropertyTextureProperty> _properties;
 
   friend class UCesiumPropertyTextureBlueprintLibrary;

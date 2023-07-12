@@ -68,12 +68,12 @@ struct CESIUMRUNTIME_API FCesiumPropertyTextureProperty {
 public:
   FCesiumPropertyTextureProperty() {}
 
-  FCesiumPropertyTextureProperty(
+  /*FCesiumPropertyTextureProperty(
       const CesiumGltf::PropertyTexturePropertyView& Property)
-      : _pPropertyView(&Property) {}
+      : _pPropertyView(&Property) {}*/
 
 private:
-  const CesiumGltf::PropertyTexturePropertyView* _pPropertyView;
+//  const CesiumGltf::PropertyTexturePropertyView* _pPropertyView;
 
   friend class UCesiumPropertyTexturePropertyBlueprintLibrary;
 };

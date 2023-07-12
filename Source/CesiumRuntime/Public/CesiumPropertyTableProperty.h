@@ -225,12 +225,13 @@ public:
             false),
         _count(0),
         _normalized(false) {
+
     switch (value.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
       break;
     case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidPropertyTable:
-    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorPropertyDoesNotExist:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorNonexistentProperty:
     case CesiumGltf::PropertyTablePropertyViewStatus::ErrorTypeMismatch:
     case CesiumGltf::PropertyTablePropertyViewStatus::
         ErrorComponentTypeMismatch:
