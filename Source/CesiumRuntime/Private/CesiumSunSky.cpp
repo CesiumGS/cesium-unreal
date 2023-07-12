@@ -454,7 +454,18 @@ FVector getViewLocation(UWorld* pWorld) {
 } // namespace
 
 void ACesiumSunSky::UpdateAtmosphereRadius() {
-  const FTransform& transform = this->GetActorTransform().Inverse();
+  // This Actor is located at the center of the Earth (the CesiumGlobeAnchor
+  // keeps it there), so we ignore this Actor's transform and use only its
+  // parent transform.
+  FTransform transform{};
+  USceneComponent* pRootComponent = this->GetRootComponent();
+  if (IsValid(pRootComponent)) {
+    USceneComponent* pParent = pRootComponent->GetAttachParent();
+    if (IsValid(pParent)) {
+      transform = pParent->GetComponentToWorld().Inverse();
+    }
+  }
+
   FVector location =
       transform.TransformPosition(getViewLocation(this->GetWorld()));
   glm::dvec3 llh =

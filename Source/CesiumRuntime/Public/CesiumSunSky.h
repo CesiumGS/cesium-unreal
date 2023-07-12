@@ -293,8 +293,8 @@ protected:
    * The height of the atmosphere layer above the ground, in kilometers. This
    * value is automatically scaled according to the CesiumGeoreference Scale and
    * the Actor scale. However, Unreal Engine's SkyAtmosphere has a hard-coded
-   * minimum effective value of 0.1, so the atmosphere will look too thick when the globe
-   * is scaled down drastically.
+   * minimum effective value of 0.1, so the atmosphere will look too thick when
+   * the globe is scaled down drastically.
    */
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Atmosphere")
   double AtmosphereHeight = 60.0;
