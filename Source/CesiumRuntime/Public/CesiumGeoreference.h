@@ -283,74 +283,106 @@ public:
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) into Unreal world
-   * coordinates (relative to the floating origin).
+   * degrees (y), and height above the ellipsoid in meters (z) into Unreal
+   * coordinates. The resulting position should generally not be interpreted as
+   * an Unreal _world_ position, but rather a position expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
   glm::dvec3 TransformLongitudeLatitudeHeightToUnreal(
       const glm::dvec3& longitudeLatitudeHeight) const;
 
   /**
    * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) into Unreal world
-   * coordinates (relative to the floating origin).
+   * degrees (y), and height above the ellipsoid in meters (z) into Unreal
+   * coordinates. The resulting position should generally not be interpreted as
+   * an Unreal _world_ position, but rather a position expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformLongitudeLatitudeHeightToUnreal(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
-   * Transforms Unreal world coordinates (relative to the floating origin) into
-   * longitude in degrees (x), latitude in degrees (y), and height above the
-   * ellipsoid in meters (z).
+   * Transforms Unreal coordinates into longitude in degrees (x), latitude in
+   * degrees (y), and height above the ellipsoid in meters (z). The position
+   * should generally not be an Unreal _world_ position, but rather a position
+   * expressed in some parent Actor's reference frame as defined by its
+   * Transform. This way, the chain of Unreal transforms places and orients the
+   * "globe" in the Unreal world.
    */
   glm::dvec3
   TransformUnrealToLongitudeLatitudeHeight(const glm::dvec3& unreal) const;
 
   /**
-   * Transforms Unreal world coordinates (relative to the floating origin) into
-   * longitude in degrees (x), latitude in degrees (y), and height above the
-   * ellipsoid in meters (z).
+   * Transforms Unreal coordinates into longitude in degrees (x), latitude in
+   * degrees (y), and height above the ellipsoid in meters (z). The position
+   * should generally not be an Unreal _world_ position, but rather a position
+   * expressed in some parent Actor's reference frame as defined by its
+   * Transform. This way, the chain of Unreal transforms places and orients the
+   * "globe" in the Unreal world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformUnrealToLongitudeLatitudeHeight(const FVector& Unreal) const;
 
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
-   * Unreal relative world (relative to the floating origin).
+   * Unreal coordinates. The resulting position should generally not be
+   * interpreted as an Unreal _world_ position, but rather a position expressed
+   * in some parent Actor's reference frame as defined by its Transform. This
+   * way, the chain of Unreal transforms places and orients the "globe" in the
+   * Unreal world.
    */
   glm::dvec3 TransformEcefToUnreal(const glm::dvec3& ecef) const;
 
   /**
    * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
-   * Unreal relative world (relative to the floating origin).
+   * Unreal coordinates. The resulting position should generally not be
+   * interpreted as an Unreal _world_ position, but rather a position expressed
+   * in some parent Actor's reference frame as defined by its Transform. This
+   * way, the chain of Unreal transforms places and orients the "globe" in the
+   * Unreal world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformEcefToUnreal(const FVector& Ecef) const;
 
   /**
-   * Transforms the given point from Unreal relative world (relative to the
-   * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
+   * Transforms the given point from Unreal coordinates to Earth-Centered,
+   * Earth-Fixed (ECEF). The position should generally not be an Unreal _world_
+   * position, but rather a position expressed in some parent Actor's reference
+   * frame as defined by its Transform. This way, the chain of Unreal transforms
+   * places and orients the "globe" in the Unreal world.
    */
   glm::dvec3 TransformUnrealToEcef(const glm::dvec3& unreal) const;
 
   /**
-   * Transforms the given point from Unreal relative world (relative to the
-   * floating origin) to Earth-Centered, Earth-Fixed (ECEF).
+   * Transforms the given point from Unreal coordinates to Earth-Centered,
+   * Earth-Fixed (ECEF). The position should generally not be an Unreal _world_
+   * position, but rather a position expressed in some parent Actor's reference
+   * frame as defined by its Transform. This way, the chain of Unreal transforms
+   * places and orients the "globe" in the Unreal world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FVector TransformUnrealToEcef(const FVector& Unreal) const;
 
   /**
-   * Transforms a rotator from Unreal world to East-South-Up at the given
-   * Unreal world location (relative to the floating origin).
+   * Transforms a rotator from Unreal to East-South-Up at the given
+   * Unreal location. The rotator and location should generally not be relative
+   * to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
   glm::dquat TransformRotatorUnrealToEastSouthUp(
       const glm::dquat& UnrealRotator,
       const glm::dvec3& UnrealLocation) const;
 
   /**
-   * Transforms a rotator from Unreal world to East-South-Up at the given
-   * Unreal world location (relative to the floating origin).
+   * Transforms a rotator from Unreal to East-South-Up at the given
+   * Unreal location. The rotator and location should generally not be relative
+   * to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator TransformRotatorUnrealToEastSouthUp(
@@ -358,16 +390,22 @@ public:
       const FVector& UnrealLocation) const;
 
   /**
-   * Transforms a rotator from East-South-Up to Unreal world at the given
-   * Unreal world location (relative to the floating origin).
+   * Transforms a rotator from East-South-Up to Unreal at the given
+   * Unreal location. The location and resulting rotator should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
   glm::dquat TransformRotatorEastSouthUpToUnreal(
       const glm::dquat& EsuRotator,
       const glm::dvec3& UnrealLocation) const;
 
   /**
-   * Transforms a rotator from East-South-Up to Unreal world at the given
-   * Unreal world location (relative to the floating origin).
+   * Transforms a rotator from East-South-Up to Unreal at the given
+   * Unreal location. The location and resulting rotator should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FRotator TransformRotatorEastSouthUpToUnreal(
@@ -376,17 +414,23 @@ public:
 
   /**
    * Computes the rotation matrix from the local East-South-Up to Unreal at the
-   * specified Unreal world location (relative to the floating
-   * origin). The returned transformation works in Unreal's left-handed
-   * coordinate system.
+   * specified Unreal location. The returned transformation works in Unreal's
+   * left-handed coordinate system. The location and resulting rotation should
+   * generally not be relative to the Unreal _world_, but rather be expressed in
+   * some parent Actor's reference frame as defined by its Transform. This way,
+   * the chain of Unreal transforms places and orients the "globe" in the Unreal
+   * world.
    */
   glm::dmat3 ComputeEastSouthUpToUnreal(const glm::dvec3& unreal) const;
 
   /**
    * Computes the rotation matrix from the local East-South-Up to Unreal at the
-   * specified Unreal world location (relative to the floating
-   * origin). The returned transformation works in Unreal's left-handed
-   * coordinate system.
+   * specified Unreal location. The returned transformation works in Unreal's
+   * left-handed coordinate system. The location and resulting rotation should
+   * generally not be relative to the Unreal _world_, but rather be expressed in
+   * some parent Actor's reference frame as defined by its Transform. This way,
+   * the chain of Unreal transforms places and orients the "globe" in the Unreal
+   * world.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   FMatrix ComputeEastSouthUpToUnreal(const FVector& Unreal) const;
@@ -406,9 +450,9 @@ public:
 
   /**
    * @brief Computes the normal of the plane tangent to the surface of the
-   * ellipsoid that is used by this instance, at the provided position.
+   * ellipsoid that is used by this instance, at the provided position ECEF.
    *
-   * @param position The cartesian position for which to to determine the
+   * @param position The ECEF position for which to to determine the
    * surface normal.
    * @return The normal.
    */
