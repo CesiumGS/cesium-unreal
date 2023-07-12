@@ -138,7 +138,8 @@ void AGlobeAwareDefaultPawn::_interpolateFlightPosition(
   }
 }
 
-const FTransform& AGlobeAwareDefaultPawn::GetGlobeToUnrealWorldTransform() const {
+const FTransform&
+AGlobeAwareDefaultPawn::GetGlobeToUnrealWorldTransform() const {
   AActor* pParent = this->GetAttachParentActor();
   if (IsValid(pParent)) {
     return pParent->GetActorTransform();
