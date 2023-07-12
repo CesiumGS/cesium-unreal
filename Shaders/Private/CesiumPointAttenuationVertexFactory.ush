@@ -235,15 +235,19 @@ float4 VertexFactoryGetPreviousWorldPosition(FVertexFactoryInput Input, FVertexF
 }
 
 float4 ApplyAttenuation(float4 WorldPosition, uint CornerIndex) {
-  	// Unreal uses counter-clockwise winding order.
+    // These offsets generate the quad like so:
+   	// 1 --- 2
+  	// |  /  |
   	// 0 --- 3
-  	// |  \  |
-  	// 1 --- 2
+  	// Unreal uses counter-clockwise winding order, but Cesium models are created
+    // with a y-inverting transform. To compensate, we create the quad facing the
+    // wrong way, such that when the transform is applied, the quad faces the right
+    // way.
 
   	// Results in -0.5 for 0, 1 and 0.5 for 2, 3
   	float OffsetX = CornerIndex / 2 - 0.5;
   	float OffsetY = -0.5f;
-  	if (CornerIndex == 0 || CornerIndex == 3) {
+  	if (CornerIndex == 1 || CornerIndex == 2) {
   	  	OffsetY = 0.5;
   	}
 
