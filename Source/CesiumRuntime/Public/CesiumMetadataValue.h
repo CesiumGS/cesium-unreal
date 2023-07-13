@@ -187,13 +187,12 @@ public:
     bool isArray;
 
     if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      auto propertyType = CesiumGltf::TypeToPropertyType<
-          CesiumGltf::MetadataArrayType<T>::type>::value;
-      auto propertyComponentType = CesiumGltf::TypeToPropertyType<
-          CesiumGltf::MetadataArrayType<T>::type>::component;
+      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
 
-      type = ECesiumMetadataType(propertyType);
-      componentType = ECesiumMetadataComponentType(propertyComponentType);
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<ArrayType>::component);
       isArray = true;
     } else {
       type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);

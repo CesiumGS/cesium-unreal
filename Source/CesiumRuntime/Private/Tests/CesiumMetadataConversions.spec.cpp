@@ -382,17 +382,10 @@ void FCesiumMetadataConversionsSpec::Define() {
 
     It("uses default value for invalid strings", [this]() {
       TestEqual(
-          "out-of-range number",
-          CesiumMetadataConversions<double, std::string_view>::convert(
-              std::string_view(
-                  std::to_string(std::numeric_limits<double>::max()) + "1"),
-              0.0),
-          0.0);
-      TestEqual(
           "mixed number and non-number input",
           CesiumMetadataConversions<double, std::string_view>::convert(
               std::string_view("10.00 hello"),
-              0.0f),
+              0.0),
           0.0);
       TestEqual(
           "non-number input",

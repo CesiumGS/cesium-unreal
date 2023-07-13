@@ -495,7 +495,7 @@ struct CesiumMetadataConversions<
   }
 };
 
-static const char VectorComponents[] = "XYZW";
+static const std::string VectorComponents = "XYZW";
 
 /**
  * Converts from a glm::vecN to a string.
@@ -783,7 +783,7 @@ struct CesiumMetadataConversions<FIntVector, glm::vec<4, T>> {
 template <> struct CesiumMetadataConversions<FIntVector, std::string_view> {
   /**
    * Converts a std::string_view to a FIntVector. This uses
-   * FIntVector::InitFromString, which expects the values to be written in the
+   * TVector::InitFromString, which expects the values to be written in the
    * "X=... Y=... Z=..." format. If this function fails to parse a FIntVector,
    * the default value is returned.
    *
@@ -796,9 +796,12 @@ template <> struct CesiumMetadataConversions<FIntVector, std::string_view> {
         CesiumMetadataConversions<FString, std::string_view>::convert(
             from,
             FString(""));
-    FIntVector result;
+    UE::Math::TVector<int32_t> result;
+    if (result.InitFromString(string)) {
+      return FIntVector(result[0], result[1], result[2]);
+    }
+
     return defaultValue;
-    // result.InitFromString(string) ? result : defaultValue;
   }
 };
 
@@ -1154,7 +1157,7 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 ///**
 // * Converts from a boolean to a double-precision floating-point vec4.
 // */
-//template <> struct CesiumMetadataConversions<FVector4, bool> {
+// template <> struct CesiumMetadataConversions<FVector4, bool> {
 //  /**
 //   * Converts a boolean to a FVector4. The boolean is converted to a float
 //   * value of 1.0f for true or 0.0f for false. The returned vector is
@@ -1172,8 +1175,8 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 ///**
 // * Converts from an integer type to a double-precision floating-point vec3.
 // */
-//template <typename TFrom>
-//struct CesiumMetadataConversions<
+// template <typename TFrom>
+// struct CesiumMetadataConversions<
 //    FVector,
 //    TFrom,
 //    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
@@ -1193,7 +1196,7 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 ///**
 // * Converts from a float to a double-precision floating-point vec3.
 // */
-//template <> struct CesiumMetadataConversions<FVector, float> {
+// template <> struct CesiumMetadataConversions<FVector, float> {
 //  /**
 //   * Converts a float to a FVector. The returned vector is initialized with
 //   * the value in all of its components.
@@ -1209,7 +1212,7 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 ///**
 // * Converts from a double to a single-precision floating-point vec3.
 // */
-//template <> struct CesiumMetadataConversions<FVector, double> {
+// template <> struct CesiumMetadataConversions<FVector, double> {
 //  /**
 //   * Converts a double to a FVector3f. The returned vector is initialized with
 //   * the value in all of its components.
@@ -1226,12 +1229,14 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 // * Converts from a glm::vec2 of any type to a double-precision floating-point
 // * vec3.
 // */
-//template <typename T>
-//struct CesiumMetadataConversions<FVector, glm::vec<2, T>> {
+// template <typename T>
+// struct CesiumMetadataConversions<FVector, glm::vec<2, T>> {
 //  /**
 //   * Converts a glm::vec2 of any type to a FVector3f. Similar to how an
-//   * FVector3f can be constructed from an FIntPoint, the vec2 becomes the first
-//   * two components of the FVector3f, while the third component is set to zero.
+//   * FVector3f can be constructed from an FIntPoint, the vec2 becomes the
+//   first
+//   * two components of the FVector3f, while the third component is set to
+//   zero.
 //   * If the vec2 is of an integer type, its values may lose precision during
 //   * conversion.
 //   *
@@ -1251,10 +1256,11 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 // * Converts from a glm::vec3 of any type to a double-precision floating-point
 // * vec3.
 // */
-//template <typename T>
-//struct CesiumMetadataConversions<FVector, glm::vec<3, T>> {
+// template <typename T>
+// struct CesiumMetadataConversions<FVector, glm::vec<3, T>> {
 //  /**
-//   * Converts a glm::vec3 of any type to a FVector. If the vec3 is of an integer
+//   * Converts a glm::vec3 of any type to a FVector. If the vec3 is of an
+//   integer
 //   * type, its values may lose precision during conversion.
 //   *
 //   * @param from The glm::vec3 to be converted.
@@ -1273,8 +1279,8 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 // * Converts from a glm::vec4 of any type to a double-precision floating-point
 // * vec3.
 // */
-//template <typename T>
-//struct CesiumMetadataConversions<FVector, glm::vec<4, T>> {
+// template <typename T>
+// struct CesiumMetadataConversions<FVector, glm::vec<4, T>> {
 //  /**
 //   * Converts a glm::vec4 of any type to a FVector. This only uses the first
 //   * three components of the vec4, dropping the fourth. If the vec3 is of an
@@ -1295,7 +1301,7 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 ///**
 // * Converts from a std::string_view to a double-precision floating-point vec3.
 // */
-//template <> struct CesiumMetadataConversions<FVector, std::string_view> {
+// template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 //  /**
 //   * Converts a std::string_view to a FVector. This uses
 //   * FVector::InitFromString, which expects the values to be written in the

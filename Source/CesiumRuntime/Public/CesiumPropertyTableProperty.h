@@ -247,7 +247,7 @@ public:
     ECesiumMetadataComponentType componentType;
     bool isArray;
     if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = CesiumGltf::MetadataArrayType<T>::type;
+      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
       type =
           ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
       componentType = ECesiumMetadataComponentType(
