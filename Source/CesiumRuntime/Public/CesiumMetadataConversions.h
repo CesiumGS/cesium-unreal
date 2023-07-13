@@ -161,8 +161,8 @@ struct CesiumMetadataConversions<
         CesiumGltf::IsMetadataInteger<TTo>::value && std::is_signed_v<TTo>>> {
   /**
    * Converts the contents of a std::string_view to a signed integer. This
-   * expects the entire std::string_view represents the number, not just a part
-   * of it.
+   * assumes that the entire std::string_view represents the number, not just a
+   * part of it.
    *
    * This returns the default value if no number is parsed from the string.
    *
@@ -214,8 +214,8 @@ struct CesiumMetadataConversions<
         CesiumGltf::IsMetadataInteger<TTo>::value && !std::is_signed_v<TTo>>> {
   /**
    * Converts the contents of a std::string_view to an signed integer. This
-   * expects the entire std::string_view represents the number, not just a part
-   * of it.
+   * assumes that the entire std::string_view represents the number, not just a
+   * part of it.
    *
    * This returns the default value if no number is parsed from the string.
    *
@@ -342,7 +342,7 @@ template <> struct CesiumMetadataConversions<float, double> {
  */
 template <> struct CesiumMetadataConversions<float, std::string_view> {
   /**
-   * Converts a std::string_view to a float. This expects the entire
+   * Converts a std::string_view to a float. This assumes that the entire
    * std::string_view represents the number, not just a part of it.
    *
    * This returns the default value if no number is parsed from the string.
@@ -429,7 +429,7 @@ template <> struct CesiumMetadataConversions<double, float> {
  */
 template <> struct CesiumMetadataConversions<double, std::string_view> {
   /**
-   * Converts a std::string_view to a double. This expects the entire
+   * Converts a std::string_view to a double. This assumes that the entire
    * std::string_view represents the number, not just a part of it.
    *
    * This returns the default value if no number is parsed from the string.
@@ -519,7 +519,9 @@ struct CesiumMetadataConversions<
       if (i > 0) {
         result += " ";
       }
-      result += VectorComponents[i] + "=" + std::to_string(from[i]);
+      result += VectorComponents[i];
+      result += "=";
+      result += std::to_string(from[i]);
     }
     return FString(result.c_str());
   }
@@ -545,7 +547,7 @@ struct CesiumMetadataConversions<
     std::string result;
     glm::length_t dimensions = from.length();
     // glm::matNs are column-major, but Unreal matrices are row-major and print
-    // values by row.
+    // their values by row.
     for (glm::length_t c = 0; c < dimensions; c++) {
       if (c > 0) {
         result += " ";
@@ -555,7 +557,6 @@ struct CesiumMetadataConversions<
         if (r > 0) {
           result += " ";
         }
-
         result += std::to_string(from[c][r]);
       }
       result += "]";
@@ -579,7 +580,263 @@ template <> struct CesiumMetadataConversions<FString, std::string_view> {
 
 #pragma endregion
 
+#pragma region Conversions to integer vec2
+/**
+ * Converts from a boolean to a 32-bit signed integer vec2.
+ */
+template <> struct CesiumMetadataConversions<FIntPoint, bool> {
+  /**
+   * Converts a boolean to a FIntPoint. The boolean is converted to an integer
+   * value of 1 for true or 0 for false. The returned vector is initialized with
+   * this value in both of its components.
+   *
+   * @param from The boolean to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint convert(bool from, const FIntPoint& defaultValue) {
+    int32 value = from ? 1 : 0;
+    return FIntPoint(value);
+  }
+};
+
+/**
+ * Converts from an integer type to a 32-bit signed integer vec2.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FIntPoint,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
+  /**
+   * Converts an integer to a FIntPoint. The returned vector is initialized
+   * with the value in both of its components. If the integer cannot be
+   * losslessly converted to a 32-bit signed representation, the default value
+   * is returned.
+   *
+   * @param from The integer value to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint convert(TFrom from, const FIntPoint& defaultValue) {
+    if (from > std::numeric_limits<int32_t>::max() ||
+        from < std::numeric_limits<int32_t>::lowest()) {
+      return defaultValue;
+    }
+    return FIntPoint(static_cast<int32_t>(from));
+  }
+};
+
+/**
+ * Converts from a floating-point value to a 32-bit signed integer vec2.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FIntPoint,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataFloating<TFrom>::value>> {
+  /**
+   * Converts a floating-point value to a FIntPoint. This truncates the
+   * floating-point value, rounding it towards zero, and puts it in both of the
+   * resulting vector's components.
+   *
+   * If the value is outside the range that a 32-bit signed integer can
+   * represent, the default value is returned.
+   *
+   * @param from The floating-point value to convert from.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint convert(TFrom from, const FIntPoint& defaultValue) {
+    if (double(std::numeric_limits<int32_t>::max()) < from ||
+        double(std::numeric_limits<int32_t>::lowest()) > from) {
+      // Floating-point number is outside the range.
+      return defaultValue;
+    }
+    return FIntPoint(static_cast<int32_t>(from));
+  }
+};
+
+/**
+ * Converts from a glm::vecN of any type to a 32-bit signed integer vec2.
+ */
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<FIntPoint, glm::vec<N, T>> {
+  /**
+   * Converts a glm::vecN of any type to a FIntPoint. This only uses the first
+   * two components of the vecN. If either of the first two values cannot be
+   * converted to a 32-bit signed integer, the default value is returned.
+   *
+   * @param from The glm::vecN to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint
+  convert(const glm::vec<N, T>& from, const FIntPoint& defaultValue) {
+    if constexpr (CesiumGltf::IsMetadataInteger<T>::value) {
+      // Check if both values can be converted.
+      for (size_t i = 0; i < 2; i++) {
+        if (from[i] > std::numeric_limits<int32_t>::max() ||
+            from[i] < std::numeric_limits<int32_t>::lowest()) {
+          return defaultValue;
+        }
+      }
+    }
+
+    if constexpr (CesiumGltf::IsMetadataFloating<T>::value) {
+      for (size_t i = 0; i < 2; i++) {
+        if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
+            from[i] < double(std::numeric_limits<int32_t>::lowest())) {
+          return defaultValue;
+        }
+      }
+    }
+
+    return FIntPoint(
+        static_cast<int32_t>(from[0]),
+        static_cast<int32_t>(from[1]));
+  }
+};
+
+/**
+ * Converts from a std::string_view to a 32-bit signed integer vec2.
+ */
+template <> struct CesiumMetadataConversions<FIntPoint, std::string_view> {
+  /**
+   * Converts a std::string_view to a FIntPoint. This expects the values to be
+   * written in the "X=... Y=..." format. If this function fails to parse
+   * a FIntPoint, the default value is returned.
+   *
+   * @param from The std::string_view to be parsed.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint
+  convert(const std::string_view& from, const FIntPoint& defaultValue) {
+    FString string =
+        CesiumMetadataConversions<FString, std::string_view>::convert(
+            from,
+            FString(""));
+
+    // For some reason, FIntPoint doesn't have an InitFromString method, so
+    // copy the one from FVector.
+    int32 X, Y;
+    const bool bSuccessful = FParse::Value(*string, TEXT("X="), X) &&
+                             FParse::Value(*string, TEXT("Y="), Y);
+    return bSuccessful ? FIntPoint(X, Y) : defaultValue;
+  }
+};
+
+#pragma endregion
+
+#pragma region Conversions to double vec2
+/**
+ * Converts from a boolean to a double-precision floating-point vec2.
+ */
+template <> struct CesiumMetadataConversions<FVector2D, bool> {
+  /**
+   * Converts a boolean to a FVector2D. The boolean is converted to a double
+   * value of 1.0 for true or 0.0 for false. The returned vector is
+   initialized
+   * with this value in both of its components.
+   *
+   * @param from The boolean to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector2D convert(bool from, const FVector2D& defaultValue) {
+    double value = from ? 1.0 : 0.0;
+    return FVector2D(value);
+  }
+};
+
+/**
+ * Converts from an integer type to a double-precision floating-point vec2.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FVector2D,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
+  /**
+   * Converts an integer to a FVector2D. The returned vector is initialized
+   * with the value in both of its components. The value may lose precision
+   * during conversion.
+   *
+   * @param from The integer value to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector2D convert(TFrom from, const FVector2D& defaultValue) {
+    return FVector2D(static_cast<double>(from));
+  }
+};
+
+/**
+ * Converts from a floating-point value to a double-precision floating-point
+ * vec2.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FVector2D,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataFloating<TFrom>::value>> {
+  /**
+   * Converts a floating-point value to a FVector2D. The returned vector is
+   * initialized with the value in all of its components.
+   *
+   * @param from The floating-point value to convert from.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector2D convert(TFrom from, const FVector2D& defaultValue) {
+    return FVector2D(static_cast<double>(from));
+  }
+};
+
+/**
+ * Converts from a glm::vecN of any type to a double-precision floating-point
+ * vec2.
+ */
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<FVector2D, glm::vec<N, T>> {
+  /**
+   * Converts a glm::vecN of any type to a FVector2D. This only uses the first
+   * two components of the vecN.
+   *
+   * @param from The glm::vecN to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector2D
+  convert(const glm::vec<N, T>& from, const FVector2D& defaultValue) {
+    return FVector2D(
+        static_cast<double>(from[0]),
+        static_cast<double>(from[1]));
+  }
+};
+
+/**
+ * Converts from a std::string_view to a double-precision floating-point
+ * vec2.
+ */
+template <> struct CesiumMetadataConversions<FVector2D, std::string_view> {
+  /**
+   * Converts a std::string_view to a FVector2D. This uses
+   * FVector2D::InitFromString, which expects the values to be written in the
+   * "X=... Y=..." format. If this function fails to parse a FVector2D, the
+   * default value is returned.
+   *
+   * @param from The std::string_view to be parsed.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector2D
+  convert(const std::string_view& from, const FVector2D& defaultValue) {
+    FString string =
+        CesiumMetadataConversions<FString, std::string_view>::convert(
+            from,
+            FString(""));
+
+    FVector2D result;
+    return result.InitFromString(string) ? result : defaultValue;
+  }
+};
+
+#pragma endregion
+
 #pragma region Conversions to integer vec3
+
 /**
  * Converts from a boolean to a 32-bit signed integer vec3.
  */
@@ -617,7 +874,7 @@ struct CesiumMetadataConversions<
    */
   static FIntVector convert(TFrom from, const FIntVector& defaultValue) {
     if (from > std::numeric_limits<int32_t>::max() ||
-        from < std::numeric_limits<int32_t>::min()) {
+        from < std::numeric_limits<int32_t>::lowest()) {
       return defaultValue;
     }
     return FIntVector(static_cast<int32_t>(from));
@@ -625,7 +882,7 @@ struct CesiumMetadataConversions<
 };
 
 /**
- * Converts from a float to a 32-bit signed integer vec3.
+ * Converts from a floating-point value to a 32-bit signed integer vec3.
  */
 template <typename TFrom>
 struct CesiumMetadataConversions<
@@ -634,7 +891,8 @@ struct CesiumMetadataConversions<
     std::enable_if_t<CesiumGltf::IsMetadataFloating<TFrom>::value>> {
   /**
    * Converts a floating-point value to a FIntVector. This truncates the
-   * floating-point value, rounding it towards zero.
+   * floating-point value, rounding it towards zero, and puts it in all of the
+   * resulting vector's components.
    *
    * If the value is outside the range that a 32-bit signed integer can
    * represent, the default value is returned.
@@ -660,7 +918,7 @@ struct CesiumMetadataConversions<FIntVector, glm::vec<2, T>> {
   /**
    * Converts a glm::vec2 of any type to a FIntVector. The vec2 becomes the
    * first two components of the FIntVector, while the third component is set to
-   * zero. If any of the original vec2 values cannot be converted to a 32-bit
+   * zero. If either of the original vec2 values cannot be converted to a 32-bit
    * signed integer, the default value is returned.
    *
    * @param from The glm::vec2 to be converted.
@@ -672,7 +930,7 @@ struct CesiumMetadataConversions<FIntVector, glm::vec<2, T>> {
       // Check if all values can be converted.
       for (size_t i = 0; i < 2; i++) {
         if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::min()) {
+            from[i] < std::numeric_limits<int32_t>::lowest()) {
           return defaultValue;
         }
       }
@@ -713,7 +971,7 @@ struct CesiumMetadataConversions<FIntVector, glm::vec<3, T>> {
       // Check if all values can be converted.
       for (size_t i = 0; i < 3; i++) {
         if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::min()) {
+            from[i] < std::numeric_limits<int32_t>::lowest()) {
           return defaultValue;
         }
       }
@@ -742,9 +1000,9 @@ template <typename T>
 struct CesiumMetadataConversions<FIntVector, glm::vec<4, T>> {
   /**
    * Converts a glm::vec4 of any type to a FIntVector. This only uses the first
-   * three components of the vec4, dropping the fourth. If any of first three
-   * values cannot be converted to a 32-bit signed integer, the default value is
-   * returned.
+   * three components of the vec4, dropping the fourth. If any of the first
+   * three values cannot be converted to a 32-bit signed integer, the default
+   * value is returned.
    *
    * @param from The glm::vec4 to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
@@ -755,7 +1013,7 @@ struct CesiumMetadataConversions<FIntVector, glm::vec<4, T>> {
       // Check if all values can be converted.
       for (size_t i = 0; i < 3; i++) {
         if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::min()) {
+            from[i] < std::numeric_limits<int32_t>::lowest()) {
           return defaultValue;
         }
       }
@@ -782,10 +1040,9 @@ struct CesiumMetadataConversions<FIntVector, glm::vec<4, T>> {
  */
 template <> struct CesiumMetadataConversions<FIntVector, std::string_view> {
   /**
-   * Converts a std::string_view to a FIntVector. This uses
-   * TVector::InitFromString, which expects the values to be written in the
-   * "X=... Y=... Z=..." format. If this function fails to parse a FIntVector,
-   * the default value is returned.
+   * Converts a std::string_view to a FIntVector. This expects the values to be
+   * written in the "X=... Y=... Z=..." format. If this function fails to parse
+   * a FIntVector, the default value is returned.
    *
    * @param from The std::string_view to be parsed.
    * @param defaultValue The default value to be returned if conversion fails.
@@ -796,12 +1053,14 @@ template <> struct CesiumMetadataConversions<FIntVector, std::string_view> {
         CesiumMetadataConversions<FString, std::string_view>::convert(
             from,
             FString(""));
-    UE::Math::TVector<int32_t> result;
-    if (result.InitFromString(string)) {
-      return FIntVector(result[0], result[1], result[2]);
-    }
 
-    return defaultValue;
+    // For some reason, FIntVector doesn't have an InitFromString method, so
+    // copy the one from FVector.
+    int32 X, Y, Z;
+    const bool bSuccessful = FParse::Value(*string, TEXT("X="), X) &&
+                             FParse::Value(*string, TEXT("Y="), Y) &&
+                             FParse::Value(*string, TEXT("Z="), Z);
+    return bSuccessful ? FIntVector(X, Y, Z) : defaultValue;
   }
 };
 
@@ -876,8 +1135,8 @@ template <> struct CesiumMetadataConversions<FVector3f, double> {
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FVector3f convert(double from, const FVector3f& defaultValue) {
-    if (from > std::numeric_limits<float>::max() ||
-        from < std::numeric_limits<float>::lowest()) {
+    if (from > double(std::numeric_limits<float>::max()) ||
+        from < double(std::numeric_limits<float>::lowest())) {
       return defaultValue;
     }
     return FVector3f(static_cast<float>(from));
@@ -885,28 +1144,26 @@ template <> struct CesiumMetadataConversions<FVector3f, double> {
 };
 
 /**
- * Converts from a glm::vec3 of any type to a single-precision floating-point
+ * Converts from a glm::vec2 of any type to a single-precision floating-point
  * vec3.
  */
-template <glm::length_t N, typename T>
-struct CesiumMetadataConversions<FVector3f, glm::vec<N, T>> {
+template <typename T>
+struct CesiumMetadataConversions<FVector3f, glm::vec<2, T>> {
   /**
-   * Converts a glm::vecN of any type to a FVector3f. If any of the original
-   * vec3 values cannot be converted to a float, the default value is
-   * returned.
-   *
-   * If the input is a vec2, the vec2 becomes the first two components of the
-   * FVector3f, while the third component is set to zero. If the input is a
-   * vec4, the vec4 is truncated to its first three components.
+   * Converts a glm::vec2 of any type to a FVector3f. Similar to how an
+   * FVector3f can be constructed from an FIntPoint, the vec2 becomes the first
+   * two components of the FVector3f, while the third component is set to zero.
+   * If the vec2 is of an integer type, its values may lose precision during
+   * conversion.
    *
    * @param from The glm::vecN to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FVector3f
-  convert(const glm::vec<N, T>& from, const FVector3f& defaultValue) {
+  convert(const glm::vec<2, T>& from, const FVector3f& defaultValue) {
     if constexpr (std::is_same_v<T, double>) {
       // Check if all double values can be converted to floats.
-      for (size_t i = 0; i < std::min(N, 3); i++) {
+      for (size_t i = 0; i < 2; i++) {
         if (from[i] > double(std::numeric_limits<float>::max()) ||
             from[i] < double(std::numeric_limits<float>::lowest())) {
           return defaultValue;
@@ -914,17 +1171,43 @@ struct CesiumMetadataConversions<FVector3f, glm::vec<N, T>> {
       }
     }
 
-    if constexpr (N == 2) {
-      return FVector3f(
-          static_cast<float>(from[0]),
-          static_cast<float>(from[1]),
-          0.0f);
-    } else {
-      return FVector3f(
-          static_cast<float>(from[0]),
-          static_cast<float>(from[1]),
-          static_cast<float>(from[2]));
+    return FVector3f(
+        static_cast<float>(from[0]),
+        static_cast<float>(from[1]),
+        0.0f);
+  }
+};
+
+/**
+ * Converts from a glm::vec3 of any type to a single-precision floating-point
+ * vec3.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FVector3f, glm::vec<3, T>> {
+  /**
+   * Converts a glm::vec3 of any type to a FVector3f. If any of the original
+   * vec3 values cannot be converted to a float, the default value is
+   * returned.
+   *
+   * @param from The glm::vecN to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector3f
+  convert(const glm::vec<3, T>& from, const FVector3f& defaultValue) {
+    if constexpr (std::is_same_v<T, double>) {
+      // Check if all double values can be converted to floats.
+      for (size_t i = 0; i < 3; i++) {
+        if (from[i] > double(std::numeric_limits<float>::max()) ||
+            from[i] < double(std::numeric_limits<float>::lowest())) {
+          return defaultValue;
+        }
+      }
     }
+
+    return FVector3f(
+        static_cast<float>(from[0]),
+        static_cast<float>(from[1]),
+        static_cast<float>(from[2]));
   }
 };
 
@@ -935,7 +1218,7 @@ struct CesiumMetadataConversions<FVector3f, glm::vec<N, T>> {
 template <typename T>
 struct CesiumMetadataConversions<FVector3f, glm::vec<4, T>> {
   /**
-   * Converts a glm::vec4 of any type to a FVector3f. If any of first three
+   * Converts a glm::vec4 of any type to a FVector3f. If any of the first three
    * values cannot be converted to a float, the default value is returned.
    *
    * @param from The glm::vec4 to be converted.
@@ -1046,7 +1329,7 @@ template <> struct CesiumMetadataConversions<FVector, float> {
  */
 template <> struct CesiumMetadataConversions<FVector, double> {
   /**
-   * Converts a double to a FVector3f. The returned vector is initialized with
+   * Converts a double to a FVector. The returned vector is initialized with
    * the value in all of its components.
    *
    * @param from The double to be converted.
@@ -1064,9 +1347,9 @@ template <> struct CesiumMetadataConversions<FVector, double> {
 template <typename T>
 struct CesiumMetadataConversions<FVector, glm::vec<2, T>> {
   /**
-   * Converts a glm::vec2 of any type to a FVector3f. Similar to how an
-   * FVector3f can be constructed from an FIntPoint, the vec2 becomes the first
-   * two components of the FVector3f, while the third component is set to zero.
+   * Converts a glm::vec2 of any type to a FVector. Similar to how an
+   * FVector can be constructed from an FIntPoint, the vec2 becomes the first
+   * two components of the FVector, while the third component is set to zero.
    * If the vec2 is of an integer type, its values may lose precision during
    * conversion.
    *
@@ -1153,173 +1436,343 @@ template <> struct CesiumMetadataConversions<FVector, std::string_view> {
 
 #pragma endregion
 
-//#pragma region Conversions to double vec4
-///**
-// * Converts from a boolean to a double-precision floating-point vec4.
-// */
-// template <> struct CesiumMetadataConversions<FVector4, bool> {
-//  /**
-//   * Converts a boolean to a FVector4. The boolean is converted to a float
-//   * value of 1.0f for true or 0.0f for false. The returned vector is
-//   * initialized with this value in all of its components.
-//   *
-//   * @param from The boolean to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector convert(bool from, const FVector& defaultValue) {
-//    float value = from ? 1.0 : 0.0;
-//    return FVector(value);
-//  }
-//};
-//
-///**
-// * Converts from an integer type to a double-precision floating-point vec3.
-// */
-// template <typename TFrom>
-// struct CesiumMetadataConversions<
-//    FVector,
-//    TFrom,
-//    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
-//  /**
-//   * Converts an integer to a FVector. The returned vector is initialized with
-//   * the value in all of its components. The value may lose precision during
-//   * conversion.
-//   *
-//   * @param from The integer value to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector convert(TFrom from, const FVector& defaultValue) {
-//    return FVector(static_cast<double>(from));
-//  }
-//};
-//
-///**
-// * Converts from a float to a double-precision floating-point vec3.
-// */
-// template <> struct CesiumMetadataConversions<FVector, float> {
-//  /**
-//   * Converts a float to a FVector. The returned vector is initialized with
-//   * the value in all of its components.
-//   *
-//   * @param from The float to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector convert(float from, const FVector& defaultValue) {
-//    return FVector(static_cast<double>(from));
-//  }
-//};
-//
-///**
-// * Converts from a double to a single-precision floating-point vec3.
-// */
-// template <> struct CesiumMetadataConversions<FVector, double> {
-//  /**
-//   * Converts a double to a FVector3f. The returned vector is initialized with
-//   * the value in all of its components.
-//   *
-//   * @param from The double to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector convert(double from, const FVector& defaultValue) {
-//    return FVector(from);
-//  }
-//};
-//
-///**
-// * Converts from a glm::vec2 of any type to a double-precision floating-point
-// * vec3.
-// */
-// template <typename T>
-// struct CesiumMetadataConversions<FVector, glm::vec<2, T>> {
-//  /**
-//   * Converts a glm::vec2 of any type to a FVector3f. Similar to how an
-//   * FVector3f can be constructed from an FIntPoint, the vec2 becomes the
-//   first
-//   * two components of the FVector3f, while the third component is set to
-//   zero.
-//   * If the vec2 is of an integer type, its values may lose precision during
-//   * conversion.
-//   *
-//   * @param from The glm::vec2 to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector
-//  convert(const glm::vec<2, T>& from, const FVector& defaultValue) {
-//    return FVector(
-//        static_cast<double>(from[0]),
-//        static_cast<double>(from[1]),
-//        0.0);
-//  }
-//};
-//
-///**
-// * Converts from a glm::vec3 of any type to a double-precision floating-point
-// * vec3.
-// */
-// template <typename T>
-// struct CesiumMetadataConversions<FVector, glm::vec<3, T>> {
-//  /**
-//   * Converts a glm::vec3 of any type to a FVector. If the vec3 is of an
-//   integer
-//   * type, its values may lose precision during conversion.
-//   *
-//   * @param from The glm::vec3 to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector
-//  convert(const glm::vec<3, T>& from, const FVector& defaultValue) {
-//    return FVector(
-//        static_cast<double>(from[0]),
-//        static_cast<double>(from[1]),
-//        static_cast<double>(from[2]));
-//  }
-//};
-//
-///**
-// * Converts from a glm::vec4 of any type to a double-precision floating-point
-// * vec3.
-// */
-// template <typename T>
-// struct CesiumMetadataConversions<FVector, glm::vec<4, T>> {
-//  /**
-//   * Converts a glm::vec4 of any type to a FVector. This only uses the first
-//   * three components of the vec4, dropping the fourth. If the vec3 is of an
-//   * integer type, its values may lose precision during conversion.
-//   *
-//   * @param from The glm::vec4 to be converted.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector
-//  convert(const glm::vec<4, T>& from, const FVector& defaultValue) {
-//    return FVector(
-//        static_cast<double>(from[0]),
-//        static_cast<double>(from[1]),
-//        static_cast<double>(from[2]));
-//  }
-//};
-//
-///**
-// * Converts from a std::string_view to a double-precision floating-point vec3.
-// */
-// template <> struct CesiumMetadataConversions<FVector, std::string_view> {
-//  /**
-//   * Converts a std::string_view to a FVector. This uses
-//   * FVector::InitFromString, which expects the values to be written in the
-//   * "X=... Y=... Z=..." format. If this function fails to parse a FVector,
-//   * the default value is returned.
-//   *
-//   * @param from The std::string_view to be parsed.
-//   * @param defaultValue The default value to be returned if conversion fails.
-//   */
-//  static FVector
-//  convert(const std::string_view& from, const FVector& defaultValue) {
-//    FString string =
-//        CesiumMetadataConversions<FString, std::string_view>::convert(
-//            from,
-//            FString(""));
-//    FVector result;
-//    return result.InitFromString(string) ? result : defaultValue;
-//  }
-//};
-//
-//#pragma endregion
+#pragma region Conversions to double vec4
+
+/**
+ * Converts from a boolean to a double-precision floating-point vec4.
+ */
+template <> struct CesiumMetadataConversions<FVector4, bool> {
+  /**
+   * Converts a boolean to a FVector4. The boolean is converted to a double
+   * value of 1.0 for true or 0.0 for false. The returned vector is
+   * initialized with this value in all of its components.
+   *
+   * @param from The boolean to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4 convert(bool from, const FVector4& defaultValue) {
+    double value = from ? 1.0 : 0.0;
+    return FVector4(value, value, value, value);
+  }
+};
+
+/**
+ * Converts from an integer type to a double-precision floating-point vec4.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FVector4,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
+  /**
+   * Converts an integer to a FVector4. The returned vector is initialized with
+   * the value in all of its components. The value may lose precision during
+   * conversion.
+   *
+   * @param from The integer value to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4 convert(TFrom from, const FVector4& defaultValue) {
+    double value = static_cast<double>(from);
+    return FVector4(from, from, from, from);
+  }
+};
+
+/**
+ * Converts from a float to a double-precision floating-point vec4.
+ */
+template <> struct CesiumMetadataConversions<FVector4, float> {
+  /**
+   * Converts a float to a FVector4. The returned vector is initialized with
+   * the value in all of its components.
+   *
+   * @param from The float to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4 convert(float from, const FVector& defaultValue) {
+    double value = static_cast<double>(from);
+    return FVector4(from, from, from, from);
+  }
+};
+
+/**
+ * Converts from a double to a double-precision floating-point vec4.
+ */
+template <> struct CesiumMetadataConversions<FVector4, double> {
+  /**
+   * Converts a double to a FVector4. The returned vector is initialized with
+   * the value in all of its components.
+   *
+   * @param from The double to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4 convert(double from, const FVector4& defaultValue) {
+    return FVector4(from, from, from, from);
+  }
+};
+
+/**
+ * Converts from a glm::vec2 of any type to a double-precision floating-point
+ * vec4.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FVector4, glm::vec<2, T>> {
+  /**
+   * Converts a glm::vec2 of any type to a FVector4. The vec2 becomes the first
+   * two components of the FVector4, while the third and fourth components are
+   * set to zero.
+   *
+   * If the vec2 is of an integer type, its values may lose
+   * precision during conversion.
+   *
+   * @param from The glm::vec2 to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4
+  convert(const glm::vec<2, T>& from, const FVector4& defaultValue) {
+    return FVector4(
+        static_cast<double>(from[0]),
+        static_cast<double>(from[1]),
+        0.0,
+        0.0);
+  }
+};
+
+/**
+ * Converts from a glm::vec3 of any type to a double-precision floating-point
+ * vec4.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FVector4, glm::vec<3, T>> {
+  /**
+   * Converts a glm::vec3 of any type to a FVector4. The vec3 becomes the first
+   * three components of the FVector4, while the fourth component is set to
+   * zero.
+   *
+   * If the vec3 is of an integer type, its values may lose precision during
+   * conversion.
+   *
+   * @param from The glm::vec3 to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4
+  convert(const glm::vec<3, T>& from, const FVector4& defaultValue) {
+    return FVector4(
+        static_cast<double>(from[0]),
+        static_cast<double>(from[1]),
+        static_cast<double>(from[2]),
+        0.0);
+  }
+};
+
+/**
+ * Converts from a glm::vec4 of any type to a double-precision floating-point
+ * vec4.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FVector4, glm::vec<4, T>> {
+  /**
+   * Converts a glm::vec4 of any type to a FVector4. If the vec4 is of an
+   * integer type, its values may lose precision during conversion.
+   *
+   * @param from The glm::vec4 to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4
+  convert(const glm::vec<4, T>& from, const FVector4& defaultValue) {
+    return FVector4(
+        static_cast<double>(from[0]),
+        static_cast<double>(from[1]),
+        static_cast<double>(from[2]),
+        static_cast<double>(from[3]));
+  }
+};
+
+/**
+ * Converts from a std::string_view to a double-precision floating-point vec4.
+ */
+template <> struct CesiumMetadataConversions<FVector4, std::string_view> {
+  /**
+   * Converts a std::string_view to a FVector4. This uses
+   * FVector4::InitFromString, which expects the values to be written in the
+   * "X=... Y=... Z=..." format. It allows the "W=..." component is optional; if
+   * left out, the fourth component will be initialized as 1.0.
+   *
+   * If this function fails to parse a FVector, the default value is returned.
+   *
+   * @param from The std::string_view to be parsed.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FVector4
+  convert(const std::string_view& from, const FVector4& defaultValue) {
+    FString string =
+        CesiumMetadataConversions<FString, std::string_view>::convert(
+            from,
+            FString(""));
+    FVector4 result;
+    return result.InitFromString(string) ? result : defaultValue;
+  }
+};
+
+#pragma endregion
+
+#pragma region Conversions to double  mat4
+
+/**
+ * Converts from a glm::mat2 to a double-precision floating-point mat4.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FMatrix, glm::mat<2, 2, T>> {
+  /**
+   * Converts a glm::mat2 of any type to a FMatrix. The mat2 is used to
+   * initialize the values of the FMatrix at the corresponding indices.
+   * The rest of the components are all set to zero.
+   *
+   * If the mat2 is of an integer type, its values may lose precision during
+   * conversion.
+   *
+   * @param from The mat2 to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FMatrix
+  convert(const glm::mat<2, 2, T>& from, const FMatrix& defaultValue) {
+    // glm is column major, but Unreal is row major.
+    FPlane4d row1 = FPlane4d::Zero();
+    row1.X = static_cast<double>(from[0][0]);
+    row1.Y = static_cast<double>(from[1][0]);
+
+    FPlane4d row2 = FPlane4d::Zero();
+    row2.X = static_cast<double>(from[0][1]);
+    row2.Y = static_cast<double>(from[1][1]);
+
+    return FMatrix(row1, row2, FPlane4d::Zero(), FPlane4d::Zero());
+  }
+};
+
+/**
+ * Converts from a glm::mat3 to a double-precision floating-point mat4.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FMatrix, glm::mat<3, 3, T>> {
+  /**
+   * Converts a glm::mat3 of any type to a FMatrix. The mat3 is used to
+   * initialize the values of the FMatrix at the corresponding indices.
+   * The rest of the components are all set to zero.
+   *
+   * If the mat3 is of an integer type, its values may lose precision during
+   * conversion.
+   *
+   * @param from The mat3 to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FMatrix
+  convert(const glm::mat<3, 3, T>& from, const FMatrix& defaultValue) {
+    // glm is column major, but Unreal is row major.
+    FPlane4d row1 = FPlane4d::Zero();
+    row1.X = static_cast<double>(from[0][0]);
+    row1.Y = static_cast<double>(from[1][0]);
+    row1.Z = static_cast<double>(from[2][0]);
+
+    FPlane4d row2 = FPlane4d::Zero();
+    row2.X = static_cast<double>(from[0][1]);
+    row2.Y = static_cast<double>(from[1][1]);
+    row2.Z = static_cast<double>(from[2][1]);
+
+    FPlane4d row3 = FPlane4d::Zero();
+    row3.X = static_cast<double>(from[0][2]);
+    row3.Y = static_cast<double>(from[1][2]);
+    row3.Z = static_cast<double>(from[2][2]);
+
+    return FMatrix(row1, row2, row3, FPlane4d::Zero());
+  }
+};
+
+/**
+ * Converts from a glm::mat4 to a double-precision floating-point mat4.
+ */
+template <typename T>
+struct CesiumMetadataConversions<FMatrix, glm::mat<4, 4, T>> {
+  /**
+   * Converts a glm::mat4 of any type to a FMatrix. If the mat4 is of an integer
+   * type, its values may lose precision during conversion.
+   *
+   * @param from The mat4 to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FMatrix
+  convert(const glm::mat<4, 4, T>& from, const FMatrix& defaultValue) {
+    // glm is column major, but Unreal is row major.
+    FPlane4d row1 = FPlane4d::Zero();
+    row1.X = static_cast<double>(from[0][0]);
+    row1.Y = static_cast<double>(from[1][0]);
+    row1.Z = static_cast<double>(from[2][0]);
+    row1.W = static_cast<double>(from[3][0]);
+
+    FPlane4d row2 = FPlane4d::Zero();
+    row2.X = static_cast<double>(from[0][1]);
+    row2.Y = static_cast<double>(from[1][1]);
+    row2.Z = static_cast<double>(from[2][1]);
+    row2.W = static_cast<double>(from[3][1]);
+
+    FPlane4d row3 = FPlane4d::Zero();
+    row3.X = static_cast<double>(from[0][2]);
+    row3.Y = static_cast<double>(from[1][2]);
+    row3.Z = static_cast<double>(from[2][2]);
+    row3.W = static_cast<double>(from[3][2]);
+
+    FPlane4d row4 = FPlane4d::Zero();
+    row4.X = static_cast<double>(from[0][3]);
+    row4.Y = static_cast<double>(from[1][3]);
+    row4.Z = static_cast<double>(from[2][3]);
+    row4.W = static_cast<double>(from[3][3]);
+
+    return FMatrix(row1, row2, row3, row4);
+  }
+};
+
+/**
+ * Converts from a boolean to a double-precision floating-point mat4.
+ */
+template <> struct CesiumMetadataConversions<FMatrix, bool> {
+  /**
+   * Converts a boolean to a FMatrix. The boolean is converted to a double
+   * value of 1.0 for true or 0.0 for false. The returned matrix is
+   * initialized with this value along its diagonal.
+   *
+   * @param from The boolean to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FMatrix convert(bool from, const FMatrix& defaultValue) {
+    glm::dmat4 mat4(from ? 1.0 : 0.0);
+    return CesiumMetadataConversions<FMatrix, glm::dmat4>::convert(
+        mat4,
+        defaultValue);
+    ;
+  }
+};
+
+/**
+ * Converts from a scalar type to a double-precision floating-point mat4.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FMatrix,
+    TFrom,
+    std::enable_if_t<CesiumGltf::IsMetadataScalar<TFrom>::value>> {
+  /**
+   * Converts a scalar to a FMatrix. The returned vector is initialized
+   * with the value along its diagonal. If the scalar is an integer, the value
+   * may lose precision during conversion.
+   *
+   * @param from The integer value to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FMatrix convert(TFrom from, const FMatrix& defaultValue) {
+    glm::dmat4 mat4(static_cast<double>(from));
+    return CesiumMetadataConversions<FMatrix, glm::dmat4>::convert(
+        mat4,
+        defaultValue);
+  }
+};
+
+#pragma endregion

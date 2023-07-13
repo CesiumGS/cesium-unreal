@@ -377,9 +377,10 @@ public:
    * If the value is a single-precision floating-point number, it is returned
    * as-is.
    *
-   * If the value is an integer or double-precision floating-point number,
-   * it is converted to the closest representable single-precision
-   * floating-point number. // TODO FIX
+   * If the value is a scalar of any other type, as long as it is within the
+   * range of values that a single-precision floating-point number can
+   * represent, it is returned as its closest representation as a
+   * single-precision floating-point number.
    *
    * If the value is a boolean, 0.0f is returned for false and 1.0f for true.
    *

@@ -1,4 +1,5 @@
 #include "CesiumMetadataConversions.h"
+#include "CesiumTestHelpers.h"
 #include "Misc/AutomationTest.h"
 
 #include <limits>
@@ -76,6 +77,22 @@ void FCesiumMetadataConversionsSpec::Define() {
               true));
     });
 
+    It("uses default value for incompatible strings", [this]() {
+      std::string_view stringView("11");
+      TestFalse(
+          "invalid number",
+          CesiumMetadataConversions<bool, std::string_view>::convert(
+              stringView,
+              false));
+
+      stringView = std::string_view("this is true");
+      TestFalse(
+          "invalid word",
+          CesiumMetadataConversions<bool, std::string_view>::convert(
+              stringView,
+              false));
+    });
+
     It("uses default value for incompatible types", [this]() {
       TestFalse(
           "vecN",
@@ -115,12 +132,12 @@ void FCesiumMetadataConversionsSpec::Define() {
 
     It("converts from in-range floating point number", [this]() {
       TestEqual(
-          "single-precision",
+          "float",
           CesiumMetadataConversions<int32_t, float>::convert(50.125f, 0),
           50);
 
       TestEqual(
-          "double-precision",
+          "double",
           CesiumMetadataConversions<int32_t, double>::convert(1234.05678f, 0),
           1234);
     });
@@ -246,13 +263,13 @@ void FCesiumMetadataConversionsSpec::Define() {
     It("converts from integer", [this]() {
       int32_t int32Value = -1234;
       TestEqual(
-          "int32_t",
+          "32-bit",
           CesiumMetadataConversions<float, int32_t>::convert(int32Value, 0.0f),
           static_cast<float>(int32Value));
 
       uint64_t uint64Value = std::numeric_limits<uint64_t>::max();
       TestEqual(
-          "uint64_t",
+          "64-bit",
           CesiumMetadataConversions<float, uint64_t>::convert(
               uint64Value,
               0.0f),
@@ -272,7 +289,13 @@ void FCesiumMetadataConversionsSpec::Define() {
 
     It("converts from string", [this]() {
       TestEqual(
-          "value",
+          "integer value",
+          CesiumMetadataConversions<float, std::string_view>::convert(
+              std::string_view("123"),
+              0),
+          static_cast<float>(123));
+      TestEqual(
+          "floating-point value",
           CesiumMetadataConversions<float, std::string_view>::convert(
               std::string_view("123.456"),
               0),
@@ -345,15 +368,9 @@ void FCesiumMetadataConversionsSpec::Define() {
     });
 
     It("converts from integer", [this]() {
-      int32_t int32Value = -1234;
-      TestEqual(
-          "int32_t",
-          CesiumMetadataConversions<double, int32_t>::convert(int32Value, 0.0),
-          static_cast<double>(int32Value));
-
       uint64_t uint64Value = std::numeric_limits<uint64_t>::max();
       TestEqual(
-          "uint64_t",
+          "64-bit",
           CesiumMetadataConversions<double, uint64_t>::convert(
               uint64Value,
               0.0),
@@ -373,7 +390,13 @@ void FCesiumMetadataConversionsSpec::Define() {
 
     It("converts from string", [this]() {
       TestEqual(
-          "value",
+          "integer value",
+          CesiumMetadataConversions<double, std::string_view>::convert(
+              std::string_view("123"),
+              0),
+          static_cast<double>(123));
+      TestEqual(
+          "floating-point value",
           CesiumMetadataConversions<double, std::string_view>::convert(
               std::string_view("123.456"),
               0),
@@ -411,7 +434,7 @@ void FCesiumMetadataConversionsSpec::Define() {
       TestEqual(
           "matN",
           CesiumMetadataConversions<double, glm::dmat2>::convert(
-              glm::dmat2(),
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
               0.0),
           0.0);
 
@@ -425,7 +448,506 @@ void FCesiumMetadataConversionsSpec::Define() {
     });
   });
 
-  // TODO: see if this works, and if so, templatize the other vecNs
+  Describe("FIntPoint", [this]() {
+    It("converts from glm::ivec2", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FIntPoint, glm::ivec2>::convert(
+              glm::ivec2(-1, 2),
+              FIntPoint(0)),
+          FIntPoint(-1, 2));
+    });
+
+    It("converts from other vec2 types", [this]() {
+      TestEqual(
+          "uint8_t",
+          CesiumMetadataConversions<FIntPoint, glm::u8vec2>::convert(
+              glm::u8vec2(12, 76),
+              FIntPoint(0)),
+          FIntPoint(12, 76));
+      TestEqual(
+          "int64_t",
+          CesiumMetadataConversions<FIntPoint, glm::i64vec2>::convert(
+              glm::i64vec2(-28, 44),
+              FIntPoint(0)),
+          FIntPoint(-28, 44));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntPoint, glm::dvec2>::convert(
+              glm::dvec2(-3.5, 1.23456),
+              FIntPoint(0)),
+          FIntPoint(-3, 1));
+    });
+
+    It("converts from vec3 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FIntPoint, glm::ivec3>::convert(
+              glm::ivec3(-84, 5, 25),
+              FIntPoint(0)),
+          FIntPoint(-84, 5));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FIntPoint, glm::vec3>::convert(
+              glm::vec3(4.5f, -2.345f, 81.0f),
+              FIntPoint(0)),
+          FIntPoint(4, -2));
+    });
+
+    It("converts from vec4 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FIntPoint, glm::i16vec4>::convert(
+              glm::i16vec4(-42, 278, 23, 1),
+              FIntPoint(0)),
+          FIntPoint(-42, 278));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntPoint, glm::dvec4>::convert(
+              glm::dvec4(-3.5, 1.23456, 26.0, 8.0),
+              FIntPoint(0)),
+          FIntPoint(-3, 1));
+    });
+
+    It("converts from boolean", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FIntPoint, bool>::convert(
+              true,
+              FIntPoint(-1)),
+          FIntPoint(1));
+    });
+
+    It("converts from in-range integer", [this]() {
+      TestEqual(
+          "32-bit",
+          CesiumMetadataConversions<FIntPoint, int32_t>::convert(
+              -12345,
+              FIntPoint(0)),
+          FIntPoint(-12345));
+
+      TestEqual(
+          "64-bit",
+          CesiumMetadataConversions<FIntPoint, int64_t>::convert(
+              static_cast<int64_t>(12345),
+              FIntPoint(0)),
+          FIntPoint(static_cast<int32_t>(12345)));
+    });
+
+    It("converts from in-range floating-point number", [this]() {
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FIntPoint, float>::convert(
+              1234.56f,
+              FIntPoint(0)),
+          FIntPoint(1234));
+
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntPoint, double>::convert(
+              789.12,
+              FIntPoint(0)),
+          FIntPoint(789));
+    });
+
+    It("converts from string", [this]() {
+      std::string_view str("X=1 Y=2");
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FIntPoint, std::string_view>::convert(
+              str,
+              FIntPoint(0)),
+          FIntPoint(1, 2));
+    });
+
+    It("uses default value for out-of-range scalars", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FIntPoint, uint64_t>::convert(
+              static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()),
+              FIntPoint(0)),
+          FIntPoint(0));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntPoint, double>::convert(
+              std::numeric_limits<double>::max(),
+              FIntPoint(0)),
+          FIntPoint(0));
+    });
+
+    It("uses default value for vecNs with out-of-range components", [this]() {
+      TestEqual(
+          "vec2",
+          CesiumMetadataConversions<FIntPoint, glm::dvec2>::convert(
+              glm::dvec2(1.0, std::numeric_limits<double>::max()),
+              FIntPoint(0)),
+          FIntPoint(0));
+      TestEqual(
+          "vec3",
+          CesiumMetadataConversions<FIntPoint, glm::vec3>::convert(
+              glm::vec3(1.0, std::numeric_limits<float>::max(), -1.0),
+              FIntPoint(0)),
+          FIntPoint(0));
+      TestEqual(
+          "vec4",
+          CesiumMetadataConversions<FIntPoint, glm::u64vec4>::convert(
+              glm::u64vec4(std::numeric_limits<uint64_t>::max(), 1, 1, 1),
+              FIntPoint(0)),
+          FIntPoint(0));
+    });
+
+    It("uses default value for invalid string", [this]() {
+      std::string_view str("X=1");
+      TestEqual(
+          "partial input",
+          CesiumMetadataConversions<FIntPoint, std::string_view>::convert(
+              str,
+              FIntPoint(0)),
+          FIntPoint(0));
+
+      str = std::string_view("R=0.5 G=0.5");
+      TestEqual(
+          "bad format",
+          CesiumMetadataConversions<FIntPoint, std::string_view>::convert(
+              str,
+              FIntPoint(0)),
+          FIntPoint(0));
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      TestEqual(
+          "matN",
+          CesiumMetadataConversions<FIntPoint, glm::dmat2>::convert(
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
+              FIntPoint(0)),
+          FIntPoint(0));
+
+      PropertyArrayView<glm::ivec2> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FIntPoint, PropertyArrayView<glm::ivec2>>::
+              convert(arrayView, FIntPoint(0)),
+          FIntPoint(0));
+    });
+  });
+
+  Describe("FVector2D", [this]() {
+    It("converts from glm::dvec2", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector2D, glm::dvec2>::convert(
+              glm::dvec2(-1.0, 2.0),
+              FVector2D(0.0)),
+          FVector2D(-1.0, 2.0));
+    });
+
+    It("converts from other vec2 types", [this]() {
+      TestEqual(
+          "int32_t",
+          CesiumMetadataConversions<FVector2D, glm::ivec2>::convert(
+              glm::ivec2(12, 76),
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(12), static_cast<double>(76)));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector2D, glm::vec2>::convert(
+              glm::vec2(-3.5f, 1.234f),
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(-3.5f), static_cast<double>(1.234f)));
+    });
+
+    It("converts from vec3 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector2D, glm::ivec3>::convert(
+              glm::ivec3(-84, 5, 25),
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(-84), static_cast<double>(5)));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector2D, glm::vec3>::convert(
+              glm::vec3(4.5f, -2.345f, 81.0f),
+              FVector2D(0)),
+          FVector2D(static_cast<double>(4.5f), static_cast<double>(-2.345f)));
+    });
+
+    It("converts from vec4 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector2D, glm::i16vec4>::convert(
+              glm::i16vec4(-42, 278, 23, 1),
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(-42), static_cast<double>(278)));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector2D, glm::vec4>::convert(
+              glm::vec4(4.5f, 2.345f, 8.1f, 1038.0f),
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(4.5f), static_cast<double>(2.345f)));
+    });
+
+    It("converts from boolean", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector2D, bool>::convert(
+              true,
+              FVector2D(-1.0)),
+          FVector2D(1.0));
+    });
+
+    It("converts from integer", [this]() {
+      TestEqual(
+          "32-bit",
+          CesiumMetadataConversions<FVector2D, int32_t>::convert(
+              -12345,
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(-12345)));
+    });
+
+    It("converts from in-range floating-point number", [this]() {
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector2D, float>::convert(
+              1234.56f,
+              FVector2D(0.0)),
+          FVector2D(static_cast<double>(1234.56f)));
+
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector2D, double>::convert(
+              789.12,
+              FVector2D(0.0)),
+          FVector2D(789.12));
+    });
+
+    It("converts from string", [this]() {
+      std::string_view str("X=1.5 Y=2.5");
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector2D, std::string_view>::convert(
+              str,
+              FVector2D(0.0)),
+          FVector2D(1.5, 2.5));
+    });
+
+    It("uses default value for invalid string", [this]() {
+      std::string_view str("X=1");
+      TestEqual(
+          "partial input",
+          CesiumMetadataConversions<FVector2D, std::string_view>::convert(
+              str,
+              FVector2D(0.0)),
+          FVector2D(0.0));
+
+      str = std::string_view("R=0.5 G=0.5");
+      TestEqual(
+          "bad format",
+          CesiumMetadataConversions<FVector2D, std::string_view>::convert(
+              str,
+              FVector2D(0.0)),
+          FVector2D(0.0));
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      TestEqual(
+          "matN",
+          CesiumMetadataConversions<FVector2D, glm::dmat2>::convert(
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
+              FVector2D(0.0)),
+          FVector2D(0.0));
+
+      PropertyArrayView<glm::dvec2> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FVector2D, PropertyArrayView<glm::dvec2>>::
+              convert(arrayView, FVector2D(0.0)),
+          FVector2D(0.0));
+    });
+  });
+
+  Describe("FIntVector", [this]() {
+    It("converts from glm::ivec3", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FIntVector, glm::ivec3>::convert(
+              glm::ivec3(-1, 2, 4),
+              FIntVector(0)),
+          FIntVector(-1, 2, 4));
+    });
+
+    It("converts from other vec3 types", [this]() {
+      TestEqual(
+          "uint8_t",
+          CesiumMetadataConversions<FIntVector, glm::u8vec3>::convert(
+              glm::u8vec3(12, 76, 23),
+              FIntVector(0)),
+          FIntVector(12, 76, 23));
+      TestEqual(
+          "int64_t",
+          CesiumMetadataConversions<FIntVector, glm::i64vec3>::convert(
+              glm::i64vec3(-28, 44, -7),
+              FIntVector(0)),
+          FIntVector(-28, 44, -7));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntVector, glm::dvec3>::convert(
+              glm::dvec3(-3.5, 1.23456, 82.9),
+              FIntVector(0)),
+          FIntVector(-3, 1, 82));
+    });
+
+    It("converts from vec2 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FIntVector, glm::ivec2>::convert(
+              glm::ivec2(-84, 5),
+              FIntVector(0)),
+          FIntVector(-84, 5, 0));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FIntVector, glm::vec2>::convert(
+              glm::vec2(4.5f, -2.345f),
+              FIntVector(0)),
+          FIntVector(4, -2, 0));
+    });
+
+    It("converts from vec4 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FIntVector, glm::i16vec4>::convert(
+              glm::i16vec4(-42, 278, 23, 1),
+              FIntVector(0)),
+          FIntVector(-42, 278, 23));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntVector, glm::dvec4>::convert(
+              glm::dvec4(-3.5, 1.23456, 26.0, 8.0),
+              FIntVector(0)),
+          FIntVector(-3, 1, 26));
+    });
+
+    It("converts from boolean", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FIntVector, bool>::convert(
+              true,
+              FIntVector(-1)),
+          FIntVector(1));
+    });
+
+    It("converts from in-range integer", [this]() {
+      TestEqual(
+          "32-bit",
+          CesiumMetadataConversions<FIntVector, int32_t>::convert(
+              -12345,
+              FIntVector(0)),
+          FIntVector(-12345));
+
+      TestEqual(
+          "64-bit",
+          CesiumMetadataConversions<FIntVector, int64_t>::convert(
+              static_cast<int64_t>(12345),
+              FIntVector(0)),
+          FIntVector(static_cast<int32_t>(12345)));
+    });
+
+    It("converts from in-range floating-point number", [this]() {
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FIntVector, float>::convert(
+              1234.56f,
+              FIntVector(0)),
+          FIntVector(1234));
+
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntVector, double>::convert(
+              789.12,
+              FIntVector(0)),
+          FIntVector(789));
+    });
+
+    It("converts from string", [this]() {
+      std::string_view str("X=1 Y=2 Z=4");
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FIntVector, std::string_view>::convert(
+              str,
+              FIntVector(0)),
+          FIntVector(1, 2, 4));
+    });
+
+    It("uses default value for out-of-range scalars", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FIntVector, uint64_t>::convert(
+              static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()),
+              FIntVector(0)),
+          FIntVector(0));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FIntVector, double>::convert(
+              std::numeric_limits<double>::max(),
+              FIntVector(0)),
+          FIntVector(0));
+    });
+
+    It("uses default value for vecNs with out-of-range components", [this]() {
+      TestEqual(
+          "vec2",
+          CesiumMetadataConversions<FIntVector, glm::dvec2>::convert(
+              glm::dvec2(1.0, std::numeric_limits<double>::max()),
+              FIntVector(0)),
+          FIntVector(0));
+      TestEqual(
+          "vec3",
+          CesiumMetadataConversions<FIntVector, glm::vec3>::convert(
+              glm::vec3(1.0, std::numeric_limits<float>::max(), -1.0),
+              FIntVector(0)),
+          FIntVector(0));
+      TestEqual(
+          "vec4",
+          CesiumMetadataConversions<FIntVector, glm::u64vec4>::convert(
+              glm::u64vec4(std::numeric_limits<uint64_t>::max(), 1, 1, 1),
+              FIntVector(0)),
+          FIntVector(0));
+    });
+
+    It("uses default value for invalid string", [this]() {
+      std::string_view str("X=1 Y=2");
+      TestEqual(
+          "partial input",
+          CesiumMetadataConversions<FIntVector, std::string_view>::convert(
+              str,
+              FIntVector(0)),
+          FIntVector(0));
+
+      str = std::string_view("R=0.5 G=0.5 B=1");
+      TestEqual(
+          "bad format",
+          CesiumMetadataConversions<FIntVector, std::string_view>::convert(
+              str,
+              FIntVector(0)),
+          FIntVector(0));
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      TestEqual(
+          "matN",
+          CesiumMetadataConversions<FIntVector, glm::dmat2>::convert(
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
+              FIntVector(0)),
+          FIntVector(0));
+
+      PropertyArrayView<glm::ivec3> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FIntVector, PropertyArrayView<glm::ivec3>>::
+              convert(arrayView, FIntVector(0)),
+          FIntVector(0));
+    });
+  });
+
   Describe("FVector3f", [this]() {
     It("converts from glm::vec3", [this]() {
       TestEqual(
@@ -434,6 +956,568 @@ void FCesiumMetadataConversionsSpec::Define() {
               glm::vec3(1.0f, 2.3f, 4.56f),
               FVector3f(0.0f)),
           FVector3f(1.0f, 2.3f, 4.56f));
+    });
+
+    It("converts from other vec3 types", [this]() {
+      TestEqual(
+          "int8_t",
+          CesiumMetadataConversions<FVector3f, glm::i8vec3>::convert(
+              glm::i8vec3(-11, 2, 53),
+              FVector3f(0.0f)),
+          FVector3f(
+              static_cast<float>(-11),
+              static_cast<float>(2),
+              static_cast<float>(53)));
+      TestEqual(
+          "uint32_t",
+          CesiumMetadataConversions<FVector3f, glm::uvec3>::convert(
+              glm::uvec3(0, 44, 160),
+              FVector3f(0.0f)),
+          FVector3f(
+              static_cast<float>(0),
+              static_cast<float>(44),
+              static_cast<float>(160)));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector3f, glm::dvec3>::convert(
+              glm::dvec3(-3.5, 1.23456, 88.08),
+              FVector3f(0.0f)),
+          FVector3f(
+              static_cast<float>(-3.5),
+              static_cast<float>(1.23456),
+              static_cast<float>(88.08)));
+    });
+
+    It("converts from vec2 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector3f, glm::ivec2>::convert(
+              glm::ivec2(-84, 5),
+              FVector3f(0.0f)),
+          FVector3f(static_cast<float>(-84), static_cast<float>(5), 0.0f));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector3f, glm::vec2>::convert(
+              glm::vec2(4.5f, 2.345f),
+              FVector3f(0.0f)),
+          FVector3f(4.5f, 2.345f, 0.0f));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector3f, glm::dvec2>::convert(
+              glm::dvec2(-3.5, 1.23456),
+              FVector3f(0.0f)),
+          FVector3f(
+              static_cast<float>(-3.5),
+              static_cast<float>(1.23456),
+              0.0f));
+    });
+
+    It("converts from vec4 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector3f, glm::i16vec4>::convert(
+              glm::i16vec4(-42, 278, 23, 1),
+              FVector3f(0.0f)),
+          FVector3f(
+              static_cast<float>(-42),
+              static_cast<float>(278),
+              static_cast<float>(23)));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector3f, glm::vec4>::convert(
+              glm::vec4(4.5f, 2.345f, 8.1f, 1038.0f),
+              FVector3f(0.0f)),
+          FVector3f(4.5f, 2.345f, 8.1f));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector3f, glm::dvec4>::convert(
+              glm::dvec4(-3.5, 1.23456, 26.0, 8.0),
+              FVector3f(0.0f)),
+          FVector3f(
+              static_cast<float>(-3.5),
+              static_cast<float>(1.23456),
+              static_cast<float>(26.0)));
+    });
+
+    It("converts from boolean", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector3f, bool>::convert(
+              true,
+              FVector3f(-1.0f)),
+          FVector3f(1.0f));
+    });
+
+    It("converts from integer", [this]() {
+      TestEqual(
+          "32-bit",
+          CesiumMetadataConversions<FVector3f, uint32_t>::convert(
+              12345,
+              FVector3f(0.0f)),
+          FVector3f(static_cast<float>(12345)));
+
+      TestEqual(
+          "64-bit",
+          CesiumMetadataConversions<FVector3f, int64_t>::convert(
+              -12345,
+              FVector3f(0.0f)),
+          FVector3f(static_cast<float>(-12345)));
+    });
+
+    It("converts from in-range floating-point number", [this]() {
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector3f, float>::convert(
+              1234.56f,
+              FVector3f(0.0f)),
+          FVector3f(1234.56f));
+
+      // Seems like calling static_cast<float>(789.12) directly results in a
+      // different value... use a variable to guarantee correctness.
+      double value = 789.12;
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector3f, double>::convert(
+              value,
+              FVector3f(0.0f)),
+          FVector3f(static_cast<float>(value)));
+    });
+
+    It("converts from string", [this]() {
+      std::string_view str("X=1 Y=2 Z=3");
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector3f, std::string_view>::convert(
+              str,
+              FVector3f(0.0f)),
+          FVector3f(1.0f, 2.0f, 3.0f));
+    });
+
+    It("uses default value for out-of-range scalars", [this]() {
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector3f, double>::convert(
+              std::numeric_limits<double>::max(),
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+    });
+
+    It("uses default value for vecNs with out-of-range components", [this]() {
+      TestEqual(
+          "vec2",
+          CesiumMetadataConversions<FVector3f, glm::dvec2>::convert(
+              glm::dvec2(1.0, std::numeric_limits<double>::max()),
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+      TestEqual(
+          "vec3",
+          CesiumMetadataConversions<FVector3f, glm::dvec3>::convert(
+              glm::dvec3(1.0, -1.0, std::numeric_limits<double>::max()),
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+      TestEqual(
+          "vec4",
+          CesiumMetadataConversions<FVector3f, glm::dvec4>::convert(
+              glm::dvec4(1.0, -1.0, std::numeric_limits<double>::max(), 1.0),
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+    });
+
+    It("uses default value for invalid string", [this]() {
+      std::string_view str("X=1 Y=2");
+      TestEqual(
+          "partial input",
+          CesiumMetadataConversions<FVector3f, std::string_view>::convert(
+              str,
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+
+      str = std::string_view("R=0.5 G=0.5 B=0.5");
+      TestEqual(
+          "bad format",
+          CesiumMetadataConversions<FVector3f, std::string_view>::convert(
+              str,
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      TestEqual(
+          "matN",
+          CesiumMetadataConversions<FVector3f, glm::dmat2>::convert(
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
+              FVector3f(0.0f)),
+          FVector3f(0.0f));
+
+      PropertyArrayView<glm::vec3> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FVector3f, PropertyArrayView<glm::vec3>>::
+              convert(arrayView, FVector3f(0.0f)),
+          FVector3f(0.0f));
+    });
+  });
+
+  Describe("FVector", [this]() {
+    It("converts from glm::dvec3", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector, glm::dvec3>::convert(
+              glm::dvec3(1.0, 2.3, 4.56),
+              FVector(0.0)),
+          FVector(1.0, 2.3, 4.56));
+    });
+
+    It("converts from other vec3 types", [this]() {
+      TestEqual(
+          "uint32_t",
+          CesiumMetadataConversions<FVector, glm::uvec3>::convert(
+              glm::uvec3(0, 44, 160),
+              FVector(0.0)),
+          FVector(
+              static_cast<double>(0),
+              static_cast<double>(44),
+              static_cast<double>(160)));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector, glm::vec3>::convert(
+              glm::vec3(-3.5f, 1.23456f, 88.08f),
+              FVector(0.0)),
+          FVector(
+              static_cast<double>(-3.5f),
+              static_cast<double>(1.23456f),
+              static_cast<double>(88.08f)));
+    });
+
+    It("converts from vec2 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector, glm::ivec2>::convert(
+              glm::ivec2(-84, 5),
+              FVector(0.0)),
+          FVector(static_cast<double>(-84), static_cast<double>(5), 0.0));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector, glm::vec2>::convert(
+              glm::vec2(4.5f, 2.345f),
+              FVector(0.0)),
+          FVector(static_cast<double>(4.5f), static_cast<double>(2.345f), 0.0));
+    });
+
+    It("converts from vec4 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector, glm::i16vec4>::convert(
+              glm::i16vec4(-42, 278, 23, 1),
+              FVector(0.0)),
+          FVector(
+              static_cast<double>(-42),
+              static_cast<double>(278),
+              static_cast<double>(23)));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector, glm::dvec4>::convert(
+              glm::dvec4(4.5, 2.34, 8.1, 1038.0),
+              FVector(0.0)),
+          FVector(4.5, 2.34, 8.1));
+    });
+
+    It("converts from boolean", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector, bool>::convert(
+              true,
+              FVector(-1.0)),
+          FVector(1.0));
+    });
+
+    It("converts from integer", [this]() {
+      TestEqual(
+          "32-bit",
+          CesiumMetadataConversions<FVector, uint32_t>::convert(
+              12345,
+              FVector(0.0)),
+          FVector(static_cast<double>(12345)));
+
+      TestEqual(
+          "64-bit",
+          CesiumMetadataConversions<FVector, int64_t>::convert(
+              -12345,
+              FVector(0.0)),
+          FVector(static_cast<double>(-12345)));
+    });
+
+    It("converts from floating-point number", [this]() {
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector, float>::convert(
+              1234.56f,
+              FVector(0.0)),
+          FVector(static_cast<double>(1234.56f)));
+
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector, double>::convert(
+              4.56,
+              FVector(0.0)),
+          FVector(4.56));
+    });
+
+    It("converts from string", [this]() {
+      std::string_view str("X=1.5 Y=2.5 Z=3.5");
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector, std::string_view>::convert(
+              str,
+              FVector(0.0)),
+          FVector(1.5f, 2.5f, 3.5f));
+    });
+
+    It("uses default value for invalid string", [this]() {
+      std::string_view str("X=1 Y=2");
+      TestEqual(
+          "partial input",
+          CesiumMetadataConversions<FVector, std::string_view>::convert(
+              str,
+              FVector(0.0)),
+          FVector(0.0));
+
+      str = std::string_view("R=0.5 G=0.5 B=0.5");
+      TestEqual(
+          "bad format",
+          CesiumMetadataConversions<FVector, std::string_view>::convert(
+              str,
+              FVector(0.0)),
+          FVector(0.0));
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      TestEqual(
+          "matN",
+          CesiumMetadataConversions<FVector, glm::dmat2>::convert(
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
+              FVector(0.0)),
+          FVector(0.0));
+
+      PropertyArrayView<glm::dvec3> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FVector, PropertyArrayView<glm::dvec3>>::
+              convert(arrayView, FVector(0.0)),
+          FVector(0.0));
+    });
+  });
+
+  Describe("FVector4", [this]() {
+    It("converts from glm::dvec4", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector, glm::dvec4>::convert(
+              glm::dvec4(1.0, 2.3, 4.56, 7.89),
+              FVector4::Zero()),
+          FVector4(1.0, 2.3, 4.56, 7.89));
+    });
+
+    It("converts from other vec4 types", [this]() {
+      TestEqual(
+          "uint32_t",
+          CesiumMetadataConversions<FVector4, glm::uvec4>::convert(
+              glm::uvec4(0, 44, 160, 1),
+              FVector4::Zero()),
+          FVector4(
+              static_cast<double>(0),
+              static_cast<double>(44),
+              static_cast<double>(160),
+              static_cast<double>(1)));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector4, glm::vec4>::convert(
+              glm::vec4(-3.5f, 1.23456f, 88.08f, 1.0f),
+              FVector4::Zero()),
+          FVector4(
+              static_cast<double>(-3.5f),
+              static_cast<double>(1.23456f),
+              static_cast<double>(88.08f),
+              static_cast<double>(1.0f)));
+    });
+
+    It("converts from vec2 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector4, glm::ivec2>::convert(
+              glm::ivec2(-84, 5),
+              FVector4::Zero()),
+          FVector4(static_cast<double>(-84), static_cast<double>(5), 0.0, 0.0));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector4, glm::vec2>::convert(
+              glm::vec2(4.5f, 2.345f),
+              FVector4::Zero()),
+          FVector4(
+              static_cast<double>(4.5f),
+              static_cast<double>(2.345f),
+              0.0,
+              0.0));
+    });
+
+    It("converts from vec3 types", [this]() {
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FVector4, glm::i16vec3>::convert(
+              glm::i16vec3(-42, 278, 23),
+              FVector4::Zero()),
+          FVector4(
+              static_cast<double>(-42),
+              static_cast<double>(278),
+              static_cast<double>(23),
+              0.0));
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector4, glm::dvec3>::convert(
+              glm::dvec3(4.5, 2.34, 8.1),
+              FVector4::Zero()),
+          FVector4(4.5, 2.34, 8.1, 0.0));
+    });
+
+    It("converts from boolean", [this]() {
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FVector4, bool>::convert(
+              true,
+              FVector4(-1.0, -1.0, -1.0, -1.0)),
+          FVector4::One());
+    });
+
+    It("converts from integer", [this]() {
+      uint32_t uint32Value = static_cast<uint32_t>(12345);
+      double expected = static_cast<double>(uint32Value);
+      TestEqual(
+          "32-bit",
+          CesiumMetadataConversions<FVector4, uint32_t>::convert(
+              12345,
+              FVector4::Zero()),
+          FVector4(expected, expected, expected, expected));
+
+      int64_t int64Value = static_cast<int64_t>(-12345);
+      expected = static_cast<double>(int64Value);
+      TestEqual(
+          "64-bit",
+          CesiumMetadataConversions<FVector4, int64_t>::convert(
+              int64Value,
+              FVector4::Zero()),
+          FVector4(expected, expected, expected, expected));
+    });
+
+    It("converts from floating-point number", [this]() {
+      float value = 1234.56f;
+      double expected = static_cast<double>(1234.56f);
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FVector4, float>::convert(
+              1234.56f,
+              FVector4::Zero()),
+          FVector4(expected, expected, expected, expected));
+
+      TestEqual(
+          "double",
+          CesiumMetadataConversions<FVector4, double>::convert(
+              4.56,
+              FVector4::Zero()),
+          FVector4(4.56, 4.56, 4.56, 4.56));
+    });
+
+    It("converts from string", [this]() {
+      std::string_view str("X=1.5 Y=2.5 Z=3.5 W=4.5");
+      TestEqual(
+          "with W component",
+          CesiumMetadataConversions<FVector4, std::string_view>::convert(
+              str,
+              FVector4::Zero()),
+          FVector4(1.5, 2.5, 3.5, 4.5));
+
+      str = std::string_view("X=1.5 Y=2.5 Z=3.5");
+      TestEqual(
+          "without W component",
+          CesiumMetadataConversions<FVector4, std::string_view>::convert(
+              str,
+              FVector4::Zero()),
+          FVector4(1.5, 2.5, 3.5, 1.0));
+    });
+
+    It("uses default value for invalid string", [this]() {
+      std::string_view str("X=1 Y=2");
+      TestEqual(
+          "partial input",
+          CesiumMetadataConversions<FVector4, std::string_view>::convert(
+              str,
+              FVector4::Zero()),
+          FVector4::Zero());
+
+      str = std::string_view("R=0.5 G=0.5 B=0.5 A=1.0");
+      TestEqual(
+          "bad format",
+          CesiumMetadataConversions<FVector4, std::string_view>::convert(
+              str,
+              FVector4::Zero()),
+          FVector4::Zero());
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      TestEqual(
+          "matN",
+          CesiumMetadataConversions<FVector, glm::dmat2>::convert(
+              glm::dmat2(1.0, 2.0, 3.0, 4.0),
+              FVector4::Zero()),
+          FVector4::Zero());
+
+      PropertyArrayView<glm::dvec4> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FVector, PropertyArrayView<glm::dvec4>>::
+              convert(arrayView, FVector4::Zero()),
+          FVector4::Zero());
+    });
+  });
+
+  Describe("FMatrix", [this]() {
+    It("converts from glm::dmat4", [this]() {
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 3.0, 4.0),
+          FPlane4d(5.0, 6.0, 7.0, 8.0),
+          FPlane4d(0.0, 1.0, 0.0, 1.0),
+          FPlane4d(1.0, 0.0, 0.0, 1.0));
+
+      // clang-format off
+      glm::dmat4 input = glm::dmat4(
+          1.0, 2.0, 3.0, 4.0,
+          5.0, 6.0, 7.0, 8.0,
+          0.0, 1.0, 0.0, 1.0,
+          1.0, 0.0, 0.0, 1.0);
+      // clang-format on
+      input = glm::transpose(input);
+
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FMatrix, glm::dmat4>::convert(
+              input,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("converts from boolean", [this]() {
+      FPlane4d zeroPlane(0.0, 0.0, 0.0, 0.0);
+      FMatrix zeroMatrix(zeroPlane, zeroPlane, zeroPlane, zeroPlane);
+
+      TestEqual(
+          "true",
+          CesiumMetadataConversions<FMatrix, bool>::convert(true, zeroMatrix),
+          FMatrix::Identity);
+      TestEqual(
+          "false",
+          CesiumMetadataConversions<FMatrix, bool>::convert(
+              false,
+              FMatrix::Identity),
+          zeroMatrix);
     });
   });
 
@@ -490,6 +1574,16 @@ void FCesiumMetadataConversionsSpec::Define() {
               glm::vec3(4.5f, 3.21f, 123.0f),
               FString("")),
           FString(expectedVec3.c_str()));
+
+      std::string expectedVec4 =
+          "X=" + std::to_string(1.0f) + " Y=" + std::to_string(2.0f) +
+          " Z=" + std::to_string(3.0f) + " W=" + std::to_string(4.0f);
+      TestEqual(
+          "vec4",
+          CesiumMetadataConversions<FString, glm::vec4>::convert(
+              glm::vec4(1.0f, 2.0f, 3.0f, 4.0f),
+              FString("")),
+          FString(expectedVec4.c_str()));
     });
 
     It("uses default value for incompatible types", [this]() {

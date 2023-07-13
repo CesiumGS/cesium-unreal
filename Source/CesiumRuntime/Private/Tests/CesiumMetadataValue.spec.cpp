@@ -362,13 +362,13 @@ void FCesiumMetadataValueSpec::Define() {
       TestEqual(
           "smaller signed integer",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          -12345);
+          static_cast<int64_t>(-12345));
 
       value = FCesiumMetadataValue(static_cast<uint8_t>(255));
       TestEqual(
           "smaller unsigned integer",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          255);
+          static_cast<int64_t>(255));
     });
 
     It("gets from boolean", [this]() {
@@ -376,7 +376,7 @@ void FCesiumMetadataValueSpec::Define() {
       TestEqual(
           "value",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, -1),
-          1);
+          static_cast<int64_t>(1));
     });
 
     It("gets from in-range floating point number", [this]() {
@@ -384,13 +384,13 @@ void FCesiumMetadataValueSpec::Define() {
       TestEqual(
           "float",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          1234);
+          static_cast<int64_t>(1234));
 
       value = FCesiumMetadataValue(-78.9);
       TestEqual(
           "double",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          -78);
+          static_cast<int64_t>(-78));
     });
 
     It("gets from string", [this]() {
@@ -398,100 +398,104 @@ void FCesiumMetadataValueSpec::Define() {
       TestEqual(
           "value",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          -1234);
+          static_cast<int64_t>(-1234));
     });
 
     It("returns default value for out-of-range numbers", [this]() {
+      const int64_t zero = static_cast<int64_t>(0);
       FCesiumMetadataValue value(std::numeric_limits<float>::lowest());
       TestEqual(
           "negative floating-point number",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          0);
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
+          zero);
 
       value = FCesiumMetadataValue(std::numeric_limits<uint64_t>::max());
       TestEqual(
           "positive integer",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          0);
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
+          zero);
 
       value = FCesiumMetadataValue(std::numeric_limits<float>::max());
       TestEqual(
           "positive floating-point number",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          0);
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
+          zero);
     });
 
     It("returns default value for incompatible types", [this]() {
+      const int64_t zero = static_cast<int64_t>(0);
       FCesiumMetadataValue value(glm::u64vec2(1, 1));
       TestEqual(
           "vecN",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          0);
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
+          zero);
 
       value = FCesiumMetadataValue(glm::mat2(1.0f, 1.0f, 1.0f, 1.0f));
       TestEqual(
           "matN",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          0);
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
+          zero);
 
       value = FCesiumMetadataValue(PropertyArrayView<int64_t>());
       TestEqual(
           "array",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          0);
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
+          zero);
     });
   });
 
-  // Describe("FString", [this]() {
-  //  It("converts from string", [this]() {
-  //    TestEqual(
-  //        "FString",
-  //        CesiumMetadataConversions<FString, FString>::convert(
-  //            FString("Hello"),
-  //            FString("")),
-  //        FString("Hello"));
-  //    TestEqual(
-  //        "std::string_view",
-  //        CesiumMetadataConversions<FString, std::string_view>::convert(
-  //            std::string_view("Hello"),
-  //            FString("")),
-  //        FString("Hello"));
-  //  });
+  Describe("FString", [this]() {
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("Hello"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("Hello"));
+    });
 
-  //  It("converts from boolean", [this]() {
-  //    TestEqual(
-  //        "true",
-  //        CesiumMetadataConversions<FString, bool>::convert(true,
-  //        FString("")), FString("true"));
-  //    TestEqual(
-  //        "float",
-  //        CesiumMetadataConversions<FString, bool>::convert(false,
-  //        FString("")), FString("false"));
-  //  });
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "true",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("true"));
 
-  //  It("converts from scalar", [this]() {
-  //    TestEqual(
-  //        "integer",
-  //        CesiumMetadataConversions<FString, uint16_t>::convert(
-  //            1234,
-  //            FString("")),
-  //        FString("1234"));
-  //    TestEqual(
-  //        "float",
-  //        CesiumMetadataConversions<FString, float>::convert(
-  //            1.2345f,
-  //            FString("")),
-  //        FString(std::to_string(1.2345f).c_str()));
-  //  });
+      value = FCesiumMetadataValue(false);
+      TestEqual(
+          "false",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("false"));
+    });
 
-  //  It("uses default value for incompatible types", [this]() {
-  //    TestEqual(
-  //        "default value for array",
-  //        CesiumMetadataConversions<FString, PropertyArrayView<uint8_t>>::
-  //            convert(
-  //                PropertyArrayView<uint8_t>(std::vector<std::byte>()),
-  //                FString("")),
-  //        FString(""));
-  //  });
-  //});
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(1234);
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("1234"));
+
+      value = FCesiumMetadataValue(1.2345f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString(std::to_string(1.2345f).c_str()));
+    });
+
+    It("gets from vecN", [this]() {
+      FCesiumMetadataValue value(glm::ivec4(1, 2, 3, 4));
+      TestEqual(
+          "vec4",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString("X=1 Y=2 Z=3 W=4"));
+    });
+
+    It("returns default value for incompatible types", [this]() {
+      FCesiumMetadataValue value =
+          FCesiumMetadataValue(PropertyArrayView<uint8_t>());
+      TestEqual(
+          "array",
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
+          FString(""));
+    });
+  });
 }
