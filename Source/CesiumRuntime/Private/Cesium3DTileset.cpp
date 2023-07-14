@@ -109,6 +109,7 @@ ACesium3DTileset::ACesium3DTileset()
 
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
+  this->Root = this->RootComponent;
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -120,8 +121,8 @@ TSoftObjectPtr<ACesiumGeoreference> ACesium3DTileset::GetGeoreference() const {
 }
 
 void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
-  if (NewMobility != this->Mobility) {
-    this->Mobility = NewMobility;
+  if (NewMobility != this->RootComponent->Mobility) {
+    this->RootComponent->SetMobility(NewMobility);
     DestroyTileset();
   }
 }
@@ -927,8 +928,6 @@ getCesiumViewExtension() {
 
 void ACesium3DTileset::LoadTileset() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
-
-  this->RootComponent->SetMobility(Mobility);
 
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
@@ -2099,6 +2098,10 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
       this->TilesetSource = ETilesetSource::FromCesiumIon;
     }
   }
+
+  if (CesiumVersion < FCesiumCustomVersion::TilesetMobilityRemoved) {
+    this->RootComponent->SetMobility(this->Mobility_DEPRECATED);
+  }
 }
 
 #if WITH_EDITOR
@@ -2139,7 +2142,6 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix
