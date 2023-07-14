@@ -42,7 +42,8 @@ void ACesiumCartographicPolygon::BeginPlay() {
 }
 
 CesiumGeospatial::CartographicPolygon
-ACesiumCartographicPolygon::CreateCartographicPolygon() const {
+ACesiumCartographicPolygon::CreateCartographicPolygon(
+    const FTransform& worldToTileset) const {
   int32 splinePointsCount = this->Polygon->GetNumberOfSplinePoints();
 
   if (splinePointsCount < 3) {
@@ -51,10 +52,17 @@ ACesiumCartographicPolygon::CreateCartographicPolygon() const {
 
   std::vector<glm::dvec2> polygon(splinePointsCount);
 
+  // The spline points should be located in the tileset _exactly where they
+  // appear to be_. The way we do that is by getting their world position, and
+  // then transforming that world position to a Cesium3DTileset local position.
+  // That way if the tileset is transformed relative to the globe, the polygon
+  // will still affect the tileset where the user thinks it should.
+
   for (size_t i = 0; i < splinePointsCount; ++i) {
-    const FVector& unrealPosition = this->Polygon->GetLocationAtSplinePoint(
-        i,
-        ESplineCoordinateSpace::World);
+    const FVector& unrealPosition = worldToTileset.TransformPosition(
+        this->Polygon->GetLocationAtSplinePoint(
+            i,
+            ESplineCoordinateSpace::World));
     glm::dvec3 cartographic =
         this->GlobeAnchor->ResolveGeoreference()
             ->TransformUnrealToLongitudeLatitudeHeight(glm::dvec3(
