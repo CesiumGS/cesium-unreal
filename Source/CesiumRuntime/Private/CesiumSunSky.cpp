@@ -97,9 +97,10 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
   SkyLight->bCastRaytracedShadow = true;
 #endif
 
-  // The Sky Light is fixed at the Georeference origin.
-  // TODO: should it follow the player?
-  SkyLight->SetRelativeLocation(FVector(0, 0, 0));
+  // Initially put the SkyLight at the world origin.
+  // This is updated in UpdateSun.
+  SkyLight->SetUsingAbsoluteLocation(true);
+  SkyLight->SetWorldLocation(FVector(0, 0, 0));
 
   // The Sky Atmosphere should be positioned relative to the
   // Scene/RootComponent, which is kept at the center of the Earth by the
@@ -376,6 +377,11 @@ ACesiumGeoreference* ACesiumSunSky::GetGeoreference() const {
 }
 
 void ACesiumSunSky::UpdateSun_Implementation() {
+  // Put the Sky Light at the Georeference origin.
+  // TODO: should it follow the player?
+  this->SkyLight->SetUsingAbsoluteLocation(true);
+  this->SkyLight->SetWorldLocation(FVector(0, 0, 0));
+
   bool isDST = this->IsDST(
       this->UseDaylightSavingTime,
       this->DSTStartMonth,
