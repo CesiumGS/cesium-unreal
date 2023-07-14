@@ -81,7 +81,7 @@ public:
   virtual ~ACesium3DTileset();
 
 private:
-  UPROPERTY(VisibleAnywhere)
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
   USceneComponent* Root;
 
   UPROPERTY(
