@@ -118,7 +118,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDAttribute")
+      Category = "Cesium|Features|FeatureIDAttribute")
   static ECesiumFeatureIdAttributeStatus GetFeatureIDAttributeStatus(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 
@@ -129,7 +129,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDAttribute")
+      Category = "Cesium|Features|FeatureIDAttribute")
   static int64
   GetVertexCount(UPARAM(ref)
                      const FCesiumFeatureIdAttribute& FeatureIDAttribute);
@@ -142,7 +142,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDAttribute")
+      Category = "Cesium|Features|FeatureIDAttribute")
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
       int64 VertexIndex);

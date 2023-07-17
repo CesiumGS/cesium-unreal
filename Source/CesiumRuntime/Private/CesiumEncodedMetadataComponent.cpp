@@ -1,5 +1,6 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
+// clang-format off
 #include "CesiumEncodedMetadataComponent.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
@@ -896,3 +897,5 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 }
 
 #endif // WITH_EDITOR
+
+// clang-format on

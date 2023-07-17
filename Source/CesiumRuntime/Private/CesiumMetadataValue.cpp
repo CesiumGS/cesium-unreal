@@ -3,6 +3,7 @@
 #include "CesiumMetadataValue.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
 #include "CesiumMetadataConversions.h"
+#include "CesiumPropertyArray.h"
 
 ECesiumMetadataBlueprintType
 UCesiumMetadataValueBlueprintLibrary::GetBlueprintType(
@@ -100,6 +101,90 @@ double UCesiumMetadataValueBlueprintLibrary::GetFloat64(
       Value._value);
 }
 
+FIntPoint UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FIntPoint& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FIntPoint {
+        return CesiumMetadataConversions<FIntPoint, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
+FVector2D UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FVector2D& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FVector2D {
+        return CesiumMetadataConversions<FVector2D, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
+FIntVector UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FIntVector& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FIntVector {
+        return CesiumMetadataConversions<FIntVector, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
+FVector3f UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FVector3f& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FVector3f {
+        return CesiumMetadataConversions<FVector3f, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
+FVector UCesiumMetadataValueBlueprintLibrary::GetVector(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FVector& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FVector {
+        return CesiumMetadataConversions<FVector, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
+FVector4 UCesiumMetadataValueBlueprintLibrary::GetVector4(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FVector4& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FVector4 {
+        return CesiumMetadataConversions<FVector4, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
+FMatrix UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+    UPARAM(ref) const FCesiumMetadataValue& Value,
+    const FMatrix& DefaultValue) {
+  return std::visit(
+      [DefaultValue](auto value) -> FMatrix {
+        return CesiumMetadataConversions<FMatrix, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Value._value);
+}
+
 FString UCesiumMetadataValueBlueprintLibrary::GetString(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     const FString& DefaultValue) {
@@ -112,14 +197,14 @@ FString UCesiumMetadataValueBlueprintLibrary::GetString(
       Value._value);
 }
 
-FCesiumMetadataArray UCesiumMetadataValueBlueprintLibrary::GetArray(
+FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
   return std::visit(
-      [](auto value) -> FCesiumMetadataArray {
+      [](auto value) -> FCesiumPropertyArray {
         if constexpr (CesiumGltf::IsMetadataArray<decltype(value)>::value) {
-          return FCesiumMetadataArray(value);
+          return FCesiumPropertyArray(value);
         }
-        return FCesiumMetadataArray();
+        return FCesiumPropertyArray();
       },
       Value._value);
 }

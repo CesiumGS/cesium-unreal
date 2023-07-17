@@ -1481,12 +1481,6 @@ void FCesiumMetadataConversionsSpec::Define() {
 
   Describe("FMatrix", [this]() {
     It("converts from glm::dmat4", [this]() {
-      FMatrix expected(
-          FPlane4d(1.0, 2.0, 3.0, 4.0),
-          FPlane4d(5.0, 6.0, 7.0, 8.0),
-          FPlane4d(0.0, 1.0, 0.0, 1.0),
-          FPlane4d(1.0, 0.0, 0.0, 1.0));
-
       // clang-format off
       glm::dmat4 input = glm::dmat4(
           1.0, 2.0, 3.0, 4.0,
@@ -1496,6 +1490,11 @@ void FCesiumMetadataConversionsSpec::Define() {
       // clang-format on
       input = glm::transpose(input);
 
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 3.0, 4.0),
+          FPlane4d(5.0, 6.0, 7.0, 8.0),
+          FPlane4d(0.0, 1.0, 0.0, 1.0),
+          FPlane4d(1.0, 0.0, 0.0, 1.0));
       TestEqual(
           "value",
           CesiumMetadataConversions<FMatrix, glm::dmat4>::convert(
@@ -1504,9 +1503,51 @@ void FCesiumMetadataConversionsSpec::Define() {
           expected);
     });
 
+    It("converts from mat2", [this]() {
+      // clang-format off
+      glm::dmat2 input = glm::dmat2(
+          1.0, 2.0,
+          3.0, 4.0);
+      // clang-format on
+      input = glm::transpose(input);
+
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 0.0, 0.0),
+          FPlane4d(3.0, 4.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0));
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FMatrix, glm::dmat2>::convert(
+              input,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("converts from mat3", [this]() {
+      // clang-format off
+      glm::dmat3 input = glm::dmat3(
+          1.0, 2.0, 3.0,
+          4.0, 5.0, 6.0,
+          7.0, 8.0, 9.0);
+      // clang-format on
+      input = glm::transpose(input);
+
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 3.0, 0.0),
+          FPlane4d(4.0, 5.0, 6.0, 0.0),
+          FPlane4d(7.0, 8.0, 9.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0));
+      TestEqual(
+          "value",
+          CesiumMetadataConversions<FMatrix, glm::dmat3>::convert(
+              input,
+              FMatrix::Identity),
+          expected);
+    });
+
     It("converts from boolean", [this]() {
-      FPlane4d zeroPlane(0.0, 0.0, 0.0, 0.0);
-      FMatrix zeroMatrix(zeroPlane, zeroPlane, zeroPlane, zeroPlane);
+      FMatrix zeroMatrix(ZeroPlane, ZeroPlane, ZeroPlane, ZeroPlane);
 
       TestEqual(
           "true",
@@ -1518,6 +1559,61 @@ void FCesiumMetadataConversionsSpec::Define() {
               false,
               FMatrix::Identity),
           zeroMatrix);
+    });
+
+    It("converts from scalar", [this]() {
+      int32_t integerValue = 10;
+      double value = static_cast<double>(integerValue);
+      FMatrix expected(
+          FPlane4d(value, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, value, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, value, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, value));
+      TestEqual(
+          "integer",
+          CesiumMetadataConversions<FMatrix, int32_t>::convert(
+              integerValue,
+              FMatrix::Identity),
+          expected);
+
+      float floatValue = -3.45f;
+      value = static_cast<double>(floatValue);
+      expected = FMatrix(
+          FPlane4d(value, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, value, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, value, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, value));
+      TestEqual(
+          "float",
+          CesiumMetadataConversions<FMatrix, float>::convert(
+              floatValue,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("uses default value for incompatible types", [this]() {
+      // This is unsupported because there's no FMatrix::InitFromString method.
+      std::string_view str("[0 1 2 3] [4 5 6 7] [8 9 10 11] [12 13 14 15]");
+      TestEqual(
+          "string",
+          CesiumMetadataConversions<FMatrix, std::string_view>::convert(
+              str,
+              FMatrix::Identity),
+          FMatrix::Identity);
+
+      TestEqual(
+          "vecN",
+          CesiumMetadataConversions<FMatrix, glm::vec3>::convert(
+              glm::vec3(1.0f, 2.0f, 3.0f),
+              FMatrix::Identity),
+          FMatrix::Identity);
+
+      PropertyArrayView<glm::dmat4> arrayView;
+      TestEqual(
+          "array",
+          CesiumMetadataConversions<FMatrix, PropertyArrayView<glm::dmat4>>::
+              convert(arrayView, FMatrix::Identity),
+          FMatrix::Identity);
     });
   });
 
@@ -1558,32 +1654,85 @@ void FCesiumMetadataConversionsSpec::Define() {
     });
 
     It("converts from vecN", [this]() {
+      std::string expected("X=1 Y=2");
       TestEqual(
           "vec2",
           CesiumMetadataConversions<FString, glm::u8vec2>::convert(
               glm::u8vec2(1, 2),
               FString("")),
-          FString("X=1 Y=2"));
+          FString(expected.c_str()));
 
-      std::string expectedVec3 = "X=" + std::to_string(4.5f) +
-                                 " Y=" + std::to_string(3.21f) +
-                                 " Z=" + std::to_string(123.0f);
+      expected = "X=" + std::to_string(4.5f) + " Y=" + std::to_string(3.21f) +
+                 " Z=" + std::to_string(123.0f);
       TestEqual(
           "vec3",
           CesiumMetadataConversions<FString, glm::vec3>::convert(
               glm::vec3(4.5f, 3.21f, 123.0f),
               FString("")),
-          FString(expectedVec3.c_str()));
+          FString(expected.c_str()));
 
-      std::string expectedVec4 =
-          "X=" + std::to_string(1.0f) + " Y=" + std::to_string(2.0f) +
-          " Z=" + std::to_string(3.0f) + " W=" + std::to_string(4.0f);
+      expected = "X=" + std::to_string(1.0f) + " Y=" + std::to_string(2.0f) +
+                 " Z=" + std::to_string(3.0f) + " W=" + std::to_string(4.0f);
       TestEqual(
           "vec4",
           CesiumMetadataConversions<FString, glm::vec4>::convert(
               glm::vec4(1.0f, 2.0f, 3.0f, 4.0f),
               FString("")),
-          FString(expectedVec4.c_str()));
+          FString(expected.c_str()));
+    });
+
+    It("converts from matN", [this]() {
+      // clang-format off
+      glm::mat2 mat2(
+        0.0f, 1.0f,
+        2.0f, 3.0f);
+      mat2 = glm::transpose(mat2);
+
+      std::string expected =
+          "[" + std::to_string(0.0f) + " " + std::to_string(1.0f) + "] " +
+          "[" + std::to_string(2.0f) + " " + std::to_string(3.0f) + "]";
+      // clang-format on
+      TestEqual(
+          "mat2",
+          CesiumMetadataConversions<FString, glm::mat2>::convert(
+              mat2,
+              FString("")),
+          FString(expected.c_str()));
+
+      // This is written as transposed because glm::transpose only compiles for
+      // floating point types.
+      // clang-format off
+      glm::i8mat3x3 mat3(
+        -1,  4,  7,
+         2, -5,  8,
+         3,  6, -9);
+      // clang-format on
+
+      expected = "[-1 2 3] [4 -5 6] [7 8 -9]";
+      TestEqual(
+          "mat3",
+          CesiumMetadataConversions<FString, glm::i8mat3x3>::convert(
+              mat3,
+              FString("")),
+          FString(expected.c_str()));
+
+      // This is written as transposed because glm::transpose only compiles for
+      // floating point types.
+      // clang-format off
+      glm::u8mat4x4 mat4(
+         0,  4,  8, 12,
+         1,  5,  9, 13,
+         2,  6, 10, 14,
+         3,  7, 11, 15);
+      // clang-format on
+
+      expected = "[0 1 2 3] [4 5 6 7] [8 9 10 11] [12 13 14 15]";
+      TestEqual(
+          "vec4",
+          CesiumMetadataConversions<FString, glm::u8mat4x4>::convert(
+              mat4,
+              FString("")),
+          FString(expected.c_str()));
     });
 
     It("uses default value for incompatible types", [this]() {

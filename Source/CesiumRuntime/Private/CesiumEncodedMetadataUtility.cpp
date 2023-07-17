@@ -6,7 +6,7 @@
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumLifetime.h"
-#include "CesiumMetadataArray.h"
+#include "CesiumPropertyArray.h"
 #include "CesiumMetadataConversions.h"
 #include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveMetadata.h"

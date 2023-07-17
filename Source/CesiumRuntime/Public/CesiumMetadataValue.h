@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
-#include "CesiumMetadataArray.h"
 #include "CesiumMetadataValueType.h"
+#include "CesiumPropertyArray.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include <glm/glm.hpp>
@@ -181,28 +180,8 @@ public:
    * @param Value The value to be stored in this struct.
    */
   template <typename T>
-  explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
-    ECesiumMetadataType type;
-    ECesiumMetadataComponentType componentType;
-    bool isArray;
-
-    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-
-      type =
-          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<ArrayType>::component);
-      isArray = true;
-    } else {
-      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
-      isArray = false;
-    }
-
-    _valueType = {type, componentType, isArray};
-  }
+  explicit FCesiumMetadataValue(const T& Value)
+      : _value(Value), _valueType(GetCesiumMetadataValueType<T>()) {}
 
 private:
   ValueType _value;
@@ -241,7 +220,7 @@ public:
   GetArrayElementBlueprintType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Gets the true type of the metadata value as defined in the
+   * Gets the type of the metadata value as defined in the
    * EXT_structural_metadata extension. Many of these types are not accessible
    * from Blueprints, but can be converted to a Blueprint-accessible type.
    */
@@ -253,7 +232,7 @@ public:
   GetValueType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
   /**
-   * Attempts to retrieve the value as a Boolean.
+   * Attempts to retrieve the value as a boolean.
    *
    * If the value is a boolean, it is returned as-is.
    *
@@ -279,7 +258,7 @@ public:
   GetBoolean(UPARAM(ref) const FCesiumMetadataValue& value, bool DefaultValue);
 
   /**
-   * Attempts to retrieve the value as a Byte (unsigned 8-bit integer).
+   * Attempts to retrieve the value as an unsigned 8-bit integer.
    *
    * If the value is an integer between 0 and 255, it is returned
    * as-is.
@@ -287,7 +266,7 @@ public:
    * If the value is a floating-point number in the aforementioned range, it is
    * truncated (rounded toward zero) and returned.
    *
-   * If the value is a boolean, 0 is returned for false and 1 for true.
+   * If the value is a boolean, 1 is returned for true and 0 for false.
    *
    * If the value is a string and the entire string can be parsed as an
    * integer between 0 and 255, the parsed value is returned. The string is
@@ -308,7 +287,7 @@ public:
   GetByte(UPARAM(ref) const FCesiumMetadataValue& Value, uint8 DefaultValue);
 
   /**
-   * Attempts to retrieve the value as an Integer (signed 32-bit integer).
+   * Attempts to retrieve the value as a signed 32-bit integer.
    *
    * If the value is an integer between -2,147,483,648 and 2,147,483,647,
    * it is returned as-is.
@@ -316,7 +295,7 @@ public:
    * If the value is a floating-point number in the aforementioned range, it is
    * truncated (rounded toward zero) and returned;
    *
-   * If the value is a boolean, 0 is returned for false and 1 for true.
+   * If the value is a boolean, 1 is returned for true and 0 for false.
    *
    * If the value is a string and the entire string can be parsed as an
    * integer in the valid range, the parsed value is returned. If it can be
@@ -339,7 +318,7 @@ public:
   GetInteger(UPARAM(ref) const FCesiumMetadataValue& Value, int32 DefaultValue);
 
   /**
-   * Attempts to retrieve the value as an Integer64 (signed 64-bit integer).
+   * Attempts to retrieve the value as a signed 64-bit integer.
    *
    * If the value is an integer and between -2^63 and (2^63 - 1),
    * it is returned as-is.
@@ -347,7 +326,7 @@ public:
    * If the value is a floating-point number in the aforementioned range, it
    * is truncated (rounded toward zero) and returned;
    *
-   * If the value is a boolean, 0 is returned for false and 1 for true.
+   * If the value is a boolean, 1 is returned for true and 0 for false.
    *
    * If the value is a string and the entire string can be parsed as an
    * integer in the valid range, the parsed value is returned. If it can be
@@ -371,20 +350,18 @@ public:
       int64 DefaultValue);
 
   /**
-   * Attempts to retrieve the value as a Float (single-precision floating-point
-   * number).
+   * Attempts to retrieve the value as a single-precision floating-point number.
    *
-   * If the value is a single-precision floating-point number, it is returned
-   * as-is.
+   * If the value is already a single-precision floating-point number, it is
+   * returned as-is.
    *
-   * If the value is a scalar of any other type, as long as it is within the
-   * range of values that a single-precision floating-point number can
-   * represent, it is returned as its closest representation as a
-   * single-precision floating-point number.
+   * If the value is a scalar of any other type within the range of values that
+   * a single-precision float can represent, it is converted to its closest
+   * representation as a single-precision float and returned.
    *
-   * If the value is a boolean, 0.0f is returned for false and 1.0f for true.
+   * If the value is a boolean, 1.0f is returned for true and 0.0f for false.
    *
-   * If the value is a string and the entire string can be parsed as a
+   * If the value is a string, and the entire string can be parsed as a
    * number, the parsed value is returned. The string is parsed in a
    * locale-independent way and does not support the use of a comma or other
    * delimiter to group digits togther.
@@ -403,8 +380,7 @@ public:
   GetFloat(UPARAM(ref) const FCesiumMetadataValue& Value, float DefaultValue);
 
   /**
-   * Attempts to retrieve the value as a Float64 (double-precision
-   * floating-point number).
+   * Attempts to retrieve the value as a double-precision floating-point number.
    *
    * If the value is a single- or double-precision floating-point number, it is
    * returned as-is.
@@ -412,7 +388,7 @@ public:
    * If the value is an integer, it is converted to the closest representable
    * double-precision floating-point number.
    *
-   * If the value is a boolean, 0.0 is returned for false and 1.0 for true.
+   * If the value is a boolean, 1.0 is returned for true and 0.0 for false.
    *
    * If the value is a string and the entire string can be parsed as a
    * number, the parsed value is returned. The string is parsed in a
@@ -434,41 +410,258 @@ public:
       double DefaultValue);
 
   /**
-   * Attempts to retrieve the value as a FVector3f.
+   * Attempts to retrieve the value as a FIntPoint.
    *
-   * If the value is a 3-dimensional vector with single-precision floating-point
-   * components, it is returned as-is.
+   * If the value is a 2-dimensional vector, its components will be converted to
+   * 32-bit signed integers if possible.
    *
-   * If the value is a 3-dimensional vector with integer or double-precision
-   * components, the components will be converted to the closest representable
-   * single-precision floating-point numbers.
+   * If the value is a 3- or 4-dimensional vector, it will use the first two
+   * components to construct the FIntPoint.
    *
-   * If the value is a 4-dimensional vector, a 3-dimensional vector containing
-   * the first three components will be returned.
+   * If the value is a scalar that can be converted to a 32-bit signed integer,
+   * the resulting FIntPoint will have this value in both of its components.
    *
-   * If the value is a single-precision floating-point number, a 3-dimensional
+   * If the value is a boolean, (1, 1) is returned for true, while (0, 0) is
+   * returned for false.
    *
-   * If the value is a string and the entire string can be parsed as a
-   * number, the parsed value is returned. The string is parsed in a
-   * locale-independent way and does not support use of a comma or other
-   * character to group digits.
+   * If the value is a string that can be parsed as a FIntPoint, the parsed
+   * value is returned. The string must be formatted as "X=... Y=...".
    *
-   * Otherwise, the default value is returned.
+   * In all other cases, the default value is returned. In all vector cases, if
+   * any of the relevant components cannot be represented as a 32-bit signed,
+   * the default value is returned.
    *
-   * @param DefaultValue The default value to use if the metadata value cannot
-   * be converted.
-   * @return The value.
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a FIntPoint.
+   * @return The value as a FIntPoint.
    */
-  // UFUNCTION(
-  //    BlueprintCallable,
-  //    BlueprintPure,
-  //    Category = "Cesium|Metadata|Value")
-  // static FVector3f GetVector3f(
-  //    UPARAM(ref) const FCesiumMetadataValue& Value,
-  //    FVector3f DefaultValue);
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FIntPoint GetIntPoint(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FIntPoint& DefaultValue);
 
   /**
-   * Attempts to retrieve the value as an FString.
+   * Attempts to retrieve the value as a FVector2D.
+   *
+   * If the value is a 2-dimensional vector, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 3- or 4-dimensional vector, it will use the first two
+   * components to construct the FVector2D.
+   *
+   * If the value is a scalar, the resulting FVector2D will have this value in
+   * both of its components.
+   *
+   * If the value is a boolean, (1.0, 1.0) is returned for true, while (0.0,
+   * 0.0) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector2D, the parsed
+   * value is returned. The string must be formatted as "X=... Y=...".
+   *
+   * In all other cases, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a FIntPoint.
+   * @return The value as a FIntPoint.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FVector2D GetVector2D(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FVector2D& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value as a FIntVector.
+   *
+   * If the value is a 3-dimensional vector, its components will be converted to
+   * 32-bit signed integers if possible.
+   *
+   * If the value is a 4-dimensional vector, it will use the first three
+   * components to construct the FIntVector.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FIntVector. The Z component will be set to zero.
+   *
+   * If the value is a scalar that can be converted to a 32-bit signed integer,
+   * the resulting FIntVector will have this value in all of its components.
+   *
+   * If the value is a boolean, (1, 1, 1) is returned for true, while (0, 0, 0)
+   * is returned for false.
+   *
+   * If the value is a string that can be parsed as a FIntVector, the parsed
+   * value is returned. The string must be formatted as "X=... Y=... Z=".
+   *
+   * In all other cases, the default value is returned. In all vector cases, if
+   * any of the relevant components cannot be represented as a 32-bit signed
+   * integer, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a FIntVector.
+   * @return The value as a FIntVector.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FIntVector GetIntVector(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FIntVector& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value as a FVector3f.
+   *
+   * If the value is a 3-dimensional vector, its components will be converted to
+   * the closest representable single-precision floats, if possible.
+   *
+   * If the value is a 4-dimensional vector, a FVector3f containing the first
+   * three components will be returned.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FVector3f. The Z-component will be set to zero.
+   *
+   * If the value is a scalar that can be converted to a single-precision
+   * floating-point number, then the resulting FVector3f will have this value in
+   * all of its components.
+   *
+   * If the value is a boolean, (1.0f, 1.0f, 1.0f) is returned for true, while
+   * (0.0f, 0.0f, 0.0f) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector3f, the parsed
+   * value is returned. The string must be formatted as "X=... Y=... Z=".
+   *
+   * In all other cases, the default value is returned. In all vector cases, if
+   * any of the relevant components cannot be represented as a single-precision
+   * float, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a FVector3f.
+   * @return The value as a FVector3f.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FVector3f GetVector3f(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FVector3f& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value as a FVector.
+   *
+   * If the value is a 3-dimensional vector, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 4-dimensional vector, a FVector containing the first
+   * three components will be returned.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FVector. The Z-component will be set to zero.
+   *
+   * If the value is a scalar, then the resulting FVector will have this value
+   * in all of its components.
+   *
+   * If the value is a boolean, (1.0, 1.0, 1.0) is returned for true, while
+   * (0.0, 0.0, 0.0) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector, the parsed
+   * value is returned. The string must be formatted as "X=... Y=... Z=".
+   *
+   * In all other cases, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a FVector.
+   * @return The value as a FVector.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FVector GetVector(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FVector& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value as a FVector4.
+   *
+   * If the value is a 4-dimensional vector, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 3-dimensional vector, it will become the XYZ-components
+   * of the FVector4. The W-component will be set to zero.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FVector4. The Z- and W-components will be set to zero.
+   *
+   * If the value is a scalar, then the resulting FVector4 will have this value
+   * in all of its components.
+   *
+   * If the value is a boolean, (1.0, 1.0, 1.0, 1.0) is returned for true, while
+   * (0.0, 0.0, 0.0, 0.0) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector4, the parsed
+   * value is returned. This follows the rules of FVector4::InitFromString. The
+   * string must be formatted as "X=... Y=... Z=... W=...". The W-component is
+   * optional; if absent, it will be set to 1.0.
+   *
+   * In all other cases, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a FVector4.
+   * @return The value as a FVector4.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FVector4 GetVector4(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FVector4& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value as a FMatrix.
+   *
+   * If the value is a 4-by-4 matrix, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 3-by-3 matrix, it will initialize the corresponding
+   * entries of the FMatrix, while all other entries are set to zero. In other
+   * words, the 3-by-3 matrix is returned in an FMatrix where the fourth row and
+   * column are filled with zeroes.
+   *
+   * If the value is a 2-by-2 matrix, it will initialize the corresponding
+   * entries of the FMatrix, while all other entries are set to zero. In other
+   * words, the 2-by-2 matrix is returned in an FMatrix where the third and
+   * fourth rows / columns are filled with zeroes.
+   *
+   * If the value is a scalar, then the resulting FMatrix will have this value
+   * along its diagonal, including the very last component. All other entries
+   * will be zero.
+   *
+   * If the value is a boolean, it is converted to 1.0 for true and 0.0 for
+   * false. Then, the resulting FMatrix will have this value along its diagonal,
+   * including the very last component. All other entries will be zero.
+   *
+   * In all other cases, the default value is returned.
+   *
+   * @param DefaultValue The default value to use if the given value cannot
+   * be converted to a String.
+   * @return The value as a String.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static FMatrix GetMatrix(
+      UPARAM(ref) const FCesiumMetadataValue& Value,
+      const FMatrix& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value as a FString.
    *
    * String properties are returned as-is.
    *
@@ -477,11 +670,18 @@ public:
    *
    * Boolean properties are converted to "true" or "false".
    *
+   * Vector properties are returned as strings in the format "X=... Y=... Z=...
+   * W=..." depending on how many components they have.
+   *
+   * Matrix properties are returned as strings row-by-row, where each row's
+   * values are printed between square brackets. For example, a 2-by-2 matrix
+   * will printed out as "[A B] [C D]".
+   *
    * Array properties return the default value.
    *
    * @param DefaultValue The default value to use if the given value cannot
-   * be converted to a String.
-   * @return The value as a String.
+   * be converted to a FString.
+   * @return The value as a FString.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -492,15 +692,15 @@ public:
       const FString& DefaultValue);
 
   /**
-   * Attempts to retrieve the value as a CesiumMetadataArray. If the property is
-   * not an array type, this returns an empty array.
+   * Attempts to retrieve the value as a FCesiumPropertyArray. If the property
+   * is not an array type, this returns an empty array.
    *
-   * @return The value as a CesiumMetadataArray.
+   * @return The value as a FCesiumPropertyArray.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|Value")
-  static FCesiumMetadataArray GetArray(UPARAM(ref)
+  static FCesiumPropertyArray GetArray(UPARAM(ref)
                                            const FCesiumMetadataValue& Value);
 };

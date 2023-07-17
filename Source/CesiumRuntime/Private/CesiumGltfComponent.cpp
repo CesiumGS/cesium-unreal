@@ -1048,11 +1048,11 @@ static void loadPrimitive(
   if (pEncodedMetadataDescription) {
     primitiveResult.EncodedPrimitiveMetadata =
         encodePrimitiveMetadataAnyThreadPart(
-        *pEncodedMetadataDescription,
-        primitiveResult.Metadata);
+            *pEncodedMetadataDescription,
+            primitiveResult.Metadata);
   }
 
-  //updateTextureCoordinatesForMetadata(
+  // updateTextureCoordinatesForMetadata(
   //    model,
   //    primitive,
   //    duplicateVertices,

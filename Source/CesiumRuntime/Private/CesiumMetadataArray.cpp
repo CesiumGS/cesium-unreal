@@ -5,24 +5,15 @@
 #include "CesiumMetadataConversions.h"
 
 ECesiumMetadataBlueprintType
-UCesiumMetadataArrayBlueprintLibrary::GetElementBlueprintType(
+UCesiumMetadataArrayBlueprintLibrary::GetBlueprintComponentType(
     UPARAM(ref) const FCesiumMetadataArray& array) {
-  return CesiumMetadataValueTypeToBlueprintType(array._type);
-}
-
-FCesiumMetadataValueType
-UCesiumMetadataArrayBlueprintLibrary::GetElementValueType(
-    UPARAM(ref) const FCesiumMetadataArray& array) {
-  FCesiumMetadataValueType types(array._type);
-  types.bIsArray = false;
-
-  return types;
+  return CesiumMetadataTrueTypeToBlueprintType(array._type);
 }
 
 ECesiumMetadataTrueType_DEPRECATED
 UCesiumMetadataArrayBlueprintLibrary::GetTrueComponentType(
     UPARAM(ref) const FCesiumMetadataArray& array) {
-  return ECesiumMetadataTrueType_DEPRECATED::None_DEPRECATED;
+  return array._type;
 }
 
 int64 UCesiumMetadataArrayBlueprintLibrary::GetSize(

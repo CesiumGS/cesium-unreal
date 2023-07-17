@@ -65,7 +65,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static const ECesiumFeatureIdSetType
   GetFeatureIDSetType(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
@@ -78,7 +78,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static const FCesiumFeatureIdAttribute&
   GetAsFeatureIDAttribute(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
@@ -90,7 +90,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static const FCesiumFeatureIdTexture&
   GetAsFeatureIDTexture(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
@@ -103,7 +103,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static const int64
   GetPropertyTableIndex(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
@@ -113,7 +113,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static int64 GetFeatureCount(UPARAM(ref)
                                    const FCesiumFeatureIdSet& FeatureIDSet);
 
@@ -128,7 +128,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static const int64
   GetNullFeatureID(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
 
@@ -142,7 +142,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDSet")
+      Category = "Cesium|Features|FeatureIDSet")
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
       int64 VertexIndex);

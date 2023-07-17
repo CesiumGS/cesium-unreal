@@ -50,7 +50,7 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   /* Indicates a value is best represented as a FString. This can be used as a
      fallback for types with no proper Blueprints representation. */
   String,
-  /* Indicates a value is best represented as a CesiumMetadataArray. */
+  /* Indicates a value is best represented as a CesiumPropertyArray. */
   Array
 };
 

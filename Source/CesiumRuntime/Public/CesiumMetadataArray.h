@@ -11,15 +11,20 @@
 #include <variant>
 #include "CesiumMetadataArray.generated.h"
 
+struct UE_DEPRECATED(
+    5.0,
+    "FCesiumMetadataArray is deprecated. Use FCesiumPropertyArray instead.")
+    FCesiumMetadataPrimitive;
+
 /**
- * A Blueprint-accessible wrapper for an array property in glTF metadata.
+ * A Blueprint-accessible wrapper for an array property in glTF metadata. This
+ * class is deprecated and only exists for backwards compatibility.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataArray {
   GENERATED_USTRUCT_BODY()
 
 private:
-  // TODO: all types
   using ArrayType = std::variant<
       CesiumGltf::PropertyArrayView<int8_t>,
       CesiumGltf::PropertyArrayView<uint8_t>,
@@ -36,29 +41,37 @@ private:
 
 public:
   /**
-   * Constructs an empty array instance with unknown type.
+   * Construct an empty array with unknown type.
    */
-  FCesiumMetadataArray() : _value(), _type() {}
+  FCesiumMetadataArray()
+      : _value(), _type(ECesiumMetadataTrueType_DEPRECATED::None_DEPRECATED) {}
 
   /**
-   * Constructs a non-empty array instance.
-   * @param value The property array view that will be stored in this struct
+   * Construct a non-empty array.
+   * @param value The metadata array view that will be stored in this struct
    */
   template <typename T>
   FCesiumMetadataArray(CesiumGltf::PropertyArrayView<T> value)
-      : _value(), _type() {
-    // TODO _type = ... and value
+      : _value(value),
+        _type(ECesiumMetadataTrueType_DEPRECATED::None_DEPRECATED) {
+    CesiumGltf::PropertyType type =
+        CesiumGltf::TypeToPropertyType<CesiumGltf::PropertyArrayView<T>>::value;
+    CesiumGltf::PropertyComponentType componentType =
+        CesiumGltf::TypeToPropertyType<
+            CesiumGltf::PropertyArrayView<T>>::component;
+
+    _type = CesiumPropertyTypeToMetadataTrueType(type, componentType);
   }
 
 private:
   template <typename T, typename... VariantType>
   static bool
   holdsArrayAlternative(const std::variant<VariantType...>& variant) {
-    return std::holds_alternative<CesiumGltf::PropertyArrayView<T>>(variant);
+    return std::holds_alternative<CesiumGltf::MetadataArrayView<T>>(variant);
   }
 
   ArrayType _value;
-  FCesiumMetadataValueType _type;
+  ECesiumMetadataTrueType_DEPRECATED _type;
 
   friend class UCesiumMetadataArrayBlueprintLibrary;
 };
@@ -69,29 +82,21 @@ class CESIUMRUNTIME_API UCesiumMetadataArrayBlueprintLibrary
   GENERATED_BODY()
 
 public:
-  /**
-   * Gets the best-fitting Blueprints type for the elements of this array.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Array")
-  static ECesiumMetadataBlueprintType
-  GetElementBlueprintType(UPARAM(ref) const FCesiumMetadataArray& array);
-
-  /**
-   * Gets the true value type of the elements in the array. Many of these types
-   * are not accessible from Blueprints, but can be converted to a
-   * Blueprint-accessible type.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Array")
-  static FCesiumMetadataValueType
-  GetElementValueType(UPARAM(ref) const FCesiumMetadataArray& array);
-
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets best-fitting Blueprints type for the elements of this array.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetElementBlueprintType instead."))
+  static ECesiumMetadataBlueprintType
+  GetBlueprintComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
+
   /**
    * Gets true type of the elements in the array. Many of these types are not
    * accessible from Blueprints, but can be converted to a Blueprint-accessible
@@ -104,10 +109,9 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecatedMessage =
-               "ECesiumMetadataTrueType and UCesiumMetadataArrayBlueprintLibrary.GetTrueComponentType is deprecated. Use FCesiumMetadataValueType and UCesiumMetadataArrayBlueprintLibrary.GetElementValueType instead."))
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetElementValueType instead."))
   static ECesiumMetadataTrueType_DEPRECATED
   GetTrueComponentType(UPARAM(ref) const FCesiumMetadataArray& array);
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * Queries the number of elements in the array.
@@ -118,7 +122,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetSize instead."))
   static int64 GetSize(UPARAM(ref) const FCesiumMetadataArray& Array);
 
   /**
@@ -145,7 +153,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static bool GetBoolean(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
@@ -342,4 +354,6 @@ public:
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
       const FString& DefaultValue = "");
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };

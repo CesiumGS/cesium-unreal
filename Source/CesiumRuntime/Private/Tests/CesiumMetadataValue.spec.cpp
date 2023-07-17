@@ -1,4 +1,5 @@
 #include "CesiumMetadataValue.h"
+#include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "Misc/AutomationTest.h"
 
 #include <limits>
@@ -121,23 +122,6 @@ void FCesiumMetadataValueSpec::Define() {
           "true",
           UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, false));
     });
-
-    It("returns default value for incompatible types", [this]() {
-      FCesiumMetadataValue value(glm::u16vec2(1, 1));
-      TestFalse(
-          "vecN",
-          UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, false));
-
-      value = FCesiumMetadataValue(glm::mat2(1.0f, 1.0f, 1.0f, 1.0f));
-      TestFalse(
-          "matN",
-          UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, false));
-
-      value = FCesiumMetadataValue(PropertyArrayView<bool>());
-      TestFalse(
-          "array",
-          UCesiumMetadataValueBlueprintLibrary::GetBoolean(value, false));
-    });
   });
 
   Describe("GetByte", [this]() {
@@ -218,26 +202,6 @@ void FCesiumMetadataValueSpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
           0);
     });
-
-    It("returns default value for incompatible types", [this]() {
-      FCesiumMetadataValue value(glm::u16vec2(1, 1));
-      TestEqual(
-          "vecN",
-          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
-          0);
-
-      value = FCesiumMetadataValue(glm::mat2(1.0f, 1.0f, 1.0f, 1.0f));
-      TestEqual(
-          "matN",
-          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
-          0);
-
-      value = FCesiumMetadataValue(PropertyArrayView<uint8_t>());
-      TestEqual(
-          "array",
-          UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0),
-          0);
-    });
   });
 
   Describe("GetInteger", [this]() {
@@ -248,25 +212,13 @@ void FCesiumMetadataValueSpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
           123);
 
-      value = FCesiumMetadataValue(static_cast<int16_t>(-25));
-      TestEqual(
-          "smaller signed integer",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-          -25);
-
-      value = FCesiumMetadataValue(static_cast<uint8_t>(5));
-      TestEqual(
-          "smaller unsigned integer",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-          5);
-
       value = FCesiumMetadataValue(static_cast<int64_t>(-123));
       TestEqual(
           "larger signed integer",
           UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
           -123);
 
-      value = FCesiumMetadataValue(static_cast<int64_t>(456));
+      value = FCesiumMetadataValue(static_cast<uint64_t>(456));
       TestEqual(
           "larger unsigned integer",
           UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
@@ -328,123 +280,770 @@ void FCesiumMetadataValueSpec::Define() {
           UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
           0);
     });
-
-    It("returns default value for incompatible types", [this]() {
-      FCesiumMetadataValue value(glm::ivec2(1, 1));
-      TestEqual(
-          "vecN",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-          0);
-
-      value = FCesiumMetadataValue(glm::i32mat2x2(1, 1, 1, 1));
-      TestEqual(
-          "matN",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-          0);
-
-      value = FCesiumMetadataValue(PropertyArrayView<int32_t>());
-      TestEqual(
-          "array",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger(value, 0),
-          0);
-    });
   });
 
   Describe("GetInteger64", [this]() {
-    It("gets from in-range integers", [this]() {
+    const int64_t defaultValue = static_cast<int64_t>(0);
+
+    It("gets from in-range integers", [this, defaultValue]() {
       FCesiumMetadataValue value(std::numeric_limits<int64_t>::max() - 1);
       TestEqual(
           "int64_t",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
           std::numeric_limits<int64_t>::max() - 1);
 
       value = FCesiumMetadataValue(static_cast<int16_t>(-12345));
       TestEqual(
           "smaller signed integer",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
           static_cast<int64_t>(-12345));
 
       value = FCesiumMetadataValue(static_cast<uint8_t>(255));
       TestEqual(
           "smaller unsigned integer",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
           static_cast<int64_t>(255));
+    });
+
+    It("gets from boolean", [this, defaultValue]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
+          static_cast<int64_t>(1));
+    });
+
+    It("gets from in-range floating point number", [this, defaultValue]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
+          static_cast<int64_t>(1234));
+
+      value = FCesiumMetadataValue(-78.9);
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
+          static_cast<int64_t>(-78));
+    });
+
+    It("gets from string", [this, defaultValue]() {
+      FCesiumMetadataValue value(std::string_view("-1234"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+              value,
+              defaultValue),
+          static_cast<int64_t>(-1234));
+    });
+
+    It("returns default value for out-of-range numbers",
+       [this, defaultValue]() {
+         FCesiumMetadataValue value(std::numeric_limits<float>::lowest());
+         TestEqual(
+             "negative floating-point number",
+             UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+
+         value = FCesiumMetadataValue(std::numeric_limits<uint64_t>::max());
+         TestEqual(
+             "positive integer",
+             UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+
+         value = FCesiumMetadataValue(std::numeric_limits<float>::max());
+         TestEqual(
+             "positive floating-point number",
+             UCesiumMetadataValueBlueprintLibrary::GetInteger64(
+                 value,
+                 defaultValue),
+             defaultValue);
+       });
+  });
+
+  Describe("GetFloat", [this]() {
+    It("gets from in-range floating point number", [this]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(value, 0.0f),
+          1234.56f);
+
+      double doubleValue = -78.9;
+      value = FCesiumMetadataValue(doubleValue);
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(value, 0.0f),
+          static_cast<float>(doubleValue));
+    });
+
+    It("gets from integer", [this]() {
+      FCesiumMetadataValue value(-12345);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(value, 0.0f),
+          static_cast<float>(-12345));
     });
 
     It("gets from boolean", [this]() {
       FCesiumMetadataValue value(true);
       TestEqual(
           "value",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, -1),
-          static_cast<int64_t>(1));
-    });
-
-    It("gets from in-range floating point number", [this]() {
-      FCesiumMetadataValue value(1234.56f);
-      TestEqual(
-          "float",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          static_cast<int64_t>(1234));
-
-      value = FCesiumMetadataValue(-78.9);
-      TestEqual(
-          "double",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          static_cast<int64_t>(-78));
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(value, -1.0f),
+          1.0f);
     });
 
     It("gets from string", [this]() {
-      FCesiumMetadataValue value(std::string_view("-1234"));
+      FCesiumMetadataValue value(std::string_view("-123.01"));
       TestEqual(
           "value",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, 0),
-          static_cast<int64_t>(-1234));
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(value, 0.0f),
+          static_cast<float>(-123.01));
     });
 
     It("returns default value for out-of-range numbers", [this]() {
-      const int64_t zero = static_cast<int64_t>(0);
-      FCesiumMetadataValue value(std::numeric_limits<float>::lowest());
+      FCesiumMetadataValue value(std::numeric_limits<double>::lowest());
       TestEqual(
-          "negative floating-point number",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
-          zero);
-
-      value = FCesiumMetadataValue(std::numeric_limits<uint64_t>::max());
-      TestEqual(
-          "positive integer",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
-          zero);
-
-      value = FCesiumMetadataValue(std::numeric_limits<float>::max());
-      TestEqual(
-          "positive floating-point number",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
-          zero);
-    });
-
-    It("returns default value for incompatible types", [this]() {
-      const int64_t zero = static_cast<int64_t>(0);
-      FCesiumMetadataValue value(glm::u64vec2(1, 1));
-      TestEqual(
-          "vecN",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
-          zero);
-
-      value = FCesiumMetadataValue(glm::mat2(1.0f, 1.0f, 1.0f, 1.0f));
-      TestEqual(
-          "matN",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
-          zero);
-
-      value = FCesiumMetadataValue(PropertyArrayView<int64_t>());
-      TestEqual(
-          "array",
-          UCesiumMetadataValueBlueprintLibrary::GetInteger64(value, zero),
-          zero);
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat(value, 0.0f),
+          0.0f);
     });
   });
 
-  Describe("FString", [this]() {
+  Describe("GetFloat64", [this]() {
+    It("gets from floating point number", [this]() {
+      FCesiumMetadataValue value(78.91);
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, 0.0),
+          78.91);
+
+      value = FCesiumMetadataValue(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, 0.0),
+          static_cast<double>(1234.56f));
+    });
+
+    It("gets from integer", [this]() {
+      FCesiumMetadataValue value(-12345);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, 0.0f),
+          static_cast<double>(-12345));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, -1.0),
+          1.0);
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("-1234.05"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetFloat64(value, 0.0),
+          -1234.05);
+    });
+  });
+
+  Describe("GetIntPoint", [this]() {
+    It("gets from vec2", [this]() {
+      FCesiumMetadataValue value(glm::ivec2(1, -2));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(1, -2));
+
+      value = FCesiumMetadataValue(glm::vec2(-5.2f, 6.68f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(-5, 6));
+    });
+
+    It("gets from vec3", [this]() {
+      FCesiumMetadataValue value(glm::u8vec3(4, 5, 12));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(4, 5));
+
+      value = FCesiumMetadataValue(glm::vec3(-5.2f, 6.68f, -23.8f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(-5, 6));
+    });
+
+    It("gets from vec4", [this]() {
+      FCesiumMetadataValue value(glm::i16vec4(4, 2, 5, 12));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(4, 2));
+
+      value = FCesiumMetadataValue(glm::vec4(1.01f, -5.2f, 6.68f, -23.8f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(1, -5));
+    });
+
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(123);
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(123));
+
+      value = FCesiumMetadataValue(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(1234));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(-1)),
+          FIntPoint(1));
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("X=1 Y=2"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(1, 2));
+    });
+  });
+
+  Describe("GetVector2D", [this]() {
+    It("gets from vec2", [this]() {
+      FCesiumMetadataValue value(glm::ivec2(1, -2));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(static_cast<double>(1), static_cast<double>(-2)));
+
+      value = FCesiumMetadataValue(glm::dvec2(-5.2, 6.68));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(-5.2, 6.68));
+    });
+
+    It("gets from vec3", [this]() {
+      FCesiumMetadataValue value(glm::u8vec3(4, 5, 12));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(static_cast<double>(4), static_cast<double>(5)));
+
+      value = FCesiumMetadataValue(glm::dvec3(-5.2, 6.68, -23));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(-5.2, 6.68));
+    });
+
+    It("gets from vec4", [this]() {
+      FCesiumMetadataValue value(glm::i16vec4(4, 2, 5, 12));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(static_cast<double>(4), static_cast<double>(2)));
+
+      value = FCesiumMetadataValue(glm::dvec4(1.01, -5.2, 6.68, -23.8));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(1.01, -5.2));
+    });
+
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(123);
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(static_cast<double>(123)));
+
+      value = FCesiumMetadataValue(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(static_cast<double>(1234.56f)));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D(-1.0)),
+          FVector2D(1.0));
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("X=1.5 Y=2.5"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+              value,
+              FVector2D::Zero()),
+          FVector2D(1.5, 2.5));
+    });
+  });
+
+  Describe("GetIntVector", [this]() {
+    It("gets from vec3", [this]() {
+      FCesiumMetadataValue value(glm::u8vec3(4, 5, 12));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(4, 5, 12));
+
+      value = FCesiumMetadataValue(glm::vec3(-5.2f, 6.68f, -23.8f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(-5, 6, -23));
+    });
+
+    It("gets from vec2", [this]() {
+      FCesiumMetadataValue value(glm::ivec2(1, -2));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(1, -2, 0));
+
+      value = FCesiumMetadataValue(glm::vec2(-5.2f, 6.68f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(-5, 6, 0));
+    });
+
+    It("gets from vec4", [this]() {
+      FCesiumMetadataValue value(glm::i16vec4(4, 2, 5, 12));
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(4, 2, 5));
+
+      value = FCesiumMetadataValue(glm::vec4(1.01f, -5.2f, 6.68f, -23.8f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(1, -5, 6));
+    });
+
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(123);
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(123));
+
+      value = FCesiumMetadataValue(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(0)),
+          FIntVector(1234));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+              value,
+              FIntVector(-1)),
+          FIntVector(1));
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("X=1 Y=2"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+              value,
+              FIntPoint(0)),
+          FIntPoint(1, 2));
+    });
+  });
+
+  Describe("GetVector3f", [this]() {
+    It("gets from vec3", [this]() {
+      FCesiumMetadataValue value(glm::vec3(-5.2f, 6.68f, -23.8f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+              value,
+              FVector3f::Zero()),
+          FVector3f(-5.2f, 6.68f, -23.8f));
+    });
+
+    It("gets from vec2", [this]() {
+      FCesiumMetadataValue value(glm::vec2(-5.2f, 6.68f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+              value,
+              FVector3f::Zero()),
+          FVector3f(-5.2f, 6.68f, 0.0f));
+    });
+
+    It("gets from vec4", [this]() {
+      FCesiumMetadataValue value(glm::vec4(1.01f, -5.2f, 6.68f, -23.8f));
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+              value,
+              FVector3f::Zero()),
+          FVector3f(1.01f, -5.2f, 6.68f));
+    });
+
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(1234.56f);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+              value,
+              FVector3f::Zero()),
+          FVector3f(1234.56f));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+              value,
+              FVector3f(-1.0f)),
+          FVector3f(1.0f));
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("X=1 Y=2 Z=3"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+              value,
+              FVector3f::Zero()),
+          FVector3f(1, 2, 3));
+    });
+  });
+
+  Describe("GetVector", [this]() {
+    It("gets from vec3", [this]() {
+      FCesiumMetadataValue value(glm::dvec3(-5.2, 6.68, -23.8));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector(
+              value,
+              FVector::Zero()),
+          FVector(-5.2, 6.68, -23.8));
+    });
+
+    It("gets from vec2", [this]() {
+      FCesiumMetadataValue value(glm::dvec2(-5.2, 6.68));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector(
+              value,
+              FVector::Zero()),
+          FVector(-5.2, 6.68, 0.0));
+    });
+
+    It("gets from vec4", [this]() {
+      FCesiumMetadataValue value(glm::dvec4(1.01, -5.2, 6.68, -23.8));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector(
+              value,
+              FVector::Zero()),
+          FVector(1.01, -5.2, 6.68));
+    });
+
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(12345);
+      TestEqual(
+          "integer",
+          UCesiumMetadataValueBlueprintLibrary::GetVector(
+              value,
+              FVector::Zero()),
+          FVector(static_cast<double>(12345)));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(true);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector(value, FVector(-1.0)),
+          FVector(1.0));
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("X=1.5 Y=2.5 Z=3.5"));
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector(
+              value,
+              FVector::Zero()),
+          FVector(1.5, 2.5, 3.5));
+    });
+  });
+
+  Describe("GetVector4", [this]() {
+    It("gets from vec4", [this]() {
+      FCesiumMetadataValue value(glm::dvec4(1.01, -5.2, 6.68, -23.8));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4::Zero()),
+          FVector4(1.01, -5.2, 6.68, -23.8));
+    });
+
+    It("gets from vec3", [this]() {
+      FCesiumMetadataValue value(glm::dvec3(-5.2, 6.68, -23.8));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4::Zero()),
+          FVector4(-5.2, 6.68, -23.8, 0.0));
+    });
+
+    It("gets from vec2", [this]() {
+      FCesiumMetadataValue value(glm::dvec2(-5.2, 6.68));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4::Zero()),
+          FVector4(-5.2, 6.68, 0.0, 0.0));
+    });
+
+    It("gets from scalar", [this]() {
+      float floatValue = 7.894f;
+      double doubleValue = static_cast<double>(floatValue);
+      FCesiumMetadataValue value(floatValue);
+      TestEqual(
+          "float",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4::Zero()),
+          FVector4(doubleValue, doubleValue, doubleValue, doubleValue));
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(false);
+      TestEqual(
+          "value",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4(-1.0)),
+          FVector4::Zero());
+    });
+
+    It("gets from string", [this]() {
+      FCesiumMetadataValue value(std::string_view("X=1.5 Y=2.5 Z=3.5 W=4.5"));
+      TestEqual(
+          "value without W-component",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4::Zero()),
+          FVector4(1.5, 2.5, 3.5, 4.5));
+
+      value = FCesiumMetadataValue(std::string_view("X=1.5 Y=2.5 Z=3.5"));
+      TestEqual(
+          "value without W-component",
+          UCesiumMetadataValueBlueprintLibrary::GetVector4(
+              value,
+              FVector4::Zero()),
+          FVector4(1.5, 2.5, 3.5, 1.0));
+    });
+  });
+
+  Describe("GetMatrix", [this]() {
+    It("gets from mat4", [this]() {
+      // clang-format off
+      glm::dmat4 input = glm::dmat4(
+           1.0,  2.0, 3.0, 4.0,
+           5.0,  6.0, 7.0, 8.0,
+           9.0, 11.0, 4.0, 1.0,
+          10.0, 12.0, 3.0, 1.0);
+      // clang-format on
+      input = glm::transpose(input);
+
+      FCesiumMetadataValue value(input);
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 3.0, 4.0),
+          FPlane4d(5.0, 6.0, 7.0, 8.0),
+          FPlane4d(9.0, 11.0, 4.0, 1.0),
+          FPlane4d(10.0, 12.0, 3.0, 1.0));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+              value,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("gets from mat3", [this]() {
+      // clang-format off
+      glm::dmat3 input = glm::dmat3(
+          1.0, 2.0, 3.0,
+          4.0, 5.0, 6.0,
+          7.0, 8.0, 9.0);
+      // clang-format on
+      input = glm::transpose(input);
+
+      FCesiumMetadataValue value(input);
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 3.0, 0.0),
+          FPlane4d(4.0, 5.0, 6.0, 0.0),
+          FPlane4d(7.0, 8.0, 9.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+              value,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("gets from mat2", [this]() {
+      // clang-format off
+      glm::dmat2 input = glm::dmat2(
+          1.0, 2.0,
+          3.0, 4.0);
+      // clang-format on
+      input = glm::transpose(input);
+
+      FCesiumMetadataValue value(input);
+      FMatrix expected(
+          FPlane4d(1.0, 2.0, 0.0, 0.0),
+          FPlane4d(3.0, 4.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+              value,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("gets from scalar", [this]() {
+      FCesiumMetadataValue value(7.894);
+      FMatrix expected(
+          FPlane4d(7.894, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, 7.894, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 7.894, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 7.894));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+              value,
+              FMatrix::Identity),
+          expected);
+    });
+
+    It("gets from boolean", [this]() {
+      FCesiumMetadataValue value(false);
+      FMatrix expected(
+          FPlane4d(0.0, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0),
+          FPlane4d(0.0, 0.0, 0.0, 0.0));
+      TestEqual(
+          "double",
+          UCesiumMetadataValueBlueprintLibrary::GetMatrix(
+              value,
+              FMatrix::Identity),
+          expected);
+    });
+  });
+
+  Describe("GetFString", [this]() {
     It("gets from string", [this]() {
       FCesiumMetadataValue value(std::string_view("Hello"));
       TestEqual(
@@ -489,13 +1088,67 @@ void FCesiumMetadataValueSpec::Define() {
           FString("X=1 Y=2 Z=3 W=4"));
     });
 
-    It("returns default value for incompatible types", [this]() {
-      FCesiumMetadataValue value =
-          FCesiumMetadataValue(PropertyArrayView<uint8_t>());
+    It("gets from matN", [this]() {
+      // clang-format off
+      FCesiumMetadataValue value(
+          glm::i32mat4x4(
+            1,   2,  3, -7,
+            4,   5,  6, 88,
+            0,  -1, -4,  4,
+            2 , 70,  8,  9));
+      // clang-format on
+      std::string expected("[1 4 0 2] [2 5 -1 70] [3 6 -4 8] [-7 88 4 9]");
       TestEqual(
-          "array",
+          "mat4",
           UCesiumMetadataValueBlueprintLibrary::GetString(value, FString("")),
-          FString(""));
+          FString(expected.c_str()));
+    });
+  });
+
+  Describe("GetArray", [this]() {
+    It("gets empty array from non-array value", [this]() {
+      FCesiumMetadataValue value(std::string_view("not an array"));
+      FCesiumPropertyArray array =
+          UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+      TestEqual(
+          "array size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64>(0));
+
+      FCesiumMetadataValueType elementType =
+          UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array);
+      TestEqual(
+          "array element type",
+          elementType.Type,
+          ECesiumMetadataType::Invalid);
+      TestEqual(
+          "array element component type",
+          elementType.ComponentType,
+          ECesiumMetadataComponentType::None);
+    });
+
+    It("gets array from array value", [this]() {
+      std::vector<uint8_t> arrayValues{1, 2};
+      PropertyArrayView<uint8_t> arrayView(std::move(arrayValues));
+
+      FCesiumMetadataValue value(arrayView);
+      FCesiumPropertyArray array =
+          UCesiumMetadataValueBlueprintLibrary::GetArray(value);
+      TestEqual(
+          "array size",
+          UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
+          static_cast<int64>(arrayValues.size()));
+
+      FCesiumMetadataValueType elementType =
+          UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(array);
+      TestEqual(
+          "array element type",
+          elementType.Type,
+          ECesiumMetadataType::Scalar);
+      TestEqual(
+          "array element component type",
+          elementType.ComponentType,
+          ECesiumMetadataComponentType::Uint8);
     });
   });
 }

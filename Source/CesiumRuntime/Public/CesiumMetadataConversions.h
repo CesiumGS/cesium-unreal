@@ -11,7 +11,7 @@
 #include <type_traits>
 
 /**
- * Converts a FCesiumMetadataValueType to the best-fitting Blueprints type.
+ * @brief Converts a FCesiumMetadataValueType to the best-fitting Blueprints type.
  *
  * @param ValueType The input metadata value type.
  */
@@ -20,6 +20,38 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType);
 
 ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
     FCesiumMetadataValueType ValueType);
+
+/**
+ * @brief Converts a C++ type to its corresponding FCesiumMetadataValueType.
+ */
+template <typename T> FCesiumMetadataValueType GetCesiumMetadataValueType() {
+  ECesiumMetadataType type;
+  ECesiumMetadataComponentType componentType;
+  bool isArray;
+  if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+    using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
+    type =
+        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<ArrayType>::component);
+    isArray = true;
+  } else {
+    type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    isArray = false;
+  }
+  return {type, componentType, isArray};
+};
+
+// Deprecated.
+ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(
+    ECesiumMetadataTrueType_DEPRECATED trueType);
+
+// For backwards compatibility.
+ECesiumMetadataTrueType_DEPRECATED CesiumPropertyTypeToMetadataTrueType(
+    CesiumGltf::PropertyType type,
+    CesiumGltf::PropertyComponentType componentType);
 
 /**
  * Default conversion, just returns the default value.
@@ -546,15 +578,17 @@ struct CesiumMetadataConversions<
   static FString convert(const TFrom& from, const FString& defaultValue) {
     std::string result;
     glm::length_t dimensions = from.length();
+    glm::mat3 matrix;
+    matrix[0];
     // glm::matNs are column-major, but Unreal matrices are row-major and print
     // their values by row.
-    for (glm::length_t c = 0; c < dimensions; c++) {
-      if (c > 0) {
+    for (glm::length_t r = 0; r < dimensions; r++) {
+      if (r > 0) {
         result += " ";
       }
       result += "[";
-      for (glm::length_t r = 0; r < dimensions; r++) {
-        if (r > 0) {
+      for (glm::length_t c = 0; c < dimensions; c++) {
+        if (c > 0) {
           result += " ";
         }
         result += std::to_string(from[c][r]);
@@ -600,18 +634,20 @@ template <> struct CesiumMetadataConversions<FIntPoint, bool> {
 };
 
 /**
- * Converts from an integer type to a 32-bit signed integer vec2.
+ * Converts from a signed integer type to a 32-bit signed integer vec2.
  */
 template <typename TFrom>
 struct CesiumMetadataConversions<
     FIntPoint,
     TFrom,
-    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<TFrom>::value &&
+        std::is_signed_v<TFrom>>> {
   /**
-   * Converts an integer to a FIntPoint. The returned vector is initialized
-   * with the value in both of its components. If the integer cannot be
-   * losslessly converted to a 32-bit signed representation, the default value
-   * is returned.
+   * Converts a signed integer to a FIntPoint. The returned vector is
+   * initialized with the value in both of its components. If the integer cannot
+   * be losslessly converted to a 32-bit signed representation, the default
+   * value is returned.
    *
    * @param from The integer value to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
@@ -619,6 +655,33 @@ struct CesiumMetadataConversions<
   static FIntPoint convert(TFrom from, const FIntPoint& defaultValue) {
     if (from > std::numeric_limits<int32_t>::max() ||
         from < std::numeric_limits<int32_t>::lowest()) {
+      return defaultValue;
+    }
+    return FIntPoint(static_cast<int32_t>(from));
+  }
+};
+
+/**
+ * Converts from an unsigned integer type to a 32-bit signed integer vec2.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FIntPoint,
+    TFrom,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<TFrom>::value &&
+        !std::is_signed_v<TFrom>>> {
+  /**
+   * Converts an unsigned integer to a FIntPoint. The returned vector is
+   * initialized with the value in both of its components. If the integer cannot
+   * be losslessly converted to a 32-bit signed representation, the default
+   * value is returned.
+   *
+   * @param from The integer value to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint convert(TFrom from, const FIntPoint& defaultValue) {
+    if (from > static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
       return defaultValue;
     }
     return FIntPoint(static_cast<int32_t>(from));
@@ -655,36 +718,96 @@ struct CesiumMetadataConversions<
 };
 
 /**
- * Converts from a glm::vecN of any type to a 32-bit signed integer vec2.
+ * Converts from a glm::vecN of a signed integer type to a 32-bit signed integer
+ * vec2.
  */
 template <glm::length_t N, typename T>
-struct CesiumMetadataConversions<FIntPoint, glm::vec<N, T>> {
+struct CesiumMetadataConversions<
+    FIntPoint,
+    glm::vec<N, T>,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<T>::value && std::is_signed_v<T>>> {
   /**
-   * Converts a glm::vecN of any type to a FIntPoint. This only uses the first
-   * two components of the vecN. If either of the first two values cannot be
-   * converted to a 32-bit signed integer, the default value is returned.
+   * Converts a glm::vecN of signed integers to a FIntPoint. This only uses the
+   * first two components of the vecN. If either of the first two values cannot
+   * be converted to a 32-bit signed integer, the default value is returned.
    *
    * @param from The glm::vecN to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FIntPoint
   convert(const glm::vec<N, T>& from, const FIntPoint& defaultValue) {
-    if constexpr (CesiumGltf::IsMetadataInteger<T>::value) {
-      // Check if both values can be converted.
-      for (size_t i = 0; i < 2; i++) {
-        if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::lowest()) {
-          return defaultValue;
-        }
+    for (size_t i = 0; i < 2; i++) {
+      if (from[i] > std::numeric_limits<int32_t>::max() ||
+          from[i] < std::numeric_limits<int32_t>::lowest()) {
+        return defaultValue;
       }
     }
 
-    if constexpr (CesiumGltf::IsMetadataFloating<T>::value) {
-      for (size_t i = 0; i < 2; i++) {
-        if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
-            from[i] < double(std::numeric_limits<int32_t>::lowest())) {
-          return defaultValue;
-        }
+    return FIntPoint(
+        static_cast<int32_t>(from[0]),
+        static_cast<int32_t>(from[1]));
+  }
+};
+
+/**
+ * Converts from a glm::vecN of an unsigned integer type to a 32-bit signed
+ * integer vec2.
+ */
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<
+    FIntPoint,
+    glm::vec<N, T>,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<T>::value && !std::is_signed_v<T>>> {
+  /**
+   * Converts a glm::vecN of unsigned integers to a FIntPoint. This only uses
+   * the first two components of the vecN. If either of the first two values
+   * cannot be converted to a 32-bit signed integer, the default value is
+   * returned.
+   *
+   * @param from The glm::vecN to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint
+  convert(const glm::vec<N, T>& from, const FIntPoint& defaultValue) {
+    for (size_t i = 0; i < 2; i++) {
+      if (from[i] >
+          static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
+        return defaultValue;
+      }
+    }
+
+    return FIntPoint(
+        static_cast<int32_t>(from[0]),
+        static_cast<int32_t>(from[1]));
+  }
+};
+
+/**
+ * Converts from a glm::vecN of a floating-point type to a 32-bit signed
+ * integer vec2.
+ */
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<
+    FIntPoint,
+    glm::vec<N, T>,
+    std::enable_if_t<CesiumGltf::IsMetadataFloating<T>::value>> {
+  /**
+   * Converts a glm::vecN of floating-point numbers to a FIntPoint. This only
+   * uses the first two components of the vecN. If either of the first two
+   * values cannot be converted to a 32-bit signed integer, the default value is
+   * returned.
+   *
+   * @param from The glm::vecN to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntPoint
+  convert(const glm::vec<N, T>& from, const FIntPoint& defaultValue) {
+    for (size_t i = 0; i < 2; i++) {
+      if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
+          from[i] < double(std::numeric_limits<int32_t>::lowest())) {
+        return defaultValue;
       }
     }
 
@@ -856,18 +979,20 @@ template <> struct CesiumMetadataConversions<FIntVector, bool> {
 };
 
 /**
- * Converts from an integer type to a 32-bit signed integer vec3.
+ * Converts from a signed integer to a 32-bit signed integer vec3.
  */
 template <typename TFrom>
 struct CesiumMetadataConversions<
     FIntVector,
     TFrom,
-    std::enable_if_t<CesiumGltf::IsMetadataInteger<TFrom>::value>> {
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<TFrom>::value &&
+        std::is_signed_v<TFrom>>> {
   /**
-   * Converts an integer to a FIntVector. The returned vector is initialized
-   * with the value in all of its components. If the integer cannot be
-   * losslessly converted to a 32-bit signed representation, the default value
-   * is returned.
+   * Converts a signed integer to a FIntVector. The returned vector is
+   * initialized with the value in all of its components. If the integer
+   * cannot be losslessly converted to a 32-bit signed representation, the
+   * default value is returned.
    *
    * @param from The integer value to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
@@ -875,6 +1000,33 @@ struct CesiumMetadataConversions<
   static FIntVector convert(TFrom from, const FIntVector& defaultValue) {
     if (from > std::numeric_limits<int32_t>::max() ||
         from < std::numeric_limits<int32_t>::lowest()) {
+      return defaultValue;
+    }
+    return FIntVector(static_cast<int32_t>(from));
+  }
+};
+
+/**
+ * Converts from an unsigned integer to a 32-bit signed integer vec3.
+ */
+template <typename TFrom>
+struct CesiumMetadataConversions<
+    FIntVector,
+    TFrom,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<TFrom>::value &&
+        !std::is_signed_v<TFrom>>> {
+  /**
+   * Converts an unsigned integer to a FIntVector. The returned vector is
+   * initialized with the value in all of its components. If the integer
+   * cannot be losslessly converted to a 32-bit signed representation, the
+   * default value is returned.
+   *
+   * @param from The integer value to be converted.
+   * @param defaultValue The default value to be returned if conversion fails.
+   */
+  static FIntVector convert(TFrom from, const FIntVector& defaultValue) {
+    if (from > static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
       return defaultValue;
     }
     return FIntVector(static_cast<int32_t>(from));
@@ -911,127 +1063,147 @@ struct CesiumMetadataConversions<
 };
 
 /**
- * Converts from a glm::vec2 of any type to a 32-bit signed integer vec3.
+ * Converts from a glm::vecN of signed integers to a 32-bit signed integer vec3.
  */
-template <typename T>
-struct CesiumMetadataConversions<FIntVector, glm::vec<2, T>> {
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<
+    FIntVector,
+    glm::vec<N, T>,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<T>::value && std::is_signed_v<T>>> {
   /**
-   * Converts a glm::vec2 of any type to a FIntVector. The vec2 becomes the
-   * first two components of the FIntVector, while the third component is set to
-   * zero. If either of the original vec2 values cannot be converted to a 32-bit
-   * signed integer, the default value is returned.
+   * Converts a glm::vecN of signed integers to a FIntVector.
    *
-   * @param from The glm::vec2 to be converted.
+   * If converting from a vec2, the vec2 becomes the first two components of
+   * the FIntVector, while the third component is set to zero.
+   *
+   * If converting from a vec4, only the first three components of the vec4 are
+   * used, and the fourth is dropped.
+   *
+   * If any of the relevant components cannot be converted to 32-bit signed
+   * integers, the default value is returned.
+   *
+   * @param from The glm::vecN to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FIntVector
-  convert(const glm::vec<2, T>& from, const FIntVector& defaultValue) {
-    if constexpr (CesiumGltf::IsMetadataInteger<T>::value) {
-      // Check if all values can be converted.
-      for (size_t i = 0; i < 2; i++) {
-        if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::lowest()) {
-          return defaultValue;
-        }
+  convert(const glm::vec<N, T>& from, const FIntVector& defaultValue) {
+    glm::length_t count = glm::min(N, static_cast<glm::length_t>(3));
+    for (size_t i = 0; i < count; i++) {
+      if (from[i] > std::numeric_limits<int32_t>::max() ||
+          from[i] < std::numeric_limits<int32_t>::lowest()) {
+        return defaultValue;
       }
     }
 
-    if constexpr (CesiumGltf::IsMetadataFloating<T>::value) {
-      for (size_t i = 0; i < 2; i++) {
-        if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
-            from[i] < double(std::numeric_limits<int32_t>::lowest())) {
-          return defaultValue;
-        }
-      }
+    if constexpr (N == 2) {
+      return FIntVector(
+          static_cast<int32_t>(from[0]),
+          static_cast<int32_t>(from[1]),
+          0);
+    } else {
+      return FIntVector(
+          static_cast<int32_t>(from[0]),
+          static_cast<int32_t>(from[1]),
+          static_cast<int32_t>(from[2]));
     }
-
-    return FIntVector(
-        static_cast<int32_t>(from[0]),
-        static_cast<int32_t>(from[1]),
-        0);
   }
 };
 
 /**
- * Converts from a glm::vec3 of any type to a 32-bit signed integer vec3.
+ * Converts from a glm::vecN of unsigned integers to a 32-bit signed integer
+ * vec3.
  */
-template <typename T>
-struct CesiumMetadataConversions<FIntVector, glm::vec<3, T>> {
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<
+    FIntVector,
+    glm::vec<N, T>,
+    std::enable_if_t<
+        CesiumGltf::IsMetadataInteger<T>::value && !std::is_signed_v<T>>> {
   /**
-   * Converts a glm::vec3 of any type to a FIntVector. If any of the original
-   * vec3 values cannot be converted to a 32-bit signed integer, the default
-   * value is returned.
+   * Converts a glm::vecN of unsigned integers to a FIntVector.
    *
-   * @param from The glm::vec3 to be converted.
+   * If converting from a vec2, the vec2 becomes the first two components of
+   * the FIntVector, while the third component is set to zero.
+   *
+   * If converting from a vec4, only the first three components of the vec4 are
+   * used, and the fourth is dropped.
+   *
+   * If any of the relevant components cannot be converted to 32-bit signed
+   * integers, the default value is returned.
+   *
+   * @param from The glm::vecN to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FIntVector
-  convert(const glm::vec<3, T>& from, const FIntVector& defaultValue) {
-    if constexpr (CesiumGltf::IsMetadataInteger<T>::value) {
-      // Check if all values can be converted.
-      for (size_t i = 0; i < 3; i++) {
-        if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::lowest()) {
-          return defaultValue;
-        }
+  convert(const glm::vec<N, T>& from, const FIntVector& defaultValue) {
+    glm::length_t count = glm::min(N, static_cast<glm::length_t>(3));
+    for (size_t i = 0; i < count; i++) {
+      if (from[i] >
+          static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
+        return defaultValue;
       }
     }
 
-    if constexpr (CesiumGltf::IsMetadataFloating<T>::value) {
-      for (size_t i = 0; i < 3; i++) {
-        if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
-            from[i] < double(std::numeric_limits<int32_t>::lowest())) {
-          return defaultValue;
-        }
-      }
+    if constexpr (N == 2) {
+      return FIntVector(
+          static_cast<int32_t>(from[0]),
+          static_cast<int32_t>(from[1]),
+          0);
+    } else {
+      return FIntVector(
+          static_cast<int32_t>(from[0]),
+          static_cast<int32_t>(from[1]),
+          static_cast<int32_t>(from[2]));
     }
-
-    return FIntVector(
-        static_cast<int32_t>(from[0]),
-        static_cast<int32_t>(from[1]),
-        static_cast<int32_t>(from[2]));
   }
 };
 
 /**
- * Converts from a glm::vec4 of any type to a 32-bit signed integer vec3.
+ * Converts from a glm::vecN of floating-point numbers to a 32-bit signed
+ * integer vec3.
  */
-template <typename T>
-struct CesiumMetadataConversions<FIntVector, glm::vec<4, T>> {
+template <glm::length_t N, typename T>
+struct CesiumMetadataConversions<
+    FIntVector,
+    glm::vec<N, T>,
+    std::enable_if_t<CesiumGltf::IsMetadataFloating<T>::value>> {
   /**
-   * Converts a glm::vec4 of any type to a FIntVector. This only uses the first
-   * three components of the vec4, dropping the fourth. If any of the first
-   * three values cannot be converted to a 32-bit signed integer, the default
-   * value is returned.
+   * Converts a glm::vecN of floating-point numbers to a FIntVector.
    *
-   * @param from The glm::vec4 to be converted.
+   * If converting from a vec2, the vec2 becomes the first two components of
+   * the FIntVector, while the third component is set to zero.
+   *
+   * If converting from a vec4, only the first three components of the vec4 are
+   * used, and the fourth is dropped.
+   *
+   * If any of the relevant components cannot be converted to 32-bit signed
+   * integers, the default value is returned.
+   *
+   * @param from The glm::vecN to be converted.
    * @param defaultValue The default value to be returned if conversion fails.
    */
   static FIntVector
-  convert(const glm::vec<4, T>& from, const FIntVector& defaultValue) {
-    if constexpr (CesiumGltf::IsMetadataInteger<T>::value) {
-      // Check if all values can be converted.
-      for (size_t i = 0; i < 3; i++) {
-        if (from[i] > std::numeric_limits<int32_t>::max() ||
-            from[i] < std::numeric_limits<int32_t>::lowest()) {
-          return defaultValue;
-        }
+  convert(const glm::vec<N, T>& from, const FIntVector& defaultValue) {
+    glm::length_t count = glm::min(N, static_cast<glm::length_t>(3));
+    for (size_t i = 0; i < 3; i++) {
+      if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
+          from[i] < double(std::numeric_limits<int32_t>::lowest())) {
+        return defaultValue;
       }
     }
 
-    if constexpr (CesiumGltf::IsMetadataFloating<T>::value) {
-      for (size_t i = 0; i < 3; i++) {
-        if (from[i] > double(std::numeric_limits<int32_t>::max()) ||
-            from[i] < double(std::numeric_limits<int32_t>::lowest())) {
-          return defaultValue;
-        }
-      }
+    if constexpr (N == 2) {
+      return FIntVector(
+          static_cast<int32_t>(from[0]),
+          static_cast<int32_t>(from[1]),
+          0);
+    } else {
+      return FIntVector(
+          static_cast<int32_t>(from[0]),
+          static_cast<int32_t>(from[1]),
+          static_cast<int32_t>(from[2]));
     }
-
-    return FIntVector(
-        static_cast<int32_t>(from[0]),
-        static_cast<int32_t>(from[1]),
-        static_cast<int32_t>(from[2]));
   }
 };
 
@@ -1616,7 +1788,9 @@ template <> struct CesiumMetadataConversions<FVector4, std::string_view> {
 
 #pragma endregion
 
-#pragma region Conversions to double  mat4
+#pragma region Conversions to double mat4
+
+static const FPlane4d ZeroPlane(0.0, 0.0, 0.0, 0.0);
 
 /**
  * Converts from a glm::mat2 to a double-precision floating-point mat4.
@@ -1637,15 +1811,15 @@ struct CesiumMetadataConversions<FMatrix, glm::mat<2, 2, T>> {
   static FMatrix
   convert(const glm::mat<2, 2, T>& from, const FMatrix& defaultValue) {
     // glm is column major, but Unreal is row major.
-    FPlane4d row1 = FPlane4d::Zero();
+    FPlane4d row1(ZeroPlane);
     row1.X = static_cast<double>(from[0][0]);
     row1.Y = static_cast<double>(from[1][0]);
 
-    FPlane4d row2 = FPlane4d::Zero();
+    FPlane4d row2(ZeroPlane);
     row2.X = static_cast<double>(from[0][1]);
     row2.Y = static_cast<double>(from[1][1]);
 
-    return FMatrix(row1, row2, FPlane4d::Zero(), FPlane4d::Zero());
+    return FMatrix(row1, row2, ZeroPlane, ZeroPlane);
   }
 };
 
@@ -1668,22 +1842,22 @@ struct CesiumMetadataConversions<FMatrix, glm::mat<3, 3, T>> {
   static FMatrix
   convert(const glm::mat<3, 3, T>& from, const FMatrix& defaultValue) {
     // glm is column major, but Unreal is row major.
-    FPlane4d row1 = FPlane4d::Zero();
+    FPlane4d row1(ZeroPlane);
     row1.X = static_cast<double>(from[0][0]);
     row1.Y = static_cast<double>(from[1][0]);
     row1.Z = static_cast<double>(from[2][0]);
 
-    FPlane4d row2 = FPlane4d::Zero();
+    FPlane4d row2(ZeroPlane);
     row2.X = static_cast<double>(from[0][1]);
     row2.Y = static_cast<double>(from[1][1]);
     row2.Z = static_cast<double>(from[2][1]);
 
-    FPlane4d row3 = FPlane4d::Zero();
+    FPlane4d row3(ZeroPlane);
     row3.X = static_cast<double>(from[0][2]);
     row3.Y = static_cast<double>(from[1][2]);
     row3.Z = static_cast<double>(from[2][2]);
 
-    return FMatrix(row1, row2, row3, FPlane4d::Zero());
+    return FMatrix(row1, row2, row3, ZeroPlane);
   }
 };
 
@@ -1702,25 +1876,25 @@ struct CesiumMetadataConversions<FMatrix, glm::mat<4, 4, T>> {
   static FMatrix
   convert(const glm::mat<4, 4, T>& from, const FMatrix& defaultValue) {
     // glm is column major, but Unreal is row major.
-    FPlane4d row1 = FPlane4d::Zero();
-    row1.X = static_cast<double>(from[0][0]);
-    row1.Y = static_cast<double>(from[1][0]);
-    row1.Z = static_cast<double>(from[2][0]);
-    row1.W = static_cast<double>(from[3][0]);
+    FPlane4d row1(
+        static_cast<double>(from[0][0]),
+        static_cast<double>(from[1][0]),
+        static_cast<double>(from[2][0]),
+        static_cast<double>(from[3][0]));
 
-    FPlane4d row2 = FPlane4d::Zero();
+    FPlane4d row2(ZeroPlane);
     row2.X = static_cast<double>(from[0][1]);
     row2.Y = static_cast<double>(from[1][1]);
     row2.Z = static_cast<double>(from[2][1]);
     row2.W = static_cast<double>(from[3][1]);
 
-    FPlane4d row3 = FPlane4d::Zero();
+    FPlane4d row3(ZeroPlane);
     row3.X = static_cast<double>(from[0][2]);
     row3.Y = static_cast<double>(from[1][2]);
     row3.Z = static_cast<double>(from[2][2]);
     row3.W = static_cast<double>(from[3][2]);
 
-    FPlane4d row4 = FPlane4d::Zero();
+    FPlane4d row4(ZeroPlane);
     row4.X = static_cast<double>(from[0][3]);
     row4.Y = static_cast<double>(from[1][3]);
     row4.Z = static_cast<double>(from[2][3]);

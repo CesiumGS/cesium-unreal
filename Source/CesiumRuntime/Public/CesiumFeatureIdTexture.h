@@ -120,7 +120,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static ECesiumFeatureIdTextureStatus GetFeatureIDTextureStatus(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
@@ -132,7 +132,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static int64 GetTextureCoordinateIndex(
       const UPrimitiveComponent* Component,
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
@@ -149,7 +149,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static int64 GetFeatureIDForTextureCoordinates(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       float U,
@@ -168,7 +168,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       int64 VertexIndex);

@@ -54,9 +54,7 @@ void CreateIndicesForPrimitive(
     const std::string& type,
     const int32_t componentType,
     const std::vector<uint8_t>& indices) {
-  std::vector<std::byte> values(indices.size());
-  std::memcpy(values.data(), indices.data(), values.size());
-
+  std::vector<std::byte> values = GetValuesAsBytes(indices);
   const int32_t accessor = AddBufferToPrimitive(
       model,
       primitive,
@@ -66,14 +64,13 @@ void CreateIndicesForPrimitive(
   primitive.indices = accessor;
 }
 
-FeatureId& AddFeatureIDsAsAttributeToModel(
+CesiumGltf::FeatureId& AddFeatureIDsAsAttributeToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
     const int64_t featureCount,
     const int64_t attributeIndex) {
-  std::vector<std::byte> values(featureIDs.size() * sizeof(uint8_t));
-  std::memcpy(values.data(), featureIDs.data(), values.size());
+  std::vector<std::byte> values = GetValuesAsBytes(featureIDs);
 
   CreateAttributeForPrimitive(
       model,
@@ -96,7 +93,7 @@ FeatureId& AddFeatureIDsAsAttributeToModel(
   return featureID;
 }
 
-FeatureId& AddFeatureIDsAsTextureToModel(
+CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
@@ -121,8 +118,7 @@ FeatureId& AddFeatureIDsAsTextureToModel(
   texture.sampler = 0;
   texture.source = 0;
 
-  std::vector<std::byte> values(texCoords.size() * sizeof(glm::vec2));
-  std::memcpy(values.data(), texCoords.data(), values.size());
+  std::vector<std::byte> values = GetValuesAsBytes(texCoords);
   CreateAttributeForPrimitive(
       model,
       primitive,
