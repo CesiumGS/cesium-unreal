@@ -257,6 +257,9 @@ protected:
    * At player pawn heights in between InscribedGroundThreshold and
    * CircumscribedGroundThreshold, this Actor uses a linear interpolation
    * between the two ground radii.
+   *
+   * This value is automatically scaled according to the CesiumGeoreference
+   * Scale and the Actor scale.
    */
   UPROPERTY(
       EditAnywhere,
@@ -281,6 +284,9 @@ protected:
    * At heights in between InscribedGroundThreshold and
    * CircumscribedGroundThreshold, this Actor uses a linear interpolation
    * between the two ground radii.
+   *
+   * This value is automatically scaled according to the CesiumGeoreference
+   * Scale and the Actor scale.
    */
   UPROPERTY(
       EditAnywhere,
@@ -296,8 +302,59 @@ protected:
    * minimum effective value of 0.1, so the atmosphere will look too thick when
    * the globe is scaled down drastically.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Atmosphere")
-  double AtmosphereHeight = 60.0;
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      interp,
+      Category = "Cesium|Atmosphere",
+      meta = (UIMin = 1.0, UIMax = 200.0, ClampMin = 0.1, SliderExponent = 2.0))
+  float AtmosphereHeight = 60.0f;
+
+  /**
+   * Makes the aerial perspective look thicker by scaling distances from view
+   * to surfaces (opaque and translucent). This value is automatically scaled
+   * according to the CesiumGeoreference Scale and the Actor scale.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      interp,
+      Category = "Cesium|Atmosphere",
+      meta =
+          (DisplayName = "Aerial Perspective View Distance Scale",
+           UIMin = 0.0,
+           UIMax = 3.0,
+           ClampMin = 0.0,
+           SliderExponent = 2.0))
+  float AerialPerspectiveViewDistanceScale = 1.0f;
+
+  /**
+   * The altitude in kilometers at which Rayleigh scattering effect is reduced to
+   * 40%. This value is automatically scaled according to the CesiumGeoreference
+   * Scale and the Actor scale.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      interp,
+      Category = "Cesium|Atmosphere",
+      meta =
+          (UIMin = 0.01, UIMax = 20.0, ClampMin = 0.001, SliderExponent = 5.0))
+  float RayleighExponentialDistribution = 8.0f;
+
+  /**
+   * The altitude in kilometers at which Mie effects are reduced to 40%. This
+   * value is automatically scaled according to the CesiumGeoreference Scale and
+   * the Actor scale.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadOnly,
+      interp,
+      Category = "Cesium|Atmosphere",
+      meta =
+          (UIMin = 0.01, UIMax = 10.0, ClampMin = 0.001, SliderExponent = 5.0))
+  float MieExponentialDistribution = 1.2f;
 
   /**
    * False: Use Directional Light component inside CesiumSunSky.

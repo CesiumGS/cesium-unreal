@@ -184,7 +184,7 @@ void ACesiumSunSky::_spawnSkySphere() {
 double ACesiumSunSky::_computeScale() const {
   // The SkyAtmosphere is not affected by Actor scaling, so we do it manually.
   FVector actorScale = this->GetActorScale();
-  return actorScale.GetMax() * (this->GetGeoreference()->GetScale() / 100.0);
+  return actorScale.GetMax();
 }
 
 void ACesiumSunSky::UpdateSkySphere() {
@@ -262,10 +262,35 @@ void ACesiumSunSky::Tick(float DeltaSeconds) {
   }
 
   if (IsValid(this->SkyAtmosphere)) {
-    float atmosphereHeight =
-        float(this->_computeScale() * this->AtmosphereHeight);
+    double scale = this->_computeScale();
+
+    float atmosphereHeight = float(scale * this->AtmosphereHeight);
     if (atmosphereHeight != this->SkyAtmosphere->AtmosphereHeight) {
       this->SkyAtmosphere->SetAtmosphereHeight(atmosphereHeight);
+    }
+
+    float aerialPerspectiveViewDistanceScale =
+        float(this->AerialPerspectiveViewDistanceScale / scale);
+    if (aerialPerspectiveViewDistanceScale !=
+        this->SkyAtmosphere->AerialPespectiveViewDistanceScale) {
+      this->SkyAtmosphere->SetAerialPespectiveViewDistanceScale(
+          aerialPerspectiveViewDistanceScale);
+    }
+
+    float rayleighExponentialDistribution =
+        float(scale * this->RayleighExponentialDistribution);
+    if (rayleighExponentialDistribution !=
+        this->SkyAtmosphere->RayleighExponentialDistribution) {
+      this->SkyAtmosphere->SetRayleighExponentialDistribution(
+          rayleighExponentialDistribution);
+    }
+
+    float mieExponentialDistribution =
+        float(scale * this->MieExponentialDistribution);
+    if (mieExponentialDistribution !=
+        this->SkyAtmosphere->MieExponentialDistribution) {
+      this->SkyAtmosphere->SetMieExponentialDistribution(
+          mieExponentialDistribution);
     }
   }
 }
@@ -553,8 +578,9 @@ void ACesiumSunSky::SetSkyAtmosphereGroundRadius(
     USkyAtmosphereComponent* Sky,
     double Radius) {
   // Only update if there's a significant change to be made
-  if (Sky && FMath::Abs(Sky->BottomRadius - Radius) > 0.1) {
-    Sky->BottomRadius = Radius;
+  float radiusFloat = float(Radius);
+  if (Sky && !FMath::IsNearlyEqualByULP(radiusFloat, Sky->BottomRadius)) {
+    Sky->BottomRadius = radiusFloat;
     Sky->MarkRenderStateDirty();
     UE_LOG(LogCesium, Verbose, TEXT("GroundRadius now %f"), Sky->BottomRadius);
   }
