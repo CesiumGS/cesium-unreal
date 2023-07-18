@@ -3,6 +3,9 @@
 #include "CesiumPrimitiveMetadata.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfPrimitiveComponent.h"
+
+static FCesiumPrimitiveMetadata EmptyPrimitiveMetadata;
 
 FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
     const CesiumGltf::Model& InModel,
@@ -20,6 +23,18 @@ FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
     this->_propertyAttributeIndices.Emplace(
         static_cast<int64>(propertyAttributeIndex));
   }
+}
+
+const FCesiumPrimitiveMetadata&
+UCesiumPrimitiveMetadataBlueprintLibrary::GetPrimitiveMetadata(
+    const UPrimitiveComponent* component) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!IsValid(pGltfComponent)) {
+    return EmptyPrimitiveMetadata;
+  }
+
+  return pGltfComponent->Metadata;
 }
 
 const TArray<int64>&

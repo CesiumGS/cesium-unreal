@@ -190,7 +190,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static uint8 GetByte(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
@@ -224,7 +228,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static int32 GetInteger(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
@@ -258,7 +266,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static int64 GetInteger64(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,
@@ -291,7 +303,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static float GetFloat(
       UPARAM(ref) const FCesiumMetadataArray& array,
       int64 index,
@@ -324,7 +340,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static double GetFloat64(
       UPARAM(ref) const FCesiumMetadataArray& array,
       int64 index,
@@ -349,7 +369,11 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Array")
+      Category = "Cesium|Metadata|Array",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "UCesiumMetadataArrayBlueprintLibrary is deprecated. Use UCesiumPropertyArrayBlueprintLibrary.GetValue instead."))
   static FString GetString(
       UPARAM(ref) const FCesiumMetadataArray& Array,
       int64 Index,

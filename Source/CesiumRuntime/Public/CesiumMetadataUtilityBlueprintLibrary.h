@@ -4,7 +4,6 @@
 
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumMetadataValue.h"
-#include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveMetadata.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -20,27 +19,6 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
   GENERATED_BODY()
 
 public:
-  /**
-   * Gets the model metadata of a glTF primitive component. If component is
-   * not a Cesium glTF primitive component, the returned metadata is empty
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
-  static const FCesiumModelMetadata&
-  GetModelMetadata(const UPrimitiveComponent* component);
-
-  /**
-   * Gets the primitive metadata of a glTF primitive component. If component is
-   * not a Cesium glTF primitive component, the returned metadata is empty
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
-  static const FCesiumPrimitiveMetadata&
-  GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
    * Gets the metadata of a face of a glTF primitive component. If the component

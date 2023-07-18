@@ -237,7 +237,24 @@ public:
       return;
     }
 
-    _valueType = GetCesiumMetadataValueType<T>();
+    ECesiumMetadataType type;
+    ECesiumMetadataComponentType componentType;
+    bool isArray;
+    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<ArrayType>::component);
+      isArray = true;
+    } else {
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<T>::component);
+      isArray = false;
+    }
+    _valueType = {type, componentType, isArray};
+
     _count = value.getArrayCount();
     _normalized = value.isNormalized();
   }
@@ -427,7 +444,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|PropertyTableProperty")
   static int32 GetInteger(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID,
@@ -463,7 +480,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|PropertyTableProperty")
   static int64 GetInteger64(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID,
@@ -612,54 +629,261 @@ public:
       const FVector2D& DefaultValue);
 
   /**
-   * Retrieves the value of the property for the feature with the given ID and
-   * attempts to convert it to a string value.
+   * Attempts to retrieve the value for the given feature as a FIntVector.
    *
-   * Numeric properties are converted to a string with `FString::Format`,
-   which
-   * uses the current locale.
+   * If the value is a 3-dimensional vector, its components will be converted to
+   * 32-bit signed integers if possible.
    *
-   * Boolean properties are converted to "true" or "false".
+   * If the value is a 4-dimensional vector, it will use the first three
+   * components to construct the FIntVector.
    *
-   * Array properties return the `defaultValue`.
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FIntVector. The Z component will be set to zero.
    *
-   * String properties are returned directly.
+   * If the value is a scalar that can be converted to a 32-bit signed integer,
+   * the resulting FIntVector will have this value in all of its components.
    *
-   * @param featureID The ID of the feature.
-   * @param defaultValue The default value to use if the feature ID is invalid
-   * or the feature's value cannot be converted.
-   * @return The property value.
+   * If the value is a boolean, (1, 1, 1) is returned for true, while (0, 0, 0)
+   * is returned for false.
+   *
+   * If the value is a string that can be parsed as a FIntVector, the parsed
+   * value is returned. The string must be formatted as "X=... Y=... Z=".
+   *
+   * In all other cases, the default value is returned. In all vector cases, if
+   * any of the relevant components cannot be represented as a 32-bit signed
+   * integer, the default value is returned.
+   *
+   * If the feature ID is out-of-range, or if the property table property is
+   * somehow invalid, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as a FIntVector.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FIntVector GetIntVector(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID,
+      const FIntVector& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value for the given feature as a FVector3f.
+   *
+   * If the value is a 3-dimensional vector, its components will be converted to
+   * the closest representable single-precision floats, if possible.
+   *
+   * If the value is a 4-dimensional vector, a FVector3f containing the first
+   * three components will be returned.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FVector3f. The Z-component will be set to zero.
+   *
+   * If the value is a scalar that can be converted to a single-precision
+   * floating-point number, then the resulting FVector3f will have this value in
+   * all of its components.
+   *
+   * If the value is a boolean, (1.0f, 1.0f, 1.0f) is returned for true, while
+   * (0.0f, 0.0f, 0.0f) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector3f, the parsed
+   * value is returned. The string must be formatted as "X=... Y=... Z=".
+   *
+   * In all other cases, the default value is returned. In all vector cases, if
+   * any of the relevant components cannot be represented as a single-precision
+   * float, the default value is returned.
+   *
+   * If the feature ID is out-of-range, or if the property table property is
+   * somehow invalid, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as a FVector3f.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FVector3f GetVector3f(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID,
+      const FVector3f& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value for the given feature as a FVector.
+   *
+   * If the value is a 3-dimensional vector, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 4-dimensional vector, a FVector containing the first
+   * three components will be returned.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FVector. The Z-component will be set to zero.
+   *
+   * If the value is a scalar, then the resulting FVector will have this value
+   * as a double-precision floating-point number in all of its components.
+   *
+   * If the value is a boolean, (1.0, 1.0, 1.0) is returned for true, while
+   * (0.0, 0.0, 0.0) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector, the parsed
+   * value is returned. The string must be formatted as "X=... Y=... Z=".
+   *
+   * In all other cases, the default value is returned. If the feature ID is
+   * out-of-range, or if the property table property is somehow invalid, the
+   * default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as a FVector.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FVector GetVector(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID,
+      const FVector& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value for the given feature as a FVector4.
+   *
+   * If the value is a 4-dimensional vector, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 3-dimensional vector, it will become the XYZ-components
+   * of the FVector4. The W-component will be set to zero.
+   *
+   * If the value is a 2-dimensional vector, it will become the XY-components of
+   * the FVector4. The Z- and W-components will be set to zero.
+   *
+   * If the value is a scalar, then the resulting FVector4 will have this value
+   * as a double-precision floating-point number in all of its components.
+   *
+   * If the value is a boolean, (1.0, 1.0, 1.0, 1.0) is returned for true, while
+   * (0.0, 0.0, 0.0, 0.0) is returned for false.
+   *
+   * If the value is a string that can be parsed as a FVector4, the parsed
+   * value is returned. This follows the rules of FVector4::InitFromString. The
+   * string must be formatted as "X=... Y=... Z=... W=...". The W-component is
+   * optional; if absent, it will be set to 1.0.
+   *
+   * In all other cases, the default value is returned. If the feature ID is
+   * out-of-range, or if the property table property is somehow invalid, the
+   * default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as a FVector4.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FVector4 GetVector4(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID,
+      const FVector4& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value for the given feature as a FMatrix.
+   *
+   * If the value is a 4-by-4 matrix, its components will be converted to
+   * double-precision floating-point numbers.
+   *
+   * If the value is a 3-by-3 matrix, it will initialize the corresponding
+   * entries of the FMatrix, while all other entries are set to zero. In other
+   * words, the 3-by-3 matrix is returned in an FMatrix where the fourth row and
+   * column are filled with zeroes.
+   *
+   * If the value is a 2-by-2 matrix, it will initialize the corresponding
+   * entries of the FMatrix, while all other entries are set to zero. In other
+   * words, the 2-by-2 matrix is returned in an FMatrix where the third and
+   * fourth rows / columns are filled with zeroes.
+   *
+   * If the value is a scalar, then the resulting FMatrix will have this value
+   * along its diagonal, including the very last component. All other entries
+   * will be zero.
+   *
+   * If the value is a boolean, it is converted to 1.0 for true and 0.0 for
+   * false. Then, the resulting FMatrix will have this value along its diagonal,
+   * including the very last component. All other entries will be zero.
+   *
+   * In all other cases, the default value is returned. If the feature ID is
+   * out-of-range, or if the property table property is somehow invalid, the
+   * default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as a FMatrix.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FMatrix GetMatrix(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID,
+      const FMatrix& DefaultValue);
+
+  /**
+   * Attempts to retrieve the value for the given feature as a FString.
+   *
+   * String properties are returned as-is.
+   *
+   * Scalar values are converted to a string with `std::to_string`.
+   *
+   * Boolean properties are converted to "true" or "false".
+   *
+   * Vector properties are returned as strings in the format "X=... Y=... Z=...
+   * W=..." depending on how many components they have.
+   *
+   * Matrix properties are returned as strings row-by-row, where each row's
+   * values are printed between square brackets. For example, a 2-by-2 matrix
+   * will be printed out as "[A B] [C D]".
+   *
+   * Array properties return the default value.
+   *
+   * If the feature ID is out-of-range, or if the property table property is
+   * somehow invalid, the default value is returned.
+   *
+   * @param FeatureID The ID of the feature.
+   * @param DefaultValue The default value to fall back on.
+   * @return The property value as a FString.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
   static FString GetString(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID,
       const FString& DefaultValue = "");
 
   /**
-   * Retrieves the value of the property for the feature with the given ID.
-   * If the property is not an array type, this method returns an empty array.
-   *
-   * If the property is not an array, the default value is returned.
+   * Attempts to retrieve the value for the given feature as a
+   * FCesiumPropertyArray. If the property is not an array type, this returns an
+   * empty array.
    *
    * @param featureID The ID of the feature.
-   * @return The property value.
+   * @return The property value as a FCesiumPropertyArray.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|PropertyTableProperty")
   static FCesiumPropertyArray GetArray(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID);
 
   /**
-   * Retrieves the value of the property for the feature with the given ID.
-   * The value is returned in a generic form that can be queried as a specific
-   * type later.
+   * Retrieves the value of the property for the given feature. This allows the
+   * value to be acted on more generically; its true value can be retrieved
+   * later as a specific Blueprints type.
    *
    * @param featureID The ID of the feature.
    * @return The property value.
@@ -667,21 +891,22 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|PropertyTableProperty")
   static FCesiumMetadataValue GetValue(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID);
 
   /**
    * Whether this property is supposed to be normalized. Only applicable when
-   * the type (or element type if this is an array) is an integer.
+   * the type of this property is an integer scalar, or if this property is an
+   * array of integer scalar types.
    *
    * @return Whether this property is normalized.
    */
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Property")
+      Category = "Cesium|Metadata|PropertyTableProperty")
   static bool IsNormalized(UPARAM(ref)
                                const FCesiumPropertyTableProperty& Property);
 };

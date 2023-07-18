@@ -51,7 +51,7 @@ public:
 
   /**
    * Retrieves an element from the array as a FCesiumMetadataValue. The value
-   * can then be retrieved as another Blueprints type.
+   * can then be retrieved as a specific Blueprints type.
    *
    * If the index is out-of-bounds, this returns a bogus FCesiumMetadataValue of an unknown type.
    *

@@ -1,6 +1,6 @@
-#include "CesiumFeatureIdSpecUtility.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;
@@ -98,16 +98,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
@@ -242,16 +241,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
@@ -318,16 +316,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
@@ -364,16 +361,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0, 0.5),
           glm::vec2(0.5, 0.5)};
 
-      FeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoords,
-              0);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoords,
+          0);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,
@@ -421,16 +417,15 @@ void FCesiumFeatureIdTextureSpec::Define() {
           glm::vec2(0.5, 0),
           glm::vec2(0.0, 0.5)};
 
-      FeatureId& featureId =
-          AddFeatureIDsAsTextureToModel(
-              model,
-              *pPrimitive,
-              featureIDs,
-              4,
-              2,
-              2,
-              texCoord1,
-              1);
+      FeatureId& featureId = AddFeatureIDsAsTextureToModel(
+          model,
+          *pPrimitive,
+          featureIDs,
+          4,
+          2,
+          2,
+          texCoord1,
+          1);
 
       FCesiumFeatureIdTexture featureIDTexture(
           model,

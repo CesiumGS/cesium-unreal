@@ -21,29 +21,6 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType);
 ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
     FCesiumMetadataValueType ValueType);
 
-/**
- * @brief Converts a C++ type to its corresponding FCesiumMetadataValueType.
- */
-template <typename T> FCesiumMetadataValueType GetCesiumMetadataValueType() {
-  ECesiumMetadataType type;
-  ECesiumMetadataComponentType componentType;
-  bool isArray;
-  if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-    using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-    type =
-        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-    componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<ArrayType>::component);
-    isArray = true;
-  } else {
-    type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-    componentType = ECesiumMetadataComponentType(
-        CesiumGltf::TypeToPropertyType<T>::component);
-    isArray = false;
-  }
-  return {type, componentType, isArray};
-};
-
 // Deprecated.
 ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(
     ECesiumMetadataTrueType_DEPRECATED trueType);

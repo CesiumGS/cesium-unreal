@@ -46,14 +46,14 @@ void FCesiumMetadataConversionsSpec::Define() {
           "true ('yes')",
           CesiumMetadataConversions<bool, std::string_view>::convert(
               stringView,
-              true));
+              false));
 
       stringView = std::string_view("1");
       TestTrue(
           "true ('1')",
           CesiumMetadataConversions<bool, std::string_view>::convert(
               stringView,
-              true));
+              false));
 
       stringView = std::string_view("false");
       TestFalse(

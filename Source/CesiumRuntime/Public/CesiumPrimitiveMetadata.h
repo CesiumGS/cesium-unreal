@@ -54,6 +54,17 @@ class CESIUMRUNTIME_API UCesiumPrimitiveMetadataBlueprintLibrary
 
 public:
   /**
+   * Gets the primitive metadata of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned metadata is empty.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|Metadata")
+  static const FCesiumPrimitiveMetadata&
+  GetPrimitiveMetadata(const UPrimitiveComponent* component);
+
+  /**
    * Get the indices of the property textures that are associated with the
    * primitive. This can be used to retrieve the actual property textures from
    * the model's FCesiumModelMetadata.

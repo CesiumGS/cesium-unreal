@@ -6,40 +6,6 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-static FCesiumModelMetadata EmptyModelMetadata;
-static FCesiumPrimitiveMetadata EmptyPrimitiveMetadata;
-
-const FCesiumModelMetadata&
-UCesiumMetadataUtilityBlueprintLibrary::GetModelMetadata(
-    const UPrimitiveComponent* component) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-
-  if (!IsValid(pGltfComponent)) {
-    return EmptyModelMetadata;
-  }
-
-  const UCesiumGltfComponent* pModel =
-      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
-  if (!IsValid(pModel)) {
-    return EmptyModelMetadata;
-  }
-
-  return pModel->Metadata;
-}
-
-const FCesiumPrimitiveMetadata&
-UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
-    const UPrimitiveComponent* component) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-  if (!IsValid(pGltfComponent)) {
-    return EmptyPrimitiveMetadata;
-  }
-
-  return pGltfComponent->Metadata;
-}
-
 TMap<FString, FCesiumMetadataValue>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     const UPrimitiveComponent* component,

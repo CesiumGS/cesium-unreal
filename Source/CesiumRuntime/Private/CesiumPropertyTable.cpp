@@ -10,7 +10,7 @@ static FCesiumPropertyTableProperty EmptyPropertyTableProperty;
 FCesiumPropertyTable::FCesiumPropertyTable(
     const Model& Model,
     const PropertyTable& PropertyTable)
-    : _status(ECesiumPropertyTableStatus::ErrorInvalidMetadataExtension),
+    : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
       _count(PropertyTable.count),
       _name(),
       _properties() {
@@ -19,10 +19,8 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   PropertyTableView propertyTableView{Model, PropertyTable};
   switch (propertyTableView.status()) {
   case PropertyTableViewStatus::Valid:
+    _status = ECesiumPropertyTableStatus::Valid;
     break;
-  case PropertyTableViewStatus::ErrorClassNotFound:
-    _status = ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass;
-    return;
   default:
     // Status was already set in initializer list.
     return;
@@ -48,7 +46,7 @@ UCesiumPropertyTableBlueprintLibrary::GetPropertyTableName(
   return PropertyTable._name;
 }
 
-/*static*/ int64 UCesiumPropertyTableBlueprintLibrary::GetPropertyTableSize(
+/*static*/ int64 UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable) {
   if (PropertyTable._status != ECesiumPropertyTableStatus::Valid) {
     return 0;
@@ -86,11 +84,17 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
     int64 featureID) {
   TMap<FString, FCesiumMetadataValue> values;
   for (const auto& pair : PropertyTable._properties) {
-    values.Add(
-        pair.Key,
-        UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
-            pair.Value,
-            featureID));
+    const FCesiumPropertyTableProperty& property = pair.Value;
+    ECesiumPropertyTablePropertyStatus status =
+        UCesiumPropertyTablePropertyBlueprintLibrary::
+            GetPropertyTablePropertyStatus(property);
+    if (status == ECesiumPropertyTablePropertyStatus::Valid) {
+      values.Add(
+          pair.Key,
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
+              pair.Value,
+              featureID));
+    }
   }
 
   return values;
@@ -102,11 +106,17 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
     int64 featureID) {
   TMap<FString, FString> values;
   for (const auto& pair : PropertyTable._properties) {
-    values.Add(
-        pair.Key,
-        UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
-            pair.Value,
-            featureID));
+    const FCesiumPropertyTableProperty& property = pair.Value;
+    ECesiumPropertyTablePropertyStatus status =
+        UCesiumPropertyTablePropertyBlueprintLibrary::
+            GetPropertyTablePropertyStatus(property);
+    if (status == ECesiumPropertyTablePropertyStatus::Valid) {
+      values.Add(
+          pair.Key,
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
+              pair.Value,
+              featureID));
+    }
   }
 
   return values;

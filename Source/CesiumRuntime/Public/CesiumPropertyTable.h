@@ -13,10 +13,15 @@ struct Model;
 struct PropertyTable;
 } // namespace CesiumGltf
 
+/**
+ * @brief Reports the status of a FCesiumPropertyTableProperty. If the property
+ * table cannot be accessed, this briefly indicates why.
+ */
 UENUM(BlueprintType)
 enum class ECesiumPropertyTableStatus : uint8 {
+  /* The property table is valid. */
   Valid = 0,
-  ErrorInvalidMetadataExtension,
+  /* The property table's class definition cannot be found. */
   ErrorInvalidPropertyTableClass
 };
 
@@ -34,7 +39,7 @@ public:
    * Construct an empty property table instance.
    */
   FCesiumPropertyTable()
-      : _status(ECesiumPropertyTableStatus::ErrorInvalidMetadataExtension){};
+      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass){};
 
   /**
    * Constructs a property table from a glTF Property Table.
@@ -84,8 +89,7 @@ public:
   GetPropertyTableName(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
 
   /**
-   * Gets the size of the property table. In other words, this is
-   * how many values each property in the table is expected to have. If an error
+   * Gets the number of values each property in the table is expected to have. If an error
    * occurred while parsing the property table, this returns zero.
    */
   UFUNCTION(
@@ -93,7 +97,7 @@ public:
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyTable")
   static int64
-  GetPropertyTableSize(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
+  GetPropertyTableCount(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
 
   /**
    * Gets all the properties of the property table, mapped by property name.
@@ -130,7 +134,7 @@ public:
 
   /**
    * Gets all of the property values for a given feature, mapped by property
-   * name.
+   * name. This will only include values from valid property table properties.
    *
    * @param featureID The ID of the feature.
    */
@@ -144,7 +148,8 @@ public:
 
   /**
    * Gets all of the property values for a given feature as strings, mapped by
-   * property name.
+   * property name. This will only include values from valid property table
+   * properties.
    *
    * @param FeatureID The ID of the feature.
    */

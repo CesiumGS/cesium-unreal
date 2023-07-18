@@ -146,6 +146,9 @@ double UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat64(
   return std::visit(
       [FeatureID, DefaultValue](const auto& v) -> double {
         // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
         auto value = v.get(FeatureID);
         return CesiumMetadataConversions<double, decltype(value)>::convert(
             value,
@@ -161,6 +164,9 @@ FIntPoint UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
   return std::visit(
       [FeatureID, DefaultValue](const auto& v) -> FIntPoint {
         // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
         auto value = v.get(FeatureID);
         return CesiumMetadataConversions<FIntPoint, decltype(value)>::convert(
             value,
@@ -176,8 +182,101 @@ FVector2D UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
   return std::visit(
       [FeatureID, DefaultValue](const auto& v) -> FVector2D {
         // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
         auto value = v.get(FeatureID);
         return CesiumMetadataConversions<FVector2D, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Property._property);
+}
+
+FIntVector UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+    int64 FeatureID,
+    const FIntVector& DefaultValue) {
+  return std::visit(
+      [FeatureID, DefaultValue](const auto& v) -> FIntVector {
+        // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
+        auto value = v.get(FeatureID);
+        return CesiumMetadataConversions<FIntVector, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Property._property);
+}
+
+FVector3f UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+    int64 FeatureID,
+    const FVector3f& DefaultValue) {
+  return std::visit(
+      [FeatureID, DefaultValue](const auto& v) -> FVector3f {
+        // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
+        auto value = v.get(FeatureID);
+        return CesiumMetadataConversions<FVector3f, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Property._property);
+}
+
+FVector UCesiumPropertyTablePropertyBlueprintLibrary::GetVector(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+    int64 FeatureID,
+    const FVector& DefaultValue) {
+  return std::visit(
+      [FeatureID, DefaultValue](const auto& v) -> FVector {
+        // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
+        auto value = v.get(FeatureID);
+        return CesiumMetadataConversions<FVector, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Property._property);
+}
+
+FVector4 UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+    int64 FeatureID,
+    const FVector4& DefaultValue) {
+  return std::visit(
+      [FeatureID, DefaultValue](const auto& v) -> FVector4 {
+        // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
+        auto value = v.get(FeatureID);
+        return CesiumMetadataConversions<FVector4, decltype(value)>::convert(
+            value,
+            DefaultValue);
+      },
+      Property._property);
+}
+
+FMatrix UCesiumPropertyTablePropertyBlueprintLibrary::GetMatrix(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+    int64 FeatureID,
+    const FMatrix& DefaultValue) {
+  return std::visit(
+      [FeatureID, DefaultValue](const auto& v) -> FMatrix {
+        // size() returns zero if the view is invalid.
+        if (FeatureID < 0 || FeatureID >= v.size()) {
+          return DefaultValue;
+        }
+        auto value = v.get(FeatureID);
+        return CesiumMetadataConversions<FMatrix, decltype(value)>::convert(
             value,
             DefaultValue);
       },
@@ -226,7 +325,7 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID) {
   return std::visit(
-      [FeatureID](const auto& view) {
+      [FeatureID](const auto& view) -> FCesiumMetadataValue {
         // size() returns zero if the view is invalid.
         if (FeatureID < 0 || FeatureID >= view.size()) {
           return FCesiumMetadataValue();

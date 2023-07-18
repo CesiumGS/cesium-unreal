@@ -1,7 +1,7 @@
 #include "CesiumFeatureIdSet.h"
-#include "CesiumFeatureIdSpecUtility.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
+#include "CesiumGltfSpecUtility.h"
 #include "Misc/AutomationTest.h"
 
 using namespace CesiumGltf;

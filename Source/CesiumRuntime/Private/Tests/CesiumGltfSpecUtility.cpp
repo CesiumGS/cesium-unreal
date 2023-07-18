@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CesiumFeatureIdSpecUtility.h"
+#include "CesiumGltfSpecUtility.h"
 
 using namespace CesiumGltf;
 

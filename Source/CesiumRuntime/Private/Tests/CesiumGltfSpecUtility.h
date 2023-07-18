@@ -1,13 +1,14 @@
 #pragma once
 
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
 #include <glm/glm.hpp>
 #include <vector>
 
 /**
  * @brief Converts the given vector of values into a std::vector of bytes.
- * 
+ *
  * @returns The values as a std::vector of bytes.
  */
 template <typename T>
@@ -84,3 +85,22 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
     const int32_t imageHeight,
     const std::vector<glm::vec2>& texCoords,
     const int64_t texcoordSetIndex);
+
+//template <typename T>
+//CesiumGltf::PropertyTableProperty& AddPropertyTablePropertyToModel(
+//    CesiumGltf::Model& model,
+//    CesiumGltf::PropertyTable propertyTable,
+//    const std::vector<T>& values) {
+//  CesiumGltf::Buffer& buffer = model.buffers.emplace_back();
+//  buffer.byteLength = values.size();
+//  buffer.cesium.data.resize(values.size() * sizeof(T));
+//  std::memcpy(
+//      buffer.cesium.data.data(),
+//      values.data(),
+//      buffer.cesium.data.size());
+//
+//  CesiumGltf::BufferView& bufferView = model.bufferViews.emplace_back();
+//  bufferView.buffer = static_cast<int32_t>(model.buffers.size() - 1);
+//  bufferView.byteLength = buffer.byteLength;
+//  bufferView.byteOffset = 0;
+//}

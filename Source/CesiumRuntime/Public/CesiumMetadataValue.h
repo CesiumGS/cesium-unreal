@@ -180,8 +180,25 @@ public:
    * @param Value The value to be stored in this struct.
    */
   template <typename T>
-  explicit FCesiumMetadataValue(const T& Value)
-      : _value(Value), _valueType(GetCesiumMetadataValueType<T>()) {}
+  explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
+    ECesiumMetadataType type;
+    ECesiumMetadataComponentType componentType;
+    bool isArray;
+    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<ArrayType>::component);
+      isArray = true;
+    } else {
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<T>::component);
+      isArray = false;
+    }
+    _valueType = {type, componentType, isArray};
+  }
 
 private:
   ValueType _value;
@@ -563,7 +580,7 @@ public:
    * the FVector. The Z-component will be set to zero.
    *
    * If the value is a scalar, then the resulting FVector will have this value
-   * in all of its components.
+   * as a double-precision floating-point number in all of its components.
    *
    * If the value is a boolean, (1.0, 1.0, 1.0) is returned for true, while
    * (0.0, 0.0, 0.0) is returned for false.
@@ -598,7 +615,7 @@ public:
    * the FVector4. The Z- and W-components will be set to zero.
    *
    * If the value is a scalar, then the resulting FVector4 will have this value
-   * in all of its components.
+   * as a double-precision floating-point number in all of its components.
    *
    * If the value is a boolean, (1.0, 1.0, 1.0, 1.0) is returned for true, while
    * (0.0, 0.0, 0.0, 0.0) is returned for false.
@@ -649,8 +666,8 @@ public:
    * In all other cases, the default value is returned.
    *
    * @param DefaultValue The default value to use if the given value cannot
-   * be converted to a String.
-   * @return The value as a String.
+   * be converted to a FMatrix.
+   * @return The value as a FMatrix.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -665,8 +682,7 @@ public:
    *
    * String properties are returned as-is.
    *
-   * Scalar values are converted to a string with `FString::Format`, which uses
-   * the current locale.
+   * Scalar values are converted to a string with `std::to_string`.
    *
    * Boolean properties are converted to "true" or "false".
    *
@@ -675,7 +691,7 @@ public:
    *
    * Matrix properties are returned as strings row-by-row, where each row's
    * values are printed between square brackets. For example, a 2-by-2 matrix
-   * will printed out as "[A B] [C D]".
+   * will be printed out as "[A B] [C D]".
    *
    * Array properties return the default value.
    *

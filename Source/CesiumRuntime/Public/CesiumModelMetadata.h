@@ -47,6 +47,48 @@ class CESIUMRUNTIME_API UCesiumModelMetadataBlueprintLibrary
 
 public:
   /**
+   * Gets the model metadata of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned metadata is empty.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Model|Metadata")
+  static const FCesiumModelMetadata&
+  GetModelMetadata(const UPrimitiveComponent* component);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+   /**
+   * @brief Get all the feature tables for this model metadata.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Model",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "GetFeatureTables is deprecated. Use GetPropertyTables instead."))
+  static const TMap<FString, FCesiumPropertyTable>
+  GetFeatureTables(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
+
+  /**
+   * @brief Get all the feature textures for this model metadata.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Model",
+      Meta =
+          (DeprecatedFunction,
+           DeprecatedMessage =
+               "GetFeatureTextures is deprecated. Use GetPropertyTextures instead."))
+  static const TMap<FString, FCesiumPropertyTexture>
+  GetFeatureTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  /**
    * Gets an array of all the property tables for this model metadata.
    */
   UFUNCTION(

@@ -80,7 +80,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
   EncodedPropertyTable encodedPropertyTable;
 
   int64 propertyTableCount =
-      UCesiumPropertyTableBlueprintLibrary::GetPropertyTableSize(propertyTable);
+      UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(propertyTable);
 
   const TMap<FString, FCesiumPropertyTableProperty>& properties =
       UCesiumPropertyTableBlueprintLibrary::GetProperties(propertyTable);

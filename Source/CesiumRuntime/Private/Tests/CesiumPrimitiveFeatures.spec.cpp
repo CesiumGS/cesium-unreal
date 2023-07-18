@@ -1,5 +1,5 @@
-#include "CesiumFeatureIdSpecUtility.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltfSpecUtility.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "Misc/AutomationTest.h"
 

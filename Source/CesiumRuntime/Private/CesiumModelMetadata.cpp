@@ -3,8 +3,12 @@
 #include "CesiumModelMetadata.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfComponent.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 using namespace CesiumGltf;
+
+static FCesiumModelMetadata EmptyModelMetadata;
 
 static FCesiumPropertyTable EmptyPropertyTable;
 static FCesiumPropertyTexture EmptyPropertyTexture;
@@ -22,6 +26,54 @@ FCesiumModelMetadata::FCesiumModelMetadata(
     this->_propertyTextures.Emplace(
         FCesiumPropertyTexture(InModel, propertyTexture));
   }
+}
+
+/*static*/
+const FCesiumModelMetadata&
+UCesiumModelMetadataBlueprintLibrary::GetModelMetadata(
+    const UPrimitiveComponent* component) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+
+  if (!IsValid(pGltfComponent)) {
+    return EmptyModelMetadata;
+  }
+
+  const UCesiumGltfComponent* pModel =
+      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
+  if (!IsValid(pModel)) {
+    return EmptyModelMetadata;
+  }
+
+  return pModel->Metadata;
+}
+
+/*static*/ const TMap<FString, FCesiumPropertyTable>
+UCesiumModelMetadataBlueprintLibrary::GetFeatureTables(
+    UPARAM(ref) const FCesiumModelMetadata& ModelMetadata) {
+  TMap<FString, FCesiumPropertyTable> result;
+  for (const FCesiumPropertyTable& propertyTable :
+       ModelMetadata._propertyTables) {
+    result.Add(
+        UCesiumPropertyTableBlueprintLibrary::GetPropertyTableName(
+            propertyTable),
+        propertyTable);
+  }
+  return result;
+}
+
+/*static*/ const TMap<FString, FCesiumPropertyTexture>
+UCesiumModelMetadataBlueprintLibrary::GetFeatureTextures(
+    UPARAM(ref) const FCesiumModelMetadata& ModelMetadata) {
+  TMap<FString, FCesiumPropertyTexture> result;
+  for (const FCesiumPropertyTexture& propertyTexture :
+       ModelMetadata._propertyTextures) {
+    result.Add(
+        UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
+            propertyTexture),
+        propertyTexture);
+  }
+  return result;
 }
 
 /*static*/
