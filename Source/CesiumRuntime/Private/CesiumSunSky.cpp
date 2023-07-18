@@ -110,6 +110,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
   SkyAtmosphere->SetupAttachment(Scene);
   SkyAtmosphere->TransformMode =
       ESkyAtmosphereTransformMode::PlanetCenterAtComponentTransform;
+  SkyAtmosphere->TransmittanceMinLightElevationAngle = 90.0f;
 
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
