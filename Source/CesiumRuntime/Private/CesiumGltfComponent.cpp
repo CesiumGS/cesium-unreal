@@ -16,6 +16,7 @@
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
+#include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPointsComponent.h"
@@ -1555,6 +1556,11 @@ static void loadModelAnyThreadPart(
     //      *options.pEncodedMetadataDescription,
     //      result.Metadata);
     //}
+  }
+
+  if (model.getExtension<ExtensionModelExtFeatureMetadata>()) {
+    result.Metadata = FCesiumModelMetadata();
+    //UE_LOG(LogTemp, Warning, TEXT("Oh no"));
   }
 
   glm::dmat4x4 rootTransform = transform;

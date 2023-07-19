@@ -4,40 +4,14 @@
 
 ##### Breaking Changes :mega:
 
-- ECesiumMetadataTrueType is deprecated. Use 
-
-- Feature IDs are now parsed through the `EXT_mesh_features` extension. They will no longer be parsed from `EXT_feature_metadata`.
-- Metadata is now parsed through the `EXT_structural_metadata` extension. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible.
-  - Renamed `FCesiumFeatureTable` to `FCesiumPropertyTable`.
-  - Renamed `UCesiumFeatureTableBlueprintLibrary` to `UCesiumPropertyTableBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertyTableSize`, `GetMetadataValuesForFeatureID` is now `GetMetadataValuesForFeature`, and `GetMetadataValuesAsStringForFeatureID` is now `GetMetadataValuesForFeatureAsStrings`.
-  - Renamed `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty`. 
-  - Renamed `UCesiumMetadataPropertyBlueprintLibrary` to `UCesiumPropertyTablePropertyBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertySize`,`GetComponentCount` is now `GetPropertyArraySize`, and `GetBlueprintComponentType` is now `GetArrayElementBlueprintType`.
-  - Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
-  - Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
-  - Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` is now `GetPropertyNames`.
-  - Renamed `FCesiumMetadataGenericValue` to `FCesiumMetadataValue`.
+- Feature IDs and metadata are now parsed through the `EXT_mesh_features` and `EXT_structural_metadata` extensions respectively. Models with `EXT_feature_metadata` will still be parsed, but their metadata will be inaccessible. See the [upgrade guide](TODO) for the full changelog and for tips on upgrading to the new API.
 - Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
 - The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
 
 ##### Additions :tada:
 
-- Added `FCesiumFeatureIdSet`, which represents a set of feature IDs in the `EXT_mesh_features` extension. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
-- Added `FCesiumPrimitiveFeatures` and `UCesiumPrimitiveFeaturesBlueprintLibrary`, which can be used to enact on the feature IDs stored in `EXT_mesh_features`.
-- Added `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus`, as well as Blueprints functions to retrieve them. These indicate when something in the feature ID sets is invalid.
-- Added `FCesiumFeatureIdTexture.GetFeatureIDForVertex`, which can retrieve the feature ID of the given vertex if it contains texture coordinates.
-- Added `FCesiumModelMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on the root glTF model.
-- Added `FCesiumPrimitiveMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on a glTF mesh primitive.
 - The "Place Georeference Origin Here" action on CesiumGeoreference is now undoable.
 - Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
-
-##### Deprecated :hourglass_flowing_sand:
-
-- `FCesiumMetadataPrimitive` has been deprecated. Instead, use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
-- `FCesiumMetadataModel` has been deprecated. Use `FCesiumModelMetadata` to access metadata from a model instead.
-- `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are less applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
-- `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
--`UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace` instead.
-- `ECesiumMetadataTrueType` has been deprecated.
 
 ### v1.28.0 - 2023-07-03
 

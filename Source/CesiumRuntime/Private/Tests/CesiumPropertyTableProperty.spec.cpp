@@ -1,5 +1,3 @@
-#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
-#include "CesiumGltf/Model.h"
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumPropertyArrayBlueprintLibrary.h"
 #include "CesiumPropertyTableProperty.h"
@@ -13,18 +11,11 @@ BEGIN_DEFINE_SPEC(
     "Cesium.PropertyTableProperty",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
-Model model;
-ExtensionModelExtStructuralMetadata* extension;
 END_DEFINE_SPEC(FCesiumPropertyTablePropertySpec)
 
 void FCesiumPropertyTablePropertySpec::Define() {
-  BeforeEach([this]() {
-    model = Model();
-    extension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-  });
-
   Describe("Constructor", [this]() {
-    It("constructs invalid instance from empty view", [this]() {
+    It("constructs invalid instance by default", [this]() {
       FCesiumPropertyTableProperty property;
       TestEqual(
           "PropertyTablePropertyStatus",

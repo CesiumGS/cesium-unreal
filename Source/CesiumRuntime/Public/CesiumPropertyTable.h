@@ -14,14 +14,18 @@ struct PropertyTable;
 } // namespace CesiumGltf
 
 /**
- * @brief Reports the status of a FCesiumPropertyTableProperty. If the property
- * table cannot be accessed, this briefly indicates why.
+ * @brief Reports the status of a FCesiumPropertyTable. If the property table
+ * cannot be accessed, this briefly indicates why.
  */
 UENUM(BlueprintType)
 enum class ECesiumPropertyTableStatus : uint8 {
   /* The property table is valid. */
   Valid = 0,
-  /* The property table's class definition cannot be found. */
+  /* The property table instance was not initialized from an actual glTF
+     property table. */
+  ErrorInvalidPropertyTable,
+  /* The property table's class definition cannot be found in the metadata
+     extension. */
   ErrorInvalidPropertyTableClass
 };
 
@@ -39,7 +43,7 @@ public:
    * Construct an empty property table instance.
    */
   FCesiumPropertyTable()
-      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass){};
+      : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTable){};
 
   /**
    * Constructs a property table from a glTF Property Table.
@@ -89,8 +93,8 @@ public:
   GetPropertyTableName(UPARAM(ref) const FCesiumPropertyTable& PropertyTable);
 
   /**
-   * Gets the number of values each property in the table is expected to have. If an error
-   * occurred while parsing the property table, this returns zero.
+   * Gets the number of values each property in the table is expected to have.
+   * If an error occurred while parsing the property table, this returns zero.
    */
   UFUNCTION(
       BlueprintCallable,
