@@ -528,15 +528,16 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
             pComponent->GetOriginLatitude(),
             pComponent->GetOriginHeight()));
 
-    glm::dvec4 levelAbs =
-        this->_geoTransforms
-            .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
-        glm::dvec4(levelECEF, 1.0);
-    FVector levelRelative = VecMath::createVector(levelAbs - originLocation);
+    FVector center = this->TransformLongitudeLatitudeHeightToUnreal(FVector(
+        pComponent->GetOriginLongitude(),
+        pComponent->GetOriginLatitude(),
+        pComponent->GetOriginHeight()));
+    center = GetActorTransform().TransformPosition(center);
+
     DrawDebugSphere(
         world,
-        levelRelative,
-        100.0 * pComponent->GetLoadRadius(),
+        center,
+        100.0 * pComponent->GetLoadRadius() * GetActorScale3D().GetMax(),
         100,
         FColor::Blue);
   }
