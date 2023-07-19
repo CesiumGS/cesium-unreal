@@ -442,13 +442,24 @@ void ACesiumSunSky::UpdateSun_Implementation() {
       180.0f + (this->Azimuth + this->NorthOffset),
       0.0f);
 
+  FTransform transform{};
+  USceneComponent* pRootComponent = this->GetRootComponent();
+  if (IsValid(pRootComponent)) {
+    USceneComponent* pParent = pRootComponent->GetAttachParent();
+    if (IsValid(pParent)) {
+      transform = pParent->GetComponentToWorld();
+    }
+  }
+
+  FQuat worldRotation = transform.TransformRotation(newRotation.Quaternion());
+
   // Orient sun / directional light
   if (this->UseLevelDirectionalLight && IsValid(this->LevelDirectionalLight) &&
       IsValid(this->LevelDirectionalLight->GetRootComponent())) {
-    this->LevelDirectionalLight->GetRootComponent()->SetRelativeRotation(
-        newRotation);
+    this->LevelDirectionalLight->GetRootComponent()->SetWorldRotation(
+        worldRotation);
   } else {
-    this->DirectionalLight->SetRelativeRotation(newRotation);
+    this->DirectionalLight->SetWorldRotation(worldRotation);
   }
 
   // Mobile only
