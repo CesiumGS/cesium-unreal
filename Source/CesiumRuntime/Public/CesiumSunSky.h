@@ -329,9 +329,9 @@ protected:
   float AerialPerspectiveViewDistanceScale = 1.0f;
 
   /**
-   * The altitude in kilometers at which Rayleigh scattering effect is reduced to
-   * 40%. This value is automatically scaled according to the CesiumGeoreference
-   * Scale and the Actor scale.
+   * The altitude in kilometers at which Rayleigh scattering effect is reduced
+   * to 40%. This value is automatically scaled according to the
+   * CesiumGeoreference Scale and the Actor scale.
    */
   UPROPERTY(
       EditAnywhere,
