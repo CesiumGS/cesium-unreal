@@ -630,10 +630,15 @@ bool ACesiumGeoreference::_updateSublevelState() {
 
   glm::dvec4 cameraAbsolute = VecMath::add4D(cameraLocation, originLocation);
 
-  glm::dvec3 cameraECEF = glm::dvec3(
-      this->_geoTransforms
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
-      cameraAbsolute);
+  glm::dmat4 ueGeoreferenceToUeWorld =
+      VecMath::createMatrix4D(this->GetActorTransform().ToMatrixWithScale());
+
+  const glm::dmat4& cesiumGeoreferenceToUeGeoreference =
+      this->_geoTransforms.GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+  glm::dmat4 unrealWorldToCesiumGeoreference = glm::affineInverse(
+      ueGeoreferenceToUeWorld * cesiumGeoreferenceToUeGeoreference);
+  glm::dvec3 cameraECEF =
+      glm::dvec3(unrealWorldToCesiumGeoreference * cameraAbsolute);
 
   ALevelInstance* pClosestActiveLevel = nullptr;
   double closestLevelDistance = std::numeric_limits<double>::max();
