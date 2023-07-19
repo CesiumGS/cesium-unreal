@@ -43,7 +43,7 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
     // too, so in a relative sense the object isn't actually moving. This isn't
     // a perfect assumption, of course.
     this->SetRelativeTransform_Direct(transform);
-    this->ConditionalUpdateComponentToWorld();
+    this->UpdateComponentToWorld();
     this->MarkRenderTransformDirty();
     this->SendPhysicsTransform(ETeleportType::ResetPhysics);
   }
