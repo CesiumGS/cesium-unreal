@@ -6,6 +6,20 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
+static FCesiumMetadataPrimitive EmptyPrimitiveMetadata;
+
+const FCesiumMetadataPrimitive&
+UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
+    const UPrimitiveComponent* component) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!IsValid(pGltfComponent)) {
+    return EmptyPrimitiveMetadata;
+  }
+
+  return pGltfComponent->Metadata_DEPRECATED;
+}
+
 TMap<FString, FCesiumMetadataValue>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     const UPrimitiveComponent* component,

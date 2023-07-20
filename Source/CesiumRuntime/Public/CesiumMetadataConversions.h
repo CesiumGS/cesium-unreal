@@ -11,7 +11,8 @@
 #include <type_traits>
 
 /**
- * @brief Converts a FCesiumMetadataValueType to the best-fitting Blueprints type.
+ * @brief Converts a FCesiumMetadataValueType to the best-fitting Blueprints
+ * type.
  *
  * @param ValueType The input metadata value type.
  */
@@ -26,9 +27,8 @@ ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(
     ECesiumMetadataTrueType_DEPRECATED trueType);
 
 // For backwards compatibility.
-ECesiumMetadataTrueType_DEPRECATED CesiumPropertyTypeToMetadataTrueType(
-    CesiumGltf::PropertyType type,
-    CesiumGltf::PropertyComponentType componentType);
+ECesiumMetadataTrueType_DEPRECATED
+CesiumMetadataValueTypeToTrueType(FCesiumMetadataValueType ValueType);
 
 /**
  * Default conversion, just returns the default value.
@@ -1205,7 +1205,7 @@ template <> struct CesiumMetadataConversions<FIntVector, std::string_view> {
 
     // For some reason, FIntVector doesn't have an InitFromString method, so
     // copy the one from FVector.
-    int32 X, Y, Z;
+    int32 X = 0, Y = 0, Z = 0;
     const bool bSuccessful = FParse::Value(*string, TEXT("X="), X) &&
                              FParse::Value(*string, TEXT("Y="), Y) &&
                              FParse::Value(*string, TEXT("Z="), Z);

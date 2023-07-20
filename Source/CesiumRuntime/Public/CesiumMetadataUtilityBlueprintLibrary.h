@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumFeatureIdAttribute.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumPrimitiveMetadata.h"
 #include "Containers/UnrealString.h"
@@ -11,7 +10,6 @@
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
 
 struct FCesiumFeatureIdAttribute;
-struct FCesiumFeatureIdTexture;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
@@ -19,6 +17,20 @@ class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary
   GENERATED_BODY()
 
 public:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets the primitive metadata of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned metadata is empty
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Use CesiumPrimitiveFeatures and CesiumPrimitiveMetadata instead."))
+  static const FCesiumMetadataPrimitive&
+  GetPrimitiveMetadata(const UPrimitiveComponent* component);
 
   /**
    * Gets the metadata of a face of a glTF primitive component. If the component
@@ -47,7 +59,6 @@ public:
       const UPrimitiveComponent* component,
       int64 faceID);
 
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the feature ID associated with a given face for a feature id
    * attribute.
@@ -57,8 +68,8 @@ public:
       BlueprintPure,
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumMetadataUtilityBlueprintLibrary.GetFeatureIDFromFaceID is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFeatureIDFromFace instead."))
+           DeprecationMessage =
+               "GetFeatureIDFromFaceID is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFeatureIDFromFace instead."))
   static int64 GetFeatureIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,

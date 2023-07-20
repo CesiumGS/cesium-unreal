@@ -104,8 +104,8 @@ public:
       Category = "Cesium|Metadata|FeatureIdAttribute",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetPropertyTableIndex instead."))
+           DeprecationMessage =
+               "Use GetPropertyTableIndex on a CesiumFeatureIdSet instead."))
   static const FString&
   GetFeatureTableName(UPARAM(ref)
                           const FCesiumFeatureIdAttribute& FeatureIDAttribute);

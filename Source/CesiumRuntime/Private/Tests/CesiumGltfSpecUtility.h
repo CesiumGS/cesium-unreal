@@ -3,7 +3,9 @@
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include <glm/glm.hpp>
+#include <type_traits>
 #include <vector>
 
 /**
@@ -86,21 +88,58 @@ CesiumGltf::FeatureId& AddFeatureIDsAsTextureToModel(
     const std::vector<glm::vec2>& texCoords,
     const int64_t texcoordSetIndex);
 
-//template <typename T>
-//CesiumGltf::PropertyTableProperty& AddPropertyTablePropertyToModel(
-//    CesiumGltf::Model& model,
-//    CesiumGltf::PropertyTable propertyTable,
-//    const std::vector<T>& values) {
-//  CesiumGltf::Buffer& buffer = model.buffers.emplace_back();
-//  buffer.byteLength = values.size();
-//  buffer.cesium.data.resize(values.size() * sizeof(T));
-//  std::memcpy(
-//      buffer.cesium.data.data(),
-//      values.data(),
-//      buffer.cesium.data.size());
-//
-//  CesiumGltf::BufferView& bufferView = model.bufferViews.emplace_back();
-//  bufferView.buffer = static_cast<int32_t>(model.buffers.size() - 1);
-//  bufferView.byteLength = buffer.byteLength;
-//  bufferView.byteOffset = 0;
-//}
+/**
+ * @brief Adds the given values to the given model as a
+ * property table property in EXT_structural_metadata. This also creates a class
+ * property definition for the new property in the schema. If the model doesn't
+ * already contain EXT_structural_metadata, this function adds it.
+ *
+ * This assumes the given values are not arrays or strings.
+ *
+ * @returns The newly created property table property in the model extension.
+ */
+template <typename T>
+CesiumGltf::PropertyTableProperty& AddPropertyTablePropertyToModel(
+    CesiumGltf::Model& model,
+    CesiumGltf::PropertyTable& propertyTable,
+    const std::string& propertyName,
+    const std::string& type,
+    const std::optional<std::string>& componentType,
+    const std::vector<T>& values) {
+  ExtensionModelExtStructuralMetadata* pExtension =
+      model.getExtension<ExtensionModelExtStructuralMetadata>();
+  if (pExtension == nullptr) {
+    pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
+  }
+
+  if (!pExtension->schema) {
+    pExtension->schema.emplace();
+  }
+  Schema& schema = *pExtension->schema;
+
+  const std::string& className = propertyTable.classProperty;
+  Class& theClass = schema.classes[className];
+
+  ClassProperty& classProperty = theClass.properties[propertyName];
+  classProperty.type = type;
+  classProperty.componentType = componentType;
+
+  CesiumGltf::Buffer& buffer = model.buffers.emplace_back();
+  buffer.cesium.data.resize(values.size() * sizeof(T));
+  std::memcpy(
+      buffer.cesium.data.data(),
+      values.data(),
+      buffer.cesium.data.size());
+  buffer.byteLength = buffer.cesium.data.size();
+
+  CesiumGltf::BufferView& bufferView = model.bufferViews.emplace_back();
+  bufferView.buffer = static_cast<int32_t>(model.buffers.size() - 1);
+  bufferView.byteLength = buffer.byteLength;
+  bufferView.byteOffset = 0;
+
+  CesiumGltf::PropertyTableProperty& property =
+      propertyTable.properties[propertyName];
+  property.values = static_cast<int32_t>(model.bufferViews.size() - 1);
+
+  return property;
+}

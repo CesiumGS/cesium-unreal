@@ -67,8 +67,8 @@ public:
       Category = "Cesium|Metadata|Model",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "GetFeatureTables is deprecated. Use GetPropertyTables instead."))
+           DeprecationMessage =
+               "Use GetPropertyTables to get an array of property tables instead."))
   static const TMap<FString, FCesiumPropertyTable>
   GetFeatureTables(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
 
@@ -81,8 +81,8 @@ public:
       Category = "Cesium|Metadata|Model",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "GetFeatureTextures is deprecated. Use GetPropertyTextures instead."))
+           DeprecationMessage =
+               "Use GetPropertyTextures to get an array of property textures instead."))
   static const TMap<FString, FCesiumPropertyTexture>
   GetFeatureTextures(UPARAM(ref) const FCesiumModelMetadata& ModelMetadata);
 

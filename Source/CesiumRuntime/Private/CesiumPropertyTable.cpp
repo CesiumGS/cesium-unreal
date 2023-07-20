@@ -81,8 +81,12 @@ UCesiumPropertyTableBlueprintLibrary::FindProperty(
 /*static*/ TMap<FString, FCesiumMetadataValue>
 UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
-    int64 featureID) {
+    int64 FeatureID) {
   TMap<FString, FCesiumMetadataValue> values;
+  if (FeatureID < 0 || FeatureID >= PropertyTable._count) {
+    return values;
+  }
+
   for (const auto& pair : PropertyTable._properties) {
     const FCesiumPropertyTableProperty& property = pair.Value;
     ECesiumPropertyTablePropertyStatus status =
@@ -93,7 +97,7 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
           pair.Key,
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
               pair.Value,
-              featureID));
+              FeatureID));
     }
   }
 
@@ -103,8 +107,12 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
 /*static*/ TMap<FString, FString>
 UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
     UPARAM(ref) const FCesiumPropertyTable& PropertyTable,
-    int64 featureID) {
+    int64 FeatureID) {
   TMap<FString, FString> values;
+  if (FeatureID < 0 || FeatureID >= PropertyTable._count) {
+    return values;
+  }
+
   for (const auto& pair : PropertyTable._properties) {
     const FCesiumPropertyTableProperty& property = pair.Value;
     ECesiumPropertyTablePropertyStatus status =
@@ -115,7 +123,7 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
           pair.Key,
           UCesiumPropertyTablePropertyBlueprintLibrary::GetString(
               pair.Value,
-              featureID));
+              FeatureID));
     }
   }
 

@@ -28,7 +28,10 @@ public:
 
   FCesiumPrimitiveFeatures Features;
   FCesiumPrimitiveMetadata Metadata;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   FCesiumMetadataPrimitive Metadata_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata EncodedPrimitiveMetadata;
 

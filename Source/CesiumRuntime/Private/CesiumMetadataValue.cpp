@@ -29,6 +29,20 @@ FCesiumMetadataValueType UCesiumMetadataValueBlueprintLibrary::GetValueType(
   return Value._valueType;
 }
 
+ECesiumMetadataTrueType_DEPRECATED
+UCesiumMetadataValueBlueprintLibrary::GetTrueType(
+    UPARAM(ref) const FCesiumMetadataValue& Value) {
+  return CesiumMetadataValueTypeToTrueType(Value._valueType);
+}
+
+ECesiumMetadataTrueType_DEPRECATED
+UCesiumMetadataValueBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumMetadataValue& Value) {
+  FCesiumMetadataValueType type = Value._valueType;
+  type.bIsArray = false;
+  return CesiumMetadataValueTypeToTrueType(type);
+}
+
 bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
     UPARAM(ref) const FCesiumMetadataValue& Value,
     bool DefaultValue) {

@@ -78,8 +78,8 @@ public:
       Category = "Cesium|Metadata|Primitive",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
   static const TArray<FCesiumFeatureIdAttribute>
   GetFeatureIdAttributes(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -94,8 +94,8 @@ public:
       Category = "Cesium|Metadata|Primitive",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
   static const TArray<FCesiumFeatureIdTexture>
   GetFeatureIdTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -110,8 +110,8 @@ public:
       Category = "Cesium|Metadata|Primitive",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveMetadataBlueprintLibrary to get property texture indices from FCesiumPrimitiveMetadata instead."))
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveMetadataBlueprintLibrary to get property texture indices from FCesiumPrimitiveMetadata instead."))
   static const TArray<FString>
   GetFeatureTextureNames(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -128,8 +128,8 @@ public:
       Category = "Cesium|Metadata|Primitive",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumMetadataPrimitiveBlueprintLibrary is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFirstVertexFromFace with FCesiumPrimitiveFeatures instead."))
+           DeprecationMessage =
+               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFirstVertexFromFace with FCesiumPrimitiveFeatures instead."))
   static int64 GetFirstVertexIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
       int64 FaceID);

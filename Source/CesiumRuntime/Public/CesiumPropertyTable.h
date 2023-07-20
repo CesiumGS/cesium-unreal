@@ -24,7 +24,7 @@ enum class ECesiumPropertyTableStatus : uint8 {
   /* The property table instance was not initialized from an actual glTF
      property table. */
   ErrorInvalidPropertyTable,
-  /* The property table's class definition cannot be found in the metadata
+  /* The property table's class could be found in the schema of the metadata
      extension. */
   ErrorInvalidPropertyTableClass
 };
@@ -140,6 +140,8 @@ public:
    * Gets all of the property values for a given feature, mapped by property
    * name. This will only include values from valid property table properties.
    *
+   * If the feature ID is out-of-bounds, the returned map will be empty.
+   *
    * @param featureID The ID of the feature.
    */
   UFUNCTION(
@@ -154,6 +156,11 @@ public:
    * Gets all of the property values for a given feature as strings, mapped by
    * property name. This will only include values from valid property table
    * properties.
+   *
+   * Array properties cannot be converted to strings, so empty strings
+   * will be returned for their values.
+   * 
+   * If the feature ID is out-of-bounds, the returned map will be empty.
    *
    * @param FeatureID The ID of the feature.
    */

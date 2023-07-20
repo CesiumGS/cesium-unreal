@@ -248,6 +248,38 @@ public:
   static FCesiumMetadataValueType
   GetValueType(UPARAM(ref) const FCesiumMetadataValue& Value);
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets true type of the value. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataTrueType is deprecated. Use GetValueType to get the CesiumMetadataValueType instead."))
+  static ECesiumMetadataTrueType_DEPRECATED
+  GetTrueType(UPARAM(ref) const FCesiumMetadataValue& Value);
+
+  /**
+   * Gets true type of the elements in the array. If this value is not an array,
+   * the component type will be None. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataTrueType is deprecated. Use GetValueType to get the CesiumMetadataValueType instead."))
+  static ECesiumMetadataTrueType_DEPRECATED
+  GetTrueComponentType(UPARAM(ref) const FCesiumMetadataValue& Value);
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
   /**
    * Attempts to retrieve the value as a boolean.
    *

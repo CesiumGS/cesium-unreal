@@ -142,9 +142,16 @@ ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(
   }
 }
 
-ECesiumMetadataTrueType_DEPRECATED CesiumPropertyTypeToMetadataTrueType(
-    CesiumGltf::PropertyType type,
-    CesiumGltf::PropertyComponentType componentType) {
+ECesiumMetadataTrueType_DEPRECATED
+CesiumMetadataValueTypeToTrueType(FCesiumMetadataValueType ValueType) {
+  if (ValueType.bIsArray) {
+  return ECesiumMetadataTrueType_DEPRECATED::Array_DEPRECATED;
+  }
+
+  CesiumGltf::PropertyType type = CesiumGltf::PropertyType(ValueType.Type);
+  CesiumGltf::PropertyComponentType componentType =
+      CesiumGltf::PropertyComponentType(ValueType.ComponentType);
+
   if (type == CesiumGltf::PropertyType::Boolean) {
     return ECesiumMetadataTrueType_DEPRECATED::Boolean_DEPRECATED;
   }
