@@ -421,8 +421,8 @@ void ACesiumSunSky::UpdateSun_Implementation() {
 
   FSunPositionData sunPosition;
   USunPositionFunctionLibrary::GetSunPosition(
-      this->GetGeoreference()->OriginLatitude,
-      this->GetGeoreference()->OriginLongitude,
+      this->GetGeoreference()->GetOriginLatitude(),
+      this->GetGeoreference()->GetOriginLongitude(),
       this->TimeZone,
       isDST,
       this->Year,
@@ -511,14 +511,14 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
 
   FVector location =
       transform.TransformPosition(getViewLocation(this->GetWorld()));
-  glm::dvec3 llh =
+  FVector llh =
       this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(
-          VecMath::createVector3D(location));
+          location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.
   double maxRadius = 6387000.0;
 
-  if (llh.z / 1000.0 > this->CircumscribedGroundThreshold) {
+  if (llh.Z / 1000.0 > this->CircumscribedGroundThreshold) {
     this->SetSkyAtmosphereGroundRadius(
         this->SkyAtmosphere,
         maxRadius * this->_computeScale() / 1000.0);
@@ -528,16 +528,16 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
     glm::dvec3 ecef = this->GetGeoreference()
                           ->GetGeoTransforms()
                           .TransformLongitudeLatitudeHeightToEcef(
-                              glm::dvec3(llh.x, llh.y, -100.0));
+                              glm::dvec3(llh.X, llh.Y, -100.0));
     double minRadius = glm::length(ecef);
 
-    if (llh.z / 1000.0 < this->InscribedGroundThreshold) {
+    if (llh.Z / 1000.0 < this->InscribedGroundThreshold) {
       this->SetSkyAtmosphereGroundRadius(
           this->SkyAtmosphere,
           minRadius * this->_computeScale() / 1000.0);
     } else {
       double t =
-          ((llh.z / 1000.0) - this->InscribedGroundThreshold) /
+          ((llh.Z / 1000.0) - this->InscribedGroundThreshold) /
           (this->CircumscribedGroundThreshold - this->InscribedGroundThreshold);
       double radius = glm::mix(minRadius, maxRadius, t);
       this->SetSkyAtmosphereGroundRadius(

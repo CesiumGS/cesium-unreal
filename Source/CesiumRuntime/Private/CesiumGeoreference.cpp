@@ -121,13 +121,7 @@ ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
   return pGeoreference;
 }
 
-ACesiumGeoreference::ACesiumGeoreference()
-    : AActor(),
-      _ellipsoidRadii{
-          CesiumGeospatial::Ellipsoid::WGS84.getRadii().x,
-          CesiumGeospatial::Ellipsoid::WGS84.getRadii().y,
-          CesiumGeospatial::Ellipsoid::WGS84.getRadii().z},
-      _geoTransforms() {
+ACesiumGeoreference::ACesiumGeoreference() : AActor(), _geoTransforms() {
   PrimaryActorTick.bCanEverTick = true;
 
   this->Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -232,7 +226,7 @@ FString longPackageNameToCesiumName(UWorld* pWorld, const TStringish& name) {
 } // namespace
 
 #if WITH_EDITOR
-void ACesiumGeoreference::_updateCesiumSubLevels() {
+void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
   UWorld* pWorld = this->GetWorld();
   if (!IsValid(pWorld)) {
     // This happens for the georeference that is shown in the
@@ -339,57 +333,86 @@ void ACesiumGeoreference::_updateCesiumSubLevels() {
 }
 #endif
 
-void ACesiumGeoreference::SetScale(double NewScale) {
-  if (NewScale < 1e-6) {
-    this->Scale = 1e-6;
-  } else {
-    this->Scale = NewScale;
-  }
-  this->UpdateGeoreference();
-}
-
-double ACesiumGeoreference::GetScale() const { return Scale; }
-
 FVector
 ACesiumGeoreference::GetGeoreferenceOriginLongitudeLatitudeHeight() const {
   return FVector(OriginLongitude, OriginLatitude, OriginHeight);
 }
 
 void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
-    const glm::dvec3& targetLongitudeLatitudeHeight) {
-  this->_setGeoreferenceOrigin(
-      targetLongitudeLatitudeHeight.x,
-      targetLongitudeLatitudeHeight.y,
-      targetLongitudeLatitudeHeight.z);
-}
-
-void ACesiumGeoreference::SetGeoreferenceOrigin(
-    const glm::dvec3& TargetLongitudeLatitudeHeight) {
-  UE_LOG(
-      LogCesium,
-      Warning,
-      TEXT(
-          "SetGeoreferenceOrigin was renamed to SetGeoreferenceOriginLongitudeLatitudeHeight."));
-  SetGeoreferenceOriginLongitudeLatitudeHeight(TargetLongitudeLatitudeHeight);
-}
-
-void ACesiumGeoreference::SetGeoreferenceOriginEcef(
-    const glm::dvec3& TargetEcef) {
-  SetGeoreferenceOriginLongitudeLatitudeHeight(
-      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(TargetEcef));
-}
-
-void ACesiumGeoreference::SetGeoreferenceOriginLongitudeLatitudeHeight(
     const FVector& targetLongitudeLatitudeHeight) {
-  this->SetGeoreferenceOriginLongitudeLatitudeHeight(glm::dvec3(
+  this->_setGeoreferenceOrigin(
       targetLongitudeLatitudeHeight.X,
       targetLongitudeLatitudeHeight.Y,
-      targetLongitudeLatitudeHeight.Z));
+      targetLongitudeLatitudeHeight.Z);
 }
 
 void ACesiumGeoreference::SetGeoreferenceOriginEcef(const FVector& TargetEcef) {
-  this->SetGeoreferenceOriginEcef(
-      glm::dvec3(TargetEcef.X, TargetEcef.Y, TargetEcef.Z));
+  this->SetGeoreferenceOriginLongitudeLatitudeHeight(VecMath::createVector(
+      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(
+          VecMath::createVector3D(TargetEcef))));
+}
+
+EOriginPlacement ACesiumGeoreference::GetOriginPlacement() const {
+  return this->OriginPlacement;
+}
+
+void ACesiumGeoreference::SetOriginPlacement(EOriginPlacement NewValue) {
+  this->OriginPlacement = NewValue;
+  this->UpdateGeoreference();
+}
+
+double ACesiumGeoreference::GetOriginLatitude() const {
+  return this->OriginLatitude;
+}
+
+void ACesiumGeoreference::SetOriginLatitude(double NewValue) {
+  this->OriginLatitude = NewValue;
+  this->UpdateGeoreference();
+}
+
+double ACesiumGeoreference::GetOriginLongitude() const {
+  return this->OriginLongitude;
+}
+
+void ACesiumGeoreference::SetOriginLongitude(double NewValue) {
+  this->OriginLongitude = NewValue;
+  this->UpdateGeoreference();
+}
+
+double ACesiumGeoreference::GetOriginHeight() const {
+  return this->OriginHeight;
+}
+
+void ACesiumGeoreference::SetOriginHeight(double NewValue) {
+  this->OriginHeight = NewValue;
+  this->UpdateGeoreference();
+}
+
+double ACesiumGeoreference::GetScale() const { return this->Scale; }
+
+void ACesiumGeoreference::SetScale(double NewValue) {
+  if (NewValue < 1e-6) {
+    this->Scale = 1e-6;
+  } else {
+    this->Scale = NewValue;
+  }
+  this->UpdateGeoreference();
+}
+
+APlayerCameraManager* ACesiumGeoreference::GetSubLevelCamera() const {
+  return this->SubLevelCamera;
+}
+
+void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
+  this->SubLevelCamera = NewValue;
+}
+
+bool ACesiumGeoreference::GetShowLoadRadii() const {
+  return this->ShowLoadRadii;
+}
+
+void ACesiumGeoreference::SetShowLoadRadii(bool NewValue) {
+  this->ShowLoadRadii = NewValue;
 }
 
 // Called when the game starts or when spawned
@@ -426,13 +449,11 @@ void ACesiumGeoreference::BeginPlay() {
   UpdateGeoreference();
 }
 
-void ACesiumGeoreference::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-  Super::EndPlay(EndPlayReason);
-}
-
 /** In case the CesiumGeoreference gets spawned at run time, instead of design
  *  time, ensure that frames are updated */
 void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
+  Super::OnConstruction(Transform);
+
   UE_LOG(
       LogCesium,
       Verbose,
@@ -443,6 +464,18 @@ void ACesiumGeoreference::OnConstruction(const FTransform& Transform) {
 }
 
 void ACesiumGeoreference::BeginDestroy() { Super::BeginDestroy(); }
+
+void ACesiumGeoreference::PostLoad() {
+  Super::PostLoad();
+
+#if WITH_EDITOR
+  if (GEditor && IsValid(this->GetWorld()) &&
+      IsValid(this->GetWorld()->WorldComposition) &&
+      !this->GetWorld()->IsGameWorld()) {
+    this->_createSubLevelsFromWorldComposition();
+  }
+#endif
+}
 
 void ACesiumGeoreference::UpdateGeoreference() {
   this->_updateGeoTransforms();
@@ -544,51 +577,6 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
 }
 #endif // WITH_EDITOR
 
-#if WITH_EDITOR
-void ACesiumGeoreference::_handleViewportOriginEditing() {
-  if (!this->EditOriginInViewport) {
-    return;
-  }
-  FHitResult mouseRayResults;
-  bool mouseRaySuccess;
-
-  this->_lineTraceViewportMouse(false, mouseRaySuccess, mouseRayResults);
-
-  if (!mouseRaySuccess) {
-    return;
-  }
-  const FIntVector& originLocation = this->GetWorld()->OriginLocation;
-
-  FVector grabbedLocation = mouseRayResults.Location;
-  // convert from UE to ECEF to LongitudeLatitudeHeight
-  glm::dvec4 grabbedLocationAbs =
-      VecMath::add4D(grabbedLocation, originLocation);
-
-  glm::dvec3 grabbedLocationECEF = glm::dvec3(
-      this->_geoTransforms
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform() *
-      grabbedLocationAbs);
-
-  glm::dvec3 cartographic =
-      _geoTransforms.TransformEcefToLongitudeLatitudeHeight(
-          grabbedLocationECEF);
-
-  UE_LOG(
-      LogActor,
-      Warning,
-      TEXT("Mouse Location: (Longitude: %f, Latitude: %f, Height: %f)"),
-      cartographic.x,
-      cartographic.y,
-      cartographic.z);
-
-  // TODO: find editor viewport mouse click event
-  // if (mouseDown) {
-  // this->_setGeoreferenceOrigin()
-  //	this->EditOriginInViewport = false;
-  //}
-}
-#endif // WITH_EDITOR
-
 namespace {
 /**
  * @brief Clamping addition.
@@ -686,10 +674,7 @@ void ACesiumGeoreference::_updateGeoTransforms() {
   }
 
   this->_geoTransforms = GeoTransforms(
-      CesiumGeospatial::Ellipsoid(
-          this->_ellipsoidRadii[0],
-          this->_ellipsoidRadii[1],
-          this->_ellipsoidRadii[2]),
+      CesiumGeospatial::Ellipsoid::WGS84,
       center,
       this->Scale / 100.0);
 }
@@ -698,16 +683,7 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   Super::Tick(DeltaTime);
 
 #if WITH_EDITOR
-  // There doesn't appear to be a good way to be notified about the wide variety
-  // of level manipulations we care about, so in the Editor we'll poll.
-  if (GEditor && IsValid(this->GetWorld()) &&
-      IsValid(this->GetWorld()->WorldComposition) &&
-      !this->GetWorld()->IsGameWorld()) {
-    this->_updateCesiumSubLevels();
-  }
-
   _showSubLevelLoadRadii();
-  _handleViewportOriginEditing();
 #endif
 
   if (this->_shouldManageSubLevels()) {
@@ -728,22 +704,11 @@ void ACesiumGeoreference::Serialize(FArchive& Ar) {
  * Useful Conversion Functions
  */
 
-glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
-    const glm::dvec3& longitudeLatitudeHeight) const {
-  return _geoTransforms.TransformLongitudeLatitudeHeightToEcef(
-      longitudeLatitudeHeight);
-}
-
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightToEcef(
     const FVector& longitudeLatitudeHeight) const {
   glm::dvec3 ecef = this->_geoTransforms.TransformLongitudeLatitudeHeightToEcef(
       VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ecef.x, ecef.y, ecef.z);
-}
-
-glm::dvec3 ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
-    const glm::dvec3& ecef) const {
-  return _geoTransforms.TransformEcefToLongitudeLatitudeHeight(ecef);
 }
 
 FVector ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
@@ -753,26 +718,12 @@ FVector ACesiumGeoreference::TransformEcefToLongitudeLatitudeHeight(
   return FVector(llh.x, llh.y, llh.z);
 }
 
-glm::dvec3 ACesiumGeoreference::TransformLongitudeLatitudeHeightToUnreal(
-    const glm::dvec3& longitudeLatitudeHeight) const {
-  return this->_geoTransforms.TransformLongitudeLatitudeHeightToUnreal(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      longitudeLatitudeHeight);
-}
-
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightToUnreal(
     const FVector& longitudeLatitudeHeight) const {
   glm::dvec3 ue = this->_geoTransforms.TransformLongitudeLatitudeHeightToUnreal(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       VecMath::createVector3D(longitudeLatitudeHeight));
   return FVector(ue.x, ue.y, ue.z);
-}
-
-glm::dvec3 ACesiumGeoreference::TransformUnrealToLongitudeLatitudeHeight(
-    const glm::dvec3& ue) const {
-  return this->_geoTransforms.TransformUnrealToLongitudeLatitudeHeight(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      ue);
 }
 
 FVector ACesiumGeoreference::TransformUnrealToLongitudeLatitudeHeight(
@@ -784,25 +735,11 @@ FVector ACesiumGeoreference::TransformUnrealToLongitudeLatitudeHeight(
   return FVector(llh.x, llh.y, llh.z);
 }
 
-glm::dvec3
-ACesiumGeoreference::TransformEcefToUnreal(const glm::dvec3& ecef) const {
-  return this->_geoTransforms.TransformEcefToUnreal(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      ecef);
-}
-
 FVector ACesiumGeoreference::TransformEcefToUnreal(const FVector& ecef) const {
   glm::dvec3 ue = this->_geoTransforms.TransformEcefToUnreal(
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       VecMath::createVector3D(ecef));
   return FVector(ue.x, ue.y, ue.z);
-}
-
-glm::dvec3
-ACesiumGeoreference::TransformUnrealToEcef(const glm::dvec3& ue) const {
-  return this->_geoTransforms.TransformUnrealToEcef(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      ue);
 }
 
 FVector ACesiumGeoreference::TransformUnrealToEcef(const FVector& ue) const {
@@ -812,47 +749,24 @@ FVector ACesiumGeoreference::TransformUnrealToEcef(const FVector& ue) const {
   return FVector(ecef.x, ecef.y, ecef.z);
 }
 
-glm::dquat ACesiumGeoreference::TransformRotatorUnrealToEastSouthUp(
-    const glm::dquat& UeRotator,
-    const glm::dvec3& UeLocation) const {
-  return this->_geoTransforms.TransformRotatorUnrealToEastSouthUp(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      UeRotator,
-      UeLocation);
-}
-
 FRotator ACesiumGeoreference::TransformRotatorUnrealToEastSouthUp(
     const FRotator& UERotator,
     const FVector& ueLocation) const {
-  glm::dquat q = TransformRotatorUnrealToEastSouthUp(
-      VecMath::createQuaternion(UERotator.Quaternion()),
-      VecMath::createVector3D(ueLocation));
-  return VecMath::createRotator(q);
-}
-
-glm::dquat ACesiumGeoreference::TransformRotatorEastSouthUpToUnreal(
-    const glm::dquat& EsuRotator,
-    const glm::dvec3& UeLocation) const {
-  return this->_geoTransforms.TransformRotatorEastSouthUpToUnreal(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      EsuRotator,
-      UeLocation);
+  return VecMath::createRotator(
+      this->_geoTransforms.TransformRotatorUnrealToEastSouthUp(
+          glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
+          VecMath::createQuaternion(UERotator.Quaternion()),
+          VecMath::createVector3D(ueLocation)));
 }
 
 FRotator ACesiumGeoreference::TransformRotatorEastSouthUpToUnreal(
     const FRotator& EsuRotator,
     const FVector& ueLocation) const {
-  glm::dquat q = TransformRotatorEastSouthUpToUnreal(
-      VecMath::createQuaternion(EsuRotator.Quaternion()),
-      VecMath::createVector3D(ueLocation));
-  return VecMath::createRotator(q);
-}
-
-glm::dmat3
-ACesiumGeoreference::ComputeEastSouthUpToUnreal(const glm::dvec3& ue) const {
-  return _geoTransforms.ComputeEastSouthUpToUnreal(
-      glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
-      ue);
+  return VecMath::createRotator(
+      this->_geoTransforms.TransformRotatorEastSouthUpToUnreal(
+          glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
+          VecMath::createQuaternion(EsuRotator.Quaternion()),
+          VecMath::createVector3D(ueLocation)));
 }
 
 FMatrix
@@ -861,11 +775,6 @@ ACesiumGeoreference::ComputeEastSouthUpToUnreal(const FVector& ue) const {
       glm::dvec3(CesiumActors::getWorldOrigin4D(this)),
       glm::dvec3(ue.X, ue.Y, ue.Z));
   return VecMath::createMatrix(esuToUe);
-}
-
-glm::dmat3
-ACesiumGeoreference::ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const {
-  return _geoTransforms.ComputeEastNorthUpToEcef(ecef);
 }
 
 FMatrix
@@ -889,66 +798,6 @@ void ACesiumGeoreference::_setGeoreferenceOrigin(
 
   this->UpdateGeoreference();
 }
-
-// TODO: should consider raycasting the WGS84 ellipsoid instead. The Unreal
-// raycast seems to be inaccurate at glancing angles, perhaps due to the large
-// single-precision distances.
-#if WITH_EDITOR
-void ACesiumGeoreference::_lineTraceViewportMouse(
-    const bool ShowTrace,
-    bool& Success,
-    FHitResult& HitResult) const {
-  HitResult = FHitResult();
-  Success = false;
-
-  UWorld* world = this->GetWorld();
-
-  FViewport* pViewport = GEditor->GetActiveViewport();
-  FViewportClient* pViewportClient = pViewport->GetClient();
-  FEditorViewportClient* pEditorViewportClient =
-      static_cast<FEditorViewportClient*>(pViewportClient);
-
-  if (!world || !pEditorViewportClient ||
-      !pEditorViewportClient->Viewport->HasFocus()) {
-    return;
-  }
-
-  FViewportCursorLocation cursor =
-      pEditorViewportClient->GetCursorWorldLocationFromMousePos();
-
-  const FVector& viewLoc = cursor.GetOrigin();
-  const FVector& viewDir = cursor.GetDirection();
-
-  // TODO (low prio, because this whole function is preliminary) :
-  // This radius should probably be taken from the ellipsoid
-  const double earthRadiusCm = 637100000.0;
-  FVector lineEnd = viewLoc + viewDir * earthRadiusCm;
-
-  static const FName LineTraceSingleName(TEXT("LevelEditorLineTrace"));
-  if (ShowTrace) {
-    world->DebugDrawTraceTag = LineTraceSingleName;
-  } else {
-    world->DebugDrawTraceTag = NAME_None;
-  }
-
-  FCollisionQueryParams CollisionParams(LineTraceSingleName);
-
-  FCollisionObjectQueryParams ObjectParams =
-      FCollisionObjectQueryParams(ECC_WorldStatic);
-  ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-  ObjectParams.AddObjectTypesToQuery(ECC_Pawn);
-  ObjectParams.AddObjectTypesToQuery(ECC_Visibility);
-
-  if (world->LineTraceSingleByObjectType(
-          HitResult,
-          viewLoc,
-          lineEnd,
-          ObjectParams,
-          CollisionParams)) {
-    Success = true;
-  }
-}
-#endif
 
 bool ACesiumGeoreference::_shouldManageSubLevels() const {
   // Only a Georeference in the PersistentLevel should manage sub-levels.

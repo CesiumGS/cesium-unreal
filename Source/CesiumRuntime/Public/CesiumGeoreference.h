@@ -38,7 +38,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGeoreferenceUpdated);
 UCLASS()
 class CESIUMRUNTIME_API ACesiumGeoreference : public AActor {
   GENERATED_BODY()
-
 public:
   /*
    * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
@@ -53,35 +52,16 @@ public:
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
 
-  ACesiumGeoreference();
-
-  UPROPERTY(VisibleAnywhere, Category = "Cesium")
-  USceneComponent* Root;
-
-  /*
-   * Whether to visualize the level loading radii in the editor. Helpful for
-   * initially positioning the level and choosing a load radius.
+  /**
+   * A delegate that will be called whenever the Georeference is
+   * modified in a way that affects its computations.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Cesium Sublevels")
-  bool ShowLoadRadii = true;
+  UPROPERTY(BlueprintAssignable, Category = "Cesium")
+  FGeoreferenceUpdated OnGeoreferenceUpdated;
 
-  /*
-   * The list of georeferenced sub-levels. Each of these has a corresponding
-   * world location that can be jumped to. Only one level can be worked on in
-   * the editor at a time.
-   *
-   * New levels added in the Editor should appear in this list automatically. If
-   * any are missing, check that "World Composition" is enabled in World
-   * Settings and that the level is in a Layer with Distance Based Streaming
-   * DISABLED.
-   */
-  UPROPERTY(
-      Meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Create sub-levels by adding a UCesiumSubLevelComponent to an ALevelInstance Actor."))
-  TArray<FCesiumSubLevel> CesiumSubLevels_DEPRECATED;
+#pragma region Properties
 
+private:
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.
    *
@@ -93,7 +73,13 @@ public:
    * this property will preserve vertex precision (and thus avoid jittering)
    * much better than setting the Actor's Transform property.
    */
-  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cesium")
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetOriginPlacement,
+      BlueprintSetter = SetOriginPlacement,
+      meta = (AllowPrivateAccess))
   EOriginPlacement OriginPlacement = EOriginPlacement::CartographicOrigin;
 
   /**
@@ -101,10 +87,15 @@ public:
    * 90]
    */
   UPROPERTY(
-      EditAnywhere,
       Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetOriginLatitude,
+      BlueprintSetter = SetOriginLatitude,
+      Interp,
       meta =
-          (EditCondition =
+          (AllowPrivateAccess,
+           EditCondition =
                "OriginPlacement==EOriginPlacement::CartographicOrigin",
            ClampMin = -90.0,
            ClampMax = 90.0))
@@ -115,10 +106,15 @@ public:
    * [-180, 180]
    */
   UPROPERTY(
-      EditAnywhere,
       Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetOriginLongitude,
+      BlueprintSetter = SetOriginLongitude,
+      Interp,
       meta =
-          (EditCondition =
+          (AllowPrivateAccess,
+           EditCondition =
                "OriginPlacement==EOriginPlacement::CartographicOrigin",
            ClampMin = -180.0,
            ClampMax = 180.0))
@@ -129,20 +125,263 @@ public:
    * ellipsoid.
    */
   UPROPERTY(
-      EditAnywhere,
       Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetOriginHeight,
+      BlueprintSetter = SetOriginHeight,
+      Interp,
       meta =
-          (EditCondition =
+          (AllowPrivateAccess,
+           EditCondition =
                "OriginPlacement==EOriginPlacement::CartographicOrigin"))
   double OriginHeight = 2250.0;
 
   /**
-   * TODO: Once point-and-click georeference placement is in place, restore this
-   * as a UPROPERTY
+   * The percentage scale of the globe in the Unreal world. If this value is 50,
+   * for example, one meter on the globe occupies half a meter in the Unreal
+   * world.
    */
-  // UPROPERTY(EditAnywhere, Category = "Cesium", AdvancedDisplay)
-  bool EditOriginInViewport = false;
+  UPROPERTY(
+      Category = "Cesium",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintSetter = SetScale,
+      BlueprintGetter = GetScale,
+      Interp,
+      Meta = (AllowPrivateAccess, UIMin = 0.000001, UIMax = 100.0))
+  double Scale = 100.0;
 
+  /**
+   * The camera to use to determine which sub-level is closest, so that one can
+   * be activated and all others deactivated.
+   */
+  UPROPERTY(
+      Category = "Cesium|Cesium Sublevels",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetSubLevelCamera,
+      BlueprintSetter = SetSublevelCamera,
+      meta = (AllowPrivateAccess))
+  APlayerCameraManager* SubLevelCamera = nullptr;
+
+#if WITH_EDITORONLY_DATA
+  /*
+   * Whether to visualize the level loading radii in the editor. Helpful for
+   * initially positioning the level and choosing a load radius.
+   */
+  UPROPERTY(
+      Category = "Cesium|Cesium Sublevels",
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetShowLoadRadii,
+      BlueprintSetter = SetShowLoadRadii,
+      meta = (AllowPrivateAccess))
+  bool ShowLoadRadii = true;
+#endif
+
+#pragma endregion
+
+#pragma region PropertyAccessors
+
+public:
+  /**
+   * Returns the georeference origin position as an FVector where `X` is
+   * longitude (degrees), `Y` is latitude (degrees), and `Z` is height above the
+   * ellipsoid (meters). Only valid if the placement type is Cartographic Origin
+   * (i.e. Longitude / Latitude / Height).
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector GetGeoreferenceOriginLongitudeLatitudeHeight() const;
+
+  /**
+   * This aligns the specified longitude in degrees (X), latitude in
+   * degrees (Y), and height above the ellipsoid in meters (Z) to Unreal's world
+   * origin. That is, it moves the globe so that these coordinates exactly fall
+   * on the origin.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetGeoreferenceOriginLongitudeLatitudeHeight(
+      const FVector& TargetLongitudeLatitudeHeight);
+
+  /**
+   * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
+   * Unreal's world origin. I.e. it moves the globe so that these coordinates
+   * exactly fall on the origin.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetGeoreferenceOriginEcef(const FVector& TargetEcef);
+
+  UFUNCTION(BlueprintGetter)
+  EOriginPlacement GetOriginPlacement() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetOriginPlacement(EOriginPlacement NewValue);
+
+  UFUNCTION(BlueprintGetter)
+  double GetOriginLatitude() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetOriginLatitude(double NewValue);
+
+  UFUNCTION(BlueprintGetter)
+  double GetOriginLongitude() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetOriginLongitude(double NewValue);
+
+  UFUNCTION(BlueprintGetter)
+  double GetOriginHeight() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetOriginHeight(double NewValue);
+
+  /**
+   * The percentage scale of the globe in the Unreal world. If this value is 50,
+   * for example, one meter on the globe occupies half a meter in the Unreal
+   * world.
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetScale() const;
+
+  /**
+   * The percentage scale of the globe in the Unreal world. If this value is 50,
+   * for example, one meter on the globe occupies half a meter in the Unreal
+   * world.
+   */
+  UFUNCTION(BlueprintSetter)
+  void SetScale(double NewValue);
+
+  UFUNCTION(BlueprintGetter)
+  APlayerCameraManager* GetSubLevelCamera() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetSubLevelCamera(APlayerCameraManager* NewValue);
+
+  UFUNCTION(BlueprintGetter)
+  bool GetShowLoadRadii() const;
+
+  UFUNCTION(BlueprintSetter)
+  void SetShowLoadRadii(bool NewValue);
+
+#pragma endregion
+
+#pragma region Transformation Functions
+
+public:
+  /**
+   * Transforms the given longitude in degrees (x), latitude in
+   * degrees (y), and height above the ellipsoid in meters (z) into
+   * Earth-Centered, Earth-Fixed (ECEF) coordinates.
+   *
+   * This function peforms the computation in single-precision. When using
+   * the C++ API, corresponding double-precision function
+   * TransformLongitudeLatitudeHeightToEcef can be used.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector TransformLongitudeLatitudeHeightToEcef(
+      const FVector& LongitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
+   * the ellipsoid in meters (z).
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
+
+  /**
+   * Transforms the given longitude in degrees (x), latitude in
+   * degrees (y), and height above the ellipsoid in meters (z) into Unreal
+   * coordinates. The resulting position should generally not be interpreted as
+   * an Unreal _world_ position, but rather a position expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector TransformLongitudeLatitudeHeightToUnreal(
+      const FVector& LongitudeLatitudeHeight) const;
+
+  /**
+   * Transforms Unreal coordinates into longitude in degrees (x), latitude in
+   * degrees (y), and height above the ellipsoid in meters (z). The position
+   * should generally not be an Unreal _world_ position, but rather a position
+   * expressed in some parent Actor's reference frame as defined by its
+   * Transform. This way, the chain of Unreal transforms places and orients the
+   * "globe" in the Unreal world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector TransformUnrealToLongitudeLatitudeHeight(const FVector& Unreal) const;
+
+  /**
+   * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
+   * Unreal coordinates. The resulting position should generally not be
+   * interpreted as an Unreal _world_ position, but rather a position expressed
+   * in some parent Actor's reference frame as defined by its Transform. This
+   * way, the chain of Unreal transforms places and orients the "globe" in the
+   * Unreal world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector TransformEcefToUnreal(const FVector& Ecef) const;
+
+  /**
+   * Transforms the given point from Unreal coordinates to Earth-Centered,
+   * Earth-Fixed (ECEF). The position should generally not be an Unreal _world_
+   * position, but rather a position expressed in some parent Actor's reference
+   * frame as defined by its Transform. This way, the chain of Unreal transforms
+   * places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector TransformUnrealToEcef(const FVector& Unreal) const;
+
+  /**
+   * Transforms a rotator from Unreal to East-South-Up at the given
+   * Unreal location. The rotator and location should generally not be relative
+   * to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FRotator TransformRotatorUnrealToEastSouthUp(
+      const FRotator& UnrealRotator,
+      const FVector& UnrealLocation) const;
+
+  /**
+   * Transforms a rotator from East-South-Up to Unreal at the given
+   * Unreal location. The location and resulting rotator should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FRotator TransformRotatorEastSouthUpToUnreal(
+      const FRotator& EsuRotator,
+      const FVector& UnrealLocation) const;
+
+  /**
+   * Computes the rotation matrix from the local East-South-Up to Unreal at the
+   * specified Unreal location. The returned transformation works in Unreal's
+   * left-handed coordinate system. The location and resulting rotation should
+   * generally not be relative to the Unreal _world_, but rather be expressed in
+   * some parent Actor's reference frame as defined by its Transform. This way,
+   * the chain of Unreal transforms places and orients the "globe" in the Unreal
+   * world.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FMatrix ComputeEastSouthUpToUnreal(const FVector& Unreal) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to
+   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
+
+#pragma endregion
+
+#pragma region Editor Support
+
+public:
 #if WITH_EDITOR
   /**
    * Places the georeference origin at the camera's current location. Rotates
@@ -158,345 +397,71 @@ public:
   void PlaceGeoreferenceOriginHere();
 #endif
 
+private:
+  // This property mirrors RootComponent, and exists only so that the root
+  // component's transform is editable in the Editor.
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
+  USceneComponent* Root;
+
+#if WITH_EDITOR
   /**
-   * The camera to use to determine which sub-level is closest, so that one can
-   * be activated and all others deactivated.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium|Cesium Sublevels")
-  APlayerCameraManager* SubLevelCamera = nullptr;
-
-  /**
-   * This sets the percentage scale of the globe. For instance, if the value is
-   * 50, the globe will shrink by half.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetScale(double NewScale);
-
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  double GetScale() const;
-
-  // TODO: Allow user to select/configure the ellipsoid.
-  // Yeah, we're working on that...
-
-  /**
-   * Returns the georeference origin position as an FVector where `X` is
-   * longitude (degrees), `Y` is latitude (degrees), and `Z` is height above the
-   * ellipsoid (meters). Only valid if the placement type is Cartographic Origin
-   * (i.e. Longitude / Latitude / Height).
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector GetGeoreferenceOriginLongitudeLatitudeHeight() const;
-
-  /**
-   * This aligns the specified longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) to Unreal's world
-   * origin. I.e. it moves the globe so that these coordinates exactly fall on
-   * the origin.
+   * @brief Show the load radius of each sub-level as a sphere.
    *
-   * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sub-level, calling this method will update the sub-level's
-   * origin as well.
+   * If this is not called "in-game", and `ShowLoadRadii` is `true`,
+   * then it will show a sphere indicating the load radius of each
+   * sub-level.
    */
-  void SetGeoreferenceOriginLongitudeLatitudeHeight(
-      const glm::dvec3& TargetLongitudeLatitudeHeight);
+  void _showSubLevelLoadRadii() const;
+#endif
 
-  /**
-   * This function is here for backwards compatibility. The function
-   * SetGeoreferenceOriginLongitudeLatitudeHeight should be used instead.
-   */
-  void SetGeoreferenceOrigin(const glm::dvec3& TargetLongitudeLatitudeHeight);
+#pragma endregion
 
-  /**
-   * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
-   * Unreal's world origin. I.e. it moves the globe so that these coordinates
-   * exactly fall on the origin.
-   *
-   * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sub-level, then this call has no effect.
-   */
-  void SetGeoreferenceOriginEcef(const glm::dvec3& TargetEcef);
+#pragma region Unreal Lifecycle
 
-  /**
-   * This aligns the specified longitude in degrees (X), latitude in
-   * degrees (Y), and height above the ellipsoid in meters (Z) to Unreal's world
-   * origin. I.e. it moves the globe so that these coordinates exactly fall on
-   * the origin.
-   *
-   * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sub-level, then this call has no effect.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetGeoreferenceOriginLongitudeLatitudeHeight(
-      const FVector& TargetLongitudeLatitudeHeight);
+protected:
+  virtual bool ShouldTickIfViewportsOnly() const override;
+  virtual void Tick(float DeltaTime) override;
+  virtual void Serialize(FArchive& Ar) override;
+  virtual void BeginPlay() override;
+  virtual void OnConstruction(const FTransform& Transform) override;
+  virtual void BeginDestroy() override;
+  virtual void PostLoad() override;
 
-  /**
-   * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
-   * Unreal's world origin. I.e. it moves the globe so that these coordinates
-   * exactly fall on the origin.
-   *
-   * When the SubLevelCamera of this instance is currently contained in
-   * the bounds of a sub-level, then this call has no effect.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetGeoreferenceOriginEcef(const FVector& TargetEcef);
+#if WITH_EDITOR
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
-  /*
-   * USEFUL CONVERSION FUNCTIONS
-   */
+#pragma endregion
 
-  /**
-   * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height in meters (z) into Earth-Centered, Earth-Fixed
-   * (ECEF) coordinates.
-   */
-  glm::dvec3 TransformLongitudeLatitudeHeightToEcef(
-      const glm::dvec3& LongitudeLatitudeHeight) const;
+#pragma region Obsolete
 
-  /**
-   * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) into
-   * Earth-Centered, Earth-Fixed (ECEF) coordinates.
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformLongitudeLatitudeHeightToEcef can be used.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector TransformLongitudeLatitudeHeightToEcef(
-      const FVector& LongitudeLatitudeHeight) const;
+private:
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  UPROPERTY(
+      Meta =
+          (DeprecatedProperty,
+           DeprecationMessage =
+               "Create sub-levels by adding a UCesiumSubLevelComponent to an ALevelInstance Actor."))
+  TArray<FCesiumSubLevel> CesiumSubLevels_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  /**
-   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
-   * the ellipsoid in meters (z).
-   */
-  glm::dvec3
-  TransformEcefToLongitudeLatitudeHeight(const glm::dvec3& Ecef) const;
+#if WITH_EDITOR
+  void _createSubLevelsFromWorldComposition();
+#endif
 
-  /**
-   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
-   * the ellipsoid in meters (z).
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
+#pragma endregion
 
-  /**
-   * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) into Unreal
-   * coordinates. The resulting position should generally not be interpreted as
-   * an Unreal _world_ position, but rather a position expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  glm::dvec3 TransformLongitudeLatitudeHeightToUnreal(
-      const glm::dvec3& longitudeLatitudeHeight) const;
+#pragma region Implementation Details
 
-  /**
-   * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) into Unreal
-   * coordinates. The resulting position should generally not be interpreted as
-   * an Unreal _world_ position, but rather a position expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector TransformLongitudeLatitudeHeightToUnreal(
-      const FVector& LongitudeLatitudeHeight) const;
-
-  /**
-   * Transforms Unreal coordinates into longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z). The position
-   * should generally not be an Unreal _world_ position, but rather a position
-   * expressed in some parent Actor's reference frame as defined by its
-   * Transform. This way, the chain of Unreal transforms places and orients the
-   * "globe" in the Unreal world.
-   */
-  glm::dvec3
-  TransformUnrealToLongitudeLatitudeHeight(const glm::dvec3& unreal) const;
-
-  /**
-   * Transforms Unreal coordinates into longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z). The position
-   * should generally not be an Unreal _world_ position, but rather a position
-   * expressed in some parent Actor's reference frame as defined by its
-   * Transform. This way, the chain of Unreal transforms places and orients the
-   * "globe" in the Unreal world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector TransformUnrealToLongitudeLatitudeHeight(const FVector& Unreal) const;
-
-  /**
-   * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
-   * Unreal coordinates. The resulting position should generally not be
-   * interpreted as an Unreal _world_ position, but rather a position expressed
-   * in some parent Actor's reference frame as defined by its Transform. This
-   * way, the chain of Unreal transforms places and orients the "globe" in the
-   * Unreal world.
-   */
-  glm::dvec3 TransformEcefToUnreal(const glm::dvec3& ecef) const;
-
-  /**
-   * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
-   * Unreal coordinates. The resulting position should generally not be
-   * interpreted as an Unreal _world_ position, but rather a position expressed
-   * in some parent Actor's reference frame as defined by its Transform. This
-   * way, the chain of Unreal transforms places and orients the "globe" in the
-   * Unreal world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector TransformEcefToUnreal(const FVector& Ecef) const;
-
-  /**
-   * Transforms the given point from Unreal coordinates to Earth-Centered,
-   * Earth-Fixed (ECEF). The position should generally not be an Unreal _world_
-   * position, but rather a position expressed in some parent Actor's reference
-   * frame as defined by its Transform. This way, the chain of Unreal transforms
-   * places and orients the "globe" in the Unreal world.
-   */
-  glm::dvec3 TransformUnrealToEcef(const glm::dvec3& unreal) const;
-
-  /**
-   * Transforms the given point from Unreal coordinates to Earth-Centered,
-   * Earth-Fixed (ECEF). The position should generally not be an Unreal _world_
-   * position, but rather a position expressed in some parent Actor's reference
-   * frame as defined by its Transform. This way, the chain of Unreal transforms
-   * places and orients the "globe" in the Unreal world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector TransformUnrealToEcef(const FVector& Unreal) const;
-
-  /**
-   * Transforms a rotator from Unreal to East-South-Up at the given
-   * Unreal location. The rotator and location should generally not be relative
-   * to the Unreal _world_, but rather be expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  glm::dquat TransformRotatorUnrealToEastSouthUp(
-      const glm::dquat& UnrealRotator,
-      const glm::dvec3& UnrealLocation) const;
-
-  /**
-   * Transforms a rotator from Unreal to East-South-Up at the given
-   * Unreal location. The rotator and location should generally not be relative
-   * to the Unreal _world_, but rather be expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FRotator TransformRotatorUnrealToEastSouthUp(
-      const FRotator& UnrealRotator,
-      const FVector& UnrealLocation) const;
-
-  /**
-   * Transforms a rotator from East-South-Up to Unreal at the given
-   * Unreal location. The location and resulting rotator should generally not be
-   * relative to the Unreal _world_, but rather be expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  glm::dquat TransformRotatorEastSouthUpToUnreal(
-      const glm::dquat& EsuRotator,
-      const glm::dvec3& UnrealLocation) const;
-
-  /**
-   * Transforms a rotator from East-South-Up to Unreal at the given
-   * Unreal location. The location and resulting rotator should generally not be
-   * relative to the Unreal _world_, but rather be expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FRotator TransformRotatorEastSouthUpToUnreal(
-      const FRotator& EsuRotator,
-      const FVector& UnrealLocation) const;
-
-  /**
-   * Computes the rotation matrix from the local East-South-Up to Unreal at the
-   * specified Unreal location. The returned transformation works in Unreal's
-   * left-handed coordinate system. The location and resulting rotation should
-   * generally not be relative to the Unreal _world_, but rather be expressed in
-   * some parent Actor's reference frame as defined by its Transform. This way,
-   * the chain of Unreal transforms places and orients the "globe" in the Unreal
-   * world.
-   */
-  glm::dmat3 ComputeEastSouthUpToUnreal(const glm::dvec3& unreal) const;
-
-  /**
-   * Computes the rotation matrix from the local East-South-Up to Unreal at the
-   * specified Unreal location. The returned transformation works in Unreal's
-   * left-handed coordinate system. The location and resulting rotation should
-   * generally not be relative to the Unreal _world_, but rather be expressed in
-   * some parent Actor's reference frame as defined by its Transform. This way,
-   * the chain of Unreal transforms places and orients the "globe" in the Unreal
-   * world.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FMatrix ComputeEastSouthUpToUnreal(const FVector& Unreal) const;
-
-  /**
-   * Computes the rotation matrix from the local East-North-Up to
-   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
-   */
-  glm::dmat3 ComputeEastNorthUpToEcef(const glm::dvec3& ecef) const;
-
-  /**
-   * Computes the rotation matrix from the local East-North-Up to
-   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
-
-  /**
-   * @brief Computes the normal of the plane tangent to the surface of the
-   * ellipsoid that is used by this instance, at the provided position ECEF.
-   *
-   * @param position The ECEF position for which to to determine the
-   * surface normal.
-   * @return The normal.
-   */
-  glm::dvec3 ComputeGeodeticSurfaceNormal(const glm::dvec3& position) const {
-    return _geoTransforms.ComputeGeodeticSurfaceNormal(position);
-  }
-  /**
-   * A delegate that will be called whenever the Georeference is
-   * modified in a way that affects its computations.
-   */
-  UPROPERTY(BlueprintAssignable, Category = "Cesium")
-  FGeoreferenceUpdated OnGeoreferenceUpdated;
+public:
+  ACesiumGeoreference();
 
   /**
    * Recomputes all world georeference transforms. Usually there is no need to
    * explicitly call this from external code.
    */
   void UpdateGeoreference();
-
-  /**
-   * @brief Returns whether `Tick` should be called in viewports-only mode.
-   *
-   * "If `true`, actor is ticked even if TickType==LEVELTICK_ViewportsOnly."
-   * (The TickType is determined by the unreal engine internally).
-   */
-  virtual bool ShouldTickIfViewportsOnly() const override;
-
-  /**
-   * @brief Function called every frame on this Actor.
-   *
-   * @param DeltaTime Game time elapsed during last frame modified by the time
-   * dilation
-   */
-  virtual void Tick(float DeltaTime) override;
-
-  /**
-   * Handles reading, writing, and reference collecting using FArchive.
-   * This implementation handles all FProperty serialization, but can be
-   * overridden for native variables.
-   *
-   * This class overrides this method to ensure internal variables are
-   * immediately synchronized with newly-loaded values.
-   */
-  virtual void Serialize(FArchive& Ar) override;
 
   /**
    * Returns the GeoTransforms that offers the same conversion
@@ -507,18 +472,6 @@ public:
     return _geoTransforms;
   }
 
-protected:
-  // Called when the game starts or when spawned
-  virtual void BeginPlay() override;
-  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-  virtual void OnConstruction(const FTransform& Transform) override;
-  virtual void BeginDestroy() override;
-
-#if WITH_EDITOR
-  virtual void
-  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
-
 private:
   /**
    * A tag that is assigned to Georeferences when they are created
@@ -526,76 +479,16 @@ private:
    */
   static FName DEFAULT_GEOREFERENCE_TAG;
 
-  /**
-   * The percentage scale of the globe in the Unreal world. If this value is 50,
-   * for example, one meter on the globe occupies half a meter in the Unreal
-   * world.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Meta = (AllowPrivateAccess),
-      BlueprintReadWrite,
-      BlueprintSetter = "SetScale",
-      BlueprintGetter = "GetScale",
-      Category = "Cesium",
-      Meta = (UIMin = 0.000001, UIMax = 100.0))
-  double Scale = 100.0;
-
-  /**
-   * The radii, in x-, y-, and z-direction, of the ellipsoid that
-   * should be used in this instance.
-   */
-  UPROPERTY()
-  double _ellipsoidRadii[3];
-
   GeoTransforms _geoTransforms;
 
   UPROPERTY()
   UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
-
-#if WITH_EDITOR
-  FDelegateHandle _newCurrentLevelSubscription;
-#endif
 
   // TODO: add option to set georeference directly from ECEF
   void _setGeoreferenceOrigin(
       double targetLongitude,
       double targetLatitude,
       double targetHeight);
-
-#if WITH_EDITOR
-  /**
-   * Will make sure that the `CesiumSubLevels` array contains all
-   * of the current streaming levels of the world.
-   */
-  void _updateCesiumSubLevels();
-#endif
-
-#if WITH_EDITOR
-  void _lineTraceViewportMouse(
-      const bool ShowTrace,
-      bool& Success,
-      FHitResult& HitResult) const;
-
-  /**
-   * @brief Show the load radius of each sub-level as a sphere.
-   *
-   * If this is not called "in-game", and `ShowLoadRadii` is `true`,
-   * then it will show a sphere indicating the load radius of each
-   * sub-level.
-   */
-  void _showSubLevelLoadRadii() const;
-
-  /**
-   * @brief Allow editing the origin with the mouse.
-   *
-   * If `EditOriginInViewport` is true, this will trace the mouse
-   * position, and update the origin based on the point that was
-   * hit.
-   */
-  void _handleViewportOriginEditing();
-
-#endif
 
   /**
    * @brief Updates the load state of sub-levels.
@@ -630,4 +523,5 @@ private:
    * PersistentLevel.
    */
   bool _shouldManageSubLevels() const;
+#pragma endregion
 };

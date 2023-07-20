@@ -6,6 +6,7 @@
 #include "CesiumGeoreference.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "CesiumWgs84Ellipsoid.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -103,9 +104,8 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   const glm::dvec3 actorUp = glm::normalize(currentRotation[2]);
 
   // Compute the surface normal of the ellipsoid
-  const glm::dvec3 ellipsoidNormal =
-      this->ResolvedGeoreference->ComputeGeodeticSurfaceNormal(
-          VecMath::createVector3D(this->GetECEF()));
+  glm::dvec3 ellipsoidNormal = VecMath::createVector3D(
+      UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(this->GetECEF()));
 
   // Find the shortest rotation to align local up with the ellipsoid normal
   const glm::dquat R = glm::rotation(actorUp, ellipsoidNormal);
@@ -231,8 +231,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   }
 
   this->MoveToECEF(
-      this->ResolvedGeoreference->TransformLongitudeLatitudeHeightToEcef(
-          TargetLongitudeLatitudeHeight));
+      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+          VecMath::createVector(TargetLongitudeLatitudeHeight)));
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(

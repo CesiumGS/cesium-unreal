@@ -63,14 +63,12 @@ ACesiumCartographicPolygon::CreateCartographicPolygon(
         this->Polygon->GetLocationAtSplinePoint(
             i,
             ESplineCoordinateSpace::World));
-    glm::dvec3 cartographic =
+    FVector cartographic =
         this->GlobeAnchor->ResolveGeoreference()
-            ->TransformUnrealToLongitudeLatitudeHeight(glm::dvec3(
-                unrealPosition.X,
-                unrealPosition.Y,
-                unrealPosition.Z));
+            ->TransformUnrealToLongitudeLatitudeHeight(
+                FVector(unrealPosition.X, unrealPosition.Y, unrealPosition.Z));
     polygon[i] =
-        glm::dvec2(glm::radians(cartographic.x), glm::radians(cartographic.y));
+        glm::dvec2(glm::radians(cartographic.X), glm::radians(cartographic.Y));
   }
 
   return CartographicPolygon(polygon);

@@ -137,9 +137,9 @@ void FSubLevelsSpec::Define() {
 
           pLevelComponent1->SetOriginLongitudeLatitudeHeight(
               FVector(4.0, 5.0, 6.0));
-          TestEqual("Longitude", pGeoreference->OriginLongitude, 4.0);
-          TestEqual("Latitude", pGeoreference->OriginLatitude, 5.0);
-          TestEqual("Height", pGeoreference->OriginHeight, 6.0);
+          TestEqual("Longitude", pGeoreference->GetOriginLongitude(), 4.0);
+          TestEqual("Latitude", pGeoreference->GetOriginLatitude(), 5.0);
+          TestEqual("Height", pGeoreference->GetOriginHeight(), 6.0);
         });
       });
 
@@ -157,9 +157,9 @@ void FSubLevelsSpec::Define() {
         It("", EAsyncExecution::TaskGraphMainThread, [this]() {
           // Verify that the previously-active sub-level isn't affected by
           // georeference origin changes.
-          double expectedLongitude = pGeoreference->OriginLongitude;
-          double expectedLatitude = pGeoreference->OriginLatitude;
-          double expectedHeight = pGeoreference->OriginHeight;
+          double expectedLongitude = pGeoreference->GetOriginLongitude();
+          double expectedLatitude = pGeoreference->GetOriginLatitude();
+          double expectedHeight = pGeoreference->GetOriginHeight();
 
           TestNotEqual("Longitude", expectedLongitude, 7.0);
           TestNotEqual("Latitude", expectedLatitude, 8.0);
@@ -169,13 +169,13 @@ void FSubLevelsSpec::Define() {
               FVector(7.0, 8.0, 9.0));
           TestEqual(
               "Longitude",
-              pGeoreference->OriginLongitude,
+              pGeoreference->GetOriginLongitude(),
               expectedLongitude);
           TestEqual(
               "Latitude",
-              pGeoreference->OriginLatitude,
+              pGeoreference->GetOriginLatitude(),
               expectedLatitude);
-          TestEqual("Height", pGeoreference->OriginHeight, expectedHeight);
+          TestEqual("Height", pGeoreference->GetOriginHeight(), expectedHeight);
         });
       });
 
