@@ -815,7 +815,7 @@ template <> struct CesiumMetadataConversions<FIntPoint, std::string_view> {
 
     // For some reason, FIntPoint doesn't have an InitFromString method, so
     // copy the one from FVector.
-    int32 X, Y;
+    int32 X = 0, Y = 0;
     const bool bSuccessful = FParse::Value(*string, TEXT("X="), X) &&
                              FParse::Value(*string, TEXT("Y="), Y);
     return bSuccessful ? FIntPoint(X, Y) : defaultValue;

@@ -79,7 +79,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+               "CesiumMetadataPrimitive is deprecated. Get feature IDs from CesiumPrimitiveFeatures instead."))
   static const TArray<FCesiumFeatureIdAttribute>
   GetFeatureIdAttributes(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -95,7 +95,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary to get FCesiumFeatureIdSet from FCesiumPrimitiveFeatures instead."))
+               "CesiumMetadataPrimitive is deprecated. Get feature IDs from CesiumPrimitiveFeatures instead."))
   static const TArray<FCesiumFeatureIdTexture>
   GetFeatureIdTextures(UPARAM(ref)
                            const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -111,7 +111,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveMetadataBlueprintLibrary to get property texture indices from FCesiumPrimitiveMetadata instead."))
+               "CesiumMetadataPrimitive is deprecated. Get the associated property texture indices from CesiumPrimitiveMetadata instead."))
   static const TArray<FString>
   GetFeatureTextureNames(UPARAM(ref)
                              const FCesiumMetadataPrimitive& MetadataPrimitive);
@@ -129,7 +129,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "CesiumMetadataPrimitive is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetFirstVertexFromFace with FCesiumPrimitiveFeatures instead."))
+               "CesiumMetadataPrimitive is deprecated. Use GetFirstVertexFromFace with CesiumPrimitiveFeatures instead."))
   static int64 GetFirstVertexIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
       int64 FaceID);

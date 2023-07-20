@@ -317,6 +317,23 @@ public:
   static ECesiumMetadataBlueprintType GetArrayElementBlueprintType(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets the best-fitting Blueprints type for the elements in this property's
+   * array values. If the given property does not contain array values, this
+   * returns None.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use GetArrayElementBlueprintType instead."))
+  static ECesiumMetadataBlueprintType
+  GetBlueprintComponentType(UPARAM(ref)
+                                const FCesiumPropertyTableProperty& Property);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
   /**
    * Gets the type of the metadata value as defined in the
    * EXT_structural_metadata extension. Many of these types are not accessible
@@ -329,6 +346,39 @@ public:
   static FCesiumMetadataValueType
   GetValueType(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets true type of the value. Many of these types are not accessible
+   * from Blueprints, but can be converted to a Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataTrueType is deprecated. Use GetValueType to get the CesiumMetadataValueType instead."))
+  static ECesiumMetadataTrueType_DEPRECATED
+  GetTrueType(UPARAM(ref) const FCesiumPropertyTableProperty& Value);
+
+  /**
+   * Gets true type of the elements in this array property. If this is not an
+   * array property, the component type will be None. Many of these types are
+   * not accessible from Blueprints, but can be converted to a
+   * Blueprint-accessible type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "CesiumMetadataTrueType is deprecated. Use GetValueType to get the CesiumMetadataValueType instead."))
+  static ECesiumMetadataTrueType_DEPRECATED
+  GetTrueComponentType(UPARAM(ref) const FCesiumPropertyTableProperty& Value);
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
   /**
    * Gets the number of values in the property.
    */
@@ -338,6 +388,20 @@ public:
       Category = "Cesium|Metadata|PropertyTableProperty")
   static int64
   GetPropertySize(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets the number of values in this property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use GetPropertySize instead."))
+  static int64
+  GetNumberOfFeatures(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * Gets the number of elements in an array of this property. Only
@@ -349,6 +413,21 @@ public:
       Category = "Cesium|Metadata|PropertyTableProperty")
   static int64 GetArraySize(UPARAM(ref)
                                 const FCesiumPropertyTableProperty& Property);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Gets the number of elements in an array of this property. Only
+   * applicable when the property is a fixed-length array type.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use GetArraySize instead."))
+  static int64
+  GetComponentCount(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * Attempts to retrieve the value for the given feature as a boolean.
@@ -895,6 +974,24 @@ public:
   static FCesiumMetadataValue GetValue(
       UPARAM(ref) const FCesiumPropertyTableProperty& Property,
       int64 FeatureID);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * Retrieves the value of the property for the given feature. This allows the
+   * value to be acted on more generically; its true value can be retrieved
+   * later as a specific Blueprints type.
+   *
+   * @param featureID The ID of the feature.
+   * @return The property value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta = (DeprecatedFunction, DeprecatedMessage = "Use GetValue instead."))
+  static FCesiumMetadataValue GetGenericValue(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * Whether this property is supposed to be normalized. Only applicable when

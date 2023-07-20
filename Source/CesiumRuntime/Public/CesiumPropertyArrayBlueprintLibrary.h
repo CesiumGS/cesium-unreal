@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include "CesiumPropertyArray.h"
 #include "CesiumMetadataValue.h"
+#include "CesiumPropertyArray.h"
 #include "CesiumPropertyArrayBlueprintLibrary.generated.h"
 
 /**
- * Blueprint library functions for acting on an array property in EXT_structural_metadata.
+ * Blueprint library functions for acting on an array property in
+ * EXT_structural_metadata.
  */
 UCLASS()
 class CESIUMRUNTIME_API UCesiumPropertyArrayBlueprintLibrary
@@ -24,6 +25,18 @@ public:
       Category = "Cesium|Metadata|PropertyArray")
   static ECesiumMetadataBlueprintType
   GetElementBlueprintType(UPARAM(ref) const FCesiumPropertyArray& array);
+
+  /**
+   * Gets the best-fitting Blueprints type for the elements of this array.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use GetElementBlueprintType instead."))
+  static ECesiumMetadataBlueprintType
+  GetBlueprintComponentType(UPARAM(ref) const FCesiumPropertyArray& array);
 
   /**
    * Gets the true value type of the elements in the array. Many of these types
@@ -53,7 +66,8 @@ public:
    * Retrieves an element from the array as a FCesiumMetadataValue. The value
    * can then be retrieved as a specific Blueprints type.
    *
-   * If the index is out-of-bounds, this returns a bogus FCesiumMetadataValue of an unknown type.
+   * If the index is out-of-bounds, this returns a bogus FCesiumMetadataValue of
+   * an unknown type.
    *
    * @param Index The index of the array element to retrieve.
    * @return The element as a FCesiumMetadataValue.
@@ -77,10 +91,10 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "Use UCesiumPropertyArrayBlueprintLibrary.GetElementValueType instead."))
+               "CesiumMetadataTrueType is deprecated. Use GetElementValueType instead."))
   static ECesiumMetadataTrueType_DEPRECATED
   GetTrueComponentType(UPARAM(ref) const FCesiumPropertyArray& array);
-  
+
   /**
    * Retrieves an element from the array and attempts to convert it to a Boolean
    * value.

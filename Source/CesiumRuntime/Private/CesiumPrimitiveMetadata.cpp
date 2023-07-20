@@ -14,14 +14,12 @@ FCesiumPrimitiveMetadata::FCesiumPrimitiveMetadata(
     : _propertyTextureIndices(), _propertyAttributeIndices() {
   this->_propertyTextureIndices.Reserve(Metadata.propertyTextures.size());
   for (const int64 propertyTextureIndex : Metadata.propertyTextures) {
-    this->_propertyTextureIndices.Emplace(
-        static_cast<int64>(propertyTextureIndex));
+    this->_propertyTextureIndices.Emplace(propertyTextureIndex);
   }
 
   this->_propertyAttributeIndices.Reserve(Metadata.propertyAttributes.size());
   for (const int64 propertyAttributeIndex : Metadata.propertyAttributes) {
-    this->_propertyAttributeIndices.Emplace(
-        static_cast<int64>(propertyAttributeIndex));
+    this->_propertyAttributeIndices.Emplace(propertyAttributeIndex);
   }
 }
 

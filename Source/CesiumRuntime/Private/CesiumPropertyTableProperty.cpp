@@ -31,10 +31,31 @@ UCesiumPropertyTablePropertyBlueprintLibrary::GetArrayElementBlueprintType(
   return CesiumMetadataValueTypeToBlueprintType(valueType);
 }
 
+ECesiumMetadataBlueprintType
+UCesiumPropertyTablePropertyBlueprintLibrary::GetBlueprintComponentType(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
+  return UCesiumPropertyTablePropertyBlueprintLibrary::
+      GetArrayElementBlueprintType(Property);
+}
+
 FCesiumMetadataValueType
 UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return Property._valueType;
+}
+
+ECesiumMetadataTrueType_DEPRECATED
+UCesiumPropertyTablePropertyBlueprintLibrary::GetTrueType(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
+  return CesiumMetadataValueTypeToTrueType(Property._valueType);
+}
+
+ECesiumMetadataTrueType_DEPRECATED
+UCesiumPropertyTablePropertyBlueprintLibrary::GetTrueComponentType(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
+  FCesiumMetadataValueType type = Property._valueType;
+  type.bIsArray = false;
+  return CesiumMetadataValueTypeToTrueType(type);
 }
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
@@ -44,7 +65,17 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
       Property._property);
 }
 
+int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetNumberOfFeatures(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
+  return UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(Property);
+}
+
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
+  return Property._count;
+}
+
+int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetComponentCount(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
   return Property._count;
 }
@@ -333,6 +364,14 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
         return FCesiumMetadataValue(view.get(FeatureID));
       },
       Property._property);
+}
+
+FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
+    UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+    int64 FeatureID) {
+  return UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
+      Property,
+      FeatureID);
 }
 
 bool UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(

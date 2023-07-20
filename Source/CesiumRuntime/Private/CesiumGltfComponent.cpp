@@ -1949,18 +1949,7 @@ static void loadPrimitiveGameThreadPart(
       RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
   pStaticMesh->NeverStream = true;
 
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-  // UE 4.26 or earlier
-  pStaticMesh->bIsBuiltAtRuntime = true;
-  pStaticMesh->RenderData = std::move(loadResult.RenderData);
-#elif ENGINE_MAJOR_VERSION == 4
-  // UE 4.27 or later
-  pStaticMesh->SetIsBuiltAtRuntime(true);
   pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
-#else
-  // UE 5
-  pStaticMesh->SetRenderData(std::move(loadResult.RenderData));
-#endif
 
   const Material& material =
       loadResult.pMaterial ? *loadResult.pMaterial : defaultMaterial;
@@ -2114,7 +2103,10 @@ static void loadPrimitiveGameThreadPart(
 
   pMesh->Features = std::move(loadResult.Features);
   pMesh->Metadata = std::move(loadResult.Metadata);
-  pMesh->Metadata_DEPRECATED = std::move(loadResult.Metadata_DEPRECATED);
+  pMesh->Metadata_DEPRECATED = FCesiumMetadataPrimitive(
+      pMesh->Features,
+      pMesh->Metadata,
+      pGltf->Metadata);
   pMesh->EncodedPrimitiveMetadata =
       std::move(loadResult.EncodedPrimitiveMetadata);
 
@@ -2126,12 +2118,8 @@ static void loadPrimitiveGameThreadPart(
 
   // Set up RenderData bounds and LOD data
   pStaticMesh->CalculateExtendedBounds();
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-  pStaticMesh->RenderData->ScreenSize[0].Default = 1.0f;
-#else
   pStaticMesh->GetRenderData()->ScreenSize[0].Default = 1.0f;
-#endif
+
   pStaticMesh->CreateBodySetup();
 
   if (createNavCollision) {

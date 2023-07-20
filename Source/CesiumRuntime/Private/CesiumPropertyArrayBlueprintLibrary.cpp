@@ -10,6 +10,12 @@ UCesiumPropertyArrayBlueprintLibrary::GetElementBlueprintType(
   return CesiumMetadataValueTypeToBlueprintType(array._elementType);
 }
 
+ECesiumMetadataBlueprintType
+UCesiumPropertyArrayBlueprintLibrary::GetBlueprintComponentType(
+    UPARAM(ref) const FCesiumPropertyArray& array) {
+  return CesiumMetadataValueTypeToBlueprintType(array._elementType);
+}
+
 FCesiumMetadataValueType
 UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(
     UPARAM(ref) const FCesiumPropertyArray& array) {

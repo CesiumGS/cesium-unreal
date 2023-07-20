@@ -1,68 +1,67 @@
 # Cesium for Unreal v2.0 Upgrade Guide
 
-As of v2.0.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_structural_metadata` extensions from 3D Tiles 1.1. Models with `EXT_features_metadata` will still load, but their feature IDs and metadata can no longer be accessed. The significant differences between the extensions required a large overhaul of the metadata-accessing API. There are measures in-place to ensure backwards compatibility and replace old Blueprints with the new nodes, but be sure to make a backup of your project before switching Cesium for Unreal versions, just to be sure.
+As of v2.0.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_structural_metadata` extensions from 3D Tiles 1.1. Models with `EXT_features_metadata` will still load, but their feature IDs and metadata will no longer be accessible. Some differences between the extensions -- in particular, differences between possible metadata types and the ways that property collections were accessed or stored -- required an overhaul of the metadata-accessing API in Unreal.
 
-This guide intends to inform users of the differences between the old and new metadata APIs, as well as how to achieve the same functionality with Blueprints.
+ This guide intends to inform users of the differences between the old and new metadata APIs. While there are measures in-place to ensure backwards compatibility, be sure to make a backup of your project before switching Cesium for Unreal versions.
 
 ## Table of Contents
 
-- [Retrieving feature IDs from `EXT_mesh_features`](#retrieving-feature-ids-from-ext-mesh-features)
+- [Retrieving Feature IDs from `EXT_mesh_features`](#ext-mesh-features)
 - [Retrieving metadata from `EXT_structural_metadata`](#retrieving-metadata-from-ext-structural-metadata)
 
-## Retrieving feature IDs from `EXT_mesh_features`
+<h2 id="ext-mesh-features">Retrieving Feature IDs from `EXT_mesh_features`</h2>
 
-In `EXT_feature_metadata`, feature IDs and metadata are stored together in the extension. In 3D Tiles 1.1, feature IDs are indicated by the `EXT_mesh_features` extension, independent of metadata. Thankfully, the new extension does not result in many differences in the Cesium for Unreal API. The most drastic change is the deprecation of `FCesiumMetadataPrimitive` -- feature IDs must now be retrieved from `FCesiumPrimitiveFeatures`.
+Fature IDs and metadata used to be stored together in the `EXT_feature_metadata` extension. Now, in 3D Tiles 1.1, feature IDs are indicated by the `EXT_mesh_features` extension, which can exist independent of metadata. Thankfully, the new extension does not result in many differences for the Cesium for Unreal API. The most notable change is the deprecation of `FCesiumMetadataPrimitive`, which has been replaced by the more appropriately named `FCesiumPrimitiveFeatures`.
 
-See [here](https://github.com/CesiumGS/glTF/tree/3d-tiles-next/extensions/2.0/Vendor/EXT_mesh_features) for the `EXT_mesh_features` specification.
+For the `EXT_mesh_features` specification, see [here](https://github.com/CesiumGS/glTF/tree/3d-tiles-next/extensions/2.0/Vendor/EXT_mesh_features).
 
 ### Summary
 
-- `FCesiumMetadataPrimitive` has been deprecated. Use `FCesiumPrimitiveFeatures` to enact on feature IDs stored in the `EXT_mesh_features` extension of a glTF primitive.
-- Added `FCesiumFeatureIdSet`, which represents a feature ID set in `EXT_mesh_features`. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
-- Added `UCesiumFeatureIdSetBlueprintLibrary`, which acts on an input `FCesiumFeatureIdSet`.
+- Deprecated `FCesiumMetadataPrimitive`. Use `FCesiumPrimitiveFeatures` to enact on feature IDs stored in `EXT_mesh_features` on a glTF primitive.
+- Added `FCesiumFeatureIdSet`, which represents a feature ID set in `EXT_mesh_features`.
+- Added `ECesiumFeatureIdSetType`, which indicates whether a `FCesiumFeatureIdSet` is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
+- Added `UCesiumFeatureIdSetBlueprintLibrary`, which acts on a given `FCesiumFeatureIdSet`.
 - Added `FCesiumFeatureIdTexture.GetFeatureIDForVertex`, which can retrieve the feature ID of the given vertex if it contains texture coordinates.
-- Added `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus` to indicate whether a feature ID attribute or texture is valid, respectively.
-- `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated. Instead, use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` to retrieve the index of a property table.
+- Added `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus`, which indicate whether a feature ID attribute or texture is valid, respectively.
+- Deprecated `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName`. Instead, use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` to retrieve the index of a property table.
 
 ### Feature ID Sets
 
-Feature IDs are stored in a `FCesiumFeatureIdSet`. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs.
-
-The feature ID of a given vertex can be obtained in Blueprints with the **"Get Feature ID For Vertex"** node (or in C++, `UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex`). This will sample a `FCesiumFeatureIdSet` for the feature ID, regardless of its type.
+Feature IDs are stored in a `FCesiumFeatureIdSet`. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs. The feature ID of a given vertex can be obtained in Blueprints with the **"Get Feature ID For Vertex"** node (or in C++, `UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex`). This will sample a `FCesiumFeatureIdSet` for the feature ID, regardless of its type.
 
 !["Get Feature ID For Vertex" node in Blueprints](Images/getFeatureIdForVertex.jpeg)
 
-If the `FCesiumFeatureIdSet` is a feature ID attribute type, the **"Get As Feature ID Attribute"** node can be used to interact with the underlying `FCesiumFeatureIDAttribute`. Similarly, if the `FCesiumFeatureIdSet` is a feature ID texture type, the **"Get As Feature ID Texture"** can be used. In C++, these functions are `UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute` and `UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture` respectively.
+If the `FCesiumFeatureIdSet` is a feature ID attribute, the **"Get As Feature ID Attribute"** node can be used to interact with the underlying `FCesiumFeatureIDAttribute`. Similarly, if the `FCesiumFeatureIdSet` is a feature ID texture, the **"Get As Feature ID Texture"** can be used. In C++, these functions are `UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute` and `UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture` respectively.
 
 !["Get As Feature ID Attribute" and "Get As Feature ID Texture" nodes in Blueprints](Images/getAsFeatureIdFunctions.jpeg)
 
-Implicit feature ID sets have no corresponding underlying implementations – they simply correspond to the indices of vertices in the mesh.
+Implicit feature ID sets have no counterpart – they simply correspond to the indices of vertices in the mesh.
 
 ### Interfacing with Property Tables
 
-Feature IDs are associated with feature tables by name in `EXT_feature_metadata`. This name was used to retrieve the corresponding feature table from a map of feature tables in the model's root extension.
+In `EXT_feature_metadata`, feature IDs were associated with feature tables by name. The name was used to retrieve the corresponding feature table from a map of feature tables in the model's root `EXT_feature_metadata` extension.
 
-This changes with 3D Tiles 1.1. In `EXT_mesh_features`, feature IDs are optionally associated with metadata property tables from `EXT_structural_metadata`. If a `FCesiumFeatureIDSet` is associated with a property table, it will have a property table index. This value indexes into an array of property tables in the model's root extension.
+This changes with 3D Tiles 1.1. In `EXT_mesh_features`, feature IDs are optionally associated with property tables from `EXT_structural_metadata`. If a `FCesiumFeatureIDSet` is associated with a property table, it will have a property table *index*. This value indexes into an array of property tables in the model's root extension.
 
-The property table index can be retrieved with the **"Get Property Table Index"** Blueprint node (or in C++,`UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex`). See the Property Tables section for more information.
+The property table index can be retrieved with the **"Get Property Table Index"** Blueprint node (or in C++,`UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex`). See Property Tables for more information.
 
 ### Feature ID Attributes and Textures
 
-`FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` are mostly unchanged. For reasons explained above, their **"GetFeatureTableName"** Blueprints functions have been deprecated (`UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTextureName` in C++).
+Property tables are retrieved by index in `EXT_structural_metadata`, so it makes less sense to use the **"GetFeatureTableName"** Blueprints functions. (These are `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` in C++.) Aside from these now-deprecated functions, `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` are mostly unchanged. 
 
-Previously, Cesium for Unreal would not indicate if a feature ID attribute or texture was somehow broken. For example, if a feature ID texture's image could not be loaded, nothing in the API would indicate that. Thus, the `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus` enums were added, to indicate when something in the feature ID sets is invalid. These can be queried using the **"Get Feature ID Attribute Status"** and **"Get Feature ID Texture Status"** Blueprints nodes respectively (or in C++, `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus` respectively).
+Previously, Cesium for Unreal would not indicate if a feature ID attribute or texture was somehow broken, and thus unable to return accurate feature IDs. For example, if the image of a feature ID texture did not actually exist, nothing in the old API would communicate that. Thus, the `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus` enums were added. These indicate when something in the feature ID sets is invalid, and can be queried using the **"Get Feature ID Attribute Status"** and **"Get Feature ID Texture Status"** Blueprints nodes respectively. (Or in C++, `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus` respectively.)
 
 !["Get Feature ID Attribute Status" and "Get Feature ID Texture Status" nodes in Blueprints](Images/getFeatureIdStatusFunctions.jpeg)
 
 This can be used for debugging and validation purposes, e.g., to check if a `FCesiumFeatureIdAttribute` or `FCesiumFeatureIdTexture` are valid before trying to sample them for feature IDs.
 
-Furthermore, if the **"Get As Feature ID Attribute"** or **"Get As Feature ID Texture"** nodes are used on a `FCesiumFeatureIdSet` of the wrong type, they will return `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` instances with invalid statuses.
+Furthermore, if the **"Get As Feature ID Attribute"** or **"Get As Feature ID Texture"** nodes are used on a `FCesiumFeatureIdSet` of the wrong type, they will return invalid `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` instances.
 
 ### Primitive Features
 
-The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. Notably, it allows you to access all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets`). You can also use  **"Get Feature ID Sets Of Type"** (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType`) to filter for a specific type of feature IDs.
+The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. iT allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets`). The **"Get Feature ID Sets Of Type"** function(`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType`) can also be used to filter for a specific type of feature IDs.
 
-You can also use the **"Get Feature ID From Face"** function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace`) to get the feature ID that is associated with a given face index, from the specified `FCesiumFeatureIdSet`. Here's an example of how one might retrieve the feature ID of a primitive hit by a `LineTrace`:
+Previously, the **"Get Feature ID From Face ID"** function sampled feature IDs from a `FCesiumMetadataPrimitive`. It has been renamed to **"Get Feature ID From Face"** (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace`) and now takes a `FCesiumPrimitiveFeatures`. Use this to get the feature ID that is associated with a given face index, from the specified `FCesiumFeatureIdSet`. Here's an example of how one might retrieve the feature ID of a primitive hit by a `LineTrace`:
 
 ![Example feature ID picking script](Images/getFeatureIdFromFaceExample.jpeg)
 

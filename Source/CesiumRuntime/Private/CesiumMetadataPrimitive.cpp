@@ -84,6 +84,10 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
     int64 FaceID) {
+  if (!MetadataPrimitive._pPrimitiveFeatures) {
+    return -1;
+  }
+
   return UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
       *MetadataPrimitive._pPrimitiveFeatures,
       FaceID);

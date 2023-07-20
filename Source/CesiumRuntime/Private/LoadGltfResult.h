@@ -31,10 +31,6 @@ struct LoadPrimitiveResult {
   // Parses EXT_structural_metadata from a mesh primitive.
   FCesiumPrimitiveMetadata Metadata{};
 
-  // For backwards compatibility. Does not actually parse EXT_feature_metadata
-  // implementation.
-  FCesiumMetadataPrimitive Metadata_DEPRECATED{};
-
   CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata EncodedPrimitiveMetadata{};
   TMap<FString, uint32_t> metadataTextureCoordinateParameters;
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
