@@ -39,7 +39,7 @@ UCLASS()
 class CESIUMRUNTIME_API ACesiumGeoreference : public AActor {
   GENERATED_BODY()
 public:
-  /*
+  /**
    * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
    * persistent level of the calling object's world. If not found, it creates a
    * new default Georeference.
@@ -47,7 +47,7 @@ public:
    */
   UFUNCTION(
       BlueprintCallable,
-      Category = "CesiumGeoreference",
+      Category = "Cesium",
       meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
@@ -157,7 +157,7 @@ private:
    * be activated and all others deactivated.
    */
   UPROPERTY(
-      Category = "Cesium|Cesium Sublevels",
+      Category = "Cesium|Sub-levels",
       EditAnywhere,
       BlueprintReadWrite,
       BlueprintGetter = GetSubLevelCamera,
@@ -171,7 +171,7 @@ private:
    * initially positioning the level and choosing a load radius.
    */
   UPROPERTY(
-      Category = "Cesium|Cesium Sublevels",
+      Category = "Cesium|Sub-levels",
       EditAnywhere,
       BlueprintReadWrite,
       BlueprintGetter = GetShowLoadRadii,
@@ -393,7 +393,7 @@ public:
    * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sub-levels.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(CallInEditor, Category = "Actions")
   void PlaceGeoreferenceOriginHere();
 #endif
 

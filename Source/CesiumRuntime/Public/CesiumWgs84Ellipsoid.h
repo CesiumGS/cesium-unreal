@@ -45,9 +45,6 @@ public:
   /**
    * Computes the normal of the plane tangent to the surface of the ellipsoid
    * at the provided Earth-Centered, Earth-Fixed position.
-   * </summary>
-   * <param name="earthCenteredEarthFixed">The ECEF position in meters.</param>
-   * <returns>The normal at the ECEF position</returns>
    */
   UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
   static FVector GeodeticSurfaceNormal(const FVector& earthCenteredEarthFixed);
