@@ -287,15 +287,15 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets from in-range integers", [this, defaultValue]() {
       FCesiumMetadataValue value(std::numeric_limits<int64_t>::max() - 1);
-      TestEqual(
+      TestEqual<int64>(
           "int64_t",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
               defaultValue),
-          std::numeric_limits<int64_t>::max() - 1);
+          std::numeric_limits<int64>::max() - 1);
 
       value = FCesiumMetadataValue(static_cast<int16_t>(-12345));
-      TestEqual(
+      TestEqual<int64>(
           "smaller signed integer",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
@@ -303,7 +303,7 @@ void FCesiumMetadataValueSpec::Define() {
           static_cast<int64_t>(-12345));
 
       value = FCesiumMetadataValue(static_cast<uint8_t>(255));
-      TestEqual(
+      TestEqual<int64>(
           "smaller unsigned integer",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
@@ -313,7 +313,7 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets from boolean", [this, defaultValue]() {
       FCesiumMetadataValue value(true);
-      TestEqual(
+      TestEqual<int64>(
           "value",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
@@ -323,7 +323,7 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets from in-range floating point number", [this, defaultValue]() {
       FCesiumMetadataValue value(1234.56f);
-      TestEqual(
+      TestEqual<int64>(
           "float",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
@@ -331,7 +331,7 @@ void FCesiumMetadataValueSpec::Define() {
           static_cast<int64_t>(1234));
 
       value = FCesiumMetadataValue(-78.9);
-      TestEqual(
+      TestEqual<int64>(
           "double",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
@@ -341,7 +341,7 @@ void FCesiumMetadataValueSpec::Define() {
 
     It("gets from string", [this, defaultValue]() {
       FCesiumMetadataValue value(std::string_view("-1234"));
-      TestEqual(
+      TestEqual<int64>(
           "value",
           UCesiumMetadataValueBlueprintLibrary::GetInteger64(
               value,
@@ -352,7 +352,7 @@ void FCesiumMetadataValueSpec::Define() {
     It("returns default value for out-of-range numbers",
        [this, defaultValue]() {
          FCesiumMetadataValue value(std::numeric_limits<float>::lowest());
-         TestEqual(
+         TestEqual<int64>(
              "negative floating-point number",
              UCesiumMetadataValueBlueprintLibrary::GetInteger64(
                  value,
@@ -360,7 +360,7 @@ void FCesiumMetadataValueSpec::Define() {
              defaultValue);
 
          value = FCesiumMetadataValue(std::numeric_limits<uint64_t>::max());
-         TestEqual(
+         TestEqual<int64>(
              "positive integer",
              UCesiumMetadataValueBlueprintLibrary::GetInteger64(
                  value,
@@ -368,7 +368,7 @@ void FCesiumMetadataValueSpec::Define() {
              defaultValue);
 
          value = FCesiumMetadataValue(std::numeric_limits<float>::max());
-         TestEqual(
+         TestEqual<int64>(
              "positive floating-point number",
              UCesiumMetadataValueBlueprintLibrary::GetInteger64(
                  value,

@@ -604,22 +604,23 @@ void FCesiumPropertyTablePropertySpec::Define() {
   });
 
   Describe("GetInteger64", [this]() {
-    It("returns default value for invalid property", [this]() {
+    int64_t defaultValue = static_cast<int64_t>(0);
+    It("returns default value for invalid property", [this, defaultValue]() {
       FCesiumPropertyTableProperty property;
       TestEqual(
           "status",
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-      TestEqual(
+      TestEqual<int64>(
           "value",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
               property,
               0),
-          0);
+          defaultValue);
     });
 
-    It("returns default value for invalid feature ID", [this]() {
+    It("returns default value for invalid feature ID", [this, defaultValue]() {
       std::vector<int64_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
@@ -639,21 +640,21 @@ void FCesiumPropertyTablePropertySpec::Define() {
               property),
           static_cast<int64>(values.size()));
 
-      TestEqual(
+      TestEqual<int64>(
           "negative index",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
               property,
               -1),
-          0);
-      TestEqual(
+          defaultValue);
+      TestEqual<int64>(
           "out-of-range positive index",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
               property,
               10),
-          0);
+          defaultValue);
     });
 
-    It("gets from int64 property", [this]() {
+    It("gets from int64 property", [this, defaultValue]() {
       std::vector<int64_t> values{-1, 2, -3, 4};
       std::vector<std::byte> data = GetValuesAsBytes(values);
 
@@ -674,17 +675,17 @@ void FCesiumPropertyTablePropertySpec::Define() {
           static_cast<int64>(values.size()));
 
       for (size_t i = 0; i < values.size(); i++) {
-        TestEqual(
+        TestEqual<int64>(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
                 property,
                 static_cast<int64>(i),
-                0),
+                defaultValue),
             values[i]);
       }
     });
 
-    It("converts compatible values", [this]() {
+    It("converts compatible values", [this, defaultValue]() {
       std::vector<uint64_t> values{
           10,
           20,
@@ -710,12 +711,12 @@ void FCesiumPropertyTablePropertySpec::Define() {
 
       std::vector<int64_t> expected{10, 20, 30, 0};
       for (size_t i = 0; i < expected.size(); i++) {
-        TestEqual(
+        TestEqual<int64>(
             std::string("value" + std::to_string(i)).c_str(),
             UCesiumPropertyTablePropertyBlueprintLibrary::GetInteger64(
                 property,
                 static_cast<int64>(i),
-                0),
+                defaultValue),
             expected[i]);
       }
     });
@@ -2357,9 +2358,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           false);
       for (size_t i = 0; i < values.size(); i++) {
         FCesiumMetadataValue value =
-            UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
-                property,
-                i);
+            UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(property, i);
         TestTrue(
             "value type",
             UCesiumMetadataValueBlueprintLibrary::GetValueType(value) ==

@@ -119,13 +119,30 @@ Keep in mind that while matrices are column-major in `EXT_structural_metadata`, 
 
 `FCesiumMetadataGenericValue` has been renamed to `FCesiumMetadataValue` in the new API, but its function hasn't changed. It represents a value retrieved from a metadata property in an abstracted form. This way, metadata values can be retrieved from differently-typed properties and acted upon with more general behavior.
 
-Below is a comprehensive list of related changes.
+Additionally, `UCesiumMetadataGenericValueBlueprintLibrary` has been renamed to `UCesiumMetadataValueBlueprintLibrary`. This includes the following changes:
 
-- Renamed `FCesiumMetadataGenericValue` has been renamed to `FCesiumMetadataValue`.
+- Renamed `GetBlueprintComponentType` to `GetArrayElementBlueprintType`.
+- Deprecated `GetTrueType` and `GetTrueComponentType`. Use `GetValueType` to get the type information as a `FCesiumMetadataValueType` instead.
 
-### Feature Tables -> Property Tables
+Functions have also been added to retrieve a `FCesiumMetadataValue`'s value as one of the new vector and matrix value types:
 
-Feature tables in `EXT_feature_metadata` correspond to property tables in `EXT_structural_metadata`. As such, `FCesiumFeatureTable` has been renamed to `FCesiumPropertyTable`. `FCesiumPropertyTableStatus` has been added to indicate whether a property table is valid.
+- `GetIntPoint`
+- `GetVector2D`
+- `GetIntVector`
+- `GetVector3f`
+- `GetVector`
+- `GetVector4`
+- `GetMatrix`
+
+### Metadata Arrays
+
+`FCesiumMetadataArray` has been renamed to `FCesiumPropertyArray`, and `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary` accordingly. This still represents an array of metadata entities, where the values are retrieved by index. However, instead of retrieving values with a specific type (e.g., using the **"Get Integer"** or **"Get Boolean"** functions), there is only **"Get Value"**. This returns the  functions in `UCesiumPropertyArrayBlueprintLibrary` have been deprecated:
+
+### Property Tables
+
+Feature tables in `EXT_feature_metadata` correspond to property tables in `EXT_structural_metadata`. As such, `FCesiumFeatureTable` has been renamed to `FCesiumPropertyTable`. The properties of a `FCesiumPropertyTable` have been renamed from `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty` for clarity.
+
+`FCesiumPropertyTableStatus` has been added to indicate whether a property table is valid.
 
 Additionally, `UCesiumFeatureTableBlueprintLibrary` has been renamed to `UCesiumPropertyTableBlueprintLibrary`. The following functions have also been renamed:
 | Old | New |

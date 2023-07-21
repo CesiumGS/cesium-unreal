@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGltfComponent.h"
 #include "Async/Async.h"
@@ -15,8 +15,8 @@
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/ExtensionKhrMaterialsUnlit.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtStructuralMetadata.h"
-#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/ExtensionModelExtFeatureMetadata.h"
+#include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
 #include "CesiumGltf/PropertyType.h"
 #include "CesiumGltf/TextureInfo.h"
 #include "CesiumGltfPointsComponent.h"
