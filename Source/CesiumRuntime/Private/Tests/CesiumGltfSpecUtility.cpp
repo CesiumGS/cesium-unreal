@@ -4,9 +4,8 @@
 
 using namespace CesiumGltf;
 
-int32_t AddBufferToPrimitive(
+int32_t AddBufferToModel(
     CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& primitive,
     const std::string& type,
     const int32_t componentType,
     const std::vector<std::byte>&& values) {
@@ -32,50 +31,18 @@ int32_t AddBufferToPrimitive(
   return static_cast<int32_t>(model.accessors.size() - 1);
 }
 
-void CreateAttributeForPrimitive(
-    CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& primitive,
-    const std::string& attributeName,
-    const std::string& type,
-    const int32_t componentType,
-    const std::vector<std::byte>&& values) {
-  const int32_t accessor = AddBufferToPrimitive(
-      model,
-      primitive,
-      type,
-      componentType,
-      std::move(values));
-  primitive.attributes.insert({attributeName, accessor});
-}
-
-void CreateIndicesForPrimitive(
-    CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& primitive,
-    const std::string& type,
-    const int32_t componentType,
-    const std::vector<uint8_t>& indices) {
-  std::vector<std::byte> values = GetValuesAsBytes(indices);
-  const int32_t accessor = AddBufferToPrimitive(
-      model,
-      primitive,
-      type,
-      componentType,
-      std::move(values));
-  primitive.indices = accessor;
-}
-
 CesiumGltf::FeatureId& AddFeatureIDsAsAttributeToModel(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
     const int64_t featureCount,
-    const int64_t attributeIndex) {
+    const int64_t setIndex) {
   std::vector<std::byte> values = GetValuesAsBytes(featureIDs);
 
   CreateAttributeForPrimitive(
       model,
       primitive,
-      "_FEATURE_ID_" + std::to_string(attributeIndex),
+      "_FEATURE_ID_" + std::to_string(setIndex),
       CesiumGltf::AccessorSpec::Type::SCALAR,
       CesiumGltf::AccessorSpec::ComponentType::UNSIGNED_BYTE,
       std::move(values));
@@ -88,7 +55,7 @@ CesiumGltf::FeatureId& AddFeatureIDsAsAttributeToModel(
 
   FeatureId& featureID = pExtension->featureIds.emplace_back();
   featureID.featureCount = featureCount;
-  featureID.attribute = attributeIndex;
+  featureID.attribute = setIndex;
 
   return featureID;
 }

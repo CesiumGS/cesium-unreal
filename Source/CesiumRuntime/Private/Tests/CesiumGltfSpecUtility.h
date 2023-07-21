@@ -22,13 +22,12 @@ std::vector<std::byte> GetValuesAsBytes(const std::vector<T>& values) {
 }
 
 /**
- * @brief Adds the buffer to the given primitive, creating a buffer view and
+ * @brief Adds the buffer to the given model, creating a buffer view and
  * accessor in the process.
  * @returns The index of the accessor.
  */
-int32_t AddBufferToPrimitive(
+int32_t AddBufferToModel(
     CesiumGltf::Model& model,
-    CesiumGltf::MeshPrimitive& primitive,
     const std::string& type,
     const int32_t componentType,
     const std::vector<std::byte>&& values);
@@ -37,24 +36,36 @@ int32_t AddBufferToPrimitive(
  * @brief Creates an attribute on the given primitive, including a buffer,
  * buffer view, and accessor for the given values.
  */
+template <typename T>
 void CreateAttributeForPrimitive(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::string& attributeName,
     const std::string& type,
     const int32_t componentType,
-    const std::vector<std::byte>&& values);
+    const std::vector<T>& values) {
+  std::vector<std::byte> data = GetValuesAsBytes(values);
+  const int32_t accessor =
+      AddBufferToModel(model, type, componentType, std::move(data));
+  primitive.attributes.insert({attributeName, accessor});
+}
 
 /**
  * @brief Creates indices for the given primitive, including a buffer,
  * buffer view, and accessor for the given values.
  */
+template <typename T>
 void CreateIndicesForPrimitive(
     CesiumGltf::Model& model,
     CesiumGltf::MeshPrimitive& primitive,
     const std::string& type,
     const int32_t componentType,
-    const std::vector<uint8_t>& indices);
+    const std::vector<T>& indices) {
+  std::vector<std::byte> values = GetValuesAsBytes(indices);
+  const int32_t accessor =
+      AddBufferToModel(model, type, componentType, std::move(values));
+  primitive.indices = accessor;
+}
 
 /**
  * @brief Adds the feature IDs to the given primitive as a feature ID attribute
@@ -68,7 +79,7 @@ CesiumGltf::FeatureId& AddFeatureIDsAsAttributeToModel(
     CesiumGltf::MeshPrimitive& primitive,
     const std::vector<uint8_t>& featureIDs,
     const int64_t featureCount,
-    const int64_t attributeIndex);
+    const int64_t setIndex);
 
 /**
  * @brief Adds the feature IDs to the given primitive as a feature ID texture

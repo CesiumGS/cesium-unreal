@@ -1,19 +1,19 @@
 # Cesium for Unreal v2.0 Upgrade Guide
 
-As of v2.0.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_structural_metadata` extensions from 3D Tiles 1.1. Models with `EXT_features_metadata` will still load, but their feature IDs and metadata will no longer be accessible. Some differences between the extensions -- in particular, differences between possible metadata types and the ways that property collections were accessed or stored -- required an overhaul of the metadata-accessing API in Unreal.
+As of v2.0.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_structural_metadata` extensions from 3D Tiles 1.1. Models with `EXT_features_metadata` will still load, but their feature IDs and metadata will no longer be accessible. Some differences between the extensions – in particular, differences between possible metadata types and the ways that property collections were accessed or stored – required an overhaul of the metadata-accessing API in Unreal.
 
  This guide intends to inform users of the differences between the old and new metadata APIs. While there are measures in-place to ensure backwards compatibility, be sure to make a backup of your project before switching Cesium for Unreal versions.
 
 ## Table of Contents
 
 - [Retrieving Feature IDs from `EXT_mesh_features`](#ext-mesh-features)
-- [Retrieving metadata from `EXT_structural_metadata`](#retrieving-metadata-from-ext-structural-metadata)
+- [Retrieving metadata from `EXT_structural_metadata`](#ext-structural-metadata)
 
 <h2 id="ext-mesh-features">Retrieving Feature IDs from `EXT_mesh_features`</h2>
 
 Fature IDs and metadata used to be stored together in the `EXT_feature_metadata` extension. Now, in 3D Tiles 1.1, feature IDs are indicated by the `EXT_mesh_features` extension, which can exist independent of metadata. Thankfully, the new extension does not result in many differences for the Cesium for Unreal API. The most notable change is the deprecation of `FCesiumMetadataPrimitive`, which has been replaced by the more appropriately named `FCesiumPrimitiveFeatures`.
 
-For the `EXT_mesh_features` specification, see [here](https://github.com/CesiumGS/glTF/tree/3d-tiles-next/extensions/2.0/Vendor/EXT_mesh_features).
+For the complete `EXT_mesh_features` specification, see [here](https://github.com/CesiumGS/glTF/tree/3d-tiles-next/extensions/2.0/Vendor/EXT_mesh_features).
 
 ### Summary
 
@@ -67,24 +67,53 @@ Previously, the **"Get Feature ID From Face ID"** function sampled feature IDs f
 
 **Note**: This function does not interface well with feature ID textures or implicit feature IDs, since these feature ID types make it possible for a face to have multiple feature IDs. In these cases, the feature ID of the first vertex of the face is returned.
 
-## Retrieving metadata from `EXT_structural_metadata`
+<h2 id="ext-structural-metadata">Retrieving metadata from `EXT_structural_metadata`</h2>
 
-`EXT_structural_metadata` builds upon the class properties possible in `EXT_feature_metadata` by adding new types. This type system is much more expansive, and as such, required complete rework of the metadata type system in Cesium for Unreal.
+`EXT_structural_metadata` builds upon `EXT_feature_metadata` by adding new metadata property types, as well as other options to more granularly define a property. These expansive additions required a rework of the metadata type system in Cesium for Unreal.
 
-### True Type -> Value Type
+For the complete `EXT_structural_metadata` specification, see [here](https://github.com/CesiumGS/glTF/tree/3d-tiles-next/extensions/2.0/Vendor/EXT_structural_metadata).
 
-The `ECesiumMetadataTrueType` enum has been completely deprecated. Now, the more detailed `EXT_structural_metadata` types are indicated through the `FCesiumMetadataValueType`. A `FCesiumMetadataValueType` has a `ECesiumMetadataType`, a `ECesiumMetadataComponentType`, and a boolean indicating whether the type is an array. The component type enum is only applicable to numeric types, i.e., scalars, `vecNs`, or `matN`s. Some examples of how these types are used are as follows:
+### Metadata Value Types
 
-| `FCesiumMetadataValueType`` | Explanation |
-| ------------------------ | ------------ |
-| Type: `ECesiumMetadataType::Boolean`<br/>ComponentType: `ECesiumMetadataComponentType::None`<br/>bIsArray: `false` | Describes a boolean property. Values are retrieved as booleans. |
-| Type: `ECesiumMetadataType::Vec2`<br/>ComponentType: `ECesiumMetadataComponentType::Uint8`<br/>bIsArray: `false` | Describes a `vec2` property where the vectors contain unsigned 8-bit integer components. Values are retrieved as two-dimensional unsigned 8-bit integer vectors. |
-| Type: `ECesiumMetadataType::String`<br/>ComponentType: `ECesiumMetadataComponentType::None`<br/>bIsArray: `true` | Describes a string array property. Values are retrieved as arrays of strings. |
-| Type: `ECesiumMetadataType::Scalar`<br/>ComponentType: `ECesiumMetadataComponentType::Float32`<br/>bIsArray: `true` | Describes a scalar array property where the scalars are single-precision floats. Values are retrieved as arrays of single-precision floats. |
+The biggest change in the metadata-accessing API is the deprecation of `ECesiumMetadataTrueType`. The types in `EXT_structural_metadata` are more complex, and there are too many permutations to reasonably define in one enum. Instead, the type of a metadata property or value is conveyed through the `FCesiumMetadataValueType` struct. This struct is closely modeled after how class property types appear in the extension itself.
+
+`FCesiumMetadataValueType` has three components:
+- a `ECesiumMetadataType`, which corresponds to the `type` of a class property in the metadata schema.
+- a `ECesiumMetadataComponentType`, which corresponds to the `componentType` of a class property. This is only applicable to scalar, `vecN`, and `matN` types, and will be marked `None` for all other types. 
+- `bIsArray`, a boolean that corresponds to the `array` flag in a class property. If `bIsArray` is true, the type represents an array of elements, where the elements are of the given type and component type.
+
+Below are some example type definitions and their interpretations.
+
+| Example | Explanation |
+| ------- | ----------- |
+| Type: `Boolean`<br/>ComponentType: `None`<br/>bIsArray: `false` | Describes a boolean property. Values are retrieved as booleans. |
+| Type: `Vec2`<br/>ComponentType: `Uint8`<br/>bIsArray: `false` | Describes a `vec2` property where the vectors contain unsigned 8-bit integer components. Values are retrieved as two-dimensional unsigned 8-bit integer vectors. |
+| Type: `String`<br/>ComponentType: `None`<br/>bIsArray: `true` | Describes a string array property. Values are retrieved as arrays of strings. |
+| Type: `Scalar`<br/>ComponentType: `Float32`<br/>bIsArray: `true` | Describes a scalar array property where the scalars are single-precision floats. Values are retrieved as arrays of single-precision floats. |
 
 ### Expanded Blueprint Types
 
-Many of the `EXT_structural_metadata` types cannot be directly represented by Unreal Blueprint types. The `ECesiumMetadataBlueprintType` is still used to indicate the best-fitting Blueprints type for a metadata property or value. In Cesium for Unreal v2.0.0, it has been expanded to include the vector and matrix types that are possible with the `EXT_structural_metadata` extension.
+Like before, the `ECesiumMetadataBlueprintType` is still used to indicate the best-fitting Blueprints type for a metadata property or value. In Cesium for Unreal v2.0.0, it has been expanded to include the vector and matrix types that are possible with the `EXT_structural_metadata` extension. Many of these do not have a one-to-one representation in Unreal Blueprints, but can be converted to a fitting Blueprints type.
+
+The new supported Blueprints types include:
+- `FIntPoint`
+- `FVector2D`
+- `FIntVector`
+- `FVector3f`
+- `FVector`
+- `FVector4`
+- `FMatrix`
+
+Vector property values can be converted to other dimensions for flexibility. For example, a `vec2` can be returned as a `FVector4` with zeroes in the unused components, meaning `vec2(1, 2)` becomes `FVector(1, 2, 0, 0)`. A `vec3` can be returned as a `FVector2D` containing the first two components, meaning `vec3(1, 2, 3)` becomes `FVector2D(1, 2)`.
+
+Unfortunately, there are no perfect representations for `mat2` and `mat3` properties in Unreal Engine, but they can still be retrieved from properties as `FMatrix` instances, padded by zeros in the unused components. For example:
+
+| Original | FMatrix |
+| ---- | ------ |
+| [1, 2]<br/>[3, 4] | [1, 2, 0, 0] <br/> [3, 4, 0, 0]<br/>[0, 0, 0, 0]<br/>[0, 0, 0, 0] |
+| [1, 2, 3]<br/>[4, 5, 6]<br/>[7, 8, 9] | [1, 2, 3, 0] <br/> [4, 5, 6, 0]<br/>[7, 8, 9, 0]<br/>[0, 0, 0, 0] |
+
+Keep in mind that while matrices are column-major in `EXT_structural_metadata`, Unreal's `FMatrix` is row-major. The values are transposed to the correct places in the `FMatrix`.
 
 ### Metadata Arrays and Values
 

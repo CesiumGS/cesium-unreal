@@ -1549,18 +1549,7 @@ static void loadModelAnyThreadPart(
   const ExtensionModelExtStructuralMetadata* pMetadataExtension =
       model.getExtension<ExtensionModelExtStructuralMetadata>();
   if (pMetadataExtension) {
-    // TODO: construct deprecated metadata struct?
     result.Metadata = FCesiumModelMetadata(model, *pMetadataExtension);
-    // if (options.pEncodedMetadataDescription) {
-    //  result.EncodedMetadata = encodeMetadataAnyThreadPart(
-    //      *options.pEncodedMetadataDescription,
-    //      result.Metadata);
-    //}
-  }
-
-  if (model.getExtension<ExtensionModelExtFeatureMetadata>()) {
-    result.Metadata = FCesiumModelMetadata();
-    //UE_LOG(LogTemp, Warning, TEXT("Oh no"));
   }
 
   glm::dmat4x4 rootTransform = transform;

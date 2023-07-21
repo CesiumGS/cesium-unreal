@@ -41,7 +41,10 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "The CesiumMetadataUtility blueprint library is deprecated. Use GetMetadataValuesForFace in the CesiumMetadataPicking blueprint library instead."))
   static TMap<FString, FCesiumMetadataValue>
   GetMetadataValuesForFace(const UPrimitiveComponent* component, int64 faceID);
 
@@ -54,7 +57,10 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Metadata|Utility")
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "The CesiumMetadataUtility blueprint library is deprecated. Use GetMetadataValuesForFaceAsStrings in the CesiumMetadataPicking blueprint library instead."))
   static TMap<FString, FString> GetMetadataValuesAsStringForFace(
       const UPrimitiveComponent* component,
       int64 faceID);

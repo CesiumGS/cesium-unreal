@@ -6,7 +6,6 @@
 #include "CesiumMetadataValueType.h"
 #include "CesiumUtility/JsonValue.h"
 #include <cstdlib>
-#include <errno.h>
 #include <glm/common.hpp>
 #include <type_traits>
 
@@ -369,11 +368,10 @@ template <> struct CesiumMetadataConversions<float, std::string_view> {
 
     char* pLastUsed;
     float parsedValue = std::strtof(temp.c_str(), &pLastUsed);
-    if (pLastUsed == temp.c_str() + temp.size() && errno == 0) {
+    if (pLastUsed == temp.c_str() + temp.size() && !std::isinf(parsedValue)) {
       // Successfully parsed the entire string as a float.
       return parsedValue;
     }
-    errno = 0;
     return defaultValue;
   }
 };
@@ -456,11 +454,10 @@ template <> struct CesiumMetadataConversions<double, std::string_view> {
 
     char* pLastUsed;
     double parsedValue = std::strtod(temp.c_str(), &pLastUsed);
-    if (pLastUsed == temp.c_str() + temp.size() && errno == 0) {
+    if (pLastUsed == temp.c_str() + temp.size() && !std::isinf(parsedValue)) {
       // Successfully parsed the entire string as a double.
       return parsedValue;
     }
-    errno = 0;
     return defaultValue;
   }
 };
