@@ -1,12 +1,14 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 #include "CesiumMetadataUtilityBlueprintLibrary.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-static FCesiumMetadataPrimitive EmptyPrimitiveMetadata;
+static FCesiumMetadataPrimitive EmptyMetadataPrimitive;
 
 const FCesiumMetadataPrimitive&
 UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
@@ -14,7 +16,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!IsValid(pGltfComponent)) {
-    return EmptyPrimitiveMetadata;
+    return EmptyMetadataPrimitive;
   }
 
   return pGltfComponent->Metadata_DEPRECATED;
@@ -106,3 +108,5 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
           Primitive,
           FaceID));
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

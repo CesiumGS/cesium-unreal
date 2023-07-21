@@ -42,7 +42,8 @@ public:
   FCesiumMetadataPrimitive Metadata_DEPRECATED;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata EncodedPrimitiveMetadata;
+  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata
+      EncodedPrimitiveMetadata;
 
   ACesium3DTileset* pTilesetActor;
 

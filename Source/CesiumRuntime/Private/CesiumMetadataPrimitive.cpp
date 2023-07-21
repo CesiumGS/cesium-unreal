@@ -1,4 +1,6 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
@@ -62,7 +64,8 @@ const TArray<FString>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
   TArray<FString> propertyTextureNames;
-  if (!MetadataPrimitive._pPrimitiveMetadata || !MetadataPrimitive._pModelMetadata) {
+  if (!MetadataPrimitive._pPrimitiveMetadata ||
+      !MetadataPrimitive._pModelMetadata) {
     return TArray<FString>();
   }
 
@@ -70,13 +73,17 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
       UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
           *MetadataPrimitive._pPrimitiveMetadata);
 
-   const TArray<FCesiumPropertyTexture> propertyTextures =
-      UCesiumModelMetadataBlueprintLibrary::GetPropertyTexturesAtIndices(*MetadataPrimitive._pModelMetadata, propertyTextureIndices);
+  const TArray<FCesiumPropertyTexture> propertyTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTexturesAtIndices(
+          *MetadataPrimitive._pModelMetadata,
+          propertyTextureIndices);
 
-   propertyTextureNames.Reserve(propertyTextures.Num());
-   for (auto propertyTexture : propertyTextures) {
-     propertyTextureNames.Add(UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(propertyTexture));
-   }
+  propertyTextureNames.Reserve(propertyTextures.Num());
+  for (auto propertyTexture : propertyTextures) {
+    propertyTextureNames.Add(
+        UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
+            propertyTexture));
+  }
 
   return propertyTextureNames;
 }
@@ -92,3 +99,5 @@ int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
       *MetadataPrimitive._pPrimitiveFeatures,
       FaceID);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

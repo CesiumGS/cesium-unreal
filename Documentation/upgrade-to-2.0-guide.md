@@ -59,9 +59,9 @@ Furthermore, if the **"Get As Feature ID Attribute"** or **"Get As Feature ID Te
 
 ### Primitive Features
 
-The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. iT allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets`). The **"Get Feature ID Sets Of Type"** function(`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType`) can also be used to filter for a specific type of feature IDs.
+The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. It allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets`). The **"Get Feature ID Sets Of Type"** function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType`) can also be used to filter for a specific type of feature IDs.
 
-Previously, the **"Get Feature ID From Face ID"** function sampled feature IDs from a `FCesiumMetadataPrimitive`. It has been renamed to **"Get Feature ID From Face"** (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace`) and now takes a `FCesiumPrimitiveFeatures`. Use this to get the feature ID that is associated with a given face index, from the specified `FCesiumFeatureIdSet`. Here's an example of how one might retrieve the feature ID of a primitive hit by a `LineTrace`:
+Previously, users could use the **"Get Feature ID From Face ID"** function (`UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID`) to sample feature IDs from a `FCesiumMetadataPrimitive`. In Cesium for Unreal v2.0.0, this function has been deprecated. Instead, use **"Get Feature ID From Face"** (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace`). This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures` and `FCesiumFeatureIdSet`. Here's an example of how one might retrieve the feature ID of a primitive hit by a `LineTrace`:
 
 ![Example feature ID picking script](Images/getFeatureIdFromFaceExample.jpeg)
 
@@ -115,9 +115,13 @@ Unfortunately, there are no perfect representations for `mat2` and `mat3` proper
 
 Keep in mind that while matrices are column-major in `EXT_structural_metadata`, Unreal's `FMatrix` is row-major. The values are transposed to the correct places in the `FMatrix`.
 
-### Metadata Arrays and Values
+### Metadata Values
 
-Renamed `FCesiumMetadataGenericValue` to `FCesiumMetadataValue`.
+`FCesiumMetadataGenericValue` has been renamed to `FCesiumMetadataValue` in the new API, but its function hasn't changed. It represents a value retrieved from a metadata property in an abstracted form. This way, metadata values can be retrieved from differently-typed properties and acted upon with more general behavior.
+
+Below is a comprehensive list of related changes.
+
+- Renamed `FCesiumMetadataGenericValue` has been renamed to `FCesiumMetadataValue`.
 
 ### Feature Tables -> Property Tables
 
@@ -133,7 +137,7 @@ Additionally, `UCesiumFeatureTableBlueprintLibrary` has been renamed to `UCesium
 Additionally, the `FCesiumMetadataProperty` struct, which represented a feature table property in `EXT_feature_metadata`, has been renamed to `FCesiumPropertyTableProperty`. 
   - Renamed `UCesiumMetadataPropertyBlueprintLibrary` to `UCesiumPropertyTablePropertyBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertySize`,`GetComponentCount` is now `GetPropertyArraySize`, and `GetBlueprintComponentType` is now `GetArrayElementBlueprintType`.
 
-  ### Feature Textures -> Property Textures
+  ### TODO: Feature Textures -> Property Textures
   - Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
   - Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
   - Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` is now `GetPropertyNames`.
@@ -145,6 +149,4 @@ Additionally, the `FCesiumMetadataProperty` struct, which represented a feature 
 - `FCesiumMetadataPrimitive` has been deprecated. Instead, use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
 - `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are less applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
 - `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
-- `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace` instead.
-- `ECesiumMetadataTrueType` has been deprecated.
 - `FCesiumMetadataArray` has been deprecated. Use `FCesiumPropertyArray` instead.

@@ -18,7 +18,7 @@ std::vector<std::byte> GetValuesAsBytes(const std::vector<T>& values) {
   std::vector<std::byte> bytes(values.size() * sizeof(T));
   std::memcpy(bytes.data(), values.data(), bytes.size());
 
-  return std::move(bytes);
+  return bytes;
 }
 
 /**
@@ -129,7 +129,7 @@ CesiumGltf::PropertyTableProperty& AddPropertyTablePropertyToModel(
   Schema& schema = *pExtension->schema;
 
   const std::string& className = propertyTable.classProperty;
-  Class& theClass = schema.classes[className];
+  CesiumGltf::Class& theClass = schema.classes[className];
 
   ClassProperty& classProperty = theClass.properties[propertyName];
   classProperty.type = type;
