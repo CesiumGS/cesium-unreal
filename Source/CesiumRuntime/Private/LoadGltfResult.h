@@ -31,7 +31,8 @@ struct LoadPrimitiveResult {
   // Parses EXT_structural_metadata from a mesh primitive.
   FCesiumPrimitiveMetadata Metadata{};
 
-  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata EncodedPrimitiveMetadata{};
+  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata
+      EncodedPrimitiveMetadata{};
   TMap<FString, uint32_t> metadataTextureCoordinateParameters;
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;

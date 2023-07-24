@@ -561,7 +561,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -711,10 +711,8 @@ void FCesiumPropertyTableSpec::Define() {
               propertyTable),
           static_cast<int64_t>(0));
 
-      const auto values =
-          UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
-              propertyTable,
-              0);
+      const auto values = UCesiumPropertyTableBlueprintLibrary::
+          GetMetadataValuesForFeatureAsStrings(propertyTable, 0);
       TestTrue("values map is empty", values.IsEmpty());
     });
 
@@ -758,16 +756,12 @@ void FCesiumPropertyTableSpec::Define() {
               propertyTable),
           static_cast<int64_t>(scalarValues.size()));
 
-      auto values =
-          UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
-              propertyTable,
-              -1);
+      auto values = UCesiumPropertyTableBlueprintLibrary::
+          GetMetadataValuesForFeatureAsStrings(propertyTable, -1);
       TestTrue("no values for for negative feature ID", values.IsEmpty());
 
-      values =
-          UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
-              propertyTable,
-              10);
+      values = UCesiumPropertyTableBlueprintLibrary::
+          GetMetadataValuesForFeatureAsStrings(propertyTable, 10);
       TestTrue(
           "no values for positive out-of-range feature ID",
           values.IsEmpty());
@@ -867,10 +861,8 @@ void FCesiumPropertyTableSpec::Define() {
               propertyTable),
           static_cast<int64>(propertyValues.size()));
 
-      const auto values =
-          UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
-              propertyTable,
-              0);
+      const auto values = UCesiumPropertyTableBlueprintLibrary::
+          GetMetadataValuesForFeatureAsStrings(propertyTable, 0);
       TestTrue("values map is empty", values.IsEmpty());
     });
   });
