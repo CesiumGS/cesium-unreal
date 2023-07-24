@@ -180,6 +180,36 @@ private:
   bool ShowLoadRadii = true;
 #endif
 
+  /**
+   * The transformation matrix from the Unreal coordinate system to the
+   * Earth-Centered, Earth-Fixed (ECEF) coordinate system. The Unreal
+   * coordinates should generally not be interpreted as Unreal _world_
+   * coordinates, but rather a coordinate system based on some parent Actor's
+   * reference frame as defined by its transform. This way, the chain of Unreal
+   * transforms places and orients the "globe" in the Unreal world.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      BlueprintGetter = GetUnrealToEarthCenteredEarthFixedTransformation,
+      Category = "Cesium",
+      meta = (AllowPrivateAccess))
+  FMatrix UnrealToEarthCenteredEarthFixedTransformation;
+
+  /**
+   * The transformation matrix from the Earth-Centered, Earth-Fixed (ECEF)
+   * coordinate system to the Unreal coordinate system. The Unreal coordinates
+   * should generally not be interpreted as Unreal _world_ coordinates, but
+   * rather a coordinate system based on some parent Actor's reference frame as
+   * defined by its transform. This way, the chain of Unreal transforms places
+   * and orients the "globe" in the Unreal world.
+   */
+  UPROPERTY(
+      BlueprintReadOnly,
+      BlueprintGetter = GetEarthCenteredEarthFixedToUnrealTransformation,
+      Category = "Cesium",
+      meta = (AllowPrivateAccess))
+  FMatrix EarthCenteredEarthFixedToUnrealTransformation;
+
 #pragma endregion
 
 #pragma region PropertyAccessors
@@ -264,6 +294,12 @@ public:
   UFUNCTION(BlueprintSetter)
   void SetShowLoadRadii(bool NewValue);
 
+  UFUNCTION(BlueprintGetter)
+  const FMatrix& GetUnrealToEarthCenteredEarthFixedTransformation() const;
+
+  UFUNCTION(BlueprintGetter)
+  const FMatrix& GetEarthCenteredEarthFixedToUnrealTransformation() const;
+
 #pragma endregion
 
 #pragma region Transformation Functions
@@ -271,68 +307,92 @@ public:
 public:
   /**
    * Transforms the given longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z) into
-   * Earth-Centered, Earth-Fixed (ECEF) coordinates.
-   *
-   * This function peforms the computation in single-precision. When using
-   * the C++ API, corresponding double-precision function
-   * TransformLongitudeLatitudeHeightToEcef can be used.
-   */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector TransformLongitudeLatitudeHeightToEcef(
-      const FVector& LongitudeLatitudeHeight) const;
-
-  /**
-   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
-   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
-   * the ellipsoid in meters (z).
-   */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
-
-  /**
-   * Transforms the given longitude in degrees (x), latitude in
    * degrees (y), and height above the ellipsoid in meters (z) into Unreal
    * coordinates. The resulting position should generally not be interpreted as
    * an Unreal _world_ position, but rather a position expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Actor's reference frame as defined by its transform. This way, the chain of
    * Unreal transforms places and orients the "globe" in the Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector TransformLongitudeLatitudeHeightToUnreal(
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "UnrealPosition"))
+  FVector TransformLongitudeLatitudeHeightPositionToUnreal(
       const FVector& LongitudeLatitudeHeight) const;
 
   /**
-   * Transforms Unreal coordinates into longitude in degrees (x), latitude in
-   * degrees (y), and height above the ellipsoid in meters (z). The position
-   * should generally not be an Unreal _world_ position, but rather a position
-   * expressed in some parent Actor's reference frame as defined by its
-   * Transform. This way, the chain of Unreal transforms places and orients the
+   * Transforms a position in Unreal coordinates into longitude in degrees (x),
+   * latitude in degrees (y), and height above the ellipsoid in meters (z). The
+   * position should generally not be an Unreal _world_ position, but rather a
+   * position expressed in some parent Actor's reference frame as defined by its
+   * transform. This way, the chain of Unreal transforms places and orients the
    * "globe" in the Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector TransformUnrealToLongitudeLatitudeHeight(const FVector& Unreal) const;
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
+  FVector TransformUnrealPositionToLongitudeLatitudeHeight(
+      const FVector& UnrealPosition) const;
 
   /**
-   * Transforms the given point from Earth-Centered, Earth-Fixed (ECEF) into
-   * Unreal coordinates. The resulting position should generally not be
+   * Transforms a position in Earth-Centered, Earth-Fixed (ECEF) coordinates
+   * into Unreal coordinates. The resulting position should generally not be
    * interpreted as an Unreal _world_ position, but rather a position expressed
-   * in some parent Actor's reference frame as defined by its Transform. This
+   * in some parent Actor's reference frame as defined by its transform. This
    * way, the chain of Unreal transforms places and orients the "globe" in the
    * Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector TransformEcefToUnreal(const FVector& Ecef) const;
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "UnrealPosition"))
+  FVector TransformEarthCenteredEarthFixedPositionToUnreal(
+      const FVector& EarthCenteredEarthFixedPosition) const;
 
   /**
-   * Transforms the given point from Unreal coordinates to Earth-Centered,
+   * Transforms the given position from Unreal coordinates to Earth-Centered,
    * Earth-Fixed (ECEF). The position should generally not be an Unreal _world_
    * position, but rather a position expressed in some parent Actor's reference
-   * frame as defined by its Transform. This way, the chain of Unreal transforms
+   * frame as defined by its transform. This way, the chain of Unreal transforms
    * places and orients the "globe" in the Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector TransformUnrealToEcef(const FVector& Unreal) const;
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedPosition"))
+  FVector TransformUnrealPositionToEarthCenteredEarthFixed(
+      const FVector& UnrealPosition) const;
+
+  /**
+   * Transforms a direction vector in Earth-Centered, Earth-Fixed (ECEF)
+   * coordinates into Unreal coordinates. The resulting direction vector should
+   * generally not be interpreted as an Unreal _world_ vector, but rather a
+   * vector expressed in some parent Actor's reference frame as defined by its
+   * transform. This way, the chain of Unreal transforms places and orients the
+   * "globe" in the Unreal world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "UnrealDirection"))
+  FVector TransformEarthCenteredEarthFixedDirectionToUnreal(
+      const FVector& EarthCenteredEarthFixedDirection) const;
+
+  /**
+   * Transforms the given direction vector from Unreal coordinates to
+   * Earth-Centered, Earth-Fixed (ECEF) coordinates. The direction vector should
+   * generally not be an Unreal _world_ vector, but rather a vector expressed in
+   * some parent Actor's reference frame as defined by its transform. This way,
+   * the chain of Unreal transforms places and orients the "globe" in the Unreal
+   * world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedPosition"))
+  FVector TransformUnrealDirectionToEarthCenteredEarthFixed(
+      const FVector& UnrealDirection) const;
 
   /**
    * Transforms a rotator from Unreal to East-South-Up at the given
@@ -381,19 +441,19 @@ public:
 
 #pragma region Editor Support
 
-public:
 #if WITH_EDITOR
+public:
   /**
    * Places the georeference origin at the camera's current location. Rotates
    * the globe so the current longitude/latitude/height of the camera is at the
    * Unreal origin. The camera is also teleported to the Unreal origin.
    *
    * Warning: Before clicking, ensure that all non-Cesium objects in the
-   * persistent level are georeferenced with the "CesiumGeoreferenceComponent"
+   * persistent level are georeferenced with the "CesiumGlobeAnchorComponent"
    * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sub-levels.
    */
-  UFUNCTION(CallInEditor, Category = "Actions")
+  UFUNCTION(CallInEditor, Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
 #endif
 
@@ -449,6 +509,35 @@ private:
 #if WITH_EDITOR
   void _createSubLevelsFromWorldComposition();
 #endif
+
+  /**
+   * Transforms the given longitude in degrees (x), latitude in
+   * degrees (y), and height above the ellipsoid in meters (z) into
+   * Earth-Centered, Earth-Fixed (ECEF) coordinates.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use LongitudeLatitudeHeightToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+  FVector TransformLongitudeLatitudeHeightToEcef(
+      const FVector& LongitudeLatitudeHeight) const;
+
+  /**
+   * Transforms the given Earth-Centered, Earth-Fixed (ECEF) coordinates into
+   * WGS84 longitude in degrees (x), latitude in degrees (y), and height above
+   * the ellipsoid in meters (z).
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use EarthCenteredEarthFixedToLongitudeLatitudeHeight on CesiumWgs84Ellipsoid instead."))
+  FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
 
 #pragma endregion
 

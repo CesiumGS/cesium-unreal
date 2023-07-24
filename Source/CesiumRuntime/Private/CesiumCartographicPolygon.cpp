@@ -65,8 +65,7 @@ ACesiumCartographicPolygon::CreateCartographicPolygon(
             ESplineCoordinateSpace::World));
     FVector cartographic =
         this->GlobeAnchor->ResolveGeoreference()
-            ->TransformUnrealToLongitudeLatitudeHeight(
-                FVector(unrealPosition.X, unrealPosition.Y, unrealPosition.Z));
+            ->TransformUnrealPositionToLongitudeLatitudeHeight(unrealPosition);
     polygon[i] =
         glm::dvec2(glm::radians(cartographic.X), glm::radians(cartographic.Y));
   }

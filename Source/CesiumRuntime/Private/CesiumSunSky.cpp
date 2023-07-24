@@ -512,7 +512,7 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
   FVector location =
       transform.TransformPosition(getViewLocation(this->GetWorld()));
   FVector llh =
-      this->GetGeoreference()->TransformUnrealToLongitudeLatitudeHeight(
+      this->GetGeoreference()->TransformUnrealPositionToLongitudeLatitudeHeight(
           location);
 
   // An atmosphere of this radius should circumscribe all Earth terrain.

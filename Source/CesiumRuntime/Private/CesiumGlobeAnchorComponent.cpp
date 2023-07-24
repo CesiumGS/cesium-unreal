@@ -214,8 +214,8 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
     return FVector(0.0);
   }
 
-  return this->ResolvedGeoreference->TransformEcefToLongitudeLatitudeHeight(
-      this->GetECEF());
+  return UCesiumWgs84Ellipsoid::
+      EarthCenteredEarthFixedToLongitudeLatitudeHeight(this->GetECEF());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(

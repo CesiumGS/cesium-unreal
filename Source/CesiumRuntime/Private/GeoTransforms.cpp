@@ -5,6 +5,7 @@
 #include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "VecMath.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -36,7 +37,9 @@ GeoTransforms::GeoTransforms()
           1.0),
       _ellipsoid(CesiumGeospatial::Ellipsoid::WGS84),
       _center(0.0),
-      _scale(1.0) {
+      _scale(1.0),
+      _ecefToUnreal(),
+      _unrealToEcef() {
   // Coordinate system is initialized with the default values. This function
   // overrides them with proper values.
   this->updateTransforms();
@@ -54,7 +57,9 @@ GeoTransforms::GeoTransforms(
           1.0),
       _ellipsoid(ellipsoid),
       _center(center),
-      _scale(scale) {
+      _scale(scale),
+      _ecefToUnreal(),
+      _unrealToEcef() {
   // Coordinate system is initialized with the default values. This function
   // overrides them with proper values.
   this->updateTransforms();
@@ -100,6 +105,10 @@ glm::dquat GeoTransforms::ComputeSurfaceNormalRotationUnreal(
 void GeoTransforms::updateTransforms() noexcept {
   this->_coordinateSystem =
       createCoordinateSystem(this->_ellipsoid, this->_center, this->_scale);
+  this->_ecefToUnreal = VecMath::createMatrix(
+      this->_coordinateSystem.getEcefToLocalTransformation());
+  this->_unrealToEcef = VecMath::createMatrix(
+      this->_coordinateSystem.getLocalToEcefTransformation());
 
   UE_LOG(
       LogCesium,

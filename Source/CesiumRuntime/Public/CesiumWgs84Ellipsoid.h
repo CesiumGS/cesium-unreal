@@ -40,14 +40,14 @@ public:
    * value (0,0,0) because the surface position is undefined.
    */
   UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
-  static FVector ScaleToGeodeticSurface(const FVector& earthCenteredEarthFixed);
+  static FVector ScaleToGeodeticSurface(const FVector& EarthCenteredEarthFixed);
 
   /**
    * Computes the normal of the plane tangent to the surface of the ellipsoid
    * at the provided Earth-Centered, Earth-Fixed position.
    */
   UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
-  static FVector GeodeticSurfaceNormal(const FVector& earthCenteredEarthFixed);
+  static FVector GeodeticSurfaceNormal(const FVector& EarthCenteredEarthFixed);
 
   /**
    * Convert longitude in degrees (X), latitude in degrees (Y), and height above
@@ -56,7 +56,7 @@ public:
    */
   UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
   static FVector LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-      const FVector& longitudeLatitudeHeight);
+      const FVector& LongitudeLatitudeHeight);
 
   /**
    * Convert Earth-Centered, Earth-Fixed (ECEF) coordinates to longitude in
@@ -67,5 +67,5 @@ public:
    */
   UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
   static FVector EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-      const FVector& earthCenteredEarthFixed);
+      const FVector& EarthCenteredEarthFixed);
 };

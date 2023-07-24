@@ -215,6 +215,13 @@ public:
       const glm::dvec3& oldPosition,
       const glm::dvec3& newPosition) const;
 
+  const FMatrix& GetEllipsoidCenteredToAbsoluteUnrealWorldMatrix() const {
+    return this->_ecefToUnreal;
+  }
+  const FMatrix& GetAbsoluteUnrealWorldToEllipsoidCenteredMatrix() const {
+    return this->_unrealToEcef;
+  }
+
 private:
   /**
    * Update the derived state (i.e. the local horizontal coordinate system) when
@@ -228,4 +235,6 @@ private:
   CesiumGeospatial::Ellipsoid _ellipsoid;
   glm::dvec3 _center;
   double _scale;
+  FMatrix _ecefToUnreal;
+  FMatrix _unrealToEcef;
 };
