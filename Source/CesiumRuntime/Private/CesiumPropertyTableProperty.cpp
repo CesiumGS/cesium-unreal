@@ -67,7 +67,8 @@ int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetNumberOfFeatures(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property) {
-  return UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(Property);
+  return UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
+      Property);
 }
 
 int64 UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
@@ -366,7 +367,8 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
       Property._property);
 }
 
-FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
+FCesiumMetadataValue
+UCesiumPropertyTablePropertyBlueprintLibrary::GetGenericValue(
     UPARAM(ref) const FCesiumPropertyTableProperty& Property,
     int64 FeatureID) {
   return UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(

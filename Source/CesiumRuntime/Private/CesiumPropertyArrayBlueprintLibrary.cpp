@@ -22,6 +22,11 @@ UCesiumPropertyArrayBlueprintLibrary::GetElementValueType(
   return array._elementType;
 }
 
+int64 UCesiumPropertyArrayBlueprintLibrary::GetArraySize(
+    UPARAM(ref) const FCesiumPropertyArray& array) {
+  return std::visit([](const auto& view) { return view.size(); }, array._value);
+}
+
 int64 UCesiumPropertyArrayBlueprintLibrary::GetSize(
     UPARAM(ref) const FCesiumPropertyArray& array) {
   return std::visit([](const auto& view) { return view.size(); }, array._value);

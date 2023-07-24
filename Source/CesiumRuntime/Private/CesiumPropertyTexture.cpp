@@ -13,8 +13,7 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
     const CesiumGltf::Model& Model,
     const CesiumGltf::PropertyTexture& PropertyTexture)
     : _status(ECesiumPropertyTextureStatus::ErrorInvalidMetadataExtension),
-      _name(PropertyTexture.name.value_or("").c_str())
-      {
+      _name(PropertyTexture.name.value_or("").c_str()) {
   PropertyTextureView propertyTextureView(Model, PropertyTexture);
   switch (propertyTextureView.status()) {
   case PropertyTextureViewStatus::Valid:
@@ -25,10 +24,10 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
   }
 
   propertyTextureView.forEachProperty([&properties = _properties](
-                                        const std::string& propertyName,
-                                        auto propertyValue) mutable {
+                                          const std::string& propertyName,
+                                          auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
-   // properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
+    // properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
   });
 }
 

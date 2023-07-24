@@ -5,9 +5,7 @@
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumGltfSpecUtility.h"
 #include "CesiumMetadataPickingBlueprintLibrary.h"
-#include "CesiumTestHelpers.h"
 #include "Misc/AutomationTest.h"
-#include "Tests/AutomationEditorCommon.h"
 
 using namespace CesiumGltf;
 

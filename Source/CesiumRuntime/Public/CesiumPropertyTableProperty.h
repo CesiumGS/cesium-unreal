@@ -389,7 +389,7 @@ public:
   static int64
   GetPropertySize(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 
-    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
    * Gets the number of values in this property.
    */

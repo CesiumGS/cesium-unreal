@@ -2092,10 +2092,14 @@ static void loadPrimitiveGameThreadPart(
 
   pMesh->Features = std::move(loadResult.Features);
   pMesh->Metadata = std::move(loadResult.Metadata);
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   pMesh->Metadata_DEPRECATED = FCesiumMetadataPrimitive(
       pMesh->Features,
       pMesh->Metadata,
       pGltf->Metadata);
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
   pMesh->EncodedPrimitiveMetadata =
       std::move(loadResult.EncodedPrimitiveMetadata);
 

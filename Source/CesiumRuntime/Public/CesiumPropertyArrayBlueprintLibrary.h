@@ -27,18 +27,6 @@ public:
   GetElementBlueprintType(UPARAM(ref) const FCesiumPropertyArray& array);
 
   /**
-   * Gets the best-fitting Blueprints type for the elements of this array.
-   */
-  UFUNCTION(
-      BlueprintCallable,
-      BlueprintPure,
-      Meta =
-          (DeprecatedFunction,
-           DeprecationMessage = "Use GetElementBlueprintType instead."))
-  static ECesiumMetadataBlueprintType
-  GetBlueprintComponentType(UPARAM(ref) const FCesiumPropertyArray& array);
-
-  /**
    * Gets the true value type of the elements in the array. Many of these types
    * are not accessible from Blueprints, but can be converted to a
    * Blueprint-accessible type.
@@ -60,7 +48,7 @@ public:
       BlueprintCallable,
       BlueprintPure,
       Category = "Cesium|Metadata|PropertyArray")
-  static int64 GetSize(UPARAM(ref) const FCesiumPropertyArray& Array);
+  static int64 GetArraySize(UPARAM(ref) const FCesiumPropertyArray& Array);
 
   /**
    * Retrieves an element from the array as a FCesiumMetadataValue. The value
@@ -81,6 +69,18 @@ public:
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /**
+   * Gets the best-fitting Blueprints type for the elements of this array.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage = "Use GetElementBlueprintType instead."))
+  static ECesiumMetadataBlueprintType
+  GetBlueprintComponentType(UPARAM(ref) const FCesiumPropertyArray& array);
+
+  /**
    * Gets true type of the elements in the array. Many of these types are not
    * accessible from Blueprints, but can be converted to a Blueprint-accessible
    * type.
@@ -94,6 +94,21 @@ public:
                "CesiumMetadataTrueType is deprecated. Use GetElementValueType instead."))
   static ECesiumMetadataTrueType_DEPRECATED
   GetTrueComponentType(UPARAM(ref) const FCesiumPropertyArray& array);
+
+  /**
+   * Gets the number of elements in the array. Returns 0 if the elements have
+   * an unknown type.
+   *
+   * @return The number of elements in the array.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use GetArraySize instead."))
+  static int64 GetSize(UPARAM(ref) const FCesiumPropertyArray& Array);
 
   /**
    * Retrieves an element from the array and attempts to convert it to a Boolean

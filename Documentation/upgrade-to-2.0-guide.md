@@ -69,17 +69,17 @@ Previously, users could use the **"Get Feature ID From Face ID"** function (`UCe
 
 <h2 id="ext-structural-metadata">Retrieving metadata from `EXT_structural_metadata`</h2>
 
-`EXT_structural_metadata` builds upon `EXT_feature_metadata` by adding new metadata property types, as well as other options to more granularly define a property. These expansive additions required a rework of the metadata type system in Cesium for Unreal.
+Building upon the `EXT_feature_metadata` specifiation, `EXT_structural_metadata` adds new metadata property types, as well as other options to more granularly define a property. These expansive additions required a rework of the metadata type system in Cesium for Unreal.
 
 For the complete `EXT_structural_metadata` specification, see [here](https://github.com/CesiumGS/glTF/tree/3d-tiles-next/extensions/2.0/Vendor/EXT_structural_metadata).
 
 ### Metadata Value Types
 
-The biggest change in the metadata-accessing API is the deprecation of `ECesiumMetadataTrueType`. The types in `EXT_structural_metadata` are more complex, and there are too many permutations to reasonably define in one enum. Instead, the type of a metadata property or value is conveyed through the `FCesiumMetadataValueType` struct. This struct is closely modeled after how class property types appear in the extension itself.
+The biggest change in the metadata-accessing API is the overhaul of the type system. The data types in `EXT_structural_metadata` are more complex, with too many permutations to reasonably define in one enum. This called for the deprecation of `ECesiumMetadataTrueType`. Instead, the type of a metadata property or value is conveyed through the `FCesiumMetadataValueType` struct. This struct is closely modeled after how class property types appear in the extension itself.
 
 `FCesiumMetadataValueType` has three components:
-- a `ECesiumMetadataType`, which corresponds to the `type` of a class property in the metadata schema.
-- a `ECesiumMetadataComponentType`, which corresponds to the `componentType` of a class property. This is only applicable to scalar, `vecN`, and `matN` types, and will be marked `None` for all other types. 
+- `ECesiumMetadataType`, which corresponds to the `type` of a class property in the metadata schema.
+- `ECesiumMetadataComponentType`, which corresponds to the `componentType` of a class property. This is only applicable to scalar, `vecN`, and `matN` types, and will be marked `None` for all other types. 
 - `bIsArray`, a boolean that corresponds to the `array` flag in a class property. If `bIsArray` is true, the type represents an array of elements, where the elements are of the given type and component type.
 
 Below are some example type definitions and their interpretations.
@@ -93,9 +93,9 @@ Below are some example type definitions and their interpretations.
 
 ### Expanded Blueprint Types
 
-Like before, the `ECesiumMetadataBlueprintType` is still used to indicate the best-fitting Blueprints type for a metadata property or value. In Cesium for Unreal v2.0.0, it has been expanded to include the vector and matrix types that are possible with the `EXT_structural_metadata` extension. Many of these do not have a one-to-one representation in Unreal Blueprints, but can be converted to a fitting Blueprints type.
+As with before, the `ECesiumMetadataBlueprintType` enum is still used to indicate the best-fitting Blueprints type for a metadata property or value. In Cesium for Unreal v2.0.0, it has been expanded to include the vector and matrix types possible with the `EXT_structural_metadata` extension. Many of these do not have an exact representation in Unreal Blueprints, but can be converted to a fitting Blueprints type.
 
-The new supported Blueprints types include:
+The newly supported Blueprints types include:
 - `FIntPoint`
 - `FVector2D`
 - `FIntVector`
@@ -104,20 +104,32 @@ The new supported Blueprints types include:
 - `FVector4`
 - `FMatrix`
 
-Vector property values can be converted to other dimensions for flexibility. For example, a `vec2` can be returned as a `FVector4` with zeroes in the unused components, meaning `vec2(1, 2)` becomes `FVector(1, 2, 0, 0)`. A `vec3` can be returned as a `FVector2D` containing the first two components, meaning `vec3(1, 2, 3)` becomes `FVector2D(1, 2)`.
+Vector property values can be converted to other dimensions for flexibility. For example, a `vec2` can be returned as a `FVector4` with zeroes in the unused components. A `vec3` can be returned as a `FVector2D` containing the first two components. Scalars can also be retrieved in vector form, as a vector with the value in all components. Some examples are below.
+
+| Original | Converted |
+| -------- | --------- |
+| `vec2(1, 2)` | `FVector(1, 2, 0, 0)` |
+| `vec3(1, 2, 3)` | `FVector2D(1, 2)`. |
+| `2.5` | `FVector4(2.5, 2.5, 2.5, 2.5)` |
 
 Unfortunately, there are no perfect representations for `mat2` and `mat3` properties in Unreal Engine, but they can still be retrieved from properties as `FMatrix` instances, padded by zeros in the unused components. For example:
 
 | Original | FMatrix |
 | ---- | ------ |
-| [1, 2]<br/>[3, 4] | [1, 2, 0, 0] <br/> [3, 4, 0, 0]<br/>[0, 0, 0, 0]<br/>[0, 0, 0, 0] |
-| [1, 2, 3]<br/>[4, 5, 6]<br/>[7, 8, 9] | [1, 2, 3, 0] <br/> [4, 5, 6, 0]<br/>[7, 8, 9, 0]<br/>[0, 0, 0, 0] |
+| `[1, 2]`<br/>`[3, 4]`| `[1, 2, 0, 0]` <br/>`[3, 4, 0, 0]`<br/>`[0, 0, 0, 0]`<br/>`[0, 0, 0, 0]`|
+| `[1, 2, 3]`<br/>`[4, 5, 6]`<br/>`[7, 8, 9]` | `[1, 2, 3, 0]` <br/>`[4, 5, 6, 0]`<br/>`[7, 8, 9, 0]`<br/>`[0, 0, 0, 0]` |
+
+Additionally, scalars can be retrieved as an `FMatrix` with the value along its diagonal. For example,
+
+| Original | FMatrix |
+| -------- | ------- |
+| `2.5` | `[2.5, 0, 0, 0]`<br/>`[0, 2.5, 0, 0]`<br/>`[0, 0, 2.5, 0]`<br/>`[0, 0, 0, 2.5]` |
 
 Keep in mind that while matrices are column-major in `EXT_structural_metadata`, Unreal's `FMatrix` is row-major. The values are transposed to the correct places in the `FMatrix`.
 
 ### Metadata Values
 
-`FCesiumMetadataGenericValue` has been renamed to `FCesiumMetadataValue` in the new API, but its function hasn't changed. It represents a value retrieved from a metadata property in an abstracted form. This way, metadata values can be retrieved from differently-typed properties and acted upon with more general behavior.
+In the new API, `FCesiumMetadataGenericValue` has been renamed to `FCesiumMetadataValue`, but its function remains the same. This struct represents a value retrieved from a metadata property in an abstracted form. In this way, metadata values can be retrieved from differently-typed properties and acted upon with more general behavior.
 
 Additionally, `UCesiumMetadataGenericValueBlueprintLibrary` has been renamed to `UCesiumMetadataValueBlueprintLibrary`. This includes the following changes:
 
@@ -136,34 +148,64 @@ Functions have also been added to retrieve a `FCesiumMetadataValue`'s value as o
 
 ### Metadata Arrays
 
-`FCesiumMetadataArray` has been renamed to `FCesiumPropertyArray`, and `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary` accordingly. This still represents an array of metadata entities, where the values are retrieved by index. However, instead of retrieving values with a specific type (e.g., using the **"Get Integer"** or **"Get Boolean"** functions), there is only **"Get Value"**. This returns the  functions in `UCesiumPropertyArrayBlueprintLibrary` have been deprecated:
+`FCesiumMetadataArray` has been renamed to `FCesiumPropertyArray`. It still represents an array of metadata entities where values are retrieved by index. Accordingly, `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary`.
+
+Previously, values were retrieved from arrays with a specific type (e.g., **"Get Integer"** or **"Get Boolean"**). However, in the new API, only the **"Get Value"** function exists. This returns the value at the specified index as a `FCesiumMetadataValue`. The type of this value can be found by using `GetValueType` on the resulting `FCesiumMetadataValue`, or `GetElementValueType` on the `FCesiumPropertyArray` it came from. The value can then be converted to the appropriate type.
+
+The complete change list is as follows:
+
+- The following functions in `UCesiumPropertyArrayBlueprintLibrary` have been deprecated:
+  - `GetBoolean`
+  - `GetByte`
+  - `GetInteger`
+  - `GetInteger64`
+  - `GetFloat`
+  - `GetFloat64`
+  - `GetString`
+- Added `GetValue` to retrieve values from the array as `FCesiumMetadataValue` instances.
+- Deprecated `GetTrueComponentType`. Use `GetElementValueType` to get the type information as a `FCesiumMetadataValueType` instead.
+- Renamed `GetBlueprintComponentType` to `GetElementBlueprintType`.
+- Renamed `GetSize` to `GetArraySize`.
 
 ### Property Tables
 
-Feature tables in `EXT_feature_metadata` correspond to property tables in `EXT_structural_metadata`. As such, `FCesiumFeatureTable` has been renamed to `FCesiumPropertyTable`. The properties of a `FCesiumPropertyTable` have been renamed from `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty` for clarity.
+Property tables in `EXT_structural_metadata` evolved from the feature tables in `EXT_feature_metadata`. As such, `FCesiumFeatureTable` has been renamed to `FCesiumPropertyTable`. Additionally, `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty` for clarity.
 
-`FCesiumPropertyTableStatus` has been added to indicate whether a property table is valid.
+Previously, a property table did not report whether or not it was valid. For example, if the table's class was not found in the metadata schema, it would not be populated with any properties, and would not report why. `FCesiumPropertyTableStatus` has been added to indicate whether a property table is valid. Additionally, if any of its properties were invalid, they would be omitted from the property table without explanation. Now, a `FCesiumPropertyTableProperty` reports its `FCesiumPropertyTablePropertyStatus`, indicating when it has experienced an error. Invalid properties will still be represented in the property table, but can be queried for their status. 
 
-Additionally, `UCesiumFeatureTableBlueprintLibrary` has been renamed to `UCesiumPropertyTableBlueprintLibrary`. The following functions have also been renamed:
-| Old | New |
-| --- | ----|
-| `GetNumberOfFeatures` | `GetPropertyTableSize`|
-| `GetMetadataValuesForFeatureID` | `GetMetadataValuesForFeature`|
-| `GetMetadataValuesAsStringForFeatureID` | `GetMetadataValuesForFeatureAsStrings`|
+Additionally, `UCesiumFeatureTableBlueprintLibrary` has been renamed to `UCesiumPropertyTableBlueprintLibrary`. This includes the following changes:
 
-Additionally, the `FCesiumMetadataProperty` struct, which represented a feature table property in `EXT_feature_metadata`, has been renamed to `FCesiumPropertyTableProperty`. 
-  - Renamed `UCesiumMetadataPropertyBlueprintLibrary` to `UCesiumPropertyTablePropertyBlueprintLibrary`. `GetNumberOfFeatures` is now `GetPropertySize`,`GetComponentCount` is now `GetPropertyArraySize`, and `GetBlueprintComponentType` is now `GetArrayElementBlueprintType`.
+- Renamed `GetNumberOfFeatures` to `GetPropertyTableSize`.
+- Renamed `GetMetadataValuesForFeatureID` to `GetMetadataValuesForFeature`. Only values from valid properties are retrieved.
+- Renamed `GetMetadataValuesAsStringForFeatureID` to `GetMetadataValuesForFeatureAsStrings`. Only strings from valid properties are retrieved.
+- Added the `GetPropertyNames` function to retrieve the names of all properties, including invalid ones.
+- Added the `FindProperty` function to retrieve a property of a specific name from the property table. Returns an invalid instance if such a property cannot be found.
 
-  ### TODO: Feature Textures -> Property Textures
-  - Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
-  - Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
-  - Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` is now `GetPropertyNames`.
+Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumPropertyTablePropertyBlueprintLibrary` with the following changes:
 
+- Deprecated `GetTrueType` and `GetTrueComponentType`. Use `GetValueType` to get the type information as a `FCesiumMetadataValueType` instead.
+- Renamed `GetNumberOfFeatures` to `GetPropertySize`.
+- Renamed `GetComponentCount` to `GetPropertyArraySize`. Note that this will return zero if the property is an array type, but its arrays vary in length.
+- Renamed `GetBlueprintComponentType` to `GetArrayElementBlueprintType`.
+- Added functions to retrieve values as the new vector and matrix types:
+  - `GetIntPoint`
+  - `GetVector2D`
+  - `GetIntVector`
+  - `GetVector3f`
+  - `GetVector`
+  - `GetVector4`
+  - `GetMatrix`
+
+
+
+- `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
+
+### TODO: Feature Textures -> Property Textures
+
+- Renamed `FCesiumFeatureTexture` to `FCesiumPropertyTexture`.
+- Renamed `FCesiumFeatureTextureProperty` to `FCesiumPropertyTextureProperty`.
+- Renamed `UCesiumFeatureTexturePropertyBlueprintLibrary` to `UCesiumPropertyTexturePropertyBlueprintLibrary`. `GetPropertyKeys` is now `GetPropertyNames`.
 - Added `FCesiumPropertyArray`, which represents an array retrieved from the `EXT_structural_metadata` extension.
 - Renamed `FCesiumMetadataModel` to `FCesiumModelMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on the root glTF model.
 - Added `FCesiumPrimitiveMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on a glTF mesh primitive.
-
 - `FCesiumMetadataPrimitive` has been deprecated. Instead, use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
-- `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` have been deprecated, since they are less applicable in `EXT_mesh_features`. Use `UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex` instead.
-- `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
-- `FCesiumMetadataArray` has been deprecated. Use `FCesiumPropertyArray` instead.
