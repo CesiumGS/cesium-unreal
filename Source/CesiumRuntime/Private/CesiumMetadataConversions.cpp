@@ -145,7 +145,7 @@ ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(
 ECesiumMetadataTrueType_DEPRECATED
 CesiumMetadataValueTypeToTrueType(FCesiumMetadataValueType ValueType) {
   if (ValueType.bIsArray) {
-  return ECesiumMetadataTrueType_DEPRECATED::Array_DEPRECATED;
+    return ECesiumMetadataTrueType_DEPRECATED::Array_DEPRECATED;
   }
 
   CesiumGltf::PropertyType type = CesiumGltf::PropertyType(ValueType.Type);

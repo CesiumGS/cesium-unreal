@@ -75,7 +75,7 @@ public:
       Meta =
           (DeprecatedFunction,
            DeprecationMessage =
-               "GetFeatureIDFromFaceID is deprecated. Use GetFeatureIDFromFace with CesiumPrimitiveFeatures instead."))
+               "Use GetFeatureIDFromFace with CesiumPrimitiveFeatures instead."))
   static int64 GetFeatureIDFromFaceID(
       UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,

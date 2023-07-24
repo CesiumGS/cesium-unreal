@@ -33,11 +33,11 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::ErrorInvalidPropertyTable);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
-          0);
+          static_cast<int64_t>(0));
     });
 
     It("constructs invalid instance for missing schema", [this]() {
@@ -49,11 +49,11 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
-          0);
+          static_cast<int64_t>(0));
     });
 
     It("constructs invalid instance for missing class", [this]() {
@@ -65,11 +65,11 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
-          0);
+          static_cast<int64_t>(0));
     });
 
     It("constructs valid instance with valid property", [this]() {
@@ -91,7 +91,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -119,7 +119,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -181,7 +181,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -200,7 +200,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(scalarProperty),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               scalarProperty),
@@ -225,7 +225,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(vec2Property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               vec2Property),
@@ -265,7 +265,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -284,7 +284,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidPropertyData);
-      TestEqual(
+      TestEqual<int64>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
@@ -356,7 +356,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -404,7 +404,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -419,11 +419,11 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(property),
           ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty);
-      TestEqual(
+      TestEqual<int64>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               property),
-          0);
+          static_cast<int64_t>(0));
     });
 
     It("finds existing properties", [this]() {
@@ -459,7 +459,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -474,7 +474,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(scalarProperty),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               scalarProperty),
@@ -489,7 +489,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::
               GetPropertyTablePropertyStatus(vec2Property),
           ECesiumPropertyTablePropertyStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Size",
           UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(
               vec2Property),
@@ -514,11 +514,11 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::ErrorInvalidPropertyTable);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
-          0);
+          static_cast<int64_t>(0));
 
       const auto values =
           UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
@@ -616,7 +616,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -674,7 +674,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -705,11 +705,11 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::ErrorInvalidPropertyTable);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
-          0);
+          static_cast<int64_t>(0));
 
       const auto values =
           UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeatureAsStrings(
@@ -752,7 +752,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -807,7 +807,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),
@@ -861,7 +861,7 @@ void FCesiumPropertyTableSpec::Define() {
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableStatus(
               propertyTable),
           ECesiumPropertyTableStatus::Valid);
-      TestEqual(
+      TestEqual<int64>(
           "Count",
           UCesiumPropertyTableBlueprintLibrary::GetPropertyTableCount(
               propertyTable),

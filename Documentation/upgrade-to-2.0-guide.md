@@ -27,11 +27,11 @@ For the complete `EXT_mesh_features` specification, see [here](https://github.co
 
 ### Feature ID Sets
 
-Feature IDs are stored in a `FCesiumFeatureIdSet`. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs. The feature ID of a given vertex can be obtained in Blueprints with the **"Get Feature ID For Vertex"** node (or in C++, `UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex`). This will sample a `FCesiumFeatureIdSet` for the feature ID, regardless of its type.
+Feature IDs are stored in a `FCesiumFeatureIdSet`. A `FCesiumFeatureIdSet` has a `ECesiumFeatureIdSetType` indicating whether it is a feature ID attribute, a feature ID texture, or a set of implicit feature IDs. The feature ID of a given vertex can be obtained in Blueprints with the **"Get Feature ID For Vertex"** node. This will sample a `FCesiumFeatureIdSet` for the feature ID, regardless of its type.
 
 !["Get Feature ID For Vertex" node in Blueprints](Images/getFeatureIdForVertex.jpeg)
 
-If the `FCesiumFeatureIdSet` is a feature ID attribute, the **"Get As Feature ID Attribute"** node can be used to interact with the underlying `FCesiumFeatureIDAttribute`. Similarly, if the `FCesiumFeatureIdSet` is a feature ID texture, the **"Get As Feature ID Texture"** can be used. In C++, these functions are `UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute` and `UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDTexture` respectively.
+If the `FCesiumFeatureIdSet` is a feature ID attribute, the **"Get As Feature ID Attribute"** node can be used to interact with the underlying `FCesiumFeatureIDAttribute`. Similarly, if the `FCesiumFeatureIdSet` is a feature ID texture, the **"Get As Feature ID Texture"** can be used.
 
 !["Get As Feature ID Attribute" and "Get As Feature ID Texture" nodes in Blueprints](Images/getAsFeatureIdFunctions.jpeg)
 
@@ -43,13 +43,13 @@ In `EXT_feature_metadata`, feature IDs were associated with feature tables by na
 
 This changes with 3D Tiles 1.1. In `EXT_mesh_features`, feature IDs are optionally associated with property tables from `EXT_structural_metadata`. If a `FCesiumFeatureIDSet` is associated with a property table, it will have a property table *index*. This value indexes into an array of property tables in the model's root extension.
 
-The property table index can be retrieved with the **"Get Property Table Index"** Blueprint node (or in C++,`UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex`). See Property Tables for more information.
+The property table index can be retrieved with the **"Get Property Table Index"** Blueprint node. See Property Tables for more information.
 
 ### Feature ID Attributes and Textures
 
-Property tables are retrieved by index in `EXT_structural_metadata`, so it makes less sense to use the **"GetFeatureTableName"** Blueprints functions. (These are `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureTableName` in C++.) Aside from these now-deprecated functions, `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` are mostly unchanged. 
+Property tables are retrieved by index in `EXT_structural_metadata`, so it makes less sense to use the **"GetFeatureTableName"** Blueprints functions. Aside from these now-deprecated functions, `FCesiumFeatureIdAttribute` and `FCesiumFeatureIdTexture` are mostly unchanged. 
 
-Previously, Cesium for Unreal would not indicate if a feature ID attribute or texture was somehow broken, and thus unable to return accurate feature IDs. For example, if the image of a feature ID texture did not actually exist, nothing in the old API would communicate that. Thus, the `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus` enums were added. These indicate when something in the feature ID sets is invalid, and can be queried using the **"Get Feature ID Attribute Status"** and **"Get Feature ID Texture Status"** Blueprints nodes respectively. (Or in C++, `UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDAttributeStatus` and `UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDTextureStatus` respectively.)
+Previously, Cesium for Unreal would not indicate if a feature ID attribute or texture was somehow broken, and thus unable to return accurate feature IDs. For example, if the image of a feature ID texture did not actually exist, nothing in the old API would communicate that. Thus, the `ECesiumFeatureIdAttributeStatus` and `ECesiumFeatureIdTextureStatus` enums were added. These indicate when something in the feature ID sets is invalid, and can be queried using the **"Get Feature ID Attribute Status"** and **"Get Feature ID Texture Status"** Blueprints nodes respectively.
 
 !["Get Feature ID Attribute Status" and "Get Feature ID Texture Status" nodes in Blueprints](Images/getFeatureIdStatusFunctions.jpeg)
 
@@ -59,13 +59,15 @@ Furthermore, if the **"Get As Feature ID Attribute"** or **"Get As Feature ID Te
 
 ### Primitive Features
 
-The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. It allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets`). The **"Get Feature ID Sets Of Type"** function (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType`) can also be used to filter for a specific type of feature IDs.
+The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. It allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function. The **"Get Feature ID Sets Of Type"** function can also be used to filter for a specific type of feature IDs.
 
-Previously, users could use the **"Get Feature ID From Face ID"** function (`UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID`) to sample feature IDs from a `FCesiumMetadataPrimitive`. In Cesium for Unreal v2.0.0, this function has been deprecated. Instead, use **"Get Feature ID From Face"** (`UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace`). This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures` and `FCesiumFeatureIdSet`. Here's an example of how one might retrieve the feature ID of a primitive hit by a `LineTrace`:
+Previously, users could use the **"Get Feature ID From Face ID"** function to sample feature IDs from a `FCesiumMetadataPrimitive`. In Cesium for Unreal v2.0.0, this function has been deprecated. Instead, use **"Get Feature ID From Face"**. This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures` and `FCesiumFeatureIdSet`. Here's an example of how one might retrieve the feature ID of a primitive hit by a `LineTrace`:
 
 ![Example feature ID picking script](Images/getFeatureIdFromFaceExample.jpeg)
 
 **Note**: This function does not interface well with feature ID textures or implicit feature IDs, since these feature ID types make it possible for a face to have multiple feature IDs. In these cases, the feature ID of the first vertex of the face is returned.
+
+Additionally, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `GetFirstVertexFromFace` from `UCesiumPrimitiveFeaturesBlueprintLibrary` instead.
 
 <h2 id="ext-structural-metadata">Retrieving metadata from `EXT_structural_metadata`</h2>
 
@@ -81,6 +83,8 @@ The biggest change in the metadata-accessing API is the overhaul of the type sys
 - `ECesiumMetadataType`, which corresponds to the `type` of a class property in the metadata schema.
 - `ECesiumMetadataComponentType`, which corresponds to the `componentType` of a class property. This is only applicable to scalar, `vecN`, and `matN` types, and will be marked `None` for all other types. 
 - `bIsArray`, a boolean that corresponds to the `array` flag in a class property. If `bIsArray` is true, the type represents an array of elements, where the elements are of the given type and component type.
+
+![Metadata Value Type struct in Blueprints](Images/metadataValueType.jpeg)
 
 Below are some example type definitions and their interpretations.
 
@@ -152,9 +156,12 @@ Functions have also been added to retrieve a `FCesiumMetadataValue`'s value as o
 
 Previously, values were retrieved from arrays with a specific type (e.g., **"Get Integer"** or **"Get Boolean"**). However, in the new API, only the **"Get Value"** function exists. This returns the value at the specified index as a `FCesiumMetadataValue`. The type of this value can be found by using `GetValueType` on the resulting `FCesiumMetadataValue`, or `GetElementValueType` on the `FCesiumPropertyArray` it came from. The value can then be converted to the appropriate type.
 
+![Get Value node in Blueprints](Images/getValue.jpeg)
+
 The complete change list is as follows:
 
-- The following functions in `UCesiumPropertyArrayBlueprintLibrary` have been deprecated:
+- Added `GetValue` to retrieve values from the array as `FCesiumMetadataValue` instances.
+- Deprecated the following functions in `UCesiumPropertyArrayBlueprintLibrary`:
   - `GetBoolean`
   - `GetByte`
   - `GetInteger`
@@ -162,7 +169,6 @@ The complete change list is as follows:
   - `GetFloat`
   - `GetFloat64`
   - `GetString`
-- Added `GetValue` to retrieve values from the array as `FCesiumMetadataValue` instances.
 - Deprecated `GetTrueComponentType`. Use `GetElementValueType` to get the type information as a `FCesiumMetadataValueType` instead.
 - Renamed `GetBlueprintComponentType` to `GetElementBlueprintType`.
 - Renamed `GetSize` to `GetArraySize`.
@@ -172,6 +178,8 @@ The complete change list is as follows:
 Property tables in `EXT_structural_metadata` evolved from the feature tables in `EXT_feature_metadata`. As such, `FCesiumFeatureTable` has been renamed to `FCesiumPropertyTable`. Additionally, `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty` for clarity.
 
 Previously, a property table did not report whether or not it was valid. For example, if the table's class was not found in the metadata schema, it would not be populated with any properties, and would not report why. `FCesiumPropertyTableStatus` has been added to indicate whether a property table is valid. Additionally, if any of its properties were invalid, they would be omitted from the property table without explanation. Now, a `FCesiumPropertyTableProperty` reports its `FCesiumPropertyTablePropertyStatus`, indicating when it has experienced an error. Invalid properties will still be represented in the property table, but can be queried for their status. 
+
+![Get Property Table Status and Get Property Table Property Status Blueprints](Images/getPropertyTableStatusFunctions.jpeg)
 
 Additionally, `UCesiumFeatureTableBlueprintLibrary` has been renamed to `UCesiumPropertyTableBlueprintLibrary`. This includes the following changes:
 
@@ -185,7 +193,7 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
 
 - Deprecated `GetTrueType` and `GetTrueComponentType`. Use `GetValueType` to get the type information as a `FCesiumMetadataValueType` instead.
 - Renamed `GetNumberOfFeatures` to `GetPropertySize`.
-- Renamed `GetComponentCount` to `GetPropertyArraySize`. Note that this will return zero if the property is an array type, but its arrays vary in length.
+- Renamed `GetComponentCount` to `GetPropertyArraySize`. Note that this will return zero if the property is an array type with arrays that vary in length.
 - Renamed `GetBlueprintComponentType` to `GetArrayElementBlueprintType`.
 - Added functions to retrieve values as the new vector and matrix types:
   - `GetIntPoint`
@@ -196,9 +204,7 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
   - `GetVector4`
   - `GetMatrix`
 
-
-
-- `UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID` has been deprecated. Use `UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace` instead.
+### TODO: Metadata Picking
 
 ### TODO: Feature Textures -> Property Textures
 

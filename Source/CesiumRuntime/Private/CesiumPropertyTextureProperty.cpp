@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTextureProperty.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <limits>
 
+// clang-format off
 int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
     const UPrimitiveComponent* Component,
     UPARAM(ref) const FCesiumPropertyTextureProperty& Property) {
@@ -29,20 +30,20 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetTextureCoordinateIndex(
 int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
     UPARAM(ref) const FCesiumPropertyTextureProperty& property) {
   return 0;
-  //property._pPropertyView->getCount();
+  // property._pPropertyView->getCount();
 }
 //
-//bool UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
+// bool UCesiumPropertyTexturePropertyBlueprintLibrary::IsNormalized(
 //    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
 //  return property._pPropertyView->isNormalized();
 //}
 //
-//FString UCesiumPropertyTexturePropertyBlueprintLibrary::GetSwizzle(
+// FString UCesiumPropertyTexturePropertyBlueprintLibrary::GetSwizzle(
 //    UPARAM(ref) const FCesiumFeatureTextureProperty& property) {
 //  return UTF8_TO_TCHAR(property._pProperty->getSwizzle().c_str());
 //}
 //
-//FCesiumIntegerColor UCesiumPropertyTexturePropertyBlueprintLibrary::
+// FCesiumIntegerColor UCesiumPropertyTexturePropertyBlueprintLibrary::
 //    GetIntegerColorFromTextureCoordinates(
 //        UPARAM(ref) const FCesiumFeatureTextureProperty& property,
 //        float u,
@@ -70,7 +71,7 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
 //  }
 //}
 //
-//FCesiumFloatColor UCesiumPropertyTexturePropertyBlueprintLibrary::
+// FCesiumFloatColor UCesiumPropertyTexturePropertyBlueprintLibrary::
 //    GetFloatColorFromTextureCoordinates(
 //        UPARAM(ref) const FCesiumFeatureTextureProperty& property,
 //        float u,
@@ -107,3 +108,5 @@ int64 UCesiumPropertyTexturePropertyBlueprintLibrary::GetComponentCount(
 //    return {0.0f, 0.0f, 0.0f, 0.0f};
 //  }
 //}
+
+// clang-format on
