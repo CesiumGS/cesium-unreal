@@ -116,7 +116,7 @@ void FSubLevelsSpec::Define() {
               "pSubLevel1 is hidden",
               pSubLevel1->IsTemporarilyHiddenInEditor(true));
 
-          pGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+          pGeoreference->SetOriginLongitudeLatitudeHeight(
               FVector(1.0, 2.0, 3.0));
           TestEqual("Longitude", pLevelComponent1->GetOriginLongitude(), 1.0);
           TestEqual("Latitude", pLevelComponent1->GetOriginLatitude(), 2.0);

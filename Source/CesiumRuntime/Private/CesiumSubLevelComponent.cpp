@@ -259,11 +259,10 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
         this->OriginLatitude !=
             this->ResolvedGeoreference->GetOriginLatitude() ||
         this->OriginHeight != this->ResolvedGeoreference->GetOriginHeight()) {
-      this->ResolvedGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-          FVector(
-              this->OriginLongitude,
-              this->OriginLatitude,
-              this->OriginHeight));
+      this->ResolvedGeoreference->SetOriginLongitudeLatitudeHeight(FVector(
+          this->OriginLongitude,
+          this->OriginLatitude,
+          this->OriginHeight));
     }
   }
 }

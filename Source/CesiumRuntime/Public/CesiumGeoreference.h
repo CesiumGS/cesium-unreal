@@ -222,25 +222,28 @@ public:
    * (i.e. Longitude / Latitude / Height).
    */
   UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector GetGeoreferenceOriginLongitudeLatitudeHeight() const;
+  FVector GetOriginLongitudeLatitudeHeight() const;
 
   /**
    * This aligns the specified longitude in degrees (X), latitude in
-   * degrees (Y), and height above the ellipsoid in meters (Z) to Unreal's world
+   * degrees (Y), and height above the ellipsoid in meters (Z) to the Unreal
    * origin. That is, it moves the globe so that these coordinates exactly fall
-   * on the origin.
+   * on the origin. Only valid if the placement type is Cartographic Origin
+   * (i.e. Longitude / Latitude / Height).
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetGeoreferenceOriginLongitudeLatitudeHeight(
+  void SetOriginLongitudeLatitudeHeight(
       const FVector& TargetLongitudeLatitudeHeight);
 
   /**
    * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
-   * Unreal's world origin. I.e. it moves the globe so that these coordinates
-   * exactly fall on the origin.
+   * the Unreal origin. That is, it moves the globe so that these coordinates
+   * exactly fall on the origin. Only valid if the placement type is
+   * Cartographic Origin (i.e. Longitude / Latitude / Height).
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetGeoreferenceOriginEcef(const FVector& TargetEcef);
+  void SetOriginEarthCenteredEarthFixed(
+      const FVector& TargetEarthCenteredEarthFixed);
 
   UFUNCTION(BlueprintGetter)
   EOriginPlacement GetOriginPlacement() const;
