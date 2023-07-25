@@ -23,7 +23,7 @@ enum class ECesiumPropertyComponentType : uint8 { Uint8, Float };
 /**
  * @brief The property type.
  */
-UENUM() 
+UENUM()
 enum class ECesiumPropertyType : uint8 { Scalar, Vec2, Vec3, Vec4 };
 
 /**
