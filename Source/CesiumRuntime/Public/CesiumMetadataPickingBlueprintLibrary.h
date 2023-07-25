@@ -33,7 +33,8 @@ public:
    * - if the component is not a Cesium glTF primitive component
    * - if the given face index is out-of-bounds
    * - if the specified feature ID set does not exist on the primitive
-   * - if the specified feature ID set is not associated with a valid property table
+   * - if the specified feature ID set is not associated with a valid property
+   * table
    *
    * Additionally, if any of the property table's properties are invalid, they
    * will not be included in the result.
@@ -61,15 +62,17 @@ public:
    * across the face of a primitive. If the specified CesiumFeatureIdSet is one
    * of those types, the feature ID of the first vertex on the face will be
    * used.
-   * 
+   *
    * The returned result may be empty for several reasons:
    * - if the component is not a Cesium glTF primitive component
    * - if the given face index is out-of-bounds
    * - if the specified feature ID set does not exist on the primitive
-   * - if the specified feature ID set is not associated with a valid property table
+   * - if the specified feature ID set is not associated with a valid property
+   * table
    *
    * Additionally, if any of the property table's properties are invalid, they
-   * will not be included in the result. Array properties will return empty strings.
+   * will not be included in the result. Array properties will return empty
+   * strings.
    */
   UFUNCTION(
       BlueprintCallable,
