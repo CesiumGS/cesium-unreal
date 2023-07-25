@@ -8,6 +8,7 @@
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumPrimitiveFeatures.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumTextureUtility.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
@@ -24,6 +25,7 @@
 // TODO: internal documentation
 namespace LoadGltfResult {
 struct LoadPrimitiveResult {
+  FCesiumPrimitiveFeatures Features{};
   FCesiumMetadataPrimitive Metadata{};
   CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
   TMap<FString, uint32_t> metadataTextureCoordinateParameters;

@@ -6,9 +6,6 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-// REMOVE AFTER DEPRECATION
-#include "CesiumMetadataFeatureTable.h"
-
 static FCesiumMetadataModel EmptyModelMetadata;
 static FCesiumMetadataPrimitive EmptyPrimitiveMetadata;
 
@@ -46,7 +43,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
 TMap<FString, FCesiumMetadataGenericValue>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     const UPrimitiveComponent* component,
-    int64 faceID) {
+    int64 FaceIndex) {
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!IsValid(pGltfComponent)) {
@@ -59,23 +56,24 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
 
-  const FCesiumMetadataModel& modelMetadata = pModel->Metadata;
-  const FCesiumMetadataPrimitive& primitiveMetadata = pGltfComponent->Metadata;
-  const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes =
-      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
-          primitiveMetadata);
+  const FCesiumPrimitiveFeatures& features = pGltfComponent->Features;
+  const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
+          features,
+          ECesiumFeatureIdSetType::Attribute);
   if (featureIdAttributes.Num() == 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
+
+  const FCesiumMetadataModel& modelMetadata = pModel->Metadata;
+  const FCesiumMetadataPrimitive& primitiveMetadata = pGltfComponent->Metadata;
 
   // For now, only considers the first feature
   // TODO: expand to arbitrary number of features once testing data is
   // available
   const TMap<FString, FCesiumFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(modelMetadata);
-  const FString& featureTableName =
-      UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
-          featureIdAttributes[0]);
+  const FString& featureTableName = "";
   const FCesiumFeatureTable* pFeatureTable =
       featureTables.Find(featureTableName);
   if (!pFeatureTable) {
@@ -83,7 +81,10 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   }
 
   int64 featureID =
-      GetFeatureIDFromFaceID(primitiveMetadata, featureIdAttributes[0], faceID);
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+          features,
+          featureIdAttributes[0],
+          FaceIndex);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataGenericValue>();
   }
@@ -96,7 +97,7 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
 TMap<FString, FString>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
     const UPrimitiveComponent* component,
-    int64 faceID) {
+    int64 FaceIndex) {
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!IsValid(pGltfComponent)) {
@@ -109,23 +110,24 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
     return TMap<FString, FString>();
   }
 
-  const FCesiumMetadataModel& modelMetadata = pModel->Metadata;
-  const FCesiumMetadataPrimitive& primitiveMetadata = pGltfComponent->Metadata;
-  const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes =
-      UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
-          primitiveMetadata);
+  const FCesiumPrimitiveFeatures& features = pGltfComponent->Features;
+  const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
+          features,
+          ECesiumFeatureIdSetType::Attribute);
   if (featureIdAttributes.Num() == 0) {
     return TMap<FString, FString>();
   }
+
+  const FCesiumMetadataModel& modelMetadata = pModel->Metadata;
+  const FCesiumMetadataPrimitive& primitiveMetadata = pGltfComponent->Metadata;
 
   // For now, only considers the first feature
   // TODO: expand to arbitrary number of features once testing data is
   // available
   const TMap<FString, FCesiumFeatureTable>& featureTables =
       UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(modelMetadata);
-  const FString& featureTableName =
-      UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureTableName(
-          featureIdAttributes[0]);
+  const FString& featureTableName = "";
   const FCesiumFeatureTable* pFeatureTable =
       featureTables.Find(featureTableName);
   if (!pFeatureTable) {
@@ -133,7 +135,10 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
   }
 
   int64 featureID =
-      GetFeatureIDFromFaceID(primitiveMetadata, featureIdAttributes[0], faceID);
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+          features,
+          featureIdAttributes[0],
+          FaceIndex);
   if (featureID < 0) {
     return TMap<FString, FString>();
   }
@@ -144,24 +149,11 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
 
 int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
     UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
-    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIdAttribute,
-    int64 faceID) {
+    UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
+    int64 FaceID) {
   return UCesiumFeatureIdAttributeBlueprintLibrary::GetFeatureIDForVertex(
-      FeatureIdAttribute,
+      FeatureIDAttribute,
       UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
           Primitive,
-          faceID));
+          FaceID));
 }
-
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace(
-    UPARAM(ref) const FCesiumMetadataPrimitive& Primitive,
-    UPARAM(ref) const FCesiumMetadataFeatureTable& FeatureTable,
-    int64 faceID) {
-  return UCesiumMetadataFeatureTableBlueprintLibrary::GetFeatureIDForVertex(
-      FeatureTable,
-      UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
-          Primitive,
-          faceID));
-}
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
