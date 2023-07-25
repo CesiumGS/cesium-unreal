@@ -395,47 +395,77 @@ public:
       const FVector& UnrealDirection) const;
 
   /**
-   * Transforms a rotator from Unreal to East-South-Up at the given
-   * Unreal location. The rotator and location should generally not be relative
-   * to the Unreal _world_, but rather be expressed in some parent
-   * Actor's reference frame as defined by its Transform. This way, the chain of
-   * Unreal transforms places and orients the "globe" in the Unreal world.
-   */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FRotator TransformRotatorUnrealToEastSouthUp(
-      const FRotator& UnrealRotator,
-      const FVector& UnrealLocation) const;
-
-  /**
-   * Transforms a rotator from East-South-Up to Unreal at the given
-   * Unreal location. The location and resulting rotator should generally not be
+   * Given a Rotator that transforms an object into the Unreal coordinate
+   * system, returns a new Rotator that transforms that object into an
+   * East-South-Up frame centered at a given location.
+   *
+   * In an East-South-Up frame, +X points East, +Y points South, and +Z points
+   * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
+   * coordinates vary depending on where on the globe we are talking about.
+   * That is why this function takes a location, expressed in Unreal
+   * coordinates, that defines the origin of the East-South-Up frame of
+   * interest.
+   *
+   * The Unreal location and the resulting Rotator should generally not be
    * relative to the Unreal _world_, but rather be expressed in some parent
    * Actor's reference frame as defined by its Transform. This way, the chain of
    * Unreal transforms places and orients the "globe" in the Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FRotator TransformRotatorEastSouthUpToUnreal(
-      const FRotator& EsuRotator,
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EastSouthUpRotator"))
+  FRotator TransformUnrealRotatorToEastSouthUp(
+      const FRotator& UnrealRotator,
       const FVector& UnrealLocation) const;
 
   /**
-   * Computes the rotation matrix from the local East-South-Up to Unreal at the
-   * specified Unreal location. The returned transformation works in Unreal's
-   * left-handed coordinate system. The location and resulting rotation should
-   * generally not be relative to the Unreal _world_, but rather be expressed in
-   * some parent Actor's reference frame as defined by its Transform. This way,
-   * the chain of Unreal transforms places and orients the "globe" in the Unreal
-   * world.
+   * Given a Rotator that transforms an object into the East-South-Up frame
+   * centered at a given location, returns a new Rotator that transforms that
+   * object into Unreal coordinates.
+   *
+   * In an East-South-Up frame, +X points East, +Y points South, and +Z points
+   * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
+   * coordinates vary depending on where on the globe we are talking about.
+   * That is why this function takes a location, expressed in Unreal
+   * coordinates, that defines the origin of the East-South-Up frame of
+   * interest.
+   *
+   * The Unreal location and the resulting Rotator should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FMatrix ComputeEastSouthUpToUnreal(const FVector& Unreal) const;
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "UnrealRotator"))
+  FRotator TransformEastSouthUpRotatorToUnreal(
+      const FRotator& EastSouthUpRotator,
+      const FVector& UnrealLocation) const;
 
   /**
-   * Computes the rotation matrix from the local East-North-Up to
-   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
+   * Computes the matrix that transforms from an East-South-Up frame centered at
+   * a given location to the Unreal frame.
+   *
+   * In an East-South-Up frame, +X points East, +Y points South, and +Z points
+   * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
+   * coordinates vary depending on where on the globe we are talking about.
+   * That is why this function takes a location, expressed in Unreal
+   * coordinates, that defines the origin of the East-South-Up frame of
+   * interest.
+   *
+   * The Unreal location and the resulting matrix should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EastSouthUpToUnrealMatrix"))
+  FMatrix
+  ComputeEastSouthUpToUnrealTransformation(const FVector& UnrealLocation) const;
 
 #pragma endregion
 
@@ -538,6 +568,19 @@ private:
            DeprecationMessage =
                "Use EarthCenteredEarthFixedToLongitudeLatitudeHeight on CesiumWgs84Ellipsoid instead."))
   FVector TransformEcefToLongitudeLatitudeHeight(const FVector& Ecef) const;
+
+  /**
+   * Computes the rotation matrix from the local East-North-Up to
+   * Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "Use EastNorthUpToEarthCenteredEarthFixed on CesiumWgs84Ellipsoid instead."))
+  FMatrix ComputeEastNorthUpToEcef(const FVector& Ecef) const;
 
 #pragma endregion
 

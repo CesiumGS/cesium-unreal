@@ -39,22 +39,33 @@ public:
    * position is near the center of the ellipsoid, the result will have the
    * value (0,0,0) because the surface position is undefined.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
-  static FVector ScaleToGeodeticSurface(const FVector& EarthCenteredEarthFixed);
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium|WGS84 Ellipsoid",
+      meta = (ReturnDisplayName = "SurfacePosition"))
+  static FVector
+  ScaleToGeodeticSurface(const FVector& EarthCenteredEarthFixedPosition);
 
   /**
    * Computes the normal of the plane tangent to the surface of the ellipsoid
    * at the provided Earth-Centered, Earth-Fixed position.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
-  static FVector GeodeticSurfaceNormal(const FVector& EarthCenteredEarthFixed);
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium|WGS84 Ellipsoid",
+      meta = (ReturnDisplayName = "SurfaceNormalVector"))
+  static FVector
+  GeodeticSurfaceNormal(const FVector& EarthCenteredEarthFixedPosition);
 
   /**
    * Convert longitude in degrees (X), latitude in degrees (Y), and height above
    * the WGS84 ellipsoid in meters (Z) to Earth-Centered, Earth-Fixed (ECEF)
    * coordinates.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium|WGS84 Ellipsoid",
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedPosition"))
   static FVector LongitudeLatitudeHeightToEarthCenteredEarthFixed(
       const FVector& LongitudeLatitudeHeight);
 
@@ -65,7 +76,17 @@ public:
    * will have the value (0,0,0) because the longitude, latitude, and height are
    * undefined.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium|WGS84 Ellipsoid")
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium|WGS84 Ellipsoid",
+      meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   static FVector EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-      const FVector& EarthCenteredEarthFixed);
+      const FVector& EarthCenteredEarthFixedPosition);
+
+  /**
+   * Computes the transformation matrix from the local East-North-Up (ENU) frame
+   * to Earth-Centered, Earth-Fixed (ECEF) at the specified ECEF location.
+   */
+  static FMatrix EastNorthUpToEarthCenteredEarthFixed(
+      const FVector& EarthCenteredEarthFixedPosition);
 };

@@ -131,7 +131,7 @@ public:
    * origin). The returned transformation works in Unreal's left-handed
    * coordinate system.
    */
-  glm::dmat3 ComputeEastSouthUpToUnreal(
+  glm::dmat4 ComputeEastSouthUpToUnreal(
       const glm::dvec3& origin,
       const glm::dvec3& Ue) const noexcept;
 

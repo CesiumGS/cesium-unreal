@@ -96,7 +96,8 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FVector globePosition =
       transform.InverseTransformPosition(this->GetPawnViewLocation());
   FMatrix esuAdjustmentMatrix =
-      this->GetGeoreference()->ComputeEastSouthUpToUnreal(globePosition) *
+      this->GetGeoreference()->ComputeEastSouthUpToUnrealTransformation(
+          globePosition) *
       transform.ToMatrixNoScale();
 
   return FRotator(esuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());

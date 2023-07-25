@@ -179,7 +179,8 @@ glm::dquat GeoTransforms::TransformRotatorUnrealToEastSouthUp(
     const glm::dvec3& origin,
     const glm::dquat& UERotator,
     const glm::dvec3& ueLocation) const noexcept {
-  glm::dmat3 esuToUe = this->ComputeEastSouthUpToUnreal(origin, ueLocation);
+  glm::dmat3 esuToUe =
+      glm::dmat3(this->ComputeEastSouthUpToUnreal(origin, ueLocation));
   glm::dmat3 ueToEsu = glm::affineInverse(esuToUe);
   glm::dquat ueToEsuQuat = glm::quat_cast(ueToEsu);
   return ueToEsuQuat * UERotator;
@@ -190,19 +191,19 @@ glm::dquat GeoTransforms::TransformRotatorEastSouthUpToUnreal(
     const glm::dquat& ESURotator,
     const glm::dvec3& ueLocation) const noexcept {
 
-  glm::dmat3 esuToUe = this->ComputeEastSouthUpToUnreal(origin, ueLocation);
+  glm::dmat3 esuToUe =
+      glm::dmat3(this->ComputeEastSouthUpToUnreal(origin, ueLocation));
   glm::dquat esuToUeQuat = glm::quat_cast(esuToUe);
   return esuToUeQuat * ESURotator;
 }
 
-glm::dmat3 GeoTransforms::ComputeEastSouthUpToUnreal(
+glm::dmat4 GeoTransforms::ComputeEastSouthUpToUnreal(
     const glm::dvec3& origin,
     const glm::dvec3& ue) const noexcept {
   glm::dvec3 ecef = this->TransformUnrealToEcef(origin, ue);
   LocalHorizontalCoordinateSystem newLocal =
       createCoordinateSystem(this->_ellipsoid, ecef, this->_scale);
-  return glm::dmat3(
-      newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
+  return newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem);
 }
 
 glm::dmat3
