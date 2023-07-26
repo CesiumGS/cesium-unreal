@@ -58,7 +58,7 @@ public:
   GetModelMetadata(const UPrimitiveComponent* component);
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
-   /**
+  /**
    * @brief Get all the feature tables for this model metadata.
    */
   UFUNCTION(

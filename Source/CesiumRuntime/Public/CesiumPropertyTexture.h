@@ -35,8 +35,7 @@ public:
 
   FCesiumPropertyTexture(
       const CesiumGltf::Model& model,
-      const CesiumGltf::PropertyTexture&
-          PropertyTexture);
+      const CesiumGltf::PropertyTexture& PropertyTexture);
 
 private:
   ECesiumPropertyTextureStatus _status;

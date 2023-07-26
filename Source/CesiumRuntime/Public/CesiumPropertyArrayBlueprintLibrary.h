@@ -106,8 +106,7 @@ public:
       BlueprintPure,
       Meta =
           (DeprecatedFunction,
-           DeprecationMessage =
-               "Use GetArraySize instead."))
+           DeprecationMessage = "Use GetArraySize instead."))
   static int64 GetSize(UPARAM(ref) const FCesiumPropertyArray& Array);
 
   /**

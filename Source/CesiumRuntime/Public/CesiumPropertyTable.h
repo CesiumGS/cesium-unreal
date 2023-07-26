@@ -159,7 +159,7 @@ public:
    *
    * Array properties cannot be converted to strings, so empty strings
    * will be returned for their values.
-   * 
+   *
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
    * @param FeatureID The ID of the feature.
