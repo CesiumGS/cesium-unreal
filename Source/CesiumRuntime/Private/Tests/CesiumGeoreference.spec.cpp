@@ -180,44 +180,18 @@ void FCesiumGeoreferenceSpec::Define() {
           pGeoreferenceNullIsland
               ->TransformLongitudeLatitudeHeightPositionToUnreal(
                   FVector(90.0, 0.0, 0.0));
+
       FRotator rotationAtNullIsland =
           pGeoreferenceNullIsland->TransformEastSouthUpRotatorToUnreal(
               rotationAt90DegreesLongitude,
               originOf90DegreesLongitudeInNullIslandCoordinates);
 
-      // Verify the rotation by checking the directions of the three axes.
-      FVector xEcefExpected =
-          pGeoreference90Longitude
-              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
-                  rotationAt90DegreesLongitude.RotateVector(
-                      FVector::XAxisVector));
-      FVector yEcefExpected =
-          pGeoreference90Longitude
-              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
-                  rotationAt90DegreesLongitude.RotateVector(
-                      FVector::YAxisVector));
-      FVector zEcefExpected =
-          pGeoreference90Longitude
-              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
-                  rotationAt90DegreesLongitude.RotateVector(
-                      FVector::ZAxisVector));
-
-      FVector xEcefActual =
-          pGeoreferenceNullIsland
-              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
-                  rotationAtNullIsland.RotateVector(FVector::XAxisVector));
-      FVector yEcefActual =
-          pGeoreferenceNullIsland
-              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
-                  rotationAtNullIsland.RotateVector(FVector::YAxisVector));
-      FVector zEcefActual =
-          pGeoreferenceNullIsland
-              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
-                  rotationAtNullIsland.RotateVector(FVector::ZAxisVector));
-
-      TestEqual("xEcefActual", xEcefActual, xEcefExpected);
-      TestEqual("yEcefActual", yEcefActual, yEcefExpected);
-      TestEqual("zEcefActual", zEcefActual, zEcefExpected);
+      CesiumTestHelpers::TestRotatorsAreEquivalent(
+          this,
+          pGeoreference90Longitude,
+          rotationAt90DegreesLongitude,
+          pGeoreferenceNullIsland,
+          rotationAtNullIsland);
     });
   });
 }
