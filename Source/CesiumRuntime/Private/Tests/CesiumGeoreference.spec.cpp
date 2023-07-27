@@ -173,17 +173,51 @@ void FCesiumGeoreferenceSpec::Define() {
                  FVector(0.0, 0.0, 0.0));
          TestEqual("atOrigin2", atOrigin2, FRotator(1.0, 2.0, 3.0));
        });
-  });
 
-  It("transforms Unreal Rotators to East-South-Up", [this]() {
-    FRotator atNullIsland =
-        pGeoreferenceNullIsland->TransformEastSouthUpRotatorToUnreal(
-            FRotator(1.0, 2.0, 3.0), // pitch (+X), yaw (-Z), roll (+Y)
-            // at the anti-meridian / equator
-            FVector(
-                0.0,
-                0.0,
-                -2.0 * Ellipsoid::WGS84.getMaximumRadius() * 100.0));
-    TestEqual("atNullIsland", atNullIsland, FRotator(-1.0, -2.0, 177.0));
+    It("transforms Unreal Rotators to East-South-Up", [this]() {
+      FRotator rotationAt90DegreesLongitude = FRotator(1.0, 2.0, 3.0);
+      FVector originOf90DegreesLongitudeInNullIslandCoordinates =
+          pGeoreferenceNullIsland
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(
+                  FVector(90.0, 0.0, 0.0));
+      FRotator rotationAtNullIsland =
+          pGeoreferenceNullIsland->TransformEastSouthUpRotatorToUnreal(
+              rotationAt90DegreesLongitude,
+              originOf90DegreesLongitudeInNullIslandCoordinates);
+
+      // Verify the rotation by checking the directions of the three axes.
+      FVector xEcefExpected =
+          pGeoreference90Longitude
+              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
+                  rotationAt90DegreesLongitude.RotateVector(
+                      FVector::XAxisVector));
+      FVector yEcefExpected =
+          pGeoreference90Longitude
+              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
+                  rotationAt90DegreesLongitude.RotateVector(
+                      FVector::YAxisVector));
+      FVector zEcefExpected =
+          pGeoreference90Longitude
+              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
+                  rotationAt90DegreesLongitude.RotateVector(
+                      FVector::ZAxisVector));
+
+      FVector xEcefActual =
+          pGeoreferenceNullIsland
+              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
+                  rotationAtNullIsland.RotateVector(FVector::XAxisVector));
+      FVector yEcefActual =
+          pGeoreferenceNullIsland
+              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
+                  rotationAtNullIsland.RotateVector(FVector::YAxisVector));
+      FVector zEcefActual =
+          pGeoreferenceNullIsland
+              ->TransformUnrealDirectionToEarthCenteredEarthFixed(
+                  rotationAtNullIsland.RotateVector(FVector::ZAxisVector));
+
+      TestEqual("xEcefActual", xEcefActual, xEcefExpected);
+      TestEqual("yEcefActual", yEcefActual, yEcefExpected);
+      TestEqual("zEcefActual", zEcefActual, zEcefExpected);
+    });
   });
 }

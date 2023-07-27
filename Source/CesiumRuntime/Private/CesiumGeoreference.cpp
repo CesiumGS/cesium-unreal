@@ -780,9 +780,7 @@ FRotator ACesiumGeoreference::TransformUnrealRotatorToEastSouthUp(
     const FVector& UnrealLocation) const {
   FMatrix unrealToEsu =
       this->ComputeEastSouthUpToUnrealTransformation(UnrealLocation).Inverse();
-  FMatrix unreal = FRotationMatrix::Make(UnrealRotator);
-  FMatrix esu = unrealToEsu * unreal;
-  return esu.Rotator();
+  return FRotator(unrealToEsu.ToQuat() * EastSouthUpRotator.Quaternion());
 }
 
 FRotator ACesiumGeoreference::TransformEastSouthUpRotatorToUnreal(
@@ -790,9 +788,7 @@ FRotator ACesiumGeoreference::TransformEastSouthUpRotatorToUnreal(
     const FVector& UnrealLocation) const {
   FMatrix esuToUnreal =
       this->ComputeEastSouthUpToUnrealTransformation(UnrealLocation);
-  FMatrix esu = FRotationMatrix::Make(EastSouthUpRotator);
-  FMatrix unreal = esuToUnreal * esu;
-  return unreal.Rotator();
+  return FRotator(esuToUnreal.ToQuat() * EastSouthUpRotator.Quaternion());
 }
 
 FMatrix ACesiumGeoreference::ComputeEastSouthUpToUnrealTransformation(
