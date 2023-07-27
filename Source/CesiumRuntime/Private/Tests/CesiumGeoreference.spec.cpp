@@ -174,7 +174,7 @@ void FCesiumGeoreferenceSpec::Define() {
          TestEqual("atOrigin2", atOrigin2, FRotator(1.0, 2.0, 3.0));
        });
 
-    It("transforms Unreal Rotators to East-South-Up", [this]() {
+    It("transforms East-South-Up Rotators to Unreal", [this]() {
       FRotator rotationAt90DegreesLongitude = FRotator(1.0, 2.0, 3.0);
       FVector originOf90DegreesLongitudeInNullIslandCoordinates =
           pGeoreferenceNullIsland
@@ -192,6 +192,26 @@ void FCesiumGeoreferenceSpec::Define() {
           rotationAt90DegreesLongitude,
           pGeoreferenceNullIsland,
           rotationAtNullIsland);
+    });
+
+    It("transforms Unreal Rotators to East-South-Up", [this]() {
+      FRotator rotationAtNullIsland = FRotator(1.0, 2.0, 3.0);
+      FVector originOf90DegreesLongitudeInNullIslandCoordinates =
+          pGeoreferenceNullIsland
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(
+                  FVector(90.0, 0.0, 0.0));
+
+      FRotator rotationAt90DegreesLongitude =
+          pGeoreferenceNullIsland->TransformUnrealRotatorToEastSouthUp(
+              rotationAtNullIsland,
+              originOf90DegreesLongitudeInNullIslandCoordinates);
+
+      CesiumTestHelpers::TestRotatorsAreEquivalent(
+          this,
+          pGeoreferenceNullIsland,
+          rotationAtNullIsland,
+          pGeoreference90Longitude,
+          rotationAt90DegreesLongitude);
     });
   });
 }
