@@ -163,7 +163,7 @@ private:
   APlayerCameraManager* SubLevelCamera = nullptr;
 
 #if WITH_EDITORONLY_DATA
-  /*
+  /**
    * Whether to visualize the level loading radii in the editor. Helpful for
    * initially positioning the level and choosing a load radius.
    */
@@ -224,55 +224,119 @@ public:
   void SetOriginEarthCenteredEarthFixed(
       const FVector& TargetEarthCenteredEarthFixed);
 
+  /**
+   * Gets the placement of this Actor's origin (coordinate 0,0,0) within the
+   * tileset.
+   *
+   * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates, such
+   * that the tileset content is in a small bounding volume 6-7 million meters
+   * (the radius of the Earth) away from the coordinate system origin. This
+   * property allows an alternative position, other then the tileset's true
+   * origin, to be treated as the origin for the purpose of this Actor. Using
+   * this property will preserve vertex precision (and thus avoid jittering)
+   * much better than setting the Actor's Transform property.
+   */
   UFUNCTION(BlueprintGetter)
   EOriginPlacement GetOriginPlacement() const;
 
+  /**
+   * Sets the placement of this Actor's origin (coordinate 0,0,0) within the
+   * tileset.
+   *
+   * 3D Tiles tilesets often use Earth-centered, Earth-fixed coordinates, such
+   * that the tileset content is in a small bounding volume 6-7 million meters
+   * (the radius of the Earth) away from the coordinate system origin. This
+   * property allows an alternative position, other then the tileset's true
+   * origin, to be treated as the origin for the purpose of this Actor. Using
+   * this property will preserve vertex precision (and thus avoid jittering)
+   * much better than setting the Actor's Transform property.
+   */
   UFUNCTION(BlueprintSetter)
   void SetOriginPlacement(EOriginPlacement NewValue);
 
+  /**
+   * Gets the latitude of the custom origin placement in degrees, in the range
+   * [-90, 90]
+   */
   UFUNCTION(BlueprintGetter)
   double GetOriginLatitude() const;
 
+  /**
+   * Sets the latitude of the custom origin placement in degrees, in the range
+   * [-90, 90]
+   */
   UFUNCTION(BlueprintSetter)
   void SetOriginLatitude(double NewValue);
 
+  /**
+   * Gets the longitude of the custom origin placement in degrees, in the range
+   * [-180, 180]
+   */
   UFUNCTION(BlueprintGetter)
   double GetOriginLongitude() const;
 
+  /**
+   * Sets the longitude of the custom origin placement in degrees, in the range
+   * [-180, 180]
+   */
   UFUNCTION(BlueprintSetter)
   void SetOriginLongitude(double NewValue);
 
+  /**
+   * Gets the height of the custom origin placement in meters above the
+   * ellipsoid.
+   */
   UFUNCTION(BlueprintGetter)
   double GetOriginHeight() const;
 
+  /**
+   * Sets the height of the custom origin placement in meters above the
+   * ellipsoid.
+   */
   UFUNCTION(BlueprintSetter)
   void SetOriginHeight(double NewValue);
 
   /**
-   * The percentage scale of the globe in the Unreal world. If this value is 50,
-   * for example, one meter on the globe occupies half a meter in the Unreal
-   * world.
+   * Gets the percentage scale of the globe in the Unreal world. If this value
+   * is 50, for example, one meter on the globe occupies half a meter in the
+   * Unreal world.
    */
   UFUNCTION(BlueprintGetter)
   double GetScale() const;
 
   /**
-   * The percentage scale of the globe in the Unreal world. If this value is 50,
-   * for example, one meter on the globe occupies half a meter in the Unreal
-   * world.
+   * Sets the percentage scale of the globe in the Unreal world. If this value
+   * is 50, for example, one meter on the globe occupies half a meter in the
+   * Unreal world.
    */
   UFUNCTION(BlueprintSetter)
   void SetScale(double NewValue);
 
+  /**
+   * Gets the camera to use to determine which sub-level is closest, so that one
+   * can be activated and all others deactivated.
+   */
   UFUNCTION(BlueprintGetter)
   APlayerCameraManager* GetSubLevelCamera() const;
 
+  /**
+   * Sets the camera to use to determine which sub-level is closest, so that one
+   * can be activated and all others deactivated.
+   */
   UFUNCTION(BlueprintSetter)
   void SetSubLevelCamera(APlayerCameraManager* NewValue);
 
+  /**
+   * Gets whether to visualize the level loading radii in the editor. Helpful
+   * for initially positioning the level and choosing a load radius.
+   */
   UFUNCTION(BlueprintGetter)
   bool GetShowLoadRadii() const;
 
+  /**
+   * Sets whether to visualize the level loading radii in the editor. Helpful
+   * for initially positioning the level and choosing a load radius.
+   */
   UFUNCTION(BlueprintSetter)
   void SetShowLoadRadii(bool NewValue);
 
