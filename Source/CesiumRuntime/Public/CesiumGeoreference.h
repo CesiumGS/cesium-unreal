@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
 #include "Containers/UnrealString.h"
 #include "CoreMinimal.h"
@@ -498,7 +499,7 @@ public:
       BlueprintPure,
       Category = "Cesium",
       meta = (ReturnDisplayName = "UnrealToEarthCenteredEarthFixedMatrix"))
-  const FMatrix& ComputeUnrealToEarthCenteredEarthFixedTransformation() const;
+  FMatrix ComputeUnrealToEarthCenteredEarthFixedTransformation() const;
 
   /**
    * Computes the transformation matrix from the Earth-Centered, Earth-Fixed
@@ -512,7 +513,7 @@ public:
       BlueprintPure,
       Category = "Cesium",
       meta = (ReturnDisplayName = "EarthCenteredEarthFixedToUnrealMatrix"))
-  const FMatrix& ComputeEarthCenteredEarthFixedToUnrealTransformation() const;
+  FMatrix ComputeEarthCenteredEarthFixedToUnrealTransformation() const;
 
   /**
    * Computes the matrix that transforms from an East-South-Up frame centered at
@@ -618,6 +619,11 @@ protected:
 
 #pragma region Obsolete
 
+public:
+  [[deprecated(
+      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")]] const GeoTransforms&
+  GetGeoTransforms() const noexcept;
+
 private:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
   UPROPERTY(
@@ -687,15 +693,6 @@ public:
    */
   void UpdateGeoreference();
 
-  /**
-   * Returns the GeoTransforms that offers the same conversion
-   * functions as this class, but performs the computations
-   * in double precision.
-   */
-  const GeoTransforms& GetGeoTransforms() const noexcept {
-    return _geoTransforms;
-  }
-
 private:
   /**
    * A tag that is assigned to Georeferences when they are created
@@ -703,16 +700,12 @@ private:
    */
   static FName DEFAULT_GEOREFERENCE_TAG;
 
-  GeoTransforms _geoTransforms;
+  mutable GeoTransforms _geoTransforms;
+  CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem{
+      glm::dmat4(1.0)};
 
   UPROPERTY()
   UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
-
-  // TODO: add option to set georeference directly from ECEF
-  void _setGeoreferenceOrigin(
-      double targetLongitude,
-      double targetLatitude,
-      double targetHeight);
 
   /**
    * @brief Updates the load state of sub-levels.
@@ -729,7 +722,7 @@ private:
    * Updates _geoTransforms based on the current ellipsoid and center, and
    * returns the old transforms.
    */
-  void _updateGeoTransforms();
+  void _updateCoordinateSystem();
 
   /**
    * Determines if this Georeference should manage sub-level switching.
