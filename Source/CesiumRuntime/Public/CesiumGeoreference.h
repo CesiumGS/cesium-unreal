@@ -3,14 +3,11 @@
 #pragma once
 
 #include "CesiumSubLevel.h"
-#include "Components/ActorComponent.h"
 #include "Containers/UnrealString.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GeoTransforms.h"
 #include "OriginPlacement.h"
-#include "UObject/WeakInterfacePtr.h"
-#include <glm/mat3x3.hpp>
 #include "CesiumGeoreference.generated.h"
 
 class APlayerCameraManager;
@@ -180,36 +177,6 @@ private:
   bool ShowLoadRadii = true;
 #endif
 
-  /**
-   * The transformation matrix from the Unreal coordinate system to the
-   * Earth-Centered, Earth-Fixed (ECEF) coordinate system. The Unreal
-   * coordinates should generally not be interpreted as Unreal _world_
-   * coordinates, but rather a coordinate system based on some parent Actor's
-   * reference frame as defined by its transform. This way, the chain of Unreal
-   * transforms places and orients the "globe" in the Unreal world.
-   */
-  UPROPERTY(
-      BlueprintReadOnly,
-      BlueprintGetter = GetUnrealToEarthCenteredEarthFixedTransformation,
-      Category = "Cesium",
-      meta = (AllowPrivateAccess))
-  FMatrix UnrealToEarthCenteredEarthFixedTransformation;
-
-  /**
-   * The transformation matrix from the Earth-Centered, Earth-Fixed (ECEF)
-   * coordinate system to the Unreal coordinate system. The Unreal coordinates
-   * should generally not be interpreted as Unreal _world_ coordinates, but
-   * rather a coordinate system based on some parent Actor's reference frame as
-   * defined by its transform. This way, the chain of Unreal transforms places
-   * and orients the "globe" in the Unreal world.
-   */
-  UPROPERTY(
-      BlueprintReadOnly,
-      BlueprintGetter = GetEarthCenteredEarthFixedToUnrealTransformation,
-      Category = "Cesium",
-      meta = (AllowPrivateAccess))
-  FMatrix EarthCenteredEarthFixedToUnrealTransformation;
-
 #pragma endregion
 
 #pragma region PropertyAccessors
@@ -236,10 +203,22 @@ public:
       const FVector& TargetLongitudeLatitudeHeight);
 
   /**
+   * Returns the georeference origin position as an FVector in Earth-Centerd,
+   * Earth-Fixed (ECEF) coordinates. Only valid if the placement type is
+   * Cartographic Origin (i.e. Longitude / Latitude / Height).
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector GetOriginEarthCenteredEarthFixed() const;
+
+  /**
    * This aligns the specified Earth-Centered, Earth-Fixed (ECEF) coordinates to
    * the Unreal origin. That is, it moves the globe so that these coordinates
    * exactly fall on the origin. Only valid if the placement type is
-   * Cartographic Origin (i.e. Longitude / Latitude / Height).
+   * Cartographic Origin (i.e. Longitude / Latitude / Height). Note that if the
+   * provided ECEF coordiantes are near the center of the Earth so that
+   * Longitude, Latitude, and Height are undefined, this function will instead
+   * place the origin at 0 degrees longitude, 0 degrees latitude, and 0 meters
+   * height about the ellipsoid.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SetOriginEarthCenteredEarthFixed(
@@ -296,12 +275,6 @@ public:
 
   UFUNCTION(BlueprintSetter)
   void SetShowLoadRadii(bool NewValue);
-
-  UFUNCTION(BlueprintGetter)
-  const FMatrix& GetUnrealToEarthCenteredEarthFixedTransformation() const;
-
-  UFUNCTION(BlueprintGetter)
-  const FMatrix& GetEarthCenteredEarthFixedToUnrealTransformation() const;
 
 #pragma endregion
 
@@ -448,6 +421,34 @@ public:
       const FVector& UnrealLocation) const;
 
   /**
+   * Computes the transformation matrix from the Unreal coordinate system to the
+   * Earth-Centered, Earth-Fixed (ECEF) coordinate system. The Unreal
+   * coordinates should generally not be interpreted as Unreal _world_
+   * coordinates, but rather a coordinate system based on some parent Actor's
+   * reference frame as defined by its transform. This way, the chain of Unreal
+   * transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "UnrealToEarthCenteredEarthFixedMatrix"))
+  const FMatrix& ComputeUnrealToEarthCenteredEarthFixedTransformation() const;
+
+  /**
+   * Computes the transformation matrix from the Earth-Centered, Earth-Fixed
+   * (ECEF) coordinate system to the Unreal coordinate system. The Unreal
+   * coordinates should generally not be interpreted as Unreal _world_
+   * coordinates, but rather a coordinate system based on some parent Actor's
+   * reference frame as defined by its transform. This way, the chain of Unreal
+   * transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedToUnrealMatrix"))
+  const FMatrix& ComputeEarthCenteredEarthFixedToUnrealTransformation() const;
+
+  /**
    * Computes the matrix that transforms from an East-South-Up frame centered at
    * a given location to the Unreal frame.
    *
@@ -469,6 +470,29 @@ public:
       meta = (ReturnDisplayName = "EastSouthUpToUnrealMatrix"))
   FMatrix
   ComputeEastSouthUpToUnrealTransformation(const FVector& UnrealLocation) const;
+
+  /**
+   * Computes the matrix that transforms from the Unreal frame to an
+   * East-South-Up frame centered at a given location.
+   *
+   * In an East-South-Up frame, +X points East, +Y points South, and +Z points
+   * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
+   * coordinates vary depending on where on the globe we are talking about.
+   * That is why this function takes a location, expressed in Unreal
+   * coordinates, that defines the origin of the East-South-Up frame of
+   * interest.
+   *
+   * The Unreal location and the resulting matrix should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "UnrealToEastSouthUpMatrix"))
+  FMatrix
+  ComputeUnrealToEastSouthUpTransformation(const FVector& UnrealLocation) const;
 
 #pragma endregion
 
@@ -517,7 +541,6 @@ protected:
   virtual void Serialize(FArchive& Ar) override;
   virtual void BeginPlay() override;
   virtual void OnConstruction(const FTransform& Transform) override;
-  virtual void BeginDestroy() override;
   virtual void PostLoad() override;
 
 #if WITH_EDITOR
@@ -641,14 +664,6 @@ private:
    * returns the old transforms.
    */
   void _updateGeoTransforms();
-
-  /**
-   * @brief Finds the ULevelStreaming with given name.
-   *
-   * @returns The ULevelStreaming, or nullptr if the provided name does not
-   * exist.
-   */
-  ULevelStreaming* _findLevelStreamingByName(const FString& name);
 
   /**
    * Determines if this Georeference should manage sub-level switching.
