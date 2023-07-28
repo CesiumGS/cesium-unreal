@@ -1,13 +1,14 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
+// clang-format off
 #include "CesiumEncodedMetadataComponent.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedMetadataUtility.h"
-#include "CesiumFeatureTextureProperty.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataConversions.h"
-#include "CesiumMetadataModel.h"
+#include "CesiumModelMetadata.h"
+#include "CesiumPropertyTextureProperty.h"
 
 #if WITH_EDITOR
 #include "AssetRegistry/AssetData.h"
@@ -44,16 +45,15 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
     return;
   }
 
-  // clang-format off
-  // for (const UActorComponent* pComponent : pOwner->GetComponents()) {
-  //   const UCesiumGltfComponent* pGltf =
-  //   Cast<UCesiumGltfComponent>(pComponent); if (!pGltf) {
-  //     continue;
-  //   }
+  //for (const UActorComponent* pComponent : pOwner->GetComponents()) {
+  //  const UCesiumGltfComponent* pGltf = Cast<UCesiumGltfComponent>(pComponent);
+  //  if (!pGltf) {
+  //    continue;
+  //  }
 
-  //  const FCesiumMetadataModel& model = pGltf->Metadata;
-  //  const TMap<FString, FCesiumFeatureTable>& featureTables =
-  //      UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(model);
+  //  const FCesiumModelMetadata& modelMetadata = pGltf->Metadata;
+  //  const TArray<FCesiumPropertyTable>& propertyTables =
+  //      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(modelMetadata);
   //  const TMap<FString, FCesiumFeatureTexture>& featureTextures =
   //      UCesiumMetadataModelBlueprintLibrary::GetFeatureTextures(model);
 
@@ -95,8 +95,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
   //      ECesiumMetadataPackedGpuType gpuType =
   //          ECesiumMetadataPackedGpuType::None;
   //      if (type == ECesiumMetadataTrueType::Array) {
-  //        gpuType =
-  //        CesiumMetadataTrueTypeToDefaultPackedGpuType(componentType);
+  //        gpuType = CesiumMetadataTrueTypeToDefaultPackedGpuType(componentType);
   //        componentCount =
   //            UCesiumMetadataPropertyBlueprintLibrary::GetComponentCount(
   //                propertyIt.Value);
@@ -166,7 +165,7 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
   //        continue;
   //      }
 
-  //      FCesiumFeatureTextureProperty property =
+  //      FCesiumPropertyTextureProperty property =
   //          UCesiumFeatureTextureBlueprintLibrary::FindProperty(
   //              featureTextureIt.Value,
   //              propertyName);
@@ -200,70 +199,68 @@ void UCesiumEncodedMetadataComponent::AutoFill() {
   //  }
   //}
 
-  // clang-format on
+  //for (const UActorComponent* pComponent : pOwner->GetComponents()) {
+  //  const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
+  //      Cast<UCesiumGltfPrimitiveComponent>(pComponent);
+  //  if (!pGltfPrimitive) {
+  //    continue;
+  //  }
 
-  for (const UActorComponent* pComponent : pOwner->GetComponents()) {
-    const UCesiumGltfPrimitiveComponent* pGltfPrimitive =
-        Cast<UCesiumGltfPrimitiveComponent>(pComponent);
-    if (!pGltfPrimitive) {
-      continue;
-    }
+  //  const FCesiumPrimitiveFeatures& features = pGltfPrimitive->Features;
+  //  const TArray<FCesiumFeatureIdSet> featureIDSets =
+  //      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
 
-    const FCesiumPrimitiveFeatures& features = pGltfPrimitive->Features;
-    const TArray<FCesiumFeatureIdSet> featureIDSets =
-        UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(features);
+  //  for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
+  //    const int64 propertyTableIndex =
+  //        UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
+  //            featureIDSet);
+  //    if (propertyTableIndex >= 0 &&
+  //        propertyTableIndex < this->FeatureTables.Num()) {
+  //      FFeatureTableDescription& featureTable =
+  //          this->FeatureTables[propertyTableIndex];
+  //      const ECesiumFeatureIdSetType type =
+  //          UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
+  //              featureIDSet);
 
-    for (const FCesiumFeatureIdSet& featureIDSet : featureIDSets) {
-      const int64 propertyTableIndex =
-          UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(
-              featureIDSet);
-      if (propertyTableIndex >= 0 &&
-          propertyTableIndex < this->FeatureTables.Num()) {
-        FFeatureTableDescription& featureTable =
-            this->FeatureTables[propertyTableIndex];
-        const ECesiumFeatureIdSetType type =
-            UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDSetType(
-                featureIDSet);
-
-        // TODO: this will be overhauled, but here's code with new API for
-        // future reference
-        if (type == ECesiumFeatureIdSetType::Attribute) {
-          if (featureTable.AccessType == ECesiumFeatureTableAccessType::Mixed ||
-              featureTable.AccessType ==
-                  ECesiumFeatureTableAccessType::Texture) {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
-          } else {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
-          }
-        } else if (type == ECesiumFeatureIdSetType::Texture) {
-          if (featureTable.AccessType ==
-              ECesiumFeatureTableAccessType::Attribute) {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
-          } else if (
-              featureTable.AccessType ==
-              ECesiumFeatureTableAccessType::Unknown) {
-            featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
-            // clang-format off
-            // switch (texture.getFeatureIdTextureView().getChannel()) {
-            // case 1:
-            //   featureTable.Channel = "g";
-            //   break;
-            // case 2:
-            //   featureTable.Channel = "b";
-            //   break;
-            // case 3:
-            //   featureTable.Channel = "a";
-            //   break;
-            //// case 0:
-            // default:
-            //   featureTable.Channel = "r";
-            // }
-            // clang-format on
-          }
-        }
-      }
-    }
-  }
+  //      // TODO: this will be overhauled, but here's code with new API for
+  //      // future reference
+  //      if (type == ECesiumFeatureIdSetType::Attribute) {
+  //        if (featureTable.AccessType == ECesiumFeatureTableAccessType::Mixed ||
+  //            featureTable.AccessType ==
+  //                ECesiumFeatureTableAccessType::Texture) {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
+  //        } else {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Attribute;
+  //        }
+  //      } else if (type == ECesiumFeatureIdSetType::Texture) {
+  //        if (featureTable.AccessType ==
+  //            ECesiumFeatureTableAccessType::Attribute) {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Mixed;
+  //        } else if (
+  //            featureTable.AccessType ==
+  //            ECesiumFeatureTableAccessType::Unknown) {
+  //          featureTable.AccessType = ECesiumFeatureTableAccessType::Texture;
+  //          // clang-format off
+  //          // switch (texture.getFeatureIdTextureView().getChannel()) {
+  //          // case 1:
+  //          //   featureTable.Channel = "g";
+  //          //   break;
+  //          // case 2:
+  //          //   featureTable.Channel = "b";
+  //          //   break;
+  //          // case 3:
+  //          //   featureTable.Channel = "a";
+  //          //   break;
+  //          //// case 0:
+  //          // default:
+  //          //   featureTable.Channel = "r";
+  //          // }
+  //          // clang-format on
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
 }
 
 #if WITH_EDITOR
@@ -900,3 +897,5 @@ void UCesiumEncodedMetadataComponent::GenerateMaterial() {
 }
 
 #endif // WITH_EDITOR
+
+// clang-format on

@@ -1,32 +1,14 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 #include "CesiumMetadataUtilityBlueprintLibrary.h"
 #include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
-static FCesiumMetadataModel EmptyModelMetadata;
-static FCesiumMetadataPrimitive EmptyPrimitiveMetadata;
-
-const FCesiumMetadataModel&
-UCesiumMetadataUtilityBlueprintLibrary::GetModelMetadata(
-    const UPrimitiveComponent* component) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-
-  if (!IsValid(pGltfComponent)) {
-    return EmptyModelMetadata;
-  }
-
-  const UCesiumGltfComponent* pModel =
-      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
-  if (!IsValid(pModel)) {
-    return EmptyModelMetadata;
-  }
-
-  return pModel->Metadata;
-}
+static FCesiumMetadataPrimitive EmptyMetadataPrimitive;
 
 const FCesiumMetadataPrimitive&
 UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
@@ -34,117 +16,86 @@ UCesiumMetadataUtilityBlueprintLibrary::GetPrimitiveMetadata(
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!IsValid(pGltfComponent)) {
-    return EmptyPrimitiveMetadata;
+    return EmptyMetadataPrimitive;
   }
 
-  return pGltfComponent->Metadata;
+  return pGltfComponent->Metadata_DEPRECATED;
 }
 
-TMap<FString, FCesiumMetadataGenericValue>
+TMap<FString, FCesiumMetadataValue>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
     const UPrimitiveComponent* component,
     int64 FaceIndex) {
   const UCesiumGltfPrimitiveComponent* pGltfComponent =
       Cast<UCesiumGltfPrimitiveComponent>(component);
   if (!IsValid(pGltfComponent)) {
-    return TMap<FString, FCesiumMetadataGenericValue>();
+    return TMap<FString, FCesiumMetadataValue>();
   }
 
   const UCesiumGltfComponent* pModel =
       Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
   if (!IsValid(pModel)) {
-    return TMap<FString, FCesiumMetadataGenericValue>();
+    return TMap<FString, FCesiumMetadataValue>();
   }
 
   const FCesiumPrimitiveFeatures& features = pGltfComponent->Features;
-  const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
+  const TArray<FCesiumFeatureIdSet>& featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           features,
           ECesiumFeatureIdSetType::Attribute);
-  if (featureIdAttributes.Num() == 0) {
-    return TMap<FString, FCesiumMetadataGenericValue>();
+  if (featureIDSets.Num() == 0) {
+    return TMap<FString, FCesiumMetadataValue>();
   }
 
-  const FCesiumMetadataModel& modelMetadata = pModel->Metadata;
-  const FCesiumMetadataPrimitive& primitiveMetadata = pGltfComponent->Metadata;
+  const FCesiumModelMetadata& modelMetadata = pModel->Metadata;
+  const FCesiumPrimitiveMetadata& primitiveMetadata = pGltfComponent->Metadata;
 
-  // For now, only considers the first feature
+  // For now, only considers the first feature ID set
   // TODO: expand to arbitrary number of features once testing data is
   // available
-  const TMap<FString, FCesiumFeatureTable>& featureTables =
-      UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(modelMetadata);
-  const FString& featureTableName = "";
-  const FCesiumFeatureTable* pFeatureTable =
-      featureTables.Find(featureTableName);
-  if (!pFeatureTable) {
-    return TMap<FString, FCesiumMetadataGenericValue>();
+  const FCesiumFeatureIdSet& featureIDSet = featureIDSets[0];
+  const int64 propertyTableIndex =
+      UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
+
+  const TArray<FCesiumPropertyTable>& propertyTables =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTables(modelMetadata);
+  if (propertyTableIndex < 0 || propertyTableIndex >= propertyTables.Num()) {
+    return TMap<FString, FCesiumMetadataValue>();
   }
+
+  const FCesiumPropertyTable& propertyTable =
+      propertyTables[propertyTableIndex];
 
   int64 featureID =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
           features,
-          featureIdAttributes[0],
+          featureIDSet,
           FaceIndex);
   if (featureID < 0) {
-    return TMap<FString, FCesiumMetadataGenericValue>();
+    return TMap<FString, FCesiumMetadataValue>();
   }
 
-  return UCesiumFeatureTableBlueprintLibrary::GetMetadataValuesForFeatureID(
-      *pFeatureTable,
+  return UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
+      propertyTable,
       featureID);
 }
 
 TMap<FString, FString>
 UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesAsStringForFace(
-    const UPrimitiveComponent* component,
+    const UPrimitiveComponent* Component,
     int64 FaceIndex) {
-  const UCesiumGltfPrimitiveComponent* pGltfComponent =
-      Cast<UCesiumGltfPrimitiveComponent>(component);
-  if (!IsValid(pGltfComponent)) {
-    return TMap<FString, FString>();
-  }
-
-  const UCesiumGltfComponent* pModel =
-      Cast<UCesiumGltfComponent>(pGltfComponent->GetOuter());
-  if (!IsValid(pModel)) {
-    return TMap<FString, FString>();
-  }
-
-  const FCesiumPrimitiveFeatures& features = pGltfComponent->Features;
-  const TArray<FCesiumFeatureIdSet>& featureIdAttributes =
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
-          features,
-          ECesiumFeatureIdSetType::Attribute);
-  if (featureIdAttributes.Num() == 0) {
-    return TMap<FString, FString>();
-  }
-
-  const FCesiumMetadataModel& modelMetadata = pModel->Metadata;
-  const FCesiumMetadataPrimitive& primitiveMetadata = pGltfComponent->Metadata;
-
-  // For now, only considers the first feature
-  // TODO: expand to arbitrary number of features once testing data is
-  // available
-  const TMap<FString, FCesiumFeatureTable>& featureTables =
-      UCesiumMetadataModelBlueprintLibrary::GetFeatureTables(modelMetadata);
-  const FString& featureTableName = "";
-  const FCesiumFeatureTable* pFeatureTable =
-      featureTables.Find(featureTableName);
-  if (!pFeatureTable) {
-    return TMap<FString, FString>();
-  }
-
-  int64 featureID =
-      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
-          features,
-          featureIdAttributes[0],
+  TMap<FString, FCesiumMetadataValue> values =
+      UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
+          Component,
           FaceIndex);
-  if (featureID < 0) {
-    return TMap<FString, FString>();
+  TMap<FString, FString> strings;
+  for (auto valuesIt : values) {
+    strings.Add(
+        valuesIt.Key,
+        UCesiumMetadataValueBlueprintLibrary::GetString(valuesIt.Value, ""));
   }
 
-  return UCesiumFeatureTableBlueprintLibrary::
-      GetMetadataValuesAsStringForFeatureID(*pFeatureTable, featureID);
+  return strings;
 }
 
 int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
@@ -157,3 +108,5 @@ int64 UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDFromFaceID(
           Primitive,
           FaceID));
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

@@ -2,14 +2,13 @@
 
 #include "CesiumFeatureIdTexture.h"
 
-#include "CesiumGltf/ExtensionExtMeshFeaturesFeatureIdTexture.h"
+#include "CesiumGltf/FeatureIdTexture.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumGltfPrimitiveComponent.h"
 
 #include <optional>
 
 using namespace CesiumGltf;
-using namespace CesiumGltf::MeshFeatures;
 
 namespace {
 // There are technically no invalid texcoord values because of clamp / wrap
@@ -63,7 +62,7 @@ struct TexCoordFromAccessor {
 FCesiumFeatureIdTexture::FCesiumFeatureIdTexture(
     const Model& Model,
     const MeshPrimitive& Primitive,
-    const ExtensionExtMeshFeaturesFeatureIdTexture& FeatureIdTexture,
+    const FeatureIdTexture& FeatureIdTexture,
     const FString& PropertyTableName)
     : _status(ECesiumFeatureIdTextureStatus::ErrorInvalidTexture),
       _featureIdTextureView(Model, FeatureIdTexture),
@@ -170,7 +169,7 @@ int64 UCesiumFeatureIdTextureBlueprintLibrary::
         const FCesiumFeatureIdTexture& FeatureIDTexture,
         float U,
         float V) {
-  return FeatureIDTexture._featureIdTextureView.getFeatureId(U, V);
+  return FeatureIDTexture._featureIdTextureView.getFeatureID(U, V);
 }
 
 int64 UCesiumFeatureIdTextureBlueprintLibrary::GetFeatureIDForVertex(

@@ -6,9 +6,10 @@
 #include "CesiumGltf/Material.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
-#include "CesiumMetadataModel.h"
 #include "CesiumMetadataPrimitive.h"
+#include "CesiumModelMetadata.h"
 #include "CesiumPrimitiveFeatures.h"
+#include "CesiumPrimitiveMetadata.h"
 #include "CesiumRasterOverlays.h"
 #include "CesiumTextureUtility.h"
 #include "Chaos/TriangleMeshImplicitObject.h"
@@ -25,9 +26,13 @@
 // TODO: internal documentation
 namespace LoadGltfResult {
 struct LoadPrimitiveResult {
+  // Parses EXT_mesh_features from a mesh primitive.
   FCesiumPrimitiveFeatures Features{};
-  FCesiumMetadataPrimitive Metadata{};
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata{};
+  // Parses EXT_structural_metadata from a mesh primitive.
+  FCesiumPrimitiveMetadata Metadata{};
+
+  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata
+      EncodedPrimitiveMetadata{};
   TMap<FString, uint32_t> metadataTextureCoordinateParameters;
   TUniquePtr<FStaticMeshRenderData> RenderData = nullptr;
   const CesiumGltf::Model* pModel = nullptr;
@@ -72,7 +77,8 @@ struct LoadNodeResult {
 
 struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
-  FCesiumMetadataModel Metadata{};
-  CesiumEncodedMetadataUtility::EncodedMetadata EncodedMetadata{};
+  // Parses the root EXT_structural_metadata extension.
+  FCesiumModelMetadata Metadata{};
+  CesiumEncodedMetadataUtility::EncodedModelMetadata EncodedModelMetadata{};
 };
 } // namespace LoadGltfResult

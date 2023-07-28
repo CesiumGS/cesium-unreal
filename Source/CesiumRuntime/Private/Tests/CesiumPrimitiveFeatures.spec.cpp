@@ -1,5 +1,5 @@
-#include "CesiumFeatureIdSpecUtility.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
+#include "CesiumGltfSpecUtility.h"
 #include "CesiumPrimitiveFeatures.h"
 #include "Misc/AutomationTest.h"
 
@@ -37,8 +37,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
     });
 
     It("constructs with single feature ID set", [this]() {
-      ExtensionExtMeshFeaturesFeatureId& featureID =
-          pExtension->featureIds.emplace_back();
+      FeatureId& featureID = pExtension->featureIds.emplace_back();
       featureID.featureCount = 10;
 
       FCesiumPrimitiveFeatures primitiveFeatures =
@@ -80,8 +79,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
           texCoords,
           0);
 
-      ExtensionExtMeshFeaturesFeatureId& implicitIDs =
-          pExtension->featureIds.emplace_back();
+      FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
       implicitIDs.featureCount = 3;
 
       FCesiumPrimitiveFeatures primitiveFeatures =
@@ -100,8 +98,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
       for (size_t i = 0; i < featureIDSets.Num(); i++) {
         const FCesiumFeatureIdSet& featureIDSet =
             featureIDSets[static_cast<int32>(i)];
-        const ExtensionExtMeshFeaturesFeatureId& gltfFeatureID =
-            pExtension->featureIds[i];
+        const FeatureId& gltfFeatureID = pExtension->featureIds[i];
         TestEqual(
             "Feature Count",
             UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(featureIDSet),
@@ -140,8 +137,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
           texCoords,
           0);
 
-      ExtensionExtMeshFeaturesFeatureId& implicitIDs =
-          pExtension->featureIds.emplace_back();
+      FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
       implicitIDs.featureCount = 3;
     });
 
@@ -596,8 +592,7 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
     Describe("ImplicitFeatureIDs", [this]() {
       BeforeEach([this]() {
-        ExtensionExtMeshFeaturesFeatureId& implicitIDs =
-            pExtension->featureIds.emplace_back();
+        FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
         implicitIDs.featureCount = 6;
       });
 

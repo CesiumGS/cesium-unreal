@@ -2,15 +2,14 @@
 
 #pragma once
 
-#include "CesiumFeatureTable.h"
-#include "CesiumGltf/MeshFeaturesFeatureIdTextureView.h"
+#include "CesiumGltf/FeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "CesiumFeatureIdTexture.generated.h"
 
 namespace CesiumGltf {
 struct Model;
-struct ExtensionExtMeshFeaturesFeatureIdTexture;
+struct FeatureIdTexture;
 } // namespace CesiumGltf
 
 /**
@@ -32,7 +31,7 @@ enum ECesiumFeatureIdTextureStatus {
 /**
  * @brief A blueprint-accessible wrapper for a feature ID texture from a glTF
  * primitive. Provides access to per-pixel feature IDs, which can be used with
- * the corresponding {@link FCesiumFeatureTable} to access per-pixel metadata.
+ * the corresponding {@link FCesiumPropertyTable} to access per-pixel metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumFeatureIdTexture {
@@ -59,29 +58,27 @@ public:
    *
    * @param Model The model.
    * @param Primitive The mesh primitive containing the feature ID texture.
-   * @param FeatureIdTexture The texture specified by the
-   * ExtensionExtMeshFeaturesFeatureId.
+   * @param FeatureIdTexture The texture specified by the FeatureId.
    * @param PropertyTableName The name of the property table this texture
    * corresponds to, if one exists, for backwards compatibility.
    */
   FCesiumFeatureIdTexture(
       const CesiumGltf::Model& Model,
       const CesiumGltf::MeshPrimitive& Primitive,
-      const CesiumGltf::ExtensionExtMeshFeaturesFeatureIdTexture&
-          FeatureIdTexture,
+      const CesiumGltf::FeatureIdTexture& FeatureIdTexture,
       const FString& PropertyTableName);
 
   /**
    * @brief Gets the underlying view of this feature ID texture.
    */
-  constexpr const CesiumGltf::MeshFeatures::FeatureIdTextureView&
+  constexpr const CesiumGltf::FeatureIdTextureView&
   getFeatureIdTextureView() const {
     return this->_featureIdTextureView;
   }
 
 private:
   ECesiumFeatureIdTextureStatus _status;
-  CesiumGltf::MeshFeatures::FeatureIdTextureView _featureIdTextureView;
+  CesiumGltf::FeatureIdTextureView _featureIdTextureView;
   TexCoordAccessorType _texCoordAccessor;
   int64 _textureCoordinateIndex;
 
@@ -109,8 +106,8 @@ public:
       Category = "Cesium|Metadata|FeatureIdTexture",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumFeatureIdTextureBlueprintLibrary.GetFeatureTableName is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetPropertyTableIndex instead."))
+           DeprecationMessage =
+               "Use GetPropertyTableIndex on a CesiumFeatureIdSet instead."))
   static const FString&
   GetFeatureTableName(UPARAM(ref)
                           const FCesiumFeatureIdTexture& FeatureIDTexture);
@@ -123,7 +120,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static ECesiumFeatureIdTextureStatus GetFeatureIDTextureStatus(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
@@ -135,14 +132,14 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static int64 GetTextureCoordinateIndex(
       const UPrimitiveComponent* Component,
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture);
 
   /**
    * Gets the feature ID corresponding to the pixel specified by the texture
-   * coordinates. The feature ID can be used with a FCesiumFeatureTable to
+   * coordinates. The feature ID can be used with a FCesiumPropertyTable to
    * retrieve the per-pixel metadata.
    *
    * This assumes the given texture coordinates are from the appropriate
@@ -152,7 +149,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static int64 GetFeatureIDForTextureCoordinates(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       float U,
@@ -160,7 +157,7 @@ public:
 
   /**
    * Gets the feature ID associated with the given vertex. The
-   * feature ID can be used with a FCesiumFeatureTable to retrieve the
+   * feature ID can be used with a FCesiumPropertyTable to retrieve the
    * per-vertex metadata.
    *
    * This works if the vertex contains texture coordinates for the relevant
@@ -171,7 +168,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDTexture")
+      Category = "Cesium|Features|FeatureIDTexture")
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdTexture& FeatureIDTexture,
       int64 VertexIndex);

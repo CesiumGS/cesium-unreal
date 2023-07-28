@@ -10,45 +10,45 @@
 #include "Templates/SharedPointer.h"
 #include "Templates/UniquePtr.h"
 
-struct FCesiumMetadataModel;
-struct FCesiumMetadataPrimitive;
-struct FCesiumFeatureTable;
-struct FCesiumFeatureTexture;
+struct FCesiumModelMetadata;
+struct FCesiumPrimitiveMetadata;
+struct FCesiumPropertyTable;
+struct FCesiumPropertyTexture;
 struct FFeatureTableDescription;
 struct FFeatureTextureDescription;
 struct FMetadataDescription;
 
 namespace CesiumEncodedMetadataUtility {
-struct EncodedMetadataProperty {
+struct EncodedPropertyTableProperty {
   /**
-   * @brief The name of this property.
+   * @brief The name of this property tableproperty.
    */
   FString name;
 
   /**
-   * @brief The encoded property array.
+   * @brief The property table property values, encoded into a texture.
    */
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 };
 
-struct EncodedMetadataFeatureTable {
+struct EncodedPropertyTable {
   /**
-   * @brief The encoded properties in this feature table.
+   * @brief The encoded properties in this property table.
    */
-  TArray<EncodedMetadataProperty> encodedProperties;
+  TArray<EncodedPropertyTableProperty> properties;
 };
 
 struct EncodedFeatureIdTexture {
   /**
-   * @brief The name to use for this feature id texture in the shader.
+   * @brief The name to use for this feature ID texture in the shader.
    */
   FString baseName;
 
   /**
-   * @brief The encoded feature table corresponding to this feature id
+   * @brief The encoded property table corresponding to this feature ID
    * texture.
    */
-  FString featureTableName;
+  FString propertyTableName;
 
   /**
    * @brief The actual feature ID texture.
@@ -56,12 +56,12 @@ struct EncodedFeatureIdTexture {
   TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 
   /**
-   * @brief The channel that this feature id texture uses within the image.
+   * @brief The channel that this feature ID texture uses within the image.
    */
   int32 channel;
 
   /**
-   * @brief The texture coordinate accessor index for the feature id texture.
+   * @brief The texture coordinate accessor index for the feature ID texture.
    */
   int64 textureCoordinateAttributeId;
 };
@@ -72,66 +72,66 @@ struct EncodedFeatureIdAttribute {
   int32 index;
 };
 
-struct EncodedFeatureTextureProperty {
+struct EncodedPropertyTextureProperty {
   FString baseName;
   TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
   int64 textureCoordinateAttributeId;
   int32 channelOffsets[4];
 };
 
-struct EncodedFeatureTexture {
-  TArray<EncodedFeatureTextureProperty> properties;
+struct EncodedPropertyTexture {
+  TArray<EncodedPropertyTextureProperty> properties;
 };
 
-struct EncodedMetadataPrimitive {
+struct EncodedPrimitiveMetadata {
   TArray<EncodedFeatureIdTexture> encodedFeatureIdTextures;
   TArray<EncodedFeatureIdAttribute> encodedFeatureIdAttributes;
-  TArray<FString> featureTextureNames;
+  TArray<FString> propertyTextureNames;
 };
 
-struct EncodedMetadata {
-  TMap<FString, EncodedMetadataFeatureTable> encodedFeatureTables;
-  TMap<FString, EncodedFeatureTexture> encodedFeatureTextures;
+struct EncodedModelMetadata {
+  TMap<FString, EncodedPropertyTable> propertyTables;
+  TMap<FString, EncodedPropertyTexture> propertyTextures;
 };
 
-EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
+EncodedPropertyTable encodePropertyTableAnyThreadPart(
     const FFeatureTableDescription& featureTableDescription,
-    const FCesiumFeatureTable& featureTable);
+    const FCesiumPropertyTable& propertyTable);
 
-EncodedFeatureTexture encodeFeatureTextureAnyThreadPart(
+EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     TMap<
         const CesiumGltf::ImageCesium*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
-        featureTexturePropertyMap,
+        propertyTexturePropertyMap,
     const FFeatureTextureDescription& featureTextureDescription,
-    const FString& featureTextureName,
-    const FCesiumFeatureTexture& featureTexture);
+    const FString& propertyTextureName,
+    const FCesiumPropertyTexture& propertyTexture);
 
-EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
+EncodedPrimitiveMetadata encodePrimitiveMetadataAnyThreadPart(
     const FMetadataDescription& metadataDescription,
-    const FCesiumMetadataPrimitive& primitive);
+    const FCesiumPrimitiveMetadata& primitive);
 
-EncodedMetadata encodeMetadataAnyThreadPart(
+EncodedModelMetadata encodeModelMetadataAnyThreadPart(
     const FMetadataDescription& metadataDescription,
-    const FCesiumMetadataModel& metadata);
+    const FCesiumModelMetadata& modelMetadata);
 
-bool encodeMetadataFeatureTableGameThreadPart(
-    EncodedMetadataFeatureTable& encodedFeatureTable);
+bool encodePropertyTableGameThreadPart(
+    EncodedPropertyTable& encodedFeatureTable);
 
-bool encodeFeatureTextureGameThreadPart(
+bool encodePropertyTextureGameThreadPart(
     TArray<TUniquePtr<CesiumTextureUtility::LoadedTextureResult>>&
         uniqueTextures,
-    EncodedFeatureTexture& encodedFeatureTexture);
+    EncodedPropertyTexture& encodedFeatureTexture);
 
-bool encodeMetadataPrimitiveGameThreadPart(
-    EncodedMetadataPrimitive& encodedPrimitive);
+bool encodePrimitiveMetadataGameThreadPart(
+    EncodedPrimitiveMetadata& encodedPrimitive);
 
-bool encodeMetadataGameThreadPart(EncodedMetadata& encodedMetadata);
+bool encodeModelMetadataGameThreadPart(EncodedModelMetadata& encodedMetadata);
 
-void destroyEncodedMetadataPrimitive(
-    EncodedMetadataPrimitive& encodedPrimitive);
+void destroyEncodedPrimitiveMetadata(
+    EncodedPrimitiveMetadata& encodedPrimitive);
 
-void destroyEncodedMetadata(EncodedMetadata& encodedMetadata);
+void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
 
 FString createHlslSafeName(const FString& rawName);
 

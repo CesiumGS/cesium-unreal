@@ -26,10 +26,24 @@ public:
   UCesiumGltfPrimitiveComponent();
   virtual ~UCesiumGltfPrimitiveComponent();
 
+  /**
+   * Represents the primitive's EXT_mesh_features extension.
+   */
   FCesiumPrimitiveFeatures Features;
-  FCesiumMetadataPrimitive Metadata;
+  /**
+   * Represents the primitive's EXT_structural_metadata extension.
+   */
+  FCesiumPrimitiveMetadata Metadata;
 
-  CesiumEncodedMetadataUtility::EncodedMetadataPrimitive EncodedMetadata;
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+  /**
+   * For backwards compatibility with the EXT_feature_metadata implementation.
+   */
+  FCesiumMetadataPrimitive Metadata_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata
+      EncodedPrimitiveMetadata;
 
   ACesium3DTileset* pTilesetActor;
 

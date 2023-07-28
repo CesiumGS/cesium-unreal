@@ -1,21 +1,18 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 #include "CesiumMetadataPrimitive.h"
 #include "CesiumGltf/ExtensionMeshPrimitiveExtFeatureMetadata.h"
 #include "CesiumGltf/Model.h"
 
 FCesiumMetadataPrimitive::FCesiumMetadataPrimitive(
-    const CesiumGltf::Model& model,
-    const CesiumGltf::MeshPrimitive& primitive,
-    const CesiumGltf::ExtensionMeshPrimitiveExtFeatureMetadata& metadata,
-    const FCesiumPrimitiveFeatures& primitiveFeatures)
-    : _pPrimitiveFeatures(&primitiveFeatures), _featureTextureNames() {
-  this->_featureTextureNames.Reserve(metadata.featureTextures.size());
-  for (const std::string& featureTextureName : metadata.featureTextures) {
-    this->_featureTextureNames.Emplace(
-        UTF8_TO_TCHAR(featureTextureName.c_str()));
-  }
-}
+    const FCesiumPrimitiveFeatures& PrimitiveFeatures,
+    const FCesiumPrimitiveMetadata& PrimitiveMetadata,
+    const FCesiumModelMetadata& ModelMetadata)
+    : _pPrimitiveFeatures(&PrimitiveFeatures),
+      _pPrimitiveMetadata(&PrimitiveMetadata),
+      _pModelMetadata(&ModelMetadata) {}
 
 const TArray<FCesiumFeatureIdAttribute>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdAttributes(
@@ -47,6 +44,7 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
   if (!MetadataPrimitive._pPrimitiveFeatures) {
     return featureIDTextures;
   }
+
   const TArray<FCesiumFeatureIdSet> featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSetsOfType(
           *MetadataPrimitive._pPrimitiveFeatures,
@@ -62,16 +60,44 @@ UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureIdTextures(
   return featureIDTextures;
 }
 
-const TArray<FString>&
+const TArray<FString>
 UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTextureNames(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive) {
-  return MetadataPrimitive._featureTextureNames;
+  TArray<FString> propertyTextureNames;
+  if (!MetadataPrimitive._pPrimitiveMetadata ||
+      !MetadataPrimitive._pModelMetadata) {
+    return TArray<FString>();
+  }
+
+  const TArray<int64>& propertyTextureIndices =
+      UCesiumPrimitiveMetadataBlueprintLibrary::GetPropertyTextureIndices(
+          *MetadataPrimitive._pPrimitiveMetadata);
+
+  const TArray<FCesiumPropertyTexture> propertyTextures =
+      UCesiumModelMetadataBlueprintLibrary::GetPropertyTexturesAtIndices(
+          *MetadataPrimitive._pModelMetadata,
+          propertyTextureIndices);
+
+  propertyTextureNames.Reserve(propertyTextures.Num());
+  for (auto propertyTexture : propertyTextures) {
+    propertyTextureNames.Add(
+        UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
+            propertyTexture));
+  }
+
+  return propertyTextureNames;
 }
 
 int64 UCesiumMetadataPrimitiveBlueprintLibrary::GetFirstVertexIDFromFaceID(
     UPARAM(ref) const FCesiumMetadataPrimitive& MetadataPrimitive,
     int64 FaceID) {
+  if (!MetadataPrimitive._pPrimitiveFeatures) {
+    return -1;
+  }
+
   return UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
       *MetadataPrimitive._pPrimitiveFeatures,
       FaceID);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

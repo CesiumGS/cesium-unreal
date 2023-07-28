@@ -1,10 +1,9 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumFeatureIdSet.h"
-#include "CesiumFeatureTable.h"
 #include "CesiumGltf/Accessor.h"
-#include "CesiumGltf/ExtensionExtMeshFeaturesFeatureId.h"
 #include "CesiumGltf/ExtensionModelExtStructuralMetadata.h"
+#include "CesiumGltf/FeatureId.h"
 #include "CesiumGltf/Model.h"
 
 using namespace CesiumGltf;
@@ -15,7 +14,7 @@ static FCesiumFeatureIdTexture EmptyFeatureIDTexture;
 FCesiumFeatureIdSet::FCesiumFeatureIdSet(
     const Model& InModel,
     const MeshPrimitive& Primitive,
-    const ExtensionExtMeshFeaturesFeatureId& FeatureID)
+    const FeatureId& FeatureID)
     : _featureID(),
       _featureIDSetType(ECesiumFeatureIdSetType::None),
       _featureCount(FeatureID.featureCount),
@@ -29,8 +28,7 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
   if (pMetadata && _propertyTableIndex >= 0) {
     size_t index = static_cast<size_t>(_propertyTableIndex);
     if (index < pMetadata->propertyTables.size()) {
-      const ExtensionExtStructuralMetadataPropertyTable& propertyTable =
-          pMetadata->propertyTables[index];
+      const PropertyTable& propertyTable = pMetadata->propertyTables[index];
       std::string name = propertyTable.name.value_or("");
       propertyTableName = FString(name.c_str());
     }

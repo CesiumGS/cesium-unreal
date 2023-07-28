@@ -62,6 +62,7 @@ public:
   UPROPERTY(EditAnywhere, Category = "Cesium|Cesium Sublevels")
   bool ShowLoadRadii = true;
 
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
   /*
    * The list of georeferenced sub-levels. Each of these has a corresponding
    * world location that can be jumped to. Only one level can be worked on in
@@ -78,6 +79,7 @@ public:
            DeprecationMessage =
                "Create sub-levels by adding a UCesiumSubLevelComponent to an ALevelInstance Actor."))
   TArray<FCesiumSubLevel> CesiumSubLevels_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
    * The placement of this Actor's origin (coordinate 0,0,0) within the tileset.

@@ -3,8 +3,11 @@
 #include "CesiumPrimitiveFeatures.h"
 #include "CesiumGltf/ExtensionExtMeshFeatures.h"
 #include "CesiumGltf/Model.h"
+#include "CesiumGltfPrimitiveComponent.h"
 
 using namespace CesiumGltf;
+
+static FCesiumPrimitiveFeatures EmptyPrimitiveFeatures;
 
 namespace {
 struct VertexIndexFromAccessor {
@@ -67,10 +70,21 @@ FCesiumPrimitiveFeatures::FCesiumPrimitiveFeatures(
     _vertexCount = positionAccessor.count;
   }
 
-  for (const CesiumGltf::ExtensionExtMeshFeaturesFeatureId& FeatureId :
-       Features.featureIds) {
+  for (const CesiumGltf::FeatureId& FeatureId : Features.featureIds) {
     this->_featureIDSets.Add(FCesiumFeatureIdSet(Model, Primitive, FeatureId));
   }
+}
+
+const FCesiumPrimitiveFeatures&
+UCesiumPrimitiveFeaturesBlueprintLibrary::GetPrimitiveFeatures(
+    const UPrimitiveComponent* component) {
+  const UCesiumGltfPrimitiveComponent* pGltfComponent =
+      Cast<UCesiumGltfPrimitiveComponent>(component);
+  if (!IsValid(pGltfComponent)) {
+    return EmptyPrimitiveFeatures;
+  }
+
+  return pGltfComponent->Features;
 }
 
 const TArray<FCesiumFeatureIdSet>&

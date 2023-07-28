@@ -61,6 +61,17 @@ class CESIUMRUNTIME_API UCesiumPrimitiveFeaturesBlueprintLibrary
 
 public:
   /**
+   * Gets the primitive features of a glTF primitive component. If component is
+   * not a Cesium glTF primitive component, the returned features are empty.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Primitive|Features")
+  static const FCesiumPrimitiveFeatures&
+  GetPrimitiveFeatures(const UPrimitiveComponent* component);
+
+  /**
    * Gets all the feature ID sets that are associated with the
    * primitive.
    */

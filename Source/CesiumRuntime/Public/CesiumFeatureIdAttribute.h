@@ -60,8 +60,7 @@ public:
    *
    * @param Model The model.
    * @param Primitive The mesh primitive containing the feature ID attribute.
-   * @param FeatureIDAttribute The attribute index specified by the
-   * ExtensionExtMeshFeaturesFeatureId.
+   * @param FeatureIDAttribute The attribute index specified by the FeatureId.
    * @param PropertyTableName The name of the property table this attribute
    * corresponds to, if one exists, for backwards compatibility.
    */
@@ -105,8 +104,8 @@ public:
       Category = "Cesium|Metadata|FeatureIdAttribute",
       Meta =
           (DeprecatedFunction,
-           DeprecatedMessage =
-               "UCesiumFeatureIdAttributeBlueprintLibrary.GetFeatureTableName is deprecated. Use UCesiumPrimitiveFeaturesBlueprintLibrary.GetPropertyTableIndex instead."))
+           DeprecationMessage =
+               "Use GetPropertyTableIndex on a CesiumFeatureIdSet instead."))
   static const FString&
   GetFeatureTableName(UPARAM(ref)
                           const FCesiumFeatureIdAttribute& FeatureIDAttribute);
@@ -119,7 +118,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDAttribute")
+      Category = "Cesium|Features|FeatureIDAttribute")
   static ECesiumFeatureIdAttributeStatus GetFeatureIDAttributeStatus(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute);
 
@@ -130,7 +129,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDAttribute")
+      Category = "Cesium|Features|FeatureIDAttribute")
   static int64
   GetVertexCount(UPARAM(ref)
                      const FCesiumFeatureIdAttribute& FeatureIDAttribute);
@@ -143,7 +142,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       BlueprintPure,
-      Category = "Cesium|Primitive|FeatureIDAttribute")
+      Category = "Cesium|Features|FeatureIDAttribute")
   static int64 GetFeatureIDForVertex(
       UPARAM(ref) const FCesiumFeatureIdAttribute& FeatureIDAttribute,
       int64 VertexIndex);
