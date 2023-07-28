@@ -326,6 +326,7 @@ public:
   UFUNCTION(BlueprintSetter)
   void SetSubLevelCamera(APlayerCameraManager* NewValue);
 
+#if WITH_EDITOR
   /**
    * Gets whether to visualize the level loading radii in the editor. Helpful
    * for initially positioning the level and choosing a load radius.
@@ -339,6 +340,7 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetShowLoadRadii(bool NewValue);
+#endif // WITH_EDITOR
 
 #pragma endregion
 

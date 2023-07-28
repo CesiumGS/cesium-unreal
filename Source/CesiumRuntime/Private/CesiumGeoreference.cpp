@@ -193,6 +193,7 @@ void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
   this->SubLevelCamera = NewValue;
 }
 
+#if WITH_EDITOR
 bool ACesiumGeoreference::GetShowLoadRadii() const {
   return this->ShowLoadRadii;
 }
@@ -200,6 +201,7 @@ bool ACesiumGeoreference::GetShowLoadRadii() const {
 void ACesiumGeoreference::SetShowLoadRadii(bool NewValue) {
   this->ShowLoadRadii = NewValue;
 }
+#endif // WITH_EDITOR
 
 FVector ACesiumGeoreference::TransformLongitudeLatitudeHeightPositionToUnreal(
     const FVector& LongitudeLatitudeHeight) const {
