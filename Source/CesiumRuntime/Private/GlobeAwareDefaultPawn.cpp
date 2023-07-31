@@ -45,14 +45,10 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     return;
   }
 
-  glm::dvec4 upEcef(
-      this->_ellipsoid.geodeticSurfaceNormal(
-          VecMath::createVector3D(this->GlobeAnchor->GetECEF())),
-      0.0);
-  glm::dvec4 up = this->GlobeAnchor->ResolveGeoreference()
-                      ->GetGeoTransforms()
-                      .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
-                  upEcef;
+  FVector upEcef = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+      this->GlobeAnchor->GetECEF());
+  FVector up = this->GlobeAnchor->ResolveGeoreference()
+                   ->TransformEarthCenteredEarthFixedDirectionToUnreal(upEcef);
 
   FTransform transform{};
   USceneComponent* pRootComponent = this->GetRootComponent();
@@ -63,9 +59,7 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
     }
   }
 
-  this->_moveAlongVector(
-      transform.TransformVector(FVector(up.x, up.y, up.z)),
-      Val);
+  this->_moveAlongVector(transform.TransformVector(up), Val);
 }
 
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {

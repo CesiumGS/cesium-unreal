@@ -693,6 +693,11 @@ public:
    */
   void UpdateGeoreference();
 
+  const CesiumGeospatial::LocalHorizontalCoordinateSystem&
+  getCoordinateSystem() const noexcept {
+    return this->_coordinateSystem;
+  }
+
 private:
   /**
    * A tag that is assigned to Georeferences when they are created

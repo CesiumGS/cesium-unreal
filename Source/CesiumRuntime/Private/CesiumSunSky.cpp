@@ -525,10 +525,9 @@ void ACesiumSunSky::UpdateAtmosphereRadius() {
   } else {
     // Find the ellipsoid radius 100m below the surface at this location. See
     // the comment at the top of this file.
-    glm::dvec3 ecef = this->GetGeoreference()
-                          ->GetGeoTransforms()
-                          .TransformLongitudeLatitudeHeightToEcef(
-                              glm::dvec3(llh.X, llh.Y, -100.0));
+    glm::dvec3 ecef =
+        CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+            CesiumGeospatial::Cartographic::fromDegrees(llh.X, llh.Y, -100.0));
     double minRadius = glm::length(ecef);
 
     if (llh.Z / 1000.0 < this->InscribedGroundThreshold) {
