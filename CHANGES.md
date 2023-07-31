@@ -5,7 +5,7 @@
 ##### Fixes :wrench:
 
 - Fixed a bug introduced in v1.28.0 that prevented point clouds from rendering with attenuation.
-- Fixed a bug where Google Photorealistic 3D Tiles would not render in Movie Render Queue.
+- Fixed a bug where Google Photorealistic 3D Tiles would sometimes not render in Movie Render Queue.
 
 ### v1.28.0 - 2023-07-03
 
