@@ -1,5 +1,11 @@
 # Change Log
 
+### v1.29.0 - 2023-08-01
+
+##### Fixes :wrench:
+
+- Fixed a bug introduced in v1.28.0 that prevented point clouds from rendering with attenuation.
+
 ### v1.28.0 - 2023-07-03
 
 ##### Breaking Changes :mega:
