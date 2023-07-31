@@ -20,6 +20,7 @@
 - `ACesiumGeoreference`, `ACesiumCameraManager`, and `ACesiumCreditSystem` are now created in the Persistent Level, even if the object that triggered their automatic creation (such as `ACesium3DTileset`) exists in a sub-level. It is very rarely useful to have instances of these objects within a sub-level.
 - An instance of `ACesiumCreditSystem` in a sub-level will no longer cause overlapping and broken-looking credits. However, we still recommend deleting credit system instances from sub-levels.
 - Fixed a bug introduced in v1.28.0 that prevented point clouds from rendering with attenuation.
+- Fixed a bug that caused `UnrealLightmass` to crash when attempting to build lighting containing static meshes created by a `Cesium3DTileset`.
 - Fixed a bug where Google Photorealistic 3D Tiles would sometimes not render in Movie Render Queue.
 
 ### v1.28.0 - 2023-07-03
