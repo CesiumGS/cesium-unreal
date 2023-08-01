@@ -28,6 +28,8 @@
 - Fixed a bug where Google Photorealistic 3D Tiles would sometimes not render in Movie Render Queue.
 - Fixed a bug that caused `UnrealLightmass` to crash when attempting to build lighting containing static meshes created by a `Cesium3DTileset`.
 
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.25.1 to v0.26.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.28.0 - 2023-07-03
 
 ##### Breaking Changes :mega:
