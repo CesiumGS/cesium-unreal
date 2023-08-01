@@ -7,8 +7,8 @@
 #include "Cesium3DTilesSelection/ViewUpdateResult.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "CesiumCreditSystem.h"
-#include "CesiumEncodedMetadataComponent.h"
 #include "CesiumExclusionZone.h"
+#include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumGeoreference.h"
 #include "CesiumPointCloudShading.h"
 #include "CoreMinimal.h"
@@ -1146,7 +1146,8 @@ private:
 private:
   TUniquePtr<Cesium3DTilesSelection::Tileset> _pTileset;
 
-  FMetadataDescription _encodedMetadataDescription;
+  FCesiumPrimitiveFeaturesDescription _featuresDescription;
+  FCesiumModelMetadataDescription _modelMetadataDescription;
 
   // For debug output
   uint32_t _lastTilesRendered;

@@ -4,7 +4,7 @@
 
 #include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTileset.h"
-#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
@@ -42,7 +42,7 @@ public:
   FCesiumMetadataPrimitive Metadata_DEPRECATED;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  CesiumEncodedMetadataUtility::EncodedPrimitiveMetadata
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata
       EncodedPrimitiveMetadata;
 
   ACesium3DTileset* pTilesetActor;

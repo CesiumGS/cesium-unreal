@@ -19,7 +19,8 @@ FCesiumFeatureIdSet::FCesiumFeatureIdSet(
       _featureIDSetType(ECesiumFeatureIdSetType::None),
       _featureCount(FeatureID.featureCount),
       _nullFeatureID(FeatureID.nullFeatureId.value_or(-1)),
-      _propertyTableIndex(FeatureID.propertyTable.value_or(-1)) {
+      _propertyTableIndex(FeatureID.propertyTable.value_or(-1)),
+      _label(FString(FeatureID.label.value_or("").c_str())) {
   FString propertyTableName;
 
   // For backwards compatibility with GetFeatureTableName.
@@ -100,6 +101,11 @@ int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureCount(
 const int64 UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(
     UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
   return FeatureIDSet._nullFeatureID;
+}
+
+const FString UCesiumFeatureIdSetBlueprintLibrary::GetLabel(
+    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet) {
+  return FeatureIDSet._label;
 }
 
 int64 UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(

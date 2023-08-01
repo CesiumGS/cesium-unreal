@@ -11,11 +11,9 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     const Model& Model,
     const PropertyTable& PropertyTable)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
+      _name(PropertyTable.name.value_or("").c_str()),
       _count(PropertyTable.count),
-      _name(),
       _properties() {
-  _name = PropertyTable.name.value_or("").c_str();
-
   PropertyTableView propertyTableView{Model, PropertyTable};
   switch (propertyTableView.status()) {
   case PropertyTableViewStatus::Valid:

@@ -131,19 +131,16 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
       }
     }
 
-    CesiumEncodedMetadataUtility::destroyEncodedPrimitiveMetadata(
-        this->EncodedPrimitiveMetadata);
+    //CesiumEncodedFeaturesMetadata::destroyEncodedPrimitiveMetadata(
+    //    this->EncodedPrimitiveMetadata);
 
     CesiumLifetime::destroy(pMaterial);
   }
 
   UStaticMesh* pMesh = this->GetStaticMesh();
   if (pMesh) {
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-    UBodySetup* pBodySetup = pMesh->BodySetup;
-#else
     UBodySetup* pBodySetup = pMesh->GetBodySetup();
-#endif
+
     if (pBodySetup) {
       CesiumLifetime::destroy(pBodySetup);
     }

@@ -6,7 +6,7 @@
 #include "Cesium3DTilesSelection/RasterOverlay.h"
 #include "Cesium3DTilesSelection/RasterOverlayTile.h"
 #include "CesiumCommon.h"
-#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumFeatureIdSet.h"
 #include "CesiumGeometry/Axis.h"
 #include "CesiumGeometry/Rectangle.h"
@@ -62,7 +62,7 @@
 
 using namespace CesiumGltf;
 using namespace CesiumTextureUtility;
-using namespace CesiumEncodedMetadataUtility;
+using namespace CesiumEncodedFeaturesMetadata;
 using namespace CreateGltfOptions;
 using namespace LoadGltfResult;
 
@@ -507,35 +507,19 @@ loadPrimitiveMetadata(const Model& model, const MeshPrimitive& primitive) {
   return FCesiumPrimitiveMetadata(model, primitive, *pMetadata);
 }
 
-static void updateTextureCoordinatesForMetadata(
+static void updateTextureCoordinatesForFeatureIds(
     const Model& model,
     const MeshPrimitive& primitive,
     bool duplicateVertices,
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
+    const FCesiumPrimitiveFeatures& primitiveFeatures,
+    const EncodedPrimitiveFeatures& encodedPrimitiveFeatures,
     const EncodedModelMetadata& encodedModelMetadata,
-    const EncodedPrimitiveMetadata& encodedPrimitiveMetadata,
-    const TArray<FCesiumFeatureIdAttribute>& featureIdAttributes,
-    TMap<FString, uint32_t>& metadataTextureCoordinateParameters,
+    TMap<FString, uint32_t>& featuresMetadataTexcoordParameters,
     std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
 
-  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinatesForMetadata)
-
-  // for (const EncodedFeatureIdTexture& encodedFeatureIdTexture :
-  //     encodedPrimitiveMetadata.encodedFeatureIdTextures) {
-  //  metadataTextureCoordinateParameters.Emplace(
-  //      encodedFeatureIdTexture.baseName + "UV",
-  //      updateTextureCoordinates(
-  //          model,
-  //          primitive,
-  //          duplicateVertices,
-  //          vertices,
-  //          indices,
-  //          "TEXCOORD_" +
-  //              std::to_string(
-  //                  encodedFeatureIdTexture.textureCoordinateAttributeId),
-  //          textureCoordinateMap));
-  //}
+  TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinatesForFeatureIds)
 
   // for (const FString& featureTextureName :
   //     encodedPrimitiveMetadata.featureTextureNames) {
@@ -559,25 +543,40 @@ static void updateTextureCoordinatesForMetadata(
   //  }
   //}
 
-  const ExtensionMeshPrimitiveExtStructuralMetadata* pMetadata =
-      primitive.getExtension<ExtensionMeshPrimitiveExtStructuralMetadata>();
+  // These are necessary for feature ID attributes, since we'll be taking
+  // feature IDs from the attribute itself and putting them into texcoords.
+  const TArray<FCesiumFeatureIdSet>& featureIDSets =
+      UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+          primitiveFeatures);
 
-  if (pMetadata) {
-    for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
-         encodedPrimitiveMetadata.encodedFeatureIdAttributes) {
-      const FCesiumFeatureIdAttribute& featureIdAttribute =
-          featureIdAttributes[encodedFeatureIdAttribute.index];
+  for (const EncodedFeatureIdSet& encodedFeatureIDSet :
+       encodedPrimitiveFeatures.featureIdSets) {
+    if (encodedFeatureIDSet.attribute) {
+      int32_t attribute = *encodedFeatureIDSet.attribute;
+      std::string attributeName = "_FEATURE_ID_" + std::to_string(attribute);
+      if (primitive.attributes.find(attributeName) ==
+          primitive.attributes.end()) {
+        continue;
+      }
 
-      int32_t attribute = featureIdAttribute.getAttributeIndex();
+      // This was already validated when creating the EncodedFeatureIdSet.
+      int32_t accessor = primitive.attributes.at(attributeName);
+
       uint32_t textureCoordinateIndex = textureCoordinateMap.size();
-      textureCoordinateMap[attribute] = textureCoordinateIndex;
-      metadataTextureCoordinateParameters.Emplace(
-          encodedFeatureIdAttribute.name,
+      textureCoordinateMap[accessor] = textureCoordinateIndex;
+      featuresMetadataTexcoordParameters.Emplace(
+          encodedFeatureIDSet.name,
           textureCoordinateIndex);
+
+      const FCesiumFeatureIdSet& featureIDSet =
+          featureIDSets[encodedFeatureIDSet.index];
+      const FCesiumFeatureIdAttribute& featureIDAttribute =
+          UCesiumFeatureIdSetBlueprintLibrary::GetAsFeatureIDAttribute(
+              featureIDSet);
 
       int64 vertexCount =
           UCesiumFeatureIdAttributeBlueprintLibrary::GetVertexCount(
-              featureIdAttribute);
+              featureIDAttribute);
 
       // We encode unsigned integer feature ids as floats in the u-channel of
       // a texture coordinate slot.
@@ -588,7 +587,7 @@ static void updateTextureCoordinatesForMetadata(
           if (vertexIndex >= 0 && vertexIndex < vertexCount) {
             float featureId = static_cast<float>(
                 UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIdAttribute, vertexIndex));
+                    GetFeatureIDForVertex(featureIDAttribute, vertexIndex));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
@@ -600,13 +599,30 @@ static void updateTextureCoordinatesForMetadata(
           if (i < vertexCount) {
             float featureId = static_cast<float>(
                 UCesiumFeatureIdAttributeBlueprintLibrary::
-                    GetFeatureIDForVertex(featureIdAttribute, i));
+                    GetFeatureIDForVertex(featureIDAttribute, i));
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(featureId, 0.0f);
           } else {
             vertex.UVs[textureCoordinateIndex] = TMeshVector2(0.0f, 0.0f);
           }
         }
       }
+    } else if (encodedFeatureIDSet.texture) {
+      const EncodedFeatureIdTexture& encodedFeatureIDTexture =
+          *encodedFeatureIDSet.texture;
+      featuresMetadataTexcoordParameters.Emplace(
+          encodedFeatureIDSet.name + "_UV",
+          updateTextureCoordinates(
+              model,
+              primitive,
+              duplicateVertices,
+              vertices,
+              indices,
+              "TEXCOORD_" +
+                  std::to_string(
+                      encodedFeatureIDTexture.textureCoordinateSetIndex),
+              textureCoordinateMap));
+    } else {
+      // TODO: implicit IDs
     }
   }
 }
@@ -1043,29 +1059,35 @@ static void loadPrimitive(
   primitiveResult.Features = loadPrimitiveFeatures(model, primitive);
   primitiveResult.Metadata = loadPrimitiveMetadata(model, primitive);
 
-  const FMetadataDescription* pEncodedMetadataDescription =
-      options.pMeshOptions->pNodeOptions->pModelOptions
-          ->pEncodedMetadataDescription;
-  if (pEncodedMetadataDescription) {
-    primitiveResult.EncodedPrimitiveMetadata =
-        encodePrimitiveMetadataAnyThreadPart(
-            *pEncodedMetadataDescription,
-            primitiveResult.Metadata);
+  auto pModelOptions = options.pMeshOptions->pNodeOptions->pModelOptions;
+  const FCesiumPrimitiveFeaturesDescription* pPrimitiveFeaturesDescription =
+      pModelOptions->pPrimitiveFeaturesDescription;
+  if (pPrimitiveFeaturesDescription) {
+    primitiveResult.EncodedFeatures = encodePrimitiveFeaturesAnyThreadPart(
+        *pPrimitiveFeaturesDescription,
+        primitiveResult.Features);
   }
 
-  // updateTextureCoordinatesForMetadata(
-  //    model,
-  //    primitive,
-  //    duplicateVertices,
-  //    StaticMeshBuildVertices,
-  //    indices,
-  //    options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult
-  //        ->EncodedModelMetadata,
-  //    primitiveResult.EncodedPrimitiveMetadata,
-  //    UCesiumPrimitiveMetadataBlueprintLibrary::GetFeatureIdAttributes(
-  //        primitiveResult.Metadata),
-  //    primitiveResult.metadataTextureCoordinateParameters,
-  //    textureCoordinateMap);
+  const FCesiumModelMetadataDescription* pEncodedMetadataDescription =
+      pModelOptions->pEncodedMetadataDescription;
+  if (pEncodedMetadataDescription) {
+    // primitiveResult.EncodedMetadata = encodePrimitiveMetadataAnyThreadPart(
+    //    *pEncodedMetadataDescription,
+    //    primitiveResult.Metadata);
+  }
+
+  updateTextureCoordinatesForFeatureIds(
+      model,
+      primitive,
+      duplicateVertices,
+      StaticMeshBuildVertices,
+      indices,
+      primitiveResult.Features,
+      primitiveResult.EncodedFeatures,
+      options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult
+          ->EncodedModelMetadata,
+      primitiveResult.featuresMetadataTexCoordParameters,
+      textureCoordinateMap);
 
   // TangentX: Tangent
   // TangentY: Bi-tangent
@@ -1743,14 +1765,13 @@ static void SetPropertyTableParameterValues(
   }
 }
 
-static void SetMetadataParameterValues(
+static void SetFeaturesMetadataParameterValues(
     const CesiumGltf::Model& model,
     UCesiumGltfComponent& gltfComponent,
     LoadPrimitiveResult& loadResult,
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-
   /**
    * TODO: Write down this convention somewhere more permanent / accessible.
    *
@@ -1777,13 +1798,12 @@ static void SetMetadataParameterValues(
    *    "FTB_<feature table name>_<property name>"
    */
 
-  if (!encodePrimitiveMetadataGameThreadPart(
-          loadResult.EncodedPrimitiveMetadata)) {
+  if (!encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
     return;
   }
 
   for (const auto& textureCoordinateSet :
-       loadResult.metadataTextureCoordinateParameters) {
+       loadResult.featuresMetadataTexCoordParameters) {
     pMaterial->SetScalarParameterValueByInfo(
         FMaterialParameterInfo(
             FName(textureCoordinateSet.Key),
@@ -1821,64 +1841,65 @@ static void SetMetadataParameterValues(
                  encodedProperty.channelOffsets[3]));
        }
      }
-   }
-
-   for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
-        loadResult.EncodedMetadata.encodedFeatureIdTextures) {
-
-     pMaterial->SetTextureParameterValueByInfo(
-         FMaterialParameterInfo(
-             FName(encodedFeatureIdTexture.baseName + "TX"),
-             association,
-             index),
-         encodedFeatureIdTexture.pTexture->pTexture.Get());
-
-     FLinearColor channelMask;
-     switch (encodedFeatureIdTexture.channel) {
-     case 1:
-       channelMask = FLinearColor::Green;
-       break;
-     case 2:
-       channelMask = FLinearColor::Blue;
-       break;
-     default:
-       channelMask = FLinearColor::Red;
-     }
-
-     pMaterial->SetVectorParameterValueByInfo(
-         FMaterialParameterInfo(
-             FName(encodedFeatureIdTexture.baseName + "CM"),
-             association,
-             index),
-         channelMask);
-
-     const EncodedMetadataFeatureTable* pEncodedFeatureTable =
-         gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
-             encodedFeatureIdTexture.featureTableName);
-
-     if (pEncodedFeatureTable) {
-       SetMetadataFeatureTableParameterValues(
-           *pEncodedFeatureTable,
-           pMaterial,
-           association,
-           index);
-     }
-   }
-
-   for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
-        loadResult.EncodedMetadata.encodedFeatureIdAttributes) {
-     const EncodedMetadataFeatureTable* pEncodedFeatureTable =
-         gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
-             encodedFeatureIdAttribute.featureTableName);
-
-     if (pEncodedFeatureTable) {
-       SetMetadataFeatureTableParameterValues(
-           *pEncodedFeatureTable,
-           pMaterial,
-           association,
-           index);
-     }
    }*/
+
+  // for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
+  //     loadResult.EncodedMetadata.encodedFeatureIdTextures) {
+
+  //  pMaterial->SetTextureParameterValueByInfo(
+  //      FMaterialParameterInfo(
+  //          FName(encodedFeatureIdTexture.baseName + "TX"),
+  //          association,
+  //          index),
+  //      encodedFeatureIdTexture.pTexture->pTexture.Get());
+
+  //  FLinearColor channelMask;
+  //  switch (encodedFeatureIdTexture.channel) {
+  //  case 1:
+  //    channelMask = FLinearColor::Green;
+  //    break;
+  //  case 2:
+  //    channelMask = FLinearColor::Blue;
+  //    break;
+  //  default:
+  //    channelMask = FLinearColor::Red;
+  //  }
+
+  //  pMaterial->SetVectorParameterValueByInfo(
+  //      FMaterialParameterInfo(
+  //          FName(encodedFeatureIdTexture.baseName + "CM"),
+  //          association,
+  //          index),
+  //      channelMask);
+
+  //  const EncodedMetadataFeatureTable* pEncodedFeatureTable =
+  //      gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
+  //          encodedFeatureIdTexture.featureTableName);
+
+  //  if (pEncodedFeatureTable) {
+  //    SetMetadataFeatureTableParameterValues(
+  //        *pEncodedFeatureTable,
+  //        pMaterial,
+  //        association,
+  //        index);
+  //  }
+  //}
+
+  //// TODO: set parameter values for material functions
+  // for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
+  //     loadResult.EncodedMetadata.encodedFeatureIdAttributes) {
+  //  const EncodedMetadataFeatureTable* pEncodedFeatureTable =
+  //      gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
+  //          encodedFeatureIdAttribute.featureTableName);
+
+  //  if (pEncodedFeatureTable) {
+  //    SetMetadataFeatureTableParameterValues(
+  //        *pEncodedFeatureTable,
+  //        pMaterial,
+  //        association,
+  //        index);
+  //  }
+  //}
 }
 
 static void loadPrimitiveGameThreadPart(
@@ -2078,9 +2099,9 @@ static void loadPrimitiveGameThreadPart(
           waterIndex);
     }
 
-    int32 metadataIndex = pCesiumData->LayerNames.Find("Metadata");
+    int32 metadataIndex = pCesiumData->LayerNames.Find("FeaturesMetadata");
     if (metadataIndex >= 0) {
-      SetMetadataParameterValues(
+      SetFeaturesMetadataParameterValues(
           model,
           *pGltf,
           loadResult,
@@ -2100,8 +2121,7 @@ static void loadPrimitiveGameThreadPart(
       pGltf->Metadata);
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  pMesh->EncodedPrimitiveMetadata =
-      std::move(loadResult.EncodedPrimitiveMetadata);
+  pMesh->EncodedPrimitiveMetadata = std::move(loadResult.EncodedMetadata);
 
   pMaterial->TwoSided = true;
 

@@ -55,10 +55,16 @@ public:
       const CesiumGltf::Model& Model,
       const CesiumGltf::PropertyTable& PropertyTable);
 
+  /**
+   * Gets the name of the metadata class that this property table conforms to.
+   */
+  FString getClass() const { return _class; }
+
 private:
   ECesiumPropertyTableStatus _status;
-  int64 _count;
   FString _name;
+  FString _class;
+  int64 _count;
   TMap<FString, FCesiumPropertyTableProperty> _properties;
 
   friend class UCesiumPropertyTableBlueprintLibrary;

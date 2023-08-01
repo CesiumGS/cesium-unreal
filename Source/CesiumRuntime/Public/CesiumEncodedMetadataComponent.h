@@ -226,33 +226,42 @@ struct CESIUMRUNTIME_API FMetadataDescription {
  * boiler-plate material code to access the selected properties can be
  * auto-generated using the "Generate Material" button.
  */
-UCLASS(ClassGroup = (Cesium), Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumEncodedMetadataComponent
+UCLASS(Deprecated)
+class CESIUMRUNTIME_API UDEPRECATED_CesiumEncodedMetadataComponent
     : public UActorComponent {
   GENERATED_BODY()
 
 public:
-  /**
-   * @brief This button can be used to pre-populate the description of metadata
-   * to encode based on the existing metadata in the current tiles.
-   *
-   * Warning: Using Auto Fill may populate the description with a large amount
-   * of metadata. Make sure to delete the properties that aren't relevant.
-   */
-  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
-  void AutoFill();
-
-#if WITH_EDITOR
-  /**
-   * @brief This button can be used to create a boiler-plate material layer that
-   * exposes the requested metadata properties in the current description. The
-   * nodes to access the metadata will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Game/
-   * folder and TargetMaterialLayer will be set to the new material layer.
-   */
-  UFUNCTION(CallInEditor, Category = "EncodeMetadata")
-  void GenerateMaterial();
-#endif
+//  /**
+//   * @brief This button can be used to pre-populate the description of metadata
+//   * to encode based on the existing metadata in the current tiles.
+//   *
+//   * Warning: Using Auto Fill may populate the description with a large amount
+//   * of metadata. Make sure to delete the properties that aren't relevant.
+//   */
+//  UFUNCTION(
+//      CallInEditor,
+//      Meta =
+//          (DeprecatedFunction,
+//           DeprecationMessage =
+//               "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."))
+//  void AutoFill();
+//
+//#if WITH_EDITOR
+//  /**
+//   * @brief This button can be used to create a boiler-plate material layer that
+//   * exposes the requested metadata properties in the current description. The
+//   * nodes to access the metada will be added to TargetMaterialLayer if it
+//   * exists. Otherwise a new material layer will be created in the /Game/
+//   * folder and TargetMaterialLayer will be set to the new material layer.
+//   */
+//  UFUNCTION(
+//      CallInEditor,
+//      Meta =
+//          (DeprecatedFunction,
+//           DeprecationMessage = "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."))
+//  void GenerateMaterial();
+//#endif
 
 #if WITH_EDITORONLY_DATA
   /**

@@ -4,7 +4,7 @@
 
 #include "Cesium3DTilesSelection/Tile.h"
 #include "Cesium3DTileset.h"
-#include "CesiumEncodedMetadataUtility.h"
+#include "CesiumEncodedFeaturesMetadata.h"
 #include "CesiumModelMetadata.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SceneComponent.h"
@@ -93,7 +93,7 @@ public:
 
   FCesiumModelMetadata Metadata{};
 
-  CesiumEncodedMetadataUtility::EncodedModelMetadata EncodedModelMetadata{};
+  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedModelMetadata{};
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

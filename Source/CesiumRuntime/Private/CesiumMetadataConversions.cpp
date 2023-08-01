@@ -81,20 +81,20 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
   return ECesiumMetadataBlueprintType::None;
 }
 
-ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
+ECesiumEncodedMetadataGpuType CesiumMetadataValueTypeToEncodedMetadataGpuType(
     FCesiumMetadataValueType ValueType) {
   ECesiumMetadataType type = ValueType.Type;
   ECesiumMetadataComponentType componentType = ValueType.ComponentType;
 
   if (type == ECesiumMetadataType::Boolean) {
-    return ECesiumMetadataPackedGpuType::Uint8;
+    return ECesiumEncodedMetadataGpuType::Uint8;
   }
 
   if (type == ECesiumMetadataType::Scalar) {
     switch (componentType) {
     case ECesiumMetadataComponentType::Int8: // lossy or reinterpreted
     case ECesiumMetadataComponentType::Uint8:
-      return ECesiumMetadataPackedGpuType::Uint8;
+      return ECesiumEncodedMetadataGpuType::Uint8;
     case ECesiumMetadataComponentType::Float32:
     case ECesiumMetadataComponentType::Float64: // lossy
     case ECesiumMetadataComponentType::Int16:
@@ -103,13 +103,13 @@ ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
     case ECesiumMetadataComponentType::Uint32: // lossy or reinterpreted
     case ECesiumMetadataComponentType::Int64:  // lossy
     case ECesiumMetadataComponentType::Uint64: // lossy
-      return ECesiumMetadataPackedGpuType::Float;
+      return ECesiumEncodedMetadataGpuType::Float;
     default:
-      return ECesiumMetadataPackedGpuType::None;
+      return ECesiumEncodedMetadataGpuType::None;
     }
   }
 
-  return ECesiumMetadataPackedGpuType::None;
+  return ECesiumEncodedMetadataGpuType::None;
 }
 
 ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(

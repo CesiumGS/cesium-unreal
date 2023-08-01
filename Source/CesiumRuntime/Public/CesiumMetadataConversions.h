@@ -18,7 +18,7 @@
 ECesiumMetadataBlueprintType
 CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType);
 
-ECesiumMetadataPackedGpuType CesiumMetadataValueTypeToDefaultPackedGpuType(
+ECesiumEncodedMetadataGpuType CesiumMetadataValueTypeToEncodedMetadataGpuType(
     FCesiumMetadataValueType ValueType);
 
 // Deprecated.

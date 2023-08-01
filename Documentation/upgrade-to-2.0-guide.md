@@ -195,7 +195,7 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
 
 - Deprecated `GetTrueType` and `GetTrueComponentType`. Use `GetValueType` to get the type information as a `FCesiumMetadataValueType` instead.
 - Renamed `GetNumberOfFeatures` to `GetPropertySize`.
-- Renamed `GetComponentCount` to `GetPropertyArraySize`. Note that this will return zero if the property is an array type with arrays that vary in length.
+- Renamed `GetComponentCount` to `GetArraySize`. Note that this will return zero if the property is an array type with arrays that vary in length.
 - Renamed `GetBlueprintComponentType` to `GetArrayElementBlueprintType`.
 - Added functions to retrieve values as the new vector and matrix types:
   - `GetIntPoint`

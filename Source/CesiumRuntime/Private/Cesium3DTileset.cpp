@@ -665,8 +665,9 @@ public:
     options.ignoreKhrMaterialsUnlit =
         this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
+    options.pPrimitiveFeaturesDescription = &this->_pActor->_featuresDescription;
     options.pEncodedMetadataDescription =
-        &this->_pActor->_encodedMetadataDescription;
+        &this->_pActor->_modelMetadataDescription;
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
@@ -934,15 +935,20 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
-      this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
-  if (pEncodedMetadataDescriptionComponent) {
-    this->_encodedMetadataDescription = {
-        pEncodedMetadataDescriptionComponent->FeatureTables,
-        pEncodedMetadataDescriptionComponent->FeatureTextures};
+  const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+      this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+  if (pFeaturesMetadataComponent) {
+    this->_featuresDescription = {pFeaturesMetadataComponent->FeatureIdSets};
+    this->_modelMetadataDescription = {
+        pFeaturesMetadataComponent->PropertyTables};
   } else {
-    this->_encodedMetadataDescription = {};
+    this->_featuresDescription = {};
+    this->_modelMetadataDescription = {};
   }
+
+  // TODO: check for old component for backwards compatibility
+  // const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+  //    this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
 
   ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 

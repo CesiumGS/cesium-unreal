@@ -16,7 +16,12 @@ struct FeatureId;
  * @brief The type of a feature ID set.
  */
 UENUM(BlueprintType)
-enum ECesiumFeatureIdSetType { None, Attribute, Texture, Implicit };
+enum class ECesiumFeatureIdSetType : uint8 {
+  None,
+  Attribute,
+  Texture,
+  Implicit
+};
 
 /**
  * @brief A blueprint-accessible wrapper for a feature ID set from a glTF
@@ -50,6 +55,7 @@ private:
   int64 _featureCount;
   int64 _nullFeatureID;
   int64 _propertyTableIndex;
+  FString _label;
 
   friend class UCesiumFeatureIdSetBlueprintLibrary;
 };
@@ -131,6 +137,17 @@ public:
       Category = "Cesium|Features|FeatureIDSet")
   static const int64
   GetNullFeatureID(UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet);
+
+  /**
+   * Gets the label assigned to this feature ID set. If no label was present in
+   * the glTF feature ID set, this returns an empty string.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Features|FeatureIDSet")
+  static const FString GetLabel(UPARAM(ref)
+                                    const FCesiumFeatureIdSet& FeatureIDSet);
 
   /**
    * Gets the feature ID associated with a given vertex. The feature ID can be
