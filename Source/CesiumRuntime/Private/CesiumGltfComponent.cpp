@@ -2134,6 +2134,7 @@ static void loadPrimitiveGameThreadPart(
 
   pStaticMesh->AddMaterial(pMaterial);
 
+  pStaticMesh->SetLightingGuid();
   pStaticMesh->InitResources();
 
   // Set up RenderData bounds and LOD data
