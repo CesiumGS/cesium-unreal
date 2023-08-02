@@ -25,16 +25,15 @@ struct FCesiumPrimitiveFeaturesDescription;
 /**
  * @brief Provides utility for encoding feature IDs from EXT_mesh_features and
  * metadata from EXT_structural_metadata. "Encoding" refers broadly to the
- * process of converting data to accessible formats on the GPU, and giving them
- * names for use in Unreal materials.
+ * process of converting data to accessible formats on the GPU. This process
+ * also gives them names for use in Unreal materials.
  *
- * First, the desired feature ID sets / metadata properties from across the
- * tileset must be generated on a CesiumFeaturesMetadataComponent. Then,
- * encoding occurs on a model-by-model basis. Not all models in a tileset may
- * necessarily contain the feature IDs / metadata specified in the description.
+ * First, the desired feature ID sets / metadata properties must be filled out
+ * on a tileset's CesiumFeaturesMetadataComponent. Then, encoding will occur on
+ * a model-by-model basis. Not all models in a tileset may necessarily contain
+ * the feature IDs / metadata specified in the description.
  */
 namespace CesiumEncodedFeaturesMetadata {
-
 /**
  * Naming convention for encoded features + metadata material parameters
  *
@@ -55,7 +54,7 @@ namespace CesiumEncodedFeaturesMetadata {
  *    "FTB_<feature table name>_<property name>"
  */
 static const FString MaterialTextureSuffix = "_TX";
-static const FString MaterialTexCoordSuffix = "_UV";
+static const FString MaterialTexCoordIndexSuffix = "_UV_INDEX";
 static const FString MaterialChannelsSuffix = "_CHANNELS";
 static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
 
@@ -180,6 +179,8 @@ void destroyEncodedPrimitiveFeatures(EncodedPrimitiveFeatures& encodedFeatures);
 
 #pragma endregion
 
+#pragma region Encoded Metadata
+
 /**
  * A property table property that has been encoded for access on the GPU.
  */
@@ -193,6 +194,8 @@ struct EncodedPropertyTableProperty {
    * @brief The property table property values, encoded into a texture.
    */
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
+
+  // TODO: may need values for offset and scale here
 };
 
 /**
@@ -264,6 +267,8 @@ void destroyEncodedPrimitiveMetadata(
     EncodedPrimitiveMetadata& encodedPrimitive);
 
 void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata);
+
+#pragma endregion
 
 FString createHlslSafeName(const FString& rawName);
 

@@ -9,6 +9,8 @@
 #include <glm/common.hpp>
 #include <type_traits>
 
+enum class ECesiumEncodedMetadataComponentType : uint8;
+
 /**
  * @brief Converts a FCesiumMetadataValueType to the best-fitting Blueprints
  * type.
@@ -17,9 +19,6 @@
  */
 ECesiumMetadataBlueprintType
 CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType);
-
-ECesiumEncodedMetadataGpuType CesiumMetadataValueTypeToEncodedMetadataGpuType(
-    FCesiumMetadataValueType ValueType);
 
 // Deprecated.
 ECesiumMetadataBlueprintType CesiumMetadataTrueTypeToBlueprintType(

@@ -6,6 +6,7 @@
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
 #include "CesiumMetadataConversions.h"
+#include "CesiumEncodedMetadataConversions.h"
 #include "CesiumModelMetadata.h"
 
 #if WITH_EDITOR
@@ -89,43 +90,45 @@ void AutoFillPropertyTableDescriptions(
       FCesiumMetadataValueType valueType =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValueType(
               propertyIt.Value);
-      ECesiumMetadataType type = valueType.Type;
-      ECesiumMetadataComponentType componentType = valueType.ComponentType;
-
-      ECesiumEncodedMetadataGpuType gpuType =
-          CesiumMetadataValueTypeToEncodedMetadataGpuType(valueType);
-      if (gpuType == ECesiumEncodedMetadataGpuType::None) {
-        continue;
-      }
-
-      if (valueType.bIsArray) {
-        UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
-            propertyIt.Value);
-      }
 
       FCesiumPropertyTablePropertyDescription& property =
           pDescription->Properties.Emplace_GetRef();
-      property.Name = propertyIt.Key;
+      property.TrueType = valueType;
 
-      switch (type) {
-      case ECesiumMetadataType::Vec2:
-        property.Type = ECesiumEncodedPropertyType::Vec2;
-        break;
-      case ECesiumMetadataType::Vec3:
-        property.Type = ECesiumEncodedPropertyType::Vec3;
-        break;
-      case ECesiumMetadataType::Vec4:
-        property.Type = ECesiumEncodedPropertyType::Vec4;
-        break;
+      ECesiumEncodedMetadataComponentType encodedType =
+          CesiumMetadataComponentTypeToEncodedType(valueType.ComponentType);
+      switch (encodedType) {
+      case ECesiumEncodedMetadataComponentType::Uint8:
+      case ECesiumEncodedMetadataComponentType::Float:
+        property.Conversion =
+            ECesiumEncodedMetadataConversion::CoerceComponents;
       default:
-        property.Type = ECesiumEncodedPropertyType::Scalar;
-      };
-
-      if (gpuType == ECesiumEncodedMetadataGpuType::Uint8) {
-        property.ComponentType = ECesiumEncodedPropertyComponentType::Uint8;
-      } else /*if (gpuType == float)*/ {
-        property.ComponentType = ECesiumEncodedPropertyComponentType::Float;
+        property.Conversion = ECesiumEncodedMetadataConversion::None;
       }
+
+      //if (valueType.bIsArray) {
+      //  UCesiumPropertyTablePropertyBlueprintLibrary::GetArraySize(
+      //      propertyIt.Value);
+      //}
+      //switch (type) {
+      //case ECesiumMetadataType::Vec2:
+      //  property.Type = ECesiumEncodedPropertyType::Vec2;
+      //  break;
+      //case ECesiumMetadataType::Vec3:
+      //  property.Type = ECesiumEncodedPropertyType::Vec3;
+      //  break;
+      //case ECesiumMetadataType::Vec4:
+      //  property.Type = ECesiumEncodedPropertyType::Vec4;
+      //  break;
+      //default:
+      //  property.Type = ECesiumEncodedPropertyType::Scalar;
+      //};
+
+      //if (gpuType == ECesiumEncodedMetadataGpuType::Uint8) {
+      //  property.ComponentType = ECesiumEncodedPropertyComponentType::Uint8;
+      //} else /*if (gpuType == float)*/ {
+      //  property.ComponentType = ECesiumEncodedPropertyComponentType::Float;
+      //}
 
       property.Normalized =
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(
@@ -432,7 +435,7 @@ void GenerateNodesForFeatureIdSets(
       UMaterialExpressionScalarParameter* TexCoordsIndex =
           NewObject<UMaterialExpressionScalarParameter>(TargetMaterialLayer);
       TexCoordsIndex->ParameterName =
-          FName(featureIdSet.Name + MaterialTexCoordSuffix);
+          FName(featureIdSet.Name + MaterialTexCoordIndexSuffix);
       TexCoordsIndex->DefaultValue = 0.0f;
       TexCoordsIndex->MaterialExpressionEditorX = NodeX;
       TexCoordsIndex->MaterialExpressionEditorY = NodeY;

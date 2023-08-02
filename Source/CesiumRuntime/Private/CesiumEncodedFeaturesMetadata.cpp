@@ -1,6 +1,7 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumEncodedFeaturesMetadata.h"
+#include "CesiumEncodedMetadataConversions.h"
 #include "CesiumFeatureIdSet.h"
 #include "CesiumFeaturesMetadataComponent.h"
 #include "CesiumLifetime.h"
@@ -292,12 +293,12 @@ struct EncodedPixelFormat {
 // TODO: consider picking better pixel formats when they are available for the
 // current platform.
 EncodedPixelFormat getPixelFormat(
-    ECesiumEncodedMetadataGpuType type,
+    ECesiumEncodedMetadataComponentType type,
     int64 componentCount,
     bool isNormalized) {
 
   switch (type) {
-  case ECesiumEncodedMetadataGpuType::Uint8:
+  case ECesiumEncodedMetadataComponentType::Uint8:
     switch (componentCount) {
     case 1:
       return {isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT, 1};
@@ -311,7 +312,7 @@ EncodedPixelFormat getPixelFormat(
     default:
       return {EPixelFormat::PF_Unknown, 0};
     }
-  case ECesiumEncodedMetadataGpuType::Float:
+  case ECesiumEncodedMetadataComponentType::Float:
     switch (componentCount) {
     case 1:
       return {EPixelFormat::PF_R32_FLOAT, 4};
@@ -386,26 +387,27 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       }
     }
 
-    int32 expectedCount = 1;
-    switch (pExpectedProperty->Type) {
-    case ECesiumEncodedPropertyType::Vec2:
-      expectedCount = 2;
-      break;
-    case ECesiumEncodedPropertyType::Vec3:
-      expectedCount = 3;
-      break;
-    case ECesiumEncodedPropertyType::Vec4:
-      expectedCount = 4;
-    };
+    // int32 expectedCount = 1;
+    // switch (pExpectedProperty->Type) {
+    // case ECesiumEncodedPropertyType::Vec2:
+    //  expectedCount = 2;
+    //  break;
+    // case ECesiumEncodedPropertyType::Vec3:
+    //  expectedCount = 3;
+    //  break;
+    // case ECesiumEncodedPropertyType::Vec4:
+    //  expectedCount = 4;
+    //};
 
-    if (expectedCount != elementCount) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "Skip encoding metadata property; the number of components does not match the type specified by the metadata description."));
-      continue;
-    }
+    // if (expectedCount != elementCount) {
+    //  UE_LOG(
+    //      LogCesium,
+    //      Warning,
+    //      TEXT(
+    //          "Skip encoding metadata property; the number of components does
+    //          not match the type specified by the metadata description."));
+    //  continue;
+    //}
 
     //// Coerce the true type into the expected gpu component type.
     // ECesiumMetadataPackedGpuType gpuType =

@@ -611,7 +611,7 @@ static void updateTextureCoordinatesForFeatureIds(
           *encodedFeatureIDSet.texture;
       featuresMetadataTexcoordParameters.Emplace(
           encodedFeatureIDSet.name +
-              CesiumEncodedFeaturesMetadata::MaterialTexCoordSuffix,
+              CesiumEncodedFeaturesMetadata::MaterialTexCoordIndexSuffix,
           updateTextureCoordinates(
               model,
               primitive,

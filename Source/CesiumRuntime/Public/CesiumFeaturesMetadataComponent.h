@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumMetadataValueType.h"
 #include "Components/ActorComponent.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
@@ -16,6 +17,9 @@
 #pragma region Features descriptions
 
 enum class ECesiumFeatureIdSetType : uint8;
+enum class ECesiumEncodedMetadataType : uint8;
+enum class ECesiumEncodedMetadataComponentType : uint8;
+enum class ECesiumEncodedMetadataConversion : uint8;
 
 /**
  * @brief Description of a feature ID set from EXT_mesh_features.
@@ -86,24 +90,10 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveFeaturesDescription {
 #pragma endregion
 
 #pragma region Metadata descriptions
-/**
- * @brief The GPU component type to coerce this property to.
- *
- */
-UENUM()
-enum class ECesiumEncodedPropertyComponentType : uint8 { Uint8, Float };
-
-/**
- * @brief The property type.
- */
-UENUM()
-enum class ECesiumEncodedPropertyType : uint8 { Scalar, Vec2, Vec3, Vec4 };
-
 // Note that these don't exhaustively cover the possibilities of glTF metadata
 // classes, they only cover the subset that can be encoded into textures. For
 // example, arbitrary size arrays and enums are excluded. Other un-encoded
 // types like strings will be coerced.
-// ^ this isn't true? strings don't seem to be handled
 
 /**
  * @brief Description of a property table property that should be encoded for
@@ -114,50 +104,74 @@ struct CESIUMRUNTIME_API FCesiumPropertyTablePropertyDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief The name of this property. This will be how it is referenced in the
+   * The name of this property. This will be how it is referenced in the
    * material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Name;
 
+  // The individual values of FCesiumMetadataValueType are separated for
+  // readability. (Removing the outer FCesiumMetadataValueType struct flattens
+  // the UI hierarchy.)
+
   /**
-   * @brief The GPU component type to coerce this property to.
+   * The underlying type of this property. Not all types of properties can be
+   * encoded to the GPU, or coerced to GPU-compatible types.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumMetadataValueType TrueType;
+
+  /**
+   * The GPU-compatible type that this property's values will be encoded as.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumEncodedMetadataType Type;
+
+  /**
+   * The GPU-compatible component type that this property's values will be
+   * encoded as. These correspond to the pixel component types that are
+   * supported in Unreal textures.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumEncodedMetadataComponentType ComponentType;
+
+  /**
+   * The method of conversion used for this property. This describes how the
+   * values will be converted for access in Unreal materials. Note that not all
+   * property types are compatible with the methods of conversion.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  ECesiumEncodedMetadataConversion Conversion;
+
+  /**
+   * If the property type is a uint8, this indicates whether or not the
+   * values are normalized. If so, then the values will be normalized to floats
+   * in the [0-1] range before accessing in an Unreal material.
    *
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumEncodedPropertyComponentType ComponentType =
-      ECesiumEncodedPropertyComponentType::Float;
-
-  /**
-   * @brief The property type.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumEncodedPropertyType Type = ECesiumEncodedPropertyType::Scalar;
-
-  /**
-   * @brief If ComponentType == Uint8, this indicates whether to normalize into
-   * a [0-1] range before accessing on the GPU.
+   * This can be unchecked to send the uint8 values to the Unreal material
+   * as-is.
    */
   UPROPERTY(
       EditAnywhere,
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "ComponentType==ECesiumPropertyComponentType::Uint8"))
+               "ComponentType==ECesiumMetadataComponentType::Uint8"))
   bool Normalized = false;
 };
 
 /**
  * @brief Description of a property table containing properties to be encoded
- * for access on the GPU.
+ * for access in Unreal materials.
  */
 USTRUCT()
 struct CESIUMRUNTIME_API FCesiumPropertyTableDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief The name of this feature table.
-   *
+   * @brief The name of this property table. If this property table has no name
+   * in the EXT_structural_metadata extension, then its class name is used
+   * instead.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Name;
@@ -243,7 +257,7 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief Descriptions of feature tables to upload to the GPU.
+   * @brief Descriptions of property tables to encode for access in Unreal materials.
    */
   UPROPERTY(
       EditAnywhere,
@@ -320,7 +334,8 @@ public:
   FCesiumPrimitiveFeaturesDescription Features;
 
   /**
-   * @brief Descriptions of the EXT_structural_metadata in the visible glTF models across the tileset.
+   * @brief Descriptions of the EXT_structural_metadata in the visible glTF
+   * models across the tileset.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FCesiumModelMetadataDescription ModelMetadata;

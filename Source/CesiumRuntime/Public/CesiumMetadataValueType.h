@@ -54,10 +54,6 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   Array
 };
 
-// True types are cast, reintepreted, or parsed before being packed into gpu
-// types when encoding into a texture.
-enum class ECesiumEncodedMetadataGpuType : uint8 { None, Uint8, Float };
-
 // UE requires us to have an enum with the value 0.
 // Invalid / None should have that value, but just make sure.
 static_assert(int(CesiumGltf::PropertyType::Invalid) == 0);
@@ -146,21 +142,27 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   /**
    * The type of the metadata property or value.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   ECesiumMetadataType Type;
 
   /**
    * The component of the metadata property or value. Only applies when the type
    * is a Scalar, VecN, or MatN type.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "Type != ECesiumMetadataType::Invalid && Type == ECesiumMetadataType::Boolean && Type == ECesiumMetadataType::Enum && Type == ECesiumMetadataType::String"))
   ECesiumMetadataComponentType ComponentType;
 
   /**
    * Whether or not this represents an array containing elements of the
    * specified types.
    */
-  UPROPERTY(BlueprintReadWrite, Category = "Cesium")
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool bIsArray;
 
   inline bool operator==(const FCesiumMetadataValueType& ValueType) {
