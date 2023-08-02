@@ -938,9 +938,8 @@ void ACesium3DTileset::LoadTileset() {
   const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
       this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
   if (pFeaturesMetadataComponent) {
-    this->_featuresDescription = {pFeaturesMetadataComponent->FeatureIdSets};
-    this->_modelMetadataDescription = {
-        pFeaturesMetadataComponent->PropertyTables};
+    this->_featuresDescription = pFeaturesMetadataComponent->Features;
+    this->_modelMetadataDescription = pFeaturesMetadataComponent->ModelMetadata;
   } else {
     this->_featuresDescription = {};
     this->_modelMetadataDescription = {};

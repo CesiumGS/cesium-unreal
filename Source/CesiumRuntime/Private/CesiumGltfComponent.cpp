@@ -610,7 +610,8 @@ static void updateTextureCoordinatesForFeatureIds(
       const EncodedFeatureIdTexture& encodedFeatureIDTexture =
           *encodedFeatureIDSet.texture;
       featuresMetadataTexcoordParameters.Emplace(
-          encodedFeatureIDSet.name + "_UV",
+          encodedFeatureIDSet.name +
+              CesiumEncodedFeaturesMetadata::MaterialTexCoordSuffix,
           updateTextureCoordinates(
               model,
               primitive,
@@ -1772,32 +1773,6 @@ static void SetFeaturesMetadataParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-  /**
-   * TODO: Write down this convention somewhere more permanent / accessible.
-   *
-   * The following is the naming convention for encoded metadata:
-   *
-   * Feature Id Textures:
-   *  - Base: "FIT_<feature table name>_"...
-   *    - Texture: ..."TX"
-   *    - Texture Coordinate Index: ..."UV"
-   *    - Channel Mask: ..."CM"
-   *
-   * Feature Id Attributes:
-   *  - Texture Coordinate Index (feature ids are encoded into UVs):
-   *    "FA_<feature table name>"
-   *
-   * Feature Texture Properties:
-   *  - Base: "FTX_<feature texture name>_<property name>_"...
-   *    - Texture: ..."TX"
-   *    - Texture Coordinate Index: ..."UV"
-   *    - Swizzle: ..."SW"
-   *
-   * Encoded Feature Table Properties:
-   *  - Encoded Property Table:
-   *    "FTB_<feature table name>_<property name>"
-   */
-
   if (!encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
     return;
   }
@@ -1810,6 +1785,43 @@ static void SetFeaturesMetadataParameterValues(
             association,
             index),
         textureCoordinateSet.Value);
+  }
+
+  for (EncodedFeatureIdSet& encodedFeatureIdSet :
+       loadResult.EncodedFeatures.featureIdSets) {
+    if (!encodedFeatureIdSet.texture) {
+      continue;
+    }
+
+    EncodedFeatureIdTexture& texture = *encodedFeatureIdSet.texture;
+
+    pMaterial->SetTextureParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdSet.name + MaterialTextureSuffix),
+            association,
+            index),
+        texture.pTexture->pTexture.Get());
+
+    size_t numChannels = texture.channels.size();
+    pMaterial->SetScalarParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdSet.name + MaterialNumChannelsSuffix),
+            association,
+            index),
+        static_cast<float>(numChannels));
+
+    std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
+    for (size_t i = 0; i < numChannels; i++) {
+      channelsAsFloats[i] = static_cast<float>(texture.channels[i]);
+    }
+
+    FLinearColor channels;
+    pMaterial->SetVectorParameterValueByInfo(
+        FMaterialParameterInfo(
+            FName(encodedFeatureIdSet.name + MaterialChannelsSuffix),
+            association,
+            index),
+        channels);
   }
 
   /* for (const FString& featureTextureName :
@@ -1842,64 +1854,6 @@ static void SetFeaturesMetadataParameterValues(
        }
      }
    }*/
-
-  // for (EncodedFeatureIdTexture& encodedFeatureIdTexture :
-  //     loadResult.EncodedMetadata.encodedFeatureIdTextures) {
-
-  //  pMaterial->SetTextureParameterValueByInfo(
-  //      FMaterialParameterInfo(
-  //          FName(encodedFeatureIdTexture.baseName + "TX"),
-  //          association,
-  //          index),
-  //      encodedFeatureIdTexture.pTexture->pTexture.Get());
-
-  //  FLinearColor channelMask;
-  //  switch (encodedFeatureIdTexture.channel) {
-  //  case 1:
-  //    channelMask = FLinearColor::Green;
-  //    break;
-  //  case 2:
-  //    channelMask = FLinearColor::Blue;
-  //    break;
-  //  default:
-  //    channelMask = FLinearColor::Red;
-  //  }
-
-  //  pMaterial->SetVectorParameterValueByInfo(
-  //      FMaterialParameterInfo(
-  //          FName(encodedFeatureIdTexture.baseName + "CM"),
-  //          association,
-  //          index),
-  //      channelMask);
-
-  //  const EncodedMetadataFeatureTable* pEncodedFeatureTable =
-  //      gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
-  //          encodedFeatureIdTexture.featureTableName);
-
-  //  if (pEncodedFeatureTable) {
-  //    SetMetadataFeatureTableParameterValues(
-  //        *pEncodedFeatureTable,
-  //        pMaterial,
-  //        association,
-  //        index);
-  //  }
-  //}
-
-  //// TODO: set parameter values for material functions
-  // for (const EncodedFeatureIdAttribute& encodedFeatureIdAttribute :
-  //     loadResult.EncodedMetadata.encodedFeatureIdAttributes) {
-  //  const EncodedMetadataFeatureTable* pEncodedFeatureTable =
-  //      gltfComponent.EncodedMetadata.encodedFeatureTables.Find(
-  //          encodedFeatureIdAttribute.featureTableName);
-
-  //  if (pEncodedFeatureTable) {
-  //    SetMetadataFeatureTableParameterValues(
-  //        *pEncodedFeatureTable,
-  //        pMaterial,
-  //        association,
-  //        index);
-  //  }
-  //}
 }
 
 static void loadPrimitiveGameThreadPart(
@@ -2121,7 +2075,8 @@ static void loadPrimitiveGameThreadPart(
       pGltf->Metadata);
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-  pMesh->EncodedPrimitiveMetadata = std::move(loadResult.EncodedMetadata);
+  pMesh->EncodedFeatures = std::move(loadResult.EncodedFeatures);
+  pMesh->EncodedMetadata = std::move(loadResult.EncodedMetadata);
 
   pMaterial->TwoSided = true;
 

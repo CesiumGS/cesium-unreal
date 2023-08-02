@@ -35,6 +35,30 @@ struct FCesiumPrimitiveFeaturesDescription;
  */
 namespace CesiumEncodedFeaturesMetadata {
 
+/**
+ * Naming convention for encoded features + metadata material parameters
+ *
+ * Feature Id Textures:
+ *  - Base: "FIT_<feature table name>_"...
+ *    - Texture: ..."TX"
+ *    - Texture Coordinate Index: ..."UV"
+ *    - Channel Mask: ..."CM"
+ *
+ * Feature Texture Properties:
+ *  - Base: "FTX_<feature texture name>_<property name>_"...
+ *    - Texture: ..."TX"
+ *    - Texture Coordinate Index: ..."UV"
+ *    - Swizzle: ..."SW"
+ *
+ * Encoded Feature Table Properties:
+ *  - Encoded Property Table:
+ *    "FTB_<feature table name>_<property name>"
+ */
+static const FString MaterialTextureSuffix = "_TX";
+static const FString MaterialTexCoordSuffix = "_UV";
+static const FString MaterialChannelsSuffix = "_CHANNELS";
+static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
+
 #pragma region Encoded Primitive Features
 
 /**

@@ -293,7 +293,7 @@ public:
    * @brief This button can be used to create a boiler-plate material layer that
    * exposes the requested metadata properties in the current description. The
    * nodes to access the metadata will be added to TargetMaterialLayer if it
-   * exists. Otherwise a new material layer will be created in the /Game/
+   * exists. Otherwise a new material layer will be created in the /Content/
    * folder and TargetMaterialLayer will be set to the new material layer.
    */
   UFUNCTION(CallInEditor, Category = "Cesium")
@@ -308,39 +308,20 @@ public:
    * to the requested metadata. If this is left blank, a new material layer
    * will be created in the /Game/ folder.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium|EncodedMetadata")
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
 #endif
 
-  // Note: Here, we avoid wrapping the feature tables and feature textures
-  // inside a FMetadataDescription to avoid further complicating the details
-  // panel UI for editing the hierarchy.
+  /**
+   * Description of the EXT_mesh_features in the visible glTF primitives across
+   * the tileset.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumPrimitiveFeaturesDescription Features;
 
   /**
-   * Description of the feature ID sets available from the
-   * EXT_mesh_features on a glTF's primitives.
+   * @brief Descriptions of the EXT_structural_metadata in the visible glTF models across the tileset.
    */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Features",
-      Meta = (TitleProperty = "Name"))
-  TArray<FCesiumFeatureIdSetDescription> FeatureIdSets;
-
-  /**
-   * @brief Descriptions of property tables to upload to the GPU.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium|Metadata",
-      Meta = (TitleProperty = "Name"))
-  TArray<FCesiumPropertyTableDescription> PropertyTables;
-
-  ///**
-  // * @brief Descriptions of feature textures to upload to the GPU.
-  // */
-  // UPROPERTY(
-  //    EditAnywhere,
-  //    Category = "Cesium|Metadata",
-  //    Meta = (TitleProperty = "Name"))
-  // TArray<FFeatureTextureDescription> FeatureTextures;
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumModelMetadataDescription ModelMetadata;
 };

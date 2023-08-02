@@ -42,8 +42,15 @@ public:
   FCesiumMetadataPrimitive Metadata_DEPRECATED;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
+  /**
+   * The encoded representation of the primitive's EXT_mesh_features extension.
+   */
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
+  /**
+   * The encoded representation of the primitive's EXT_structural_metadata extension.
+   */
   CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata
-      EncodedPrimitiveMetadata;
+      EncodedMetadata;
 
   ACesium3DTileset* pTilesetActor;
 

@@ -119,7 +119,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::EncodeFeatureIdTexture)
 
   EncodedFeatureIdSet result;
-  EncodedFeatureIdTexture encodedFeatureIdTexture;
+  EncodedFeatureIdTexture& encodedFeatureIdTexture = result.texture.emplace();
 
   encodedFeatureIdTexture.channels = featureIdTextureView.getChannels();
   encodedFeatureIdTexture.textureCoordinateSetIndex =
@@ -147,12 +147,12 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     encodedFeatureIdTexture.pTexture->filter = TextureFilter::TF_Nearest;
 
     if (!encodedFeatureIdTexture.pTexture->pTextureData) {
-          UE_LOG(
-              LogCesium,
-              Error,
-              TEXT(
-                  "Error encoding a feature table property. Most likely could not allocate enough texture memory."));
-          return std::nullopt;
+      UE_LOG(
+          LogCesium,
+          Error,
+          TEXT(
+              "Error encoding a feature ID texture. Most likely could not allocate enough texture memory."));
+      return std::nullopt;
     }
 
     FTexture2DMipMap* pMip = new FTexture2DMipMap();
@@ -171,8 +171,6 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
 
     pMip->BulkData.Unlock();
   }
-
-  result.texture = encodedFeatureIdTexture;
 
   return result;
 }
@@ -234,6 +232,7 @@ EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
     encodedSet->name = name;
     encodedSet->index = i;
     encodedSet->propertyTableName = pDescription->PropertyTableName;
+
     result.featureIdSets.Add(*encodedSet);
   }
 
