@@ -92,6 +92,7 @@ public class CesiumRuntime : ModuleRules
             "draco",
             "ktx_read",
             //"MikkTSpace",
+            "meshoptimizer",
             "modp_b64",
             "s2geometry",
             "spdlog",
