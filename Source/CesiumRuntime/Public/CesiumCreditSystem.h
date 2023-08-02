@@ -44,7 +44,7 @@ public:
   virtual void BeginDestroy() override;
 
   UPROPERTY(EditDefaultsOnly, Category = "Cesium")
-  TSubclassOf<UUserWidget> CreditsWidgetClass;
+  TSubclassOf<class UScreenCreditsWidget> CreditsWidgetClass;
 
   /**
    * Whether the credit string has changed since last frame.
