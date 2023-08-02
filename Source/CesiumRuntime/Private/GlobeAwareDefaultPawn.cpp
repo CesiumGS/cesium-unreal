@@ -328,7 +328,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // If we reached the end, set actual destination location and
   // orientation
   if (flyPercentage >= 1.0f) {
-    this->GlobeAnchor->MoveToECEF(this->_flyToECEFDestination);
+    this->GlobeAnchor->MoveToECEF(
+        VecMath::createVector(this->_flyToECEFDestination));
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0f;
@@ -347,7 +348,7 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   _interpolateFlightPosition(flyPercentage, currentPosition);
 
   // Set Location
-  this->GlobeAnchor->MoveToECEF(currentPosition);
+  this->GlobeAnchor->MoveToECEF(VecMath::createVector(currentPosition));
 
   // Interpolate rotation in the ESU frame. The local ESU ControlRotation will
   // be transformed to the appropriate world rotation as we fly.

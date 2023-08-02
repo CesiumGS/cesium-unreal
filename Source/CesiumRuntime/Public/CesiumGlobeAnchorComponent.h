@@ -23,6 +23,7 @@ UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGlobeAnchorComponent : public UActorComponent {
   GENERATED_BODY()
 
+#pragma region Properties
 private:
   /**
    * The designated georeference actor controlling how the owning actor's
@@ -38,7 +39,7 @@ private:
       BlueprintReadWrite,
       BlueprintGetter = GetGeoreference,
       BlueprintSetter = SetGeoreference,
-      Category = "Cesium|Georeference",
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
 
@@ -58,40 +59,15 @@ private:
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
 
-public:
-  /** @copydoc UCesiumGlobeAnchorComponent::Georeference */
-  UFUNCTION(BlueprintGetter, Category = "Cesium")
-  TSoftObjectPtr<ACesiumGeoreference> GetGeoreference() const;
-
-  /** @copydoc UCesiumGlobeAnchorComponent::Georeference */
-  UFUNCTION(BlueprintSetter, Category = "Cesium")
-  void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
-
-  /**
-   * Resolves the Cesium Georeference to use with this Component. Returns
-   * the value of the Georeference property if it is set. Otherwise, finds a
-   * Georeference in the World and returns it, creating it if necessary. The
-   * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* ResolveGeoreference();
-
-  /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time ResolveGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InvalidateResolvedGeoreference();
-
-private:
   /**
    * The latitude in degrees of this component, in the range [-90, 90]
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      BlueprintReadOnly,
+      BlueprintGetter = GetLatitude,
+      Interp,
+      Category = "Cesium",
       Meta = (AllowPrivateAccess, ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
@@ -100,7 +76,9 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      BlueprintReadOnly,
+      BlueprintGetter = GetLongitude,
+      Category = "Cesium",
       meta = (AllowPrivateAccess, ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
@@ -112,48 +90,20 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      BlueprintReadOnly,
+      BlueprintGetter = GetHeight,
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double Height = 0.0;
 
-public:
-  /**
-   * Returns the longitude in degrees (X), latitude in degrees (Y),
-   * and height in meters (Z) of the actor.
-   *
-   * Returns a zero vector if the component is not yet registered.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector GetLongitudeLatitudeHeight() const;
-
-  /**
-   * Move the actor to the specified longitude in degrees (x), latitude
-   * in degrees (y), and height in meters (z).
-   *
-   * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
-   * orientation will also be adjusted to account for globe curvature.
-   */
-  void MoveToLongitudeLatitudeHeight(
-      const glm::dvec3& TargetLongitudeLatitudeHeight);
-
-  /**
-   * Move the actor to the specified longitude in degrees (x), latitude
-   * in degrees (y), and height in meters (z).
-   *
-   * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
-   * orientation will also be adjusted to account for globe curvature.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void
-  MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
-
-private:
   /**
    * The Earth-Centered Earth-Fixed X-coordinate of this component in meters.
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      BlueprintReadOnly,
+      BlueprintGetter = GetEcefX,
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double ECEF_X = 0.0;
 
@@ -162,7 +112,9 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      BlueprintReadOnly,
+      BlueprintGetter = GetEcefY,
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double ECEF_Y = 0.0;
 
@@ -171,31 +123,104 @@ private:
    */
   UPROPERTY(
       EditAnywhere,
-      Category = "Cesium|Georeference",
+      BlueprintReadOnly,
+      BlueprintGetter = GetEcefZ,
+      Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double ECEF_Z = 0.0;
 
+#pragma endregion
+
+#pragma region Property Accessors
 public:
   /**
-   * Returns the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
-   * meters, downcasted to a single-precision floating point vector.
+   * Gets the designated georeference actor controlling how the owning actor's
+   * coordinate system relates to the coordinate system in this Unreal Engine
+   * level.
    *
-   * Returns a zero vector if the component is not yet registered.
+   * If this is null, the Component will find and use the first Georeference
+   * Actor in the level, or create one if necessary. To get the active/effective
+   * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  FVector GetECEF() const;
+  UFUNCTION(BlueprintGetter)
+  TSoftObjectPtr<ACesiumGeoreference> GetGeoreference() const;
 
   /**
-   * Moves the Actor to which this component is attached to a given globe
-   * position in Earth-Centered, Earth-Fixed coordinates in meters.
+   * Sets the designated georeference actor controlling how the owning actor's
+   * coordinate system relates to the coordinate system in this Unreal Engine
+   * level.
    *
-   * If AdjustOrientationForGlobeWhenMoving is enabled, this method will also
-   * update the orientation based on the globe curvature.
-   *
-   * @param newPosition The new position.
+   * If this is null, the Component will find and use the first Georeference
+   * Actor in the level, or create one if necessary. To get the active/effective
+   * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
    */
-  void MoveToECEF(const glm::dvec3& newPosition);
+  UFUNCTION(BlueprintSetter)
+  void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
 
+  /**
+   * Gets the latitude in degrees of this component, in the range [-90, 90]
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetLatitude() const noexcept { return this->Latitude; }
+
+  /**
+   * Gets the longitude in degrees of this component, in the range [-180, 180]
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetLongitude() const noexcept { return this->Longitude; }
+
+  /**
+   * Gets the height in meters above the ellipsoid (usually WGS84) of this
+   * component. Do not confuse this with a geoid height or height above mean sea
+   * level, which can be tens of meters higher or lower depending on where in
+   * the world the object is located.
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetHeight() const noexcept { return this->Height; }
+
+  /**
+   * Gets the Earth-Centered Earth-Fixed X-coordinate of this component in
+   * meters.
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetEcefX() const noexcept { return this->ECEF_X; }
+
+  /**
+   * Gets the Earth-Centered Earth-Fixed Y-coordinate of this component in
+   * meters.
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetEcefY() const noexcept { return this->ECEF_Y; }
+
+  /**
+   * Gets the Earth-Centered Earth-Fixed Z-coordinate of this component in
+   * meters.
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetEcefZ() const noexcept { return this->ECEF_Z; }
+
+  /**
+   * Gets the longitude in degrees (X), latitude in degrees (Y),
+   * and height in meters about the ellipsoid (Z) of the actor.
+   *
+   * Do not confuse the ellipsoid height with a geoid height or height above
+   * mean sea level, which can be tens of meters higher or lower depending on
+   * where in the world the object is located.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector GetLongitudeLatitudeHeight() const;
+
+  /**
+   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
+   * meters.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector GetECEF() const;
+
+#pragma endregion
+
+#pragma region Move and Rotate
+public:
   /**
    * Moves the Actor to which this component is attached to a given globe
    * position in Earth-Centered, Earth-Fixed coordinates in meters.
@@ -222,6 +247,37 @@ public:
    */
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
+#pragma endregion
+
+public:
+  /**
+   * Resolves the Cesium Georeference to use with this Component. Returns
+   * the value of the Georeference property if it is set. Otherwise, finds a
+   * Georeference in the World and returns it, creating it if necessary. The
+   * resolved Georeference is cached so subsequent calls to this function will
+   * return the same instance.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  ACesiumGeoreference* ResolveGeoreference();
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time ResolveGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void InvalidateResolvedGeoreference();
+
+  /**
+   * Move the actor to the specified longitude in degrees (x), latitude
+   * in degrees (y), and height in meters (z).
+   *
+   * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
+   * orientation will also be adjusted to account for globe curvature.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void
+  MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
 
 public:
   /**

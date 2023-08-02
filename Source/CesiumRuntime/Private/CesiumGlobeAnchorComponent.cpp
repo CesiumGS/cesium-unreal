@@ -78,15 +78,11 @@ FVector UCesiumGlobeAnchorComponent::GetECEF() const {
   return VecMath::createVector(glm::dvec3(this->_actorToECEF[3]));
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF(const glm::dvec3& newPosition) {
-  this->ECEF_X = newPosition.x;
-  this->ECEF_Y = newPosition.y;
-  this->ECEF_Z = newPosition.z;
-  this->_applyCartesianProperties();
-}
-
 void UCesiumGlobeAnchorComponent::MoveToECEF(const FVector& TargetEcef) {
-  this->MoveToECEF(VecMath::createVector3D(TargetEcef));
+  this->ECEF_X = TargetEcef.X;
+  this->ECEF_Y = TargetEcef.Y;
+  this->ECEF_Z = TargetEcef.Z;
+  this->_applyCartesianProperties();
 }
 
 void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
@@ -220,7 +216,7 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
-    const glm::dvec3& TargetLongitudeLatitudeHeight) {
+    const FVector& TargetLongitudeLatitudeHeight) {
   if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
     UE_LOG(
         LogCesium,
@@ -233,13 +229,7 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
 
   this->MoveToECEF(
       UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          VecMath::createVector(TargetLongitudeLatitudeHeight)));
-}
-
-void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
-    const FVector& TargetLongitudeLatitudeHeight) {
-  return this->MoveToLongitudeLatitudeHeight(
-      VecMath::createVector3D(TargetLongitudeLatitudeHeight));
+          TargetLongitudeLatitudeHeight));
 }
 
 void UCesiumGlobeAnchorComponent::ApplyWorldOffset(
