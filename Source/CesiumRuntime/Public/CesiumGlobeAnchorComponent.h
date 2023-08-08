@@ -4,8 +4,7 @@
 
 #include "Components/ActorComponent.h"
 #include "Delegates/IDelegateInstance.h"
-#include <glm/gtx/quaternion.hpp>
-#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 #include <optional>
 #include "CesiumGlobeAnchorComponent.generated.h"
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumRuntime.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/MathFwd.h"

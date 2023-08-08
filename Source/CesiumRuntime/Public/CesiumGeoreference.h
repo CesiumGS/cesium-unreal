@@ -4,8 +4,6 @@
 
 #include "CesiumGeospatial/LocalHorizontalCoordinateSystem.h"
 #include "CesiumSubLevel.h"
-#include "Containers/UnrealString.h"
-#include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GeoTransforms.h"
 #include "OriginPlacement.h"
