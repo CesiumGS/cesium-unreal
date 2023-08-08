@@ -18,3 +18,12 @@
 #pragma warning(pop)
 #endif
 #endif
+
+#include "Blueprint/UserWidget.h"
+#include "Components/MeshComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "Physics/PhysicsInterfaceCore.h"
+#include "PhysicsEngine/BodyInstance.h"

@@ -1,19 +1,14 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumGlobeAnchorComponent.h"
-#include "CesiumActors.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeometry/Transforms.h"
 #include "CesiumGeoreference.h"
-#include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumRuntime.h"
-#include "CesiumTransforms.h"
 #include "CesiumWgs84Ellipsoid.h"
 #include "Components/SceneComponent.h"
-#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "VecMath.h"
-#include <glm/gtx/quaternion.hpp>
 
 // These are the "changes" that can happen to this component, how it detects
 // them, and what it does about them:
@@ -662,3 +657,5 @@ void UCesiumGlobeAnchorComponent::_applyCartographicProperties() {
   this->ECEF_Z = ecef.Z;
   this->_applyCartesianProperties();
 }
+//
+
