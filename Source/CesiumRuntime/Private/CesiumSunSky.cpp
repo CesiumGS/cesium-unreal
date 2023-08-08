@@ -114,7 +114,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
 
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
-  this->GlobeAnchor->AdjustOrientationForGlobeWhenMoving = false;
+  this->GlobeAnchor->SetAdjustOrientationForGlobeWhenMoving(false);
 }
 
 void ACesiumSunSky::_handleTransformUpdated(
@@ -172,7 +172,7 @@ void ACesiumSunSky::_spawnSkySphere() {
           SkySphereActor,
           TEXT("GlobeAnchor"));
   this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
-  GlobeAnchorComponent->AdjustOrientationForGlobeWhenMoving = false;
+  GlobeAnchorComponent->SetAdjustOrientationForGlobeWhenMoving(false);
   GlobeAnchorComponent->SetGeoreference(this->GlobeAnchor->GetGeoreference());
   GlobeAnchorComponent->MoveToECEF(FVector(0.0, 0.0, 0.0));
 

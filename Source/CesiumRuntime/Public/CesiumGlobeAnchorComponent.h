@@ -129,6 +129,50 @@ private:
       Meta = (AllowPrivateAccess))
   double ECEF_Z = 0.0;
 
+  /**
+   * Using the teleport flag will move objects to the updated transform
+   * immediately and without affecting their velocity. This is useful when
+   * working with physics actors that maintain an internal velocity which we do
+   * not want to change when updating location.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetTeleportWhenUpdatingTransform,
+      BlueprintSetter = SetTeleportWhenUpdatingTransform,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  bool TeleportWhenUpdatingTransform = true;
+
+  /**
+   * Whether to adjust the Actor's orientation based on globe curvature as the
+   * Actor moves.
+   *
+   * The Earth is not flat, so as we move across its surface, the direction of
+   * "up" changes. If we ignore this fact and leave an object's orientation
+   * unchanged as it moves over the globe surface, the object will become
+   * increasingly tilted and eventually be completely upside-down when we arrive
+   * at the opposite side of the globe.
+   *
+   * When this setting is enabled, this Component will automatically apply a
+   * rotation to the Actor to account for globe curvature any time the Actor's
+   * position on the globe changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * when your application already accounts for globe curvature itself when it
+   * updates an Actor's position and orientation, because in that case the Actor
+   * would be over-rotated.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      BlueprintGetter = GetAdjustOrientationForGlobeWhenMoving,
+      BlueprintSetter = SetAdjustOrientationForGlobeWhenMoving,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  bool AdjustOrientationForGlobeWhenMoving = true;
+
 #pragma endregion
 
 #pragma region Property Accessors
@@ -156,6 +200,24 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
+
+  /**
+   * Resolves the Cesium Georeference to use with this Component. Returns
+   * the value of the Georeference property if it is set. Otherwise, finds a
+   * Georeference in the World and returns it, creating it if necessary. The
+   * resolved Georeference is cached so subsequent calls to this function will
+   * return the same instance.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  ACesiumGeoreference* ResolveGeoreference();
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time ResolveGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void InvalidateResolvedGeoreference();
 
   /**
    * Gets the latitude in degrees of this component, in the range [-90, 90]
@@ -217,6 +279,68 @@ public:
   UFUNCTION(BlueprintPure, Category = "Cesium")
   FVector GetECEF() const;
 
+  /**
+   * Gets a flag indiciating whether to move objects to the updated transform
+   * immediately and without affecting their velocity. This is useful when
+   * working with physics actors that maintain an internal velocity which we do
+   * not want to change when updating location.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetTeleportWhenUpdatingTransform() const;
+
+  /**
+   * Sets a flag indiciating whether to move objects to the updated transform
+   * immediately and without affecting their velocity. This is useful when
+   * working with physics actors that maintain an internal velocity which we do
+   * not want to change when updating location.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetTeleportWhenUpdatingTransform(bool Value);
+
+  /**
+   * Gets a flag indicating whether to adjust the Actor's orientation based on
+   * globe curvature as the Actor moves.
+   *
+   * The Earth is not flat, so as we move across its surface, the direction of
+   * "up" changes. If we ignore this fact and leave an object's orientation
+   * unchanged as it moves over the globe surface, the object will become
+   * increasingly tilted and eventually be completely upside-down when we arrive
+   * at the opposite side of the globe.
+   *
+   * When this setting is enabled, this Component will automatically apply a
+   * rotation to the Actor to account for globe curvature any time the Actor's
+   * position on the globe changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * when your application already accounts for globe curvature itself when it
+   * updates an Actor's position and orientation, because in that case the Actor
+   * would be over-rotated.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  bool GetAdjustOrientationForGlobeWhenMoving() const;
+
+  /**
+   * Sets a flag indicating whether to adjust the Actor's orientation based on
+   * globe curvature as the Actor moves.
+   *
+   * The Earth is not flat, so as we move across its surface, the direction of
+   * "up" changes. If we ignore this fact and leave an object's orientation
+   * unchanged as it moves over the globe surface, the object will become
+   * increasingly tilted and eventually be completely upside-down when we arrive
+   * at the opposite side of the globe.
+   *
+   * When this setting is enabled, this Component will automatically apply a
+   * rotation to the Actor to account for globe curvature any time the Actor's
+   * position on the globe changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * when your application already accounts for globe curvature itself when it
+   * updates an Actor's position and orientation, because in that case the Actor
+   * would be over-rotated.
+   */
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetAdjustOrientationForGlobeWhenMoving(bool Value);
+
 #pragma endregion
 
 #pragma region Move and Rotate
@@ -225,8 +349,8 @@ public:
    * Moves the Actor to which this component is attached to a given globe
    * position in Earth-Centered, Earth-Fixed coordinates in meters.
    *
-   * If AdjustOrientationForGlobeWhenMoving is enabled, this method will also
-   * update the orientation based on the globe curvature.
+   * If AdjustOrientationForGlobeWhenMoving is enabled, this method will
+   * also update the orientation based on the globe curvature.
    *
    * @param newPosition The new position.
    */
@@ -247,26 +371,6 @@ public:
    */
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
-#pragma endregion
-
-public:
-  /**
-   * Resolves the Cesium Georeference to use with this Component. Returns
-   * the value of the Georeference property if it is set. Otherwise, finds a
-   * Georeference in the World and returns it, creating it if necessary. The
-   * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* ResolveGeoreference();
-
-  /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time ResolveGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InvalidateResolvedGeoreference();
 
   /**
    * Move the actor to the specified longitude in degrees (x), latitude
@@ -278,39 +382,10 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void
   MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
+#pragma endregion
 
+#pragma region Implementation Details
 public:
-  /**
-   * Using the teleport flag will move objects to the updated transform
-   * immediately and without affecting their velocity. This is useful when
-   * working with physics actors that maintain an internal velocity which we do
-   * not want to change when updating location.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Georeference")
-  bool TeleportWhenUpdatingTransform = true;
-
-  /**
-   * Whether to adjust the Actor's orientation based on globe curvature as the
-   * Actor moves.
-   *
-   * The Earth is not flat, so as we move across its surface, the direction of
-   * "up" changes. If we ignore this fact and leave an object's orientation
-   * unchanged as it moves over the globe surface, the object will become
-   * increasingly tilted and eventually be completely upside-down when we arrive
-   * at the opposite side of the globe.
-   *
-   * When this setting is enabled, this Component will automatically apply a
-   * rotation to the Actor to account for globe curvature any time the Actor's
-   * position on the globe changes.
-   *
-   * This property should usually be enabled, but it may be useful to disable it
-   * when your application already accounts for globe curvature itself when it
-   * updates an Actor's position and orientation, because in that case the Actor
-   * would be over-rotated.
-   */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium|Georeference")
-  bool AdjustOrientationForGlobeWhenMoving = true;
-
   //
   // Base class overrides
   //
@@ -489,4 +564,5 @@ private:
    * globe transform.
    */
   void _updateCartographicProperties();
+#pragma endregion
 };

@@ -78,6 +78,24 @@ FVector UCesiumGlobeAnchorComponent::GetECEF() const {
   return VecMath::createVector(glm::dvec3(this->_actorToECEF[3]));
 }
 
+bool UCesiumGlobeAnchorComponent::GetTeleportWhenUpdatingTransform() const {
+  return this->TeleportWhenUpdatingTransform;
+}
+
+void UCesiumGlobeAnchorComponent::SetTeleportWhenUpdatingTransform(bool Value) {
+  this->TeleportWhenUpdatingTransform = Value;
+}
+
+bool UCesiumGlobeAnchorComponent::GetAdjustOrientationForGlobeWhenMoving()
+    const {
+  return this->AdjustOrientationForGlobeWhenMoving;
+}
+
+void UCesiumGlobeAnchorComponent::SetAdjustOrientationForGlobeWhenMoving(
+    bool Value) {
+  this->AdjustOrientationForGlobeWhenMoving = Value;
+}
+
 void UCesiumGlobeAnchorComponent::MoveToECEF(const FVector& TargetEcef) {
   this->ECEF_X = TargetEcef.X;
   this->ECEF_Y = TargetEcef.Y;
