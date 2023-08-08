@@ -294,8 +294,16 @@ FMatrix ACesiumGeoreference::ComputeEastSouthUpToUnrealTransformation(
     const FVector& UnrealLocation) const {
   FVector ecef =
       this->TransformUnrealPositionToEarthCenteredEarthFixed(UnrealLocation);
+  return this
+      ->ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+          ecef);
+}
+
+FMatrix ACesiumGeoreference::
+    ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+        const FVector& EarthCenteredEarthFixedPosition) const {
   LocalHorizontalCoordinateSystem newLocal =
-      createCoordinateSystem(ecef, this->GetScale());
+      createCoordinateSystem(EarthCenteredEarthFixedPosition, this->GetScale());
   return VecMath::createMatrix(
       newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }

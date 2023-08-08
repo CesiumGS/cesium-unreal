@@ -537,8 +537,37 @@ public:
   ComputeEastSouthUpToUnrealTransformation(const FVector& UnrealLocation) const;
 
   /**
+   * Computes the matrix that transforms from an East-South-Up frame centered at
+   * a given location to the Unreal frame. The location is expressed as an
+   * Earth-Centered, Earth-Fixed position. To use an Unreal position instead,
+   * use ComputeUnrealToEastSouthUpTransformation.
+   *
+   * In an East-South-Up frame, +X points East, +Y points South, and +Z points
+   * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF
+   * coordinates vary depending on where on the globe we are talking about.
+   * That is why this function takes a location, expressed in Unreal
+   * coordinates, that defines the origin of the East-South-Up frame of
+   * interest.
+   *
+   * The Unreal location and the resulting matrix should generally not be
+   * relative to the Unreal _world_, but rather be expressed in some parent
+   * Actor's reference frame as defined by its Transform. This way, the chain of
+   * Unreal transforms places and orients the "globe" in the Unreal world.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EastSouthUpToUnrealMatrix"))
+  FMatrix
+  ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+      const FVector& EarthCenteredEarthFixedPosition) const;
+
+  /**
    * Computes the matrix that transforms from the Unreal frame to an
-   * East-South-Up frame centered at a given location.
+   * East-South-Up frame centered at a given location. The location is expressed
+   * in Unreal coordinates. To use an Earth-Centered, Earth-Fixed position
+   * instead, use
+   * ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation.
    *
    * In an East-South-Up frame, +X points East, +Y points South, and +Z points
    * Up. However, the directions of "East", "South", and "Up" in Unreal or ECEF

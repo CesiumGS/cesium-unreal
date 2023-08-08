@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGeospatial/GlobeAnchor.h"
 #include "Components/ActorComponent.h"
 #include "Delegates/IDelegateInstance.h"
 #include <glm/mat4x4.hpp>
@@ -383,19 +384,33 @@ public:
   void
   MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
 
+  /**
+   * Gets the rotation from the Actor's coordinate system to a local coordinate
+   * system centered on this object where the +X points in the local East
+   * direction, the +Y axis points in the local South direction, and the +Z axis
+   * points in the local Up direction.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FRotator GetLocalToEastSouthUpRotation() const;
+
+  /**
+   * Sets the rotation from the Actor's coordinate system to a local coordinate
+   * system centered on this object where the +X points in the local East
+   * direction, the +Y axis points in the local South direction, and the +Z axis
+   * points in the local Up direction.
+   *
+   * When the rotation is set via this method, it is internally converted to
+   * and stored in the ActorToEarthCenteredEarthFixed property. As a
+   * result, getting this property will not necessarily return the exact value
+   * that was set.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetLocalToEastSouthUpRotation(const FRotator& LocalToEastSouthUp);
+
 #pragma endregion
 
 #pragma region Unreal Lifecycle
-public:
-  /**
-   * Called by the owner actor when the world's OriginLocation changes (i.e.
-   * during origin rebasing). The Component will recompute the Actor's
-   * transform based on the new OriginLocation and on this component's
-   * globe transform. The Actor's orientation is unaffected.
-   */
-  virtual void
-  ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
-
+protected:
   /**
    * Handles reading, writing, and reference collecting using FArchive.
    * This implementation handles all FProperty serialization, but can be
@@ -423,7 +438,6 @@ public:
   PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-protected:
   /**
    * Called when a component is registered. This can be viewed as "enabling"
    * this Component on the Actor to which it is attached.
@@ -445,19 +459,44 @@ protected:
 
 #pragma region Implementation Details
 private:
+  CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
+
+  CesiumGeospatial::GlobeAnchor
+  _createNativeGlobeAnchor(const FMatrix& actorToECEF) const;
+
+  USceneComponent* _getRootComponent(bool warnIfNull) const;
+
+  FTransform _getCurrentRelativeTransform() const;
+
+  void _setCurrentRelativeTransform(const FTransform& relativeTransform);
+
+  CesiumGeospatial::GlobeAnchor
+  _createOrUpdateNativeGlobeAnchorFromRelativeTransform(
+      const FTransform& newRelativeTransform);
+
+  CesiumGeospatial::GlobeAnchor
+  _createOrUpdateNativeGlobeAnchorFromECEF(const FMatrix& newActorToECEFMatrix);
+
+  void _updateFromNativeGlobeAnchor(
+      const CesiumGeospatial::GlobeAnchor& nativeAnchor);
+
+  void _setNewActorToECEFFromRelativeTransform();
+
+  void _setNewActorToECEFMatrix(const FMatrix& newActorToECEFMatrix);
+
+#if WITH_EDITORONLY_DATA
   /**
    * The current Actor to ECEF transformation expressed as a simple array of
    * doubles so that Unreal Engine can serialize it.
    */
+  UPROPERTY(meta = (DeprecatedProperty))
+  double _actorToECEF_Array_DEPRECATED[16];
+
+  static_assert(sizeof(_actorToECEF_Array_DEPRECATED) == sizeof(glm::dmat4));
+#endif
+
   UPROPERTY()
-  double _actorToECEF_Array[16];
-
-  static_assert(sizeof(_actorToECEF_Array) == sizeof(glm::dmat4));
-
-  /**
-   * The _actorToECEF_Array cast as a glm::dmat4 for convenience.
-   */
-  glm::dmat4& _actorToECEF = *reinterpret_cast<glm::dmat4*>(_actorToECEF_Array);
+  FMatrix _actorToECEF;
 
   /**
    * True if the globe transform is a valid and correct representation of the
@@ -500,41 +539,6 @@ private:
   void _onGeoreferenceChanged();
 
   /**
-   * Updates the globe-relative (ECEF) transform from the current Actor
-   * transform.
-   *
-   * @returns The new globe position.
-   */
-  const glm::dmat4& _updateGlobeTransformFromActorTransform();
-
-  /**
-   * Updates the Unreal world Actor position from the current globe position.
-   *
-   * @param newWorldOrigin The new world OriginLocation to use when computing
-   * the Actor transform. If std::nullopt, the true world OriginLocation is
-   * used.
-   * @return The new Actor position.
-   */
-  FTransform _updateActorTransformFromGlobeTransform(
-      const std::optional<glm::dvec3>& newWorldOrigin = std::nullopt);
-
-  /**
-   * Sets a new globe transform and updates the Actor transform to match. If
-   * `AdjustOrientationForGlobeWhenMoving` is enabled, the orientation is also
-   * adjusted for globe curvature.
-   *
-   * This function does not update the Longitude, Latitude, Height, ECEF_X,
-   * ECEF_Y, or ECEF_Z properties. To do that, call `_updateCartesianProperties`
-   * and `_updateCartographicProperties`.
-   *
-   * @param newTransform The new transform, before it is adjusted for globe
-   * curvature.
-   * @returns The new globe transform, which may be different from
-   * `newTransform` if the orientation has been adjusted for globe curvature.
-   */
-  const glm::dmat4& _setGlobeTransform(const glm::dmat4& newTransform);
-
-  /**
    * Applies the current values of the ECEF_X, ECEF_Y, and ECEF_Z properties,
    * updating the Longitude, Latitude, and Height properties, the globe
    * transform, and the Actor transform. If
@@ -544,12 +548,6 @@ private:
   void _applyCartesianProperties();
 
   /**
-   * Updates the ECEF_X, ECEF_Y, and ECEF_Z properties from the current globe
-   * transform.
-   */
-  void _updateCartesianProperties();
-
-  /**
    * Applies the current values of the Longitude, Latitude, and Height
    * properties, updating the ECEF_X, ECEF_Y, and ECEF_Z properties, the globe
    * transform, and the Actor transform. If
@@ -557,11 +555,5 @@ private:
    * adjusted for globe curvature.
    */
   void _applyCartographicProperties();
-
-  /**
-   * Updates the Longitude, Latitude, and Height properties from the current
-   * globe transform.
-   */
-  void _updateCartographicProperties();
 #pragma endregion
 };

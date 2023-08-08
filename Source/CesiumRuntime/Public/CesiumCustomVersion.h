@@ -21,6 +21,10 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // of the normal Mobility property on the RootComponent.
     TilesetMobilityRemoved = 3,
 
+    // The UCesiumGlobeAnchorComponent's globe transformation changed from being
+    // an array of doubles to being an FMatrix.
+    GlobeAnchorTransformationAsFMatrix = 4,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };
