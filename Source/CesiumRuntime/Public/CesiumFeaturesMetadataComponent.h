@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "CesiumMetadataValueType.h"
+#include "CesiumMetadataEncodingDetails.h"
+#include "CesiumMetadataPropertyDetails.h"
 #include "Components/ActorComponent.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
@@ -90,10 +91,18 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveFeaturesDescription {
 #pragma endregion
 
 #pragma region Metadata descriptions
-// Note that these don't exhaustively cover the possibilities of glTF metadata
-// classes, they only cover the subset that can be encoded into textures. For
-// example, arbitrary size arrays and enums are excluded. Other un-encoded
-// types like strings will be coerced.
+
+// These don't exhaustively cover the possibilities of glTF metadata
+// classes, they only cover the subset that can be encoded into textures. The
+// following types are excluded:
+// - enums
+// - strings that cannot be parsed as numbers or colors
+// - matrices
+// - variable length arrays
+// - arrays of non-scalar, non-boolean elements
+//
+// Additionally, if a property contains fixed-length arrays, only the first four
+// elements can be encoded.
 
 /**
  * @brief Description of a property table property that should be encoded for
@@ -110,38 +119,19 @@ struct CESIUMRUNTIME_API FCesiumPropertyTablePropertyDescription {
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FString Name;
 
-  // The individual values of FCesiumMetadataValueType are separated for
-  // readability. (Removing the outer FCesiumMetadataValueType struct flattens
-  // the UI hierarchy.)
-
   /**
-   * The underlying type of this property. Not all types of properties can be
-   * encoded to the GPU, or coerced to GPU-compatible types.
+   * Describes the underlying type of this property and other relevant
+   * information from its EXT_structural_metadata definition. Not all types of
+   * properties can be encoded to the GPU, or coerced to GPU-compatible types.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  FCesiumMetadataValueType TrueType;
+  FCesiumMetadataPropertyDetails PropertyDetails;
 
   /**
-   * The GPU-compatible type that this property's values will be encoded as.
+   * Describes how the property will be encoded as data on the GPU, if possible.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumEncodedMetadataType Type;
-
-  /**
-   * The GPU-compatible component type that this property's values will be
-   * encoded as. These correspond to the pixel component types that are
-   * supported in Unreal textures.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumEncodedMetadataComponentType ComponentType;
-
-  /**
-   * The method of conversion used for this property. This describes how the
-   * values will be converted for access in Unreal materials. Note that not all
-   * property types are compatible with the methods of conversion.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumEncodedMetadataConversion Conversion;
+  FCesiumMetadataEncodingDetails EncodingDetails;
 
   /**
    * If the property type is a uint8, this indicates whether or not the
@@ -156,7 +146,7 @@ struct CESIUMRUNTIME_API FCesiumPropertyTablePropertyDescription {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "ComponentType==ECesiumMetadataComponentType::Uint8"))
+               "Type.ComponentType==ECesiumMetadataComponentType::Uint8"))
   bool Normalized = false;
 };
 
@@ -257,7 +247,8 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
-   * @brief Descriptions of property tables to encode for access in Unreal materials.
+   * @brief Descriptions of property tables to encode for access in Unreal
+   * materials.
    */
   UPROPERTY(
       EditAnywhere,
@@ -326,17 +317,21 @@ public:
   UMaterialFunctionMaterialLayer* TargetMaterialLayer = nullptr;
 #endif
 
-  /**
-   * Description of the EXT_mesh_features in the visible glTF primitives across
-   * the tileset.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  FCesiumPrimitiveFeaturesDescription Features;
+  // Using the FCesiumPrimitiveFeaturesDescription and
+  // FCesiumModelMetadataDescription structs makes the UI less readable, so the
+  // component uses arrays directly to help flatten the UI.
 
   /**
-   * @brief Descriptions of the EXT_structural_metadata in the visible glTF
+   * Description of the feature ID sets in the visible glTF primitives across
+   * the tileset.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  TArray<FCesiumFeatureIdSetDescription> FeatureIdSets;
+
+  /**
+   * @brief Descriptions of the property tables in the visible glTF
    * models across the tileset.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  FCesiumModelMetadataDescription ModelMetadata;
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  TArray<FCesiumPropertyTableDescription> PropertyTables;
 };

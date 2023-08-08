@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -121,8 +121,8 @@ enum class ECesiumMetadataComponentType : uint8 {
 };
 
 /**
- * Represents the true value type of a metadata property or value, according to
- * how the property is defined in EXT_structural_metadata.
+ * Represents the true value type of a metadata value, akin to the property
+ * types in EXT_structural_metadata.
  */
 USTRUCT(BlueprintType)
 struct CESIUMRUNTIME_API FCesiumMetadataValueType {
@@ -136,7 +136,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   FCesiumMetadataValueType(
       ECesiumMetadataType InType,
       ECesiumMetadataComponentType InComponentType,
-      bool IsArray)
+      bool IsArray = false)
       : Type(InType), ComponentType(InComponentType), bIsArray(IsArray) {}
 
   /**
@@ -155,7 +155,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "Type != ECesiumMetadataType::Invalid && Type == ECesiumMetadataType::Boolean && Type == ECesiumMetadataType::Enum && Type == ECesiumMetadataType::String"))
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
   ECesiumMetadataComponentType ComponentType;
 
   /**
@@ -165,8 +165,13 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
   bool bIsArray;
 
-  inline bool operator==(const FCesiumMetadataValueType& ValueType) {
+  inline bool operator==(const FCesiumMetadataValueType& ValueType) const {
     return Type == ValueType.Type && ComponentType == ValueType.ComponentType &&
            bIsArray == ValueType.bIsArray;
+  }
+
+  inline bool operator!=(const FCesiumMetadataValueType& ValueType) const {
+    return Type != ValueType.Type || ComponentType != ValueType.ComponentType ||
+           bIsArray != ValueType.bIsArray;
   }
 };

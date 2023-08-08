@@ -31,8 +31,11 @@ struct LoadPrimitiveResult {
   // Parses EXT_structural_metadata from a mesh primitive.
   FCesiumPrimitiveMetadata Metadata{};
 
+  // Encodes the EXT_mesh_features on a mesh primitive.
   CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures{};
+  // Encodes the EXT_structural_metadata on a mesh primitive.
   CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata{};
+
   // A map of feature ID set names to their corresponding texture coordinate
   // indices in the Unreal mesh.
   TMap<FString, uint32_t> featuresMetadataTexCoordParameters;
@@ -67,7 +70,8 @@ struct LoadPrimitiveResult {
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex{};
   // Maps the accessor index in a glTF to its corresponding texture coordinate
   // index in the Unreal mesh.
-  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+  // The -1 key is reserved for implicit feature IDs (in other words, the vertex index).
+  std::unordered_map<int32_t, uint32_t> textureCoordinateMap;
 
   glm::vec3 dimensions;
 };
@@ -84,6 +88,7 @@ struct LoadModelResult {
   std::vector<LoadNodeResult> nodeResults{};
   // Parses the root EXT_structural_metadata extension.
   FCesiumModelMetadata Metadata{};
-  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedModelMetadata{};
+  // Encodes the EXT_structural_metadata on a glTF model.
+  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 };
 } // namespace LoadGltfResult

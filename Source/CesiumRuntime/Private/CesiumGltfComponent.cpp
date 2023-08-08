@@ -119,7 +119,7 @@ static uint32_t updateTextureCoordinates(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const std::optional<T>& texture,
-    std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
+    std::unordered_map<int32_t, uint32_t>& textureCoordinateMap) {
   if (!texture) {
     return 0;
   }
@@ -141,14 +141,14 @@ uint32_t updateTextureCoordinates(
     TArray<FStaticMeshBuildVertex>& vertices,
     const TArray<uint32>& indices,
     const std::string& attributeName,
-    std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
+    std::unordered_map<int32_t, uint32_t>& textureCoordinateMap) {
   auto uvAccessorIt = primitive.attributes.find(attributeName);
   if (uvAccessorIt == primitive.attributes.end()) {
     // Texture not used, texture coordinates don't matter.
     return 0;
   }
 
-  int uvAccessorID = uvAccessorIt->second;
+  int32_t uvAccessorID = uvAccessorIt->second;
   auto mapIt = textureCoordinateMap.find(uvAccessorID);
   if (mapIt != textureCoordinateMap.end()) {
     // Texture coordinates for this accessor are already populated.
@@ -517,7 +517,7 @@ static void updateTextureCoordinatesForFeatureIds(
     const EncodedPrimitiveFeatures& encodedPrimitiveFeatures,
     const EncodedModelMetadata& encodedModelMetadata,
     TMap<FString, uint32_t>& featuresMetadataTexcoordParameters,
-    std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap) {
+    std::unordered_map<int32_t, uint32_t>& textureCoordinateMap) {
 
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateTextureCoordinatesForFeatureIds)
 
@@ -543,8 +543,11 @@ static void updateTextureCoordinatesForFeatureIds(
   //  }
   //}
 
-  // These are necessary for feature ID attributes, since we'll be taking
-  // feature IDs from the attribute itself and putting them into texcoords.
+  // These are necessary for retrieving feature ID attributes, since we'll be
+  // taking feature IDs from the attribute itself and putting them into
+  // texcoords. We could technically just make an AccessorView on the attribute,
+  // but there are multiple feature ID component types, and
+  // FCesiumFeatureIdAttribute already creates the accessor view for us.
   const TArray<FCesiumFeatureIdSet>& featureIDSets =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
           primitiveFeatures);
@@ -623,7 +626,27 @@ static void updateTextureCoordinatesForFeatureIds(
                       encodedFeatureIDTexture.textureCoordinateSetIndex),
               textureCoordinateMap));
     } else {
-      // TODO: implicit IDs
+      // Similar to feature ID attributes, we encode the unsigned integer vertex
+      // ids as floats in the u-channel of a texture coordinate slot. If it ever
+      // becomes possible to access the vertex ID through an Unreal material
+      // node, this can be removed.
+      uint32_t textureCoordinateIndex = textureCoordinateMap.size();
+      textureCoordinateMap[-1] = textureCoordinateIndex;
+      featuresMetadataTexcoordParameters.Emplace(
+          encodedFeatureIDSet.name,
+          textureCoordinateIndex);
+      if (duplicateVertices) {
+        for (int64_t i = 0; i < indices.Num(); ++i) {
+          FStaticMeshBuildVertex& vertex = vertices[i];
+          uint32 vertexIndex = indices[i];
+          vertex.UVs[textureCoordinateIndex] = TMeshVector2(vertexIndex, 0.0f);
+        }
+      } else {
+        for (int64_t i = 0; i < vertices.Num(); ++i) {
+          FStaticMeshBuildVertex& vertex = vertices[i];
+          vertex.UVs[textureCoordinateIndex] = TMeshVector2(i, 0.0f);
+        }
+      }
     }
   }
 }
@@ -964,7 +987,7 @@ static void loadPrimitive(
   // We need to copy the texture coordinates associated with each texture (if
   // any) into the the appropriate UVs slot in FStaticMeshBuildVertex.
 
-  std::unordered_map<uint32_t, uint32_t>& textureCoordinateMap =
+  std::unordered_map<int32_t, uint32_t>& textureCoordinateMap =
       primitiveResult.textureCoordinateMap;
 
   {
@@ -1069,14 +1092,6 @@ static void loadPrimitive(
         primitiveResult.Features);
   }
 
-  const FCesiumModelMetadataDescription* pEncodedMetadataDescription =
-      pModelOptions->pEncodedMetadataDescription;
-  if (pEncodedMetadataDescription) {
-    // primitiveResult.EncodedMetadata = encodePrimitiveMetadataAnyThreadPart(
-    //    *pEncodedMetadataDescription,
-    //    primitiveResult.Metadata);
-  }
-
   updateTextureCoordinatesForFeatureIds(
       model,
       primitive,
@@ -1086,7 +1101,7 @@ static void loadPrimitive(
       primitiveResult.Features,
       primitiveResult.EncodedFeatures,
       options.pMeshOptions->pNodeOptions->pHalfConstructedModelResult
-          ->EncodedModelMetadata,
+          ->EncodedMetadata,
       primitiveResult.featuresMetadataTexCoordParameters,
       textureCoordinateMap);
 
@@ -1575,6 +1590,14 @@ static void loadModelAnyThreadPart(
     result.Metadata = FCesiumModelMetadata(model, *pMetadataExtension);
   }
 
+  const FCesiumModelMetadataDescription* pEncodedMetadataDescription =
+      options.pEncodedMetadataDescription;
+  if (pEncodedMetadataDescription) {
+    result.EncodedMetadata = encodeModelMetadataAnyThreadPart(
+        *pEncodedMetadataDescription,
+        result.Metadata);
+  }
+
   glm::dmat4x4 rootTransform = transform;
 
   {
@@ -1761,7 +1784,12 @@ static void SetPropertyTableParameterValues(
        encodedPropertyTable.properties) {
 
     pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(FName(encodedProperty.name), association, index),
+        FMaterialParameterInfo(
+            FName(getMaterialNameForPropertyTableProperty(
+                encodedPropertyTable.name,
+                encodedProperty.name)),
+            association,
+            index),
         encodedProperty.pTexture->pTexture.Get());
   }
 }
@@ -1854,6 +1882,15 @@ static void SetFeaturesMetadataParameterValues(
        }
      }
    }*/
+
+  for (const EncodedPropertyTable& propertyTable :
+       gltfComponent.EncodedMetadata.propertyTables) {
+    SetPropertyTableParameterValues(
+        propertyTable,
+        pMaterial,
+        association,
+        index);
+  }
 }
 
 static void loadPrimitiveGameThreadPart(
@@ -2155,8 +2192,7 @@ UCesiumGltfComponent::CreateOffGameThread(
   Gltf->SetFlags(RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
 
   Gltf->Metadata = std::move(pReal->loadModelResult.Metadata);
-  Gltf->EncodedModelMetadata =
-      std::move(pReal->loadModelResult.EncodedModelMetadata);
+  Gltf->EncodedMetadata = std::move(pReal->loadModelResult.EncodedMetadata);
 
   if (pBaseMaterial) {
     Gltf->BaseMaterial = pBaseMaterial;
@@ -2172,7 +2208,8 @@ UCesiumGltfComponent::CreateOffGameThread(
 
   Gltf->CustomDepthParameters = CustomDepthParameters;
 
-  encodeModelMetadataGameThreadPart(Gltf->EncodedModelMetadata);
+  encodeModelMetadataGameThreadPart(Gltf->EncodedMetadata);
+
   for (LoadNodeResult& node : pReal->loadModelResult.nodeResults) {
     if (node.meshResult) {
       for (LoadPrimitiveResult& primitive : node.meshResult->primitiveResults) {
@@ -2398,7 +2435,7 @@ void UCesiumGltfComponent::SetCollisionEnabled(
 }
 
 void UCesiumGltfComponent::BeginDestroy() {
-  destroyEncodedModelMetadata(this->EncodedModelMetadata);
+  destroyEncodedModelMetadata(this->EncodedMetadata);
   Super::BeginDestroy();
 }
 

@@ -93,7 +93,7 @@ public:
 
   FCesiumModelMetadata Metadata{};
 
-  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedModelMetadata{};
+  CesiumEncodedFeaturesMetadata::EncodedModelMetadata EncodedMetadata{};
 
   void UpdateTransformFromCesium(const glm::dmat4& CesiumToUnrealTransform);
 

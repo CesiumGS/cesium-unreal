@@ -665,7 +665,8 @@ public:
     options.ignoreKhrMaterialsUnlit =
         this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
-    options.pPrimitiveFeaturesDescription = &this->_pActor->_featuresDescription;
+    options.pPrimitiveFeaturesDescription =
+        &this->_pActor->_featuresDescription;
     options.pEncodedMetadataDescription =
         &this->_pActor->_modelMetadataDescription;
 
@@ -938,8 +939,9 @@ void ACesium3DTileset::LoadTileset() {
   const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
       this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
   if (pFeaturesMetadataComponent) {
-    this->_featuresDescription = pFeaturesMetadataComponent->Features;
-    this->_modelMetadataDescription = pFeaturesMetadataComponent->ModelMetadata;
+    this->_featuresDescription = {pFeaturesMetadataComponent->FeatureIdSets};
+    this->_modelMetadataDescription = {
+        pFeaturesMetadataComponent->PropertyTables};
   } else {
     this->_featuresDescription = {};
     this->_modelMetadataDescription = {};

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CesiumMetadataValueType.h"
 #include "CesiumTextureUtility.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
@@ -16,6 +15,7 @@ struct FCesiumPrimitiveFeatures;
 struct FCesiumModelMetadata;
 struct FCesiumPrimitiveMetadata;
 struct FCesiumPropertyTable;
+struct FCesiumPropertyTableProperty;
 struct FCesiumPropertyTexture;
 struct FCesiumPropertyTableDescription;
 struct FFeatureTextureDescription;
@@ -35,28 +35,19 @@ struct FCesiumPrimitiveFeaturesDescription;
  */
 namespace CesiumEncodedFeaturesMetadata {
 /**
- * Naming convention for encoded features + metadata material parameters
- *
- * Feature Id Textures:
- *  - Base: "FIT_<feature table name>_"...
- *    - Texture: ..."TX"
- *    - Texture Coordinate Index: ..."UV"
- *    - Channel Mask: ..."CM"
- *
- * Feature Texture Properties:
- *  - Base: "FTX_<feature texture name>_<property name>_"...
- *    - Texture: ..."TX"
- *    - Texture Coordinate Index: ..."UV"
- *    - Swizzle: ..."SW"
- *
- * Encoded Feature Table Properties:
- *  - Encoded Property Table:
- *    "FTB_<feature table name>_<property name>"
+ * Naming convention for feature ID texture parameters:
+ *  - Texture: FeatureIDTextureName + "_TX"
+ *  - Texture Coordinate Index: FeatureIDTextureName + "_UV"
+ *  - Channels: FeatureIDTextureName + "_CHANNELS"
+ *  - NumChannels: FeatureIDTextureName + "_NUM_CHANNELS"
  */
 static const FString MaterialTextureSuffix = "_TX";
 static const FString MaterialTexCoordIndexSuffix = "_UV_INDEX";
 static const FString MaterialChannelsSuffix = "_CHANNELS";
 static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
+
+static const FString MaterialPropertyTablePrefix = "PTABLE_";
+static const FString MaterialPropertyDataSuffix = "_DATA";
 
 #pragma region Encoded Primitive Features
 
@@ -182,11 +173,39 @@ void destroyEncodedPrimitiveFeatures(EncodedPrimitiveFeatures& encodedFeatures);
 #pragma region Encoded Metadata
 
 /**
+ * @brief Generates a name for a property table in a glTF model's
+ * EXT_structural_metadata. If the property table already has a name, this will
+ * return the name. Otherwise, if the property table is unlabeled, its
+ * corresponding class will be substituted.
+ *
+ * This is used by FCesiumPropertyTableDescription to display the names of
+ * the property tables across a tileset.
+ *
+ * @param PropertyTable The property table
+ */
+FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable);
+
+/**
+ * @brief Generates a name for a property table property in a glTF model's
+ * EXT_structural_metadata. This is formatted like so:
+ *
+ * "PTABLE_<table name>_<property name>"
+ *
+ * This is used to name the texture parameter corresponding to this property in
+ * the generated Unreal material.
+ *
+ * @param PropertyTable The property table
+ */
+FString getMaterialNameForPropertyTableProperty(
+    const FString& propertyTableName,
+    const FString& propertyName);
+
+/**
  * A property table property that has been encoded for access on the GPU.
  */
 struct EncodedPropertyTableProperty {
   /**
-   * @brief The name of this property table property.
+   * @brief The name of the property table property.
    */
   FString name;
 
@@ -195,13 +214,19 @@ struct EncodedPropertyTableProperty {
    */
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 
-  // TODO: may need values for offset and scale here
+  // TODO: may need values for offset and scale here in the future
 };
 
 /**
  * A property table whose properties have been encoded for access on the GPU.
  */
 struct EncodedPropertyTable {
+  /**
+   * @brief The name assigned to this property table. This will be used to
+   * construct variable names in the generated Unreal material.
+   */
+  FString name;
+
   /**
    * @brief The encoded properties in this property table.
    */
@@ -223,9 +248,13 @@ struct EncodedPrimitiveMetadata {
   TArray<FString> propertyTextureNames;
 };
 
+/**
+ * @brief The encoded representation of the EXT_structural_metadata of a glTF
+ * model.
+ */
 struct EncodedModelMetadata {
-  TMap<FString, EncodedPropertyTable> propertyTables;
-  TMap<FString, EncodedPropertyTexture> propertyTextures;
+  TArray<EncodedPropertyTable> propertyTables;
+  TArray<EncodedPropertyTexture> propertyTextures;
 };
 
 EncodedPropertyTable encodePropertyTableAnyThreadPart(

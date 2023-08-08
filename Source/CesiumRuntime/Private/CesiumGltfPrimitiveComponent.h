@@ -64,7 +64,11 @@ public:
   glm::dmat4x4 HighPrecisionNodeTransform;
 
   OverlayTextureCoordinateIDMap overlayTextureCoordinateIDToUVIndex;
-  std::unordered_map<uint32_t, uint32_t> textureCoordinateMap;
+  // Maps the accessor index in a glTF to its corresponding texture coordinate
+  // index in the Unreal mesh.
+  // The -1 key is reserved for implicit feature IDs (in other words, the vertex
+  // index).
+  std::unordered_map<int32_t, uint32_t> textureCoordinateMap;
 
   std::optional<Cesium3DTilesSelection::BoundingVolume> boundingVolume;
 

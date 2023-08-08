@@ -1,108 +1,108 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
-#include "CesiumMetadataValueType.h"
-#include <cstdlib>
-#include <type_traits>
+
+struct FCesiumPropertyTablePropertyDescription;
+struct FCesiumPropertyTableProperty;
+struct FCesiumMetadataPropertyDetails;
+struct FCesiumMetadataEncodingDetails;
 
 /**
- * @brief The component type that a metadata property's values will be encoded
- * as. These correspond to the pixel component types that are supported in
- * Unreal textures.
- */
-UENUM()
-enum class ECesiumEncodedMetadataComponentType : uint8 { None, Uint8, Float };
-
-/**
- * @brief The type that a metadata property's values will be encoded as.
- */
-UENUM()
-enum class ECesiumEncodedMetadataType : uint8 {
-  None,
-  Scalar,
-  Vec2,
-  Vec3,
-  Vec4
-};
-
-/**
- * @brief Indicates how a property value from EXT_structural_metadata should be
- * converted to a GPU-accessible type, if possible.
- */
-UENUM()
-enum class ECesiumEncodedMetadataConversion : uint8 {
-  /**
-   * Do nothing. This is typically used for property types that are
-   * completely unable to be coerced.
-   */
-  None,
-  /**
-   * Coerce the components of a property value to the specified component type.
-   * If the property contains string values, this attempts to parse numbers from
-   * the strings as uint8s.
-   */
-  CoerceComponents,
-  /**
-   * Attempt to parse a color from a string property value. This supports
-   * the following formats:
-   * - rgb(R, G, B), where R, G, and B are values in the range [0, 255]
-   * - hexcode colors, e.g. #ff0000
-   */
-  ParseColorFromString
-};
-
-/**
- * @brief Gets the corresponding encoded type for a given metadata component
- * type. In other words, gets the type that it will be coerced to for the GPU.
- */
-ECesiumEncodedMetadataComponentType CesiumMetadataComponentTypeToEncodedType(
-    ECesiumMetadataComponentType ComponentType);
-
-/**
- * @brief Attempts to parse a color from a string property value. This supports
- * the following formats:
- * - rgb(R, G, B), where R, G, and B are values in the range [0, 255]
- * - hexcode colors, e.g. #ff0000
+ * @brief Gets the best-fitting encoded types and conversion method for a given
+ * metadata type. This determines the best way (if one is possible) to transfer
+ * values of the given type to the GPU, for access in Unreal materials.
  *
- * @returns A TArray representing the components of the color. If a color could
- * not be parsed, the returned array will be empty.
+ * An array size can also be supplied if bIsArray is true on the given value
+ * type. If bIsArray is true, but the given array size is zero, this indicates
+ * the arrays of the property vary in length. Variable-length array properties
+ * are unsupported.
+ *
+ * @param ValueType The given value type.
+ * @param ArraySize The size of the array, if applicable.
  */
-template <
-    typename T,
-    std::enable_if_t<std::is_same_v<T, uint8_t> || std::is_same_v<T, float>>>
-static TArray<T> parseColorFromString(FString string) {
-  TArray<T> result;
+FCesiumMetadataEncodingDetails CesiumMetadataPropertyDetailsToEncodingDetails(
+    FCesiumMetadataPropertyDetails PropertyDetails);
 
-  // Handle hexcode case
-  if (string.StartsWith(TEXT("#"))) {
-    //if (string.Len() )
-  }
+/**
+ * @brief Gets the number of components associated with the given encoded type.
+ * @param type The encoded metadata type.
+ */
+size_t
+CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType type);
 
-  // Handle rgb(R, G, B) case
-  if (colorString.StartsWith(TEXT("rgb(")) && colorString.EndsWith(TEXT(")"))) {
-    TArray<FString> parts;
-    parts.Reserve(3);
-    int partCount = colorString.Mid(4, colorString.Len() - 5)
-                        .ParseIntoArray(parts, TEXT(","), false);
-    if (partCount == 3) {
-      uint8 color[3]{255, 255, 255};
-      color[0] = FCString::Atoi(*parts[0]);
-      color[1] = FCString::Atoi(*parts[1]);
-      color[2] = FCString::Atoi(*parts[2]);
-    }
-  }
+/**
+ * Any custom encoding behavior, e.g., special encoding of unsupported
+ * properties, can go here. Use the below methods as examples.
+ */
 
-  // int64 num =
-  //    std::min(componentCount, std::min(int64_t(encodedFormat.pixelSize),
-  //    3LL));
-  // for (int64 j = 0; j < num; ++j) {
-  //  *pWritePos = color[j];
-  //  ++pWritePos;
-  //}
-  // for (int64 j = num; j < int64(encodedFormat.pixelSize); ++j) {
-  //  *pWritePos = 255;
-  //  ++pWritePos;
-  //}
+/**
+ * @brief Coerces property values to the type specified by the property
+ * description. The following property types are supported:
+ * - scalars
+ * - vecNs
+ * - booleans
+ * - scalar and boolean arrays (up to the first four elements)
+ *
+ * Additionally, if the property contains strings or string arrays, it will
+ * attempt to parse numbers from each string, then coerce those numbers to the
+ * desired format.
+ */
+struct CesiumEncodedMetadataCoerce {
+  /**
+   * Whether it is possible to apply the encoding method based on the property
+   * description.
+   *
+   * @param description The property table property description.
+   */
+  static bool
+  canEncode(const FCesiumPropertyTablePropertyDescription& description);
 
-  return result;
+  /**
+   * Encodes the data of the property table property into the given texture data
+   * pointer, as the type specified in the property description.
+   *
+   * @param propertyDescription The property table property description.
+   * @param property The property table property itself.
+   * @param pTextureData A pointer to the texture data, which will be filled
+   * during encoding.
+   * @param pixelSize The size of a pixel from the given texture, in bytes.
+   */
+  static void encode(
+      const FCesiumPropertyTablePropertyDescription& propertyDescription,
+      const FCesiumPropertyTableProperty& property,
+      void* pTextureData,
+      size_t pixelSize);
+};
+
+/**
+ * @brief Attempts to parse colors from string property values and encode them
+ * for access in Unreal materials. This supports the following formats:
+ * - rgb(R,G,B), where R, G, and B are values in the range [0, 255]
+ * - hexcode colors, e.g. #AF012B and #fff
+ */
+struct CesiumEncodedMetadataParseColorFromString {
+  /**
+   * Whether it is possible to apply the encoding method based on the property
+   * description.
+   *
+   * @param description The property table property description.
+   */
+  static bool
+  canEncode(const FCesiumPropertyTablePropertyDescription& description);
+
+  /**
+   * Encodes the data of the property table property into the given texture data
+   * pointer, as the type specified in the property description.
+   *
+   * @param propertyDescription The property table property description.
+   * @param property The property table property itself.
+   * @param pTextureData A pointer to the texture data, which will be filled
+   * during encoding.
+   * @param pixelSize The size of a pixel from the given texture, in bytes.
+   */
+  static void encode(
+      const FCesiumPropertyTablePropertyDescription& propertyDescription,
+      const FCesiumPropertyTableProperty& property,
+      void* pTextureData,
+      size_t pixelSize);
 };
