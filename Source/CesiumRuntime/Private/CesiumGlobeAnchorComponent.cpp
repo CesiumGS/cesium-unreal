@@ -96,10 +96,11 @@ void UCesiumGlobeAnchorComponent::SetAdjustOrientationForGlobeWhenMoving(
 
 void UCesiumGlobeAnchorComponent::MoveToEarthCenteredEarthFixedPosition(
     const FVector& TargetEcef) {
-  this->ECEF_X = TargetEcef.X;
-  this->ECEF_Y = TargetEcef.Y;
-  this->ECEF_Z = TargetEcef.Z;
-  this->_applyCartesianProperties();
+  if (!this->_actorToECEFIsValid)
+    this->_setNewActorToECEFFromRelativeTransform();
+  FMatrix newMatrix = this->_actorToECEF;
+  newMatrix.SetOrigin(TargetEcef);
+  this->_setNewActorToECEFMatrix(newMatrix);
 }
 
 void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
@@ -545,6 +546,21 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   this->_actorToECEF =
       VecMath::createMatrix(nativeAnchor.getAnchorToFixedTransform());
   this->_actorToECEFIsValid = true;
+
+  // Update the editable position properties
+  // TODO: it'd be nice if we didn't have to store these at all. But then we'd
+  // need a custom UI to make them directly editable, I think.
+  FVector origin = this->_actorToECEF.GetOrigin();
+  this->ECEF_X = origin.X;
+  this->ECEF_Y = origin.Y;
+  this->ECEF_Z = origin.Z;
+
+  FVector llh =
+      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+          origin);
+  this->Longitude = llh.X;
+  this->Latitude = llh.Y;
+  this->Height = llh.Z;
 
   // Update the Unreal relative transform
   ACesiumGeoreference* pGeoreference = this->ResolvedGeoreference;
