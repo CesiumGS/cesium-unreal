@@ -64,7 +64,8 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   this->ResolveGeoreference();
 }
 
-FVector UCesiumGlobeAnchorComponent::GetECEF() const {
+FVector
+UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedPosition() const {
   if (!this->_actorToECEFIsValid) {
     UE_LOG(
         LogCesium,
@@ -96,7 +97,8 @@ void UCesiumGlobeAnchorComponent::SetAdjustOrientationForGlobeWhenMoving(
   this->AdjustOrientationForGlobeWhenMoving = Value;
 }
 
-void UCesiumGlobeAnchorComponent::MoveToECEF(const FVector& TargetEcef) {
+void UCesiumGlobeAnchorComponent::MoveToEarthCenteredEarthFixedPosition(
+    const FVector& TargetEcef) {
   this->ECEF_X = TargetEcef.X;
   this->ECEF_Y = TargetEcef.Y;
   this->ECEF_Z = TargetEcef.Z;
@@ -119,8 +121,9 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   const glm::dvec3 actorUp = glm::normalize(currentRotation[2]);
 
   // Compute the surface normal of the ellipsoid
-  glm::dvec3 ellipsoidNormal = VecMath::createVector3D(
-      UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(this->GetECEF()));
+  glm::dvec3 ellipsoidNormal =
+      VecMath::createVector3D(UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
+          this->GetEarthCenteredEarthFixedPosition()));
 
   // Find the shortest rotation to align local up with the ellipsoid normal
   const glm::dquat R = glm::rotation(actorUp, ellipsoidNormal);
@@ -230,7 +233,8 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
   }
 
   return UCesiumWgs84Ellipsoid::
-      EarthCenteredEarthFixedToLongitudeLatitudeHeight(this->GetECEF());
+      EarthCenteredEarthFixedToLongitudeLatitudeHeight(
+          this->GetEarthCenteredEarthFixedPosition());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
@@ -245,7 +249,7 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     return;
   }
 
-  this->MoveToECEF(
+  this->MoveToEarthCenteredEarthFixedPosition(
       UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
           TargetLongitudeLatitudeHeight));
 }

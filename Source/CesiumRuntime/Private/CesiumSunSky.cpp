@@ -136,7 +136,8 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
       TEXT("Called OnConstruction for CesiumSunSky %s"),
       *this->GetName());
 
-  this->GlobeAnchor->MoveToECEF(FVector(0.0, 0.0, 0.0));
+  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   UE_LOG(
       LogCesium,
@@ -174,7 +175,8 @@ void ACesiumSunSky::_spawnSkySphere() {
   this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
   GlobeAnchorComponent->SetAdjustOrientationForGlobeWhenMoving(false);
   GlobeAnchorComponent->SetGeoreference(this->GlobeAnchor->GetGeoreference());
-  GlobeAnchorComponent->MoveToECEF(FVector(0.0, 0.0, 0.0));
+  GlobeAnchorComponent->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   _wantsSpawnMobileSkySphere = false;
 
@@ -201,7 +203,8 @@ void ACesiumSunSky::UpdateSkySphere() {
 void ACesiumSunSky::BeginPlay() {
   Super::BeginPlay();
 
-  this->GlobeAnchor->MoveToECEF(FVector(0.0, 0.0, 0.0));
+  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   this->_transformUpdatedSubscription =
       this->RootComponent->TransformUpdated.AddUObject(

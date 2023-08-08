@@ -15,7 +15,7 @@ class ACesiumGeoreference;
  * and maintain precise placement. When the owning actor is transformed through
  * normal Unreal Engine mechanisms, the internal geospatial coordinates will be
  * automatically updated. The actor position can also be set in terms of
- * Earth-Centered, Eath-Fixed coordinates (ECEF) or Longitude, Latitude, and
+ * Earth-Centered, Earth-Fixed coordinates (ECEF) or Longitude, Latitude, and
  * Height relative to the ellipsoid.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
@@ -101,7 +101,7 @@ private:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadOnly,
-      BlueprintGetter = GetEcefX,
+      BlueprintGetter = GetEarthCenteredEarthFixedX,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double ECEF_X = 0.0;
@@ -112,7 +112,7 @@ private:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadOnly,
-      BlueprintGetter = GetEcefY,
+      BlueprintGetter = GetEarthCenteredEarthFixedY,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double ECEF_Y = 0.0;
@@ -123,7 +123,7 @@ private:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadOnly,
-      BlueprintGetter = GetEcefZ,
+      BlueprintGetter = GetEarthCenteredEarthFixedZ,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double ECEF_Z = 0.0;
@@ -244,21 +244,21 @@ public:
    * meters.
    */
   UFUNCTION(BlueprintGetter)
-  double GetEcefX() const noexcept { return this->ECEF_X; }
+  double GetEarthCenteredEarthFixedX() const noexcept { return this->ECEF_X; }
 
   /**
    * Gets the Earth-Centered Earth-Fixed Y-coordinate of this component in
    * meters.
    */
   UFUNCTION(BlueprintGetter)
-  double GetEcefY() const noexcept { return this->ECEF_Y; }
+  double GetEarthCenteredEarthFixedY() const noexcept { return this->ECEF_Y; }
 
   /**
    * Gets the Earth-Centered Earth-Fixed Z-coordinate of this component in
    * meters.
    */
   UFUNCTION(BlueprintGetter)
-  double GetEcefZ() const noexcept { return this->ECEF_Z; }
+  double GetEarthCenteredEarthFixedZ() const noexcept { return this->ECEF_Z; }
 
   /**
    * Gets the longitude in degrees (X), latitude in degrees (Y),
@@ -276,10 +276,10 @@ public:
    * meters.
    */
   UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector GetECEF() const;
+  FVector GetEarthCenteredEarthFixedPosition() const;
 
   /**
-   * Gets a flag indiciating whether to move objects to the updated transform
+   * Gets a flag indicating whether to move objects to the updated transform
    * immediately and without affecting their velocity. This is useful when
    * working with physics actors that maintain an internal velocity which we do
    * not want to change when updating location.
@@ -288,7 +288,7 @@ public:
   bool GetTeleportWhenUpdatingTransform() const;
 
   /**
-   * Sets a flag indiciating whether to move objects to the updated transform
+   * Sets a flag indicating whether to move objects to the updated transform
    * immediately and without affecting their velocity. This is useful when
    * working with physics actors that maintain an internal velocity which we do
    * not want to change when updating location.
@@ -343,6 +343,7 @@ public:
 #pragma endregion
 
 #pragma region Move and Rotate
+
 public:
   /**
    * Moves the Actor to which this component is attached to a given globe
@@ -354,7 +355,7 @@ public:
    * @param newPosition The new position.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void MoveToECEF(const FVector& TargetEcef);
+  void MoveToEarthCenteredEarthFixedPosition(const FVector& TargetEcef);
 
   /**
    * Rotates the Actor so that its local +Z axis is aligned with the ellipsoid
@@ -381,14 +382,11 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void
   MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
+
 #pragma endregion
 
-#pragma region Implementation Details
+#pragma region Unreal Lifecycle
 public:
-  //
-  // Base class overrides
-  //
-
   /**
    * Called by the owner actor when the world's OriginLocation changes (i.e.
    * during origin rebasing). The Component will recompute the Actor's
@@ -443,7 +441,9 @@ protected:
    * changes to properties.
    */
   virtual void OnUnregister() override;
+#pragma endregion
 
+#pragma region Implementation Details
 private:
   /**
    * The current Actor to ECEF transformation expressed as a simple array of
