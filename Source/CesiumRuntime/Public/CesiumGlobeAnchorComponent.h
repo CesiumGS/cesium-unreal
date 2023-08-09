@@ -386,7 +386,10 @@ public:
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   FVector GetLongitudeLatitudeHeight() const;
 
   /**
@@ -402,8 +405,7 @@ public:
    * orientation will also be adjusted to account for globe curvature.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void
-  MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
+  void MoveToLongitudeLatitudeHeight(const FVector& LongitudeLatitudeHeight);
 
   /**
    * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
@@ -437,8 +439,8 @@ public:
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
-      meta = (ReturnDisplayName = "EastSouthUpRotator"))
-  FRotator GetEastSouthUpRotator() const;
+      meta = (ReturnDisplayName = "EastSouthUpRotation"))
+  FQuat GetEastSouthUpRotation() const;
 
   /**
    * Sets the rotation of the Actor relative to a local coordinate system
@@ -452,7 +454,7 @@ public:
    * that was set.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetEastSouthUpRotator(const FRotator& EastSouthUpRotator);
+  void SetEastSouthUpRotation(const FQuat& EastSouthUpRotation);
 
   /**
    * Gets the rotation of the Actor relative to the Earth-Centered, Earth-Fixed
@@ -467,8 +469,8 @@ public:
   UFUNCTION(
       BlueprintPure,
       Category = "Cesium",
-      meta = (ReturnDisplayName = "EarthCenteredEarthFixedRotator"))
-  FRotator GetEarthCenteredEarthFixedRotator() const;
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedRotation"))
+  FQuat GetEarthCenteredEarthFixedRotation() const;
 
   /**
    * Sets the rotation of the Actor relative to the Earth-Centered, Earth-Fixed
@@ -481,8 +483,8 @@ public:
    * points up through the North Pole.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetEarthCenteredEarthFixedRotator(
-      const FRotator& EarthCenteredEarthFixedRotation);
+  void SetEarthCenteredEarthFixedRotation(
+      const FQuat& EarthCenteredEarthFixedRotation);
 
   /**
    * Rotates the Actor so that its local +Z axis is aligned with the ellipsoid

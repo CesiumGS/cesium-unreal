@@ -192,7 +192,7 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
     return;
   }
 
-  this->SetEastSouthUpRotator(FRotator());
+  this->SetEastSouthUpRotation(FQuat::Identity);
 
 #if WITH_EDITOR
   // In the Editor, mark this component modified so Undo works properly.
@@ -284,7 +284,7 @@ createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
 
 } // namespace
 
-FRotator UCesiumGlobeAnchorComponent::GetEastSouthUpRotator() const {
+FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
@@ -299,11 +299,11 @@ FRotator UCesiumGlobeAnchorComponent::GetEastSouthUpRotator() const {
       nullptr,
       &rotationToEastSouthUp,
       nullptr);
-  return VecMath::createRotator(rotationToEastSouthUp);
+  return VecMath::createQuaternion(rotationToEastSouthUp);
 }
 
-void UCesiumGlobeAnchorComponent::SetEastSouthUpRotator(
-    const FRotator& LocalToEastSouthUp) {
+void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
+    const FQuat& EastSouthUpRotation) {
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
@@ -323,26 +323,25 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotator(
   glm::dmat4 newModelToEastSouthUp =
       CesiumGeometry::Transforms::createTranslationRotationScaleMatrix(
           translation,
-          VecMath::createQuaternion(LocalToEastSouthUp.Quaternion()),
+          VecMath::createQuaternion(EastSouthUpRotation),
           scale);
 
   anchor.setAnchorToLocalTransform(eastSouthUp, newModelToEastSouthUp, false);
   this->_updateFromNativeGlobeAnchor(anchor);
 }
 
-FRotator
-UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotator() const {
+FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
   glm::dquat rotationToEarthCenteredEarthFixed;
   CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix),
       nullptr,
       &rotationToEarthCenteredEarthFixed,
       nullptr);
-  return VecMath::createRotator(rotationToEarthCenteredEarthFixed);
+  return VecMath::createQuaternion(rotationToEarthCenteredEarthFixed);
 }
 
-void UCesiumGlobeAnchorComponent::SetEarthCenteredEarthFixedRotator(
-    const FRotator& EarthCenteredEarthFixedRotation) {
+void UCesiumGlobeAnchorComponent::SetEarthCenteredEarthFixedRotation(
+    const FQuat& EarthCenteredEarthFixedRotation) {
   glm::dvec3 translation;
   glm::dvec3 scale;
   CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
@@ -354,8 +353,7 @@ void UCesiumGlobeAnchorComponent::SetEarthCenteredEarthFixedRotator(
   glm::dmat4 newModelToEarthCenteredEarthFixed =
       CesiumGeometry::Transforms::createTranslationRotationScaleMatrix(
           translation,
-          VecMath::createQuaternion(
-              EarthCenteredEarthFixedRotation.Quaternion()),
+          VecMath::createQuaternion(EarthCenteredEarthFixedRotation),
           scale);
 
   this->ActorToEarthCenteredEarthFixedMatrix =
