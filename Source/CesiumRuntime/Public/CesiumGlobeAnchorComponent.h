@@ -18,7 +18,7 @@ class ACesiumGeoreference;
  * Earth-Centered, Earth-Fixed coordinates (ECEF) or Longitude, Latitude, and
  * Height relative to the ellipsoid.
  */
-UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = Cesium, Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumGlobeAnchorComponent : public UActorComponent {
   GENERATED_BODY()
 
@@ -41,6 +41,50 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   TSoftObjectPtr<ACesiumGeoreference> Georeference = nullptr;
+
+  /**
+   * Whether to adjust the Actor's orientation based on globe curvature as the
+   * Actor moves.
+   *
+   * The Earth is not flat, so as we move across its surface, the direction of
+   * "up" changes. If we ignore this fact and leave an object's orientation
+   * unchanged as it moves over the globe surface, the object will become
+   * increasingly tilted and eventually be completely upside-down when we arrive
+   * at the opposite side of the globe.
+   *
+   * When this setting is enabled, this Component will automatically apply a
+   * rotation to the Actor to account for globe curvature any time the Actor's
+   * position on the globe changes.
+   *
+   * This property should usually be enabled, but it may be useful to disable it
+   * when your application already accounts for globe curvature itself when it
+   * updates an Actor's position and orientation, because in that case the Actor
+   * would be over-rotated.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      Category = "Cesium",
+      BlueprintGetter = GetAdjustOrientationForGlobeWhenMoving,
+      BlueprintSetter = SetAdjustOrientationForGlobeWhenMoving,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  bool AdjustOrientationForGlobeWhenMoving = true;
+
+  /**
+   * Using the teleport flag will move objects to the updated transform
+   * immediately and without affecting their velocity. This is useful when
+   * working with physics actors that maintain an internal velocity which we do
+   * not want to change when updating location.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetTeleportWhenUpdatingTransform,
+      BlueprintSetter = SetTeleportWhenUpdatingTransform,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  bool TeleportWhenUpdatingTransform = true;
 
   /**
    * The resolved georeference used by this component. This is not serialized
@@ -78,7 +122,7 @@ private:
       BlueprintReadOnly,
       BlueprintGetter = GetLongitude,
       Category = "Cesium",
-      meta = (AllowPrivateAccess, ClampMin = -180.0, ClampMax = 180.0))
+      Meta = (AllowPrivateAccess, ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
   /**
@@ -129,48 +173,26 @@ private:
   double ECEF_Z = 0.0;
 
   /**
-   * Using the teleport flag will move objects to the updated transform
-   * immediately and without affecting their velocity. This is useful when
-   * working with physics actors that maintain an internal velocity which we do
-   * not want to change when updating location.
+   * The 4x4 transformation matrix from the Actors's local coordinate system to
+   * the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
+   *
+   * The ECEF coordinate system is a right-handed system located at the center
+   * of the Earth. The +X axis points to the intersection of the Equator and
+   * Prime Meridian (zero degrees longitude). The +Y axis points to the
+   * intersection of the Equator and +90 degrees longitude. The +Z axis points
+   * up through the North Pole.
+   *
+   * If `AdjustOrientationForGlobeWhenMoving` is enabled and this property is
+   * set, the Actor's orientation will also be adjusted to account for globe
+   * curvature.
    */
   UPROPERTY(
-      EditAnywhere,
       BlueprintReadWrite,
-      BlueprintGetter = GetTeleportWhenUpdatingTransform,
-      BlueprintSetter = SetTeleportWhenUpdatingTransform,
+      BlueprintGetter = GetActorToEarthCenteredEarthFixedMatrix,
+      BlueprintSetter = SetActorToEarthCenteredEarthFixedMatrix,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
-  bool TeleportWhenUpdatingTransform = true;
-
-  /**
-   * Whether to adjust the Actor's orientation based on globe curvature as the
-   * Actor moves.
-   *
-   * The Earth is not flat, so as we move across its surface, the direction of
-   * "up" changes. If we ignore this fact and leave an object's orientation
-   * unchanged as it moves over the globe surface, the object will become
-   * increasingly tilted and eventually be completely upside-down when we arrive
-   * at the opposite side of the globe.
-   *
-   * When this setting is enabled, this Component will automatically apply a
-   * rotation to the Actor to account for globe curvature any time the Actor's
-   * position on the globe changes.
-   *
-   * This property should usually be enabled, but it may be useful to disable it
-   * when your application already accounts for globe curvature itself when it
-   * updates an Actor's position and orientation, because in that case the Actor
-   * would be over-rotated.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      Category = "Cesium",
-      BlueprintGetter = GetAdjustOrientationForGlobeWhenMoving,
-      BlueprintSetter = SetAdjustOrientationForGlobeWhenMoving,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  bool AdjustOrientationForGlobeWhenMoving = true;
+  FMatrix ActorToEarthCenteredEarthFixedMatrix;
 
 #pragma endregion
 
@@ -222,13 +244,13 @@ public:
    * Gets the latitude in degrees of this component, in the range [-90, 90]
    */
   UFUNCTION(BlueprintGetter)
-  double GetLatitude() const noexcept { return this->Latitude; }
+  double GetLatitude() const { return this->Latitude; }
 
   /**
    * Gets the longitude in degrees of this component, in the range [-180, 180]
    */
   UFUNCTION(BlueprintGetter)
-  double GetLongitude() const noexcept { return this->Longitude; }
+  double GetLongitude() const { return this->Longitude; }
 
   /**
    * Gets the height in meters above the ellipsoid (usually WGS84) of this
@@ -237,46 +259,57 @@ public:
    * the world the object is located.
    */
   UFUNCTION(BlueprintGetter)
-  double GetHeight() const noexcept { return this->Height; }
+  double GetHeight() const { return this->Height; }
 
   /**
    * Gets the Earth-Centered Earth-Fixed X-coordinate of this component in
    * meters.
    */
   UFUNCTION(BlueprintGetter)
-  double GetEarthCenteredEarthFixedX() const noexcept { return this->ECEF_X; }
+  double GetEarthCenteredEarthFixedX() const { return this->ECEF_X; }
 
   /**
    * Gets the Earth-Centered Earth-Fixed Y-coordinate of this component in
    * meters.
    */
   UFUNCTION(BlueprintGetter)
-  double GetEarthCenteredEarthFixedY() const noexcept { return this->ECEF_Y; }
+  double GetEarthCenteredEarthFixedY() const { return this->ECEF_Y; }
 
   /**
    * Gets the Earth-Centered Earth-Fixed Z-coordinate of this component in
    * meters.
    */
   UFUNCTION(BlueprintGetter)
-  double GetEarthCenteredEarthFixedZ() const noexcept { return this->ECEF_Z; }
+  double GetEarthCenteredEarthFixedZ() const { return this->ECEF_Z; }
 
   /**
-   * Gets the longitude in degrees (X), latitude in degrees (Y),
-   * and height in meters about the ellipsoid (Z) of the actor.
+   * Gets the 4x4 transformation matrix from the Actors's local coordinate
+   * system to the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
-   * Do not confuse the ellipsoid height with a geoid height or height above
-   * mean sea level, which can be tens of meters higher or lower depending on
-   * where in the world the object is located.
+   * The ECEF coordinate system is a right-handed system located at the center
+   * of the Earth. The +X axis points to the intersection of the Equator and
+   * Prime Meridian (zero degrees longitude). The +Y axis points to the
+   * intersection of the Equator and +90 degrees longitude. The +Z axis points
+   * up through the North Pole.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector GetLongitudeLatitudeHeight() const;
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  FMatrix GetActorToEarthCenteredEarthFixedMatrix() const;
 
   /**
-   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
-   * meters.
+   * Sets the 4x4 transformation matrix from the Actors's local coordinate
+   * system to the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
+   *
+   * The ECEF coordinate system is a right-handed system located at the center
+   * of the Earth. The +X axis points to the intersection of the Equator and
+   * Prime Meridian (zero degrees longitude). The +Y axis points to the
+   * intersection of the Equator and +90 degrees longitude. The +Z axis points
+   * up through the North Pole.
+   *
+   * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
+   * orientation will also be adjusted to account for globe curvature.
    */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FVector GetEarthCenteredEarthFixedPosition() const;
+  UFUNCTION(BlueprintSetter, Category = "Cesium")
+  void SetActorToEarthCenteredEarthFixedMatrix(const FMatrix& Value);
 
   /**
    * Gets a flag indicating whether to move objects to the updated transform
@@ -346,6 +379,43 @@ public:
 
 public:
   /**
+   * Gets the longitude in degrees (X), latitude in degrees (Y),
+   * and height in meters about the ellipsoid (Z) of the actor.
+   *
+   * Do not confuse the ellipsoid height with a geoid height or height above
+   * mean sea level, which can be tens of meters higher or lower depending on
+   * where in the world the object is located.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  FVector GetLongitudeLatitudeHeight() const;
+
+  /**
+   * Moves the Actor to which this component is attached to a given longitude in
+   * degrees (X), latitude in degrees (Y), and height in meters (Z).
+   *
+   * The Height (Z) is measured in meters above the WGS84 ellipsoid. Do not
+   * confused an ellipsoidal height with a geoid height or height above mean sea
+   * level, which can be tens of meters higher or lower depending on where in
+   * the world the object is located.
+   *
+   * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
+   * orientation will also be adjusted to account for globe curvature.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void
+  MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
+
+  /**
+   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
+   * meters.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedPosition"))
+  FVector GetEarthCenteredEarthFixedPosition() const;
+
+  /**
    * Moves the Actor to which this component is attached to a given globe
    * position in Earth-Centered, Earth-Fixed coordinates in meters.
    *
@@ -355,7 +425,64 @@ public:
    * @param newPosition The new position.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void MoveToEarthCenteredEarthFixedPosition(const FVector& TargetEcef);
+  void MoveToEarthCenteredEarthFixedPosition(
+      const FVector& EarthCenteredEarthFixedPosition);
+
+  /**
+   * Gets the rotation of the Actor relative to a local coordinate system
+   * centered on this object where the +X points in the local East direction,
+   * the +Y axis points in the local South direction, and the +Z axis points in
+   * the local Up direction.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EastSouthUpRotator"))
+  FRotator GetEastSouthUpRotator() const;
+
+  /**
+   * Sets the rotation of the Actor relative to a local coordinate system
+   * centered on this object where the +X points in the local East direction,
+   * the +Y axis points in the local South direction, and the +Z axis points in
+   * the local Up direction.
+   *
+   * When the rotation is set via this method, it is internally converted to
+   * and stored in the ActorToEarthCenteredEarthFixedMatrix property. As a
+   * result, getting this property will not necessarily return the exact value
+   * that was set.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetEastSouthUpRotator(const FRotator& EastSouthUpRotator);
+
+  /**
+   * Gets the rotation of the Actor relative to the Earth-Centered, Earth-Fixed
+   * (ECEF) coordinate system.
+   *
+   * The ECEF coordinate system is a right-handed system located at the center
+   * of the Earth. The +X axis points from there to the intersection of the
+   * Equator and Prime Meridian (zero degrees longitude). The +Y axis points to
+   * the intersection of the Equator and +90 degrees longitude. The +Z axis
+   * points up through the North Pole.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      meta = (ReturnDisplayName = "EarthCenteredEarthFixedRotator"))
+  FRotator GetEarthCenteredEarthFixedRotator() const;
+
+  /**
+   * Sets the rotation of the Actor relative to the Earth-Centered, Earth-Fixed
+   * (ECEF) coordinate system.
+   *
+   * The ECEF coordinate system is a right-handed system located at the center
+   * of the Earth. The +X axis points from there to the intersection of the
+   * Equator and Prime Meridian (zero degrees longitude). The +Y axis points to
+   * the intersection of the Equator and +90 degrees longitude. The +Z axis
+   * points up through the North Pole.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void SetEarthCenteredEarthFixedRotator(
+      const FRotator& EarthCenteredEarthFixedRotation);
 
   /**
    * Rotates the Actor so that its local +Z axis is aligned with the ellipsoid
@@ -371,40 +498,6 @@ public:
    */
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
-
-  /**
-   * Move the actor to the specified longitude in degrees (x), latitude
-   * in degrees (y), and height in meters (z).
-   *
-   * If `AdjustOrientationForGlobeWhenMoving` is enabled, the Actor's
-   * orientation will also be adjusted to account for globe curvature.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void
-  MoveToLongitudeLatitudeHeight(const FVector& TargetLongitudeLatitudeHeight);
-
-  /**
-   * Gets the rotation from the Actor's coordinate system to a local coordinate
-   * system centered on this object where the +X points in the local East
-   * direction, the +Y axis points in the local South direction, and the +Z axis
-   * points in the local Up direction.
-   */
-  UFUNCTION(BlueprintPure, Category = "Cesium")
-  FRotator GetLocalToEastSouthUpRotation() const;
-
-  /**
-   * Sets the rotation from the Actor's coordinate system to a local coordinate
-   * system centered on this object where the +X points in the local East
-   * direction, the +Y axis points in the local South direction, and the +Z axis
-   * points in the local Up direction.
-   *
-   * When the rotation is set via this method, it is internally converted to
-   * and stored in the ActorToEarthCenteredEarthFixed property. As a
-   * result, getting this property will not necessarily return the exact value
-   * that was set.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void SetLocalToEastSouthUpRotation(const FRotator& LocalToEastSouthUp);
 
 #pragma endregion
 
@@ -481,21 +574,16 @@ private:
 
   void _setNewActorToECEFFromRelativeTransform();
 
-  void _setNewActorToECEFMatrix(const FMatrix& newActorToECEFMatrix);
-
 #if WITH_EDITORONLY_DATA
   /**
    * The current Actor to ECEF transformation expressed as a simple array of
    * doubles so that Unreal Engine can serialize it.
    */
-  UPROPERTY(meta = (DeprecatedProperty))
+  UPROPERTY(Meta = (DeprecatedProperty))
   double _actorToECEF_Array_DEPRECATED[16];
 
   static_assert(sizeof(_actorToECEF_Array_DEPRECATED) == sizeof(glm::dmat4));
 #endif
-
-  UPROPERTY()
-  FMatrix _actorToECEF;
 
   /**
    * True if the globe transform is a valid and correct representation of the
@@ -536,23 +624,5 @@ private:
    */
   UFUNCTION()
   void _onGeoreferenceChanged();
-
-  /**
-   * Applies the current values of the ECEF_X, ECEF_Y, and ECEF_Z properties,
-   * updating the Longitude, Latitude, and Height properties, the globe
-   * transform, and the Actor transform. If
-   * `AdjustOrientationForGlobeWhenMoving` is enabled, the orientation is also
-   * adjusted for globe curvature.
-   */
-  void _applyCartesianProperties();
-
-  /**
-   * Applies the current values of the Longitude, Latitude, and Height
-   * properties, updating the ECEF_X, ECEF_Y, and ECEF_Z properties, the globe
-   * transform, and the Actor transform. If
-   * `AdjustOrientationForGlobeWhenMoving` is enabled, the orientation is also
-   * adjusted for globe curvature.
-   */
-  void _applyCartographicProperties();
 #pragma endregion
 };

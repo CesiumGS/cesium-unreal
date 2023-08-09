@@ -73,7 +73,51 @@ UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedPosition() const {
     return FVector(0.0);
   }
 
-  return this->_actorToECEF.GetOrigin();
+  return this->ActorToEarthCenteredEarthFixedMatrix.GetOrigin();
+}
+
+FMatrix
+UCesiumGlobeAnchorComponent::GetActorToEarthCenteredEarthFixedMatrix() const {
+  if (!this->_actorToECEFIsValid) {
+    const_cast<UCesiumGlobeAnchorComponent*>(this)
+        ->_setNewActorToECEFFromRelativeTransform();
+  }
+
+  return this->ActorToEarthCenteredEarthFixedMatrix;
+}
+
+void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
+    const FMatrix& Value) {
+  // This method is equivalent to
+  // CesiumGlobeAnchorImpl::SetNewLocalToGlobeFixedMatrix in Cesium for Unity.
+
+  if (!this->ResolvedGeoreference) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumGlobeAnchorComponent %s cannot set new Actor-to-ECEF transform because there is no valid CesiumGeoreference."),
+        *this->GetName());
+    return;
+  }
+
+  USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
+  if (!IsValid(pOwnerRoot)) {
+    return;
+  }
+
+  // Update with the new ECEF transform, also rotating based on the new position
+  // if desired.
+  CesiumGeospatial::GlobeAnchor nativeAnchor =
+      this->_createOrUpdateNativeGlobeAnchorFromECEF(Value);
+  this->_updateFromNativeGlobeAnchor(nativeAnchor);
+
+#if WITH_EDITOR
+  // In the Editor, mark this component and the root component modified so Undo
+  // works properly.
+  this->Modify();
+  pOwnerRoot->Modify();
+#endif
 }
 
 bool UCesiumGlobeAnchorComponent::GetTeleportWhenUpdatingTransform() const {
@@ -98,9 +142,9 @@ void UCesiumGlobeAnchorComponent::MoveToEarthCenteredEarthFixedPosition(
     const FVector& TargetEcef) {
   if (!this->_actorToECEFIsValid)
     this->_setNewActorToECEFFromRelativeTransform();
-  FMatrix newMatrix = this->_actorToECEF;
+  FMatrix newMatrix = this->ActorToEarthCenteredEarthFixedMatrix;
   newMatrix.SetOrigin(TargetEcef);
-  this->_setNewActorToECEFMatrix(newMatrix);
+  this->SetActorToEarthCenteredEarthFixedMatrix(newMatrix);
 }
 
 void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
@@ -115,7 +159,7 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   }
 
   // Compute the current local up axis of the actor (the +Z axis) in ECEF
-  FVector up = this->_actorToECEF.GetUnitAxis(EAxis::Z);
+  FVector up = this->ActorToEarthCenteredEarthFixedMatrix.GetUnitAxis(EAxis::Z);
 
   // Compute the surface normal of the ellipsoid
   FVector ellipsoidNormal = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
@@ -126,7 +170,8 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
       FQuat::FindBetween(up, ellipsoidNormal).ToMatrix();
 
   // Compute the new actor rotation and apply it
-  FMatrix newActorToECEF = alignmentRotation * this->_actorToECEF;
+  FMatrix newActorToECEF =
+      alignmentRotation * this->ActorToEarthCenteredEarthFixedMatrix;
   this->_updateFromNativeGlobeAnchor(
       this->_createNativeGlobeAnchor(newActorToECEF));
 
@@ -147,7 +192,7 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
     return;
   }
 
-  this->SetLocalToEastSouthUpRotation(FRotator());
+  this->SetEastSouthUpRotator(FRotator());
 
 #if WITH_EDITOR
   // In the Editor, mark this component modified so Undo works properly.
@@ -239,9 +284,9 @@ createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
 
 } // namespace
 
-FRotator UCesiumGlobeAnchorComponent::GetLocalToEastSouthUpRotation() const {
+FRotator UCesiumGlobeAnchorComponent::GetEastSouthUpRotator() const {
   CesiumGeospatial::GlobeAnchor anchor(
-      VecMath::createMatrix4D(this->_actorToECEF));
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
   CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
       createEastSouthUp(anchor);
@@ -257,10 +302,10 @@ FRotator UCesiumGlobeAnchorComponent::GetLocalToEastSouthUpRotation() const {
   return VecMath::createRotator(rotationToEastSouthUp);
 }
 
-void UCesiumGlobeAnchorComponent::SetLocalToEastSouthUpRotation(
+void UCesiumGlobeAnchorComponent::SetEastSouthUpRotator(
     const FRotator& LocalToEastSouthUp) {
   CesiumGeospatial::GlobeAnchor anchor(
-      VecMath::createMatrix4D(this->_actorToECEF));
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
   CesiumGeospatial::LocalHorizontalCoordinateSystem eastSouthUp =
       createEastSouthUp(anchor);
@@ -285,6 +330,38 @@ void UCesiumGlobeAnchorComponent::SetLocalToEastSouthUpRotation(
   this->_updateFromNativeGlobeAnchor(anchor);
 }
 
+FRotator
+UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotator() const {
+  glm::dquat rotationToEarthCenteredEarthFixed;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix),
+      nullptr,
+      &rotationToEarthCenteredEarthFixed,
+      nullptr);
+  return VecMath::createRotator(rotationToEarthCenteredEarthFixed);
+}
+
+void UCesiumGlobeAnchorComponent::SetEarthCenteredEarthFixedRotator(
+    const FRotator& EarthCenteredEarthFixedRotation) {
+  glm::dvec3 translation;
+  glm::dvec3 scale;
+  CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
+      VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix),
+      &translation,
+      nullptr,
+      &scale);
+
+  glm::dmat4 newModelToEarthCenteredEarthFixed =
+      CesiumGeometry::Transforms::createTranslationRotationScaleMatrix(
+          translation,
+          VecMath::createQuaternion(
+              EarthCenteredEarthFixedRotation.Quaternion()),
+          scale);
+
+  this->ActorToEarthCenteredEarthFixedMatrix =
+      VecMath::createMatrix(newModelToEarthCenteredEarthFixed);
+}
+
 void UCesiumGlobeAnchorComponent::Serialize(FArchive& Ar) {
   Super::Serialize(Ar);
 
@@ -302,7 +379,7 @@ void UCesiumGlobeAnchorComponent::Serialize(FArchive& Ar) {
   if (CesiumVersion <
       FCesiumCustomVersion::GlobeAnchorTransformationAsFMatrix) {
     memcpy(
-        this->_actorToECEF.M,
+        this->ActorToEarthCenteredEarthFixedMatrix.M,
         this->_actorToECEF_Array_DEPRECATED,
         sizeof(double) * 16);
   }
@@ -331,7 +408,8 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Latitude) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)) {
-    this->_applyCartographicProperties();
+    this->MoveToLongitudeLatitudeHeight(
+        FVector(this->Longitude, this->Latitude, this->Height));
   } else if (
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_X) ||
@@ -339,7 +417,8 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Y) ||
       propertyName ==
           GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Z)) {
-    this->_applyCartesianProperties();
+    this->MoveToEarthCenteredEarthFixedPosition(
+        FVector(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
   } else if (
       propertyName ==
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
@@ -414,7 +493,8 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
 
 CesiumGeospatial::GlobeAnchor
 UCesiumGlobeAnchorComponent::_createNativeGlobeAnchor() const {
-  return this->_createNativeGlobeAnchor(this->_actorToECEF);
+  return this->_createNativeGlobeAnchor(
+      this->ActorToEarthCenteredEarthFixedMatrix);
 }
 
 CesiumGeospatial::GlobeAnchor
@@ -533,7 +613,7 @@ UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
   } else {
     // Create an anchor at the old position and move it to the new one.
     CesiumGeospatial::GlobeAnchor cppAnchor(
-        VecMath::createMatrix4D(this->_actorToECEF));
+        VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
     cppAnchor.setAnchorToFixedTransform(
         VecMath::createMatrix4D(newActorToECEFMatrix),
         this->AdjustOrientationForGlobeWhenMoving);
@@ -543,14 +623,14 @@ UCesiumGlobeAnchorComponent::_createOrUpdateNativeGlobeAnchorFromECEF(
 
 void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
     const CesiumGeospatial::GlobeAnchor& nativeAnchor) {
-  this->_actorToECEF =
+  this->ActorToEarthCenteredEarthFixedMatrix =
       VecMath::createMatrix(nativeAnchor.getAnchorToFixedTransform());
   this->_actorToECEFIsValid = true;
 
   // Update the editable position properties
   // TODO: it'd be nice if we didn't have to store these at all. But then we'd
   // need a custom UI to make them directly editable, I think.
-  FVector origin = this->_actorToECEF.GetOrigin();
+  FVector origin = this->ActorToEarthCenteredEarthFixedMatrix.GetOrigin();
   this->ECEF_X = origin.X;
   this->ECEF_Y = origin.Y;
   this->ECEF_Z = origin.Z;
@@ -619,58 +699,9 @@ void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
 #endif
 }
 
-void UCesiumGlobeAnchorComponent::_setNewActorToECEFMatrix(
-    const FMatrix& newActorToECEFMatrix) {
-  // This method is equivalent to
-  // CesiumGlobeAnchorImpl::SetNewLocalToGlobeFixedMatrix in Cesium for Unity.
-
-  if (!this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s cannot set new Actor-to-ECEF transform because there is no valid CesiumGeoreference."),
-        *this->GetName());
-    return;
-  }
-
-  USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
-  if (!IsValid(pOwnerRoot)) {
-    return;
-  }
-
-  // Update with the new ECEF transform, also rotating based on the new position
-  // if desired.
-  CesiumGeospatial::GlobeAnchor nativeAnchor =
-      this->_createOrUpdateNativeGlobeAnchorFromECEF(newActorToECEFMatrix);
-  this->_updateFromNativeGlobeAnchor(nativeAnchor);
-
-#if WITH_EDITOR
-  // In the Editor, mark this component and the root component modified so Undo
-  // works properly.
-  this->Modify();
-  pOwnerRoot->Modify();
-#endif
-}
-
 void UCesiumGlobeAnchorComponent::_onGeoreferenceChanged() {
   if (this->_actorToECEFIsValid) {
-    this->_setNewActorToECEFMatrix(this->_actorToECEF);
+    this->SetActorToEarthCenteredEarthFixedMatrix(
+        this->ActorToEarthCenteredEarthFixedMatrix);
   }
-}
-
-void UCesiumGlobeAnchorComponent::_applyCartesianProperties() {
-  // TODO: set translation part of ActorToECEF.
-  this->MoveToEarthCenteredEarthFixedPosition(
-      FVector(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
-}
-
-void UCesiumGlobeAnchorComponent::_applyCartographicProperties() {
-  FVector ecef =
-      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-          FVector(this->Longitude, this->Latitude, this->Height));
-  this->ECEF_X = ecef.X;
-  this->ECEF_Y = ecef.Y;
-  this->ECEF_Z = ecef.Z;
-  this->_applyCartesianProperties();
 }
