@@ -12,6 +12,25 @@
 
 - The "Place Georeference Origin Here" action on CesiumGeoreference is now undoable.
 - Cesium Actors now have the "Is Spatially Loaded" flag disabled by default. When using World Partition, this is essential for some, such as `CesiumGeoreference`.
+- The `CesiumCameraManager` instance to use with a `Cesium3DTileset` can now be specified with a property on the tileset. In addition to offering more flexibility, this avoids the work of finding the camera manager in the level every frame.
+- Cesium Actors created with the Quick Add or Cesium ion panels are now created inside the active sub-level, if there is one.
+- Cesium objects in sub-levels can now explicitly reference `ACesiumGeoreference`, `ACesiumCreditSystem`, and `ACesiumCameraManager` instances in the Persistent Level.
+
+##### Fixes :wrench:
+
+- Fixed a bug in `ACesiumSunSky` that could cause an error when it was created inside a sub-level.
+- `ACesiumGeoreference`, `ACesiumCameraManager`, and `ACesiumCreditSystem` are now created in the Persistent Level, even if the object that triggered their automatic creation (such as `ACesium3DTileset`) exists in a sub-level. It is very rarely useful to have instances of these objects within a sub-level.
+- An instance of `ACesiumCreditSystem` in a sub-level will no longer cause overlapping and broken-looking credits. However, we still recommend deleting credit system instances from sub-levels.
+
+### v1.29.0 - 2023-08-01
+
+##### Fixes :wrench:
+
+- Fixed a bug introduced in v1.28.0 that prevented point clouds from rendering with attenuation.
+- Fixed a bug where Google Photorealistic 3D Tiles would sometimes not render in Movie Render Queue.
+- Fixed a bug that caused `UnrealLightmass` to crash when attempting to build lighting containing static meshes created by a `Cesium3DTileset`.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.25.1 to v0.26.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.28.0 - 2023-07-03
 
