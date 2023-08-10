@@ -5,7 +5,6 @@
 #include "CesiumGeospatial/GlobeAnchor.h"
 #include "Components/ActorComponent.h"
 #include "Delegates/IDelegateInstance.h"
-#include <glm/mat4x4.hpp>
 #include "CesiumGlobeAnchorComponent.generated.h"
 
 class ACesiumGeoreference;
@@ -233,14 +232,6 @@ public:
   ACesiumGeoreference* ResolveGeoreference();
 
   /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time ResolveGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InvalidateResolvedGeoreference();
-
-  /**
    * Gets the latitude in degrees of this component, in the range [-90, 90]
    */
   UFUNCTION(BlueprintGetter)
@@ -375,7 +366,7 @@ public:
 
 #pragma endregion
 
-#pragma region Move and Rotate
+#pragma region Public Methods
 
 public:
   /**
@@ -501,6 +492,41 @@ public:
   UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
   void SnapToEastSouthUp();
 
+  /**
+   * Synchronizes the properties of this globe anchor.
+   *
+   * It is usually not necessary to call this method because it is called
+   * automatically when needed.
+   *
+   * This method performs the following actions:
+   *
+   *   - If the ActorToEarthCenteredEarthFixedMatrix has not yet been
+   * determined, it is computed from the Actor's current root transform.
+   *   - If the Actor's root transform has changed since the last time this
+   * component was registered, this method updates the
+   * ActorToEarthCenteredEarthFixedMatrix from the current transform.
+   *   - If the origin of the CesiumGeoreference has changed, the Actor's root
+   * transform is updated based on the ActorToEarthCenteredEarthFixedMatrix and
+   * the new georeference origin.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void Sync();
+
+#pragma endregion
+
+#pragma region Obsolete
+public:
+  UE_DEPRECATED(
+      "Cesium For Unreal v2.0",
+      "The resolved georeference can no longer be explicitly invalidated. To change the georeference, call SetGeoreference or ReregisterComponent.")
+  UFUNCTION(
+      BlueprintCallable,
+      Category = "Cesium",
+      Meta =
+          (DeprecatedFunction,
+           DeprecationMessage =
+               "The resolved georeference can no longer be explicitly invalidated. To change the georeference, call SetGeoreference or ReregisterComponent."))
+  void InvalidateResolvedGeoreference();
 #pragma endregion
 
 #pragma region Unreal Lifecycle
@@ -549,6 +575,9 @@ protected:
    * changes to properties.
    */
   virtual void OnUnregister() override;
+
+	virtual void Activate(bool bReset = false) override;
+  virtual void Deactivate() override;
 #pragma endregion
 
 #pragma region Implementation Details
@@ -577,14 +606,10 @@ private:
   void _setNewActorToECEFFromRelativeTransform();
 
 #if WITH_EDITORONLY_DATA
-  /**
-   * The current Actor to ECEF transformation expressed as a simple array of
-   * doubles so that Unreal Engine can serialize it.
-   */
+  // This is used only to preserve the transformation saved by old versions of
+  // Cesium for Unreal. See the Serialize method.
   UPROPERTY(Meta = (DeprecatedProperty))
   double _actorToECEF_Array_DEPRECATED[16];
-
-  static_assert(sizeof(_actorToECEF_Array_DEPRECATED) == sizeof(glm::dmat4));
 #endif
 
   /**
@@ -603,6 +628,9 @@ private:
    */
   bool _updatingActorTransform = false;
 
+  bool _lastRelativeTransformIsValid = false;
+  FTransform _lastRelativeTransform{};
+
   /**
    * Called when the root transform of the Actor to which this Component is
    * attached has changed. So:
@@ -615,8 +643,6 @@ private:
       USceneComponent* InRootComponent,
       EUpdateTransformFlags UpdateTransformFlags,
       ETeleportType Teleport);
-
-  FDelegateHandle _onTransformChangedWhileUnregistered;
 
   /**
    * Called when the Component switches to a new Georeference Actor or the

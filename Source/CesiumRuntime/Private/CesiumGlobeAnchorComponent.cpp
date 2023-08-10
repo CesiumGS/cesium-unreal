@@ -56,9 +56,26 @@ UCesiumGlobeAnchorComponent::GetGeoreference() const {
 
 void UCesiumGlobeAnchorComponent::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
+  ACesiumGeoreference* pOriginal = this->ResolvedGeoreference;
+
+  if (IsValid(pOriginal)) {
+    pOriginal->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+
+  this->ResolvedGeoreference = nullptr;
   this->Georeference = NewGeoreference;
-  this->InvalidateResolvedGeoreference();
-  this->ResolveGeoreference();
+
+  // If this component is currently registered, we need to re-resolve the
+  // georeference. If it's not, this will happen when it becomes registered.
+  if (this->IsRegistered()) {
+    this->ResolveGeoreference();
+
+    // If we switched to a different georeference, synchronize the state based
+    // on the new one.
+    if (pOriginal != this->Georeference && IsValid(pOriginal)) {
+      this->Sync();
+    }
+  }
 }
 
 FVector
@@ -90,17 +107,6 @@ void UCesiumGlobeAnchorComponent::SetActorToEarthCenteredEarthFixedMatrix(
     const FMatrix& Value) {
   // This method is equivalent to
   // CesiumGlobeAnchorImpl::SetNewLocalToGlobeFixedMatrix in Cesium for Unity.
-
-  if (!this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s cannot set new Actor-to-ECEF transform because there is no valid CesiumGeoreference."),
-        *this->GetName());
-    return;
-  }
-
   USceneComponent* pOwnerRoot = this->_getRootComponent(/*warnIfNull*/ true);
   if (!IsValid(pOwnerRoot)) {
     return;
@@ -200,6 +206,25 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
 #endif
 }
 
+void UCesiumGlobeAnchorComponent::Sync() {
+  // If we don't have a actor -> ECEF matrix yet, we must update from the
+  // actor's root transform.
+  bool updateFromTransform = !this->_actorToECEFIsValid;
+  if (!updateFromTransform && this->_lastRelativeTransformIsValid) {
+    // We may also need to update from the Transform if it has changed
+    // since the last time we computed the local -> globe fixed matrix.
+    updateFromTransform = !this->_lastRelativeTransform.Equals(
+        this->_getCurrentRelativeTransform(),
+        0.0);
+  }
+
+  if (updateFromTransform)
+    this->_setNewActorToECEFFromRelativeTransform();
+  else
+    this->SetActorToEarthCenteredEarthFixedMatrix(
+        this->ActorToEarthCenteredEarthFixedMatrix);
+}
+
 ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
   if (IsValid(this->ResolvedGeoreference)) {
     return this->ResolvedGeoreference;
@@ -218,16 +243,11 @@ ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
         &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
   }
 
-  this->_onGeoreferenceChanged();
-
   return this->ResolvedGeoreference;
 }
 
 void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
-  }
-  this->ResolvedGeoreference = nullptr;
+  // This method is deprecated and no longer does anything.
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
@@ -248,16 +268,6 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
     const FVector& TargetLongitudeLatitudeHeight) {
-  if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s cannot move to a globe position because the component is not yet registered."),
-        *this->GetName());
-    return;
-  }
-
   this->MoveToEarthCenteredEarthFixedPosition(
       UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
           TargetLongitudeLatitudeHeight));
@@ -392,36 +402,36 @@ void UCesiumGlobeAnchorComponent::OnComponentCreated() {
 #if WITH_EDITOR
 void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
+  if (PropertyChangedEvent.Property) {
+    FName propertyName = PropertyChangedEvent.Property->GetFName();
+
+    if (propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Longitude) ||
+        propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Latitude) ||
+        propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)) {
+      this->MoveToLongitudeLatitudeHeight(
+          FVector(this->Longitude, this->Latitude, this->Height));
+    } else if (
+        propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_X) ||
+        propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Y) ||
+        propertyName ==
+            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Z)) {
+      this->MoveToEarthCenteredEarthFixedPosition(
+          FVector(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
+    } else if (
+        propertyName ==
+        GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
+      this->SetGeoreference(this->Georeference);
+    }
+  }
+
+  // Call the base class implementation last, because it will call OnRegister,
+  // which will call Sync. So we need to apply the updated values first.
   Super::PostEditChangeProperty(PropertyChangedEvent);
-
-  if (!PropertyChangedEvent.Property) {
-    return;
-  }
-
-  FName propertyName = PropertyChangedEvent.Property->GetFName();
-
-  if (propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Longitude) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Latitude) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)) {
-    this->MoveToLongitudeLatitudeHeight(
-        FVector(this->Longitude, this->Latitude, this->Height));
-  } else if (
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_X) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Y) ||
-      propertyName ==
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Z)) {
-    this->MoveToEarthCenteredEarthFixedPosition(
-        FVector(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
-  } else if (
-      propertyName ==
-      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
-    this->InvalidateResolvedGeoreference();
-  }
 }
 #endif
 
@@ -440,32 +450,23 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
 
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
-    if (_onTransformChangedWhileUnregistered.IsValid()) {
-      pOwnerRoot->TransformUpdated.Remove(_onTransformChangedWhileUnregistered);
-    }
     pOwnerRoot->TransformUpdated.AddUObject(
         this,
         &UCesiumGlobeAnchorComponent::_onActorTransformChanged);
   }
 
-  // Resolve the georeference, which will also subscribe to the new georeference
-  // (if there is one) and call _onGeoreferenceChanged.
-  // This will update the actor transform with the globe position, but only if
-  // the globe transform is valid.
   this->ResolveGeoreference();
-
-  // If the globe transform is not yet valid, compute it from the actor
-  // transform now.
-  if (!this->_actorToECEFIsValid) {
-    this->_setNewActorToECEFFromRelativeTransform();
-  }
+  this->Sync();
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
   Super::OnUnregister();
 
   // Unsubscribe from the ResolvedGeoreference.
-  this->InvalidateResolvedGeoreference();
+  if (IsValid(this->ResolvedGeoreference)) {
+    this->ResolvedGeoreference->OnGeoreferenceUpdated.RemoveAll(this);
+  }
+  this->ResolvedGeoreference = nullptr;
 
   // Unsubscribe from the TransformUpdated event.
   const AActor* pOwner = this->GetOwner();
@@ -481,12 +482,17 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
   USceneComponent* pOwnerRoot = pOwner->GetRootComponent();
   if (pOwnerRoot) {
     pOwnerRoot->TransformUpdated.RemoveAll(this);
-    _onTransformChangedWhileUnregistered =
-        pOwnerRoot->TransformUpdated.AddLambda(
-            [this](USceneComponent*, EUpdateTransformFlags, ETeleportType) {
-              this->_actorToECEFIsValid = false;
-            });
   }
+}
+
+void UCesiumGlobeAnchorComponent::Activate(bool bReset) {
+  Super::Activate(bReset);
+  UE_LOG(LogCesium, Warning, TEXT("***********Activate"));
+}
+
+void UCesiumGlobeAnchorComponent::Deactivate() {
+  Super::Deactivate();
+  UE_LOG(LogCesium, Warning, TEXT("***********Deactivate"));
 }
 
 CesiumGeospatial::GlobeAnchor
@@ -569,6 +575,9 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
       this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
                                           : ETeleportType::None);
   this->_updatingActorTransform = false;
+
+  this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
+  this->_lastRelativeTransformIsValid = true;
 }
 
 CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
@@ -642,13 +651,13 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
 
   // Update the Unreal relative transform
   ACesiumGeoreference* pGeoreference = this->ResolvedGeoreference;
-  assert(pGeoreference != nullptr);
+  if (IsValid(pGeoreference)) {
+    glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
+        pGeoreference->getCoordinateSystem());
 
-  glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
-      pGeoreference->getCoordinateSystem());
-
-  this->_setCurrentRelativeTransform(
-      FTransform(VecMath::createMatrix(anchorToLocal)));
+    this->_setCurrentRelativeTransform(
+        FTransform(VecMath::createMatrix(anchorToLocal)));
+  }
 }
 
 void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
