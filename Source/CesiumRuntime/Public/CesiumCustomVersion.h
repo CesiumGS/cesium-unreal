@@ -17,6 +17,9 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // The Georeferencing system was refactored.
     GeoreferenceRefactoring = 2,
 
+    // The Metadata system was refactored.
+    MetadataRefactoring = 3,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };

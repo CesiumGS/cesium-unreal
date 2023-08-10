@@ -11,6 +11,9 @@
 #include "VecMath.h"
 #include <variant>
 
+// Prevent deprecation warnings while initializing deprecated metadata structs.
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 // Sets default values for this component's properties
 UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   PrimaryComponentTick.bCanEverTick = false;
@@ -18,6 +21,8 @@ UCesiumGltfPrimitiveComponent::UCesiumGltfPrimitiveComponent() {
   pMeshPrimitive = nullptr;
   pTilesetActor = nullptr;
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 
@@ -131,8 +136,16 @@ void UCesiumGltfPrimitiveComponent::BeginDestroy() {
       }
     }
 
-    //CesiumEncodedFeaturesMetadata::destroyEncodedPrimitiveMetadata(
-    //    this->EncodedPrimitiveMetadata);
+    CesiumEncodedFeaturesMetadata::destroyEncodedPrimitiveFeatures(
+        this->EncodedFeatures);
+
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    if (this->EncodedMetadata_DEPRECATED) {
+      CesiumEncodedMetadataUtility::destroyEncodedMetadataPrimitive(
+          *this->EncodedMetadata_DEPRECATED);
+      this->EncodedMetadata_DEPRECATED = std::nullopt;
+    }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     CesiumLifetime::destroy(pMaterial);
   }

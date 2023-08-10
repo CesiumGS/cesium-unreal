@@ -383,9 +383,9 @@ bool isValidPropertyTablePropertyDescription(
 
   bool isNormalized =
       UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property);
-  if (propertyDescription.Normalized != isNormalized) {
+  if (propertyDescription.PropertyDetails.bIsNormalized != isNormalized) {
     FString error =
-        propertyDescription.Normalized
+        propertyDescription.PropertyDetails.bIsNormalized
             ? "Description incorrectly marked a property table property as normalized; skip encoding."
             : "Description incorrectly marked a property table property as not normalized; skip encoding.";
     UE_LOG(LogCesium, Warning, TEXT("%s"), *error);
@@ -550,7 +550,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
 EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
     TMap<const CesiumGltf::ImageCesium*, TWeakPtr<LoadedTextureResult>>&
         featureTexturePropertyMap,
-    const FFeatureTextureDescription& featureTextureDescription,
+    const FCesiumPropertyTextureDescription& propertyTextureDescription,
     const FString& featureTextureName,
     const FCesiumPropertyTexture& propertyTexture) {
 
@@ -926,6 +926,5 @@ FString createHlslSafeName(const FString& rawName) {
 
   return safeName;
 }
-
 
 } // namespace CesiumEncodedFeaturesMetadata

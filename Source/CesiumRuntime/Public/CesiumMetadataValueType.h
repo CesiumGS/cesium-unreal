@@ -83,6 +83,14 @@ enum class ECesiumMetadataTrueType_DEPRECATED : uint8 {
   Array_DEPRECATED
 };
 
+// True types are cast, reintepreted, or parsed before being packed into gpu
+// types when encoding into a texture.
+enum class ECesiumMetadataPackedGpuType_DEPRECATED : uint8 {
+  None_DEPRECATED,
+  Uint8_DEPRECATED,
+  Float_DEPRECATED
+};
+
 /**
  * The type of a metadata property in EXT_structural_metadata.
  */

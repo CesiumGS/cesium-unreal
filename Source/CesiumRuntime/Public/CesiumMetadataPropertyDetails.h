@@ -78,7 +78,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
                "(Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String) && (ComponentType != ECesiumMetadataComponentType::None && ComponentType != ECesiumMetadataComponentType::Float32 && ComponentType != ECesiumMetadataComponentType::Float64)"))
   bool bIsNormalized;
 
-  // TODO: scale and offset
+  // TODO: scale and offset, no data + default value
 
   inline bool
   operator==(const FCesiumMetadataPropertyDetails& ValueType) const {

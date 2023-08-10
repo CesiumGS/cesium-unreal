@@ -20,21 +20,13 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
  *
  */
 UENUM()
-enum class ECesiumPropertyComponentType_DEPRECATED : uint8 {
-  Uint8_DEPRECATED,
-  Float_DEPRECATED
-};
+enum class ECesiumPropertyComponentType_DEPRECATED : uint8 { Uint8, Float };
 
 /**
  * @brief The property type.
  */
 UENUM()
-enum class ECesiumPropertyType_DEPRECATED : uint8 {
-  Scalar_DEPRECATED,
-  Vec2_DEPRECATED,
-  Vec3_DEPRECATED,
-  Vec4_DEPRECATED
-};
+enum class ECesiumPropertyType_DEPRECATED : uint8 { Scalar, Vec2, Vec3, Vec4 };
 
 /**
  * @brief Describes how this feature table is accessed. Either through feature
@@ -42,10 +34,10 @@ enum class ECesiumPropertyType_DEPRECATED : uint8 {
  */
 UENUM()
 enum class ECesiumFeatureTableAccessType_DEPRECATED : uint8 {
-  Unknown_DEPRECATED,
-  Texture_DEPRECATED,
-  Attribute_DEPRECATED,
-  Mixed_DEPRECATED
+  Unknown,
+  Texture,
+  Attribute,
+  Mixed
 };
 
 // Note that these don't exhaustively cover the possibilities of glTF metadata
@@ -79,14 +71,13 @@ struct CESIUMRUNTIME_API FPropertyDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumPropertyComponentType_DEPRECATED ComponentType =
-      ECesiumPropertyComponentType_DEPRECATED::Float_DEPRECATED;
+      ECesiumPropertyComponentType_DEPRECATED::Float;
 
   /**
    * @brief The property type.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyType_DEPRECATED Type =
-      ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED;
+  ECesiumPropertyType_DEPRECATED Type = ECesiumPropertyType_DEPRECATED::Scalar;
 
   /**
    * @brief If ComponentType==Uint8, this indicates whether to normalize into a
@@ -127,7 +118,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumFeatureTableAccessType_DEPRECATED AccessType =
-      ECesiumFeatureTableAccessType_DEPRECATED::Unknown_DEPRECATED;
+      ECesiumFeatureTableAccessType_DEPRECATED::Unknown;
 
   /**
    * @brief If the AccessType==Texture, this string represents the channel of
@@ -178,8 +169,7 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
    * @brief The property type.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyType_DEPRECATED Type =
-      ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED;
+  ECesiumPropertyType_DEPRECATED Type = ECesiumPropertyType_DEPRECATED::Scalar;
 
   /**
    * @brief If ComponentType==Uint8, this indicates whether to normalize into a
@@ -222,6 +212,11 @@ struct CESIUMRUNTIME_API FFeatureTextureDescription {
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FFeatureTexturePropertyDescription> Properties;
 };
+
+struct UE_DEPRECATED(
+    5.0,
+    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    FMetadataDescription;
 
 struct UE_DEPRECATED(
     5.0,
@@ -316,4 +311,8 @@ public:
            DeprecationMessage =
                "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."))
   TArray<FFeatureTextureDescription> FeatureTextures;
+
+  // virtual void Serialize(FArchive& Ar) override;
 };
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

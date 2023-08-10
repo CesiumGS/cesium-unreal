@@ -132,22 +132,6 @@ struct CESIUMRUNTIME_API FCesiumPropertyTablePropertyDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   FCesiumMetadataEncodingDetails EncodingDetails;
-
-  /**
-   * If the property type is a uint8, this indicates whether or not the
-   * values are normalized. If so, then the values will be normalized to floats
-   * in the [0-1] range before accessing in an Unreal material.
-   *
-   * This can be unchecked to send the uint8 values to the Unreal material
-   * as-is.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      Category = "Cesium",
-      Meta =
-          (EditCondition =
-               "Type.ComponentType==ECesiumMetadataComponentType::Uint8"))
-  bool Normalized = false;
 };
 
 /**
@@ -173,70 +157,70 @@ struct CESIUMRUNTIME_API FCesiumPropertyTableDescription {
   TArray<FCesiumPropertyTablePropertyDescription> Properties;
 };
 
-///**
-// * @brief Description of a feature texture property that should be uploaded to
-// * the GPU.
-// */
-// USTRUCT()
-// struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
-//  GENERATED_USTRUCT_BODY()
-//
-//  /**
-//   * @brief The name of this property as it will be referenced in the
-//   * material.
-//   */
-//  UPROPERTY(EditAnywhere, Category = "Cesium")
-//  FString Name;
-//
-//  // For now, always assumes it is Uint8
-//  /*
-//  UPROPERTY(EditAnywhere, Category = "Cesium")
-//  ECesiumPropertyComponentType ComponentType =
-//      ECesiumPropertyComponentType::Uint8;*/
-//
-//  /**
-//   * @brief The property type.
-//   */
-//  UPROPERTY(EditAnywhere, Category = "Cesium")
-//  ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
-//
-//  /**
-//   * @brief If ComponentType==Uint8, this indicates whether to normalize into
-//   a
-//   * [0-1] range before accessing on the GPU.
-//   */
-//  UPROPERTY(EditAnywhere, Category = "Cesium")
-//  bool Normalized = false;
-//
-//  /**
-//   * @brief This string describes the channel order of the incoming feature
-//   * texture property (e.g., "rgb", "bgra", etc.). This helps us fix the
-//   * channel order when accessing on the GPU.
-//   */
-//  UPROPERTY(EditAnywhere, Category = "Cesium")
-//  FString Swizzle;
-//};
-//
-///**
-// * @brief Description of a feature texture with properties that should be
-// * uploaded to the GPU.
-// */
-// USTRUCT()
-// struct CESIUMRUNTIME_API FFeatureTextureDescription {
-//  GENERATED_USTRUCT_BODY()
-//
-//  /**
-//   * @brief The name of this feature texture.
-//   */
-//  UPROPERTY(EditAnywhere, Category = "Cesium")
-//  FString Name;
-//
-//  /**
-//   * @brief Descriptions of the properties to upload to the GPU.
-//   */
-//  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty =
-//  "Name")) TArray<FFeatureTexturePropertyDescription> Properties;
-//};
+/**
+ * @brief Description of a property texture property that should be uploaded to
+ * the GPU.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumPropertyTexturePropertyDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * @brief The name of this property as it will be referenced in the
+   * material.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name;
+
+  //  // For now, always assumes it is Uint8
+  //  /*
+  //  UPROPERTY(EditAnywhere, Category = "Cesium")
+  //  ECesiumPropertyComponentType ComponentType =
+  //      ECesiumPropertyComponentType::Uint8;*/
+  //
+  ///**
+  // * @brief The property type.
+  // */
+  // UPROPERTY(EditAnywhere, Category = "Cesium")
+  // ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
+
+  /**
+   * @brief If ComponentType==Uint8, this indicates whether to normalize into
+   a
+   * [0-1] range before accessing on the GPU.
+   */
+  //  UPROPERTY(EditAnywhere, Category = "Cesium")
+  //  bool Normalized = false;
+  //
+  /**
+   * @brief This string describes the channel order of the incoming feature
+   * texture property (e.g., "rgb", "bgra", etc.). This helps us fix the
+   * channel order when accessing on the GPU.
+   */
+  //  UPROPERTY(EditAnywhere, Category = "Cesium")
+  //  FString Swizzle;
+};
+
+/**
+ * @brief Description of a property texture with properties that should be
+ * made accessible to Unreal materials.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumPropertyTextureDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * @brief The name of this property texture.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name;
+
+  /**
+   * @brief Descriptions of the properties to upload to the GPU.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  TArray<FCesiumPropertyTexturePropertyDescription> Properties;
+};
 
 /**
  * @brief Description of metadata from a glTF's EXT_structural_metadata
@@ -257,16 +241,39 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
   TArray<FCesiumPropertyTableDescription> PropertyTables;
 
   ///**
-  // * @brief Descriptions of feature textures to upload to the GPU.
+  // * @brief Descriptions of property textures to upload to the GPU.
   // */
   // UPROPERTY(
   //    EditAnywhere,
   //    Category = "Metadata",
   //    Meta = (TitleProperty = "Name"))
-  // TArray<FFeatureTextureDescription> PropertyTextures;
+  // TArray<FCesiumPropertyTextureDescription> PropertyTextures;
 };
 
 #pragma endregion
+
+/**
+ * @brief Description of both feature IDs and metadata from a glTF via the
+ * EXT_mesh_Features and EXT_structural_metadata extensions. Indicates what
+ * parts of the extension should be uploaded to the GPU for access in Unreal
+ * materials.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * @brief Description of the feature ID sets available from the
+   * EXT_mesh_features on a glTF's primitives.
+   */
+  FCesiumPrimitiveFeaturesDescription Features;
+
+  /**
+   * @brief Description of metadata from a glTF's EXT_structural_metadata
+   * extension.
+   */
+  FCesiumModelMetadataDescription ModelMetadata;
+};
 
 /**
  * @brief A component that can be added to Cesium3DTileset actors to

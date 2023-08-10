@@ -266,7 +266,7 @@ EncodedPropertyTexture encodePropertyTextureAnyThreadPart(
         const CesiumGltf::ImageCesium*,
         TWeakPtr<CesiumTextureUtility::LoadedTextureResult>>&
         propertyTexturePropertyMap,
-    const FFeatureTextureDescription& featureTextureDescription,
+    const FCesiumPropertyTextureDescription& propertyTextureDescription,
     const FString& propertyTextureName,
     const FCesiumPropertyTexture& propertyTexture);
 

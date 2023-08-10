@@ -5,6 +5,7 @@
 #include "Cesium3DTilesSelection/BoundingVolume.h"
 #include "Cesium3DTileset.h"
 #include "CesiumEncodedFeaturesMetadata.h"
+#include "CesiumEncodedMetadataUtility.h"
 #include "CesiumGltf/MeshPrimitive.h"
 #include "CesiumGltf/Model.h"
 #include "CesiumMetadataPrimitive.h"
@@ -35,22 +36,25 @@ public:
    */
   FCesiumPrimitiveMetadata Metadata;
 
-  PRAGMA_DISABLE_DEPRECATION_WARNINGS
-  /**
-   * For backwards compatibility with the EXT_feature_metadata implementation.
-   */
-  FCesiumMetadataPrimitive Metadata_DEPRECATED;
-  PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
   /**
    * The encoded representation of the primitive's EXT_mesh_features extension.
    */
   CesiumEncodedFeaturesMetadata::EncodedPrimitiveFeatures EncodedFeatures;
   /**
-   * The encoded representation of the primitive's EXT_structural_metadata extension.
+   * The encoded representation of the primitive's EXT_structural_metadata
+   * extension.
    */
-  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata
-      EncodedMetadata;
+  CesiumEncodedFeaturesMetadata::EncodedPrimitiveMetadata EncodedMetadata;
+
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+  /**
+   * For backwards compatibility with the EXT_feature_metadata implementation.
+   */
+  FCesiumMetadataPrimitive Metadata_DEPRECATED;
+  std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
+      EncodedMetadata_DEPRECATED;
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   ACesium3DTileset* pTilesetActor;
 

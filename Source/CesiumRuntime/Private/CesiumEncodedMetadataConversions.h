@@ -2,6 +2,7 @@
 
 #pragma once
 
+enum class ECesiumEncodedMetadataType : uint8;
 struct FCesiumPropertyTablePropertyDescription;
 struct FCesiumPropertyTableProperty;
 struct FCesiumMetadataPropertyDetails;
