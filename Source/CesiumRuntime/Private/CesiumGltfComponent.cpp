@@ -641,12 +641,14 @@ static void updateTextureCoordinatesForFeatureIds(
         for (int64_t i = 0; i < indices.Num(); ++i) {
           FStaticMeshBuildVertex& vertex = vertices[i];
           uint32 vertexIndex = indices[i];
-          vertex.UVs[textureCoordinateIndex] = TMeshVector2(vertexIndex, 0.0f);
+          vertex.UVs[textureCoordinateIndex] =
+              TMeshVector2(static_cast<float>(vertexIndex), 0.0f);
         }
       } else {
         for (int64_t i = 0; i < vertices.Num(); ++i) {
           FStaticMeshBuildVertex& vertex = vertices[i];
-          vertex.UVs[textureCoordinateIndex] = TMeshVector2(i, 0.0f);
+          vertex.UVs[textureCoordinateIndex] =
+              TMeshVector2(static_cast<float>(i), 0.0f);
         }
       }
     }

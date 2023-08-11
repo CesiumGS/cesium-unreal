@@ -17,7 +17,7 @@
 #include "Containers/Map.h"
 #include "PixelFormat.h"
 #include "TextureResource.h"
-#include <CesiumGltf/FeatureIDTextureView.h>
+#include <CesiumGltf/FeatureIdTextureView.h>
 #include <CesiumGltf/PropertyTexturePropertyView.h>
 #include <CesiumGltf/PropertyTextureView.h>
 #include <CesiumUtility/Tracing.h>
