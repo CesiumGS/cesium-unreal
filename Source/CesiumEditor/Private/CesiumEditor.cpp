@@ -455,6 +455,13 @@ FCesiumEditorModule::FindFirstTilesetWithAssetID(int64_t assetID) {
 
   for (TActorIterator<ACesium3DTileset> it(pCurrentWorld); !pTilesetActor && it;
        ++it) {
+    ACesium3DTileset* pActor = *it;
+
+    // The existing Actor must be in the current level. Because it's sometimes
+    // useful to add the same tileset to multiple sub-levels.
+    if (!IsValid(pActor) || pActor->GetLevel() != pCurrentLevel)
+      continue;
+
     const Cesium3DTilesSelection::Tileset* pTileset = it->GetTileset();
     if (pTileset && it->GetIonAssetID() == assetID) {
       return *it;
@@ -573,7 +580,7 @@ AActor* GetFirstCurrentLevelActorWithClass(UClass* pActorClass) {
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
   ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
   for (TActorIterator<AActor> it(pCurrentWorld); it; ++it) {
-    if (it->GetClass() == pActorClass) {
+    if (it->GetClass() == pActorClass && it->GetLevel() == pCurrentLevel) {
       return *it;
     }
   }
@@ -602,9 +609,16 @@ AActor* SpawnActorWithClass(UClass* actorClass) {
   if (!actorClass) {
     return nullptr;
   }
+
   UWorld* pCurrentWorld = GEditor->GetEditorWorldContext().World();
-  AActor* pNewActor = pCurrentWorld->SpawnActor<AActor>(actorClass);
-  return pNewActor;
+  ULevel* pCurrentLevel = pCurrentWorld->GetCurrentLevel();
+
+  return GEditor->AddActor(
+      pCurrentLevel,
+      actorClass,
+      FTransform(),
+      false,
+      RF_Transactional);
 }
 } // namespace
 

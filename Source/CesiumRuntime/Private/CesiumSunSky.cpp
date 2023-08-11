@@ -79,7 +79,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
   DirectionalLight->SetWorldLocation(FVector(0, 0, 0));
 
   if (!SkySphereClass) {
-    ConstructorHelpers::FClassFinder<AActor> skySphereFinder(
+    static ConstructorHelpers::FClassFinder<AActor> skySphereFinder(
         TEXT("Blueprint'/CesiumForUnreal/MobileSkySphere.MobileSkySphere_C'"));
     if (skySphereFinder.Succeeded()) {
       SkySphereClass = skySphereFinder.Class;

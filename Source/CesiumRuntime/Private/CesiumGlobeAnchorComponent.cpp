@@ -50,12 +50,13 @@
 // * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
 // not changing.
 
-ACesiumGeoreference* UCesiumGlobeAnchorComponent::GetGeoreference() const {
+TSoftObjectPtr<ACesiumGeoreference>
+UCesiumGlobeAnchorComponent::GetGeoreference() const {
   return this->Georeference;
 }
 
 void UCesiumGlobeAnchorComponent::SetGeoreference(
-    ACesiumGeoreference* NewGeoreference) {
+    TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
   this->Georeference = NewGeoreference;
   this->InvalidateResolvedGeoreference();
   this->ResolveGeoreference();
@@ -177,8 +178,8 @@ ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
     return this->ResolvedGeoreference;
   }
 
-  if (IsValid(this->Georeference)) {
-    this->ResolvedGeoreference = this->Georeference;
+  if (IsValid(this->Georeference.Get())) {
+    this->ResolvedGeoreference = this->Georeference.Get();
   } else {
     this->ResolvedGeoreference =
         ACesiumGeoreference::GetDefaultGeoreference(this);

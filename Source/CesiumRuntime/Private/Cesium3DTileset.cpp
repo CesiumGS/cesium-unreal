@@ -118,7 +118,7 @@ ACesium3DTileset::ACesium3DTileset()
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-ACesiumGeoreference* ACesium3DTileset::GetGeoreference() const {
+TSoftObjectPtr<ACesiumGeoreference> ACesium3DTileset::GetGeoreference() const {
   return this->Georeference;
 }
 
@@ -129,7 +129,8 @@ void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
   }
 }
 
-void ACesium3DTileset::SetGeoreference(ACesiumGeoreference* NewGeoreference) {
+void ACesium3DTileset::SetGeoreference(
+    TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
   this->Georeference = NewGeoreference;
   this->InvalidateResolvedGeoreference();
   this->ResolveGeoreference();
@@ -140,8 +141,8 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
     return this->ResolvedGeoreference;
   }
 
-  if (IsValid(this->Georeference)) {
-    this->ResolvedGeoreference = this->Georeference;
+  if (IsValid(this->Georeference.Get())) {
+    this->ResolvedGeoreference = this->Georeference.Get();
   } else {
     this->ResolvedGeoreference =
         ACesiumGeoreference::GetDefaultGeoreference(this);
@@ -168,11 +169,12 @@ void ACesium3DTileset::InvalidateResolvedGeoreference() {
   this->ResolvedGeoreference = nullptr;
 }
 
-ACesiumCreditSystem* ACesium3DTileset::GetCreditSystem() const {
+TSoftObjectPtr<ACesiumCreditSystem> ACesium3DTileset::GetCreditSystem() const {
   return this->CreditSystem;
 }
 
-void ACesium3DTileset::SetCreditSystem(ACesiumCreditSystem* NewCreditSystem) {
+void ACesium3DTileset::SetCreditSystem(
+    TSoftObjectPtr<ACesiumCreditSystem> NewCreditSystem) {
   this->CreditSystem = NewCreditSystem;
   this->InvalidateResolvedCreditSystem();
   this->ResolveCreditSystem();
@@ -183,8 +185,8 @@ ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
     return this->ResolvedCreditSystem;
   }
 
-  if (IsValid(this->CreditSystem)) {
-    this->ResolvedCreditSystem = this->CreditSystem;
+  if (IsValid(this->CreditSystem.Get())) {
+    this->ResolvedCreditSystem = this->CreditSystem.Get();
   } else {
     this->ResolvedCreditSystem =
         ACesiumCreditSystem::GetDefaultCreditSystem(this);
@@ -198,6 +200,38 @@ ACesiumCreditSystem* ACesium3DTileset::ResolveCreditSystem() {
 
 void ACesium3DTileset::InvalidateResolvedCreditSystem() {
   this->ResolvedCreditSystem = nullptr;
+  this->RefreshTileset();
+}
+
+TSoftObjectPtr<ACesiumCameraManager>
+ACesium3DTileset::GetCameraManager() const {
+  return this->CameraManager;
+}
+
+void ACesium3DTileset::SetCameraManager(
+    TSoftObjectPtr<ACesiumCameraManager> NewCameraManager) {
+  this->CameraManager = NewCameraManager;
+  this->InvalidateResolvedCameraManager();
+  this->ResolveCameraManager();
+}
+
+ACesiumCameraManager* ACesium3DTileset::ResolveCameraManager() {
+  if (IsValid(this->ResolvedCameraManager)) {
+    return this->ResolvedCameraManager;
+  }
+
+  if (IsValid(this->CameraManager.Get())) {
+    this->ResolvedCameraManager = this->CameraManager.Get();
+  } else {
+    this->ResolvedCameraManager =
+        ACesiumCameraManager::GetDefaultCameraManager(this);
+  }
+
+  return this->ResolvedCameraManager;
+}
+
+void ACesium3DTileset::InvalidateResolvedCameraManager() {
+  this->ResolvedCameraManager = nullptr;
   this->RefreshTileset();
 }
 
@@ -576,6 +610,10 @@ void ACesium3DTileset::UpdateTransformFromCesium() {
 void ACesium3DTileset::BeginPlay() {
   Super::BeginPlay();
 
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
+
   this->LoadTileset();
 
   // Search for level sequence.
@@ -602,6 +640,10 @@ void ACesium3DTileset::BeginPlay() {
 }
 
 void ACesium3DTileset::OnConstruction(const FTransform& Transform) {
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
+
   this->LoadTileset();
 
   // Hide all existing tiles. The still-visible ones will be shown next time we
@@ -972,7 +1014,6 @@ void ACesium3DTileset::LoadTileset() {
   }
 
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
-  ACesiumCreditSystem* pCreditSystem = this->ResolveCreditSystem();
 
   this->_cesiumViewExtension = cesiumViewExtension;
 
@@ -994,6 +1035,8 @@ void ACesium3DTileset::LoadTileset() {
   if (this->BoundingVolumePoolComponent) {
     this->BoundingVolumePoolComponent->initPool(this->OcclusionPoolSize);
   }
+
+  ACesiumCreditSystem* pCreditSystem = this->ResolvedCreditSystem;
 
   Cesium3DTilesSelection::TilesetExternals externals{
       pAssetAccessor,
@@ -1244,8 +1287,7 @@ std::vector<FCesiumCamera> ACesium3DTileset::GetCameras() const {
       std::make_move_iterator(editorCameras.end()));
 #endif
 
-  ACesiumCameraManager* pCameraManager =
-      ACesiumCameraManager::GetDefaultCameraManager(this->GetWorld());
+  ACesiumCameraManager* pCameraManager = this->ResolvedCameraManager;
   if (pCameraManager) {
     const TMap<int32, FCesiumCamera>& extraCameras =
         pCameraManager->GetCameras();
@@ -1956,6 +1998,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::TilesetTick)
 
   Super::Tick(DeltaTime);
+
+  this->ResolveGeoreference();
+  this->ResolveCameraManager();
+  this->ResolveCreditSystem();
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
   if (!pRoot) {
