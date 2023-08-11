@@ -575,17 +575,11 @@ protected:
    * changes to properties.
    */
   virtual void OnUnregister() override;
-
-	virtual void Activate(bool bReset = false) override;
-  virtual void Deactivate() override;
 #pragma endregion
 
 #pragma region Implementation Details
 private:
   CesiumGeospatial::GlobeAnchor _createNativeGlobeAnchor() const;
-
-  CesiumGeospatial::GlobeAnchor
-  _createNativeGlobeAnchor(const FMatrix& actorToECEF) const;
 
   USceneComponent* _getRootComponent(bool warnIfNull) const;
 

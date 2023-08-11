@@ -49,6 +49,15 @@
 // * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
 // not changing.
 
+namespace {
+
+CesiumGeospatial::GlobeAnchor
+createNativeGlobeAnchor(const FMatrix& actorToECEF) {
+  return CesiumGeospatial::GlobeAnchor(VecMath::createMatrix4D(actorToECEF));
+}
+
+} // namespace
+
 TSoftObjectPtr<ACesiumGeoreference>
 UCesiumGlobeAnchorComponent::GetGeoreference() const {
   return this->Georeference;
@@ -178,8 +187,7 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   // Compute the new actor rotation and apply it
   FMatrix newActorToECEF =
       alignmentRotation * this->ActorToEarthCenteredEarthFixedMatrix;
-  this->_updateFromNativeGlobeAnchor(
-      this->_createNativeGlobeAnchor(newActorToECEF));
+  this->_updateFromNativeGlobeAnchor(createNativeGlobeAnchor(newActorToECEF));
 
 #if WITH_EDITOR
   // In the Editor, mark this component modified so Undo works properly.
@@ -188,16 +196,6 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
 }
 
 void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
-  if (!this->_actorToECEFIsValid || !IsValid(this->ResolvedGeoreference)) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe orientation cannot be changed because the component is not yet registered."),
-        *this->GetName());
-    return;
-  }
-
   this->SetEastSouthUpRotation(FQuat::Identity);
 
 #if WITH_EDITOR
@@ -218,11 +216,12 @@ void UCesiumGlobeAnchorComponent::Sync() {
         0.0);
   }
 
-  if (updateFromTransform)
+  if (updateFromTransform) {
     this->_setNewActorToECEFFromRelativeTransform();
-  else
+  } else {
     this->SetActorToEarthCenteredEarthFixedMatrix(
         this->ActorToEarthCenteredEarthFixedMatrix);
+  }
 }
 
 ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
@@ -295,6 +294,16 @@ createEastSouthUp(const CesiumGeospatial::GlobeAnchor& anchor) {
 } // namespace
 
 FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
+  if (!this->_actorToECEFIsValid) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+        *this->GetName());
+    return FQuat::Identity;
+  }
+
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
@@ -314,6 +323,16 @@ FQuat UCesiumGlobeAnchorComponent::GetEastSouthUpRotation() const {
 
 void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
     const FQuat& EastSouthUpRotation) {
+  if (!this->_actorToECEFIsValid) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot set the rotation on CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+        *this->GetName());
+    return;
+  }
+
   CesiumGeospatial::GlobeAnchor anchor(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix));
 
@@ -341,6 +360,16 @@ void UCesiumGlobeAnchorComponent::SetEastSouthUpRotation(
 }
 
 FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
+  if (!this->_actorToECEFIsValid) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot get the rotation from CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+        *this->GetName());
+    return FQuat::Identity;
+  }
+
   glm::dquat rotationToEarthCenteredEarthFixed;
   CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
       VecMath::createMatrix4D(this->ActorToEarthCenteredEarthFixedMatrix),
@@ -352,6 +381,16 @@ FQuat UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedRotation() const {
 
 void UCesiumGlobeAnchorComponent::SetEarthCenteredEarthFixedRotation(
     const FQuat& EarthCenteredEarthFixedRotation) {
+  if (!this->_actorToECEFIsValid) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "Cannot set the rotation on CesiumGlobeAnchorComponent %s because the component is not yet registered or does not have a valid CesiumGeoreference."),
+        *this->GetName());
+    return;
+  }
+
   glm::dvec3 translation;
   glm::dvec3 scale;
   CesiumGeometry::Transforms::computeTranslationRotationScaleFromMatrix(
@@ -485,26 +524,9 @@ void UCesiumGlobeAnchorComponent::OnUnregister() {
   }
 }
 
-void UCesiumGlobeAnchorComponent::Activate(bool bReset) {
-  Super::Activate(bReset);
-  UE_LOG(LogCesium, Warning, TEXT("***********Activate"));
-}
-
-void UCesiumGlobeAnchorComponent::Deactivate() {
-  Super::Deactivate();
-  UE_LOG(LogCesium, Warning, TEXT("***********Deactivate"));
-}
-
 CesiumGeospatial::GlobeAnchor
 UCesiumGlobeAnchorComponent::_createNativeGlobeAnchor() const {
-  return this->_createNativeGlobeAnchor(
-      this->ActorToEarthCenteredEarthFixedMatrix);
-}
-
-CesiumGeospatial::GlobeAnchor
-UCesiumGlobeAnchorComponent::_createNativeGlobeAnchor(
-    const FMatrix& actorToECEF) const {
-  return CesiumGeospatial::GlobeAnchor(VecMath::createMatrix4D(actorToECEF));
+  return createNativeGlobeAnchor(this->ActorToEarthCenteredEarthFixedMatrix);
 }
 
 USceneComponent*
@@ -650,13 +672,15 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   this->Height = llh.Z;
 
   // Update the Unreal relative transform
-  ACesiumGeoreference* pGeoreference = this->ResolvedGeoreference;
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (IsValid(pGeoreference)) {
     glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
         pGeoreference->getCoordinateSystem());
 
     this->_setCurrentRelativeTransform(
         FTransform(VecMath::createMatrix(anchorToLocal)));
+  } else {
+    this->_lastRelativeTransformIsValid = false;
   }
 }
 
@@ -675,8 +699,8 @@ void UCesiumGlobeAnchorComponent::_setNewActorToECEFFromRelativeTransform() {
   // This method is equivalent to
   // CesiumGlobeAnchorImpl::SetNewLocalToGlobeFixedMatrixFromTransform in Cesium
   // for Unity.
-
-  if (!this->ResolvedGeoreference) {
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+  if (!IsValid(pGeoreference)) {
     UE_LOG(
         LogCesium,
         Warning,
