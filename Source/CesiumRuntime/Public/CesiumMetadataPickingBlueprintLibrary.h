@@ -2,12 +2,11 @@
 
 #pragma once
 
+#include "CesiumMetadataValue.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataPickingBlueprintLibrary.generated.h"
-
-struct FCesiumMetadataValue;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataPickingBlueprintLibrary

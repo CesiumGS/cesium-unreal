@@ -120,13 +120,12 @@ public:
       int64 FaceIndex);
 
   /**
-   * Gets the feature ID associated with the given face and feature ID set.
+   * Gets the feature ID associated with the given face.
    *
-   * This does not interface well with feature ID textures or implicit feature
-   * IDs, since these feature ID types make it possible for a face to have
-   * multiple feature IDs. In these cases, the feature ID of the first
-   * vertex of the face is returned.
-   *
+   * A primitive may have multiple feature ID sets, so this allows a feature ID
+   * set to be specified by index. This value should index into the array of
+   * CesiumFeatureIdSets in the CesiumPrimitiveFeatures. If the specified
+   * feature ID set index is invalid, this returns -1.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -134,6 +133,6 @@ public:
       Category = "Cesium|Primitive|Features")
   static int64 GetFeatureIDFromFace(
       UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-      UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
-      int64 FaceIndex);
+      int64 FaceIndex,
+      int64 FeatureIDSetIndex = 0);
 };

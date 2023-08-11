@@ -46,8 +46,8 @@ UCesiumMetadataPickingBlueprintLibrary::GetMetadataValuesForFace(
   int64 featureID =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
           features,
-          featureIDSet,
-          FaceIndex);
+          FaceIndex,
+          FeatureIDSetIndex);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataValue>();
   }

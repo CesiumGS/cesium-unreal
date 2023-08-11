@@ -1948,7 +1948,6 @@ static void SetPropertyTableParameterValues(
     int32 index) {
   for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTableProperty&
            encodedProperty : encodedPropertyTable.properties) {
-
     pMaterial->SetTextureParameterValueByInfo(
         FMaterialParameterInfo(
             FName(CesiumEncodedFeaturesMetadata::
@@ -2454,7 +2453,14 @@ static void loadPrimitiveGameThreadPart(
 
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
-  pMesh->Metadata_DEPRECATED = std::move(loadResult.Metadata_DEPRECATED);
+  // Doing the above std::move operations invalidates the pointers in the
+  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit awkward,
+  // but we have to reconstruct the metadata primitive here.
+  pMesh->Metadata_DEPRECATED = FCesiumMetadataPrimitive{
+      pMesh->Features,
+      pMesh->Metadata,
+      pGltf->Metadata};
+
   if (loadResult.EncodedMetadata_DEPRECATED) {
     pMesh->EncodedMetadata_DEPRECATED =
         std::move(loadResult.EncodedMetadata_DEPRECATED);

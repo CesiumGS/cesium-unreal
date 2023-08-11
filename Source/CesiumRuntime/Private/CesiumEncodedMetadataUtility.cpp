@@ -26,6 +26,8 @@
 
 using namespace CesiumTextureUtility;
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 namespace CesiumEncodedMetadataUtility {
 
 namespace {
@@ -800,3 +802,5 @@ FString createHlslSafeName(const FString& rawName) {
 }
 
 } // namespace CesiumEncodedMetadataUtility
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

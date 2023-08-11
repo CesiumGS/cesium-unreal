@@ -117,21 +117,22 @@ CesiumGltf::PropertyTableProperty& AddPropertyTablePropertyToModel(
     const std::string& type,
     const std::optional<std::string>& componentType,
     const std::vector<T>& values) {
-  ExtensionModelExtStructuralMetadata* pExtension =
-      model.getExtension<ExtensionModelExtStructuralMetadata>();
+  CesiumGltf::ExtensionModelExtStructuralMetadata* pExtension =
+      model.getExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   if (pExtension == nullptr) {
-    pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
+    pExtension =
+        &model.addExtension<CesiumGltf::ExtensionModelExtStructuralMetadata>();
   }
 
   if (!pExtension->schema) {
     pExtension->schema.emplace();
   }
-  Schema& schema = *pExtension->schema;
+  CesiumGltf::Schema& schema = *pExtension->schema;
 
   const std::string& className = propertyTable.classProperty;
   CesiumGltf::Class& theClass = schema.classes[className];
 
-  ClassProperty& classProperty = theClass.properties[propertyName];
+  CesiumGltf::ClassProperty& classProperty = theClass.properties[propertyName];
   classProperty.type = type;
   classProperty.componentType = componentType;
 

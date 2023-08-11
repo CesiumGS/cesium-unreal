@@ -3,7 +3,6 @@
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 #include "CesiumMetadataUtilityBlueprintLibrary.h"
-#include "CesiumFeatureIdAttribute.h"
 #include "CesiumFeatureIdTexture.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumGltfPrimitiveComponent.h"
@@ -51,8 +50,6 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   const FCesiumPrimitiveMetadata& primitiveMetadata = pGltfComponent->Metadata;
 
   // For now, only considers the first feature ID set
-  // TODO: expand to arbitrary number of features once testing data is
-  // available
   const FCesiumFeatureIdSet& featureIDSet = featureIDSets[0];
   const int64 propertyTableIndex =
       UCesiumFeatureIdSetBlueprintLibrary::GetPropertyTableIndex(featureIDSet);
@@ -69,8 +66,8 @@ UCesiumMetadataUtilityBlueprintLibrary::GetMetadataValuesForFace(
   int64 featureID =
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
           features,
-          featureIDSet,
-          FaceIndex);
+          FaceIndex,
+          0);
   if (featureID < 0) {
     return TMap<FString, FCesiumMetadataValue>();
   }

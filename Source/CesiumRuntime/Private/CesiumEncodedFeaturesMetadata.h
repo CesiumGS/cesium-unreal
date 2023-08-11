@@ -18,6 +18,7 @@ struct FCesiumPropertyTable;
 struct FCesiumPropertyTableProperty;
 struct FCesiumPropertyTexture;
 struct FCesiumPropertyTableDescription;
+struct FCesiumPropertyTextureDescription;
 struct FFeatureTextureDescription;
 struct FCesiumModelMetadataDescription;
 struct FCesiumPrimitiveFeaturesDescription;

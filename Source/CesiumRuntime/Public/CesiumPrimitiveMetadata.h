@@ -8,6 +8,8 @@
 #include "CesiumPrimitiveMetadata.generated.h"
 
 namespace CesiumGltf {
+struct Model;
+struct MeshPrimitive;
 struct ExtensionMeshPrimitiveExtStructuralMetadata;
 } // namespace CesiumGltf
 
@@ -33,7 +35,7 @@ public:
    * @param model The model containing a EXT_structural_metadata extension
    * @param primitive The mesh primitive containing the EXT_feature_metadata
    * extension
-   * @param metadata The EXT_structural_metadata of the gltf mesh primitive.
+   * @param metadata The EXT_structural_metadata of the glTF mesh primitive.
    */
   FCesiumPrimitiveMetadata(
       const CesiumGltf::Model& InModel,

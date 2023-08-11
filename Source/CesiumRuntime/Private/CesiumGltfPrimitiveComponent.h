@@ -52,6 +52,7 @@ public:
    * For backwards compatibility with the EXT_feature_metadata implementation.
    */
   FCesiumMetadataPrimitive Metadata_DEPRECATED;
+
   std::optional<CesiumEncodedMetadataUtility::EncodedMetadataPrimitive>
       EncodedMetadata_DEPRECATED;
   PRAGMA_ENABLE_DEPRECATION_WARNINGS

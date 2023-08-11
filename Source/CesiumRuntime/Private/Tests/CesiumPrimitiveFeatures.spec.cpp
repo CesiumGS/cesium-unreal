@@ -328,11 +328,49 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
               primitiveFeatures);
 
       TestEqual(
-          "FeatureIDForOutOfBoundsFace",
+          "FeatureIDForPrimitiveWithNoSets",
           UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
               primitiveFeatures,
-              featureIDSets[0],
               0),
+          -1);
+    });
+
+    It("returns -1 for out of bounds feature ID set index", [this]() {
+      std::vector<uint8_t> attributeIDs{1, 1, 1, 1, 0, 0, 0};
+      AddFeatureIDsAsAttributeToModel(model, *pPrimitive, attributeIDs, 2, 0);
+
+      const std::vector<uint8_t> indices{0, 1, 2, 0, 2, 3, 4, 5, 6};
+      CreateIndicesForPrimitive(
+          model,
+          *pPrimitive,
+          AccessorSpec::Type::SCALAR,
+          AccessorSpec::ComponentType::UNSIGNED_BYTE,
+          indices);
+
+      Accessor& accessor = model.accessors.emplace_back();
+      accessor.count = 7;
+      pPrimitive->attributes.insert(
+          {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
+
+      FCesiumPrimitiveFeatures primitiveFeatures =
+          FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
+      const TArray<FCesiumFeatureIdSet>& featureIDSets =
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+              primitiveFeatures);
+
+      TestEqual(
+          "FeatureIDForOutOfBoundsSetIndex",
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+              primitiveFeatures,
+              0,
+              -1),
+          -1);
+      TestEqual(
+          "FeatureIDForOutOfBoundsSetIndex",
+          UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+              primitiveFeatures,
+              0,
+              2),
           -1);
     });
 
@@ -356,22 +394,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForNegativeFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 -1),
             -1);
         TestEqual(
             "FeatureIDForOutOfBoundsFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 2),
             -1);
       });
@@ -387,9 +420,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         const size_t numFaces = static_cast<size_t>(accessor.count / 3);
         for (size_t i = 0; i < numFaces; i++) {
@@ -397,7 +427,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
               "FeatureIDForFace",
               UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                   primitiveFeatures,
-                  featureIDSets[0],
                   static_cast<int64>(i)),
               attributeIDs[i * 3]);
         }
@@ -422,9 +451,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         const size_t numFaces = indices.size() / 3;
         for (size_t i = 0; i < numFaces; i++) {
@@ -432,7 +458,6 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
               "FeatureIDForFace",
               UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                   primitiveFeatures,
-                  featureIDSets[0],
                   static_cast<int64>(i)),
               attributeIDs[i * 3]);
         }
@@ -471,22 +496,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForNegativeFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 -1),
             -1);
         TestEqual(
             "FeatureIDForOutOfBoundsFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 2),
             -1);
       });
@@ -517,22 +537,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 0),
             0);
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 1),
             3);
       });
@@ -569,22 +584,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 0),
             0);
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 1),
             2);
       });
@@ -604,22 +614,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForNegativeFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 -1),
             -1);
         TestEqual(
             "FeatureIDForOutOfBoundsFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 10),
             -1);
       });
@@ -632,22 +637,17 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 0),
             0);
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 1),
             3);
       });
@@ -668,25 +668,85 @@ void FCesiumPrimitiveFeaturesSpec::Define() {
 
         FCesiumPrimitiveFeatures primitiveFeatures =
             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
-        const TArray<FCesiumFeatureIdSet>& featureIDSets =
-            UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
-                primitiveFeatures);
 
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 0),
             2);
         TestEqual(
             "FeatureIDForFace",
             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
                 primitiveFeatures,
-                featureIDSets[0],
                 1),
             3);
       });
     });
+
+    It("gets feature ID from correct set with specified feature ID set index",
+       [this]() {
+         // First feature ID set is attribute
+         std::vector<uint8_t> attributeIDs{1, 1, 1, 1, 0, 0, 0};
+         AddFeatureIDsAsAttributeToModel(
+             model,
+             *pPrimitive,
+             attributeIDs,
+             2,
+             0);
+
+         const std::vector<uint8_t> indices{0, 1, 2, 0, 2, 3, 4, 5, 6};
+         CreateIndicesForPrimitive(
+             model,
+             *pPrimitive,
+             AccessorSpec::Type::SCALAR,
+             AccessorSpec::ComponentType::UNSIGNED_BYTE,
+             indices);
+
+         Accessor& accessor = model.accessors.emplace_back();
+         accessor.count = 7;
+         pPrimitive->attributes.insert(
+             {"POSITION", static_cast<int32_t>(model.accessors.size() - 1)});
+
+         // Second feature ID set is implicit
+         FeatureId& implicitIDs = pExtension->featureIds.emplace_back();
+         implicitIDs.featureCount = 7;
+
+         FCesiumPrimitiveFeatures primitiveFeatures =
+             FCesiumPrimitiveFeatures(model, *pPrimitive, *pExtension);
+
+         const TArray<FCesiumFeatureIdSet>& featureIDSets =
+             UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDSets(
+                 primitiveFeatures);
+         TestEqual("FeatureIDSetCount", featureIDSets.Num(), 2);
+
+         int64 setIndex = 0;
+         for (size_t index = 0; index < indices.size(); index += 3) {
+           std::string label("FeatureIDAttribute" + std::to_string(index));
+           int64 faceIndex = static_cast<int64>(index) / 3;
+           int64 featureID = static_cast<int64>(attributeIDs[indices[index]]);
+           TestEqual(
+               FString(label.c_str()),
+               UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+                   primitiveFeatures,
+                   faceIndex,
+                   setIndex),
+               featureID);
+         }
+
+         setIndex = 1;
+         for (size_t index = 0; index < indices.size(); index += 3) {
+           std::string label("ImplicitFeatureID" + std::to_string(index));
+           int64 faceIndex = static_cast<int64>(index) / 3;
+           int64 featureID = static_cast<int64>(indices[index]);
+           TestEqual(
+               FString(label.c_str()),
+               UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
+                   primitiveFeatures,
+                   faceIndex,
+                   setIndex),
+               featureID);
+         }
+       });
   });
 }

@@ -2,14 +2,14 @@
 
 #pragma once
 
+#include "CesiumFeatureIdAttribute.h"
+#include "CesiumMetadataPrimitive.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumPrimitiveMetadata.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataUtilityBlueprintLibrary.generated.h"
-
-struct FCesiumFeatureIdAttribute;
 
 UCLASS()
 class CESIUMRUNTIME_API UCesiumMetadataUtilityBlueprintLibrary

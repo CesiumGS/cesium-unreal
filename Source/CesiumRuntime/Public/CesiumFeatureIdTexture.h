@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGltf/AccessorView.h"
 #include "CesiumGltf/FeatureIdTextureView.h"
 #include "Containers/UnrealString.h"
 #include "Kismet/BlueprintFunctionLibrary.h"

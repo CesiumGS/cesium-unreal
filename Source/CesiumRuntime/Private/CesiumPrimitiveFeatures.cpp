@@ -128,10 +128,15 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
 
 int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
     UPARAM(ref) const FCesiumPrimitiveFeatures& PrimitiveFeatures,
-    UPARAM(ref) const FCesiumFeatureIdSet& FeatureIDSet,
-    int64 FaceIndex) {
+    int64 FaceIndex,
+    int64 FeatureIDSetIndex) {
+  if (FeatureIDSetIndex < 0 ||
+      FeatureIDSetIndex > PrimitiveFeatures._featureIDSets.Num()) {
+    return -1;
+  }
+
   return UCesiumFeatureIdSetBlueprintLibrary::GetFeatureIDForVertex(
-      FeatureIDSet,
+      PrimitiveFeatures._featureIDSets[FeatureIDSetIndex],
       UCesiumPrimitiveFeaturesBlueprintLibrary::GetFirstVertexFromFace(
           PrimitiveFeatures,
           FaceIndex));
