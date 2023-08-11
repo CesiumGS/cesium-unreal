@@ -6,10 +6,11 @@ As of v2.0.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_struct
 
 ## Table of Contents
 
-- [Retrieving Feature IDs from `EXT_mesh_features`](#ext-mesh-features)
-- [Retrieving metadata from `EXT_structural_metadata`](#ext-structural-metadata)
+- [Retrieving Feature IDs From `EXT_mesh_features`](#ext-mesh-features)
+- [Retrieving Metadata From `EXT_structural_metadata`](#ext-structural-metadata)
+- [Styling with `EXT_mesh_features` and `EXT_structural_metadata`](#styling)
 
-<h2 id="ext-mesh-features">Retrieving Feature IDs from EXT_mesh_features</h2>
+<h2 id="ext-mesh-features">Retrieving Feature IDs From EXT_mesh_features</h2>
 
 Feature IDs and metadata were previously stored together in the `EXT_feature_metadata` extension. Now, in 3D Tiles 1.1, feature IDs are indicated by the `EXT_mesh_features` extension, which can exist independently of `EXT_structural_metadata`. The new extension does not result in many differences for the Cesium for Unreal API. The most notable change is the deprecation of `FCesiumMetadataPrimitive`, which has been replaced by the more appropriately named `FCesiumPrimitiveFeatures`.
 
@@ -61,15 +62,17 @@ Furthermore, if the **"Get As Feature ID Attribute"** or **"Get As Feature ID Te
 
 The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. It allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function. The **"Get Feature ID Sets Of Type"** function can also be used to filter for a specific type of feature IDs.
 
-Previously, users could use the **"Get Feature ID From Face ID"** function to sample feature IDs from a `FCesiumMetadataPrimitive`. This function has been deprecated in Cesium for Unreal v2.0.0. Instead, use **"Get Feature ID From Face"**. This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures` and `FCesiumFeatureIdSet`. Here's an example of how one might retrieve feature IDs from a primitive hit by a `LineTrace`:
+Previously, users could use the **"Get Feature ID From Face ID"** function to sample feature IDs from a `FCesiumMetadataPrimitive`. This function has been deprecated in Cesium for Unreal v2.0.0. Instead, use **"Get Feature ID From Face"**. This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures`. A primitive may have multiple feature ID sets, so this node allows a feature ID set to be specified by index. The index corresponds to the array retrieved by **"Get Feature ID Sets"**.
 
-![Example feature ID picking script](Images/getFeatureIdFromFaceExample.jpeg)
+Here's an example of how one might retrieve feature IDs from a primitive hit by a `LineTrace`:
 
-**Note**: This function does not interface well with feature ID textures or implicit feature IDs, since these feature ID types make it possible for a face to have multiple feature IDs. In these cases, the feature ID of the first vertex of the face is returned.
+![Example feature ID picking script](Images/getFeatureIdFromFace.jpeg)
+
+> **Note**: This function does not interface well with feature ID textures or implicit feature IDs, since these feature ID types make it possible for a face to have multiple feature IDs. In these cases, the feature ID of the first vertex of the face is returned.
 
 Additionally, **"Get First Vertex ID From Face ID"** has been deprecated. Use **"Get First Vertex From Face"** from `UCesiumPrimitiveFeaturesBlueprintLibrary` instead.
 
-<h2 id="ext-structural-metadata">Retrieving metadata from EXT_structural_metadata</h2>
+<h2 id="ext-structural-metadata">Retrieving Metadata From EXT_structural_metadata</h2>
 
 Building on the `EXT_feature_metadata` specification, `EXT_structural_metadata` adds new metadata types and other options to more granularly define a property. These expansive additions required a rework of the metadata system in Cesium for Unreal.
 
@@ -154,7 +157,7 @@ Functions have also been added to retrieve the data of a `FCesiumMetadataValue` 
 
 `FCesiumMetadataArray` has been renamed to `FCesiumPropertyArray`. It still represents an array of metadata entities where values are retrieved by index.
 
-Accordingly, `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary`. In previous versions, values were retrieved from arrays with a specific type (e.g., **"Get Integer"** or **"Get Boolean"**). However, in v2.0.0, only the **"Get Value"** function exists. This returns the value at the specified index as a `FCesiumMetadataValue`. The type of this value can be found by using **"Get Value Type"** on the resulting `FCesiumMetadataValue`, or **"GetElementValueType"** on the `FCesiumPropertyArray` it came from. Then, the value can be converted to the appropriate type.
+Accordingly, `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary`. In previous versions, values were retrieved from arrays with a specific type (e.g., **"Get Integer"** or **"Get Boolean"**). However, in v2.0.0, only the **"Get Value"** function exists. This returns the value at the specified index as a `FCesiumMetadataValue`. The type of this value can be found by using **"Get Value Type"** on the resulting `FCesiumMetadataValue`, or **"Get Element Value Type"** on the `FCesiumPropertyArray` it came from. Then, the value can be converted to the appropriate type.
 
 ![Get Value node in Blueprints](Images/getValue.jpeg)
 
@@ -177,7 +180,7 @@ The complete change list concerning property arrays is as follows:
 
 Property tables in `EXT_structural_metadata` evolved from the feature tables in `EXT_feature_metadata`. As such, `FCesiumFeatureTable` has been renamed to `FCesiumPropertyTable`, and `FCesiumMetadataProperty` to `FCesiumPropertyTableProperty` for clarity.
 
-`FCesiumPropertyTableStatus` has been added to indicate whether a property table is valid. Invalid property tables will not have any metadata properties. Additionally, a `FCesiumPropertyTableProperty` can now report its `FCesiumPropertyTablePropertyStatus`, indicating when it has experienced an error. 
+`ECesiumPropertyTableStatus` has been added to indicate whether a property table is valid. Invalid property tables will not have any metadata properties. Additionally, a `FCesiumPropertyTableProperty` can now report its `ECesiumPropertyTablePropertyStatus`, indicating when it has experienced an error. 
 
 Previously, if any properties were invalid, they would be omitted from the property table without explanation. Now, any invalid properties will still be represented in the property table, but can be queried for their status. 
 
@@ -206,7 +209,21 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
   - `GetVector4`
   - `GetMatrix`
 
-### TODO: Metadata Picking
+### Metadata Picking
+
+*Picking* refers to the act of selecting a feature (e.g., selecting by mouse click), and querying it for information. Typically, picking is used to access the metadata of a particular feature.
+
+in Cesium for Unreal v2.0.0, metadata picking can be easily implemented using a new Blueprint library. Using **"Line Trace By Channel"**, trace a line into the scene upon mouse click. Then, retrieve the **"Hit Component"** and **"Face Index"** from the resulting hit.
+
+![Break the hit result of a Line Trace By Channel](Images/breakHitResult.jpeg)
+
+Then, simply connect those values to the **"Get Metadata Values For Face"** node. This node queries the component for its `FCesiumPrimitiveFeatures`. Then, it finds the feature ID set specified by the index and gets the feature ID corresponding to the specified face. If the feature ID set has an associated property table index, the node uses the feature ID to retrieve values from the corresponding property table. The values are returned as `FCesiumMetadataValue` instances, mapped by property name.
+
+![Get Metadata Values For Face](Images/getMetadataValuesForFace.jpeg)
+
+To retrieve the values as strings, use **"Get Metadata Values For Face As Strings"** instead. This can be helpful for applications that want to display the values as text in a UI.
+
+![Get Metadata Values For Face](Images/getMetadataValuesForFaceAsStrings.jpeg)
 
 ### TODO: Feature Textures -> Property Textures
 
@@ -217,3 +234,61 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
 - Renamed `FCesiumMetadataModel` to `FCesiumModelMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on the root glTF model.
 - Added `FCesiumPrimitiveMetadata`, which represents the metadata specified by the `EXT_structural_metadata` extension on a glTF mesh primitive.
 - `FCesiumMetadataPrimitive` has been deprecated. Instead, use `FCesiumPrimitiveFeatures` to access the feature IDs of a primitive and `FCesiumPrimitiveMetadata` to access its metadata.
+
+<h2 id="styling">Styling with EXT_mesh_features and EXT_structural_metadata</h2>
+
+Previously, a `UCesiumEncodedMetadataComponent` could be attached to a Cesium3DTileset to make its `EXT_feature_metadata` accessible in Unreal materials. This component has been deprecated in Cesium for Unreal v2.0.0. Instead, use the `UCesiumFeaturesMetadataComponent`, which handles `EXT_mesh_features` and `EXT_structural_metadata` instead.
+
+![CesiumFeaturesMetadataComponent](Images/cesiumFeaturesMetadataComponent.jpeg)
+
+Like its predecessor, the `UCesiumFeaturesMetadataComponent` contains descriptions of the feature ID sets and metadata in the tileset. These descriptions can be manually specified, or automatically generated using the **"Auto Fill"** button. **"Auto Fill"** will populate the descriptions based on the tiles currently in-view in the editor.
+
+![Auto Fill button on the CesiumFeaturesMetadataComponent](Images/autoFill.jpeg)
+
+These descriptions indicate which feature ID sets or metadata should be *encoded* for access on the GPU. Encoding involves converting property values to a GPU-accessible type, then passing them into Unreal materials via texture. Everything that is listed in the descriptions will be encoded, and anything not listed will be skipped. As such, only include feature ID sets and metadata that will be actually used by the application. Otherwise, the unused properties may affect memory and performance.
+
+### Feature ID Set Descriptions
+
+In this description system, feature ID sets across the tileset will be distinguished by their type and name. If a feature ID set is not labeled in the `EXT_mesh_features` extension, a name will be generated for it. Additionally, a feature ID set can specify what property table it is associated with. 
+
+![An example feature ID set description](Images/featureIdDescriptionExample.jpeg)
+
+> **Note**: This implementation assumes that feature ID sets with the same name will have the same definition throughout the tileset. If a feature ID set is defined differently between two glTF primitives, it may lead to undefined behavior.
+>
+> For example, suppose that a primitive's `EXT_mesh_features` contains a feature ID attribute named **"FeatureIDSet0"**. In the same tileset, another primitive can contain a feature ID set named **"FeatureIdSet0"**, but define it as a feature ID texture instead. If the `UCesiumFeaturesMetadataComponent` finds the feature ID attribute first, it will assume that all subsequent instances of **"FeatureIdSet0"** are also attributes. This will result in unexpected behavior when it tries to handle **"FeatureIdSet0"** in the second primitive.
+
+The glTF primitives across the tileset can contain different and multiple feature IDs. As such, when using **"Auto Fill"**, the list of feature ID sets is aggregated from the `EXT_mesh_features` extensions across the *entire* tileset. This may not necessarily match the number or types of feature ID sets that a single primitive has.
+
+### Property Table Descriptions
+
+Property tables across the tileset will be distinguished by name. If a property table is not named in the `EXT_structural_metadata` extension, then the name of its class will be used instead. For example, if an unnamed property table provides data for the class `buildings`, it will labeled as "`buildings`" in the metadata description.
+
+![Multiple property table descriptions](Images/propertyTableDescriptionExample.jpeg)
+
+Each property table description contains a list of properties, also distinguished by name. **"Auto Fill"** will include *all* of the properties belonging to *all* property tables across the tileset. Remember to delete all unused properties to avoid unnecessary encoding.
+
+![Multiple property table property descriptions](Images/propertyTablePropertyDescriptionExample.jpeg)
+
+> **Note**: glTF models across a tileset can contain property tables with the same name, but different schemas. Additionally, property tables with the same name may only contain subsets of the properties defined in the schema. As such, not all properties in a property table description are necessary present in every glTF model.
+>
+> If a property is missing from a property table, it will pass default values to its corresponding parameter in the Unreal material. For example, if a scalar property is missing from a model, the material will receive zero values.
+
+### Property Descriptions (WIP)
+
+The "Property Details" display detailed information about the type of the property, as well as any special characteristics it has (e.g., if it is normalized). This information is taken from its class property definition in the `EXT_structural_metadata` extension.
+
+![Example property details](Images/propertyDetailsExample.jpeg)
+
+The "Encoding Details" describe how this property should be encoded for access in the Unreal material.
+
+![Example encoding details](Images/encodingDetailsExample.jpeg)
+
+Unfortunately, not all properties can be neatly encoded into textures. The following property types will not be encoded:
+
+- Enums
+- Strings that cannot be parsed as numbers or colors
+- Matrices
+- Variable-length arrays
+- Arrays of non-scalar and non-boolean elements
+
+Additionally, if a property contains arrays of fixed length, only up to the first four components will be encoded.
