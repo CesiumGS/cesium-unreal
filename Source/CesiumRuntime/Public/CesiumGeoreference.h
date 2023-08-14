@@ -604,7 +604,7 @@ public:
    * or attached to an actor with that component. Ensure that static actors only
    * exist in georeferenced sub-levels.
    */
-  UFUNCTION(CallInEditor, Category = "Cesium")
+  UFUNCTION(Category = "Cesium")
   void PlaceGeoreferenceOriginHere();
 #endif
 
@@ -765,5 +765,7 @@ private:
    * PersistentLevel.
    */
   bool _shouldManageSubLevels() const;
+
+  friend class FCesiumGeoreferenceCustomization;
 #pragma endregion
 };

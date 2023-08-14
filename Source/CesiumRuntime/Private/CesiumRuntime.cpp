@@ -5,6 +5,7 @@
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/GunzipAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
+#include "CesiumGeoreference.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Tracing.h"
 #include "HAL/FileManager.h"
@@ -52,7 +53,21 @@ void FCesiumRuntimeModule::StartupModule() {
       PluginShaderDir);
 }
 
-void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
+void FCesiumRuntimeModule::ShutdownModule() {
+
+#if WITH_EDITOR
+  // Unregister the detail customization for CesiumGeoreference
+  if (FModuleManager::Get().IsModuleLoaded("PropertyEditor")) {
+    FPropertyEditorModule& PropertyEditorModule =
+        FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
+            "PropertyEditor");
+    PropertyEditorModule.UnregisterCustomClassLayout(
+        ACesiumGeoreference::StaticClass()->GetFName());
+  }
+#endif // WITH_EDITOR
+
+  CESIUM_TRACE_SHUTDOWN();
+}
 
 #undef LOCTEXT_NAMESPACE
 
