@@ -31,6 +31,10 @@ private:
    * If this is null, the Component will find and use the first Georeference
    * Actor in the level, or create one if necessary. To get the active/effective
    * Georeference from Blueprints or C++, use ResolvedGeoreference instead.
+   *
+   * If setting this property changes the CesiumGeoreference, the globe position
+   * will be maintained and the Actor's transform will be updated according to
+   * the new CesiumGeoreference.
    */
   UPROPERTY(
       EditAnywhere,
@@ -97,6 +101,7 @@ private:
   UPROPERTY(
       Transient,
       BlueprintReadOnly,
+      BlueprintGetter = GetResolvedGeoreference,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
@@ -220,6 +225,18 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetGeoreference(TSoftObjectPtr<ACesiumGeoreference> NewGeoreference);
+
+  /**
+   * Gets the resolved georeference used by this component. This is not
+   * serialized because it may point to a Georeference in the PersistentLevel
+   * while this component is in a sub-level. If the Georeference property is
+   * specified, however then this property will have the same value.
+   *
+   * This property will be null before ResolveGeoreference is called, which
+   * happens automatically when the component is registered.
+   */
+  UFUNCTION(BlueprintGetter)
+  ACesiumGeoreference* GetResolvedGeoreference() const;
 
   /**
    * Resolves the Cesium Georeference to use with this Component. Returns

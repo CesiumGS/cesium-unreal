@@ -87,6 +87,11 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   }
 }
 
+ACesiumGeoreference*
+UCesiumGlobeAnchorComponent::GetResolvedGeoreference() const {
+  return this->ResolvedGeoreference;
+}
+
 FVector
 UCesiumGlobeAnchorComponent::GetEarthCenteredEarthFixedPosition() const {
   if (!this->_actorToECEFIsValid) {
@@ -184,9 +189,16 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   FMatrix alignmentRotation =
       FQuat::FindBetween(up, ellipsoidNormal).ToMatrix();
 
-  // Compute the new actor rotation and apply it
+  // Apply the new rotation to the Actor->ECEF transform.
+  // Note that FMatrix multiplication order is opposite glm::dmat4
+  // multiplication order!
   FMatrix newActorToECEF =
-      alignmentRotation * this->ActorToEarthCenteredEarthFixedMatrix;
+      this->ActorToEarthCenteredEarthFixedMatrix * alignmentRotation;
+
+  // We don't want to rotate the origin, though, so re-set it.
+  newActorToECEF.SetOrigin(
+      this->ActorToEarthCenteredEarthFixedMatrix.GetOrigin());
+
   this->_updateFromNativeGlobeAnchor(createNativeGlobeAnchor(newActorToECEF));
 
 #if WITH_EDITOR
@@ -250,16 +262,6 @@ void UCesiumGlobeAnchorComponent::InvalidateResolvedGeoreference() {
 }
 
 FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
-  if (!this->_actorToECEFIsValid || !this->ResolvedGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "CesiumGlobeAnchorComponent %s globe position is invalid because the component is not yet registered."),
-        *this->GetName());
-    return FVector(0.0);
-  }
-
   return UCesiumWgs84Ellipsoid::
       EarthCenteredEarthFixedToLongitudeLatitudeHeight(
           this->GetEarthCenteredEarthFixedPosition());
