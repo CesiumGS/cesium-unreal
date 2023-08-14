@@ -5,7 +5,6 @@
 #include "CesiumAsync/CachingAssetAccessor.h"
 #include "CesiumAsync/GunzipAssetAccessor.h"
 #include "CesiumAsync/SqliteCache.h"
-#include "CesiumGeoreference.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumUtility/Tracing.h"
 #include "HAL/FileManager.h"
@@ -53,9 +52,7 @@ void FCesiumRuntimeModule::StartupModule() {
       PluginShaderDir);
 }
 
-void FCesiumRuntimeModule::ShutdownModule() {
-  CESIUM_TRACE_SHUTDOWN();
-}
+void FCesiumRuntimeModule::ShutdownModule() { CESIUM_TRACE_SHUTDOWN(); }
 
 #undef LOCTEXT_NAMESPACE
 
