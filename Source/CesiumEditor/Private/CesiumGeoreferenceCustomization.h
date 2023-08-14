@@ -7,15 +7,15 @@
 
 /**
  * An implementation of the IDetailCustomization interface that customizes
- * the Details View of a CesiumGeoreference.
- *
- * It is registered in FCesiumRuntimeModule::StartupModule, and will
- * use a CesiumDegreesMinutesSecondsEditor for the OriginLatitude
- * and OriginLongitude properties.
+ * the Details View of a CesiumGeoreference. It is registered in
+ * FCesiumEditorModule::StartupModule.
  */
 class FCesiumGeoreferenceCustomization : public IDetailCustomization {
 public:
   virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
+
+  static void Register(FPropertyEditorModule& PropertyEditorModule);
+  static void Unregister(FPropertyEditorModule& PropertyEditorModule);
 
   static TSharedRef<IDetailCustomization> MakeInstance();
 

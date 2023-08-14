@@ -12,6 +12,20 @@
 #include "Widgets/Layout/SWrapBox.h"
 #include "Widgets/Text/STextBlock.h"
 
+void FCesiumGeoreferenceCustomization::Register(
+    FPropertyEditorModule& PropertyEditorModule) {
+  PropertyEditorModule.RegisterCustomClassLayout(
+      ACesiumGeoreference::StaticClass()->GetFName(),
+      FOnGetDetailCustomizationInstance::CreateStatic(
+          &FCesiumGeoreferenceCustomization::MakeInstance));
+}
+
+void FCesiumGeoreferenceCustomization::Unregister(
+    FPropertyEditorModule& PropertyEditorModule) {
+  PropertyEditorModule.UnregisterCustomClassLayout(
+      ACesiumGeoreference::StaticClass()->GetFName());
+}
+
 TSharedRef<IDetailCustomization>
 FCesiumGeoreferenceCustomization::MakeInstance() {
   return MakeShareable(new FCesiumGeoreferenceCustomization);
@@ -55,16 +69,6 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
   CesiumCategory.AddProperty(
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginPlacement));
 
-  TSharedPtr<class IPropertyHandle> LongitudeDecimalDegreesHandle =
-      DetailBuilder.GetProperty(
-          GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude));
-  IDetailPropertyRow& LongitudeRow =
-      CesiumCategory.AddProperty(LongitudeDecimalDegreesHandle);
-  LongitudeEditor = MakeShared<CesiumDegreesMinutesSecondsEditor>(
-      LongitudeDecimalDegreesHandle,
-      true);
-  LongitudeEditor->PopulateRow(LongitudeRow);
-
   TSharedPtr<class IPropertyHandle> LatitudeDecimalDegreesHandle =
       DetailBuilder.GetProperty(
           GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLatitude));
@@ -74,6 +78,16 @@ void FCesiumGeoreferenceCustomization::CustomizeDetails(
       LatitudeDecimalDegreesHandle,
       false);
   LatitudeEditor->PopulateRow(LatitudeRow);
+
+  TSharedPtr<class IPropertyHandle> LongitudeDecimalDegreesHandle =
+      DetailBuilder.GetProperty(
+          GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginLongitude));
+  IDetailPropertyRow& LongitudeRow =
+      CesiumCategory.AddProperty(LongitudeDecimalDegreesHandle);
+  LongitudeEditor = MakeShared<CesiumDegreesMinutesSecondsEditor>(
+      LongitudeDecimalDegreesHandle,
+      true);
+  LongitudeEditor->PopulateRow(LongitudeRow);
 
   CesiumCategory.AddProperty(
       GET_MEMBER_NAME_CHECKED(ACesiumGeoreference, OriginHeight));

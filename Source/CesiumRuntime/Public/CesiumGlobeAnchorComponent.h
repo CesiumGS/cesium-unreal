@@ -663,5 +663,7 @@ private:
    */
   UFUNCTION()
   void _onGeoreferenceChanged();
+
+  friend class FCesiumGlobeAnchorCustomization;
 #pragma endregion
 };

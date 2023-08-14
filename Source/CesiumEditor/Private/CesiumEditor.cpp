@@ -5,13 +5,13 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCommands.h"
 #include "CesiumGeoreferenceCustomization.h"
+#include "CesiumGlobeAnchorCustomization.h"
 #include "CesiumIonPanel.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumIonTokenTroubleshooting.h"
 #include "CesiumPanel.h"
 #include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
-#include "ClassIconFinder.h"
 #include "Editor.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructure.h"
 #include "Editor/WorkspaceMenuStructure/Public/WorkspaceMenuStructureModule.h"
@@ -24,8 +24,6 @@
 #include "PropertyEditorModule.h"
 #include "Styling/SlateStyle.h"
 #include "Styling/SlateStyleRegistry.h"
-#include "UnrealAssetAccessor.h"
-#include "UnrealTaskProcessor.h"
 
 constexpr int MaximumOverlaysWithDefaultMaterial = 3;
 
@@ -100,35 +98,30 @@ createButtonBoxBrush(const FString& name, const FLinearColor& color) {
 namespace {
 
 /**
- * Registers the `FCesiumGeoreferenceCustomization` in the
- * `PropertyEditor` module, to show a DMS (Degree-Minute-Second)
- * editing component for the latitude and longitude of a
- * Georeference.
+ * Registers our details panel customizations with the property editor.
  */
-void registerGeoreferenceDetailCustomization() {
+void registerDetailCustomization() {
   FPropertyEditorModule& PropertyEditorModule =
       FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
           "PropertyEditor");
 
-  PropertyEditorModule.RegisterCustomClassLayout(
-      ACesiumGeoreference::StaticClass()->GetFName(),
-      FOnGetDetailCustomizationInstance::CreateStatic(
-          &FCesiumGeoreferenceCustomization::MakeInstance));
+  FCesiumGeoreferenceCustomization::Register(PropertyEditorModule);
+  FCesiumGlobeAnchorCustomization::Register(PropertyEditorModule);
 
   PropertyEditorModule.NotifyCustomizationModuleChanged();
 }
 
 /**
- * Undo the registration that was done in
- * `registerGeoreferenceDetailCustomization`
+ * Undo the registration that was done in `registerDetailCustomization`
  */
-void unregisterGeoreferenceDetailCustomization() {
+void unregisterDetailCustomization() {
   if (FModuleManager::Get().IsModuleLoaded("PropertyEditor")) {
     FPropertyEditorModule& PropertyEditorModule =
         FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
             "PropertyEditor");
-    PropertyEditorModule.UnregisterCustomClassLayout(
-        ACesiumGeoreference::StaticClass()->GetFName());
+
+    FCesiumGeoreferenceCustomization::Unregister(PropertyEditorModule);
+    FCesiumGlobeAnchorCustomization::Unregister(PropertyEditorModule);
   }
 }
 
@@ -266,7 +259,7 @@ void FCesiumEditorModule::StartupModule() {
 
   IModuleInterface::StartupModule();
 
-  registerGeoreferenceDetailCustomization();
+  registerDetailCustomization();
 
   this->_pIonSession =
       std::make_shared<CesiumIonSession>(getAsyncSystem(), getAssetAccessor());
@@ -389,7 +382,7 @@ void FCesiumEditorModule::ShutdownModule() {
   FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TEXT("Cesium"));
   FCesiumCommands::Unregister();
   IModuleInterface::ShutdownModule();
-  unregisterGeoreferenceDetailCustomization();
+  unregisterDetailCustomization();
   _pModule = nullptr;
 }
 
