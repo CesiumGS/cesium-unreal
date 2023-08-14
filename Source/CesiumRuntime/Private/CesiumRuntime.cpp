@@ -54,18 +54,6 @@ void FCesiumRuntimeModule::StartupModule() {
 }
 
 void FCesiumRuntimeModule::ShutdownModule() {
-
-#if WITH_EDITOR
-  // Unregister the detail customization for CesiumGeoreference
-  if (FModuleManager::Get().IsModuleLoaded("PropertyEditor")) {
-    FPropertyEditorModule& PropertyEditorModule =
-        FModuleManager::LoadModuleChecked<FPropertyEditorModule>(
-            "PropertyEditor");
-    PropertyEditorModule.UnregisterCustomClassLayout(
-        ACesiumGeoreference::StaticClass()->GetFName());
-  }
-#endif // WITH_EDITOR
-
   CESIUM_TRACE_SHUTDOWN();
 }
 
