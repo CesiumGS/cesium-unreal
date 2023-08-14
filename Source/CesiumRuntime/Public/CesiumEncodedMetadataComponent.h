@@ -20,13 +20,21 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
  *
  */
 UENUM()
-enum class ECesiumPropertyComponentType_DEPRECATED : uint8 { Uint8, Float };
+enum class ECesiumPropertyComponentType_DEPRECATED : uint8 {
+  Uint8_DEPRECATED,
+  Float_DEPRECATED
+};
 
 /**
  * @brief The property type.
  */
 UENUM()
-enum class ECesiumPropertyType_DEPRECATED : uint8 { Scalar, Vec2, Vec3, Vec4 };
+enum class ECesiumPropertyType_DEPRECATED : uint8 {
+  Scalar_DEPRECATED,
+  Vec2_DEPRECATED,
+  Vec3_DEPRECATED,
+  Vec4_DEPRECATED
+};
 
 /**
  * @brief Describes how this feature table is accessed. Either through feature
@@ -34,10 +42,10 @@ enum class ECesiumPropertyType_DEPRECATED : uint8 { Scalar, Vec2, Vec3, Vec4 };
  */
 UENUM()
 enum class ECesiumFeatureTableAccessType_DEPRECATED : uint8 {
-  Unknown,
-  Texture,
-  Attribute,
-  Mixed
+  Unknown_DEPRECATED,
+  Texture_DEPRECATED,
+  Attribute_DEPRECATED,
+  Mixed_DEPRECATED
 };
 
 // Note that these don't exhaustively cover the possibilities of glTF metadata
@@ -71,13 +79,14 @@ struct CESIUMRUNTIME_API FPropertyDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumPropertyComponentType_DEPRECATED ComponentType =
-      ECesiumPropertyComponentType_DEPRECATED::Float;
+      ECesiumPropertyComponentType_DEPRECATED::Float_DEPRECATED;
 
   /**
    * @brief The property type.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyType_DEPRECATED Type = ECesiumPropertyType_DEPRECATED::Scalar;
+  ECesiumPropertyType_DEPRECATED Type =
+      ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED;
 
   /**
    * @brief If ComponentType==Uint8, this indicates whether to normalize into a
@@ -118,7 +127,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
   ECesiumFeatureTableAccessType_DEPRECATED AccessType =
-      ECesiumFeatureTableAccessType_DEPRECATED::Unknown;
+      ECesiumFeatureTableAccessType_DEPRECATED::Unknown_DEPRECATED;
 
   /**
    * @brief If the AccessType==Texture, this string represents the channel of
@@ -129,7 +138,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "AccessType==ECesiumFeatureTableAccessType::Texture_DEPRECATED"))
+               "AccessType==ECesiumFeatureTableAccessType_DEPRECATED::Texture_DEPRECATED"))
   FString Channel;
 
   /**
@@ -169,7 +178,8 @@ struct CESIUMRUNTIME_API FFeatureTexturePropertyDescription {
    * @brief The property type.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  ECesiumPropertyType_DEPRECATED Type = ECesiumPropertyType_DEPRECATED::Scalar;
+  ECesiumPropertyType_DEPRECATED Type =
+      ECesiumPropertyType_DEPRECATED::Scalar_DEPRECATED;
 
   /**
    * @brief If ComponentType==Uint8, this indicates whether to normalize into a

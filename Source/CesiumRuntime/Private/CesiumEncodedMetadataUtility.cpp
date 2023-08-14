@@ -122,13 +122,13 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     // case ECesiumPropertyType::Scalar:
     //  expectedComponentCount = 1;
     //  break;
-    case ECesiumPropertyType_DEPRECATED::Vec2:
+    case ECesiumPropertyType_DEPRECATED::Vec2_DEPRECATED:
       expectedComponentCount = 2;
       break;
-    case ECesiumPropertyType_DEPRECATED::Vec3:
+    case ECesiumPropertyType_DEPRECATED::Vec3_DEPRECATED:
       expectedComponentCount = 3;
       break;
-    case ECesiumPropertyType_DEPRECATED::Vec4:
+    case ECesiumPropertyType_DEPRECATED::Vec4_DEPRECATED:
       expectedComponentCount = 4;
     };
 
@@ -144,7 +144,7 @@ EncodedMetadataFeatureTable encodeMetadataFeatureTableAnyThreadPart(
     ECesiumMetadataPackedGpuType_DEPRECATED gpuType =
         ECesiumMetadataPackedGpuType_DEPRECATED::None_DEPRECATED;
     if (pExpectedProperty->ComponentType ==
-        ECesiumPropertyComponentType_DEPRECATED::Uint8) {
+        ECesiumPropertyComponentType_DEPRECATED::Uint8_DEPRECATED) {
       gpuType = ECesiumMetadataPackedGpuType_DEPRECATED::Uint8_DEPRECATED;
     } else /*if (expected type is float)*/ {
       gpuType = ECesiumMetadataPackedGpuType_DEPRECATED::Float_DEPRECATED;
@@ -486,7 +486,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
     const FString& featureTableName = expectedFeatureTable.Name;
 
     if (expectedFeatureTable.AccessType ==
-        ECesiumFeatureTableAccessType_DEPRECATED::Texture) {
+        ECesiumFeatureTableAccessType_DEPRECATED::Texture_DEPRECATED) {
 
       const FCesiumFeatureIdTexture* pFeatureIdTexture =
           featureIdTextures.FindByPredicate([&featureTableName](
@@ -576,7 +576,7 @@ EncodedMetadataPrimitive encodeMetadataPrimitiveAnyThreadPart(
       }
     } else if (
         expectedFeatureTable.AccessType ==
-        ECesiumFeatureTableAccessType_DEPRECATED::Attribute) {
+        ECesiumFeatureTableAccessType_DEPRECATED::Attribute_DEPRECATED) {
       for (size_t i = 0; i < featureIdAttributes.Num(); ++i) {
         const FCesiumFeatureIdAttribute& featureIdAttribute =
             featureIdAttributes[i];
