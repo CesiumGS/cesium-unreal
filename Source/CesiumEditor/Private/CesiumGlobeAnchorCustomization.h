@@ -4,17 +4,19 @@
 
 #include "CesiumDegreesMinutesSecondsEditor.h"
 #include "IDetailCustomization.h"
+#include "TickableEditorObject.h"
 #include "CesiumGlobeAnchorCustomization.generated.h"
 
 class IDetailCategoryBuilder;
 
 UCLASS()
-class UCesiumGlobeAnchorRotationEastSouthUp : public UObject {
+class UCesiumGlobeAnchorRotationEastSouthUp : public UObject,
+                                              public FTickableEditorObject {
   GENERATED_BODY()
 
 public:
   UPROPERTY()
-  class UCesiumGlobeAnchorComponent* Component;
+  class UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   UPROPERTY(EditAnywhere)
   double Pitch = 1.0;
@@ -27,6 +29,12 @@ public:
 
   virtual void PostEditChangeProperty(
       struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
+  void Initialize(UCesiumGlobeAnchorComponent* GlobeAnchor);
+
+  // Inherited via FTickableEditorObject
+  void Tick(float DeltaTime) override;
+  TStatId GetStatId() const override;
 };
 
 /**

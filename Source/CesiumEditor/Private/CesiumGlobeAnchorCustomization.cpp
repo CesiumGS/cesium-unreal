@@ -15,9 +15,31 @@
 void UCesiumGlobeAnchorRotationEastSouthUp::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeProperty(PropertyChangedEvent);
-  this->Component->SetEastSouthUpRotation(
+  this->GlobeAnchor->SetEastSouthUpRotation(
       FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
-  this->Component->Modify();
+  this->GlobeAnchor->Modify();
+}
+
+void UCesiumGlobeAnchorRotationEastSouthUp::Initialize(
+    UCesiumGlobeAnchorComponent* GlobeAnchorComponent) {
+  this->GlobeAnchor = GlobeAnchorComponent;
+  this->Tick(0.0f);
+}
+
+void UCesiumGlobeAnchorRotationEastSouthUp::Tick(float DeltaTime) {
+  if (this->GlobeAnchor) {
+    FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
+    FRotator rotator = rotation.Rotator();
+    this->Roll = rotator.Roll;
+    this->Pitch = rotator.Pitch;
+    this->Yaw = rotator.Yaw;
+  }
+}
+
+TStatId UCesiumGlobeAnchorRotationEastSouthUp::GetStatId() const {
+  RETURN_QUICK_DECLARE_CYCLE_STAT(
+      UCesiumGlobeAnchorRotationEastSouthUp,
+      STATGROUP_Tickables);
 }
 
 void FCesiumGlobeAnchorCustomization::Register(
@@ -180,12 +202,7 @@ void FCesiumGlobeAnchorCustomization::UpdateEastSouthUpValues() {
     if (!GlobeAnchor)
       continue;
 
-    FQuat rotation = GlobeAnchor->GetEastSouthUpRotation();
-    FRotator rotator = rotation.Rotator();
-    this->EastSouthUpObjects[i]->Component = GlobeAnchor;
-    this->EastSouthUpObjects[i]->Roll = rotator.Roll;
-    this->EastSouthUpObjects[i]->Pitch = rotator.Pitch;
-    this->EastSouthUpObjects[i]->Yaw = rotator.Yaw;
+    this->EastSouthUpObjects[i]->Initialize(GlobeAnchor);
     this->EastSouthUpPointers[i] = this->EastSouthUpObjects[i].Get();
   }
 }
