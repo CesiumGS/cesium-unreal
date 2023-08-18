@@ -79,9 +79,6 @@ jobs:
       - name: Evaluate tests results
         if: always()
         run: |
-          $env:TEST_STATUS="Pending"
-          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
-
           cd "$env:TESTS_PROJECT_LOGS"
 
           # Define function to parse json recursively
@@ -97,14 +94,12 @@ jobs:
                   else {
                       # If "state:fail" entry is found in json, set failure state
                       if($name -eq "state" -and $value -eq "fail") {
-                          $env:TEST_STATUS="Failure"
-                          return
+                          exit -1
                       }
                   }
               }
           }
 
-          $env:TEST_STATUS="Success" # Set status to success at start
           $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
           Parse-JsonRecursively -jsonObject $json # Parse json
-          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV # Export result to github environment variables          
+          
