@@ -61,21 +61,23 @@ jobs:
           dir
           Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Run Cesium tests
-        continue-on-error: true
-        timeout-minutes: 60
+        timeout-minutes: 60      
         run: |
           cd "${{ inputs.unreal-binaries-path }}"
           ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
       - name: Display tests log 
+        if: always()
         run: |
           cd "$env:TESTS_PROJECT_LOGS"  
           dir 
           Get-Content TestsProject.log          
       - name: Display tests report
+        if: always()
         run: |
           cd "$env:TESTS_PROJECT_LOGS"
           Get-Content index.json
       - name: Evaluate tests results
+        if: always()
         run: |
           $env:TEST_STATUS="Pending"
           echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
