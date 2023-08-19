@@ -81,21 +81,25 @@ jobs:
         run: |
           cd "$env:TESTS_PROJECT_LOGS"
 
+          $failedTests = ""
+          $succeededTests = ""
+
           function Parse-Test($jsonObject) {
+            $currTestName = ""
             foreach ($property in $jsonObject.PSObject.Properties) {
                 $name = $property.Name
                 $value = $property.Value
 
                 if($name -eq "fullTestPath") {
-                  echo "Test Name: $value"
+                  $currTestName = $value
                 }
                 
                 if($name -eq "state") {
                    if ($value -eq "Success") {
-                     echo "  Result: Success"
+                     $global:succeededTests += $currTestName + "`n"
                    }
                    else {
-                     echo "  Result: FAILED"
+                     $global:failedTests += $currTestName + "`n"
                    }
                 }
             }
@@ -118,3 +122,22 @@ jobs:
           $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
           Parse-Json -jsonObject $json # Parse json
           
+          echo " "
+          if ($failedTests.Length -eq 0) {
+            echo "All tests passed:"
+            echo "-----------------"
+            echo "$succeededTests"
+
+            exit 0
+          }
+          else {
+            echo "FAILED tests:"
+            echo "-------------"
+            echo "$failedTests"
+
+            echo "Passing tests:"
+            echo "--------------"
+            echo "$succeededTests"
+
+            exit -1
+          }
