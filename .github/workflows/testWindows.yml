@@ -131,13 +131,13 @@ jobs:
             exit 0
           }
           else {
-            echo "FAILED tests:"
-            echo "-------------"
-            echo "$failedTests"
-
             echo "Passing tests:"
             echo "--------------"
             echo "$succeededTests"
+
+            echo "FAILED tests:"
+            echo "-------------"
+            echo "$failedTests"
 
             exit -1
           }
