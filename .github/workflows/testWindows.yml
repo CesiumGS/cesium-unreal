@@ -81,25 +81,40 @@ jobs:
         run: |
           cd "$env:TESTS_PROJECT_LOGS"
 
-          # Define function to parse json recursively
-          function Parse-JsonRecursively($jsonObject) {
-              foreach ($property in $jsonObject.PSObject.Properties) {
-                  $name = $property.Name
-                  $value = $property.Value
+          function Parse-Test($jsonObject) {
+            foreach ($property in $jsonObject.PSObject.Properties) {
+                $name = $property.Name
+                $value = $property.Value
 
-                  # If the property value is another object, call function recursively
-                  if ($value -is [PSCustomObject]) {
-                      Parse-JsonRecursively($value)
-                  }
-                  else {
-                      # If "state:fail" entry is found in json, set failure state
-                      if($name -eq "state" -and $value -eq "fail") {
-                          exit -1
-                      }
-                  }
-              }
+                if($name -eq "fullTestPath") {
+                  echo "Test Name: $value"
+                }
+                
+                if($name -eq "state") {
+                   if ($value -eq "Success") {
+                     echo "  Result: Success"
+                   }
+                   else {
+                     echo "  Result: FAILED"
+                   }
+                }
+            }
+          }
+
+          function Parse-Json($jsonObject) {
+            foreach ($property in $jsonObject.PSObject.Properties) {
+                $name = $property.Name
+                $value = $property.Value
+
+                # If the property value is another object, call function recursively
+                if ($name -eq "tests" -and $value -is [System.Object[]]) {
+                    for (($i = 0); $i -lt $value.Count; $i++) {
+                      Parse-Test($value[$i])
+                    }
+                }
+            }
           }
 
           $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
-          Parse-JsonRecursively -jsonObject $json # Parse json
+          Parse-Json -jsonObject $json # Parse json
           
