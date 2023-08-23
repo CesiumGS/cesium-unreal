@@ -19,6 +19,13 @@
 #include "CesiumTestHelpers.h"
 #include "GlobeAwareDefaultPawn.h"
 
+//
+// For debugging, it may help to create the scene in the editor
+// After the test is run, you can play with their settings and even run PIE
+//
+#define CREATE_TEST_IN_EDITOR_WORLD 0
+
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTest,
     "Cesium.LoadTest",
@@ -30,15 +37,18 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   // Programmatically set up the world
   //
 
-  UWorld* world = CesiumTestHelpers::getGlobalWorldContext();
-  ULevel* level = world->GetCurrentLevel();
-
-  // Create a camera
-  ACesiumCameraManager* cameraManager =
-      ACesiumCameraManager::GetDefaultCameraManager(world);
-  TestNotNull("Camera manager pointer is valid", cameraManager);
+#if CREATE_TEST_IN_EDITOR_WORLD
+  UWorld* world = FAutomationEditorCommonUtils::CreateNewMap();
+#else
+  UWorld* world = UWorld::CreateWorld(EWorldType::Game, false);
+  FWorldContext& context = GEngine->CreateNewWorldContext(EWorldType::Game);
+  context.SetCurrentWorld(world);
+#endif
+  TestNotNull("world is valid", world);
 
   // Create world objects
+  ACesiumCameraManager* cameraManager =
+      ACesiumCameraManager::GetDefaultCameraManager(world);
   ACesiumGeoreference* georeference =
       ACesiumGeoreference::GetDefaultGeoreference(world);
   ACesiumSunSky* sunSkyActor = world->SpawnActor<ACesiumSunSky>();
@@ -51,11 +61,12 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   AGlobeAwareDefaultPawn* pawnActor = world->SpawnActor<AGlobeAwareDefaultPawn>(
       Cast<UClass>(DynamicPawn.LoadSynchronous()));
 
-  TestNotNull("Georeference pointer is valid", georeference);
-  TestNotNull("SunSky actor pointer is valid", sunSkyActor);
-  TestNotNull("Tileset actor pointer is valid", tilesetActor);
-  TestNotNull("PlayerStart actor pointer is valid", playerStartActor);
-  TestNotNull("Dynamic pawn actor pointer is valid", pawnActor);
+  TestNotNull("cameraManager is valid", cameraManager);
+  TestNotNull("georeference is valid", georeference);
+  TestNotNull("sunSkyActor is valid", sunSkyActor);
+  TestNotNull("tilesetActor is valid", tilesetActor);
+  TestNotNull("playerStartActor is valid", playerStartActor);
+  TestNotNull("pawnActor is valid", pawnActor);
 
   // Configure similar to Google Tiles sample
   FVector targetOrigin(-122.083969, 37.424492, 142.859116);
@@ -68,6 +79,13 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   pawnActor->SetActorLocation(FVector(0, 0, 0));
   pawnActor->SetActorRotation(FRotator(-25, 95, 0));
   pawnActor->AutoPossessPlayer = EAutoReceiveInput::Player0;
+
+#if CREATE_TEST_IN_EDITOR_WORLD
+  // Let all objects persist
+#else
+  GEngine->DestroyWorldContext(world);
+  world->DestroyWorld(false);
+#endif
 
   return true;
 }
