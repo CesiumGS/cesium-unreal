@@ -25,7 +25,6 @@
 //
 #define CREATE_TEST_IN_EDITOR_WORLD 0
 
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTest,
     "Cesium.LoadTest",
