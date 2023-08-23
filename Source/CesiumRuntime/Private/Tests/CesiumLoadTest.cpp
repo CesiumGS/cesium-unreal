@@ -9,6 +9,7 @@
 #include "Editor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerStart.h"
 
 #include "Cesium3DTileset.h"
 #include "CesiumCameraManager.h"
@@ -42,6 +43,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
       ACesiumGeoreference::GetDefaultGeoreference(world);
   ACesiumSunSky* sunSkyActor = world->SpawnActor<ACesiumSunSky>();
   ACesium3DTileset* tilesetActor = world->SpawnActor<ACesium3DTileset>();
+  APlayerStart* playerStartActor = world->SpawnActor<APlayerStart>();
 
   FSoftObjectPath objectPath(
       TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
@@ -52,6 +54,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   TestNotNull("Georeference pointer is valid", georeference);
   TestNotNull("SunSky actor pointer is valid", sunSkyActor);
   TestNotNull("Tileset actor pointer is valid", tilesetActor);
+  TestNotNull("PlayerStart actor pointer is valid", playerStartActor);
   TestNotNull("Dynamic pawn actor pointer is valid", pawnActor);
 
   // Configure similar to Google Tiles sample
@@ -62,7 +65,9 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(targetOrigin);
   tilesetActor->SetUrl(targetUrl);
   tilesetActor->SetTilesetSource(ETilesetSource::FromUrl);
+  pawnActor->SetActorLocation(FVector(0, 0, 0));
   pawnActor->SetActorRotation(FRotator(-25, 95, 0));
+  pawnActor->AutoPossessPlayer = EAutoReceiveInput::Player0;
 
   return true;
 }
