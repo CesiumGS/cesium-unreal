@@ -2,22 +2,21 @@
 
 #if WITH_EDITOR
 
+#include "EngineAnalytics.h"
+#include "Interfaces/IAnalyticsProvider.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
-#include "Interfaces/IAnalyticsProvider.h"
-#include "EngineAnalytics.h"
 
+#include "CesiumRuntime.h"
 #include "Editor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "CesiumRuntime.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTest,
     "Cesium.LoadTest",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
-
 
 bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   FString MapName = "MyMap";
