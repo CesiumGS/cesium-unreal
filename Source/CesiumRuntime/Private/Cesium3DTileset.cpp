@@ -32,6 +32,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
+#include "CesiumTileExcluder.h"
 #include "CesiumTransforms.h"
 #include "CesiumViewExtension.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -976,6 +977,9 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
+  TArray<UCesiumTileExcluder*> tileExcluders;
+  this->GetComponents<UCesiumTileExcluder>(tileExcluders);
+
   const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
       this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
   if (pEncodedMetadataDescriptionComponent) {
@@ -1142,6 +1146,12 @@ void ACesium3DTileset::LoadTileset() {
     }
   }
 
+  for (UCesiumTileExcluder* pTileExcluder : tileExcluders) {
+    if (pTileExcluder->IsActive()) {
+      pTileExcluder->AddToTileset();
+    }
+  }
+
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(
@@ -1206,6 +1216,14 @@ void ACesium3DTileset::DestroyTileset() {
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
       pOverlay->RemoveFromTileset();
+    }
+  }
+
+  TArray<UCesiumTileExcluder*> tileExcluders;
+  this->GetComponents<UCesiumTileExcluder>(tileExcluders);
+  for (UCesiumTileExcluder* pTileExcluder : tileExcluders) {
+    if (pTileExcluder->IsActive()) {
+      pTileExcluder->RemoveFromTileset();
     }
   }
 
