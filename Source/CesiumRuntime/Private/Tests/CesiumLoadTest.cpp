@@ -62,46 +62,34 @@ void tickWorld(UWorld* world, double time) {
   };
 }
 
-void setupForGoogleTiles(UWorld* world) {
-  ACesiumCameraManager* cameraManager =
-      ACesiumCameraManager::GetDefaultCameraManager(world);
-  ACesiumGeoreference* georeference =
-      ACesiumGeoreference::GetDefaultGeoreference(world);
-  ACesiumSunSky* sunSky = world->SpawnActor<ACesiumSunSky>();
-  ACesium3DTileset* tileset = world->SpawnActor<ACesium3DTileset>();
-  APlayerStart* playerStart = world->SpawnActor<APlayerStart>();
-
-  FSoftObjectPath objectPath(
-      TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
-  TSoftObjectPtr<UObject> DynamicPawn = TSoftObjectPtr<UObject>(objectPath);
-  AGlobeAwareDefaultPawn* pawn = world->SpawnActor<AGlobeAwareDefaultPawn>(
-      Cast<UClass>(DynamicPawn.LoadSynchronous()));
-  pawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
+void setupForGoogleTiles(
+    UWorld* world,
+    ACesiumGeoreference* georeference,
+    AGlobeAwareDefaultPawn* pawn,
+    std::vector<ACesium3DTileset*>& createdTilesets) {
 
   FVector targetOrigin(-122.083969, 37.424492, 142.859116);
   FString targetUrl(
       "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
 
   georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(targetOrigin);
-  tileset->SetUrl(targetUrl);
-  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+
   pawn->SetActorLocation(FVector(0, 0, 0));
   pawn->SetActorRotation(FRotator(-25, 95, 0));
+
+  ACesium3DTileset* tileset = world->SpawnActor<ACesium3DTileset>();
+  tileset->SetUrl(targetUrl);
+  tileset->SetTilesetSource(ETilesetSource::FromUrl);
+  tileset->SetActorLabel(TEXT("Google Photorealistic 3D Tiles"));
+
+  createdTilesets.push_back(tileset);
 }
 
-void setupForDenver(UWorld* world) {
-  ACesiumCameraManager* cameraManager =
-      ACesiumCameraManager::GetDefaultCameraManager(world);
-  ACesiumGeoreference* georeference =
-      ACesiumGeoreference::GetDefaultGeoreference(world);
-  ACesiumSunSky* sunSky = world->SpawnActor<ACesiumSunSky>();
-  APlayerStart* playerStart = world->SpawnActor<APlayerStart>();
-  FSoftObjectPath objectPath(
-      TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
-  TSoftObjectPtr<UObject> DynamicPawn = TSoftObjectPtr<UObject>(objectPath);
-  AGlobeAwareDefaultPawn* pawn = world->SpawnActor<AGlobeAwareDefaultPawn>(
-      Cast<UClass>(DynamicPawn.LoadSynchronous()));
-  pawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
+void setupForDenver(
+    UWorld* world,
+    ACesiumGeoreference* georeference,
+    AGlobeAwareDefaultPawn* pawn,
+    std::vector<ACesium3DTileset*>& createdTilesets) {
 
   FVector targetOrigin(-104.988892, 39.743462, 1798.679443);
   FString ionToken(
@@ -137,6 +125,9 @@ void setupForDenver(UWorld* world) {
   aerometrexTileset->SetIonAccessToken(ionToken);
   aerometrexTileset->SetMaximumScreenSpaceError(2.0);
   aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
+
+  createdTilesets.push_back(worldTerrainTileset);
+  createdTilesets.push_back(aerometrexTileset);
 }
 
 bool FCesiumLoadTest::RunTest(const FString& Parameters) {
@@ -154,11 +145,48 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
 #endif
   TestNotNull("world is valid", world);
 
-  // Configure similar to Google Tiles sample
-  // setupForGoogleTiles(world);
-  setupForDenver(world);
+  // Create common objects across all locations
+  ACesiumCameraManager* cameraManager =
+      ACesiumCameraManager::GetDefaultCameraManager(world);
+  ACesiumGeoreference* georeference =
+      ACesiumGeoreference::GetDefaultGeoreference(world);
+  ACesiumSunSky* sunSky = world->SpawnActor<ACesiumSunSky>();
+  APlayerStart* playerStart = world->SpawnActor<APlayerStart>();
 
-  world->BeginPlay();
+  FSoftObjectPath objectPath(
+      TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
+  TSoftObjectPtr<UObject> DynamicPawn = TSoftObjectPtr<UObject>(objectPath);
+  AGlobeAwareDefaultPawn* pawn = world->SpawnActor<AGlobeAwareDefaultPawn>(
+      Cast<UClass>(DynamicPawn.LoadSynchronous()));
+  pawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
+
+  // Configure location specific objects
+  std::vector<ACesium3DTileset*> tilesets;
+  const size_t locationIndex = 1;
+  switch (locationIndex) {
+  case 0:
+    setupForGoogleTiles(world, georeference, pawn, tilesets);
+    break;
+  case 1:
+    setupForDenver(world, georeference, pawn, tilesets);
+    break;
+  default:
+    break;
+  }
+
+  // Halt tileset updates and reset them
+  std::vector<ACesium3DTileset*>::iterator it;
+  for (it = tilesets.begin(); it != tilesets.end(); ++it) {
+    ACesium3DTileset* tileset = *it;
+    tileset->SuspendUpdate = true;
+    tileset->RefreshTileset();
+  }
+
+  // Turn updates back on
+  for (it = tilesets.begin(); it != tilesets.end(); ++it) {
+    ACesium3DTileset* tileset = *it;
+    tileset->SuspendUpdate = false;
+  }
 
   // Spin for 5 seconds, letting our game objects tick
   const double testMaxTime = 5.0;
