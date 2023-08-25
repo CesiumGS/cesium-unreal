@@ -14,6 +14,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCameraManager.h"
 #include "CesiumGeoreference.h"
+#include "CesiumIonRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
 #include "CesiumTestHelpers.h"
@@ -94,10 +95,7 @@ void setupForDenver(UWorld* world) {
   ACesiumGeoreference* georeference =
       ACesiumGeoreference::GetDefaultGeoreference(world);
   ACesiumSunSky* sunSky = world->SpawnActor<ACesiumSunSky>();
-  ACesium3DTileset* worldTileset = world->SpawnActor<ACesium3DTileset>();
-  ACesium3DTileset* denverTileset = world->SpawnActor<ACesium3DTileset>();
   APlayerStart* playerStart = world->SpawnActor<APlayerStart>();
-
   FSoftObjectPath objectPath(
       TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
   TSoftObjectPtr<UObject> DynamicPawn = TSoftObjectPtr<UObject>(objectPath);
@@ -110,17 +108,35 @@ void setupForDenver(UWorld* world) {
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2NmZhZTk4NS01MDFmLTRjODgtOTlkYy04NjIwODhiZWExOGYiLCJpZCI6MjU5LCJpYXQiOjE2ODg1MTI4ODd9.haoe5hsJyfHk1dQAHVK6N8dW_kfmtdbyuhlGwFdEHbM");
 
   georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(targetOrigin);
-  worldTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  worldTileset->SetIonAssetID(1);
-  worldTileset->SetIonAccessToken(ionToken);
-
-  denverTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
-  denverTileset->SetIonAssetID(354307);
-  denverTileset->SetIonAccessToken(ionToken);
-  denverTileset->SetMaximumScreenSpaceError(2.0);
 
   pawn->SetActorLocation(FVector(0, 0, 0));
   pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
+
+  // Add Cesium World Terrain
+  ACesium3DTileset* worldTerrainTileset = world->SpawnActor<ACesium3DTileset>();
+  worldTerrainTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  worldTerrainTileset->SetIonAssetID(1);
+  worldTerrainTileset->SetIonAccessToken(ionToken);
+  worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
+
+  // Bing Maps Aerial overlay
+  UCesiumIonRasterOverlay* pOverlay = NewObject<UCesiumIonRasterOverlay>(
+      worldTerrainTileset,
+      FName("Bing Maps Aerial"),
+      RF_Transactional);
+  pOverlay->MaterialLayerKey = TEXT("Overlay0");
+  pOverlay->IonAssetID = 2;
+  pOverlay->SetActive(true);
+  pOverlay->OnComponentCreated();
+  worldTerrainTileset->AddInstanceComponent(pOverlay);
+
+  // Aerometrex Denver
+  ACesium3DTileset* aerometrexTileset = world->SpawnActor<ACesium3DTileset>();
+  aerometrexTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+  aerometrexTileset->SetIonAssetID(354307);
+  aerometrexTileset->SetIonAccessToken(ionToken);
+  aerometrexTileset->SetMaximumScreenSpaceError(2.0);
+  aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
 }
 
 bool FCesiumLoadTest::RunTest(const FString& Parameters) {
