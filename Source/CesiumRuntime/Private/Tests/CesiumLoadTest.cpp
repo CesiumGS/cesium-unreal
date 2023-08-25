@@ -8,7 +8,6 @@
 
 #include "Editor.h"
 #include "Engine/World.h"
-#include "EngineAnalytics.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
 
@@ -35,6 +34,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 struct LoadTestContext {
   UWorld* world;
   ACesiumGeoreference* georeference;
+  ACesiumCameraManager* cameraManager;
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;
 };
@@ -45,7 +45,10 @@ bool breakWhenTilesetsLoaded(LoadTestContext& context) {
   std::vector<ACesium3DTileset*>::const_iterator it;
   for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
     ACesium3DTileset* tileset = *it;
-    if (tileset->GetLoadProgress() != 100)
+
+    int progress = (int)tileset->GetLoadProgress();
+    UE_LOG(LogCesium, Display, TEXT("Load Progress: %d"), progress);
+    if (progress != 100)
       return false;
   }
   return true;
@@ -55,7 +58,7 @@ bool tickWorldUntil(
     LoadTestContext& context,
     double time,
     std::function<bool(LoadTestContext&)> breakFunction) {
-  const double minStepTime = 0.001; // Don't loop faster than 100 fps
+  const double minStepTime = 0.050; // Don't loop faster than 20 fps
 
   const double testStartMark = FPlatformTime::Seconds();
   const double testEndMark = testStartMark + time;
@@ -79,6 +82,12 @@ bool tickWorldUntil(
     }
 
     // Let world tick at same rate as this loop
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Ticking world: Frame delta: %d ms"),
+        int(frameElapsedTime * 1000.0));
+
     context.world->Tick(ELevelTick::LEVELTICK_All, frameElapsedTime);
 
     // Derived from TimerManagerTests.cpp, TimerTest_TickWorld
@@ -119,6 +128,21 @@ void setupForDenver(LoadTestContext& context) {
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
   context.pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
+
+  FCesiumCamera camera;
+  camera.ViewportSize = FVector2D(1024, 768);
+  camera.Location = FVector(0, 0, 0);
+  camera.Rotation = FRotator(-5.2, -149.4, 0);
+  camera.FieldOfViewDegrees = 90;
+
+  // Take over first camera, or add if it doesn't exist
+  const TMap<int32, FCesiumCamera> cameras =
+      context.cameraManager->GetCameras();
+  if (cameras.IsEmpty()) {
+    context.cameraManager->AddCamera(camera);
+  } else {
+    context.cameraManager->UpdateCamera(0, camera);
+  }
 
   // Add Cesium World Terrain
   ACesium3DTileset* worldTerrainTileset =
@@ -163,10 +187,11 @@ void createCommonWorldObjects(LoadTestContext& context) {
   worldContext.SetCurrentWorld(context.world);
 #endif
 
-  ACesiumCameraManager* cameraManager =
-      ACesiumCameraManager::GetDefaultCameraManager(context.world);
   ACesiumSunSky* sunSky = context.world->SpawnActor<ACesiumSunSky>();
   APlayerStart* playerStart = context.world->SpawnActor<APlayerStart>();
+
+  context.cameraManager =
+      ACesiumCameraManager::GetDefaultCameraManager(context.world);
 
   FSoftObjectPath objectPath(
       TEXT("Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'"));
@@ -210,6 +235,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   }
 
   // Let world settle for 1 second
+  UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
   tickWorldUntil(context, 1.0, neverBreak);
 
   // Turn updates back on
@@ -219,18 +245,13 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   }
 
   // Spin for a maximum of 5 seconds, or until tilesets finish loading
+  UE_LOG(LogCesium, Display, TEXT("\nSpinning until tilesets load...\n"));
   bool timedOut = tickWorldUntil(context, 5.0, breakWhenTilesetsLoaded);
 
-  if (FEngineAnalytics::IsAvailable()) {
-    if (timedOut) {
-      FEngineAnalytics::GetProvider().RecordEvent(
-          TEXT("LoadTest.TimeoutEvent"));
-      UE_LOG(LogCesium, Error, TEXT("Test timed out"));
-    } else {
-      FEngineAnalytics::GetProvider().RecordEvent(
-          TEXT("LoadTest.CompletionEvent"));
-      UE_LOG(LogCesium, Display, TEXT("Test completed"));
-    }
+  if (timedOut) {
+    UE_LOG(LogCesium, Error, TEXT("Test timed out"));
+  } else {
+    UE_LOG(LogCesium, Display, TEXT("Test completed"));
   }
 
   // Cleanup
