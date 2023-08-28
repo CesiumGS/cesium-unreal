@@ -37,6 +37,16 @@ struct LoadTestContext {
   ACesiumCameraManager* cameraManager;
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;
+
+  void setCamera(const FCesiumCamera& camera) {
+    // Take over first camera, or add if it doesn't exist
+    const TMap<int32, FCesiumCamera> cameras = cameraManager->GetCameras();
+    if (cameras.IsEmpty()) {
+      cameraManager->AddCamera(camera);
+    } else {
+      cameraManager->UpdateCamera(0, camera);
+    }
+  }
 };
 
 bool neverBreak(LoadTestContext& context) { return false; }
@@ -47,7 +57,7 @@ bool breakWhenTilesetsLoaded(LoadTestContext& context) {
     ACesium3DTileset* tileset = *it;
 
     int progress = (int)tileset->GetLoadProgress();
-    UE_LOG(LogCesium, Display, TEXT("Load Progress: %d"), progress);
+    // UE_LOG(LogCesium, Display, TEXT("Load Progress: %d"), progress);
     if (progress != 100)
       return false;
   }
@@ -56,12 +66,12 @@ bool breakWhenTilesetsLoaded(LoadTestContext& context) {
 
 bool tickWorldUntil(
     LoadTestContext& context,
-    double time,
+    size_t timeoutSecs,
     std::function<bool(LoadTestContext&)> breakFunction) {
   const double minStepTime = 0.050; // Don't loop faster than 20 fps
 
   const double testStartMark = FPlatformTime::Seconds();
-  const double testEndMark = testStartMark + time;
+  const double testEndMark = testStartMark + (double)timeoutSecs;
   double lastTimeMark = testStartMark;
 
   while (1) {
@@ -69,9 +79,6 @@ bool tickWorldUntil(
 
     if (frameTimeMark > testEndMark)
       return true;
-
-    if (breakFunction(context))
-      return false;
 
     double frameElapsedTime = frameTimeMark - lastTimeMark;
 
@@ -81,17 +88,24 @@ bool tickWorldUntil(
       continue;
     }
 
-    // Let world tick at same rate as this loop
-    UE_LOG(
-        LogCesium,
-        Display,
-        TEXT("Ticking world: Frame delta: %d ms"),
-        int(frameElapsedTime * 1000.0));
+    //
+    // Force a tick. Derived from various examples in this code base
+    // Search for FTSTicker::GetCoreTicker().Tick
+    //
 
-    context.world->Tick(ELevelTick::LEVELTICK_All, frameElapsedTime);
-
-    // Derived from TimerManagerTests.cpp, TimerTest_TickWorld
+    // Increment global frame counter once for each app tick.
     GFrameCounter++;
+
+    // Let world tick at same rate as this loop
+    context.world->Tick(ELevelTick::LEVELTICK_ViewportsOnly, frameElapsedTime);
+
+    // Application tick
+    FTaskGraphInterface::Get().ProcessThreadUntilIdle(
+        ENamedThreads::GameThread);
+    FTSTicker::GetCoreTicker().Tick(frameElapsedTime);
+
+    if (breakFunction(context))
+      return false;
 
     lastTimeMark = frameTimeMark;
   };
@@ -102,6 +116,13 @@ void setupForGoogleTiles(LoadTestContext& context) {
   FVector targetOrigin(-122.083969, 37.424492, 142.859116);
   FString targetUrl(
       "https://tile.googleapis.com/v1/3dtiles/root.json?key=AIzaSyCnRPXWDIj1LuX6OWIweIqZFHHoXVgdYss");
+
+  FCesiumCamera camera;
+  camera.ViewportSize = FVector2D(1024, 768);
+  camera.Location = FVector(0, 0, 0);
+  camera.Rotation = FRotator(-25, 95, 0);
+  camera.FieldOfViewDegrees = 90;
+  context.setCamera(camera);
 
   context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
       targetOrigin);
@@ -123,26 +144,18 @@ void setupForDenver(LoadTestContext& context) {
   FString ionToken(
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2NmZhZTk4NS01MDFmLTRjODgtOTlkYy04NjIwODhiZWExOGYiLCJpZCI6MjU5LCJpYXQiOjE2ODg1MTI4ODd9.haoe5hsJyfHk1dQAHVK6N8dW_kfmtdbyuhlGwFdEHbM");
 
-  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-      targetOrigin);
-
-  context.pawn->SetActorLocation(FVector(0, 0, 0));
-  context.pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
-
   FCesiumCamera camera;
   camera.ViewportSize = FVector2D(1024, 768);
   camera.Location = FVector(0, 0, 0);
   camera.Rotation = FRotator(-5.2, -149.4, 0);
   camera.FieldOfViewDegrees = 90;
+  context.setCamera(camera);
 
-  // Take over first camera, or add if it doesn't exist
-  const TMap<int32, FCesiumCamera> cameras =
-      context.cameraManager->GetCameras();
-  if (cameras.IsEmpty()) {
-    context.cameraManager->AddCamera(camera);
-  } else {
-    context.cameraManager->UpdateCamera(0, camera);
-  }
+  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+      targetOrigin);
+
+  context.pawn->SetActorLocation(FVector(0, 0, 0));
+  context.pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
 
   // Add Cesium World Terrain
   ACesium3DTileset* worldTerrainTileset =
@@ -228,6 +241,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
 
   // Halt tileset updates and reset them
   std::vector<ACesium3DTileset*>::iterator it;
+
   for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
     ACesium3DTileset* tileset = *it;
     tileset->SuspendUpdate = true;
@@ -236,27 +250,53 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
 
   // Let world settle for 1 second
   UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
-  tickWorldUntil(context, 1.0, neverBreak);
+  tickWorldUntil(context, 1, neverBreak);
 
-  // Turn updates back on
+  // Start test mark, turn updates back on
+  double loadStartMark = FPlatformTime::Seconds();
+  UE_LOG(LogCesium, Display, TEXT("-- Load start mark --"));
+
   for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
     ACesium3DTileset* tileset = *it;
     tileset->SuspendUpdate = false;
   }
 
-  // Spin for a maximum of 5 seconds, or until tilesets finish loading
+  // Spin for a maximum of 20 seconds, or until tilesets finish loading
+  const size_t testTimeout = 20;
   UE_LOG(LogCesium, Display, TEXT("\nSpinning until tilesets load...\n"));
-  bool timedOut = tickWorldUntil(context, 5.0, breakWhenTilesetsLoaded);
+  bool timedOut = tickWorldUntil(context, testTimeout, breakWhenTilesetsLoaded);
 
   if (timedOut) {
-    UE_LOG(LogCesium, Error, TEXT("Test timed out"));
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("TIMED OUT: Loading exceeded %d seconds"),
+        testTimeout);
   } else {
-    UE_LOG(LogCesium, Display, TEXT("Test completed"));
+    double loadEndMark = FPlatformTime::Seconds();
+    UE_LOG(LogCesium, Display, TEXT("-- Load end mark --"));
+
+    double loadElapsedTime = loadEndMark - loadStartMark;
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Tileset load completed in %.2f seconds"),
+        loadElapsedTime);
   }
 
   // Cleanup
 #if CREATE_TEST_IN_EDITOR_WORLD
-  // Let all objects persist
+  // Let all objects persist and be available for viewing after test
+
+  // Let world settle for 1 second
+  UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
+  tickWorldUntil(context, 1, neverBreak);
+
+  // Turn updates back off
+  for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
+    ACesium3DTileset* tileset = *it;
+    tileset->SuspendUpdate = true;
+  }
 #else
   GEngine->DestroyWorldContext(context.world);
   context.world->DestroyWorld(false);
