@@ -47,6 +47,18 @@ struct LoadTestContext {
       cameraManager->UpdateCamera(0, camera);
     }
   }
+
+  void refreshTilesets() {
+    std::vector<ACesium3DTileset*>::iterator it;
+    for (it = tilesets.begin(); it != tilesets.end(); ++it)
+      (*it)->RefreshTileset();
+  }
+
+  void setSuspendUpdate(bool suspend) {
+    std::vector<ACesium3DTileset*>::iterator it;
+    for (it = tilesets.begin(); it != tilesets.end(); ++it)
+      (*it)->SuspendUpdate = suspend;
+  }
 };
 
 bool neverBreak(LoadTestContext& context) { return false; }
@@ -240,13 +252,8 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   }
 
   // Halt tileset updates and reset them
-  std::vector<ACesium3DTileset*>::iterator it;
-
-  for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
-    ACesium3DTileset* tileset = *it;
-    tileset->SuspendUpdate = true;
-    tileset->RefreshTileset();
-  }
+  context.setSuspendUpdate(true);
+  context.refreshTilesets();
 
   // Let world settle for 1 second
   UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
@@ -255,11 +262,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   // Start test mark, turn updates back on
   double loadStartMark = FPlatformTime::Seconds();
   UE_LOG(LogCesium, Display, TEXT("-- Load start mark --"));
-
-  for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
-    ACesium3DTileset* tileset = *it;
-    tileset->SuspendUpdate = false;
-  }
+  context.setSuspendUpdate(false);
 
   // Spin for a maximum of 20 seconds, or until tilesets finish loading
   const size_t testTimeout = 20;
@@ -286,17 +289,14 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
 
   // Cleanup
 #if CREATE_TEST_IN_EDITOR_WORLD
-  // Let all objects persist and be available for viewing after test
+  // Let all objects be available for viewing after test
 
   // Let world settle for 1 second
   UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
   tickWorldUntil(context, 1, neverBreak);
 
-  // Turn updates back off
-  for (it = context.tilesets.begin(); it != context.tilesets.end(); ++it) {
-    ACesium3DTileset* tileset = *it;
-    tileset->SuspendUpdate = true;
-  }
+  // Freeze updates
+  context.setSuspendUpdate(true);
 #else
   GEngine->DestroyWorldContext(context.world);
   context.world->DestroyWorld(false);
