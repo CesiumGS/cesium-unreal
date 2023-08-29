@@ -1,4 +1,5 @@
 #include "CesiumSubLevelSwitcherComponent.h"
+#include "CesiumRuntime.h"
 #include "CesiumSubLevelComponent.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"

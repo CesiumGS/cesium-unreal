@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumRuntime.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
@@ -15,7 +16,7 @@ class UWorld;
 
 namespace CesiumTestHelpers {
 
-static UWorld* getGlobalWorldContext();
+UWorld* getGlobalWorldContext();
 
 template <typename T>
 void waitForImpl(
