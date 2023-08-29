@@ -28,7 +28,7 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTest,
-    "Cesium.LoadTest",
+    "Cesium.Performance.LoadTest",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 struct LoadTestContext {

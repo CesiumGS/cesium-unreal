@@ -13,7 +13,7 @@
 
 BEGIN_DEFINE_SPEC(
     FGlobeAwareDefaultPawnSpec,
-    "Cesium.GlobeAwareDefaultPawn",
+    "Cesium.Unit.GlobeAwareDefaultPawn",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 

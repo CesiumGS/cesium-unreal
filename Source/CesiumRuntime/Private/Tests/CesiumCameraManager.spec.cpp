@@ -7,7 +7,7 @@
 
 BEGIN_DEFINE_SPEC(
     FCesiumCameraManagerSpec,
-    "Cesium.CameraManager",
+    "Cesium.Unit.CameraManager",
     EAutomationTestFlags::ApplicationContextMask |
         EAutomationTestFlags::ProductFilter)
 END_DEFINE_SPEC(FCesiumCameraManagerSpec)
