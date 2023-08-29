@@ -235,6 +235,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   //
   // Programmatically set up the world
   //
+  UE_LOG(LogCesium, Display, TEXT("Creating world objects..."));
   LoadTestContext context;
   createCommonWorldObjects(context);
 
@@ -256,7 +257,7 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   context.refreshTilesets();
 
   // Let world settle for 1 second
-  UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
+  UE_LOG(LogCesium, Display, TEXT("Letting world settle for 1 second..."));
   tickWorldUntil(context, 1, neverBreak);
 
   // Start test mark, turn updates back on
@@ -266,33 +267,22 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
 
   // Spin for a maximum of 20 seconds, or until tilesets finish loading
   const size_t testTimeout = 20;
-  UE_LOG(LogCesium, Display, TEXT("\nSpinning until tilesets load...\n"));
+  UE_LOG(
+      LogCesium,
+      Display,
+      TEXT("Tick world until tilesets load, or %d seconds elapse..."),
+      testTimeout);
   bool timedOut = tickWorldUntil(context, testTimeout, breakWhenTilesetsLoaded);
 
-  if (timedOut) {
-    UE_LOG(
-        LogCesium,
-        Error,
-        TEXT("TIMED OUT: Loading exceeded %d seconds"),
-        testTimeout);
-  } else {
-    double loadEndMark = FPlatformTime::Seconds();
-    UE_LOG(LogCesium, Display, TEXT("-- Load end mark --"));
-
-    double loadElapsedTime = loadEndMark - loadStartMark;
-    UE_LOG(
-        LogCesium,
-        Display,
-        TEXT("Tileset load completed in %.2f seconds"),
-        loadElapsedTime);
-  }
+  double loadEndMark = FPlatformTime::Seconds();
+  UE_LOG(LogCesium, Display, TEXT("-- Load end mark --"));
 
   // Cleanup
 #if CREATE_TEST_IN_EDITOR_WORLD
   // Let all objects be available for viewing after test
 
   // Let world settle for 1 second
-  UE_LOG(LogCesium, Display, TEXT("\nLetting world settle...\n"));
+  UE_LOG(LogCesium, Display, TEXT("Letting world settle for 1 second..."));
   tickWorldUntil(context, 1, neverBreak);
 
   // Freeze updates
@@ -301,6 +291,22 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   GEngine->DestroyWorldContext(context.world);
   context.world->DestroyWorld(false);
 #endif
+
+  double loadElapsedTime = loadEndMark - loadStartMark;
+
+  if (timedOut) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT("TIMED OUT: Loading stopped after %.2f seconds"),
+        loadElapsedTime);
+  } else {
+    UE_LOG(
+        LogCesium,
+        Display,
+        TEXT("Tileset load completed in %.2f seconds"),
+        loadElapsedTime);
+  }
 
   return !timedOut;
 }
