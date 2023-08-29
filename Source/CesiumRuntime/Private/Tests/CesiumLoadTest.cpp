@@ -114,6 +114,12 @@ bool tickWorldUntil(
         ENamedThreads::GameThread);
     FTSTicker::GetCoreTicker().Tick(frameElapsedTime);
 
+    // Let UI update
+    // Not absolutely necessary, but convenient when running the tests
+    // from inside the editor, so the UI doesn't appear frozen
+    FSlateApplication::Get().PumpMessages();
+    FSlateApplication::Get().Tick();
+
     if (breakFunction(context))
       return false;
 
