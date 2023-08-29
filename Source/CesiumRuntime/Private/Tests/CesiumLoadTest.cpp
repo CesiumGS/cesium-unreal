@@ -20,12 +20,6 @@
 #include "CesiumTestHelpers.h"
 #include "GlobeAwareDefaultPawn.h"
 
-//
-// For debugging, it may help to create the scene in the editor
-// After the test is run, you can play with their settings and even run PIE
-//
-#define CREATE_TEST_IN_EDITOR_WORLD 1
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTestDenver,
     "Cesium.Performance.LoadTestDenver",
@@ -74,7 +68,6 @@ bool breakWhenTilesetsLoaded(LoadTestContext& context) {
     ACesium3DTileset* tileset = *it;
 
     int progress = (int)tileset->GetLoadProgress();
-    // UE_LOG(LogCesium, Display, TEXT("Load Progress: %d"), progress);
     if (progress != 100)
       return false;
   }
@@ -208,14 +201,7 @@ void setupForDenver(LoadTestContext& context) {
 
 void createCommonWorldObjects(LoadTestContext& context) {
 
-#if CREATE_TEST_IN_EDITOR_WORLD
   context.world = FAutomationEditorCommonUtils::CreateNewMap();
-#else
-  context.world = UWorld::CreateWorld(EWorldType::Game, false);
-  FWorldContext& worldContext =
-      GEngine->CreateNewWorldContext(EWorldType::Game);
-  worldContext.SetCurrentWorld(context.world);
-#endif
 
   ACesiumSunSky* sunSky = context.world->SpawnActor<ACesiumSunSky>();
   APlayerStart* playerStart = context.world->SpawnActor<APlayerStart>();
@@ -281,20 +267,15 @@ bool RunLoadTest(const size_t locationIndex) {
   double loadEndMark = FPlatformTime::Seconds();
   UE_LOG(LogCesium, Display, TEXT("-- Load end mark --"));
 
-  // Cleanup
-#if CREATE_TEST_IN_EDITOR_WORLD
-  // Let all objects be available for viewing after test
-
+  //
+  // Skip object cleanup. Let all objects be available for viewing after test
+  //
   // Let world settle for 1 second
   UE_LOG(LogCesium, Display, TEXT("Letting world settle for 1 second..."));
   tickWorldUntil(context, 1, neverBreak);
 
   // Freeze updates
   context.setSuspendUpdate(true);
-#else
-  GEngine->DestroyWorldContext(context.world);
-  context.world->DestroyWorld(false);
-#endif
 
   double loadElapsedTime = loadEndMark - loadStartMark;
 
