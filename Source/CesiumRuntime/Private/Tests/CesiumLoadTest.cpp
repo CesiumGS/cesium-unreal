@@ -27,8 +27,13 @@
 #define CREATE_TEST_IN_EDITOR_WORLD 1
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-    FCesiumLoadTest,
-    "Cesium.Performance.LoadTest",
+    FCesiumLoadTestDenver,
+    "Cesium.Performance.LoadTestDenver",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesiumLoadTestGoogleplex,
+    "Cesium.Performance.LoadTestGoogleplex",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 struct LoadTestContext {
@@ -230,7 +235,7 @@ void createCommonWorldObjects(LoadTestContext& context) {
   context.pawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
-bool FCesiumLoadTest::RunTest(const FString& Parameters) {
+bool RunLoadTest(const size_t locationIndex) {
 
   //
   // Programmatically set up the world
@@ -240,7 +245,6 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   createCommonWorldObjects(context);
 
   // Configure location specific objects
-  const size_t locationIndex = 1;
   switch (locationIndex) {
   case 0:
     setupForGoogleTiles(context);
@@ -309,6 +313,14 @@ bool FCesiumLoadTest::RunTest(const FString& Parameters) {
   }
 
   return !timedOut;
+}
+
+bool FCesiumLoadTestDenver::RunTest(const FString& Parameters) {
+  return RunLoadTest(1);
+}
+
+bool FCesiumLoadTestGoogleplex::RunTest(const FString& Parameters) {
+  return RunLoadTest(0);
 }
 
 #endif
