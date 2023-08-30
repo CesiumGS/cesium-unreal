@@ -10,7 +10,7 @@ class CesiumTileExcluderAdapter : public Cesium3DTilesSelection::ITileExcluder {
   virtual void startNewFrame() noexcept override;
 
 private:
-  UCesiumTileExcluder* Excluder;
+  TWeakObjectPtr<UCesiumTileExcluder> Excluder;
   ACesium3DTileset* Tileset;
   UCesiumTile* Tile;
   ACesiumGeoreference* Georeference;
@@ -18,7 +18,7 @@ private:
 
 public:
   CesiumTileExcluderAdapter(
-      UCesiumTileExcluder* Excluder,
+      TWeakObjectPtr<UCesiumTileExcluder> Excluder,
       ACesium3DTileset* Tileset,
       UCesiumTile* Tile);
 };

@@ -24,7 +24,7 @@ UCesiumTileExcluder::UCesiumTileExcluder(
 }
 
 void UCesiumTileExcluder::AddToTileset() {
-  ACesium3DTileset* CesiumTileset = this->GetOwner<ACesium3DTileset>();
+  CesiumTileset = this->GetOwner<ACesium3DTileset>();
   if (!CesiumTileset)
     return;
   Tileset* pTileset = CesiumTileset->GetTileset();
@@ -40,15 +40,13 @@ void UCesiumTileExcluder::AddToTileset() {
 
   CesiumTile = NewObject<UCesiumTile>();
   auto pAdapter = std::make_shared<CesiumTileExcluderAdapter>(
-      this,
-      CesiumTileset,
-      CesiumTile);
+      TWeakObjectPtr<UCesiumTileExcluder>(this));
   pExcluderAdapter = pAdapter.get();
   excluders.push_back(std::move(pAdapter));
 }
 
 void UCesiumTileExcluder::RemoveFromTileset() {
-  ACesium3DTileset* CesiumTileset = this->GetOwner<ACesium3DTileset>();
+  CesiumTileset = this->GetOwner<ACesium3DTileset>();
   if (!CesiumTileset)
     return;
   Tileset* pTileset = CesiumTileset->GetTileset();

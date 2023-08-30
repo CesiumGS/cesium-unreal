@@ -12,8 +12,17 @@ FBoxSphereBounds UCesiumTile::GetBounds() const {
 bool UCesiumTile::IsIntersecting(UPrimitiveComponent* Other) const {
   if (Other) {
     FBoxSphereBounds Bounds = GetBounds();
-    return FBoxSphereBounds::BoxesIntersect(Bounds, Other->Bounds) ||
-           FBoxSphereBounds::SpheresIntersect(Bounds, Other->Bounds);
+    return FBoxSphereBounds::BoxesIntersect(Bounds, Other->Bounds);
+  } else {
+    return false;
+  }
+}
+
+bool UCesiumTile::IsContainedBy(UPrimitiveComponent* Other) const {
+  if (Other) {
+    FBox Box = GetBounds().GetBox();
+    FBox OtherBox = Other->Bounds.GetBox();
+    return OtherBox.IsInside(Box);
   } else {
     return false;
   }

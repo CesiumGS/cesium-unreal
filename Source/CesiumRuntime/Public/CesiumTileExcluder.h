@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CesiumTile.h"
+#include "Cesium3DTileset.h"
 #include "CoreMinimal.h"
 #include "CesiumTileExcluder.generated.h"
 
@@ -27,6 +28,9 @@ private:
 protected:
   UPROPERTY()
   UCesiumTile* CesiumTile;
+
+  UPROPERTY()
+  ACesium3DTileset* CesiumTileset;
 
 public:
   UCesiumTileExcluder(const FObjectInitializer& ObjectInitializer);

@@ -39,5 +39,8 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   bool IsIntersecting(UPrimitiveComponent* Other) const;
 
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  bool IsContainedBy(UPrimitiveComponent* Other) const;
+
   friend class CesiumTileExcluderAdapter;
 };
