@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Cesium3DTileset.h"
 #include "CesiumTile.h"
 #include "CoreMinimal.h"
 #include "CesiumTileExcluder.generated.h"
@@ -11,7 +10,7 @@ class CesiumTileExcluderAdapter;
  * An actor component for excluding Cesium Tiles.
  * This class provides an interface for excluding Cesium Tiles from a tileset.
  * You can create a blueprint that derives from this class and override the
- * `ShouldExclude` function to iimplement custom logic for determining whether a
+ * `ShouldExclude` function to implement custom logic for determining whether a
  * tile should be excluded. This function can be implemented in either C++ or
  * Blueprints.
  */

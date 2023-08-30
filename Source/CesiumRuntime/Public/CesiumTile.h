@@ -24,7 +24,7 @@ class CESIUMRUNTIME_API UCesiumTile : public UObject {
 
 public:
   /**
-   * Returns the bounds of the tile.
+   * Returns the bounds of the tile in Unreal Absolute World coordinates.
    * This function returns the bounding box and bounding sphere that enclose the
    * tile.
    */
