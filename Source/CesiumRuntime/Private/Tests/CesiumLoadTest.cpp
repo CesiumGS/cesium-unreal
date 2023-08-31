@@ -42,6 +42,7 @@ struct LoadTestContext {
   ACesiumCameraManager* cameraManager;
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;
+  FRequestPlaySessionParams playSessionParams;
 
   void setCamera(const FCesiumCamera& camera) {
     // Take over first camera, or add if it doesn't exist
@@ -253,8 +254,7 @@ bool RunLoadTest(
 
   // Immediately start a requested play session
   UE_LOG(LogCesium, Display, TEXT("Requesting play session..."));
-  FRequestPlaySessionParams params{};
-  GEditor->RequestPlaySession(params);
+  GEditor->RequestPlaySession(context.playSessionParams);
   GEditor->StartQueuedPlaySessionRequest();
 
   // Let world settle for 1 second
@@ -284,9 +284,6 @@ bool RunLoadTest(
   // Let world settle for 1 second
   UE_LOG(LogCesium, Display, TEXT("Letting world settle for 1 second..."));
   tickWorldUntil(context, 1, neverBreak);
-
-  // Freeze updates
-  context.setSuspendUpdate(true);
 
   UE_LOG(LogCesium, Display, TEXT("Ending play session..."));
   GEditor->RequestEndPlayMap();
