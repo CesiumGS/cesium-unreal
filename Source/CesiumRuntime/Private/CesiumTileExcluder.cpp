@@ -40,7 +40,9 @@ void UCesiumTileExcluder::AddToTileset() {
 
   CesiumTile = NewObject<UCesiumTile>();
   auto pAdapter = std::make_shared<CesiumTileExcluderAdapter>(
-      TWeakObjectPtr<UCesiumTileExcluder>(this));
+      TWeakObjectPtr<UCesiumTileExcluder>(this),
+      CesiumTileset,
+      CesiumTile);
   pExcluderAdapter = pAdapter.get();
   excluders.push_back(std::move(pAdapter));
 }

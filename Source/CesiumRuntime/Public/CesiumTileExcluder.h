@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CesiumTile.h"
 #include "Cesium3DTileset.h"
+#include "CesiumTile.h"
 #include "CoreMinimal.h"
 #include "CesiumTileExcluder.generated.h"
 

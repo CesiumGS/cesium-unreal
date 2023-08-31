@@ -11,7 +11,7 @@ bool CesiumTileExcluderAdapter::shouldExclude(
 }
 
 void CesiumTileExcluderAdapter::startNewFrame() noexcept {
-  if (!IsValid(Tile) || !IsValid(Georeference) || !IsValid(Excluder) ||
+  if (!Excluder.IsValid() || !IsValid(Tile) || !IsValid(Georeference) ||
       !IsValid(Tileset)) {
     IsExcluderValid = false;
     return;
@@ -25,7 +25,7 @@ void CesiumTileExcluderAdapter::startNewFrame() noexcept {
 }
 
 CesiumTileExcluderAdapter::CesiumTileExcluderAdapter(
-    UCesiumTileExcluder* pExcluder,
+    TWeakObjectPtr<UCesiumTileExcluder> pExcluder,
     ACesium3DTileset* pTileset,
     UCesiumTile* pTile)
     : Tile(pTile),
