@@ -39,6 +39,11 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   bool IsIntersecting(UPrimitiveComponent* Other) const;
 
+  /**
+   * Checks if this tile is fully inside the given primitive component.
+   * It uses the FBox::IsInside function to compare the the FBox of the
+   * component and the tile's bounds.
+   */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   bool IsContainedBy(UPrimitiveComponent* Other) const;
 
