@@ -28,8 +28,8 @@ CesiumTileExcluderAdapter::CesiumTileExcluderAdapter(
     TWeakObjectPtr<UCesiumTileExcluder> pExcluder,
     ACesium3DTileset* pTileset,
     UCesiumTile* pTile)
-    : Tile(pTile),
-      Georeference(pTileset->ResolveGeoreference()),
-      Excluder(pExcluder),
+    : Excluder(pExcluder),
       Tileset(pTileset),
+      Tile(pTile),
+      Georeference(pTileset->ResolveGeoreference()),
       IsExcluderValid(true){};
