@@ -14,6 +14,7 @@
 #include "Cesium3DTileset.h"
 #include "CesiumCameraManager.h"
 #include "CesiumGeoreference.h"
+#include "CesiumGltfComponent.h"
 #include "CesiumIonRasterOverlay.h"
 #include "CesiumRuntime.h"
 #include "CesiumSunSky.h"
@@ -28,6 +29,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTestGoogleplex,
     "Cesium.Performance.LoadTestGoogleplex",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FCesiumLoadTestMontrealPointCloud,
+    "Cesium.Performance.LoadTestMontrealPointCloud",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::PerfFilter)
 
 struct LoadTestContext {
@@ -227,7 +233,9 @@ void createCommonWorldObjects(LoadTestContext& context) {
   context.pawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
-bool RunLoadTest(const size_t locationIndex) {
+bool RunLoadTest(
+    std::function<void(LoadTestContext&)> locationSetup,
+    std::function<void(LoadTestContext&)> afterTest = {}) {
 
   //
   // Programmatically set up the world
@@ -237,16 +245,7 @@ bool RunLoadTest(const size_t locationIndex) {
   createCommonWorldObjects(context);
 
   // Configure location specific objects
-  switch (locationIndex) {
-  case 0:
-    setupForGoogleTiles(context);
-    break;
-  case 1:
-    setupForDenver(context);
-    break;
-  default:
-    break;
-  }
+  locationSetup(context);
 
   // Halt tileset updates and reset them
   context.setSuspendUpdate(true);
@@ -299,15 +298,93 @@ bool RunLoadTest(const size_t locationIndex) {
         loadElapsedTime);
   }
 
+  if (afterTest) {
+    afterTest(context);
+  }
+
   return !timedOut;
 }
 
 bool FCesiumLoadTestDenver::RunTest(const FString& Parameters) {
-  return RunLoadTest(1);
+  return RunLoadTest(setupForDenver);
 }
 
 bool FCesiumLoadTestGoogleplex::RunTest(const FString& Parameters) {
-  return RunLoadTest(0);
+  return RunLoadTest(setupForGoogleTiles);
+}
+
+bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
+  auto setup = [this](LoadTestContext& context) {
+    FVector targetOrigin(-73.616526, 45.57335, 95.048859);
+    FString ionToken(
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2NmZhZTk4NS01MDFmLTRjODgtOTlkYy04NjIwODhiZWExOGYiLCJpZCI6MjU5LCJpYXQiOjE2ODg1MTI4ODd9.haoe5hsJyfHk1dQAHVK6N8dW_kfmtdbyuhlGwFdEHbM");
+
+    FCesiumCamera camera;
+    camera.ViewportSize = FVector2D(1024, 768);
+    camera.Location = FVector(0, 0, 0);
+    camera.Rotation = FRotator(-90.0, 0.0, 0.0);
+    camera.FieldOfViewDegrees = 90;
+    context.setCamera(camera);
+
+    context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+        targetOrigin);
+
+    context.pawn->SetActorLocation(FVector(0, 0, 0));
+    context.pawn->SetActorRotation(FRotator(-90.0, 0.0, 0.0));
+
+    // Montreal Point Cloud
+    ACesium3DTileset* montrealTileset =
+        context.world->SpawnActor<ACesium3DTileset>();
+    montrealTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
+    montrealTileset->SetIonAssetID(28945);
+    montrealTileset->SetIonAccessToken(ionToken);
+    montrealTileset->SetMaximumScreenSpaceError(16.0);
+    montrealTileset->SetActorLabel(TEXT("Montreal Point Cloud"));
+
+    context.tilesets.push_back(montrealTileset);
+  };
+
+  auto after = [this](LoadTestContext& context) {
+    // Zoom way out
+    FCesiumCamera zoomedOut;
+    zoomedOut.ViewportSize = FVector2D(1024, 768);
+    zoomedOut.Location = FVector(0, 0, 7240000.0);
+    zoomedOut.Rotation = FRotator(-90.0, 0.0, 0.0);
+    zoomedOut.FieldOfViewDegrees = 90;
+    context.setCamera(zoomedOut);
+
+    context.pawn->SetActorLocation(zoomedOut.Location);
+
+    context.setSuspendUpdate(false);
+    tickWorldUntil(context, 10, breakWhenTilesetsLoaded);
+    context.setSuspendUpdate(true);
+
+    Cesium3DTilesSelection::Tileset* pTileset =
+        context.tilesets[0]->GetTileset();
+    if (TestNotNull("Tileset", pTileset)) {
+      int visibleTiles = 0;
+      pTileset->forEachLoadedTile([&](Cesium3DTilesSelection::Tile& tile) {
+        if (tile.getState() != Cesium3DTilesSelection::TileLoadState::Done)
+          return;
+        const Cesium3DTilesSelection::TileContent& content = tile.getContent();
+        const Cesium3DTilesSelection::TileRenderContent* pRenderContent =
+            content.getRenderContent();
+        if (!pRenderContent) {
+          return;
+        }
+
+        UCesiumGltfComponent* Gltf = static_cast<UCesiumGltfComponent*>(
+            pRenderContent->getRenderResources());
+        if (Gltf && Gltf->IsVisible()) {
+          ++visibleTiles;
+        }
+      });
+
+      TestEqual("visibleTiles", visibleTiles, 1);
+    }
+  };
+
+  return RunLoadTest(setup, after);
 }
 
 #endif
