@@ -22,7 +22,7 @@ struct GetCollisionShape {
     double sphereRadius =
         glm::max(glm::length(halfAxes[0]), glm::length(halfAxes[1]));
     sphereRadius = glm::max(sphereRadius, glm::length(halfAxes[2]));
-        OverlapComponentParameters Parameters;
+    OverlapComponentParameters Parameters;
     Parameters.Pos = VecMath::createVector(center);
     Parameters.CollisionShape = FCollisionShape::MakeSphere(sphereRadius);
     return Parameters;
