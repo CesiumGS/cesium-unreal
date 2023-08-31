@@ -251,6 +251,12 @@ bool RunLoadTest(
   context.setSuspendUpdate(true);
   context.refreshTilesets();
 
+  // Immediately start a requested play session
+  UE_LOG(LogCesium, Display, TEXT("Requesting play session..."));
+  FRequestPlaySessionParams params{};
+  GEditor->RequestPlaySession(params);
+  GEditor->StartQueuedPlaySessionRequest();
+
   // Let world settle for 1 second
   UE_LOG(LogCesium, Display, TEXT("Letting world settle for 1 second..."));
   tickWorldUntil(context, 1, neverBreak);
@@ -281,6 +287,9 @@ bool RunLoadTest(
 
   // Freeze updates
   context.setSuspendUpdate(true);
+
+  UE_LOG(LogCesium, Display, TEXT("Ending play session..."));
+  GEditor->RequestEndPlayMap();
 
   double loadElapsedTime = loadEndMark - loadStartMark;
 
