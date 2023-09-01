@@ -11,18 +11,18 @@ namespace {
 struct FeatureIDFromAccessor {
   int64 operator()(std::monostate) { return -1; }
 
-  int64 operator()(const AccessorView<AccessorTypes::SCALAR<float>>& value) {
+  int64 operator()(const AccessorView<float>& value) {
     if (vertexIndex < 0 || vertexIndex >= value.size()) {
       return -1;
     }
-    return static_cast<int64>(glm::round(value[vertexIndex].value[0]));
+    return static_cast<int64>(glm::round(value[vertexIndex]));
   }
 
   template <typename T> int64 operator()(const AccessorView<T>& value) {
     if (vertexIndex < 0 || vertexIndex >= value.size()) {
       return -1;
     }
-    return static_cast<int64>(value[vertexIndex].value[0]);
+    return static_cast<int64>(value[vertexIndex]);
   }
 
   int64 vertexIndex;
@@ -62,24 +62,19 @@ FCesiumFeatureIdAttribute::FCesiumFeatureIdAttribute(
 
   switch (accessor->componentType) {
   case Accessor::ComponentType::BYTE:
-    this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<int8_t>>(Model, *accessor);
+    this->_featureIDAccessor = AccessorView<int8_t>(Model, *accessor);
     break;
   case Accessor::ComponentType::UNSIGNED_BYTE:
-    this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint8_t>>(Model, *accessor);
+    this->_featureIDAccessor = AccessorView<uint8_t>(Model, *accessor);
     break;
   case Accessor::ComponentType::SHORT:
-    this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<int16_t>>(Model, *accessor);
+    this->_featureIDAccessor = AccessorView<int16_t>(Model, *accessor);
     break;
   case Accessor::ComponentType::UNSIGNED_SHORT:
-    this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<uint16_t>>(Model, *accessor);
+    this->_featureIDAccessor = AccessorView<uint16_t>(Model, *accessor);
     break;
   case Accessor::ComponentType::FLOAT:
-    this->_featureIDAccessor =
-        AccessorView<AccessorTypes::SCALAR<float>>(Model, *accessor);
+    this->_featureIDAccessor = AccessorView<float>(Model, *accessor);
     break;
   default:
     _status = ECesiumFeatureIdAttributeStatus::ErrorInvalidAccessor;

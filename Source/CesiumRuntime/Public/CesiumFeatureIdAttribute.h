@@ -36,12 +36,12 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdAttribute {
 
   using FeatureIDAccessorType = std::variant<
       std::monostate,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int8_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint8_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<int16_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint16_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<uint32_t>>,
-      CesiumGltf::AccessorView<CesiumGltf::AccessorTypes::SCALAR<float>>>;
+      CesiumGltf::AccessorView<int8_t>,
+      CesiumGltf::AccessorView<uint8_t>,
+      CesiumGltf::AccessorView<int16_t>,
+      CesiumGltf::AccessorView<uint16_t>,
+      CesiumGltf::AccessorView<uint32_t>,
+      CesiumGltf::AccessorView<float>>;
 
 public:
   /**

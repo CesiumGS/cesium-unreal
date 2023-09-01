@@ -150,7 +150,7 @@ struct CESIUMRUNTIME_API FFeatureTableDescription {
 
 struct UE_DEPRECATED(
     5.0,
-    "CesiumEncodedMetadataComponent and its related description properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
+    "CesiumEncodedMetadataComponent and its related properties have been deprecated. Use CesiumEncodedFeaturesMetadata instead.")
     FFeatureTexturePropertyDescription;
 
 /**

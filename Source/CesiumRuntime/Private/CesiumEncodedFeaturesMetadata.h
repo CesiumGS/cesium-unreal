@@ -47,6 +47,11 @@ static const FString MaterialTexCoordIndexSuffix = "_UV_INDEX";
 static const FString MaterialChannelsSuffix = "_CHANNELS";
 static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
 
+/**
+ *  - Null Feature ID: FeatureIDSetName + "_NULL_ID"
+ */
+static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
+
 static const FString MaterialPropertyTablePrefix = "PTABLE_";
 static const FString MaterialPropertyDataSuffix = "_DATA";
 
@@ -138,6 +143,12 @@ struct EncodedFeatureIdSet {
    * extension.
    */
   FString propertyTableName;
+
+  /**
+   * A value that indicates that no feature is associated with the vertices or
+   * texels that have this value.
+   */
+  std::optional<int64> nullFeatureId;
 };
 
 /**

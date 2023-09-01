@@ -233,6 +233,7 @@ EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
     encodedSet->name = name;
     encodedSet->index = i;
     encodedSet->propertyTableName = pDescription->PropertyTableName;
+    encodedSet->nullFeatureId = pDescription->NullFeatureId;
 
     result.featureIdSets.Add(*encodedSet);
   }

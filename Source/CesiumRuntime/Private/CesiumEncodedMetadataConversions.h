@@ -18,8 +18,7 @@ struct FCesiumMetadataEncodingDetails;
  * the arrays of the property vary in length. Variable-length array properties
  * are unsupported.
  *
- * @param ValueType The given value type.
- * @param ArraySize The size of the array, if applicable.
+ * @param PropertyDetails The metadata property details
  */
 FCesiumMetadataEncodingDetails CesiumMetadataPropertyDetailsToEncodingDetails(
     FCesiumMetadataPropertyDetails PropertyDetails);

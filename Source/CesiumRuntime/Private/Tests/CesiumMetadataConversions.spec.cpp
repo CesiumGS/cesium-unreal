@@ -989,26 +989,32 @@ void FCesiumMetadataConversionsSpec::Define() {
     });
 
     It("converts from vec2 types", [this]() {
+      glm::ivec2 intVec2(-84, 5);
       TestEqual(
           "integer",
           CesiumMetadataConversions<FVector3f, glm::ivec2>::convert(
-              glm::ivec2(-84, 5),
+              intVec2,
               FVector3f(0.0f)),
-          FVector3f(static_cast<float>(-84), static_cast<float>(5), 0.0f));
+          FVector3f(
+              static_cast<float>(intVec2[0]),
+              static_cast<float>(intVec2[1]),
+              0.0f));
       TestEqual(
           "float",
           CesiumMetadataConversions<FVector3f, glm::vec2>::convert(
               glm::vec2(4.5f, 2.345f),
               FVector3f(0.0f)),
           FVector3f(4.5f, 2.345f, 0.0f));
+
+      glm::dvec2 doubleVec2(-3.5, 1.23456);
       TestEqual(
           "double",
           CesiumMetadataConversions<FVector3f, glm::dvec2>::convert(
-              glm::dvec2(-3.5, 1.23456),
+              doubleVec2,
               FVector3f(0.0f)),
           FVector3f(
-              static_cast<float>(-3.5),
-              static_cast<float>(1.23456),
+              static_cast<float>(doubleVec2[0]),
+              static_cast<float>(doubleVec2[1]),
               0.0f));
     });
 
