@@ -1,6 +1,5 @@
 # Change Log
 
-<<<<<<< HEAD
 ### ? - ?
 
 ##### Breaking Changes :mega:
@@ -21,13 +20,10 @@
 - `ACesiumGeoreference`, `ACesiumCameraManager`, and `ACesiumCreditSystem` are now created in the Persistent Level, even if the object that triggered their automatic creation (such as `ACesium3DTileset`) exists in a sub-level. It is very rarely useful to have instances of these objects within a sub-level.
 - An instance of `ACesiumCreditSystem` in a sub-level will no longer cause overlapping and broken-looking credits. However, we still recommend deleting credit system instances from sub-levels.
 
-||||||| 8200fa54
-=======
 ### v1.30.0 - 2023-09-01
 
 This release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.26.0 to v0.27.0. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
->>>>>>> origin/v1.x
 ### v1.29.0 - 2023-08-01
 
 ##### Fixes :wrench:
