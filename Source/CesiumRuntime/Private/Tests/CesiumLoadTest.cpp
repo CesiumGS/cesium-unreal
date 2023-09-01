@@ -21,6 +21,9 @@
 #include "CesiumTestHelpers.h"
 #include "GlobeAwareDefaultPawn.h"
 
+FString testIonToken(
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NjU3OGE4Zi0xOGM4LTQ4NjYtODc4ZS02YWNkMDZmY2Y1M2YiLCJpZCI6MjU5LCJpYXQiOjE2OTA4Nzg3MjB9.uxePYJL59S4pG5aqJHb9goikVSO-Px6xA7kZH8oM1eM");
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FCesiumLoadTestDenver,
     "Cesium.Performance.LoadTestDenver",
@@ -164,8 +167,6 @@ void setupForGoogleTiles(LoadTestContext& context) {
 void setupForDenver(LoadTestContext& context) {
 
   FVector targetOrigin(-104.988892, 39.743462, 1798.679443);
-  FString ionToken(
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2NmZhZTk4NS01MDFmLTRjODgtOTlkYy04NjIwODhiZWExOGYiLCJpZCI6MjU5LCJpYXQiOjE2ODg1MTI4ODd9.haoe5hsJyfHk1dQAHVK6N8dW_kfmtdbyuhlGwFdEHbM");
 
   FCesiumCamera camera;
   camera.ViewportSize = FVector2D(1024, 768);
@@ -185,7 +186,7 @@ void setupForDenver(LoadTestContext& context) {
       context.world->SpawnActor<ACesium3DTileset>();
   worldTerrainTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
   worldTerrainTileset->SetIonAssetID(1);
-  worldTerrainTileset->SetIonAccessToken(ionToken);
+  worldTerrainTileset->SetIonAccessToken(testIonToken);
   worldTerrainTileset->SetActorLabel(TEXT("Cesium World Terrain"));
 
   // Bing Maps Aerial overlay
@@ -204,7 +205,7 @@ void setupForDenver(LoadTestContext& context) {
       context.world->SpawnActor<ACesium3DTileset>();
   aerometrexTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
   aerometrexTileset->SetIonAssetID(354307);
-  aerometrexTileset->SetIonAccessToken(ionToken);
+  aerometrexTileset->SetIonAccessToken(testIonToken);
   aerometrexTileset->SetMaximumScreenSpaceError(2.0);
   aerometrexTileset->SetActorLabel(TEXT("Aerometrex Denver"));
 
@@ -322,8 +323,6 @@ bool FCesiumLoadTestGoogleplex::RunTest(const FString& Parameters) {
 bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
   auto setup = [this](LoadTestContext& context) {
     FVector targetOrigin(-73.616526, 45.57335, 95.048859);
-    FString ionToken(
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2NmZhZTk4NS01MDFmLTRjODgtOTlkYy04NjIwODhiZWExOGYiLCJpZCI6MjU5LCJpYXQiOjE2ODg1MTI4ODd9.haoe5hsJyfHk1dQAHVK6N8dW_kfmtdbyuhlGwFdEHbM");
 
     FCesiumCamera camera;
     camera.ViewportSize = FVector2D(1024, 768);
@@ -343,7 +342,7 @@ bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
         context.world->SpawnActor<ACesium3DTileset>();
     montrealTileset->SetTilesetSource(ETilesetSource::FromCesiumIon);
     montrealTileset->SetIonAssetID(28945);
-    montrealTileset->SetIonAccessToken(ionToken);
+    montrealTileset->SetIonAccessToken(testIonToken);
     montrealTileset->SetMaximumScreenSpaceError(16.0);
     montrealTileset->SetActorLabel(TEXT("Montreal Point Cloud"));
 
