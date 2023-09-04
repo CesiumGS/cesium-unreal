@@ -473,6 +473,24 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
   // Call the base class implementation last, because it will call OnRegister,
   // which will call Sync. So we need to apply the updated values first.
   Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  // Calling the Super implementation above shouldn't change the current
+  // relative transform without also changing _lastRelativeTransform. Except it
+  // can, because in some cases (e.g., on undo/redo), Unreal reruns the Actor's
+  // construction scripts, which can cause the relative transform to be
+  // recomputed from the world transform. That's a problem because later we'll
+  // think the relative transform has changed and will recompute the globe
+  // transform from it. So we set (again) the _lastRelativeTransform here.
+  //
+  // One possible danger is that the construction script _intentionally_ changes
+  // the transform. But we can't reliably distinguish that case from a phantom
+  // transform "change" caused by converting to a world transform and back. And
+  // surely something dodgy would be happening if something _other_ than the
+  // globe anchor were intentionally moving the Actor in the globe anchor's
+  // PostEditChangeProperty, right?
+  if (this->_lastRelativeTransformIsValid) {
+    this->_lastRelativeTransform = this->_getCurrentRelativeTransform();
+  }
 }
 #endif
 

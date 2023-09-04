@@ -15,9 +15,9 @@
 void UCesiumGlobeAnchorRotationEastSouthUp::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
   Super::PostEditChangeProperty(PropertyChangedEvent);
+  this->GlobeAnchor->Modify();
   this->GlobeAnchor->SetEastSouthUpRotation(
       FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
-  this->GlobeAnchor->Modify();
 }
 
 void UCesiumGlobeAnchorRotationEastSouthUp::Initialize(
