@@ -104,11 +104,13 @@ CesiumDegreesMinutesSecondsEditor::CesiumDegreesMinutesSecondsEditor(
 }
 
 void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
+  FSlateFontInfo FontInfo = IDetailLayoutBuilder::GetDetailFont();
 
   // The default editing component for the property:
   // A SpinBox for the decimal degrees
   DecimalDegreesSpinBox =
       SNew(SSpinBox<double>)
+          .Font(FontInfo)
           .MinSliderValue(IsLongitude ? -180 : -90)
           .MaxSliderValue(IsLongitude ? 180 : 90)
           .OnValueChanged(
@@ -123,6 +125,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
   // Spin boxes for degrees, minutes and seconds
   DegreesSpinBox =
       SNew(SSpinBox<int32>)
+          .Font(FontInfo)
           .MinSliderValue(0)
           .MaxSliderValue(IsLongitude ? 179 : 89)
           .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetDegrees)
@@ -130,6 +133,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
 
   MinutesSpinBox =
       SNew(SSpinBox<int32>)
+          .Font(FontInfo)
           .MinSliderValue(0)
           .MaxSliderValue(59)
           .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetMinutes)
@@ -137,6 +141,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
 
   SecondsSpinBox =
       SNew(SSpinBox<double>)
+          .Font(FontInfo)
           .MinSliderValue(0)
           .MaxSliderValue(59.999999)
           .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetSeconds)
@@ -154,6 +159,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
   SignComboBoxItems.Add(NegativeIndicator);
   SignComboBoxItems.Emplace(PositiveIndicator);
   SignComboBox = SNew(STextComboBox)
+                     .Font(FontInfo)
                      .OptionsSource(&SignComboBoxItems)
                      .OnSelectionChanged(
                          this,
