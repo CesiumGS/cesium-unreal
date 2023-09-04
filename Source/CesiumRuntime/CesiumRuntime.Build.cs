@@ -81,6 +81,8 @@ public class CesiumRuntime : ModuleRules
         string[] libs = new string[]
         {
             "async++",
+            "Cesium3DTiles",
+            "Cesium3DTilesReader",
             "Cesium3DTilesSelection",
             "CesiumAsync",
             "CesiumGeometry",
