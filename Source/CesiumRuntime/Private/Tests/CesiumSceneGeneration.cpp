@@ -13,6 +13,8 @@
 #include "CesiumSunSky.h"
 #include "GlobeAwareDefaultPawn.h"
 
+#include "CesiumTestHelpers.h"
+
 namespace Cesium {
 
 FString SceneGenerationContext::testIonToken(
@@ -38,6 +40,53 @@ void SceneGenerationContext::setSuspendUpdate(bool suspend) {
   std::vector<ACesium3DTileset*>::iterator it;
   for (it = tilesets.begin(); it != tilesets.end(); ++it)
     (*it)->SuspendUpdate = suspend;
+}
+
+bool SceneGenerationContext::areTilesetsDoneLoading() {
+  if (tilesets.empty())
+    return false;
+
+  std::vector<ACesium3DTileset*>::const_iterator it;
+  for (it = tilesets.begin(); it != tilesets.end(); ++it) {
+    ACesium3DTileset* tileset = *it;
+
+    int progress = (int)tileset->GetLoadProgress();
+    if (progress != 100) {
+      // We aren't done
+      return false;
+    }
+  }
+  return true;
+}
+
+void SceneGenerationContext::trackForPlay() {
+  CesiumTestHelpers::trackForPlay(georeference);
+  CesiumTestHelpers::trackForPlay(cameraManager);
+  CesiumTestHelpers::trackForPlay(pawn);
+
+  std::vector<ACesium3DTileset*>::iterator it;
+  for (it = tilesets.begin(); it != tilesets.end(); ++it) {
+    ACesium3DTileset* tileset = *it;
+    CesiumTestHelpers::trackForPlay(tileset);
+  }
+}
+
+void SceneGenerationContext::initForPlay(
+    SceneGenerationContext& creationContext) {
+  world = GEditor->PlayWorld;
+  georeference = CesiumTestHelpers::findInPlay(creationContext.georeference);
+  cameraManager = CesiumTestHelpers::findInPlay(creationContext.cameraManager);
+  pawn = CesiumTestHelpers::findInPlay(creationContext.pawn);
+
+  tilesets.clear();
+
+  std::vector<ACesium3DTileset*>& creationTilesets = creationContext.tilesets;
+  std::vector<ACesium3DTileset*>::iterator it;
+  for (it = creationTilesets.begin(); it != creationTilesets.end(); ++it) {
+    ACesium3DTileset* creationTileset = *it;
+    ACesium3DTileset* tileset = CesiumTestHelpers::findInPlay(creationTileset);
+    tilesets.push_back(tileset);
+  }
 }
 
 void createCommonWorldObjects(SceneGenerationContext& context) {

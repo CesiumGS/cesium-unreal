@@ -20,11 +20,14 @@ struct SceneGenerationContext {
   ACesiumCameraManager* cameraManager;
   AGlobeAwareDefaultPawn* pawn;
   std::vector<ACesium3DTileset*> tilesets;
-  FRequestPlaySessionParams playSessionParams;
 
   void setCamera(const FCesiumCamera& camera);
   void refreshTilesets();
   void setSuspendUpdate(bool suspend);
+  bool areTilesetsDoneLoading();
+
+  void trackForPlay();
+  void initForPlay(SceneGenerationContext& creationContext);
 
   static FString testIonToken;
 };
