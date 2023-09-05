@@ -126,6 +126,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
   DegreesSpinBox =
       SNew(SSpinBox<int32>)
           .Font(FontInfo)
+          .ToolTipText(FText::FromString("Degrees"))
           .MinSliderValue(0)
           .MaxSliderValue(IsLongitude ? 179 : 89)
           .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetDegrees)
@@ -134,6 +135,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
   MinutesSpinBox =
       SNew(SSpinBox<int32>)
           .Font(FontInfo)
+          .ToolTipText(FText::FromString("Minutes"))
           .MinSliderValue(0)
           .MaxSliderValue(59)
           .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetMinutes)
@@ -142,6 +144,7 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
   SecondsSpinBox =
       SNew(SSpinBox<double>)
           .Font(FontInfo)
+          .ToolTipText(FText::FromString("Seconds"))
           .MinSliderValue(0)
           .MaxSliderValue(59.999999)
           .OnValueChanged(this, &CesiumDegreesMinutesSecondsEditor::SetSeconds)
@@ -149,17 +152,21 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
 
   // The combo box for selecting "Eeast" or "West",
   // or "North" or "South", respectively.
+  FText signTooltip;
   if (IsLongitude) {
     PositiveIndicator = MakeShareable(new FString(TEXT("E")));
     NegativeIndicator = MakeShareable(new FString(TEXT("W")));
+    signTooltip = FText::FromString("East or West");
   } else {
     PositiveIndicator = MakeShareable(new FString(TEXT("N")));
     NegativeIndicator = MakeShareable(new FString(TEXT("S")));
+    signTooltip = FText::FromString("North or South");
   }
   SignComboBoxItems.Add(NegativeIndicator);
   SignComboBoxItems.Emplace(PositiveIndicator);
   SignComboBox = SNew(STextComboBox)
                      .Font(FontInfo)
+                     .ToolTipText(signTooltip)
                      .OptionsSource(&SignComboBoxItems)
                      .OnSelectionChanged(
                          this,
@@ -192,7 +199,9 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
                 // The 'degrees' symbol
-                SNew(STextBlock).Text(FText::FromString(TEXT("\u00B0")))
+                SNew(STextBlock)
+                  .Text(FText::FromString(TEXT("\u00B0")))
+                  .ToolTipText(FText::FromString("Degrees"))
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
@@ -201,7 +210,9 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
                 // The 'minutes' symbol
-                SNew(STextBlock).Text(FText::FromString(TEXT("\u2032")))
+                SNew(STextBlock)
+                  .Text(FText::FromString(TEXT("\u2032")))
+                  .ToolTipText(FText::FromString("Minutes"))
             ]
             + SHorizontalBox::Slot().FillWidth(1.0)
             [
@@ -210,7 +221,9 @@ void CesiumDegreesMinutesSecondsEditor::PopulateRow(IDetailPropertyRow& Row) {
             + SHorizontalBox::Slot().AutoWidth().Padding(hPad, 0.0f)
             [
                 // The 'seconds' symbol
-                SNew(STextBlock).Text(FText::FromString(TEXT("\u2033")))
+                SNew(STextBlock)
+                  .Text(FText::FromString(TEXT("\u2033")))
+                  .ToolTipText(FText::FromString("Seconds"))
             ]
             + SHorizontalBox::Slot().AutoWidth()
             [
