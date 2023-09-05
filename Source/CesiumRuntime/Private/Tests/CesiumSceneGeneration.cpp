@@ -2,8 +2,6 @@
 
 #include "CesiumSceneGeneration.h"
 
-#include "Tests/AutomationEditorCommon.h"
-
 #include "GameFramework/PlayerStart.h"
 
 #include "Cesium3DTileset.h"
