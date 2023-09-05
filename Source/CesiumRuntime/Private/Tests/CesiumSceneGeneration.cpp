@@ -2,6 +2,8 @@
 
 #include "CesiumSceneGeneration.h"
 
+#if WITH_EDITOR
+
 #include "GameFramework/PlayerStart.h"
 
 #include "Cesium3DTileset.h"
@@ -214,3 +216,5 @@ void setupForMontrealPointCloud(SceneGenerationContext& context) {
 }
 
 } // namespace Cesium
+
+#endif // #if WITH_EDITOR
