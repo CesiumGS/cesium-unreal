@@ -36,7 +36,7 @@ void createCommonWorldObjects(SceneGenerationContext& context);
 
 void setupForDenver(SceneGenerationContext& context);
 void setupForGoogleTiles(SceneGenerationContext& context);
-void setupForMelbourne(SceneGenerationContext& context);
+void setupForMontrealPointCloud(SceneGenerationContext& context);
 
 }; // namespace Cesium
 

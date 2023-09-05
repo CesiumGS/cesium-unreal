@@ -187,7 +187,7 @@ void setupForDenver(SceneGenerationContext& context) {
   context.tilesets.push_back(aerometrexTileset);
 }
 
-void setupForMelbourne(SceneGenerationContext& context) {
+void setupForMontrealPointCloud(SceneGenerationContext& context) {
   FVector targetOrigin(-73.616526, 45.57335, 95.048859);
 
   FCesiumCamera camera;
