@@ -5,8 +5,31 @@
 #include "Internationalization/Text.h"
 #include "UObject/NameTypes.h"
 
-class IDetailGroup;
 class IDetailCategoryBuilder;
+class IDetailGroup;
+class IDetailLayoutBuilder;
+
+class CesiumButtonGroup : public TSharedFromThis<CesiumButtonGroup> {
+public:
+  CesiumButtonGroup();
+
+  /// <summary>
+  /// Adds a button to this group. When pressed, the button will invoke the
+  /// provided UFunction. If a name is not specified, the label on the button is
+  /// derived automatically from the name of the function.
+  /// </summary>
+  /// <param name="Function"></param>
+  void AddButtonForUFunction(
+      UFunction* Function,
+      const FText& Label = FText::GetEmpty());
+
+  void
+  Finish(IDetailLayoutBuilder& DetailBuilder, IDetailCategoryBuilder& Category);
+
+private:
+  struct Impl;
+  TUniquePtr<Impl> pImpl;
+};
 
 class CesiumCustomization {
 public:
@@ -29,4 +52,10 @@ public:
       const FText& LocalizedDisplayName,
       bool bForAdvanced = false,
       bool bStartExpanded = false);
+
+  /// <summary>
+  /// Creates a new group of action buttons. Be sure to call Finish on the
+  /// returned instance after the last button has been added.
+  /// </summary>
+  static TSharedPtr<CesiumButtonGroup> CreateButtonGroup();
 };

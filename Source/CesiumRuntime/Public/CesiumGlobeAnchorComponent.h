@@ -498,7 +498,7 @@ public:
    * Rotates the Actor so that its local +Z axis is aligned with the ellipsoid
    * surface normal at its current location.
    */
-  UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SnapLocalUpToEllipsoidNormal();
 
   /**
@@ -506,7 +506,7 @@ public:
    * its +Y axis points in the local South direction, and its +Z axis points in
    * the local Up direction.
    */
-  UFUNCTION(BlueprintCallable, CallInEditor, Category = "Cesium")
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
   void SnapToEastSouthUp();
 
   /**

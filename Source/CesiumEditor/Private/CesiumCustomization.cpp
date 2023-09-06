@@ -5,8 +5,74 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "IDetailGroup.h"
+#include "ScopedTransaction.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SWrapBox.h"
 #include "Widgets/Text/STextBlock.h"
+
+struct CesiumButtonGroup::Impl {
+  TSharedPtr<SWrapBox> Container;
+  TArray<TWeakObjectPtr<UObject>> SelectedObjects;
+  FTextBuilder ButtonSearchText;
+};
+
+CesiumButtonGroup::CesiumButtonGroup() : pImpl(MakeUnique<Impl>()) {
+  this->pImpl->Container = SNew(SWrapBox).UseAllottedSize(true);
+}
+
+void CesiumButtonGroup::AddButtonForUFunction(
+    UFunction* Function,
+    const FText& Label) {
+  check(Function);
+  if (!Function)
+    return;
+
+  FText ButtonCaption =
+      Label.IsEmpty()
+          ? FText::FromString(
+                FName::NameToDisplayString(*Function->GetName(), false))
+          : Label;
+  FText ButtonTooltip = Function->GetToolTipText();
+
+  this->pImpl->ButtonSearchText.AppendLine(ButtonCaption);
+  this->pImpl->ButtonSearchText.AppendLine(ButtonTooltip);
+
+  TWeakObjectPtr<UFunction> WeakFunctionPtr = Function;
+
+  pImpl->Container->AddSlot()
+      .VAlign(EVerticalAlignment::VAlign_Center)
+      .Padding(
+          0.0f,
+          3.0f,
+          0.0f,
+          3.0f)[SNew(SButton)
+                    .Text(ButtonCaption)
+                    .OnClicked_Lambda([WeakFunctionPtr,
+                                       ButtonCaption,
+                                       Group = this->AsShared()]() {
+                      if (UFunction* Function = WeakFunctionPtr.Get()) {
+                        FScopedTransaction Transaction(ButtonCaption);
+                        FEditorScriptExecutionGuard ScriptGuard;
+                        for (TWeakObjectPtr<UObject> SelectedObjectPtr :
+                             Group->pImpl->SelectedObjects) {
+                          if (UObject* Object = SelectedObjectPtr.Get()) {
+                            Object->Modify();
+                            Object->ProcessEvent(Function, nullptr);
+                          }
+                        }
+                      }
+                      return FReply::Handled();
+                    })
+                    .ToolTipText(ButtonTooltip)];
+}
+
+void CesiumButtonGroup::Finish(
+    IDetailLayoutBuilder& DetailBuilder,
+    IDetailCategoryBuilder& Category) {
+  DetailBuilder.GetObjectsBeingCustomized(this->pImpl->SelectedObjects);
+  Category.AddCustomRow(this->pImpl->ButtonSearchText.ToText())
+      .RowTag("Actions")[this->pImpl->Container.ToSharedRef()];
+}
 
 IDetailGroup& CesiumCustomization::CreateGroup(
     IDetailCategoryBuilder& Category,
@@ -37,4 +103,8 @@ IDetailGroup& CesiumCustomization::CreateGroup(
 
   ];
   return Group;
+}
+
+TSharedPtr<CesiumButtonGroup> CesiumCustomization::CreateButtonGroup() {
+  return MakeShared<CesiumButtonGroup>();
 }

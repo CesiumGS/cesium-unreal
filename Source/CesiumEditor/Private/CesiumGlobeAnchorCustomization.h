@@ -19,13 +19,13 @@ public:
   class UCesiumGlobeAnchorComponent* GlobeAnchor;
 
   UPROPERTY(EditAnywhere)
-  double Pitch = 1.0;
+  double Pitch = 0.0;
 
   UPROPERTY(EditAnywhere)
-  double Yaw = 2.0;
+  double Yaw = 0.0;
 
   UPROPERTY(EditAnywhere)
-  double Roll = 3.0;
+  double Roll = 0.0;
 
   virtual void PostEditChangeProperty(
       struct FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -56,8 +56,6 @@ private:
       IDetailLayoutBuilder& DetailBuilder,
       IDetailCategoryBuilder& Category);
   void UpdateEastSouthUpValues();
-  FReply
-  OnPlaceGeoreferenceOriginHere(TWeakObjectPtr<UFunction> WeakFunctionPtr);
 
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LongitudeEditor;
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LatitudeEditor;

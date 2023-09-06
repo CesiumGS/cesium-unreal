@@ -4,14 +4,9 @@
 #include "CesiumCustomization.h"
 #include "CesiumDegreesMinutesSecondsEditor.h"
 #include "CesiumGlobeAnchorComponent.h"
-#include "PropertyCustomizationHelpers.h"
-#include "PropertyEditing.h"
-#include "ScopedTransaction.h"
-#include "Widgets/Input/SButton.h"
-#include "Widgets/Input/SSpinBox.h"
-#include "Widgets/Input/STextComboBox.h"
-#include "Widgets/Layout/SWrapBox.h"
-#include "Widgets/Text/STextBlock.h"
+#include "DetailCategoryBuilder.h"
+#include "DetailLayoutBuilder.h"
+#include "IDetailGroup.h"
 
 void UCesiumGlobeAnchorRotationEastSouthUp::PostEditChangeProperty(
     FPropertyChangedEvent& PropertyChangedEvent) {
@@ -68,34 +63,21 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
 
   IDetailCategoryBuilder& CesiumCategory = DetailBuilder.EditCategory("Cesium");
 
-  // UFunction* PlaceGeoreferenceOriginHere =
-  //     DetailBuilder.GetBaseClass()->FindFunctionByName(
-  //         GET_FUNCTION_NAME_CHECKED(
-  //             UCesiumGlobeAnchorComponent,
-  //             PlaceGeoreferenceOriginHere));
-  // check(PlaceGeoreferenceOriginHere);
+  TSharedPtr<CesiumButtonGroup> pButtons =
+      CesiumCustomization::CreateButtonGroup();
+  pButtons->AddButtonForUFunction(
+      UCesiumGlobeAnchorComponent::StaticClass()->FindFunctionByName(
+          GET_FUNCTION_NAME_CHECKED(
+              UCesiumGlobeAnchorComponent,
+              SnapLocalUpToEllipsoidNormal)));
 
-  // FText ButtonCaption = FText::FromString(FName::NameToDisplayString(
-  //     *PlaceGeoreferenceOriginHere->GetName(),
-  //     false));
-  // FText ButtonTooltip = PlaceGeoreferenceOriginHere->GetToolTipText();
+  pButtons->AddButtonForUFunction(
+      UCesiumGlobeAnchorComponent::StaticClass()->FindFunctionByName(
+          GET_FUNCTION_NAME_CHECKED(
+              UCesiumGlobeAnchorComponent,
+              SnapToEastSouthUp)));
 
-  // FTextBuilder ButtonSearchText;
-  // ButtonSearchText.AppendLine(ButtonCaption);
-  // ButtonSearchText.AppendLine(ButtonTooltip);
-
-  // TSharedPtr<SWrapBox> WrapBox = SNew(SWrapBox).UseAllottedSize(true);
-  // WrapBox->AddSlot().Padding(0.0f, 0.0f, 5.0f, 3.0f)
-  //     [SNew(SButton)
-  //          .Text(ButtonCaption)
-  //          .OnClicked(FOnClicked::CreateSP(
-  //              this,
-  //              &FCesiumGlobeAnchorCustomization::OnPlaceGeoreferenceOriginHere,
-  //              TWeakObjectPtr<UFunction>(PlaceGeoreferenceOriginHere)))
-  //          .ToolTipText(ButtonTooltip)];
-
-  // CesiumCategory.AddCustomRow(ButtonSearchText.ToText())
-  //     .RowTag(PlaceGeoreferenceOriginHere->GetFName())[WrapBox.ToSharedRef()];
+  pButtons->Finish(DetailBuilder, CesiumCategory);
 
   CesiumCategory.AddProperty(
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference));
@@ -209,21 +191,4 @@ void FCesiumGlobeAnchorCustomization::UpdateEastSouthUpValues() {
     this->EastSouthUpObjects[i]->Initialize(GlobeAnchor);
     this->EastSouthUpPointers[i] = this->EastSouthUpObjects[i].Get();
   }
-}
-
-FReply FCesiumGlobeAnchorCustomization::OnPlaceGeoreferenceOriginHere(
-    TWeakObjectPtr<UFunction> WeakFunctionPtr) {
-  if (UFunction* Function = WeakFunctionPtr.Get()) {
-    FScopedTransaction Transaction(
-        FText::FromString("Place Georeference Origin Here"));
-
-    FEditorScriptExecutionGuard ScriptGuard;
-    for (TWeakObjectPtr<UObject> SelectedObjectPtr : SelectedObjects) {
-      if (UObject* Object = SelectedObjectPtr.Get()) {
-        Object->ProcessEvent(Function, nullptr);
-      }
-    }
-  }
-
-  return FReply::Handled();
 }
