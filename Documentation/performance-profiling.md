@@ -1,7 +1,12 @@
 
-Is your app running slowly? Here is a guide to help find performance problems in your code.
+Want to find out how to make your Unreal app using Cesium run faster? 
 
-This guide profiles C++ code, running on Windows, using the Visual Studio CPU usage diagonostic tool ([link](https://learn.microsoft.com/en-us/visualstudio/profiling/beginners-guide-to-performance-profiling?view=vs-2022)).
+This guide will help you find performance problems in your C++ code using the CPU Usage tool included in Visual Studio's Diagonostic tools window.
+[link](https://learn.microsoft.com/en-us/visualstudio/profiling/beginners-guide-to-performance-profiling?view=vs-2022)
+
+The CPU Usage tool is easy to set up with minimal effect on how your app is built or how it runs. If you use Visual Studio often, you may even have this running already. This is a sampling-based profiler, with pros and cons detailed [here](https://learn.microsoft.com/en-us/visualstudio/profiling/understanding-performance-collection-methods-perf-profiler?view=vs-2022)
+
+
 
 ## Set up a repeatable test
 
@@ -27,7 +32,7 @@ We need to make sure all our C++ code is building in release mode.
 > This assumes that you have already built your code successfully and are familiar with the concepts from our [developer setup guide](https://github.com/CesiumGS/cesium-unreal/blob/ue5-main/Documentation/developer-setup-windows.md). Although you could profile a debug build, it is typically more useful to build in release, since this is how a game is usually packaged.
 
 1) If building the cesium-native library, make sure you are using a Release configuration
-2) Open your Unreal project's Visual Studio solution (.sln). This example uses the solution generated from https://github.com/CesiumGS/cesium-unreal-samples
+2) Open your Unreal project's Visual Studio solution (.sln). This example uses the solution generated from [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples)
 3) Choose "Development Editor"
 
 ![smaller 3](https://github.com/CesiumGS/cesium-unreal/assets/130494071/0e70065f-c717-466b-a92b-cab1dcfdd29b)
@@ -37,7 +42,7 @@ We need to make sure all our C++ code is building in release mode.
 
 ## Setup Visual Studio for capture
 
-1) Open your project's Visual Studio solution (.sln). This example uses the solution generated from https://github.com/CesiumGS/cesium-unreal-samples
+1) Open your project's Visual Studio solution (.sln). This example uses the solution generated from [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples)
 2) From the menu, choose Debug->Windows->Show Diagnostic Tools
 3) Configure it. Uncheck 'Memory Usage'. Under Settings, Uncheck "Enable CPU Profiling", we'll turn this back on later.
 
@@ -47,7 +52,7 @@ We need to make sure all our C++ code is building in release mode.
 
 ![Breakpoint Set small](https://github.com/CesiumGS/cesium-unreal/assets/130494071/5a793b9c-fd68-42ed-96ae-6ec884c38951)
 
-> We don't have to do this. We could profile the entire debugging session if we needed to. But it's generally good practice to reduce your timing capture as much as possible. This can improve responsiveness when using profiling tools, especially when dealing with intensive operations like memory heap tracking. 
+>We could profile the entire debugging session if we needed to. But it's generally good practice to reduce your timing capture as much as possible. This can improve responsiveness when using resource intensive profiling tools, like memory heap tracking. 
 
 ## Run the timing capture session
 
@@ -67,6 +72,15 @@ We need to make sure all our C++ code is building in release mode.
 
 ## Interpret the report
 
-![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/b83c63e0-06c4-47ff-afab-17a9923fa646)
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/afe09c83-6904-48ea-8002-3d7237b8d188)
 
-TODO
+This can be a bit daunting at first, but most profiling tools have a similar workflow.
+
+
+#### Start at the timeline
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/c97fd664-7951-46cb-bb60-20e8eaa35e88)
+
+Note the highlighted area to the right where the CPU usage spikes. This corresponds to the breakpoints that we set. All data from the report will reflect this selection only
+
+
+
