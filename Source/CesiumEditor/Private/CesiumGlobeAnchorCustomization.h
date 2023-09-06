@@ -18,12 +18,27 @@ public:
   UPROPERTY()
   class UCesiumGlobeAnchorComponent* GlobeAnchor;
 
-  UPROPERTY(EditAnywhere)
+  /**
+   * The rotation around the right (Y) axis. Zero pitch means the look direction
+   * (+X) is level with the horizon. Positive pitch is looking up, negative
+   * pitch is looking down.
+   */
+  UPROPERTY(EditAnywhere, Meta = (ClampMin = -89.9999, ClampMax = 89.9999))
   double Pitch = 0.0;
 
+  /**
+   * The rotation around the up (Z) axis. Zero yaw means the look direction (+X)
+   * points East. Positive yaw rotates right toward South, while negative yaw
+   * rotates left toward North.
+   */
   UPROPERTY(EditAnywhere)
   double Yaw = 0.0;
 
+  /**
+   * The rotation around the forward (X) axis. Zero roll is upright. Positive
+   * roll is like tilting your head to the right (clockwise), while negative
+   * roll is tilting to the left (counter-clockwise).
+   */
   UPROPERTY(EditAnywhere)
   double Roll = 0.0;
 
