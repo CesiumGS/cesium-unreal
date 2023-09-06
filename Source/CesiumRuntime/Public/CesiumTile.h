@@ -37,7 +37,7 @@ public:
    * primitive component and this tile.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  bool IsIntersecting(UPrimitiveComponent* Other) const;
+  bool IsIntersecting(const UPrimitiveComponent* Other) const;
 
   /**
    * Checks if this tile is fully inside the given primitive component.
@@ -45,7 +45,7 @@ public:
    * component and the tile's bounds.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  bool IsContainedBy(UPrimitiveComponent* Other) const;
+  bool IsContainedBy(const UPrimitiveComponent* Other) const;
 
   friend class CesiumTileExcluderAdapter;
 };
