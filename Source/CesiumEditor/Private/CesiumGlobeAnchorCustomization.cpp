@@ -1,6 +1,7 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGlobeAnchorCustomization.h"
+#include "CesiumCustomization.h"
 #include "CesiumDegreesMinutesSecondsEditor.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "PropertyCustomizationHelpers.h"
@@ -105,7 +106,8 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
 
-  IDetailGroup& PositionLLH = CesiumCategory.AddGroup(
+  IDetailGroup& PositionLLH = CesiumCustomization::CreateGroup(
+      CesiumCategory,
       "PositionLatitudeLongitudeHeight",
       FText::FromString("Position (Latitude, Longitude, Height)"),
       false,
@@ -134,7 +136,8 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
   PositionLLH.AddPropertyRow(DetailBuilder.GetProperty(
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)));
 
-  IDetailGroup& PositionECEF = CesiumCategory.AddGroup(
+  IDetailGroup& PositionECEF = CesiumCustomization::CreateGroup(
+      CesiumCategory,
       "PositionEarthCenteredEarthFixed",
       FText::FromString("Position (Earth-Centered, Earth-Fixed)"),
       false,
@@ -159,7 +162,8 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
 void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
     IDetailLayoutBuilder& DetailBuilder,
     IDetailCategoryBuilder& Category) {
-  IDetailGroup& RotationESU = Category.AddGroup(
+  IDetailGroup& RotationESU = CesiumCustomization::CreateGroup(
+      Category,
       "RotationEastSouthUp",
       FText::FromString("Rotation (East-South-Up)"),
       false,
