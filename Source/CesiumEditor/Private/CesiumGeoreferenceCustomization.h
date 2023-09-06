@@ -20,10 +20,6 @@ public:
   static TSharedRef<IDetailCustomization> MakeInstance();
 
 private:
-  FReply
-  OnPlaceGeoreferenceOriginHere(TWeakObjectPtr<UFunction> WeakFunctionPtr);
-
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LongitudeEditor;
   TSharedPtr<CesiumDegreesMinutesSecondsEditor> LatitudeEditor;
-  TArray<TWeakObjectPtr<UObject>> SelectedObjects;
 };
