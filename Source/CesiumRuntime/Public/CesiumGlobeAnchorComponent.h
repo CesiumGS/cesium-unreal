@@ -107,76 +107,6 @@ private:
   ACesiumGeoreference* ResolvedGeoreference = nullptr;
 
   /**
-   * The latitude in degrees of this component, in the range [-90, 90]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      BlueprintGetter = GetLatitude,
-      Interp,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess, ClampMin = -90.0, ClampMax = 90.0))
-  double Latitude = 0.0;
-
-  /**
-   * The longitude in degrees of this component, in the range [-180, 180]
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      BlueprintGetter = GetLongitude,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess, ClampMin = -180.0, ClampMax = 180.0))
-  double Longitude = 0.0;
-
-  /**
-   * The height in meters above the ellipsoid (usually WGS84) of this component.
-   * Do not confuse this with a geoid height or height above mean sea level,
-   * which can be tens of meters higher or lower depending on where in the world
-   * the object is located.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      BlueprintGetter = GetHeight,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  double Height = 0.0;
-
-  /**
-   * The Earth-Centered Earth-Fixed X-coordinate of this component in meters.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      BlueprintGetter = GetEarthCenteredEarthFixedX,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  double ECEF_X = 0.0;
-
-  /**
-   * The Earth-Centered Earth-Fixed Y-coordinate of this component in meters.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      BlueprintGetter = GetEarthCenteredEarthFixedY,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  double ECEF_Y = 0.0;
-
-  /**
-   * The Earth-Centered Earth-Fixed Z-coordinate of this component in meters.
-   */
-  UPROPERTY(
-      EditAnywhere,
-      BlueprintReadOnly,
-      BlueprintGetter = GetEarthCenteredEarthFixedZ,
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  double ECEF_Z = 0.0;
-
-  /**
    * The 4x4 transformation matrix from the Actors's local coordinate system to
    * the Earth-Centered, Earth-Fixed (ECEF) coordinate system.
    *
@@ -247,48 +177,6 @@ public:
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   ACesiumGeoreference* ResolveGeoreference();
-
-  /**
-   * Gets the latitude in degrees of this component, in the range [-90, 90]
-   */
-  UFUNCTION(BlueprintGetter)
-  double GetLatitude() const { return this->Latitude; }
-
-  /**
-   * Gets the longitude in degrees of this component, in the range [-180, 180]
-   */
-  UFUNCTION(BlueprintGetter)
-  double GetLongitude() const { return this->Longitude; }
-
-  /**
-   * Gets the height in meters above the ellipsoid (usually WGS84) of this
-   * component. Do not confuse this with a geoid height or height above mean sea
-   * level, which can be tens of meters higher or lower depending on where in
-   * the world the object is located.
-   */
-  UFUNCTION(BlueprintGetter)
-  double GetHeight() const { return this->Height; }
-
-  /**
-   * Gets the Earth-Centered Earth-Fixed X-coordinate of this component in
-   * meters.
-   */
-  UFUNCTION(BlueprintGetter)
-  double GetEarthCenteredEarthFixedX() const { return this->ECEF_X; }
-
-  /**
-   * Gets the Earth-Centered Earth-Fixed Y-coordinate of this component in
-   * meters.
-   */
-  UFUNCTION(BlueprintGetter)
-  double GetEarthCenteredEarthFixedY() const { return this->ECEF_Y; }
-
-  /**
-   * Gets the Earth-Centered Earth-Fixed Z-coordinate of this component in
-   * meters.
-   */
-  UFUNCTION(BlueprintGetter)
-  double GetEarthCenteredEarthFixedZ() const { return this->ECEF_Z; }
 
   /**
    * Gets the 4x4 transformation matrix from the Actors's local coordinate
@@ -399,6 +287,37 @@ public:
       Category = "Cesium",
       Meta = (ReturnDisplayName = "LongitudeLatitudeHeight"))
   FVector GetLongitudeLatitudeHeight() const;
+
+  /**
+   * Gets the longitude in degrees.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      Meta = (ReturnDisplayName = "Longitude"))
+  double GetLongitude() const { return this->GetLongitudeLatitudeHeight().X; }
+
+  /**
+   * Gets the latitude in degrees.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      Meta = (ReturnDisplayName = "Latitude"))
+  double GetLatitude() const { return this->GetLongitudeLatitudeHeight().Y; }
+
+  /**
+   * Gets the height in meters above the ellipsoid.
+   *
+   * Do not confuse the ellipsoid height with a geoid height or height above
+   * mean sea level, which can be tens of meters higher or lower depending on
+   * where in the world the object is located.
+   */
+  UFUNCTION(
+      BlueprintPure,
+      Category = "Cesium",
+      Meta = (ReturnDisplayName = "Height"))
+  double GetHeight() const { return this->GetLongitudeLatitudeHeight().Z; }
 
   /**
    * Moves the Actor to which this component is attached to a given longitude in

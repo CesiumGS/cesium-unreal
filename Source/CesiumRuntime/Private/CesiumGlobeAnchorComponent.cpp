@@ -447,24 +447,6 @@ void UCesiumGlobeAnchorComponent::PostEditChangeProperty(
     FName propertyName = PropertyChangedEvent.Property->GetFName();
 
     if (propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Longitude) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Latitude) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)) {
-      this->MoveToLongitudeLatitudeHeight(
-          FVector(this->Longitude, this->Latitude, this->Height));
-    } else if (
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_X) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Y) ||
-        propertyName ==
-            GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Z)) {
-      this->MoveToEarthCenteredEarthFixedPosition(
-          FVector(this->ECEF_X, this->ECEF_Y, this->ECEF_Z));
-    } else if (
-        propertyName ==
         GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference)) {
       this->SetGeoreference(this->Georeference);
     }
@@ -675,21 +657,6 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   this->ActorToEarthCenteredEarthFixedMatrix =
       VecMath::createMatrix(nativeAnchor.getAnchorToFixedTransform());
   this->_actorToECEFIsValid = true;
-
-  // Update the editable position properties
-  // TODO: it'd be nice if we didn't have to store these at all. But then we'd
-  // need a custom UI to make them directly editable, I think.
-  FVector origin = this->ActorToEarthCenteredEarthFixedMatrix.GetOrigin();
-  this->ECEF_X = origin.X;
-  this->ECEF_Y = origin.Y;
-  this->ECEF_Z = origin.Z;
-
-  FVector llh =
-      UCesiumWgs84Ellipsoid::EarthCenteredEarthFixedToLongitudeLatitudeHeight(
-          origin);
-  this->Longitude = llh.X;
-  this->Latitude = llh.Y;
-  this->Height = llh.Z;
 
   // Update the Unreal relative transform
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();

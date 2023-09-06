@@ -8,36 +8,6 @@
 #include "DetailLayoutBuilder.h"
 #include "IDetailGroup.h"
 
-void UCesiumGlobeAnchorRotationEastSouthUp::PostEditChangeProperty(
-    FPropertyChangedEvent& PropertyChangedEvent) {
-  Super::PostEditChangeProperty(PropertyChangedEvent);
-  this->GlobeAnchor->Modify();
-  this->GlobeAnchor->SetEastSouthUpRotation(
-      FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
-}
-
-void UCesiumGlobeAnchorRotationEastSouthUp::Initialize(
-    UCesiumGlobeAnchorComponent* GlobeAnchorComponent) {
-  this->GlobeAnchor = GlobeAnchorComponent;
-  this->Tick(0.0f);
-}
-
-void UCesiumGlobeAnchorRotationEastSouthUp::Tick(float DeltaTime) {
-  if (this->GlobeAnchor) {
-    FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
-    FRotator rotator = rotation.Rotator();
-    this->Roll = rotator.Roll;
-    this->Pitch = rotator.Pitch;
-    this->Yaw = rotator.Yaw;
-  }
-}
-
-TStatId UCesiumGlobeAnchorRotationEastSouthUp::GetStatId() const {
-  RETURN_QUICK_DECLARE_CYCLE_STAT(
-      UCesiumGlobeAnchorRotationEastSouthUp,
-      STATGROUP_Tickables);
-}
-
 void FCesiumGlobeAnchorCustomization::Register(
     FPropertyEditorModule& PropertyEditorModule) {
   PropertyEditorModule.RegisterCustomClassLayout(
@@ -88,72 +58,95 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       UCesiumGlobeAnchorComponent,
       TeleportWhenUpdatingTransform));
 
-  IDetailGroup& PositionLLH = CesiumCustomization::CreateGroup(
-      CesiumCategory,
-      "PositionLatitudeLongitudeHeight",
-      FText::FromString("Position (Latitude, Longitude, Height)"),
-      false,
-      true);
+  this->UpdateDerivedProperties();
 
-  TSharedPtr<class IPropertyHandle> LatitudeDecimalDegreesHandle =
-      DetailBuilder.GetProperty(
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Latitude));
-  IDetailPropertyRow& LatitudeRow =
-      PositionLLH.AddPropertyRow(LatitudeDecimalDegreesHandle.ToSharedRef());
-  LatitudeEditor = MakeShared<CesiumDegreesMinutesSecondsEditor>(
-      LatitudeDecimalDegreesHandle,
-      false);
-  LatitudeEditor->PopulateRow(LatitudeRow);
+  this->CreatePositionLongitudeLatitudeHeight(DetailBuilder, CesiumCategory);
+  this->CreatePositionEarthCenteredEarthFixed(DetailBuilder, CesiumCategory);
+  this->CreateRotationEastSouthUp(DetailBuilder, CesiumCategory);
+}
 
-  TSharedPtr<class IPropertyHandle> LongitudeDecimalDegreesHandle =
-      DetailBuilder.GetProperty(
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Longitude));
-  IDetailPropertyRow& LongitudeRow =
-      PositionLLH.AddPropertyRow(LongitudeDecimalDegreesHandle.ToSharedRef());
-  LongitudeEditor = MakeShared<CesiumDegreesMinutesSecondsEditor>(
-      LongitudeDecimalDegreesHandle,
-      true);
-  LongitudeEditor->PopulateRow(LongitudeRow);
-
-  PositionLLH.AddPropertyRow(DetailBuilder.GetProperty(
-      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Height)));
-
-  IDetailGroup& PositionECEF = CesiumCustomization::CreateGroup(
-      CesiumCategory,
+void FCesiumGlobeAnchorCustomization::CreatePositionEarthCenteredEarthFixed(
+    IDetailLayoutBuilder& DetailBuilder,
+    IDetailCategoryBuilder& Category) {
+  IDetailGroup& Group = CesiumCustomization::CreateGroup(
+      Category,
       "PositionEarthCenteredEarthFixed",
       FText::FromString("Position (Earth-Centered, Earth-Fixed)"),
       false,
       true);
 
-  PositionECEF
-      .AddPropertyRow(DetailBuilder.GetProperty(
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_X)))
-      .DisplayName(FText::FromString("X"));
-  PositionECEF
-      .AddPropertyRow(DetailBuilder.GetProperty(
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Y)))
-      .DisplayName(FText::FromString("Y"));
-  PositionECEF
-      .AddPropertyRow(DetailBuilder.GetProperty(
-          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, ECEF_Z)))
-      .DisplayName(FText::FromString("Z"));
+  TArrayView<UObject*> View = this->DerivedPointers;
+  TSharedPtr<IPropertyHandle> XProperty = DetailBuilder.AddObjectPropertyData(
+      View,
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, X));
+  TSharedPtr<IPropertyHandle> YProperty = DetailBuilder.AddObjectPropertyData(
+      View,
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Y));
+  TSharedPtr<IPropertyHandle> ZProperty = DetailBuilder.AddObjectPropertyData(
+      View,
+      GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Z));
 
-  this->CreateRotationEastSouthUp(DetailBuilder, CesiumCategory);
+  Group.AddPropertyRow(XProperty.ToSharedRef());
+  Group.AddPropertyRow(YProperty.ToSharedRef());
+  Group.AddPropertyRow(ZProperty.ToSharedRef());
+}
+
+void FCesiumGlobeAnchorCustomization::CreatePositionLongitudeLatitudeHeight(
+    IDetailLayoutBuilder& DetailBuilder,
+    IDetailCategoryBuilder& Category) {
+  IDetailGroup& Group = CesiumCustomization::CreateGroup(
+      Category,
+      "PositionLatitudeLongitudeHeight",
+      FText::FromString("Position (Latitude, Longitude, Height)"),
+      false,
+      true);
+
+  TArrayView<UObject*> View = this->DerivedPointers;
+  TSharedPtr<IPropertyHandle> LatitudeProperty =
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(
+              UCesiumGlobeAnchorDerivedProperties,
+              Latitude));
+  TSharedPtr<IPropertyHandle> LongitudeProperty =
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(
+              UCesiumGlobeAnchorDerivedProperties,
+              Longitude));
+  TSharedPtr<IPropertyHandle> HeightProperty =
+      DetailBuilder.AddObjectPropertyData(
+          View,
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Height));
+
+  IDetailPropertyRow& LatitudeRow =
+      Group.AddPropertyRow(LatitudeProperty.ToSharedRef());
+  LatitudeEditor =
+      MakeShared<CesiumDegreesMinutesSecondsEditor>(LatitudeProperty, false);
+  LatitudeEditor->PopulateRow(LatitudeRow);
+
+  IDetailPropertyRow& LongitudeRow =
+      Group.AddPropertyRow(LongitudeProperty.ToSharedRef());
+  LongitudeEditor =
+      MakeShared<CesiumDegreesMinutesSecondsEditor>(LongitudeProperty, true);
+  LongitudeEditor->PopulateRow(LongitudeRow);
+
+  Group.AddPropertyRow(HeightProperty.ToSharedRef());
 }
 
 void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
     IDetailLayoutBuilder& DetailBuilder,
     IDetailCategoryBuilder& Category) {
-  IDetailGroup& RotationESU = CesiumCustomization::CreateGroup(
+  IDetailGroup& Group = CesiumCustomization::CreateGroup(
       Category,
       "RotationEastSouthUp",
       FText::FromString("Rotation (East-South-Up)"),
       false,
       true);
 
-  this->UpdateEastSouthUpValues();
+  this->UpdateDerivedProperties();
 
-  TArrayView<UObject*> EastSouthUpPointerView = this->EastSouthUpPointers;
+  TArrayView<UObject*> EastSouthUpPointerView = this->DerivedPointers;
   TSharedPtr<IPropertyHandle> RollProperty =
       DetailBuilder.AddObjectPropertyData(EastSouthUpPointerView, "Roll");
   TSharedPtr<IPropertyHandle> PitchProperty =
@@ -161,34 +154,100 @@ void FCesiumGlobeAnchorCustomization::CreateRotationEastSouthUp(
   TSharedPtr<IPropertyHandle> YawProperty =
       DetailBuilder.AddObjectPropertyData(EastSouthUpPointerView, "Yaw");
 
-  RotationESU.AddPropertyRow(RollProperty.ToSharedRef());
-  RotationESU.AddPropertyRow(PitchProperty.ToSharedRef());
-  RotationESU.AddPropertyRow(YawProperty.ToSharedRef());
-
-  TSharedPtr<IPropertyHandle> ActorToEcefProperty =
-      DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(
-          UCesiumGlobeAnchorComponent,
-          ActorToEarthCenteredEarthFixedMatrix));
-  ActorToEcefProperty->SetOnPropertyValueChanged(FSimpleDelegate::CreateSP(
-      this,
-      &FCesiumGlobeAnchorCustomization::UpdateEastSouthUpValues));
+  Group.AddPropertyRow(RollProperty.ToSharedRef());
+  Group.AddPropertyRow(PitchProperty.ToSharedRef());
+  Group.AddPropertyRow(YawProperty.ToSharedRef());
 }
 
-void FCesiumGlobeAnchorCustomization::UpdateEastSouthUpValues() {
-  this->EastSouthUpObjects.SetNum(this->SelectedObjects.Num());
-  this->EastSouthUpPointers.SetNum(EastSouthUpObjects.Num());
+void FCesiumGlobeAnchorCustomization::UpdateDerivedProperties() {
+  this->DerivedObjects.SetNum(this->SelectedObjects.Num());
+  this->DerivedPointers.SetNum(DerivedObjects.Num());
 
   for (int i = 0; i < this->SelectedObjects.Num(); ++i) {
-    if (!IsValid(this->EastSouthUpObjects[i].Get())) {
-      this->EastSouthUpObjects[i] =
-          NewObject<UCesiumGlobeAnchorRotationEastSouthUp>();
+    if (!IsValid(this->DerivedObjects[i].Get())) {
+      this->DerivedObjects[i] =
+          NewObject<UCesiumGlobeAnchorDerivedProperties>();
     }
     UCesiumGlobeAnchorComponent* GlobeAnchor =
         Cast<UCesiumGlobeAnchorComponent>(this->SelectedObjects[i]);
-    if (!GlobeAnchor)
-      continue;
-
-    this->EastSouthUpObjects[i]->Initialize(GlobeAnchor);
-    this->EastSouthUpPointers[i] = this->EastSouthUpObjects[i].Get();
+    this->DerivedObjects[i]->Initialize(GlobeAnchor);
+    this->DerivedPointers[i] = this->DerivedObjects[i].Get();
   }
+}
+
+void UCesiumGlobeAnchorDerivedProperties::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  if (!PropertyChangedEvent.Property) {
+    return;
+  }
+
+  FName propertyName = PropertyChangedEvent.Property->GetFName();
+
+  if (propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, X) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Y) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Z)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+        FVector(this->X, this->Y, this->Z));
+  } else if (
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          Longitude) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          Latitude) ||
+      propertyName == GET_MEMBER_NAME_CHECKED(
+                          UCesiumGlobeAnchorDerivedProperties,
+                          Height)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->MoveToLongitudeLatitudeHeight(
+        FVector(this->Longitude, this->Latitude, this->Height));
+  } else if (
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Pitch) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Yaw) ||
+      propertyName ==
+          GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorDerivedProperties, Roll)) {
+    this->GlobeAnchor->Modify();
+    this->GlobeAnchor->SetEastSouthUpRotation(
+        FRotator(this->Pitch, this->Yaw, this->Roll).Quaternion());
+  }
+}
+
+void UCesiumGlobeAnchorDerivedProperties::Initialize(
+    UCesiumGlobeAnchorComponent* GlobeAnchorComponent) {
+  this->GlobeAnchor = GlobeAnchorComponent;
+  this->Tick(0.0f);
+}
+
+void UCesiumGlobeAnchorDerivedProperties::Tick(float DeltaTime) {
+  if (this->GlobeAnchor) {
+    FVector position = this->GlobeAnchor->GetEarthCenteredEarthFixedPosition();
+    this->X = position.X;
+    this->Y = position.Y;
+    this->Z = position.Z;
+
+    FVector llh = this->GlobeAnchor->GetLongitudeLatitudeHeight();
+    this->Longitude = llh.X;
+    this->Latitude = llh.Y;
+    this->Height = llh.Z;
+
+    FQuat rotation = this->GlobeAnchor->GetEastSouthUpRotation();
+    FRotator rotator = rotation.Rotator();
+    this->Roll = rotator.Roll;
+    this->Pitch = rotator.Pitch;
+    this->Yaw = rotator.Yaw;
+  }
+}
+
+TStatId UCesiumGlobeAnchorDerivedProperties::GetStatId() const {
+  RETURN_QUICK_DECLARE_CYCLE_STAT(
+      UCesiumGlobeAnchorRotationEastSouthUp,
+      STATGROUP_Tickables);
 }
