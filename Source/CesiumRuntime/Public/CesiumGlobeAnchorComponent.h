@@ -452,6 +452,10 @@ public:
 
 #pragma region Obsolete
 public:
+  /**
+   * @brief DEPRECATED
+   * @deprecated The resolved georeference can no longer be explicitly invalidated. To change the georeference, call SetGeoreference or ReregisterComponent.
+   */
   UE_DEPRECATED(
       "Cesium For Unreal v2.0",
       "The resolved georeference can no longer be explicitly invalidated. To change the georeference, call SetGeoreference or ReregisterComponent.")
