@@ -276,11 +276,7 @@ public:
 
   uint32 GetSizeY() const override { return this->_height; }
 
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
-  virtual void InitRHI(FRHICommandListBase& RHICmdList) override {
-#else
   virtual void InitRHI() override {
-#endif
     FSamplerStateInitializerRHI samplerStateInitializer(
         this->_filter,
         this->_addressX,
@@ -348,20 +344,6 @@ public:
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
-      rhiTexture = RHICreateTexture(
-          FRHITextureCreateDesc::Create2D(createInfo.DebugName)
-              .SetExtent(int32(this->_width), int32(this->_height))
-              .SetFormat(this->_format)
-              .SetNumMips(uint8(mipCount))
-              .SetNumSamples(1)
-              .SetFlags(textureFlags)
-              .SetInitialState(ERHIAccess::Unknown)
-              .SetExtData(createInfo.ExtData)
-              .SetBulkData(createInfo.BulkData)
-              .SetGPUMask(createInfo.GPUMask)
-              .SetClearValue(createInfo.ClearValueBinding));
-#else
       rhiTexture = RHICreateTexture2D(
           this->_width,
           this->_height,
@@ -370,7 +352,6 @@ public:
           1,
           textureFlags,
           createInfo);
-#endif
 
       // Copies over rest of the mips
       for (uint32 i = 1; i < mipCount; ++i) {
@@ -406,48 +387,6 @@ private:
 
   uint32 _platformExtData;
 };
-
-namespace {
-
-FTexture2DRHIRef createAsyncTextureAndWait(
-    uint32 SizeX,
-    uint32 SizeY,
-    uint8 Format,
-    uint32 NumMips,
-    ETextureCreateFlags Flags,
-    void** InitialMipData,
-    uint32 NumInitialMips) {
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
-  FGraphEventRef CompletionEvent;
-
-  FTexture2DRHIRef result = RHIAsyncCreateTexture2D(
-      SizeX,
-      SizeY,
-      Format,
-      NumMips,
-      Flags,
-      InitialMipData,
-      NumInitialMips,
-      CompletionEvent);
-
-  if (CompletionEvent) {
-    CompletionEvent->Wait();
-  }
-
-  return result;
-#else
-  return RHIAsyncCreateTexture2D(
-      SizeX,
-      SizeY,
-      Format,
-      NumMips,
-      Flags,
-      InitialMipData,
-      NumInitialMips);
-#endif
-}
-
-} // namespace
 
 /**
  * @brief Create an RHI texture on this thread. This requires
@@ -485,7 +424,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
       mipsData[i] = (void*)(&image.pixelData[mipPos.byteOffset]);
     }
 
-    return createAsyncTextureAndWait(
+    return RHIAsyncCreateTexture2D(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
         format,
@@ -495,7 +434,7 @@ FTexture2DRHIRef CreateRHITexture2D_Async(
         mipCount);
   } else {
     void* pTextureData = (void*)(image.pixelData.data());
-    return createAsyncTextureAndWait(
+    return RHIAsyncCreateTexture2D(
         static_cast<uint32>(image.width),
         static_cast<uint32>(image.height),
         format,
