@@ -64,6 +64,11 @@ void UCesiumTileExcluder::RemoveFromTileset() {
   }
 }
 
+void UCesiumTileExcluder::Refresh() {
+  this->RemoveFromTileset();
+  this->AddToTileset();
+}
+
 bool UCesiumTileExcluder::ShouldExclude_Implementation(
     const UCesiumTile* TileObject) {
   return false;

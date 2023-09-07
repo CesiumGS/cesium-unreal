@@ -52,6 +52,14 @@ public:
   void RemoveFromTileset();
 
   /**
+   * Refreshes this tile excluderby removing from its owning Cesium 3D Tileset
+   * Actor and re-adding it. If this component's Owner is not a Cesium 3D
+   * Tileset Actor, this method does nothing.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  void Refresh();
+
+  /**
    * Determines whether a tile should be excluded.
    * This function is called to determine whether a tile should be excluded from
    * the tileset. You can override this function in a derived class or blueprint
