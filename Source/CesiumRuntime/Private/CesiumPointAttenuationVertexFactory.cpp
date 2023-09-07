@@ -137,7 +137,7 @@ public:
 void FCesiumPointAttenuationDummyVertexBuffer::InitRHI(
     FRHICommandListBase& RHICmdList) {
 #else
-void FCesiumPointAttenuationVertexFactory::InitRHI() {
+void FCesiumPointAttenuationDummyVertexBuffer::InitRHI() {
 #endif
   FRHIResourceCreateInfo CreateInfo(
       TEXT("FCesiumPointAttenuationDummyVertexBuffer"));
