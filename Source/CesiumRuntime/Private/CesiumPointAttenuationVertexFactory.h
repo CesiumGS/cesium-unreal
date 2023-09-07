@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/StaticMesh.h"
+#include "Launch/Resources/Version.h"
 #include "LocalVertexFactory.h"
 #include "RHIDefinitions.h"
 #include "RHIResources.h"
@@ -19,7 +20,11 @@ public:
       const int32& NumPoints,
       const bool bAttenuationSupported)
       : NumPoints(NumPoints), bAttenuationSupported(bAttenuationSupported) {}
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
+#else
   virtual void InitRHI() override;
+#endif
 
 private:
   // The number of points in the original point mesh. Not to be confused with
@@ -62,6 +67,10 @@ public:
       const FVertexFactoryShaderPermutationParameters& Parameters);
 
 private:
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+  virtual void InitRHI(FRHICommandListBase& RHICmdList) override;
+#else
   virtual void InitRHI() override;
+#endif
   virtual void ReleaseRHI() override;
 };
