@@ -242,12 +242,11 @@ CesiumDegreesMinutesSecondsEditor::GetDecimalDegreesFromProperty() const {
   if (AccessResult == FPropertyAccess::Success) {
     return decimalDegrees;
   }
-  // This should never be the case, if the actual property
-  // was a double property, so this warning indicates a
-  // developer error:
-  UE_LOG(LogCesiumEditor, Error, TEXT("GetDecimalDegreesFromProperty FAILED"));
-  assert(false);
-  return decimalDegrees;
+
+  // In theory, this should never happen if the actual property is a double. But
+  // in practice it gets triggered when saving a level, for some reason. So, we
+  // ignore it.
+  return 0.0;
 }
 
 void CesiumDegreesMinutesSecondsEditor::SetDecimalDegreesOnProperty(
