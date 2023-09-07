@@ -33,15 +33,29 @@ We need to make sure all our C++ code is building in release mode.
 
 4) From the menu, choose Build -> Build Solution
 
+# Prepare for capture
 
-# Setup Unreal Editor + Unreal Insights for capture
+### Unreal Editor
+1) Start debugging from VS
+2) In Unreal, click Tools->Test Automation
+3) Check the Cesium.Performance.LoadTestDenver row (don't start the test yet)
+4) Click Tools->Run Unreal Insights
+> You can also find UnrealInsights.exe in UE_5.X\Engine\Binaries\Win64
 
-TODO
+### Unreal Insights
+1) From the session browser, click Connection tab
+2) Click Connect
+3) Go back to the Trace Store tab, notice your live session
 
 # Run the timing capture session
 
-TODO
+1) In Unreal, click Tools->Test Automation
+2) Click Start (you should already have the test selected)
+3) When the test ends, close UnrealEditor
+4) In Unreal Insights, select the trace that was just created
+5) Click on Open Trace
 
+> Trace files are saved in C:/Users/your username/AppData/Local/UnrealEngine/Common/UnrealTrace/Store/001
 
 # Interpret the report
 
