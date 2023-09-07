@@ -24,6 +24,9 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0 # so that `git describe` works.
+      - name: Install dotnetfx
+        run: |
+          choco install -y dotnetfx
       - name: Install dotnetcore-sdk
         run: |
           choco install -y dotnetcore-sdk
@@ -55,7 +58,7 @@ jobs:
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Build CesiumForUnreal plugin
-        timeout-minutes: 120      
+        timeout-minutes: 120
         run: |
           cd "$env:UNREAL_BATCH_FILES_PATH"
           ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
