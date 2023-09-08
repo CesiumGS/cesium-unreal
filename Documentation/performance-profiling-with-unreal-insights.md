@@ -94,12 +94,27 @@ Every row is a timing event. Some events come from the engine, some are custom t
 
 You may feel the need to jump right in to `Cesium::CreateRHITexture2D`. It seems to have one of the highest exclusive times (Excl) of any of the events in the list, 1 second. After all, our selection is only 1.2 seconds long, so this must be the performance bottleneck right? Hold on. The total sampled time at the top (CPU) is 19.8s, indicating we are sampling across threads.
 
-Given that the highest sampled calls are actually somewhat small compared to the total sampled CPU time, our bottleneck is most likely outside of our timed events.
+Given that the sampled time of the highest cost calls are actually somewhat small compared to the total sampled CPU time, our bottleneck is most likely outside of our timed events.
 
 This brings us to...
 
 
 ### Examine low use areas
+
+1) Go back to the Timings panel.
+2) In All Tracks, check Game Frames
+2) Turn off compact mode by unchecking "View Mode->Compact Mode".
+3) In View Mode, set "Depth Limit" to "4 lanes"
+4) Zoom and pan to an area of the selection where the background workers haven't started loading yet
+
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/caa47e66-b088-46d8-9aa0-1916a65777de)
+
+The selected area is the first phase of the loading test. This is a region between when the start mark was logged until when background workers start loading models. 
+
+It lasts about 8 game frames, or 388 ms, and does not seem to be making use of background threads at all. Could be something to investigate.
+
+
+### Examine fragmented use areas
 
 TODO
 
