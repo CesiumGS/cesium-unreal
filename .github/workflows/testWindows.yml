@@ -61,48 +61,83 @@ jobs:
           dir
           Get-Content "CesiumForUnreal.uplugin" | select-string -pattern "EngineVersion"
       - name: Run Cesium tests
-        continue-on-error: true
-        timeout-minutes: 30
+        timeout-minutes: 60      
         run: |
           cd "${{ inputs.unreal-binaries-path }}"
           ./UnrealEditor-Cmd.exe "$env:TESTS_PROJECT_ROOT/TestsProject.uproject" -execcmds="Automation RunTests Cesium.Unit.;quit" -nullrhi -unattended -nosplash -ReportExportPath="$env:TESTS_PROJECT_LOGS"
       - name: Display tests log 
+        if: always()
         run: |
           cd "$env:TESTS_PROJECT_LOGS"  
           dir 
           Get-Content TestsProject.log          
       - name: Display tests report
+        if: always()
         run: |
           cd "$env:TESTS_PROJECT_LOGS"
           Get-Content index.json
       - name: Evaluate tests results
+        if: always()
         run: |
-          $env:TEST_STATUS="Pending"
-          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV
-
           cd "$env:TESTS_PROJECT_LOGS"
 
-          # Define function to parse json recursively
-          function Parse-JsonRecursively($jsonObject) {
-              foreach ($property in $jsonObject.PSObject.Properties) {
-                  $name = $property.Name
-                  $value = $property.Value
+          $failedTests = ""
+          $succeededTests = ""
 
-                  # If the property value is another object, call function recursively
-                  if ($value -is [PSCustomObject]) {
-                      Parse-JsonRecursively($value)
-                  }
-                  else {
-                      # If "state:fail" entry is found in json, set failure state
-                      if($name -eq "state" -and $value -eq "fail") {
-                          $env:TEST_STATUS="Failure"
-                          return
-                      }
-                  }
-              }
+          function Parse-Test($jsonObject) {
+            $currTestName = ""
+            foreach ($property in $jsonObject.PSObject.Properties) {
+                $name = $property.Name
+                $value = $property.Value
+
+                if($name -eq "fullTestPath") {
+                  $currTestName = $value
+                }
+                
+                if($name -eq "state") {
+                   if ($value -eq "Success") {
+                     $global:succeededTests += $currTestName + "`n"
+                   }
+                   else {
+                     $global:failedTests += $currTestName + "`n"
+                   }
+                }
+            }
           }
 
-          $env:TEST_STATUS="Success" # Set status to success at start
+          function Parse-Json($jsonObject) {
+            foreach ($property in $jsonObject.PSObject.Properties) {
+                $name = $property.Name
+                $value = $property.Value
+
+                # If the property value is another object, call function recursively
+                if ($name -eq "tests" -and $value -is [System.Object[]]) {
+                    for (($i = 0); $i -lt $value.Count; $i++) {
+                      Parse-Test($value[$i])
+                    }
+                }
+            }
+          }
+
           $json = Get-Content -Path 'index.json' | ConvertFrom-Json # Read in json
-          Parse-JsonRecursively -jsonObject $json # Parse json
-          echo "test_status=$env:TEST_STATUS" >> $env:GITHUB_ENV # Export result to github environment variables          
+          Parse-Json -jsonObject $json # Parse json
+          
+          echo " "
+          if ($failedTests.Length -eq 0) {
+            echo "All tests passed:"
+            echo "-----------------"
+            echo "$succeededTests"
+
+            exit 0
+          }
+          else {
+            echo "Passing tests:"
+            echo "--------------"
+            echo "$succeededTests"
+
+            echo "FAILED tests:"
+            echo "-------------"
+            echo "$failedTests"
+
+            exit -1
+          }
