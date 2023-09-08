@@ -3,41 +3,13 @@ This guide will help you find performance problems in your C++ code using the [C
 
 The CPU Usage tool is easy to set up with minimal impact on how your app is built or how it runs. If you use Visual Studio often, you may have this running already. This is a sampling-based profiler, with pros and cons detailed [here](https://learn.microsoft.com/en-us/visualstudio/profiling/understanding-performance-collection-methods-perf-profiler?view=vs-2022).
 
-
-
 # Set up a repeatable test
 
-We need an area of code to execute repeatedly, with as many variables locked down as possible. 
+In this example, we will use our Cesium performance tests. Follow the steps outlined [here](https://github.com/CesiumGS/cesium-unreal/blob/profiling-documentation/Documentation/performance-profiling-setup-test.md).
 
-In this example, we will use our Cesium performance tests.
+# Prepare for capture
 
-### Set up Unreal
-1) Open Unreal Editor (UnrealEditor.exe)
-2) Create a blank map (project doesn't matter. Choose an existing one or create a new one)
-3) Go to Edit->Plugins
-4) Search for "Functional Testing plugin". Check it to enable it
-![smaller](https://github.com/CesiumGS/cesium-unreal/assets/130494071/5a3bc9de-cdaf-4d9d-842d-104719426663)
-5) Save all
-6) Set this map as the 'Editor Startup Map' so it loads when starting from Visual Studio
-![smaller 2](https://github.com/CesiumGS/cesium-unreal/assets/130494071/8ba5c6c2-8c97-4048-afe2-db74770d85cc)
-
-
-### Build Release Code
-
-We need to make sure all our C++ code is building in release mode.
-
-> This assumes that you have already built your code successfully and are familiar with the concepts from our [developer setup guide](https://github.com/CesiumGS/cesium-unreal/blob/ue5-main/Documentation/developer-setup-windows.md). Although you could profile a debug build, it is typically more useful to build in release, since this is how a game is usually packaged.
-
-1) If building the cesium-native library, make sure you are using a Release configuration
-2) Open your Unreal project's Visual Studio solution (.sln). This example uses the solution generated from [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples)
-3) Choose "Development Editor"
-
-![smaller 3](https://github.com/CesiumGS/cesium-unreal/assets/130494071/0e70065f-c717-466b-a92b-cab1dcfdd29b)
-
-4) From the menu, choose Build -> Build Solution
-
-
-# Setup Visual Studio for capture
+### Visual Studio
 
 1) Open your project's Visual Studio solution (.sln). This example uses the solution generated from [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples)
 2) From the menu, choose Debug->Windows->Show Diagnostic Tools
