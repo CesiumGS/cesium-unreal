@@ -2,7 +2,6 @@
 
 We need an area of code to execute repeatedly, with as many variables locked down as possible. 
 
-In this example, we will use our Cesium performance tests.
 
 ### Set up Unreal
 1) Open Unreal Editor (UnrealEditor.exe)
