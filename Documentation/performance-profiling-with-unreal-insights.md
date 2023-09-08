@@ -92,7 +92,7 @@ Let's look at the Timers tab.
 
 Every row is a timing event. Some events come from the engine, some are custom timers in the Cesium for Unreal plugin code. You'll notice that Incl is sorting descending, showing the events with the highest inclusive time. 
 
-You may feel the need to jump right in to `Cesium::CreateRHITexture2D`. It seems to have one of the highest exclusive times (Excl) of any of the events in the list, 1 second. After all, our selection is only 1.2 seconds long, so this must be the performance bottleneck right? Hold on. The total sampled time at the top (CPU) is 19.8s, indicating we are sampling across threads.
+> You may feel the need to jump right in to `Cesium::CreateRHITexture2D`. It seems to have one of the highest exclusive times (Excl) of any of the events in the list, 1 second. After all, our selection is only 1.2 seconds long, so this must be the performance bottleneck right? Hold on. The total sampled time at the top (CPU) is 19.8s, indicating the times are the total sampled times across threads, not absolute session duration.
 
 Given that the sampled time of the highest cost calls are actually somewhat small compared to the total sampled CPU time, our bottleneck is most likely outside of our timed events.
 
@@ -116,8 +116,20 @@ It lasts about 8 game frames, or 388 ms, and does not seem to be making use of b
 
 ### Examine fragmented use areas
 
-TODO
+1) Find the Timings panel
+2) In View Mode, set "Depth Limit" to "Unlimited"
+3) Zoom a bit into an area where our background workers are very busy
+
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/29d7c3a2-3710-4a2b-a4f1-09050bdb9287)
+
+This selected area is zoomed in enough to see that the background workers are all calling the same functions. They finish their work, then wait for more work to be available. Some of this work seems to take longer than others, especially at the beginning.
+
+Note the gaps between the work. In general, there seems to be more inactivity than activity during this timeframe. Ideally, we would like to see all work squished together, with no waits in between. Improvements like this should bring the total execution duration lower. In this case, total load time.
 
 # Draw conclusions
 
-TODO
+We've identified some actionable information so far, even if it only leads to investigation:
+* There is a 388 ms low use area at the beginning of the test (~30%). What is happening here? Can it be faster?
+* During high use areas, background threads seems to inactive more than they are active. Why? Can this be optimized so they are always active?
+
+It's very common for profiling to be an iterative process. The result of a profiling session could easily be just adding more event timers, or digging deeper into how something works. Before we can expect that code change that results in a heroic 10x speedup, we need to be able to see clearly what is going on.
