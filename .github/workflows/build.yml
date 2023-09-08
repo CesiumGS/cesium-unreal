@@ -660,7 +660,7 @@ jobs:
           name: ${{ env.BUILD_CESIUM_UNREAL_PACKAGE_NAME}}
           path: packages
   iOS52:
-    runs-on: macos-13
+    runs-on: macos-12
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
