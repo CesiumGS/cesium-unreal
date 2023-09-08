@@ -24,12 +24,9 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0 # so that `git describe` works.
-      - name: Install dotnetfx
+      - name: Install VS2022 .NET desktop workload
         run: |
-          choco install -y dotnetfx
-      - name: Install dotnetcore-sdk
-        run: |
-          choco install -y dotnetcore-sdk
+          choco install -y visualstudio2022-workload-manageddesktop
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
