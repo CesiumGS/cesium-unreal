@@ -1151,4 +1151,54 @@ void FCesiumMetadataValueSpec::Define() {
           ECesiumMetadataComponentType::Uint8);
     });
   });
+
+  Describe("IsEmpty", [this]() {
+    It("returns true for default value", [this]() {
+      FCesiumMetadataValue value;
+      TestTrue("IsEmpty", UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+
+    It("returns false for boolean value", [this]() {
+      FCesiumMetadataValue value(true);
+      TestFalse(
+          "IsEmpty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+
+    It("returns false for scalar value", [this]() {
+      FCesiumMetadataValue value(1.6);
+      TestFalse(
+          "IsEmpty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+
+    It("returns false for vecN value", [this]() {
+      FCesiumMetadataValue value(glm::u8vec4(1, 2, 3, 4));
+      TestFalse(
+          "IsEmpty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+
+    It("returns false for matN value", [this]() {
+      FCesiumMetadataValue value(glm::imat2x2(-1, -2, 3, 0));
+      TestFalse(
+          "IsEmpty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+
+    It("returns false for string value", [this]() {
+      FCesiumMetadataValue value(std::string_view("Hello"));
+      TestFalse(
+          "IsEmpty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+
+    It("returns false for array value", [this]() {
+      PropertyArrayView<uint8_t> arrayView;
+      FCesiumMetadataValue value(arrayView);
+      TestFalse(
+          "IsEmpty",
+          UCesiumMetadataValueBlueprintLibrary::IsEmpty(value));
+    });
+  });
 }

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CesiumGltf/PropertyTablePropertyView.h"
 #include "CesiumGltf/PropertyTypeTraits.h"
+#include "CesiumGltf/PropertyViewTypes.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumMetadataValueType.h"
 #include "CesiumPropertyArray.h"
@@ -41,161 +41,6 @@ struct CESIUMRUNTIME_API FCesiumPropertyTableProperty {
   GENERATED_USTRUCT_BODY()
 
 private:
-#pragma region PropertyType declaration
-  template <typename T>
-  using PropertyView = CesiumGltf::PropertyTablePropertyView<T>;
-
-  template <typename T>
-  using ArrayPropertyView =
-      CesiumGltf::PropertyTablePropertyView<CesiumGltf::PropertyArrayView<T>>;
-
-  using PropertyType = std::variant<
-      PropertyView<int8_t>,
-      PropertyView<uint8_t>,
-      PropertyView<int16_t>,
-      PropertyView<uint16_t>,
-      PropertyView<int32_t>,
-      PropertyView<uint32_t>,
-      PropertyView<int64_t>,
-      PropertyView<uint64_t>,
-      PropertyView<float>,
-      PropertyView<double>,
-      PropertyView<bool>,
-      PropertyView<std::string_view>,
-      PropertyView<glm::vec<2, int8_t>>,
-      PropertyView<glm::vec<2, uint8_t>>,
-      PropertyView<glm::vec<2, int16_t>>,
-      PropertyView<glm::vec<2, uint16_t>>,
-      PropertyView<glm::vec<2, int32_t>>,
-      PropertyView<glm::vec<2, uint32_t>>,
-      PropertyView<glm::vec<2, int64_t>>,
-      PropertyView<glm::vec<2, uint64_t>>,
-      PropertyView<glm::vec<2, float>>,
-      PropertyView<glm::vec<2, double>>,
-      PropertyView<glm::vec<3, int8_t>>,
-      PropertyView<glm::vec<3, uint8_t>>,
-      PropertyView<glm::vec<3, int16_t>>,
-      PropertyView<glm::vec<3, uint16_t>>,
-      PropertyView<glm::vec<3, int32_t>>,
-      PropertyView<glm::vec<3, uint32_t>>,
-      PropertyView<glm::vec<3, int64_t>>,
-      PropertyView<glm::vec<3, uint64_t>>,
-      PropertyView<glm::vec<3, float>>,
-      PropertyView<glm::vec<3, double>>,
-      PropertyView<glm::vec<4, int8_t>>,
-      PropertyView<glm::vec<4, uint8_t>>,
-      PropertyView<glm::vec<4, int16_t>>,
-      PropertyView<glm::vec<4, uint16_t>>,
-      PropertyView<glm::vec<4, int32_t>>,
-      PropertyView<glm::vec<4, uint32_t>>,
-      PropertyView<glm::vec<4, int64_t>>,
-      PropertyView<glm::vec<4, uint64_t>>,
-      PropertyView<glm::vec<4, float>>,
-      PropertyView<glm::vec<4, double>>,
-      PropertyView<glm::mat<2, 2, int8_t>>,
-      PropertyView<glm::mat<2, 2, uint8_t>>,
-      PropertyView<glm::mat<2, 2, int16_t>>,
-      PropertyView<glm::mat<2, 2, uint16_t>>,
-      PropertyView<glm::mat<2, 2, int32_t>>,
-      PropertyView<glm::mat<2, 2, uint32_t>>,
-      PropertyView<glm::mat<2, 2, int64_t>>,
-      PropertyView<glm::mat<2, 2, uint64_t>>,
-      PropertyView<glm::mat<2, 2, float>>,
-      PropertyView<glm::mat<2, 2, double>>,
-      PropertyView<glm::mat<3, 3, int8_t>>,
-      PropertyView<glm::mat<3, 3, uint8_t>>,
-      PropertyView<glm::mat<3, 3, int16_t>>,
-      PropertyView<glm::mat<3, 3, uint16_t>>,
-      PropertyView<glm::mat<3, 3, int32_t>>,
-      PropertyView<glm::mat<3, 3, uint32_t>>,
-      PropertyView<glm::mat<3, 3, int64_t>>,
-      PropertyView<glm::mat<3, 3, uint64_t>>,
-      PropertyView<glm::mat<3, 3, float>>,
-      PropertyView<glm::mat<3, 3, double>>,
-      PropertyView<glm::mat<4, 4, int8_t>>,
-      PropertyView<glm::mat<4, 4, uint8_t>>,
-      PropertyView<glm::mat<4, 4, int16_t>>,
-      PropertyView<glm::mat<4, 4, uint16_t>>,
-      PropertyView<glm::mat<4, 4, int32_t>>,
-      PropertyView<glm::mat<4, 4, uint32_t>>,
-      PropertyView<glm::mat<4, 4, int64_t>>,
-      PropertyView<glm::mat<4, 4, uint64_t>>,
-      PropertyView<glm::mat<4, 4, float>>,
-      PropertyView<glm::mat<4, 4, double>>,
-      ArrayPropertyView<int8_t>,
-      ArrayPropertyView<uint8_t>,
-      ArrayPropertyView<int16_t>,
-      ArrayPropertyView<uint16_t>,
-      ArrayPropertyView<int32_t>,
-      ArrayPropertyView<uint32_t>,
-      ArrayPropertyView<int64_t>,
-      ArrayPropertyView<uint64_t>,
-      ArrayPropertyView<float>,
-      ArrayPropertyView<double>,
-      ArrayPropertyView<bool>,
-      ArrayPropertyView<std::string_view>,
-      ArrayPropertyView<glm::vec<2, int8_t>>,
-      ArrayPropertyView<glm::vec<2, uint8_t>>,
-      ArrayPropertyView<glm::vec<2, int16_t>>,
-      ArrayPropertyView<glm::vec<2, uint16_t>>,
-      ArrayPropertyView<glm::vec<2, int32_t>>,
-      ArrayPropertyView<glm::vec<2, uint32_t>>,
-      ArrayPropertyView<glm::vec<2, int64_t>>,
-      ArrayPropertyView<glm::vec<2, uint64_t>>,
-      ArrayPropertyView<glm::vec<2, float>>,
-      ArrayPropertyView<glm::vec<2, double>>,
-      ArrayPropertyView<glm::vec<3, int8_t>>,
-      ArrayPropertyView<glm::vec<3, uint8_t>>,
-      ArrayPropertyView<glm::vec<3, int16_t>>,
-      ArrayPropertyView<glm::vec<3, uint16_t>>,
-      ArrayPropertyView<glm::vec<3, int32_t>>,
-      ArrayPropertyView<glm::vec<3, uint32_t>>,
-      ArrayPropertyView<glm::vec<3, int64_t>>,
-      ArrayPropertyView<glm::vec<3, uint64_t>>,
-      ArrayPropertyView<glm::vec<3, float>>,
-      ArrayPropertyView<glm::vec<3, double>>,
-      ArrayPropertyView<glm::vec<4, int8_t>>,
-      ArrayPropertyView<glm::vec<4, uint8_t>>,
-      ArrayPropertyView<glm::vec<4, int16_t>>,
-      ArrayPropertyView<glm::vec<4, uint16_t>>,
-      ArrayPropertyView<glm::vec<4, int32_t>>,
-      ArrayPropertyView<glm::vec<4, uint32_t>>,
-      ArrayPropertyView<glm::vec<4, int64_t>>,
-      ArrayPropertyView<glm::vec<4, uint64_t>>,
-      ArrayPropertyView<glm::vec<4, float>>,
-      ArrayPropertyView<glm::vec<4, double>>,
-      ArrayPropertyView<glm::mat<2, 2, int8_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint8_t>>,
-      ArrayPropertyView<glm::mat<2, 2, int16_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint16_t>>,
-      ArrayPropertyView<glm::mat<2, 2, int32_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint32_t>>,
-      ArrayPropertyView<glm::mat<2, 2, int64_t>>,
-      ArrayPropertyView<glm::mat<2, 2, uint64_t>>,
-      ArrayPropertyView<glm::mat<2, 2, float>>,
-      ArrayPropertyView<glm::mat<2, 2, double>>,
-      ArrayPropertyView<glm::mat<3, 3, int8_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint8_t>>,
-      ArrayPropertyView<glm::mat<3, 3, int16_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint16_t>>,
-      ArrayPropertyView<glm::mat<3, 3, int32_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint32_t>>,
-      ArrayPropertyView<glm::mat<3, 3, int64_t>>,
-      ArrayPropertyView<glm::mat<3, 3, uint64_t>>,
-      ArrayPropertyView<glm::mat<3, 3, float>>,
-      ArrayPropertyView<glm::mat<3, 3, double>>,
-      ArrayPropertyView<glm::mat<4, 4, int8_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint8_t>>,
-      ArrayPropertyView<glm::mat<4, 4, int16_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint16_t>>,
-      ArrayPropertyView<glm::mat<4, 4, int32_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint32_t>>,
-      ArrayPropertyView<glm::mat<4, 4, int64_t>>,
-      ArrayPropertyView<glm::mat<4, 4, uint64_t>>,
-      ArrayPropertyView<glm::mat<4, 4, float>>,
-      ArrayPropertyView<glm::mat<4, 4, double>>>;
-#pragma endregion
-
 public:
   /**
    * Construct an invalid property with an unknown type.
@@ -203,23 +48,26 @@ public:
   FCesiumPropertyTableProperty()
       : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
         _property(),
-        _valueType(),
-        _count(0),
-        _normalized(false) {}
+        _valueType() {}
 
   /**
    * Construct a wrapper for the property table property view.
    *
    * @param value The PropertyTablePropertyView to be stored in this struct.
    */
-  template <typename T>
+  template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::PropertyTablePropertyView<T>& value)
+      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& value)
       : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
-        _property(value),
+        _property(),
         _valueType(),
-        _count(0),
-        _normalized(false) {
+        _normalized(Normalized) {
+    if constexpr (Normalized) {
+      _property = NormalizedPropertyTablePropertyViewType(value);
+    } else {
+      _property = PropertyTablePropertyViewType(value);
+    }
+
     switch (value.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
@@ -254,9 +102,7 @@ public:
       isArray = false;
     }
     _valueType = {type, componentType, isArray};
-
-    _count = value.getArrayCount();
-    _normalized = value.isNormalized();
+    _normalized = Normalized;
   }
 
 private:
@@ -268,9 +114,13 @@ private:
   }
 
   ECesiumPropertyTablePropertyStatus _status;
+
+  using PropertyType = std::variant<
+      CesiumGltf::PropertyTablePropertyViewType,
+      CesiumGltf::NormalizedPropertyTablePropertyViewType>;
   PropertyType _property;
+
   FCesiumMetadataValueType _valueType;
-  int64 _count;
   bool _normalized;
 
   friend class UCesiumPropertyTablePropertyBlueprintLibrary;
@@ -432,19 +282,28 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a boolean.
    *
-   * If the value is a boolean, it is returned as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a scalar, zero is converted to false, while any other
+   * Property values are converted as follows:
+   *
+   * - If the value is a boolean, it is returned as-is.
+   *
+   * - If the value is a scalar, zero is converted to false, while any other
    * value is converted to true.
    *
-   * If the value is a string, "0", "false", and "no" (case-insensitive) are
+   * - If the value is a string, "0", "false", and "no" (case-insensitive) are
    * converted to false, while "1", "true", and "yes" are converted to true.
    * All other strings, including strings that can be converted to numbers,
-   * will return the default value.
+   * will return the user-defined default value.
    *
-   * All other types return the default value. If the feature ID is
+   * All other types return the user-defined default value. If the feature ID is
    * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -463,22 +322,29 @@ public:
    * Attempts to retrieve the value for the given feature as an unsigned
    * 8-bit integer.
    *
-   * If the value is an integer between 0 and 255, it is returned
-   * as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a floating-point number in the aforementioned range, it is
-   * truncated (rounded toward zero) and returned.
+   * Property values are converted as follows:
    *
-   * If the value is a boolean, 1 is returned for true and 0 for false.
+   * - If the value is an integer between 0 and 255, it is returned as-is.
+   * Otherwise, if the value is a floating-point number in the aforementioned
+   * range, it is truncated (rounded toward zero) and returned.
    *
-   * If the value is a string and the entire string can be parsed as an
+   * - If the value is a boolean, 1 is returned for true and 0 for false.
+   *
+   * - If the value is a string and the entire string can be parsed as an
    * integer between 0 and 255, the parsed value is returned. The string is
    * parsed in a locale-independent way and does not support the use of commas
    * or other delimiters to group digits together.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -497,24 +363,32 @@ public:
    * Attempts to retrieve the value for the given feature as a signed 32-bit
    * integer.
    *
-   * If the value is an integer between -2,147,483,648 and 2,147,483,647,
-   * it is returned as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a floating-point number in the aforementioned range, it is
-   * truncated (rounded toward zero) and returned;
+   * Property values are converted as follows:
    *
-   * If the value is a boolean, 1 is returned for true and 0 for false.
+   * - If the value is an integer between -2,147,483,648 and 2,147,483,647, it
+   * is returned as-is. Otherwise, if the value is a floating-point number in
+   * the aforementioned range, it is truncated (rounded toward zero) and
+   * returned.
    *
-   * If the value is a string and the entire string can be parsed as an
+   * - If the value is a boolean, 1 is returned for true and 0 for false.
+   *
+   * - If the value is a string and the entire string can be parsed as an
    * integer in the valid range, the parsed value is returned. If it can be
    * parsed as a floating-point number, the parsed value is truncated (rounded
    * toward zero). In either case, the string is parsed in a locale-independent
    * way and does not support the use of commas or other delimiters to group
    * digits together.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -533,24 +407,31 @@ public:
    * Attempts to retrieve the value for the given feature as a signed 64-bit
    * integer.
    *
-   * If the value is an integer and between -2^63 and (2^63 - 1),
-   * it is returned as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a floating-point number in the aforementioned range, it
-   * is truncated (rounded toward zero) and returned;
+   * Property values are converted as follows:
    *
-   * If the value is a boolean, 1 is returned for true and 0 for false.
+   * - If the value is an integer and between -2^63 and (2^63 - 1), it is
+   * returned as-is. Otherwise, if the value is a floating-point number in the
+   * aforementioned range, it is truncated (rounded toward zero) and returned.
    *
-   * If the value is a string and the entire string can be parsed as an
+   * - If the value is a boolean, 1 is returned for true and 0 for false.
+   *
+   * - If the value is a string and the entire string can be parsed as an
    * integer in the valid range, the parsed value is returned. If it can be
    * parsed as a floating-point number, the parsed value is truncated (rounded
    * toward zero). In either case, the string is parsed in a locale-independent
    * way and does not support the use of commas or other delimiters to group
    * digits together.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -569,23 +450,32 @@ public:
    * Attempts to retrieve the value for the given feature as a single-precision
    * floating-point number.
    *
-   * If the value is already a single-precision floating-point number, it is
-   * returned as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a scalar of any other type within the range of values that
-   * a single-precision float can represent, it is converted to its closest
+   * Property values are converted as follows:
+   *
+   * - If the value is already a single-precision floating-point
+   * number, it is returned as-is.
+   *
+   * - If the value is a scalar of any other type within the range of values
+   * that a single-precision float can represent, it is converted to its closest
    * representation as a single-precision float and returned.
    *
-   * If the value is a boolean, 1.0f is returned for true and 0.0f for false.
+   * - If the value is a boolean, 1.0f is returned for true and 0.0f for false.
    *
-   * If the value is a string, and the entire string can be parsed as a
+   * - If the value is a string, and the entire string can be parsed as a
    * number, the parsed value is returned. The string is parsed in a
    * locale-independent way and does not support the use of a comma or other
-   * delimiter to group digits togther.
+   * delimiter to group digits together.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -604,22 +494,31 @@ public:
    * Attempts to retrieve the value for the given feature as a double-precision
    * floating-point number.
    *
-   * If the value is a single- or double-precision floating-point number, it is
-   * returned as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is an integer, it is converted to the closest representable
+   * Property values are converted as follows:
+   *
+   * - If the value is a single- or double-precision floating-point number, it
+   * is returned as-is.
+   *
+   * - If the value is an integer, it is converted to the closest representable
    * double-precision floating-point number.
    *
-   * If the value is a boolean, 1.0 is returned for true and 0.0 for false.
+   * - If the value is a boolean, 1.0 is returned for true and 0.0 for false.
    *
-   * If the value is a string and the entire string can be parsed as a
+   * - If the value is a string and the entire string can be parsed as a
    * number, the parsed value is returned. The string is parsed in a
    * locale-independent way and does not support the use of commas or other
    * delimiters to group digits together.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -637,27 +536,37 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FIntPoint.
    *
-   * If the value is a 2-dimensional vector, its components will be converted to
-   * 32-bit signed integers if possible.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a 3- or 4-dimensional vector, it will use the first two
+   * Property values are converted as follows:
+   *
+   * - If the value is a 2-dimensional vector, its components will be converted
+   * to 32-bit signed integers if possible.
+   *
+   * - If the value is a 3- or 4-dimensional vector, it will use the first two
    * components to construct the FIntPoint.
    *
-   * If the value is a scalar that can be converted to a 32-bit signed integer,
-   * the resulting FIntPoint will have this value in both of its components.
+   * - If the value is a scalar that can be converted to a 32-bit signed
+   * integer, the resulting FIntPoint will have this value in both of its
+   * components.
    *
-   * If the value is a boolean, (1, 1) is returned for true, while (0, 0) is
+   * - If the value is a boolean, (1, 1) is returned for true, while (0, 0) is
    * returned for false.
    *
-   * If the value is a string that can be parsed as a FIntPoint, the parsed
+   * - If the value is a string that can be parsed as a FIntPoint, the parsed
    * value is returned. The string must be formatted as "X=... Y=...".
    *
-   * In all other cases, the default value is returned. In all vector cases, if
-   * any of the relevant components cannot be represented as a 32-bit signed,
-   * the default value is returned.
+   * In all other cases, the user-defined default value is returned. In all
+   * vector cases, if any of the relevant components cannot be represented as a
+   * 32-bit signed, the default value is returned.
    *
    * If the feature ID is out-of-range, or if the property table property is
-   * somehow invalid, the default value is returned.
+   * somehow invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -675,24 +584,33 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FVector2D.
    *
-   * If the value is a 2-dimensional vector, its components will be converted to
-   * double-precision floating-point numbers.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a 3- or 4-dimensional vector, it will use the first two
+   * Property values are converted as follows:
+   *
+   * - If the value is a 2-dimensional vector, its components will be converted
+   * to double-precision floating-point numbers.
+   *
+   * - If the value is a 3- or 4-dimensional vector, it will use the first two
    * components to construct the FVector2D.
    *
-   * If the value is a scalar, the resulting FVector2D will have this value in
+   * - If the value is a scalar, the resulting FVector2D will have this value in
    * both of its components.
    *
-   * If the value is a boolean, (1.0, 1.0) is returned for true, while (0.0,
+   * - If the value is a boolean, (1.0, 1.0) is returned for true, while (0.0,
    * 0.0) is returned for false.
    *
-   * If the value is a string that can be parsed as a FVector2D, the parsed
+   * - If the value is a string that can be parsed as a FVector2D, the parsed
    * value is returned. The string must be formatted as "X=... Y=...".
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -710,30 +628,40 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FIntVector.
    *
-   * If the value is a 3-dimensional vector, its components will be converted to
-   * 32-bit signed integers if possible.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a 4-dimensional vector, it will use the first three
+   * Property values are converted as follows:
+   *
+   * - If the value is a 3-dimensional vector, its components will be converted
+   * to 32-bit signed integers if possible.
+   *
+   * - If the value is a 4-dimensional vector, it will use the first three
    * components to construct the FIntVector.
    *
-   * If the value is a 2-dimensional vector, it will become the XY-components of
-   * the FIntVector. The Z component will be set to zero.
+   * - If the value is a 2-dimensional vector, it will become the XY-components
+   * of the FIntVector. The Z component will be set to zero.
    *
-   * If the value is a scalar that can be converted to a 32-bit signed integer,
-   * the resulting FIntVector will have this value in all of its components.
+   * - If the value is a scalar that can be converted to a 32-bit signed
+   * integer, the resulting FIntVector will have this value in all of its
+   * components.
    *
-   * If the value is a boolean, (1, 1, 1) is returned for true, while (0, 0, 0)
-   * is returned for false.
+   * - If the value is a boolean, (1, 1, 1) is returned for true, while (0, 0,
+   * 0) is returned for false.
    *
-   * If the value is a string that can be parsed as a FIntVector, the parsed
+   * - If the value is a string that can be parsed as a FIntVector, the parsed
    * value is returned. The string must be formatted as "X=... Y=... Z=".
    *
-   * In all other cases, the default value is returned. In all vector cases, if
-   * any of the relevant components cannot be represented as a 32-bit signed
-   * integer, the default value is returned.
+   * In all other cases, the user-defined default value is returned. In all
+   * vector cases, if any of the relevant components cannot be represented as a
+   * 32-bit signed integer, the default value is returned.
    *
    * If the feature ID is out-of-range, or if the property table property is
-   * somehow invalid, the default value is returned.
+   * somehow invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -751,31 +679,40 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FVector3f.
    *
-   * If the value is a 3-dimensional vector, its components will be converted to
-   * the closest representable single-precision floats, if possible.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a 4-dimensional vector, a FVector3f containing the first
+   * Property values are converted as follows:
+   *
+   * - If the value is a 3-dimensional vector, its components will be converted
+   * to the closest representable single-precision floats, if possible.
+   *
+   * - If the value is a 4-dimensional vector, a FVector3f containing the first
    * three components will be returned.
    *
-   * If the value is a 2-dimensional vector, it will become the XY-components of
-   * the FVector3f. The Z-component will be set to zero.
+   * - If the value is a 2-dimensional vector, it will become the XY-components
+   * of the FVector3f. The Z-component will be set to zero.
    *
-   * If the value is a scalar that can be converted to a single-precision
+   * - If the value is a scalar that can be converted to a single-precision
    * floating-point number, then the resulting FVector3f will have this value in
    * all of its components.
    *
-   * If the value is a boolean, (1.0f, 1.0f, 1.0f) is returned for true, while
+   * - If the value is a boolean, (1.0f, 1.0f, 1.0f) is returned for true, while
    * (0.0f, 0.0f, 0.0f) is returned for false.
    *
-   * If the value is a string that can be parsed as a FVector3f, the parsed
+   * - If the value is a string that can be parsed as a FVector3f, the parsed
    * value is returned. The string must be formatted as "X=... Y=... Z=".
    *
-   * In all other cases, the default value is returned. In all vector cases, if
-   * any of the relevant components cannot be represented as a single-precision
-   * float, the default value is returned.
+   * In all other cases, the user-defined default value is returned. In all
+   * vector cases, if any of the relevant components cannot be represented as a
+   * single-precision float, the user-defined default value is returned.
    *
    * If the feature ID is out-of-range, or if the property table property is
-   * somehow invalid, the default value is returned.
+   * somehow invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -793,27 +730,36 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FVector.
    *
-   * If the value is a 3-dimensional vector, its components will be converted to
-   * double-precision floating-point numbers.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a 4-dimensional vector, a FVector containing the first
+   * Property values are converted as follows:
+   *
+   * - If the value is a 3-dimensional vector, its components will be converted
+   * to double-precision floating-point numbers.
+   *
+   * - If the value is a 4-dimensional vector, a FVector containing the first
    * three components will be returned.
    *
-   * If the value is a 2-dimensional vector, it will become the XY-components of
-   * the FVector. The Z-component will be set to zero.
+   * - If the value is a 2-dimensional vector, it will become the XY-components
+   * of the FVector. The Z-component will be set to zero.
    *
-   * If the value is a scalar, then the resulting FVector will have this value
+   * - If the value is a scalar, then the resulting FVector will have this value
    * as a double-precision floating-point number in all of its components.
    *
-   * If the value is a boolean, (1.0, 1.0, 1.0) is returned for true, while
+   * - If the value is a boolean, (1.0, 1.0, 1.0) is returned for true, while
    * (0.0, 0.0, 0.0) is returned for false.
    *
-   * If the value is a string that can be parsed as a FVector, the parsed
+   * - If the value is a string that can be parsed as a FVector, the parsed
    * value is returned. The string must be formatted as "X=... Y=... Z=".
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -831,29 +777,38 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FVector4.
    *
-   * If the value is a 4-dimensional vector, its components will be converted to
-   * double-precision floating-point numbers.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
    *
-   * If the value is a 3-dimensional vector, it will become the XYZ-components
+   * Property values are converted as follows:
+   *
+   * - If the value is a 4-dimensional vector, its components will be converted
+   * to double-precision floating-point numbers.
+   *
+   * - If the value is a 3-dimensional vector, it will become the XYZ-components
    * of the FVector4. The W-component will be set to zero.
    *
-   * If the value is a 2-dimensional vector, it will become the XY-components of
-   * the FVector4. The Z- and W-components will be set to zero.
+   * - If the value is a 2-dimensional vector, it will become the XY-components
+   * of the FVector4. The Z- and W-components will be set to zero.
    *
-   * If the value is a scalar, then the resulting FVector4 will have this value
-   * as a double-precision floating-point number in all of its components.
+   * - If the value is a scalar, then the resulting FVector4 will have this
+   * value as a double-precision floating-point number in all of its components.
    *
-   * If the value is a boolean, (1.0, 1.0, 1.0, 1.0) is returned for true, while
-   * (0.0, 0.0, 0.0, 0.0) is returned for false.
+   * - If the value is a boolean, (1.0, 1.0, 1.0, 1.0) is returned for true,
+   * while (0.0, 0.0, 0.0, 0.0) is returned for false.
    *
-   * If the value is a string that can be parsed as a FVector4, the parsed
+   * - If the value is a string that can be parsed as a FVector4, the parsed
    * value is returned. This follows the rules of FVector4::InitFromString. The
    * string must be formatted as "X=... Y=... Z=... W=...". The W-component is
    * optional; if absent, it will be set to 1.0.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -871,30 +826,39 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FMatrix.
    *
-   * If the value is a 4-by-4 matrix, its components will be converted to
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted if possible.
+   *
+   * Property values are converted as follows:
+   *
+   * - If the value is a 4-by-4 matrix, its components will be converted to
    * double-precision floating-point numbers.
    *
-   * If the value is a 3-by-3 matrix, it will initialize the corresponding
+   * - If the value is a 3-by-3 matrix, it will initialize the corresponding
    * entries of the FMatrix, while all other entries are set to zero. In other
    * words, the 3-by-3 matrix is returned in an FMatrix where the fourth row and
    * column are filled with zeroes.
    *
-   * If the value is a 2-by-2 matrix, it will initialize the corresponding
+   * - If the value is a 2-by-2 matrix, it will initialize the corresponding
    * entries of the FMatrix, while all other entries are set to zero. In other
    * words, the 2-by-2 matrix is returned in an FMatrix where the third and
    * fourth rows / columns are filled with zeroes.
    *
-   * If the value is a scalar, then the resulting FMatrix will have this value
+   * - If the value is a scalar, then the resulting FMatrix will have this value
    * along its diagonal, including the very last component. All other entries
    * will be zero.
    *
-   * If the value is a boolean, it is converted to 1.0 for true and 0.0 for
+   * - If the value is a boolean, it is converted to 1.0 for true and 0.0 for
    * false. Then, the resulting FMatrix will have this value along its diagonal,
    * including the very last component. All other entries will be zero.
    *
-   * In all other cases, the default value is returned. If the feature ID is
-   * out-of-range, or if the property table property is somehow invalid, the
-   * default value is returned.
+   * In all other cases, the user-defined default value is returned. If the
+   * feature ID is out-of-range, or if the property table property is somehow
+   * invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -912,23 +876,32 @@ public:
   /**
    * Attempts to retrieve the value for the given feature as a FString.
    *
-   * String properties are returned as-is.
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be converted.
    *
-   * Scalar values are converted to a string with `std::to_string`.
+   * Property values are converted as follows:
    *
-   * Boolean properties are converted to "true" or "false".
+   * - String properties are returned as-is.
    *
-   * Vector properties are returned as strings in the format "X=... Y=... Z=...
-   * W=..." depending on how many components they have.
+   * - Scalar values are converted to a string with `std::to_string`.
    *
-   * Matrix properties are returned as strings row-by-row, where each row's
+   * - Boolean properties are converted to "true" or "false".
+   *
+   * - Vector properties are returned as strings in the format "X=... Y=...
+   * Z=... W=..." depending on how many components they have.
+   *
+   * - Matrix properties are returned as strings row-by-row, where each row's
    * values are printed between square brackets. For example, a 2-by-2 matrix
    * will be printed out as "[A B] [C D]".
    *
-   * Array properties return the default value.
+   * - Array properties return the user-defined default value.
    *
    * If the feature ID is out-of-range, or if the property table property is
-   * somehow invalid, the default value is returned.
+   * somehow invalid, the user-defined default value is returned.
    *
    * @param FeatureID The ID of the feature.
    * @param DefaultValue The default value to fall back on.
@@ -948,6 +921,13 @@ public:
    * FCesiumPropertyArray. If the property is not an array type, this returns an
    * empty array.
    *
+   * For numeric array properties, the raw array value for a given feature will
+   * be transformed by the property's normalization, scale, and offset before it
+   * is further converted. If the raw value is equal to the property's "no data"
+   * value, the user-defined default value is returned. However, if the property
+   * itself specifies a default value, then the property-defined default value
+   * will be returned.
+   *
    * @param featureID The ID of the feature.
    * @return The property value as a FCesiumPropertyArray.
    */
@@ -963,6 +943,12 @@ public:
    * Retrieves the value of the property for the given feature. This allows the
    * value to be acted on more generically; its true value can be retrieved
    * later as a specific Blueprints type.
+   *
+   * For numeric properties, the raw value for a given feature will be
+   * transformed by the property's normalization, scale, and offset before it is
+   * returned. If the raw value is equal to the property's "no data" value, an
+   * empty value will be returned. However, if the property itself specifies a
+   * default value, then the property-defined default value will be returned.
    *
    * @param featureID The ID of the feature.
    * @return The property value.
@@ -994,9 +980,26 @@ public:
   PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   /**
-   * Whether this property is supposed to be normalized. Only applicable when
-   * the type of this property is an integer scalar, or if this property is an
-   * array of integer scalar types.
+   * Retrieves the raw value of the property for the given feature. This is the
+   * value of the property without normalization, offset, or scale applied.
+   *
+   * If this property specifies a "no data" value, and the raw value is equal to
+   * this "no data" value, the value is returned as-is.
+   *
+   * @param featureID The ID of the feature.
+   * @return The raw property value.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue GetRawValue(
+      UPARAM(ref) const FCesiumPropertyTableProperty& Property,
+      int64 FeatureID);
+
+  /**
+   * Whether this property is normalized. Only applicable when this property has
+   * an integer component type.
    *
    * @return Whether this property is normalized.
    */
@@ -1006,4 +1009,110 @@ public:
       Category = "Cesium|Metadata|PropertyTableProperty")
   static bool IsNormalized(UPARAM(ref)
                                const FCesiumPropertyTableProperty& Property);
+
+  /**
+   * Gets the offset of this property. This can be defined by the class property
+   * that it implements, or overridden by the instance of the property itself.
+   *
+   * This is only applicable to properties with floating-point or normalized
+   * integer component types. If an offset is not defined or applicable, this
+   * returns an empty value.
+   *
+   * @return The offset of the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue
+  GetOffset(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
+  /**
+   * Gets the scale of this property. This can be defined by the class property
+   * that it implements, or overridden by the instance of the property itself.
+   *
+   * This is only applicable to properties with floating-point or normalized
+   * integer component types. If a scale is not defined or applicable, this
+   * returns an empty value.
+   *
+   * @return The scale of the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue
+  GetScale(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
+  /**
+   * Gets the minimum value of this property. This can be defined by the class
+   * property that it implements, or overridden by the instance of the property
+   * itself.
+   *
+   * This is only applicable to scalar, vecN and matN properties. It represents
+   * the component-wise minimum of all property values with normalization,
+   * offset, and scale applied. If a minimum value is not defined or
+   * applicable, this returns an empty value.
+   *
+   * @return The minimum value of the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue
+  GetMinimumValue(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
+  /**
+   * Gets the maximum value of this property. This can be defined by the class
+   * property that it implements, or overridden by the instance of the property
+   * itself.
+   *
+   * This is only applicable to scalar, vecN and matN properties. It represents
+   * the component-wise maximum of all property values with normalization,
+   * offset, and scale applied. If a maximum value is not defined or applicable,
+   * this returns an empty value.
+   *
+   * @return The maximum value of the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue
+  GetMaximumValue(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
+  /**
+   * Gets the "no data" value of this property, as defined by its class
+   * property. This value functions a sentinel value, indicating missing data
+   * wherever it appears. The value is compared against the property's raw data,
+   * without normalization, offset, or scale applied.
+   *
+   * This is not applicable to boolean properties. If a "no data" value is
+   * not defined or applicable, this returns an empty value.
+   *
+   * @return The "no data" value of the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue
+  GetNoDataValue(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
+
+  /**
+   * Gets the default value of this property, as defined by its class
+   * property. This default value is used use when encountering a "no data"
+   * value in the property.
+   *
+   * If a default value is not defined, this returns an empty value.
+   *
+   * @return The default value of the property.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|PropertyTableProperty")
+  static FCesiumMetadataValue
+  GetDefaultValue(UPARAM(ref) const FCesiumPropertyTableProperty& Property);
 };

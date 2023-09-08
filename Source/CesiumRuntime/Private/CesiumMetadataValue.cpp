@@ -29,6 +29,8 @@ FCesiumMetadataValueType UCesiumMetadataValueBlueprintLibrary::GetValueType(
   return Value._valueType;
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 ECesiumMetadataTrueType_DEPRECATED
 UCesiumMetadataValueBlueprintLibrary::GetTrueType(
     UPARAM(ref) const FCesiumMetadataValue& Value) {
@@ -54,6 +56,8 @@ bool UCesiumMetadataValueBlueprintLibrary::GetBoolean(
       },
       Value._value);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 uint8 UCesiumMetadataValueBlueprintLibrary::GetByte(
     UPARAM(ref) const FCesiumMetadataValue& Value,
@@ -221,4 +225,9 @@ FCesiumPropertyArray UCesiumMetadataValueBlueprintLibrary::GetArray(
         return FCesiumPropertyArray();
       },
       Value._value);
+}
+
+bool UCesiumMetadataValueBlueprintLibrary::IsEmpty(
+    UPARAM(ref) const FCesiumMetadataValue& Value) {
+  return std::holds_alternative<std::monostate>(Value._value);
 }

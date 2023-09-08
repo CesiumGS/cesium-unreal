@@ -8,6 +8,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UObject/ObjectMacros.h"
 #include <glm/glm.hpp>
+#include <optional>
+
 #include "CesiumMetadataValue.generated.h"
 
 /**
@@ -181,6 +183,39 @@ public:
    */
   template <typename T>
   explicit FCesiumMetadataValue(const T& Value) : _value(Value), _valueType() {
+    ECesiumMetadataType type;
+    ECesiumMetadataComponentType componentType;
+    bool isArray;
+    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
+      type =
+          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<ArrayType>::component);
+      isArray = true;
+    } else {
+      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+      componentType = ECesiumMetadataComponentType(
+          CesiumGltf::TypeToPropertyType<T>::component);
+      isArray = false;
+    }
+    _valueType = {type, componentType, isArray};
+  }
+
+  /**
+   * Constructs a metadata value with the given optional input.
+   *
+   * @param MaybeValue The optional value to be stored in this struct.
+   */
+  template <typename T>
+  explicit FCesiumMetadataValue(const std::optional<T>& MaybeValue)
+      : _value(std::monostate{}), _valueType() {
+    if (!MaybeValue) {
+      return;
+    }
+
+    _value = *MaybeValue;
+
     ECesiumMetadataType type;
     ECesiumMetadataComponentType componentType;
     bool isArray;
@@ -751,4 +786,19 @@ public:
       Category = "Cesium|Metadata|Value")
   static FCesiumPropertyArray GetArray(UPARAM(ref)
                                            const FCesiumMetadataValue& Value);
+
+  /**
+   * Whether the value is empty, i.e., whether it does not actually represent
+   * any data. An empty value functions as a null value, and can be compared to
+   * a std::nullopt in C++. For example, when the raw value of a property
+   * matches the property's specified "no data" value, it will return an empty
+   * FCesiumMetadataValue.
+   *
+   * @return Whether the value is empty.
+   */
+  UFUNCTION(
+      BlueprintCallable,
+      BlueprintPure,
+      Category = "Cesium|Metadata|Value")
+  static bool IsEmpty(UPARAM(ref) const FCesiumMetadataValue& Value);
 };
