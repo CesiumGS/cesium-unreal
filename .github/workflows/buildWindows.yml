@@ -15,6 +15,10 @@ on:
       upload-package-base-name:
         required: true
         type: string
+      extra-choco-packages:
+        required: false
+        type: string
+        default: ''
 jobs:
   build:
     runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
@@ -24,9 +28,10 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0 # so that `git describe` works.
-      - name: Install VS2022 .NET desktop workload
+      - name: Install Extra Dependencies
+        if: ${{ inputs.extra-choco-packages }}
         run: |
-          choco install -y visualstudio2022-workload-manageddesktop
+          choco install -y ${{ inputs.extra-choco-packages }}
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
