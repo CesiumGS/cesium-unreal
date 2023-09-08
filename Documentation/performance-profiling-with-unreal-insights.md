@@ -62,11 +62,42 @@ We need to make sure all our C++ code is building in release mode.
 
 ![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/9cab7cf1-ab6d-4b58-a362-fc21ccff0334)
 
-TODO
+By default, the Timings Insights Tab is shown. More detail can be found [here](https://docs.unrealengine.com/5.0/en-US/timing-insights-in-unreal-engine-5/).
 
-### Start at the timeline
+For this session, there are several sections of interest for us:
+- The Frames panel (top, a timeline view)
+- The Timings panel (middle, mostly empty because nothing is selected)
+- The Log Panel (bottom)
+- The Timers tab (right)
 
-TODO
+### Isolate your area of interest
+
+1) In the Log Panel, search for "mark". This will show the logging of our timing marks for our test. Select the start mark, then hold shift and down arrow to select the end mark too
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/7cccc075-edf7-4b8e-b704-b9efc9de1a3c)
+
+2) Notice that the Timings panel is now displaying timing data, with a specific time region highlighted
+3) In the Timings panel, select View Mode -> Compact Mode to see more of a bird's eye view
+4) Select All Tracks and uncheck the following threads that don't have much activity for our test: ```RenderThread 3-7, BackgroundThreadPool #1, ForegroundWorker #0-#1, DDC IO ThreadPool #0-#2, Reserve Worker #0-#13, AudioMixerXXX```
+5) Use the mouse wheel to zoom in to selected region. Right click and drag to pan left and right.
+
+The view should be a lot cleaner now
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/aca0680e-3dc3-4d23-9838-8f598f384089)
+
+
+### Examine high traffic timers
+
+Let's look at the Timers tab. 
+
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/823fc4d4-25d3-40dc-9b41-1cffee560454)
+
+Every row is a timing event. Some events come from the engine, some are custom timers in the Cesium for Unreal plugin code. You'll notice that Incl is sorting descending, showing the events with the highest inclusive time. 
+
+You may feel the need to jump right in to `Cesium::CreateRHITexture2D`. It seems to have one of the highest exclusive times (Excl) of any of the events in the list, 1 second. After all, our selection is only 1.2 seconds long, so this must be the performance bottleneck right? Hold on. The total sampled time at the top (CPU) is 19.8s, indicating we are sampling across threads.
+
+Given that the highest sampled calls are actually somewhat small compared to the total sampled CPU time, our bottleneck is most likely outside of our timed events.
+
+This brings us to...
+
 
 ### Examine low use areas
 
