@@ -36,28 +36,31 @@ We need to make sure all our C++ code is building in release mode.
 # Prepare for capture
 
 ### Unreal Editor
-1) Start debugging from VS
+1) In Visual Studio, click Debug -> Start Debugging (F5)
 2) In Unreal, click Tools->Test Automation
 3) Check the Cesium.Performance.LoadTestDenver row (don't start the test yet)
+![Automation Window small](https://github.com/CesiumGS/cesium-unreal/assets/130494071/d27e7d67-3658-4cb2-ab10-777498cba0da)
 4) Click Tools->Run Unreal Insights
+5) In Unreal Insights, click on the "Connection" tab (don't connect yet)
+
 > You can also find UnrealInsights.exe in UE_5.X\Engine\Binaries\Win64
 
-### Unreal Insights
-1) From the session browser, click Connection tab
-2) Click Connect
-3) Go back to the Trace Store tab, notice your live session
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/eadd4013-ca10-4b61-bb7d-0ab233440a39)
 
 # Run the timing capture session
+1) In Unreal Insights, click "Connect"
+2) In Unreal Editor, click "Start Tests" (you should already have the Test Automation window open)
+3) When the test ends, close Unreal Editor. We don't need it anymore.
+4) In Unreal Insights, click the Trace Store tab, notice the trace that was just created
+5) Click on it, then click on the 'Open Trace' button
 
-1) In Unreal, click Tools->Test Automation
-2) Click Start (you should already have the test selected)
-3) When the test ends, close UnrealEditor
-4) In Unreal Insights, select the trace that was just created
-5) Click on Open Trace
+> On the right side, there's a "Explore Trace Store Directory" button. You can click on this to delete or organize your traces
 
-> Trace files are saved in C:/Users/your username/AppData/Local/UnrealEngine/Common/UnrealTrace/Store/001
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/f1e34fbc-35cd-4bc3-b935-5e322f5d9ba6)
 
 # Interpret the report
+
+![image](https://github.com/CesiumGS/cesium-unreal/assets/130494071/9cab7cf1-ab6d-4b58-a362-fc21ccff0334)
 
 TODO
 
