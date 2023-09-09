@@ -778,7 +778,6 @@ jobs:
       unreal-runner-label: "unreal-53"
       unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Build/BatchFiles"
       upload-package-base-name: "CesiumForUnreal-53-windows"
-      extra-choco-packages: "visualstudio2022-workload-manageddesktop"
   TestWindows53:
     needs: [Windows53]
     uses: ./.github/workflows/testWindows.yml
