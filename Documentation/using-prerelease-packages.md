@@ -4,7 +4,10 @@ Cesium for Unreal has a continous integration (CI) system that automatically bui
 
 _Before you begin, **back up your project**. Cesium for Unreal can not guarantee that levels saved with a pre-release version will be loadable in other versions of the plugin._
 
-## A pre-release version from a Pull Request
+* [Download a pre-release version from a Pull Request](#download-a-pre-release-version-from-a-pull-request)
+* [Download a pre-release version from a Branch or Commit](#download-a-pre-release-version-from-a-branch-or-commit)
+
+## Download a pre-release version from a Pull Request
 
 To download a pre-release version built from a pull request, click the "Checks" tab at the top of the pull request:
 
@@ -24,7 +27,7 @@ Find the appropriate ZIP file for your version of Unreal Engine. For example, `C
 
 Once you've downloaded the appropriate ZIP, move on to [installing a Cesium for Unreal ZIP](#installing-a-cesium-for-unreal-zip).
 
-## A pre-release version from a branch
+## Download a pre-release version from a branch or commit
 
 To download a pre-release version built from a branch (or a commit), click the green check ✔️ at the top of the list of files in the branch:
 
