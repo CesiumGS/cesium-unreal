@@ -18,7 +18,31 @@ And scroll down to the Artifacts section:
 
 <img width="387" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/f2e57962-2bdf-4623-9856-a969378ceca2">
 
-If there is no Artifacts section on that page, it's probably because the CI run is in progress. Artifacts don't appear until the build is complete.
+If there is no Artifacts section on that page, it's probably because the CI run is still in progress. Artifacts don't appear until the build is complete.
+
+Find the appropriate ZIP file for your version of Unreal Engine. For example, `CesiumForUnreal-52-*.zip` is for Unreal Engine 5.2. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports. So in most cases you should download an artifact without any platform in its name.
+
+Once you've downloaded the appropriate ZIP, move on to [installing a Cesium for Unreal ZIP](#installing-a-cesium-for-unreal-zip).
+
+## A pre-release version from a branch
+
+To download a pre-release version built from a branch (or a commit), click the green check ✔️ at the top of the list of files in the branch:
+
+<img width="706" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/de9d7dc5-4db4-440a-8669-b4c4414cd2a6">
+
+Click any of the Details links that appear:
+
+<img width="394" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/30899a4d-9623-48e0-86cb-848ca2dd64bd">
+
+Then click the Summary link:
+
+<img width="420" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/7be5aba4-3e0c-4cc1-80b5-98e13e3d22d3">
+
+And scroll down to the Artifacts section:
+
+<img width="387" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/f2e57962-2bdf-4623-9856-a969378ceca2">
+
+If there is no Artifacts section on that page, it's probably because the CI run is still in progress. Artifacts don't appear until the build is complete.
 
 Find the appropriate ZIP file for your version of Unreal Engine. For example, `CesiumForUnreal-52-*.zip` is for Unreal Engine 5.2. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports. So in most cases you should download an artifact without any platform in its name.
 
