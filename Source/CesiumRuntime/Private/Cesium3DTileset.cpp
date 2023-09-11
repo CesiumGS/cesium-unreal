@@ -40,6 +40,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
 #include "Math/UnrealMathUtility.h"
 #include "PixelFormat.h"
 #include "StereoRendering.h"
