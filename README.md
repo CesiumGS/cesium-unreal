@@ -51,7 +51,7 @@ You can also find all releases on the [Releases](https://github.com/CesiumGS/ces
 2. Extract the release ZIP to Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.2 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.2\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
 3. If you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory, and the plugin is ready to use.
 
-You can also [use pre-release packages](Documentation/use-prerelease-packages.md).
+You can also [use pre-release packages](Documentation/using-prerelease-packages.md).
 
 ### :computer: Developing with Unreal Engine
 
