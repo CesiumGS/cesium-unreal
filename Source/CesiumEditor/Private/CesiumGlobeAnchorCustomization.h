@@ -58,7 +58,7 @@ public:
    * and +X points to the intersection of the Equator (zero degrees latitude)
    * and Prime Meridian (zero degrees longitude).
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double X = 0.0;
 
   /**
@@ -67,7 +67,7 @@ public:
    * and +Y points to the intersection of the Equator (zero degrees latitude)
    * and +90 degrees longitude.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double Y = 0.0;
 
   /**
@@ -75,19 +75,25 @@ public:
    * meters. The ECEF coordinate system's origin is at the center of the Earth
    * and +Z points up through the North Pole.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double Z = 0.0;
 
   /**
    * The latitude in degrees.
    */
-  UPROPERTY(EditAnywhere, Meta = (ClampMin = -90.0, ClampMax = 90.0))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (ClampMin = -90.0, ClampMax = 90.0))
   double Latitude = 0.0;
 
   /**
    * The longitude in degrees.
    */
-  UPROPERTY(EditAnywhere, Meta = (ClampMin = -180.0, ClampMax = 180.0))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (ClampMin = -180.0, ClampMax = 180.0))
   double Longitude = 0.0;
 
   /**
@@ -97,7 +103,7 @@ public:
    * mean sea level, which can be tens of meters higher or lower depending on
    * where in the world the object is located.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double Height = 0.0;
 
   /**
@@ -105,7 +111,10 @@ public:
    * (+X) is level with the horizon. Positive pitch is looking up, negative
    * pitch is looking down.
    */
-  UPROPERTY(EditAnywhere, Meta = (ClampMin = -89.9999, ClampMax = 89.9999))
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta = (ClampMin = -89.9999, ClampMax = 89.9999))
   double Pitch = 0.0;
 
   /**
@@ -113,7 +122,7 @@ public:
    * points East. Positive yaw rotates right toward South, while negative yaw
    * rotates left toward North.
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double Yaw = 0.0;
 
   /**
@@ -121,7 +130,7 @@ public:
    * roll is like tilting your head to the right (clockwise), while negative
    * roll is tilting to the left (counter-clockwise).
    */
-  UPROPERTY(EditAnywhere)
+  UPROPERTY(EditAnywhere, Category = "Cesium")
   double Roll = 0.0;
 
   virtual void PostEditChangeProperty(
