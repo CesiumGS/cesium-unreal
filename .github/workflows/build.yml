@@ -11,6 +11,18 @@ jobs:
         run: |
           npm install
           npm run format -- --dry-run -Werror
+      - name: Find Pull Request
+        uses: juliangruber/find-pull-request-action@v1
+        id: this-pull-request
+        with:
+          branch: ${{ github.ref_name }}
+      - name: Comment on pull request
+        if: ${{ this-pull-request }}
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ this-pull-request }}
+          body: |
+            This is a test of commenting on a PR from a workflow.
   Windows50:
     uses: ./.github/workflows/buildWindows.yml
     with:
