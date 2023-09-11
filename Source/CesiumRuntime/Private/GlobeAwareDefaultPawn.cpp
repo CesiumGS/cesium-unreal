@@ -9,6 +9,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "CesiumWgs84Ellipsoid.h"
 #include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
@@ -53,7 +54,18 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
                       .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform() *
                   upEcef;
 
-  this->_moveAlongVector(FVector(up.x, up.y, up.z), Val);
+  FTransform transform{};
+  USceneComponent* pRootComponent = this->GetRootComponent();
+  if (IsValid(pRootComponent)) {
+    USceneComponent* pParent = pRootComponent->GetAttachParent();
+    if (IsValid(pParent)) {
+      transform = pParent->GetComponentToWorld();
+    }
+  }
+
+  this->_moveAlongVector(
+      transform.TransformVector(FVector(up.x, up.y, up.z)),
+      Val);
 }
 
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
@@ -71,10 +83,22 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   // the right (clockwise).
   FRotator localRotation = Controller->GetControlRotation();
 
+  FTransform transform{};
+  USceneComponent* pRootComponent = this->GetRootComponent();
+  if (IsValid(pRootComponent)) {
+    USceneComponent* pParent = pRootComponent->GetAttachParent();
+    if (IsValid(pParent)) {
+      transform = pParent->GetComponentToWorld();
+    }
+  }
+
   // Transform the rotation in the ESU frame to the Unreal world frame.
+  FVector globePosition =
+      transform.InverseTransformPosition(this->GetPawnViewLocation());
   FMatrix esuAdjustmentMatrix =
-      this->GetGeoreference()->ComputeEastSouthUpToUnreal(
-          this->GetPawnViewLocation());
+      this->GetGeoreference()->ComputeEastSouthUpToUnrealTransformation(
+          globePosition) *
+      transform.ToMatrixNoScale();
 
   return FRotator(esuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
 }
@@ -114,6 +138,15 @@ void AGlobeAwareDefaultPawn::_interpolateFlightPosition(
 
     out = *geodeticPosition + geodeticUp * altitudeOffset;
   }
+}
+
+const FTransform&
+AGlobeAwareDefaultPawn::GetGlobeToUnrealWorldTransform() const {
+  AActor* pParent = this->GetAttachParentActor();
+  if (IsValid(pParent)) {
+    return pParent->GetActorTransform();
+  }
+  return FTransform::Identity;
 }
 
 void AGlobeAwareDefaultPawn::FlyToLocationECEF(
@@ -236,9 +269,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
         TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
         *this->GetName());
   }
-  const glm::dvec3& ecef =
-      this->GetGeoreference()->TransformLongitudeLatitudeHeightToEcef(
-          LongitudeLatitudeHeightDestination);
+  FVector ecef =
+      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+          VecMath::createVector(LongitudeLatitudeHeightDestination));
   this->FlyToLocationECEF(
       ecef,
       YawAtDestination,

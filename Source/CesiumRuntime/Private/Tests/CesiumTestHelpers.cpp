@@ -1,6 +1,7 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumTestHelpers.h"
+#include "CesiumGeoreference.h"
 #include "Engine/Engine.h"
 
 namespace CesiumTestHelpers {
@@ -10,6 +11,37 @@ UWorld* getGlobalWorldContext() {
       GEngine->GetWorldContexts();
   FWorldContext firstWorldContext = worldContexts[0];
   return firstWorldContext.World();
+}
+
+void TestRotatorsAreEquivalent(
+    FAutomationTestBase* pSpec,
+    ACesiumGeoreference* pGeoreferenceExpected,
+    const FRotator& rotatorExpected,
+    ACesiumGeoreference* pGeoreferenceActual,
+    const FRotator& rotatorActual) {
+  FVector xEcefExpected =
+      pGeoreferenceExpected->TransformUnrealDirectionToEarthCenteredEarthFixed(
+          rotatorExpected.RotateVector(FVector::XAxisVector));
+  FVector yEcefExpected =
+      pGeoreferenceExpected->TransformUnrealDirectionToEarthCenteredEarthFixed(
+          rotatorExpected.RotateVector(FVector::YAxisVector));
+  FVector zEcefExpected =
+      pGeoreferenceExpected->TransformUnrealDirectionToEarthCenteredEarthFixed(
+          rotatorExpected.RotateVector(FVector::ZAxisVector));
+
+  FVector xEcefActual =
+      pGeoreferenceActual->TransformUnrealDirectionToEarthCenteredEarthFixed(
+          rotatorActual.RotateVector(FVector::XAxisVector));
+  FVector yEcefActual =
+      pGeoreferenceActual->TransformUnrealDirectionToEarthCenteredEarthFixed(
+          rotatorActual.RotateVector(FVector::YAxisVector));
+  FVector zEcefActual =
+      pGeoreferenceActual->TransformUnrealDirectionToEarthCenteredEarthFixed(
+          rotatorActual.RotateVector(FVector::ZAxisVector));
+
+  pSpec->TestEqual("xEcefActual", xEcefActual, xEcefExpected);
+  pSpec->TestEqual("yEcefActual", yEcefActual, yEcefExpected);
+  pSpec->TestEqual("zEcefActual", zEcefActual, zEcefExpected);
 }
 
 FName getUniqueTag(AActor* pActor) {
