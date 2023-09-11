@@ -20,10 +20,9 @@ std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumPolygonRasterOverlay::CreateOverlay(
     const Cesium3DTilesSelection::RasterOverlayOptions& options) {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
-  if (pTileset == nullptr)
-    return nullptr;
 
-  FTransform worldToTileset = pTileset->GetActorTransform().Inverse();
+  FTransform worldToTileset =
+      pTileset ? pTileset->GetActorTransform().Inverse() : FTransform::Identity;
 
   std::vector<CartographicPolygon> polygons;
   polygons.reserve(this->Polygons.Num());
