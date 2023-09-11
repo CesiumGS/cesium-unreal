@@ -46,8 +46,10 @@ struct LoadTestContext {
 
 LoadTestContext gLoadTestContext;
 
-DEFINE_LATENT_AUTOMATION_COMMAND_THREE_PARAMETER(
+DEFINE_LATENT_AUTOMATION_COMMAND_FOUR_PARAMETER(
     TimeLoadingCommand,
+    FString,
+    loggingName,
     LoadTestContext&,
     context,
     std::function<void(SceneGenerationContext&)>,
@@ -66,7 +68,7 @@ bool TimeLoadingCommand::Update() {
 
     // Start test mark, turn updates back on
     context.startMark = FPlatformTime::Seconds();
-    UE_LOG(LogCesium, Display, TEXT("-- Load start mark --"));
+    UE_LOG(LogCesium, Display, TEXT("-- Load start mark -- %s"), *loggingName);
 
     context.playContext.setSuspendUpdate(false);
 
@@ -87,7 +89,7 @@ bool TimeLoadingCommand::Update() {
 
   if (tilesetsloaded || timedOut) {
     context.endMark = timeMark;
-    UE_LOG(LogCesium, Display, TEXT("-- Load end mark --"));
+    UE_LOG(LogCesium, Display, TEXT("-- Load end mark -- %s"), *loggingName);
 
     if (timedOut) {
       UE_LOG(
@@ -120,11 +122,13 @@ bool TimeLoadingCommand::Update() {
 }
 
 struct TestPass {
+  FString name;
   std::function<void(SceneGenerationContext&)> setupStep;
   std::function<void(SceneGenerationContext&)> verifyStep;
 };
 
 bool RunLoadTest(
+    const FString& testName,
     std::function<void(SceneGenerationContext&)> locationSetup,
     const std::vector<TestPass>& testPasses) {
 
@@ -159,8 +163,13 @@ bool RunLoadTest(
     ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(1.0f));
 
     // Do our timing capture
-    ADD_LATENT_AUTOMATION_COMMAND(
-        TimeLoadingCommand(gLoadTestContext, pass.setupStep, pass.verifyStep));
+    FString loggingName = testName + ":" + pass.name;
+
+    ADD_LATENT_AUTOMATION_COMMAND(TimeLoadingCommand(
+        loggingName,
+        gLoadTestContext,
+        pass.setupStep,
+        pass.verifyStep));
   }
 
   // End play in editor
@@ -169,20 +178,30 @@ bool RunLoadTest(
   return true;
 }
 
+void clearDiskCache(SceneGenerationContext& context) {
+  // TODO
+}
+
+void refreshTilesets(SceneGenerationContext& context) {
+  gLoadTestContext.playContext.refreshTilesets();
+}
+
 bool FCesiumLoadTestDenver::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{nullptr, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", clearDiskCache, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(setupForDenver, testPasses);
+  return RunLoadTest(GetTestName(), setupForDenver, testPasses);
 }
 
 bool FCesiumLoadTestGoogleplex::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{nullptr, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", clearDiskCache, nullptr});
+  testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
-  return RunLoadTest(setupForGoogleTiles, testPasses);
+  return RunLoadTest(GetTestName(), setupForGoogleTiles, testPasses);
 }
 
 bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
@@ -226,10 +245,10 @@ bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
   };
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{nullptr, nullptr});
-  testPasses.push_back(TestPass{adjustCamera, verifyVisibleTiles});
+  testPasses.push_back(TestPass{"Cold Cache", clearDiskCache, nullptr});
+  testPasses.push_back(TestPass{"Adjust", adjustCamera, verifyVisibleTiles});
 
-  return RunLoadTest(setupForMontrealPointCloud, testPasses);
+  return RunLoadTest(GetTestName(), setupForMontrealPointCloud, testPasses);
 }
 
 #endif
