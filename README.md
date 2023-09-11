@@ -41,7 +41,7 @@ Cesium for Unreal is tightly integrated with Unreal Engine making it possible to
 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html). Cesium for Unreal is free for both commercial and non-commercial use.
 
-### :package: Accessing Packaged Plugin
+### :package: Accessing Packaged Plugins
 
 The easiest way to access Cesium for Unreal is by downloading the officially released version from the [Unreal Engine Marketplace](https://cesium.com/unreal-marketplace?utm_source=cesium-unreal&utm_medium=github&utm_campaign=unreal).
 
@@ -51,7 +51,7 @@ You can also find all releases on the [Releases](https://github.com/CesiumGS/ces
 2. Extract the release ZIP to Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.2 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.2\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
 3. If you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory.
 
-If you would like to access pre-release, development versions of the plugin, Cesium for Unreal is automatically built from each commit, branch, and pull request. To access these packages, click the ✔️ icon on the GitHub branch or commit and click the `Details` link next to any of the checks in the box that appears. Then click "Summary" link near the top-left corner. Scroll down to the "Artifacts" section and look for an appropriate artifact for your Unreal Engine version. Note that artifacts that name a platform will _only_ work on that platform, while artifacts without any platform in the name will work on _all_ platforms that Cesium for Unreal supports.
+You can also [use pre-release packages](Documentation/use-prerelease-packages.md).
 
 ### :computer: Developing with Unreal Engine
 
