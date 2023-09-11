@@ -9,6 +9,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
 #include "CesiumUtility/Math.h"
+#include "CesiumWgs84Ellipsoid.h"
 #include "Curves/CurveFloat.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
@@ -95,7 +96,8 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FVector globePosition =
       transform.InverseTransformPosition(this->GetPawnViewLocation());
   FMatrix esuAdjustmentMatrix =
-      this->GetGeoreference()->ComputeEastSouthUpToUnreal(globePosition) *
+      this->GetGeoreference()->ComputeEastSouthUpToUnrealTransformation(
+          globePosition) *
       transform.ToMatrixNoScale();
 
   return FRotator(esuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
@@ -267,9 +269,9 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
         TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
         *this->GetName());
   }
-  const glm::dvec3& ecef =
-      this->GetGeoreference()->TransformLongitudeLatitudeHeightToEcef(
-          LongitudeLatitudeHeightDestination);
+  FVector ecef =
+      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+          VecMath::createVector(LongitudeLatitudeHeightDestination));
   this->FlyToLocationECEF(
       ecef,
       YawAtDestination,
