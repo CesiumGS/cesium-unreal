@@ -6,6 +6,7 @@
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
 
+#include "CesiumAsync/ICacheDatabase.h"
 #include "CesiumGltfComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumSceneGeneration.h"
@@ -178,8 +179,10 @@ bool RunLoadTest(
   return true;
 }
 
-void clearDiskCache(SceneGenerationContext& context) {
-  // TODO
+void clearCacheDb(SceneGenerationContext& context) {
+  std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+      getCacheDatabase();
+  pCacheDatabase->clearAll();
 }
 
 void refreshTilesets(SceneGenerationContext& context) {
@@ -189,7 +192,7 @@ void refreshTilesets(SceneGenerationContext& context) {
 bool FCesiumLoadTestDenver::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", clearDiskCache, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", clearCacheDb, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
   return RunLoadTest(GetTestName(), setupForDenver, testPasses);
@@ -198,7 +201,7 @@ bool FCesiumLoadTestDenver::RunTest(const FString& Parameters) {
 bool FCesiumLoadTestGoogleplex::RunTest(const FString& Parameters) {
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", clearDiskCache, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", clearCacheDb, nullptr});
   testPasses.push_back(TestPass{"Warm Cache", refreshTilesets, nullptr});
 
   return RunLoadTest(GetTestName(), setupForGoogleTiles, testPasses);
@@ -245,7 +248,7 @@ bool FCesiumLoadTestMontrealPointCloud::RunTest(const FString& Parameters) {
   };
 
   std::vector<TestPass> testPasses;
-  testPasses.push_back(TestPass{"Cold Cache", clearDiskCache, nullptr});
+  testPasses.push_back(TestPass{"Cold Cache", clearCacheDb, nullptr});
   testPasses.push_back(TestPass{"Adjust", adjustCamera, verifyVisibleTiles});
 
   return RunLoadTest(GetTestName(), setupForMontrealPointCloud, testPasses);

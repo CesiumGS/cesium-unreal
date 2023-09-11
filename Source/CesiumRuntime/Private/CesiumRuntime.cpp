@@ -100,20 +100,28 @@ std::string getCacheDatabaseName() {
 
 } // namespace
 
+std::shared_ptr<CesiumAsync::ICacheDatabase>& getCacheDatabase() {
+  static int MaxCacheItems =
+      GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
+
+  static std::shared_ptr<CesiumAsync::ICacheDatabase> pCacheDatabase =
+      std::make_shared<CesiumAsync::SqliteCache>(
+          spdlog::default_logger(),
+          getCacheDatabaseName(),
+          MaxCacheItems);
+
+  return pCacheDatabase;
+}
+
 const std::shared_ptr<CesiumAsync::IAssetAccessor>& getAssetAccessor() {
   static int RequestsPerCachePrune =
       GetDefault<UCesiumRuntimeSettings>()->RequestsPerCachePrune;
-  static int MaxCacheItems =
-      GetDefault<UCesiumRuntimeSettings>()->MaxCacheItems;
   static std::shared_ptr<CesiumAsync::IAssetAccessor> pAssetAccessor =
       std::make_shared<CesiumAsync::GunzipAssetAccessor>(
           std::make_shared<CesiumAsync::CachingAssetAccessor>(
               spdlog::default_logger(),
               std::make_shared<UnrealAssetAccessor>(),
-              std::make_shared<CesiumAsync::SqliteCache>(
-                  spdlog::default_logger(),
-                  getCacheDatabaseName(),
-                  MaxCacheItems),
+              getCacheDatabase(),
               RequestsPerCachePrune));
   return pAssetAccessor;
 }
