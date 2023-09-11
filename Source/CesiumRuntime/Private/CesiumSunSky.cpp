@@ -218,9 +218,6 @@ void ACesiumSunSky::BeginPlay() {
   if (this->UpdateAtmosphereAtRuntime) {
     this->UpdateAtmosphereRadius();
   }
-
-  if (this->SkyAtmosphere->AtmosphereHeight != this->AtmosphereHeight) {
-  }
 }
 
 void ACesiumSunSky::EndPlay(const EEndPlayReason::Type EndPlayReason) {
