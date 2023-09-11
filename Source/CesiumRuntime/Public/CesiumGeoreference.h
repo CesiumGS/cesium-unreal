@@ -38,6 +38,11 @@ class CESIUMRUNTIME_API ACesiumGeoreference : public AActor {
   GENERATED_BODY()
 public:
   /**
+   * The minimum allowed value for the Scale property, 1e-6.
+   */
+  static const double kMinimumScale;
+
+  /**
    * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
    * persistent level of the calling object's world. If not found, it creates a
    * new default Georeference.
@@ -687,18 +692,17 @@ private:
 public:
   ACesiumGeoreference();
 
-  /**
-   * Recomputes all world georeference transforms. Usually there is no need to
-   * explicitly call this from external code.
-   */
-  void UpdateGeoreference();
-
   const CesiumGeospatial::LocalHorizontalCoordinateSystem&
   getCoordinateSystem() const noexcept {
     return this->_coordinateSystem;
   }
 
 private:
+  /**
+   * Recomputes all world georeference transforms.
+   */
+  void UpdateGeoreference();
+
   /**
    * A tag that is assigned to Georeferences when they are created
    * as the "default" Georeference for a certain world.

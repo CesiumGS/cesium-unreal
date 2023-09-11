@@ -2017,6 +2017,13 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   glm::dmat4 unrealWorldToCesiumTileset =
       glm::affineInverse(ueTilesetToUeWorld * cesiumTilesetToUeTileset);
 
+  if (glm::isnan(unrealWorldToCesiumTileset[3].x) ||
+      glm::isnan(unrealWorldToCesiumTileset[3].y) ||
+      glm::isnan(unrealWorldToCesiumTileset[3].z)) {
+    // Probably caused by a zero scale.
+    return;
+  }
+
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(

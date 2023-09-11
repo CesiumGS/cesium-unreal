@@ -56,6 +56,8 @@ createCoordinateSystem(const FVector& center, double scale) {
 
 } // namespace
 
+/*static*/ const double ACesiumGeoreference::kMinimumScale = 1.0e-6;
+
 /*static*/ ACesiumGeoreference*
 ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
   UWorld* world = WorldContextObject->GetWorld();
@@ -195,8 +197,8 @@ void ACesiumGeoreference::SetOriginHeight(double NewValue) {
 double ACesiumGeoreference::GetScale() const { return this->Scale; }
 
 void ACesiumGeoreference::SetScale(double NewValue) {
-  if (NewValue < 1e-6) {
-    this->Scale = 1e-6;
+  if (NewValue < ACesiumGeoreference::kMinimumScale) {
+    this->Scale = ACesiumGeoreference::kMinimumScale;
   } else {
     this->Scale = NewValue;
   }
