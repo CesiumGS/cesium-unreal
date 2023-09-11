@@ -13,14 +13,14 @@ jobs:
           npm run format -- --dry-run -Werror
       - name: Find Pull Request
         uses: juliangruber/find-pull-request-action@v1
-        id: this-pull-request
+        id: find-pull-request
         with:
           branch: ${{ github.ref_name }}
       - name: Comment on pull request
-        if: ${{ this-pull-request }}
+        if: ${{ steps.find-pull-request.outputs.number }}
         uses: peter-evans/create-or-update-comment@v3
         with:
-          issue-number: ${{ this-pull-request }}
+          issue-number: ${{ steps.find-pull-request.outputs.number }}
           body: |
             This is a test of commenting on a PR from a workflow.
   Windows50:
