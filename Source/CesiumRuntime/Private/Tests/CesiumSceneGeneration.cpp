@@ -4,6 +4,8 @@
 
 #if WITH_EDITOR
 
+#include "Tests/AutomationEditorCommon.h"
+
 #include "GameFramework/PlayerStart.h"
 
 #include "Cesium3DTileset.h"
