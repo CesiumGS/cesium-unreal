@@ -58,4 +58,4 @@ Once you've download a pre-release ZIP file using one of the methods above, you 
 1. If you previously installed the Cesium for Unreal plugin via the Unreal Engine Marketplace, uninstall it first.
 2. Find Unreal Engine's `Engine/Plugins/Marketplace` directory. For example, on Unreal Engine 5.2 on Windows, this is typically `C:\Program Files\Epic Games\UE_5.2\Engine\Plugins\Marketplace`. You may need to create the `Marketplace` directory yourself.
 3. If the `CesiumForUnreal` subdirectory already exists in this `Marketplace` directory, delete it first to make sure you're getting a clean installation.
-4. Extract the release ZIP into this `Marketplace` directory. f you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory.
+4. Extract the release ZIP into this `Marketplace` directory. If you've done this correctly, you'll find a `CesiumForUnreal` sub-directory inside the `Marketplace` directory.
