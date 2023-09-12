@@ -247,8 +247,8 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
   if (!pSwitcher)
     return;
 
-  ALevelInstance* pCurrent = pSwitcher->GetCurrent();
-  ALevelInstance* pTarget = pSwitcher->GetTarget();
+  ALevelInstance* pCurrent = pSwitcher->GetCurrentSubLevel();
+  ALevelInstance* pTarget = pSwitcher->GetTargetSubLevel();
 
   // This sub-level's origin is active if it is the current level or if it's the
   // target level and there is no current level.
@@ -290,7 +290,7 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
         !this->GetWorld()->IsGameWorld()) {
       ALevelInstance* pOwner = Cast<ALevelInstance>(this->GetOwner());
       if (IsValid(pOwner) && !pOwner->IsTemporarilyHiddenInEditor(true)) {
-        pSwitcher->SetTarget(pOwner);
+        pSwitcher->SetTargetSubLevel(pOwner);
       }
     }
 #endif

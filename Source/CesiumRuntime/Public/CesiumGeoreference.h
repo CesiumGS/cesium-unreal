@@ -166,6 +166,18 @@ private:
       meta = (AllowPrivateAccess))
   APlayerCameraManager* SubLevelCamera = nullptr;
 
+  /**
+   * The component that allows switching between the sub-levels registered with
+   * this georeference.
+   */
+  UPROPERTY(
+      Instanced,
+      Category = "Cesium|Sub-levels",
+      BlueprintReadOnly,
+      BlueprintGetter = GetSubLevelSwitcher,
+      meta = (AllowPrivateAccess))
+  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
+
 #if WITH_EDITORONLY_DATA
   /**
    * Whether to visualize the level loading radii in the editor. Helpful for
@@ -329,6 +341,15 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetSubLevelCamera(APlayerCameraManager* NewValue);
+
+  /**
+   * Gets the component that allows switching between different sub-levels
+   * registered with this georeference.
+   */
+  UFUNCTION(BlueprintGetter)
+  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() {
+    return this->SubLevelSwitcher;
+  }
 
 #if WITH_EDITOR
   /**
@@ -721,7 +742,7 @@ public:
   ACesiumGeoreference();
 
   const CesiumGeospatial::LocalHorizontalCoordinateSystem&
-  getCoordinateSystem() const noexcept {
+  GetCoordinateSystem() const noexcept {
     return this->_coordinateSystem;
   }
 
@@ -740,9 +761,6 @@ private:
   mutable GeoTransforms _geoTransforms;
   CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem{
       glm::dmat4(1.0)};
-
-  UPROPERTY()
-  UCesiumSubLevelSwitcherComponent* SubLevelSwitcher;
 
   /**
    * @brief Updates the load state of sub-levels.

@@ -611,7 +611,7 @@ CesiumGeospatial::GlobeAnchor UCesiumGlobeAnchorComponent::
   assert(pGeoreference != nullptr);
 
   const CesiumGeospatial::LocalHorizontalCoordinateSystem& local =
-      pGeoreference->getCoordinateSystem();
+      pGeoreference->GetCoordinateSystem();
 
   glm::dmat4 newModelToLocal =
       VecMath::createMatrix4D(newRelativeTransform.ToMatrixWithScale());
@@ -662,7 +662,7 @@ void UCesiumGlobeAnchorComponent::_updateFromNativeGlobeAnchor(
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
   if (IsValid(pGeoreference)) {
     glm::dmat4 anchorToLocal = nativeAnchor.getAnchorToLocalTransform(
-        pGeoreference->getCoordinateSystem());
+        pGeoreference->GetCoordinateSystem());
 
     this->_setCurrentRelativeTransform(
         FTransform(VecMath::createMatrix(anchorToLocal)));

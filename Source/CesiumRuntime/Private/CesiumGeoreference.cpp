@@ -368,7 +368,7 @@ void ACesiumGeoreference::_showSubLevelLoadRadii() const {
   }
 
   for (const auto& pLevelWeak :
-       this->SubLevelSwitcher->GetRegisteredSubLevels()) {
+       this->SubLevelSwitcher->GetRegisteredSubLevelsWeak()) {
     ALevelInstance* pLevel = pLevelWeak.Get();
     if (!IsValid(pLevel))
       continue;
@@ -402,9 +402,9 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
   _showSubLevelLoadRadii();
 #endif
 
-  if (this->_shouldManageSubLevels()) {
-    _updateSublevelState();
-  }
+  // if (this->_shouldManageSubLevels()) {
+  //  _updateSublevelState();
+  //}
 }
 
 void ACesiumGeoreference::Serialize(FArchive& Ar) {
@@ -599,7 +599,7 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
     pLevelInstance->LoadLevelInstance();
   }
 
-  this->SubLevelSwitcher->SetTarget(pActiveSubLevel);
+  this->SubLevelSwitcher->SetTargetSubLevel(pActiveSubLevel);
 
   this->CesiumSubLevels_DEPRECATED.Empty();
 
@@ -648,10 +648,10 @@ void ACesiumGeoreference::UpdateGeoreference() {
 
   // If we're in a sub-level, update its origin as well.
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->SubLevelSwitcher;
-  if (IsValid(pSwitcher) && pSwitcher->GetTarget() != nullptr) {
-    if (pSwitcher->GetTarget() == pSwitcher->GetCurrent() ||
-        pSwitcher->GetCurrent() == nullptr) {
-      ALevelInstance* pTarget = pSwitcher->GetTarget();
+  if (IsValid(pSwitcher) && pSwitcher->GetTargetSubLevel() != nullptr) {
+    if (pSwitcher->GetTargetSubLevel() == pSwitcher->GetCurrentSubLevel() ||
+        pSwitcher->GetCurrentSubLevel() == nullptr) {
+      ALevelInstance* pTarget = pSwitcher->GetTargetSubLevel();
       UCesiumSubLevelComponent* pComponent =
           pTarget->FindComponentByClass<UCesiumSubLevelComponent>();
       if (IsValid(pComponent)) {
@@ -686,7 +686,7 @@ FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
 
 bool ACesiumGeoreference::_updateSublevelState() {
   const TArray<TWeakObjectPtr<ALevelInstance>>& sublevels =
-      this->SubLevelSwitcher->GetRegisteredSubLevels();
+      this->SubLevelSwitcher->GetRegisteredSubLevelsWeak();
 
   if (sublevels.Num() == 0) {
     // If we don't have any known sub-levels, bail quickly to save ourselves a
@@ -742,7 +742,7 @@ bool ACesiumGeoreference::_updateSublevelState() {
     }
   }
 
-  this->SubLevelSwitcher->SetTarget(pClosestActiveLevel);
+  this->SubLevelSwitcher->SetTargetSubLevel(pClosestActiveLevel);
 
   return pClosestActiveLevel != nullptr;
 }
