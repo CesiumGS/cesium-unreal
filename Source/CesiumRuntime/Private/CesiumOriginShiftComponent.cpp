@@ -12,8 +12,6 @@
 #include "Editor.h"
 #endif
 
-class ALevelInstance;
-
 UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
   this->PrimaryComponentTick.bCanEverTick = true;
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
