@@ -11,11 +11,11 @@ _Before you begin, **back up your project**. Cesium for Unreal can not guarantee
 
 To download a pre-release version built from a pull request, click the "Checks" tab at the top of the pull request:
 
-<img width="601" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/4e942591-b1b2-4d9d-9892-3ff05922ce48">
+<img width="601" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/130494071/ff3bd8fd-3990-4f4c-93b2-7127fee1633b">
 
 Then click the "Cesium for Unreal on: push" link:
 
-<img width="320" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/f7e4d744-942c-436c-8cfa-402fb0e3071a">
+<img width="320" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/130494071/a75fa7bf-bb2b-4fa7-ada7-7d1a894817be">
 
 And scroll down to the Artifacts section:
 
@@ -31,15 +31,15 @@ Once you've downloaded the appropriate ZIP, move on to [installing a Cesium for 
 
 To download a pre-release version built from a branch (or a commit), click the green check ✔️ at the top of the list of files in the branch:
 
-<img width="706" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/de9d7dc5-4db4-440a-8669-b4c4414cd2a6">
+<img width="706" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/130494071/e072f73d-3405-4f00-b2c9-f22872d8e93f">
 
 Click any of the Details links that appear:
 
-<img width="394" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/30899a4d-9623-48e0-86cb-848ca2dd64bd">
+<img width="394" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/130494071/7dd341c6-87dd-45f5-8a93-562e5bc27c6e">
 
 Then click the Summary link:
 
-<img width="420" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/924374/7be5aba4-3e0c-4cc1-80b5-98e13e3d22d3">
+<img width="420" alt="image" src="https://github.com/CesiumGS/cesium-unreal/assets/130494071/8b4a238d-514d-45e3-8954-13a869d67b56">
 
 And scroll down to the Artifacts section:
 
