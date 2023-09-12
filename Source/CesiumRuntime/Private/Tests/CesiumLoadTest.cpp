@@ -154,7 +154,7 @@ bool RunLoadTest(
   // Halt tileset updates and reset them
   gLoadTestContext.creationContext.setSuspendUpdate(true);
   gLoadTestContext.creationContext.refreshTilesets();
-  clearCacheDb ();
+  clearCacheDb();
 
   //
   // Start async commands
