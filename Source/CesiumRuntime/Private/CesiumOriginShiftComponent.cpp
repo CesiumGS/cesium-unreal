@@ -8,6 +8,10 @@
 #include "CesiumWgs84Ellipsoid.h"
 #include "LevelInstance/LevelInstanceActor.h"
 
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
+
 class ALevelInstance;
 
 UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
@@ -15,27 +19,14 @@ UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
 }
 
+void UCesiumOriginShiftComponent::OnRegister() {
+  Super::OnRegister();
+  this->ResolveGlobeAnchor();
+}
+
 void UCesiumOriginShiftComponent::BeginPlay() {
   Super::BeginPlay();
-
-  this->GlobeAnchor = nullptr;
-
-  AActor* Owner = this->GetOwner();
-  if (!Owner)
-    return;
-
-  this->GlobeAnchor =
-      Owner->FindComponentByClass<UCesiumGlobeAnchorComponent>();
-  if (!this->GlobeAnchor) {
-    // A globe anchor is missing and required, so add one.
-    this->GlobeAnchor =
-        Cast<UCesiumGlobeAnchorComponent>(Owner->AddComponentByClass(
-            UCesiumGlobeAnchorComponent::StaticClass(),
-            false,
-            FTransform::Identity,
-            false));
-    Owner->AddInstanceComponent(this->GlobeAnchor);
-  }
+  this->ResolveGlobeAnchor();
 }
 
 void UCesiumOriginShiftComponent::TickComponent(
@@ -100,4 +91,33 @@ void UCesiumOriginShiftComponent::TickComponent(
   }
 
   Switcher->SetTargetSubLevel(ClosestActiveLevel);
+}
+
+void UCesiumOriginShiftComponent::ResolveGlobeAnchor() {
+  this->GlobeAnchor = nullptr;
+
+  AActor* Owner = this->GetOwner();
+  if (!IsValid(Owner))
+    return;
+
+  this->GlobeAnchor =
+      Owner->FindComponentByClass<UCesiumGlobeAnchorComponent>();
+  if (!IsValid(this->GlobeAnchor)) {
+    // A globe anchor is missing and required, so add one.
+    this->GlobeAnchor =
+        Cast<UCesiumGlobeAnchorComponent>(Owner->AddComponentByClass(
+            UCesiumGlobeAnchorComponent::StaticClass(),
+            false,
+            FTransform::Identity,
+            false));
+    Owner->AddInstanceComponent(this->GlobeAnchor);
+
+    // Force the Editor to refresh to show the newly-added component
+#if WITH_EDITOR
+    Owner->Modify();
+    if (Owner->IsSelectedInEditor()) {
+      GEditor->SelectActor(Owner, true, true, true, true);
+    }
+#endif
+  }
 }
