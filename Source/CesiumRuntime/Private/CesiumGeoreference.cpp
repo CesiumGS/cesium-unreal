@@ -4,7 +4,9 @@
 #include "Camera/PlayerCameraManager.h"
 #include "CesiumActors.h"
 #include "CesiumCommon.h"
+#include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
+#include "CesiumOriginShiftComponent.h"
 #include "CesiumRuntime.h"
 #include "CesiumSubLevelComponent.h"
 #include "CesiumSubLevelSwitcherComponent.h"
@@ -410,6 +412,8 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
 void ACesiumGeoreference::Serialize(FArchive& Ar) {
   Super::Serialize(Ar);
 
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
+
   // Recompute derived values on load.
   if (Ar.IsLoading()) {
     this->_updateCoordinateSystem();
@@ -428,22 +432,6 @@ void ACesiumGeoreference::BeginPlay() {
         Warning,
         TEXT("CesiumGeoreference does not have a World in BeginPlay."));
     return;
-  }
-
-  if (!this->SubLevelCamera) {
-    // Find the first player's camera manager
-    APlayerController* pPlayerController = pWorld->GetFirstPlayerController();
-    if (pPlayerController) {
-      this->SubLevelCamera = pPlayerController->PlayerCameraManager;
-    }
-
-    if (!this->SubLevelCamera) {
-      UE_LOG(
-          LogCesium,
-          Warning,
-          TEXT(
-              "CesiumGeoreference could not find a FirstPlayerController or a corresponding PlayerCameraManager."));
-    }
   }
 
   UpdateGeoreference();
@@ -471,6 +459,94 @@ void ACesiumGeoreference::PostLoad() {
       IsValid(this->GetWorld()->WorldComposition) &&
       !this->GetWorld()->IsGameWorld()) {
     this->_createSubLevelsFromWorldComposition();
+  }
+
+  const int32 CesiumVersion =
+      this->GetLinkerCustomVersion(FCesiumCustomVersion::GUID);
+
+  if (CesiumVersion < FCesiumCustomVersion::OriginShiftComponent &&
+      !this->SubLevelSwitcher->GetRegisteredSubLevelsWeak().IsEmpty()) {
+    // In previous versions, the CesiumGeoreference managed origin shifting
+    // based on a SubLevelCamera, which defaulted to the PlayerCameraManager of
+    // the World's `GetFirstPlayerController()`.
+
+    // Backward compatibility for this is tricky, but we can make a decent
+    // attempt that will work in a lot of cases. And this is just an unfortunate
+    // v2.0 breakage for any remaining cases.
+
+    AActor* SubLevelActor = nullptr;
+
+    if (this->SubLevelCamera) {
+      // An explicit SubLevelCamera is specified. If it has a target Actor,
+      // attach a CesiumOriginShiftComponent to that Actor.
+      SubLevelActor = this->SubLevelCamera->ViewTarget.Target.Get();
+
+      if (!SubLevelActor) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("An explicit SubLevelCamera was specified on this "
+                 "CesiumGeoreference, but its ViewTarget is not a valid "
+                 "Actor, so a CesiumOriginShiftComponent could not be added "
+                 "automatically. You must manually add a "
+                 "CesiumOriginShiftComponent to the Actor whose position "
+                 "should be used to control sub-level switching."));
+      }
+    } else {
+      // No explicit SubLevelCamera, so try to find a Pawn set to auto-possess
+      // player 0.
+      for (TActorIterator<APawn> it(
+               GetWorld(),
+               APawn::StaticClass(),
+               EActorIteratorFlags::SkipPendingKill);
+           it;
+           ++it) {
+        if (it->AutoPossessPlayer == EAutoReceiveInput::Player0) {
+          SubLevelActor = *it;
+          break;
+        }
+      }
+
+      if (!SubLevelActor) {
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT(
+                "Could not find a Pawn in the level set to auto-possess player "
+                "0, so a CesiumOriginShiftComponent could not be added "
+                "automatically. You must manually add a "
+                "CesiumOriginShiftComponent to the Actor whose position "
+                "should be used to control sub-level switching."));
+      }
+    }
+
+    if (SubLevelActor) {
+      // If this is a Blueprint object, like DynamicPawn, its construction
+      // scripts may not have been run yet at this point. Doing so might cause
+      // an origin shift component to be added. So we force it to happen here so
+      // that we don't end up adding a duplicate CesiumOriginShiftComponent.
+      SubLevelActor->RerunConstructionScripts();
+      if (SubLevelActor->FindComponentByClass<UCesiumOriginShiftComponent>() ==
+          nullptr) {
+
+        UCesiumOriginShiftComponent* OriginShift =
+            Cast<UCesiumOriginShiftComponent>(
+                SubLevelActor->AddComponentByClass(
+                    UCesiumOriginShiftComponent::StaticClass(),
+                    false,
+                    FTransform::Identity,
+                    false));
+        OriginShift->SetFlags(RF_Transactional);
+        SubLevelActor->AddInstanceComponent(OriginShift);
+
+        UE_LOG(
+            LogCesium,
+            Warning,
+            TEXT("Added CesiumOriginShiftComponent to %s in order to preserve "
+                 "backward compatibility for sub-level switching."),
+            *SubLevelActor->GetName());
+      }
+    }
   }
 #endif // WITH_EDITOR
 }
@@ -582,8 +658,8 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
     pLevelComponent->SetEnabled(pFound->Enabled);
     pLevelComponent->SetLoadRadius(pFound->LoadRadius);
 
-    // But if the georeference origin is close to this sub-level's origin, make
-    // this the active sub-level.
+    // But if the georeference origin is close to this sub-level's origin,
+    // make this the active sub-level.
     if (FMath::IsNearlyEqual(
             this->OriginLongitude,
             pFound->LevelLongitude,

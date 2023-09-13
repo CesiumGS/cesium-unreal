@@ -15,6 +15,7 @@
 UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
   this->PrimaryComponentTick.bCanEverTick = true;
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
+  this->bAutoActivate = true;
 }
 
 void UCesiumOriginShiftComponent::OnRegister() {
@@ -32,6 +33,9 @@ void UCesiumOriginShiftComponent::TickComponent(
     ELevelTick TickType,
     FActorComponentTickFunction* ThisTickFunction) {
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+  if (!this->IsActive())
+    return;
 
   if (!this->GlobeAnchor)
     return;

@@ -25,6 +25,10 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // an array of doubles to being an FMatrix.
     GlobeAnchorTransformationAsFMatrix = 4,
 
+    // The origin shifting behavior became an independent component rather than
+    // built into the CesiumGeoreference.
+    OriginShiftComponent = 5,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };
