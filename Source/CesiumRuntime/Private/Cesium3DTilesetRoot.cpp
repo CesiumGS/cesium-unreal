@@ -91,7 +91,7 @@ void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
       this->_absoluteLocation - this->_worldOriginLocation;
 
   FMatrix tilesetActorToUeLocal =
-      this->GetComponentToWorld().ToMatrixWithScale();
+      this->GetRelativeTransform().ToMatrixWithScale();
   glm::dmat4 ueAbsoluteToUeLocal =
       VecMath::createMatrix4D(tilesetActorToUeLocal, relativeLocation);
 

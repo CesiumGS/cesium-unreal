@@ -4,6 +4,7 @@
 #include "Cesium3DTilesSelection/RasterizedPolygonsOverlay.h"
 #include "Cesium3DTilesSelection/RasterizedPolygonsTileExcluder.h"
 #include "Cesium3DTilesSelection/Tileset.h"
+#include "Cesium3DTileset.h"
 #include "CesiumBingMapsRasterOverlay.h"
 #include "CesiumCartographicPolygon.h"
 
@@ -18,6 +19,11 @@ UCesiumPolygonRasterOverlay::UCesiumPolygonRasterOverlay()
 std::unique_ptr<Cesium3DTilesSelection::RasterOverlay>
 UCesiumPolygonRasterOverlay::CreateOverlay(
     const Cesium3DTilesSelection::RasterOverlayOptions& options) {
+  ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
+
+  FTransform worldToTileset =
+      pTileset ? pTileset->GetActorTransform().Inverse() : FTransform::Identity;
+
   std::vector<CartographicPolygon> polygons;
   polygons.reserve(this->Polygons.Num());
 
@@ -26,7 +32,8 @@ UCesiumPolygonRasterOverlay::CreateOverlay(
       continue;
     }
 
-    CartographicPolygon polygon = pPolygon->CreateCartographicPolygon();
+    CartographicPolygon polygon =
+        pPolygon->CreateCartographicPolygon(worldToTileset);
     polygons.emplace_back(std::move(polygon));
   }
 

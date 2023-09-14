@@ -39,3 +39,10 @@ There are detailed instructions for setting up a Cesium for Unreal development e
 - Click on "Start Tests"
 
 > Note: The TestsProject uses the Cesium and Functional Testing Editor plugins. You can run the tests from any project as long as you have both of these plugins enabled
+
+## Generate Reference Documentation
+
+- Install Doxygen and make sure `doxygen` is in your path.
+- Run `npm run doxygen`
+
+The reference documentation will be written to `Documentation/Reference`.
