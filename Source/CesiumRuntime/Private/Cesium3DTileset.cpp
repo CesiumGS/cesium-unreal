@@ -12,6 +12,7 @@
 #include "Cesium3DTilesSelection/TilesetOptions.h"
 #include "Cesium3DTilesetLoadFailureDetails.h"
 #include "Cesium3DTilesetRoot.h"
+#include "CesiumActors.h"
 #include "CesiumAsync/IAssetResponse.h"
 #include "CesiumBoundingVolumeComponent.h"
 #include "CesiumCamera.h"
@@ -2087,6 +2088,8 @@ void ACesium3DTileset::PostLoad() {
                                 // actor to have correct BodyInstance values.
 
   Super::PostLoad();
+
+  CesiumActors::validateActorFlags(this);
 }
 
 void ACesium3DTileset::Serialize(FArchive& Ar) {
