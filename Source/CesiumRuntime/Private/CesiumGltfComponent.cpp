@@ -1954,9 +1954,12 @@ static void SetPropertyTableParameterValues(
         CesiumEncodedFeaturesMetadata::getMaterialNameForPropertyTableProperty(
             encodedPropertyTable.name,
             encodedProperty.name);
-    pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(FName(fullPropertyName), association, index),
-        encodedProperty.pTexture->pTexture.Get());
+
+    if (encodedProperty.pTexture) {
+      pMaterial->SetTextureParameterValueByInfo(
+          FMaterialParameterInfo(FName(fullPropertyName), association, index),
+          encodedProperty.pTexture->pTexture.Get());
+    }
 
     if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
             encodedProperty.offset)) {
@@ -2063,6 +2066,12 @@ static void SetPropertyTableParameterValues(
                 static_cast<float>(value.Z),
                 static_cast<float>(value.W)));
       }
+
+      FString hasValueName = fullPropertyName =
+          CesiumEncodedFeaturesMetadata::MaterialPropertyHasValueSuffix;
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(FName(hasValueName), association, index),
+          encodedProperty.pTexture ? 1.0 : 0.0);
     }
   }
 }

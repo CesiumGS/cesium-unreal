@@ -113,7 +113,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum"))
   bool bHasNoDataValue = false;
 
   /**
@@ -126,7 +126,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
       Category = "Cesium",
       Meta =
           (EditCondition =
-               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Enum"))
   bool bHasDefaultValue = false;
 
   inline bool

@@ -62,15 +62,15 @@ static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
  * - Property NoData: "PTABLE_" + PropertyTableName + PropertyName + "_NO_DATA"
  * - Property Default Value: "PTABLE_" + PropertyTableName + PropertyName +
  * "_DEFAULT"
- * - Property Omitted Qualifier: "PTABLE_" + PropertyTableName + PropertyName +
- * "_OMITTED"
+ * - Property Has Value Qualifier: "PTABLE_" + PropertyTableName + PropertyName
+ * + "_HAS_VALUE"
  */
 static const FString MaterialPropertyTablePrefix = "PTABLE_";
 static const FString MaterialPropertyOffsetSuffix = "_OFFSET";
 static const FString MaterialPropertyScaleSuffix = "_SCALE";
 static const FString MaterialPropertyNoDataSuffix = "_NO_DATA";
 static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
-static const FString MaterialPropertyOmittedSuffix = "_OMITTED";
+static const FString MaterialPropertyHasValueSuffix = "_HAS_VALUE";
 
 /**
  * - Property Data (node parameter name): PropertyName + "_DATA"

@@ -483,71 +483,87 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
     EncodedPropertyTableProperty& encodedProperty =
         encodedPropertyTable.properties.Emplace_GetRef();
     encodedProperty.name = createHlslSafeName(pDescription->Name);
+    encodedProperty.type = pDescription->EncodingDetails.Type;
 
-    int64 floorSqrtFeatureCount = glm::sqrt(propertyTableCount);
-    int64 textureDimension =
-        (floorSqrtFeatureCount * floorSqrtFeatureCount == propertyTableCount)
-            ? floorSqrtFeatureCount
-            : (floorSqrtFeatureCount + 1);
+    if (UCesiumPropertyTablePropertyBlueprintLibrary::
+            GetPropertyTablePropertyStatus(property) ==
+        ECesiumPropertyTablePropertyStatus::Valid) {
 
-    encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
-    // TODO: upgrade to new texture creation path.
-    encodedProperty.pTexture->textureSource = LegacyTextureSource{};
-    encodedProperty.pTexture->pTextureData = createTexturePlatformData(
-        textureDimension,
-        textureDimension,
-        encodedFormat.format);
+      int64 floorSqrtFeatureCount = glm::sqrt(propertyTableCount);
+      int64 textureDimension =
+          (floorSqrtFeatureCount * floorSqrtFeatureCount == propertyTableCount)
+              ? floorSqrtFeatureCount
+              : (floorSqrtFeatureCount + 1);
 
-    encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
-    encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
-    encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
+      encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
+      // TODO: upgrade to new texture creation path.
+      encodedProperty.pTexture->textureSource = LegacyTextureSource{};
+      encodedProperty.pTexture->pTextureData = createTexturePlatformData(
+          textureDimension,
+          textureDimension,
+          encodedFormat.format);
 
-    if (!encodedProperty.pTexture->pTextureData) {
-      UE_LOG(
-          LogCesium,
-          Error,
-          TEXT(
-              "Error encoding a property table property. Most likely could not allocate enough texture memory."));
-      continue;
+      encodedProperty.pTexture->addressX = TextureAddress::TA_Clamp;
+      encodedProperty.pTexture->addressY = TextureAddress::TA_Clamp;
+      encodedProperty.pTexture->filter = TextureFilter::TF_Nearest;
+
+      if (!encodedProperty.pTexture->pTextureData) {
+        UE_LOG(
+            LogCesium,
+            Error,
+            TEXT(
+                "Error encoding a property table property. Most likely could not allocate enough texture memory."));
+        continue;
+      }
+
+      FTexture2DMipMap* pMip = new FTexture2DMipMap();
+      encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
+      pMip->SizeX = textureDimension;
+      pMip->SizeY = textureDimension;
+
+      pMip->BulkData.Lock(LOCK_READ_WRITE);
+
+      void* pTextureData = pMip->BulkData.Realloc(
+          textureDimension * textureDimension * encodedFormat.pixelSize);
+
+      if (encodingDetails.Conversion ==
+          ECesiumEncodedMetadataConversion::ParseColorFromString) {
+        CesiumEncodedMetadataParseColorFromString::encode(
+            *pDescription,
+            property,
+            pTextureData,
+            encodedFormat.pixelSize);
+      } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */ {
+        CesiumEncodedMetadataCoerce::encode(
+            *pDescription,
+            property,
+            pTextureData,
+            encodedFormat.pixelSize);
+      }
+      pMip->BulkData.Unlock();
     }
 
-    FTexture2DMipMap* pMip = new FTexture2DMipMap();
-    encodedProperty.pTexture->pTextureData->Mips.Add(pMip);
-    pMip->SizeX = textureDimension;
-    pMip->SizeY = textureDimension;
-
-    pMip->BulkData.Lock(LOCK_READ_WRITE);
-
-    void* pTextureData = pMip->BulkData.Realloc(
-        textureDimension * textureDimension * encodedFormat.pixelSize);
-
-    if (encodingDetails.Conversion ==
-        ECesiumEncodedMetadataConversion::ParseColorFromString) {
-      CesiumEncodedMetadataParseColorFromString::encode(
-          *pDescription,
-          property,
-          pTextureData,
-          encodedFormat.pixelSize);
-    } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */ {
-      CesiumEncodedMetadataCoerce::encode(
-          *pDescription,
-          property,
-          pTextureData,
-          encodedFormat.pixelSize);
-
+    if (pDescription->PropertyDetails.bHasOffset) {
       encodedProperty.offset =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(property);
+    }
+
+    if (pDescription->PropertyDetails.bHasScale) {
       encodedProperty.scale =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(property);
+    }
+
+    if (pDescription->PropertyDetails.bHasNoDataValue) {
       encodedProperty.noData =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
               property);
+    }
+
+    if (pDescription->PropertyDetails.bHasDefaultValue) {
       encodedProperty.defaultValue =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
               property);
     }
-
-    pMip->BulkData.Unlock();
   }
 
   return encodedPropertyTable;
@@ -805,8 +821,10 @@ bool encodePropertyTableGameThreadPart(
 
   for (EncodedPropertyTableProperty& encodedProperty :
        encodedPropertyTable.properties) {
-    success &=
-        loadTextureGameThreadPart(encodedProperty.pTexture.Get()) != nullptr;
+    if (encodedProperty.pTexture) {
+      success &=
+          loadTextureGameThreadPart(encodedProperty.pTexture.Get()) != nullptr;
+    }
   }
 
   return success;
@@ -888,20 +906,21 @@ void destroyEncodedModelMetadata(EncodedModelMetadata& encodedMetadata) {
   for (auto& propertyTable : encodedMetadata.propertyTables) {
     for (EncodedPropertyTableProperty& encodedProperty :
          propertyTable.properties) {
-      if (encodedProperty.pTexture->pTexture.IsValid()) {
+      if (encodedProperty.pTexture &&
+          encodedProperty.pTexture->pTexture.IsValid()) {
         CesiumLifetime::destroy(encodedProperty.pTexture->pTexture.Get());
         encodedProperty.pTexture->pTexture.Reset();
       }
     }
   }
 
-  for (auto& encodedFeatureTextureIt : encodedMetadata.propertyTextures) {
-    for (EncodedPropertyTextureProperty& encodedFeatureTextureProperty :
-         encodedFeatureTextureIt.properties) {
-      if (encodedFeatureTextureProperty.pTexture->pTexture.IsValid()) {
+  for (auto& encodedPropertyTextureIt : encodedMetadata.propertyTextures) {
+    for (EncodedPropertyTextureProperty& encodedPropertyTextureProperty :
+         encodedPropertyTextureIt.properties) {
+      if (encodedPropertyTextureProperty.pTexture->pTexture.IsValid()) {
         CesiumLifetime::destroy(
-            encodedFeatureTextureProperty.pTexture->pTexture.Get());
-        encodedFeatureTextureProperty.pTexture->pTexture.Reset();
+            encodedPropertyTextureProperty.pTexture->pTexture.Get());
+        encodedPropertyTextureProperty.pTexture->pTexture.Reset();
       }
     }
   }

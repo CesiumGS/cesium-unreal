@@ -420,10 +420,17 @@ FCesiumMetadataValue UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(
   return callback<FCesiumMetadataValue>(
       Property._property,
       [FeatureID](const auto& view) -> FCesiumMetadataValue {
+        // Return an empty value if the property is empty.
+        if (view.status() ==
+            PropertyTablePropertyViewStatus::EmptyPropertyWithDefault) {
+          return FCesiumMetadataValue();
+        }
+
         // size() returns zero if the view is invalid.
         if (FeatureID >= 0 && FeatureID < view.size()) {
           return FCesiumMetadataValue(view.getRaw(FeatureID));
         }
+
         return FCesiumMetadataValue();
       });
 }

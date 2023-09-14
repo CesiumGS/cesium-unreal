@@ -168,8 +168,7 @@ template <typename T>
 void coerceAndEncodeScalars(
     const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
-    void* pTextureData,
-    size_t pixelSize) {
+    void* pTextureData) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
   T* pWritePos = reinterpret_cast<T*>(pTextureData);
@@ -368,8 +367,7 @@ void CesiumEncodedMetadataCoerce::encode(
       coerceAndEncodeScalars<uint8>(
           propertyDescription,
           property,
-          pTextureData,
-          pixelSize);
+          pTextureData);
       break;
     case ECesiumEncodedMetadataType::Vec2:
       coerceAndEncodeVec2s<uint8>(
@@ -403,8 +401,7 @@ void CesiumEncodedMetadataCoerce::encode(
       coerceAndEncodeScalars<float>(
           propertyDescription,
           property,
-          pTextureData,
-          pixelSize);
+          pTextureData);
       break;
     case ECesiumEncodedMetadataType::Vec2:
       coerceAndEncodeVec2s<float>(

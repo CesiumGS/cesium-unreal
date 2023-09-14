@@ -106,6 +106,13 @@ UCesiumPropertyTableBlueprintLibrary::GetMetadataValuesForFeature(
           UCesiumPropertyTablePropertyBlueprintLibrary::GetValue(
               pair.Value,
               FeatureID));
+    } else if (
+        status ==
+        ECesiumPropertyTablePropertyStatus::EmptyPropertyWithDefault) {
+      values.Add(
+          pair.Key,
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
+              pair.Value));
     }
   }
 

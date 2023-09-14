@@ -22,6 +22,8 @@ UENUM(BlueprintType)
 enum class ECesiumPropertyTablePropertyStatus : uint8 {
   /* The property table property is valid. */
   Valid = 0,
+  /* The property table property is empty but has a specified default value. */
+  EmptyPropertyWithDefault,
   /* The property table property does not exist in the glTF, or the property
      definition itself contains errors. */
   ErrorInvalidProperty,
@@ -72,6 +74,9 @@ public:
     switch (Property.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
+      break;
+    case CesiumGltf::PropertyTablePropertyViewStatus::EmptyPropertyWithDefault:
+      _status = ECesiumPropertyTablePropertyStatus::EmptyPropertyWithDefault;
       break;
     case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidPropertyTable:
     case CesiumGltf::PropertyTablePropertyViewStatus::ErrorNonexistentProperty:
@@ -980,6 +985,8 @@ public:
    * If this property specifies a "no data" value, and the raw value is equal to
    * this "no data" value, the value is returned as-is.
    *
+   * If this property is an empty property with a specified default value, it
+   * will not have any raw data to retrieve. The returned value will be empty.
    * @param featureID The ID of the feature.
    * @return The raw property value.
    */
