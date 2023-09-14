@@ -41,14 +41,19 @@ void AGlobeAwareDefaultPawn::MoveForward(float Val) {
 }
 
 void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
-  if (Val == 0.0f || !IsValid(this->GlobeAnchor)) {
+  if (Val == 0.0f) {
+    return;
+  }
+
+  ACesiumGeoreference* pGeoreference = this->GetGeoreference();
+  if (!IsValid(pGeoreference)) {
     return;
   }
 
   FVector upEcef = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
       this->GlobeAnchor->GetEarthCenteredEarthFixedPosition());
-  FVector up = this->GlobeAnchor->ResolveGeoreference()
-                   ->TransformEarthCenteredEarthFixedDirectionToUnreal(upEcef);
+  FVector up =
+      pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(upEcef);
 
   FTransform transform{};
   USceneComponent* pRootComponent = this->GetRootComponent();
@@ -64,6 +69,11 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
 
 FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   if (!Controller) {
+    return this->GetActorRotation();
+  }
+
+  ACesiumGeoreference* pGeoreference = this->GetGeoreference();
+  if (!pGeoreference) {
     return this->GetActorRotation();
   }
 
@@ -90,8 +100,7 @@ FRotator AGlobeAwareDefaultPawn::GetViewRotation() const {
   FVector globePosition =
       transform.InverseTransformPosition(this->GetPawnViewLocation());
   FMatrix esuAdjustmentMatrix =
-      this->GetGeoreference()->ComputeEastSouthUpToUnrealTransformation(
-          globePosition) *
+      pGeoreference->ComputeEastSouthUpToUnrealTransformation(globePosition) *
       transform.ToMatrixNoScale();
 
   return FRotator(esuAdjustmentMatrix.ToQuat() * localRotation.Quaternion());
@@ -163,6 +172,10 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
         Error,
         TEXT(
             "Cannot start a flight because the pawn does not have a Controller. You probably need to \"possess\" it before attempting to initiate a flight."));
+    return;
+  }
+
+  if (!IsValid(this->GetGeoreference())) {
     return;
   }
 
@@ -257,13 +270,6 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     double PitchAtDestination,
     bool CanInterruptByMoving) {
 
-  if (!IsValid(this->GetGeoreference())) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT("GlobeAwareDefaultPawn %s does not have a valid Georeference"),
-        *this->GetName());
-  }
   FVector ecef =
       UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
           VecMath::createVector(LongitudeLatitudeHeightDestination));
@@ -291,13 +297,7 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
 bool AGlobeAwareDefaultPawn::ShouldTickIfViewportsOnly() const { return true; }
 
 void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
-  if (!IsValid(this->GlobeAnchor)) {
-    UE_LOG(
-        LogCesium,
-        Warning,
-        TEXT(
-            "GlobeAwareDefaultPawn %s does not have a valid GeoreferenceComponent"),
-        *this->GetName());
+  if (!IsValid(this->GetGeoreference())) {
     return;
   }
 
@@ -389,11 +389,24 @@ ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
     UE_LOG(
         LogCesium,
         Error,
-        TEXT("GlobeAwareDefaultPawn %s does not have a GlobeAnchorComponent"),
+        TEXT(
+            "GlobeAwareDefaultPawn %s does not have a valid GlobeAnchorComponent."),
         *this->GetName());
     return nullptr;
   }
-  return this->GlobeAnchor->ResolveGeoreference();
+
+  ACesiumGeoreference* pGeoreference = this->GlobeAnchor->ResolveGeoreference();
+  if (!IsValid(pGeoreference)) {
+    UE_LOG(
+        LogCesium,
+        Error,
+        TEXT(
+            "GlobeAwareDefaultPawn %s does not have a valie CesiumGeoreference."),
+        *this->GetName());
+    pGeoreference = nullptr;
+  }
+
+  return pGeoreference;
 }
 
 void AGlobeAwareDefaultPawn::_moveAlongViewAxis(EAxis::Type axis, double Val) {

@@ -676,7 +676,7 @@ public:
   UE_DEPRECATED(
       "Cesium For Unreal v2.0",
       "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")
-  const GeoTransforms& GetGeoTransforms() const noexcept;
+  GeoTransforms GetGeoTransforms() const noexcept;
 
 private:
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -758,7 +758,6 @@ private:
    */
   static FName DEFAULT_GEOREFERENCE_TAG;
 
-  mutable GeoTransforms _geoTransforms;
   CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem{
       glm::dmat4(1.0)};
 
