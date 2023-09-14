@@ -598,6 +598,10 @@ void UCesiumGlobeAnchorComponent::_setCurrentRelativeTransform(
       nullptr,
       this->TeleportWhenUpdatingTransform ? ETeleportType::TeleportPhysics
                                           : ETeleportType::None);
+  // pOwnerRoot->SetRelativeTransform_Direct(relativeTransform);
+  // pOwnerRoot->UpdateComponentToWorld();
+  // pOwnerRoot->MarkRenderTransformDirty();
+  // pOwnerRoot->SendPhysicsTransform(ETeleportType::ResetPhysics);
   this->_updatingActorTransform = false;
 
   this->_lastRelativeTransform = this->_getCurrentRelativeTransform();

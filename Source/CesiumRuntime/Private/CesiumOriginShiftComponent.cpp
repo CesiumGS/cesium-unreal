@@ -12,6 +12,14 @@
 #include "Editor.h"
 #endif
 
+ECesiumOriginShiftMode UCesiumOriginShiftComponent::GetMode() const {
+  return this->Mode;
+}
+
+void UCesiumOriginShiftComponent::SetMode(ECesiumOriginShiftMode NewMode) {
+  this->Mode = NewMode;
+}
+
 UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
   this->PrimaryComponentTick.bCanEverTick = true;
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
@@ -28,13 +36,34 @@ void UCesiumOriginShiftComponent::BeginPlay() {
   this->ResolveGlobeAnchor();
 }
 
+namespace {
+/**
+ * @brief Clamping addition.
+ *
+ * Returns the sum of the given values, clamping the result to
+ * the minimum/maximum value that can be represented as a 32 bit
+ * signed integer.
+ *
+ * @param f The floating point value
+ * @param i The integer value
+ * @return The clamped result
+ */
+int32 clampedAdd(double f, int32 i) {
+  int64 sum = static_cast<int64>(f) + static_cast<int64>(i);
+  int64 min = static_cast<int64>(TNumericLimits<int32>::Min());
+  int64 max = static_cast<int64>(TNumericLimits<int32>::Max());
+  int64 clamped = FMath::Max(min, FMath::Min(max, sum));
+  return static_cast<int32>(clamped);
+}
+} // namespace
+
 void UCesiumOriginShiftComponent::TickComponent(
     float DeltaTime,
     ELevelTick TickType,
     FActorComponentTickFunction* ThisTickFunction) {
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-  if (!this->IsActive())
+  if (!this->IsActive() || this->Mode == ECesiumOriginShiftMode::Disabled)
     return;
 
   if (!this->GlobeAnchor)
@@ -53,9 +82,11 @@ void UCesiumOriginShiftComponent::TickComponent(
   const TArray<TWeakObjectPtr<ALevelInstance>>& Sublevels =
       Switcher->GetRegisteredSubLevelsWeak();
 
-  if (Sublevels.Num() == 0) {
-    // If we don't have any known sub-levels, bail quickly to save ourselves a
-    // little work.
+  // If we don't have any known sub-levels, and aren't origin shifting outside
+  // of sub-levels, then bail quickly to save ourselves a little work.
+  if (Sublevels.IsEmpty() &&
+      this->Mode != ECesiumOriginShiftMode::ChangeCesiumGeoreference &&
+      this->Mode != ECesiumOriginShiftMode::ChangeWorldOriginLocation) {
     return;
   }
 
@@ -93,6 +124,29 @@ void UCesiumOriginShiftComponent::TickComponent(
   }
 
   Switcher->SetTargetSubLevel(ClosestActiveLevel);
+
+  if (Switcher->GetTargetSubLevel() == nullptr &&
+      Switcher->GetCurrentSubLevel() == nullptr) {
+    if (this->Mode == ECesiumOriginShiftMode::ChangeCesiumGeoreference) {
+      Georeference->SetOriginEarthCenteredEarthFixed(ActorEcef);
+    } else if (
+        this->Mode == ECesiumOriginShiftMode::ChangeWorldOriginLocation) {
+      UWorld* World = GetWorld();
+      AActor* Actor = this->GetOwner();
+      if (IsValid(World) && IsValid(Actor)) {
+        const FIntVector& OriginLocation = World->OriginLocation;
+        FVector WorldPosition = Actor->GetActorLocation();
+        FIntVector WorldPositionInt(
+            int32(WorldPosition.X),
+            int32(WorldPosition.Y),
+            int32(WorldPosition.Z));
+        int32 X = clampedAdd(OriginLocation.X, WorldPositionInt.X);
+        int32 Y = clampedAdd(OriginLocation.Y, WorldPositionInt.Y);
+        int32 Z = clampedAdd(OriginLocation.Z, WorldPositionInt.Z);
+        World->SetNewWorldOrigin(FIntVector(X, Y, Z));
+      }
+    }
+  }
 }
 
 void UCesiumOriginShiftComponent::ResolveGlobeAnchor() {
