@@ -626,7 +626,7 @@ protected:
 
 public:
   [[deprecated(
-      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")]] const GeoTransforms&
+      "Use transformation functions on ACesiumGeoreference and UCesiumWgs84Ellipsoid instead.")]] GeoTransforms
   GetGeoTransforms() const noexcept;
 
 private:
@@ -709,7 +709,6 @@ private:
    */
   static FName DEFAULT_GEOREFERENCE_TAG;
 
-  mutable GeoTransforms _geoTransforms;
   CesiumGeospatial::LocalHorizontalCoordinateSystem _coordinateSystem{
       glm::dmat4(1.0)};
 
