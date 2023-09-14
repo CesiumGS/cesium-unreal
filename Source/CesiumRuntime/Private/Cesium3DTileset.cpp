@@ -515,8 +515,6 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
 
   // calculate unreal camera position
-  const glm::dmat4& transform =
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   glm::dvec3 ecefCameraPosition =
       std::visit(CalculateECEFCameraPosition{}, boundingVolume);
   FVector unrealCameraPosition =

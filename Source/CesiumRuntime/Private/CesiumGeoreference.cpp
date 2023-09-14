@@ -629,7 +629,7 @@ ACesiumGeoreference::ComputeEastNorthUpToEcef(const FVector& ecef) const {
   return UCesiumWgs84Ellipsoid::EastNorthUpToEarthCenteredEarthFixed(ecef);
 }
 
-ACesiumGeoreference::ACesiumGeoreference() : AActor(), _geoTransforms() {
+ACesiumGeoreference::ACesiumGeoreference() : AActor() {
   PrimaryActorTick.bCanEverTick = true;
 
   this->Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -672,13 +672,12 @@ void ACesiumGeoreference::UpdateGeoreference() {
   OnGeoreferenceUpdated.Broadcast();
 }
 
-const GeoTransforms& ACesiumGeoreference::GetGeoTransforms() const noexcept {
+GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
   // Because GeoTransforms is deprecated, we only lazily update it.
-  this->_geoTransforms = GeoTransforms(
+  return GeoTransforms(
       Ellipsoid::WGS84,
       glm::dvec3(this->_coordinateSystem.getLocalToEcefTransformation()[3]),
       this->GetScale() / 100.0);
-  return this->_geoTransforms;
 }
 
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
