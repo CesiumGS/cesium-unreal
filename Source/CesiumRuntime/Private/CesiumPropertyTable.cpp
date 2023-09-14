@@ -12,6 +12,7 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     const PropertyTable& PropertyTable)
     : _status(ECesiumPropertyTableStatus::ErrorInvalidPropertyTableClass),
       _name(PropertyTable.name.value_or("").c_str()),
+      _className(PropertyTable.classProperty.c_str()),
       _count(PropertyTable.count),
       _properties() {
   PropertyTableView propertyTableView{Model, PropertyTable};
@@ -22,6 +23,15 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   default:
     // Status was already set in initializer list.
     return;
+  }
+
+  // A valid PropertyTableView should have a non-null class.
+  const Class* pClass = propertyTableView.getClass();
+  assert(pClass);
+
+  if (pClass->name) {
+    // Prefer the class's display name over its definition name.
+    _className = FString(pClass->name->c_str());
   }
 
   propertyTableView.forEachProperty([&properties = _properties](

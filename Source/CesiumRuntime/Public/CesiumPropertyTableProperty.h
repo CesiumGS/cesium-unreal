@@ -48,7 +48,8 @@ public:
   FCesiumPropertyTableProperty()
       : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
         _property(),
-        _valueType() {}
+        _valueType(),
+        _normalized(false) {}
 
   /**
    * Construct a wrapper for the property table property view.
@@ -57,18 +58,18 @@ public:
    */
   template <typename T, bool Normalized>
   FCesiumPropertyTableProperty(
-      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& value)
+      const CesiumGltf::PropertyTablePropertyView<T, Normalized>& Property)
       : _status(ECesiumPropertyTablePropertyStatus::ErrorInvalidProperty),
         _property(),
         _valueType(),
         _normalized(Normalized) {
     if constexpr (Normalized) {
-      _property = NormalizedPropertyTablePropertyViewType(value);
+      _property = NormalizedPropertyTablePropertyViewType(Property);
     } else {
-      _property = PropertyTablePropertyViewType(value);
+      _property = PropertyTablePropertyViewType(Property);
     }
 
-    switch (value.status()) {
+    switch (Property.status()) {
     case CesiumGltf::PropertyTablePropertyViewStatus::Valid:
       _status = ECesiumPropertyTablePropertyStatus::Valid;
       break;
@@ -78,6 +79,15 @@ public:
     case CesiumGltf::PropertyTablePropertyViewStatus::
         ErrorComponentTypeMismatch:
     case CesiumGltf::PropertyTablePropertyViewStatus::ErrorArrayTypeMismatch:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidNormalization:
+    case CesiumGltf::PropertyTablePropertyViewStatus::
+        ErrorNormalizationMismatch:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidOffset:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidScale:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMax:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidMin:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidNoDataValue:
+    case CesiumGltf::PropertyTablePropertyViewStatus::ErrorInvalidDefaultValue:
       // The status was already set in the initializer list.
       return;
     default:
@@ -85,23 +95,7 @@ public:
       return;
     }
 
-    ECesiumMetadataType type;
-    ECesiumMetadataComponentType componentType;
-    bool isArray;
-    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-      type =
-          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<ArrayType>::component);
-      isArray = true;
-    } else {
-      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
-      isArray = false;
-    }
-    _valueType = {type, componentType, isArray};
+    _valueType = TypeToMetadataValueType<T>();
     _normalized = Normalized;
   }
 
@@ -285,9 +279,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -325,9 +319,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -366,9 +360,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -410,9 +404,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -453,9 +447,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -497,9 +491,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -539,9 +533,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -587,9 +581,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -631,9 +625,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -682,9 +676,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -733,9 +727,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -780,9 +774,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -829,9 +823,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted if possible.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -879,9 +873,9 @@ public:
    * For numeric properties, the raw value for a given feature will be
    * transformed by the property's normalization, scale, and offset before it is
    * further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be converted.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * Property values are converted as follows:
    *
@@ -924,9 +918,9 @@ public:
    * For numeric array properties, the raw array value for a given feature will
    * be transformed by the property's normalization, scale, and offset before it
    * is further converted. If the raw value is equal to the property's "no data"
-   * value, the user-defined default value is returned. However, if the property
-   * itself specifies a default value, then the property-defined default value
-   * will be returned.
+   * value, then the property's default value will be converted if possible. If
+   * the property-defined default value cannot be converted, or does not exist,
+   * then the user-defined default value is returned.
    *
    * @param featureID The ID of the feature.
    * @return The property value as a FCesiumPropertyArray.

@@ -233,7 +233,8 @@ EncodedPrimitiveFeatures encodePrimitiveFeaturesAnyThreadPart(
     encodedSet->name = name;
     encodedSet->index = i;
     encodedSet->propertyTableName = pDescription->PropertyTableName;
-    encodedSet->nullFeatureId = pDescription->NullFeatureId;
+    encodedSet->nullFeatureId =
+        UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(set);
 
     result.featureIdSets.Add(*encodedSet);
   }
@@ -290,7 +291,7 @@ FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable) {
 
   if (propertyTableName.IsEmpty()) {
     // Substitute the name with the property table's class.
-    propertyTableName = PropertyTable.getClass();
+    propertyTableName = PropertyTable.getClassName();
   }
 
   return propertyTableName;
@@ -312,22 +313,18 @@ struct EncodedPixelFormat {
 
 // TODO: consider picking better pixel formats when they are available for the
 // current platform.
-EncodedPixelFormat getPixelFormat(
-    FCesiumMetadataEncodingDetails encodingDetails,
-    bool isNormalized) {
+EncodedPixelFormat
+getPixelFormat(FCesiumMetadataEncodingDetails encodingDetails) {
 
   switch (encodingDetails.ComponentType) {
   case ECesiumEncodedMetadataComponentType::Uint8:
     switch (encodingDetails.Type) {
     case ECesiumEncodedMetadataType::Scalar:
-      return {isNormalized ? EPixelFormat::PF_R8 : EPixelFormat::PF_R8_UINT, 1};
+      return {EPixelFormat::PF_R8_UINT, 1};
     case ECesiumEncodedMetadataType::Vec2:
     case ECesiumEncodedMetadataType::Vec3:
     case ECesiumEncodedMetadataType::Vec4:
-      return {
-          isNormalized ? EPixelFormat::PF_R8G8B8A8
-                       : EPixelFormat::PF_R8G8B8A8_UINT,
-          4};
+      return {EPixelFormat::PF_R8G8B8A8_UINT, 4};
     default:
       return {EPixelFormat::PF_Unknown, 0};
     }
@@ -347,7 +344,7 @@ EncodedPixelFormat getPixelFormat(
 }
 
 bool isValidPropertyTablePropertyDescription(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property) {
   if (propertyDescription.EncodingDetails.Type ==
       ECesiumEncodedMetadataType::None) {
@@ -427,10 +424,10 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
   for (const auto& pair : properties) {
     const FCesiumPropertyTableProperty& property = pair.Value;
 
-    const FCesiumPropertyTablePropertyDescription* pDescription =
+    const FCesiumMetadataPropertyDescription* pDescription =
         propertyTableDescription.Properties.FindByPredicate(
-            [&key = pair.Key](const FCesiumPropertyTablePropertyDescription&
-                                  expectedProperty) {
+            [&key = pair.Key](
+                const FCesiumMetadataPropertyDescription& expectedProperty) {
               return key == expectedProperty.Name;
             });
 
@@ -471,10 +468,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       continue;
     }
 
-    bool isNormalized =
-        UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(property);
-    EncodedPixelFormat encodedFormat =
-        getPixelFormat(encodingDetails, isNormalized);
+    EncodedPixelFormat encodedFormat = getPixelFormat(encodingDetails);
     if (encodedFormat.format == EPixelFormat::PF_Unknown) {
       UE_LOG(
           LogCesium,
@@ -540,6 +534,17 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
           property,
           pTextureData,
           encodedFormat.pixelSize);
+
+      encodedProperty.offset =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(property);
+      encodedProperty.scale =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(property);
+      encodedProperty.noData =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
+              property);
+      encodedProperty.defaultValue =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
+              property);
     }
 
     pMip->BulkData.Unlock();

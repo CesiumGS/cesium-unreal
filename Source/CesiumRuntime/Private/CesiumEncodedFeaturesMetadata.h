@@ -1,7 +1,8 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
+#include "CesiumMetadataValue.h"
 #include "CesiumTextureUtility.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
@@ -48,12 +49,38 @@ static const FString MaterialChannelsSuffix = "_CHANNELS";
 static const FString MaterialNumChannelsSuffix = "_NUM_CHANNELS";
 
 /**
- *  - Null Feature ID: FeatureIDSetName + "_NULL_ID"
+ * - Null Feature ID: FeatureIDSetName + "_NULL_ID"
  */
 static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
 
+/**
+ * Naming convention for metadata parameters
+ * - Property Table: "PTABLE_" + PropertyTableName
+ * - Property Table Property: "PTABLE_" + PropertyTableName + PropertyName
+ * - Property Offset: "PTABLE_" + PropertyTableName + PropertyName + "_OFFSET"
+ * - Property Scale: "PTABLE_" + PropertyTableName + PropertyName + "_SCALE"
+ * - Property NoData: "PTABLE_" + PropertyTableName + PropertyName + "_NO_DATA"
+ * - Property Default Value: "PTABLE_" + PropertyTableName + PropertyName +
+ * "_DEFAULT"
+ * - Property Omitted Qualifier: "PTABLE_" + PropertyTableName + PropertyName +
+ * "_OMITTED"
+ */
 static const FString MaterialPropertyTablePrefix = "PTABLE_";
+static const FString MaterialPropertyOffsetSuffix = "_OFFSET";
+static const FString MaterialPropertyScaleSuffix = "_SCALE";
+static const FString MaterialPropertyNoDataSuffix = "_NO_DATA";
+static const FString MaterialPropertyDefaultValueSuffix = "_DEFAULT";
+static const FString MaterialPropertyOmittedSuffix = "_OMITTED";
+
+/**
+ * - Property Data (node parameter name): PropertyName + "_DATA"
+ * - Property Raw Value (output name): PropertyName + "_RAW"
+ * - Property Transform Value (node parameter name): TransformName +
+ * "_VALUE".
+ */
 static const FString MaterialPropertyDataSuffix = "_DATA";
+static const FString MaterialPropertyRawSuffix = "_RAW";
+static const FString MaterialPropertyValueSuffix = "_VALUE";
 
 #pragma region Encoded Primitive Features
 
@@ -226,7 +253,30 @@ struct EncodedPropertyTableProperty {
    */
   TUniquePtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
 
-  // TODO: may need values for offset and scale here in the future
+  /**
+   * @brief The type that the metadata will be encoded as.
+   */
+  ECesiumEncodedMetadataType type;
+
+  /**
+   * @brief The property table property's offset.
+   */
+  FCesiumMetadataValue offset;
+
+  /**
+   * @brief The property table property's scale.
+   */
+  FCesiumMetadataValue scale;
+
+  /**
+   * @brief The property table property's "no data" value.
+   */
+  FCesiumMetadataValue noData;
+
+  /**
+   * @brief The property table property's default value.
+   */
+  FCesiumMetadataValue defaultValue;
 };
 
 /**

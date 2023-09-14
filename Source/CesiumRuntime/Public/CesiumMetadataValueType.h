@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyType.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataValueType.generated.h"
@@ -28,25 +29,25 @@ enum class ECesiumMetadataBlueprintType : uint8 {
   Float64,
   /* Indicates a value is best represented as a FVector2D (2-dimensional
      integer vector). */
-  FIntPoint,
+  IntPoint,
   /* Indicates a value is best represented as a FVector2D (2-dimensional
      double-precision vector). */
-  FVector2D,
+  Vector2D,
   /* Indicates a value is best represented as a FIntVector (3-dimensional
      integer vector). */
-  FIntVector,
+  IntVector,
   /* Indicates a value is best represented as a FVector3f (3-dimensional
      single-precision vector). */
-  FVector3f,
+  Vector3f,
   /* Indicates a value is best represented as a FVector3 (3-dimensional
      double-precision vector). */
-  FVector3,
+  Vector3,
   /* Indicates a value is best represented as a FVector4 (4-dimensional
      double-precision vector). */
-  FVector4,
+  Vector4,
   /* Indicates a value is best represented as a FMatrix (4-by-4 double-precision
      matrix). */
-  FMatrix,
+  Matrix,
   /* Indicates a value is best represented as a FString. This can be used as a
      fallback for types with no proper Blueprints representation. */
   String,
@@ -183,3 +184,26 @@ struct CESIUMRUNTIME_API FCesiumMetadataValueType {
            bIsArray != ValueType.bIsArray;
   }
 };
+
+template <typename T>
+static FCesiumMetadataValueType TypeToMetadataValueType() {
+  ECesiumMetadataType type;
+  ECesiumMetadataComponentType componentType;
+  bool isArray;
+
+  if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
+    using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
+    type =
+        ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<ArrayType>::component);
+    isArray = true;
+  } else {
+    type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
+    componentType = ECesiumMetadataComponentType(
+        CesiumGltf::TypeToPropertyType<T>::component);
+    isArray = false;
+  }
+
+  return {type, componentType, isArray};
+}

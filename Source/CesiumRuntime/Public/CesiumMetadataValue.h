@@ -215,24 +215,7 @@ public:
     }
 
     _value = *MaybeValue;
-
-    ECesiumMetadataType type;
-    ECesiumMetadataComponentType componentType;
-    bool isArray;
-    if constexpr (CesiumGltf::IsMetadataArray<T>::value) {
-      using ArrayType = typename CesiumGltf::MetadataArrayType<T>::type;
-      type =
-          ECesiumMetadataType(CesiumGltf::TypeToPropertyType<ArrayType>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<ArrayType>::component);
-      isArray = true;
-    } else {
-      type = ECesiumMetadataType(CesiumGltf::TypeToPropertyType<T>::value);
-      componentType = ECesiumMetadataComponentType(
-          CesiumGltf::TypeToPropertyType<T>::component);
-      isArray = false;
-    }
-    _valueType = {type, componentType, isArray};
+    _valueType = TypeToMetadataValueType<T>();
   }
 
 private:

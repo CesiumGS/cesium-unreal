@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumGltf/Class.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumPropertyTableProperty.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -58,12 +59,13 @@ public:
   /**
    * Gets the name of the metadata class that this property table conforms to.
    */
-  FString getClass() const { return _class; }
+  FString getClassName() const { return _className; }
 
 private:
   ECesiumPropertyTableStatus _status;
   FString _name;
-  FString _class;
+  FString _className;
+
   int64 _count;
   TMap<FString, FCesiumPropertyTableProperty> _properties;
 

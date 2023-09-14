@@ -112,7 +112,7 @@ CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType type) {
 
 namespace {
 void coerceAndEncodeArrays(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -164,72 +164,57 @@ void coerceAndEncodeArrays(
   }
 }
 
+template <typename T>
 void coerceAndEncodeScalars(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
+  T* pWritePos = reinterpret_cast<T*>(pTextureData);
 
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Uint8) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      *pWritePos =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetByte(property, i);
-      ++pWritePos;
-    }
-    return;
-  }
+  for (int64 i = 0; i < propertySize; ++i) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(property, i);
 
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Float) {
-    float* pWritePosF = reinterpret_cast<float*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      *pWritePosF =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetFloat(property, i);
-      ++pWritePosF;
+    if constexpr (std::is_same_v<T, uint8>) {
+      *pWritePos = UCesiumMetadataValueBlueprintLibrary::GetByte(value, 0);
+    } else if constexpr (std::is_same_v<T, float>) {
+      *pWritePos = UCesiumMetadataValueBlueprintLibrary::GetFloat(value, 0.0f);
     }
-    return;
+
+    ++pWritePos;
   }
+  return;
 }
 
+template <typename T>
 void coerceAndEncodeVec2s(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
+  uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
 
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Uint8) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      FIntPoint vec2 =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetIntPoint(
-              property,
-              i,
-              FIntPoint(0));
+  for (int64 i = 0; i < propertySize; ++i) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(property, i);
+
+    if constexpr (std::is_same_v<T, uint8>) {
+      FIntPoint vec2 = UCesiumMetadataValueBlueprintLibrary::GetIntPoint(
+          value,
+          FIntPoint(0));
       for (int64 j = 0; j < 2; ++j) {
         *(pWritePos + j) =
             CesiumMetadataConversions<uint8, int32>::convert(vec2[j], 0);
       }
-      pWritePos += pixelSize;
-    }
-    return;
-  }
-
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Float) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      FVector2D vec2 =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetVector2D(
-              property,
-              i,
-              FVector2D::Zero());
+    } else if constexpr (std::is_same_v<T, float>) {
+      FVector2D vec2 = UCesiumMetadataValueBlueprintLibrary::GetVector2D(
+          value,
+          FVector2D::Zero());
 
       // Floats are encoded backwards (e.g., ABGR)
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
@@ -238,47 +223,38 @@ void coerceAndEncodeVec2s(
             CesiumMetadataConversions<float, double>::convert(vec2[j], 0.0f);
         --pWritePosF;
       }
-      pWritePos += pixelSize;
     }
-    return;
+
+    pWritePos += pixelSize;
   }
 }
 
+template <typename T>
 void coerceAndEncodeVec3s(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
+  uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
 
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Uint8) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      FIntVector vec3 =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetIntVector(
-              property,
-              i,
-              FIntVector(0));
+  for (int64 i = 0; i < propertySize; ++i) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(property, i);
+
+    if constexpr (std::is_same_v<T, uint8>) {
+      FIntVector vec3 = UCesiumMetadataValueBlueprintLibrary::GetIntVector(
+          value,
+          FIntVector(0));
       for (int64 j = 0; j < 3; ++j) {
         *(pWritePos + j) =
             CesiumMetadataConversions<uint8, int32>::convert(vec3[j], 0);
       }
-      pWritePos += pixelSize;
-    }
-    return;
-  }
-
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Float) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      FVector3f vec3 =
-          UCesiumPropertyTablePropertyBlueprintLibrary::GetVector3f(
-              property,
-              i,
-              FVector3f::Zero());
+    } else if constexpr (std::is_same_v<T, float>) {
+      FVector3f vec3 = UCesiumMetadataValueBlueprintLibrary::GetVector3f(
+          value,
+          FVector3f::Zero());
 
       // Floats are encoded backwards (e.g., ABGR)
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
@@ -286,46 +262,35 @@ void coerceAndEncodeVec3s(
         *pWritePosF = vec3[j];
         --pWritePosF;
       }
-      pWritePos += pixelSize;
     }
-    return;
+
+    pWritePos += pixelSize;
   }
 }
 
+template <typename T>
 void coerceAndEncodeVec4s(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
   int64 propertySize =
       UCesiumPropertyTablePropertyBlueprintLibrary::GetPropertySize(property);
+  uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
 
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Uint8) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      FVector4 vec4 = UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
-          property,
-          i,
-          FVector4::Zero());
+  for (int64 i = 0; i < propertySize; ++i) {
+    FCesiumMetadataValue value =
+        UCesiumPropertyTablePropertyBlueprintLibrary::GetRawValue(property, i);
+    FVector4 vec4 = UCesiumMetadataValueBlueprintLibrary::GetVector4(
+        value,
+        FVector4::Zero());
+
+    if constexpr (std::is_same_v<T, uint8>) {
       for (int64 j = 0; j < 4; ++j) {
         *(pWritePos + j) =
             CesiumMetadataConversions<uint8, double>::convert(vec4[j], 0);
       }
-      pWritePos += pixelSize;
-    }
-    return;
-  }
-
-  if (propertyDescription.EncodingDetails.ComponentType ==
-      ECesiumEncodedMetadataComponentType::Float) {
-    uint8* pWritePos = reinterpret_cast<uint8*>(pTextureData);
-    for (int64 i = 0; i < propertySize; ++i) {
-      FVector4 vec4 = UCesiumPropertyTablePropertyBlueprintLibrary::GetVector4(
-          property,
-          i,
-          FVector4::Zero());
-
+    } else if constexpr (std::is_same_v<T, float>) {
       // Floats are encoded backwards (e.g., ABGR)
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
       for (int64 j = 0; j < 4; ++j) {
@@ -333,15 +298,15 @@ void coerceAndEncodeVec4s(
             CesiumMetadataConversions<float, double>::convert(vec4[j], 0.0f);
         --pWritePosF;
       }
-      pWritePos += pixelSize;
     }
-    return;
+
+    pWritePos += pixelSize;
   }
 }
 } // namespace
 
 bool CesiumEncodedMetadataCoerce::canEncode(
-    const FCesiumPropertyTablePropertyDescription& description) {
+    const FCesiumMetadataPropertyDescription& description) {
   const ECesiumMetadataType type = description.PropertyDetails.Type;
 
   if (type == ECesiumMetadataType::Boolean ||
@@ -383,7 +348,7 @@ bool CesiumEncodedMetadataCoerce::canEncode(
 }
 
 void CesiumEncodedMetadataCoerce::encode(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -396,37 +361,75 @@ void CesiumEncodedMetadataCoerce::encode(
     return;
   }
 
-  switch (propertyDescription.EncodingDetails.Type) {
-  case ECesiumEncodedMetadataType::Scalar:
-    coerceAndEncodeScalars(
-        propertyDescription,
-        property,
-        pTextureData,
-        pixelSize);
-    break;
-  case ECesiumEncodedMetadataType::Vec2:
-    coerceAndEncodeVec2s(
-        propertyDescription,
-        property,
-        pTextureData,
-        pixelSize);
-    break;
-  case ECesiumEncodedMetadataType::Vec3:
-    coerceAndEncodeVec3s(
-        propertyDescription,
-        property,
-        pTextureData,
-        pixelSize);
-    break;
-  case ECesiumEncodedMetadataType::Vec4:
-    coerceAndEncodeVec4s(
-        propertyDescription,
-        property,
-        pTextureData,
-        pixelSize);
-    break;
-  default:
-    break;
+  if (propertyDescription.EncodingDetails.ComponentType ==
+      ECesiumEncodedMetadataComponentType::Uint8) {
+    switch (propertyDescription.EncodingDetails.Type) {
+    case ECesiumEncodedMetadataType::Scalar:
+      coerceAndEncodeScalars<uint8>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    case ECesiumEncodedMetadataType::Vec2:
+      coerceAndEncodeVec2s<uint8>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    case ECesiumEncodedMetadataType::Vec3:
+      coerceAndEncodeVec3s<uint8>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    case ECesiumEncodedMetadataType::Vec4:
+      coerceAndEncodeVec4s<uint8>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    default:
+      break;
+    }
+  } else if (
+      propertyDescription.EncodingDetails.ComponentType ==
+      ECesiumEncodedMetadataComponentType::Float) {
+    switch (propertyDescription.EncodingDetails.Type) {
+    case ECesiumEncodedMetadataType::Scalar:
+      coerceAndEncodeScalars<float>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    case ECesiumEncodedMetadataType::Vec2:
+      coerceAndEncodeVec2s<float>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    case ECesiumEncodedMetadataType::Vec3:
+      coerceAndEncodeVec3s<float>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    case ECesiumEncodedMetadataType::Vec4:
+      coerceAndEncodeVec4s<float>(
+          propertyDescription,
+          property,
+          pTextureData,
+          pixelSize);
+      break;
+    default:
+      break;
+    }
   }
 }
 
@@ -480,7 +483,7 @@ glm::u8vec3 getRgbColorFromString(const FString& rgbString) {
 } // namespace
 
 bool CesiumEncodedMetadataParseColorFromString::canEncode(
-    const FCesiumPropertyTablePropertyDescription& description) {
+    const FCesiumMetadataPropertyDescription& description) {
   return description.PropertyDetails.Type == ECesiumMetadataType::String &&
          !description.PropertyDetails.bIsArray &&
          (description.EncodingDetails.Type ==
@@ -489,7 +492,7 @@ bool CesiumEncodedMetadataParseColorFromString::canEncode(
 }
 
 void CesiumEncodedMetadataParseColorFromString::encode(
-    const FCesiumPropertyTablePropertyDescription& propertyDescription,
+    const FCesiumMetadataPropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {

@@ -48,9 +48,9 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
     case ECesiumMetadataComponentType::Int16:
     case ECesiumMetadataComponentType::Uint16:
     case ECesiumMetadataComponentType::Int32:
-      return ECesiumMetadataBlueprintType::FIntPoint;
+      return ECesiumMetadataBlueprintType::IntPoint;
     default:
-      return ECesiumMetadataBlueprintType::FVector2D;
+      return ECesiumMetadataBlueprintType::Vector2D;
     }
   }
 
@@ -61,21 +61,21 @@ CesiumMetadataValueTypeToBlueprintType(FCesiumMetadataValueType ValueType) {
     case ECesiumMetadataComponentType::Int16:
     case ECesiumMetadataComponentType::Uint16:
     case ECesiumMetadataComponentType::Int32:
-      return ECesiumMetadataBlueprintType::FIntVector;
+      return ECesiumMetadataBlueprintType::IntVector;
     case ECesiumMetadataComponentType::Float32:
-      return ECesiumMetadataBlueprintType::FVector3f;
+      return ECesiumMetadataBlueprintType::Vector3f;
     default:
-      return ECesiumMetadataBlueprintType::FVector3;
+      return ECesiumMetadataBlueprintType::Vector3;
     }
   }
 
   if (type == ECesiumMetadataType::Vec4) {
-    return ECesiumMetadataBlueprintType::FVector4;
+    return ECesiumMetadataBlueprintType::Vector4;
   }
 
   if (type == ECesiumMetadataType::Mat2 || type == ECesiumMetadataType::Mat3 ||
       type == ECesiumMetadataType::Mat4) {
-    return ECesiumMetadataBlueprintType::FMatrix;
+    return ECesiumMetadataBlueprintType::Matrix;
   }
 
   return ECesiumMetadataBlueprintType::None;

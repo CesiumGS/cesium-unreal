@@ -76,9 +76,58 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
       Meta =
           (EditCondition =
                "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String && ComponentType != ECesiumMetadataComponentType::None && ComponentType != ECesiumMetadataComponentType::Float32 && ComponentType != ECesiumMetadataComponentType::Float64"))
-  bool bIsNormalized;
+  bool bIsNormalized = false;
 
-  // TODO: scale and offset, no data + default value
+  /**
+   * Whether or not the property is transformed by an offset. This value is
+   * defined either in the class property, or in the instance of the property
+   * itself.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+  bool bHasOffset = false;
+
+  /**
+   * Whether or not the property is transformed by a scale. This value is
+   * defined either in the class property, or in the instance of the property
+   * itself.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+  bool bHasScale = false;
+
+  /**
+   * Whether or not the property specifies a "no data" value. This value
+   * functions a sentinel value, indicating missing data wherever it appears.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+  bool bHasNoDataValue = false;
+
+  /**
+   * Whether or not the property specifies a default value. This default value
+   * is used use when encountering a "no data" value in the property, or when a
+   * non-required property has been omitted.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Cesium",
+      Meta =
+          (EditCondition =
+               "Type != ECesiumMetadataType::Invalid && Type != ECesiumMetadataType::Boolean && Type != ECesiumMetadataType::Enum && Type != ECesiumMetadataType::String"))
+  bool bHasDefaultValue = false;
 
   inline bool
   operator==(const FCesiumMetadataPropertyDetails& ValueType) const {
@@ -88,8 +137,7 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
 
   inline bool
   operator!=(const FCesiumMetadataPropertyDetails& ValueType) const {
-    return Type != ValueType.Type || ComponentType != ValueType.ComponentType ||
-           bIsArray != ValueType.bIsArray;
+    return !operator==(ValueType);
   }
 
   /**
@@ -107,5 +155,15 @@ struct CESIUMRUNTIME_API FCesiumMetadataPropertyDetails {
     Type = ValueType.Type;
     ComponentType = ValueType.ComponentType;
     bIsArray = ValueType.bIsArray;
+  }
+
+  /**
+   * Whether this property has one or more value transforms. This includes
+   * normalization, offset, and scale, as well as the "no data" and default
+   * values.
+   */
+  bool HasValueTransforms() const {
+    return bIsNormalized || bHasOffset || bHasScale || bHasNoDataValue ||
+           bHasDefaultValue;
   }
 };

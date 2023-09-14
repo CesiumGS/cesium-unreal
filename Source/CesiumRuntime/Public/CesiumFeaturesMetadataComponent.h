@@ -70,7 +70,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
    * unnecessarily included in the generated material.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium")
-  int64 NullFeatureId;
+  bool bHasNullFeatureId;
 };
 
 /**
@@ -118,7 +118,7 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveFeaturesDescription {
  * access on the GPU.
  */
 USTRUCT()
-struct CESIUMRUNTIME_API FCesiumPropertyTablePropertyDescription {
+struct CESIUMRUNTIME_API FCesiumMetadataPropertyDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
@@ -163,51 +163,7 @@ struct CESIUMRUNTIME_API FCesiumPropertyTableDescription {
    * @brief Descriptions of the properties to upload to the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
-  TArray<FCesiumPropertyTablePropertyDescription> Properties;
-};
-
-/**
- * @brief Description of a property texture property that should be uploaded to
- * the GPU.
- */
-USTRUCT()
-struct CESIUMRUNTIME_API FCesiumPropertyTexturePropertyDescription {
-  GENERATED_USTRUCT_BODY()
-
-  /**
-   * @brief The name of this property as it will be referenced in the
-   * material.
-   */
-  UPROPERTY(EditAnywhere, Category = "Cesium")
-  FString Name;
-
-  //  // For now, always assumes it is Uint8
-  //  /*
-  //  UPROPERTY(EditAnywhere, Category = "Cesium")
-  //  ECesiumPropertyComponentType ComponentType =
-  //      ECesiumPropertyComponentType::Uint8;*/
-  //
-  ///**
-  // * @brief The property type.
-  // */
-  // UPROPERTY(EditAnywhere, Category = "Cesium")
-  // ECesiumPropertyType Type = ECesiumPropertyType::Scalar;
-
-  /**
-   * @brief If ComponentType==Uint8, this indicates whether to normalize into
-   a
-   * [0-1] range before accessing on the GPU.
-   */
-  //  UPROPERTY(EditAnywhere, Category = "Cesium")
-  //  bool Normalized = false;
-  //
-  /**
-   * @brief This string describes the channel order of the incoming feature
-   * texture property (e.g., "rgb", "bgra", etc.). This helps us fix the
-   * channel order when accessing on the GPU.
-   */
-  //  UPROPERTY(EditAnywhere, Category = "Cesium")
-  //  FString Swizzle;
+  TArray<FCesiumMetadataPropertyDescription> Properties;
 };
 
 /**
@@ -228,7 +184,7 @@ struct CESIUMRUNTIME_API FCesiumPropertyTextureDescription {
    * @brief Descriptions of the properties to upload to the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
-  TArray<FCesiumPropertyTexturePropertyDescription> Properties;
+  TArray<FCesiumMetadataPropertyDescription> Properties;
 };
 
 /**

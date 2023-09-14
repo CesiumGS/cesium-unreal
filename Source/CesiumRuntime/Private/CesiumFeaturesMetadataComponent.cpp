@@ -20,6 +20,7 @@
 #include "IContentBrowserSingleton.h"
 #include "IMaterialEditor.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialExpressionConstant.h"
 #include "Materials/MaterialExpressionCustom.h"
 #include "Materials/MaterialExpressionFunctionInput.h"
 #include "Materials/MaterialExpressionFunctionOutput.h"
@@ -67,17 +68,46 @@ void AutoFillPropertyTableDescriptions(
     const TMap<FString, FCesiumPropertyTableProperty>& properties =
         UCesiumPropertyTableBlueprintLibrary::GetProperties(propertyTable);
     for (const auto& propertyIt : properties) {
-      if (pDescription->Properties.FindByPredicate(
-              [&propertyName = propertyIt.Key](
-                  const FCesiumPropertyTablePropertyDescription&
-                      existingProperty) {
-                return existingProperty.Name == propertyName;
-              })) {
-        // We have already accounted for this property; skip.
+      auto pExistingProperty = pDescription->Properties.FindByPredicate(
+          [&propertyName = propertyIt.Key](
+              const FCesiumMetadataPropertyDescription& existingProperty) {
+            return existingProperty.Name == propertyName;
+          });
+
+      if (pExistingProperty) {
+        // We have already accounted for this property, but we may need to check
+        // for its offset / scale, since they can differ from the class
+        // property's definition.
+        ECesiumMetadataType type = pExistingProperty->PropertyDetails.Type;
+        switch (type) {
+        case ECesiumMetadataType::Scalar:
+        case ECesiumMetadataType::Vec2:
+        case ECesiumMetadataType::Vec3:
+        case ECesiumMetadataType::Vec4:
+        case ECesiumMetadataType::Mat2:
+        case ECesiumMetadataType::Mat3:
+        case ECesiumMetadataType::Mat4:
+          break;
+        default:
+          continue;
+        }
+
+        FCesiumMetadataValue offset =
+            UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
+                propertyIt.Value);
+        pExistingProperty->PropertyDetails.bHasOffset |=
+            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
+
+        FCesiumMetadataValue scale =
+            UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
+                propertyIt.Value);
+        pExistingProperty->PropertyDetails.bHasScale |=
+            !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
+
         continue;
       }
 
-      FCesiumPropertyTablePropertyDescription& property =
+      FCesiumMetadataPropertyDescription& property =
           pDescription->Properties.Emplace_GetRef();
       property.Name = propertyIt.Key;
 
@@ -91,6 +121,30 @@ void AutoFillPropertyTableDescriptions(
       property.PropertyDetails.bIsNormalized =
           UCesiumPropertyTablePropertyBlueprintLibrary::IsNormalized(
               propertyIt.Value);
+
+      FCesiumMetadataValue offset =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
+              propertyIt.Value);
+      property.PropertyDetails.bHasOffset =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(offset);
+
+      FCesiumMetadataValue scale =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(
+              propertyIt.Value);
+      property.PropertyDetails.bHasScale =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(scale);
+
+      FCesiumMetadataValue noData =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
+              propertyIt.Value);
+      property.PropertyDetails.bHasNoDataValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(noData);
+
+      FCesiumMetadataValue defaultValue =
+          UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
+              propertyIt.Value);
+      property.PropertyDetails.bHasDefaultValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(defaultValue);
 
       property.EncodingDetails = CesiumMetadataPropertyDetailsToEncodingDetails(
           property.PropertyDetails);
@@ -156,9 +210,6 @@ void AutoFillPropertyTextureDescriptions() {
   //    default:
   //      propertyDescription.Type = ECesiumPropertyType::Scalar;
   //    }
-
-  //    propertyDescription.Swizzle =
-  //        UCesiumFeatureTexturePropertyBlueprintLibrary::GetSwizzle(property);
   //  }
   //}
 }
@@ -208,8 +259,9 @@ void AutoFillFeatureIdSetDescriptions(
       pDescription->PropertyTableName = getNameForPropertyTable(propertyTable);
     }
 
-    pDescription->NullFeatureId =
-        UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(featureIDSet);
+    pDescription->bHasNullFeatureId =
+        UCesiumFeatureIdSetBlueprintLibrary::GetNullFeatureID(featureIDSet) >
+        -1;
   }
 }
 
@@ -282,7 +334,7 @@ struct MaterialNodeClassification {
 };
 } // namespace
 
-// Seperate nodes into auto-generated and user-added. Collect the property
+// Separate nodes into auto-generated and user-added. Collect the property
 // result nodes.
 static void ClassifyNodes(
     UMaterialFunctionMaterialLayer* Layer,
@@ -310,8 +362,9 @@ static void ClassifyNodes(
         continue;
       }
 
-      // If nodes are added when feature ID sets specify a null feature ID
-      // value.
+      // If nodes are added in when feature ID sets specify a null feature ID
+      // value, when properties specify a "no data" value, and when properties
+      // specify a default value.
       UMaterialExpressionIf* IfNode = Cast<UMaterialExpressionIf>(Node);
       if (IfNode) {
         Classification.IfNodes.Add(IfNode);
@@ -440,15 +493,35 @@ static void ClearAutoGeneratedNodes(
   // Determine which user-added connections to remap when regenerating the if
   // statements for null feature IDs.
   for (const UMaterialExpressionIf* IfNode : Classification.IfNodes) {
-    // Distinguish the if statements from each other using B, which is the
-    // generated parameter for autogenerated nodes. If this has been
-    // disconnected, then treat this node as invalid.
-    FString ParameterName;
-    if (IfNode->B.Expression) {
-      ParameterName = IfNode->B.Expression->GetParameterName().ToString();
+    // Distinguish the if statements from each other using A and B. If both of
+    // these nodes have been disconnected, then treat this node as invalid.
+    FString IfNodeName;
+
+    if (IfNode->A.Expression) {
+      UMaterialExpressionParameter* Parameter =
+          Cast<UMaterialExpressionParameter>(IfNode->A.Expression);
+      if (Parameter) {
+        IfNodeName += Parameter->GetParameterName().ToString();
+      } else {
+        TArray<FExpressionOutput>& Outputs = IfNode->A.Expression->GetOutputs();
+        FExpressionOutput& Output = Outputs[IfNode->A.OutputIndex];
+        IfNodeName += Output.OutputName;
+      }
     }
 
-    if (ParameterName.IsEmpty()) {
+    if (IfNode->B.Expression) {
+      UMaterialExpressionParameter* Parameter =
+          Cast<UMaterialExpressionParameter>(IfNode->B.Expression);
+      if (Parameter) {
+        IfNodeName += Parameter->GetParameterName().ToString();
+      } else {
+        TArray<FExpressionOutput>& Outputs = IfNode->B.Expression->GetOutputs();
+        FExpressionOutput& Output = Outputs[IfNode->B.OutputIndex];
+        IfNodeName += Output.OutputName;
+      }
+    }
+
+    if (IfNodeName.IsEmpty()) {
       // In case, treat the node as invalid. Break any user-made connections to
       // this node and don't attempt to remap it.
       for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
@@ -461,7 +534,7 @@ static void ClearAutoGeneratedNodes(
       continue;
     }
 
-    FString Key = IfNode->GetDescription() + ParameterName;
+    FString Key = IfNode->GetDescription() + IfNodeName;
     TArray<FExpressionInput*> Connections;
     for (UMaterialExpression* UserNode : Classification.UserAddedNodes) {
       for (FExpressionInput* Input : UserNode->GetInputs()) {
@@ -546,9 +619,33 @@ static void RemapUserConnections(
   }
 
   for (UMaterialExpressionIf* IfNode : Classification.IfNodes) {
-    FString ParameterName = IfNode->B.Expression->GetParameterName().ToString();
+    // Distinguish the if statements from each other using A and B. If both of
+    // these nodes have been disconnected, then treat this node as invalid.
+    FString IfNodeName;
 
-    FString Key = IfNode->GetDescription() + ParameterName;
+    FString AName;
+    UMaterialExpressionParameter* Parameter =
+        Cast<UMaterialExpressionParameter>(IfNode->A.Expression);
+    if (Parameter) {
+      AName = Parameter->GetParameterName().ToString();
+    } else {
+      TArray<FExpressionOutput>& Outputs = IfNode->A.Expression->GetOutputs();
+      FExpressionOutput& Output = Outputs[IfNode->A.OutputIndex];
+      AName = Output.OutputName.ToString();
+    }
+
+    FString BName;
+    Parameter = Cast<UMaterialExpressionParameter>(IfNode->B.Expression);
+    if (Parameter) {
+      BName = Parameter->GetParameterName().ToString();
+    } else {
+      TArray<FExpressionOutput>& Outputs = IfNode->B.Expression->GetOutputs();
+      FExpressionOutput& Output = Outputs[IfNode->B.OutputIndex];
+      BName = Output.OutputName.ToString();
+    }
+    IfNodeName = AName + BName;
+
+    FString Key = IfNode->GetDescription() + IfNodeName;
     TArray<FExpressionInput*>* pConnections = ConnectionOutputRemap.Find(Key);
     if (pConnections) {
       for (FExpressionInput* pConnection : *pConnections) {
@@ -556,6 +653,14 @@ static void RemapUserConnections(
         pConnection->OutputIndex = 0;
       }
     }
+
+    if (AName.Contains(MaterialPropertyOmittedSuffix)) {
+      // Skip the if statements for omitted properties. All connections to this
+      // node are supposed to be autogenerated.
+      continue;
+    }
+
+    bool isNoDataIfStatement = BName.Contains("NoData");
 
     TMap<FString, const FExpressionInput*>* pInputConnections =
         ConnectionInputRemap.Find(Key);
@@ -572,6 +677,13 @@ static void RemapUserConnections(
         IfNode->ALessThanB = **ppALessThanB;
       }
 
+      if (isNoDataIfStatement && IfNode->AEqualsB.Expression) {
+        // If this node is comparing the "no data" value, the property may also
+        // have a default value. If it does, it will have already been connected
+        // to this expression; don't overwrite it.
+        continue;
+      }
+
       const FExpressionInput** ppAEqualsB =
           pInputConnections->Find(TEXT("AEqualsB"));
       if (ppAEqualsB && *ppAEqualsB) {
@@ -585,6 +697,36 @@ static void RemapUserConnections(
 static const int32 Incr = 200;
 
 namespace {
+ECustomMaterialOutputType
+GetOutputTypeForEncodedType(ECesiumEncodedMetadataType Type) {
+  switch (Type) {
+  case ECesiumEncodedMetadataType::Vec2:
+    return ECustomMaterialOutputType::CMOT_Float2;
+  case ECesiumEncodedMetadataType::Vec3:
+    return ECustomMaterialOutputType::CMOT_Float3;
+  case ECesiumEncodedMetadataType::Vec4:
+    return ECustomMaterialOutputType::CMOT_Float4;
+  case ECesiumEncodedMetadataType::Scalar:
+  default:
+    return ECustomMaterialOutputType::CMOT_Float1;
+  };
+}
+
+FString GetSwizzleForEncodedType(ECesiumEncodedMetadataType Type) {
+  switch (Type) {
+  case ECesiumEncodedMetadataType::Scalar:
+    return ".r";
+  case ECesiumEncodedMetadataType::Vec2:
+    return ".rg";
+  case ECesiumEncodedMetadataType::Vec3:
+    return ".rgb";
+  case ECesiumEncodedMetadataType::Vec4:
+    return ".rgba";
+  default:
+    return FString();
+  };
+}
+
 UMaterialExpressionMaterialFunctionCall* GenerateNodesForFeatureIdTexture(
     const FCesiumFeatureIdSetDescription& Description,
     TArray<UMaterialExpression*>& AutoGeneratedNodes,
@@ -702,28 +844,345 @@ void GenerateNodesForNullFeatureId(
       NewObject<UMaterialExpressionScalarParameter>(TargetMaterialLayer);
   NullFeatureId->ParameterName =
       FName(Description.Name + MaterialNullFeatureIdSuffix);
-  NullFeatureId->DefaultValue = static_cast<float>(Description.NullFeatureId);
+  NullFeatureId->DefaultValue = 0;
   NullFeatureId->MaterialExpressionEditorX = NodeX;
   NullFeatureId->MaterialExpressionEditorY = NodeY;
   AutoGeneratedNodes.Add(NullFeatureId);
 
   NodeY = SectionTop;
   NodeX += Incr * 2;
+
   UMaterialExpressionIf* IfStatement =
       NewObject<UMaterialExpressionIf>(TargetMaterialLayer);
 
-  FExpressionInput A;
-  A.Expression = LastNode;
-  IfStatement->A = A;
-
-  FExpressionInput B;
-  B.Expression = NullFeatureId;
-  IfStatement->B = B;
+  IfStatement->A.Expression = LastNode;
+  IfStatement->B.Expression = NullFeatureId;
 
   IfStatement->MaterialExpressionEditorX = NodeX;
   IfStatement->MaterialExpressionEditorY = NodeY;
 
   AutoGeneratedNodes.Add(IfStatement);
+}
+
+UMaterialExpressionParameter* GenerateParameterNodeWithGivenType(
+    const ECesiumEncodedMetadataType Type,
+    const FString& Name,
+    TArray<UMaterialExpression*>& AutoGeneratedNodes,
+    UMaterialFunctionMaterialLayer* TargetMaterialLayer,
+    int32& NodeX,
+    int32& NodeY) {
+  UMaterialExpressionParameter* Parameter = nullptr;
+  if (Type == ECesiumEncodedMetadataType::Scalar) {
+    UMaterialExpressionScalarParameter* ScalarParameter =
+        NewObject<UMaterialExpressionScalarParameter>(TargetMaterialLayer);
+    ScalarParameter->DefaultValue = 0.0f;
+    Parameter = ScalarParameter;
+  }
+
+  if (Type == ECesiumEncodedMetadataType::Vec2 ||
+      Type == ECesiumEncodedMetadataType::Vec3 ||
+      Type == ECesiumEncodedMetadataType::Vec4) {
+    UMaterialExpressionVectorParameter* VectorParameter =
+        NewObject<UMaterialExpressionVectorParameter>(TargetMaterialLayer);
+    VectorParameter->DefaultValue = FLinearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    Parameter = VectorParameter;
+  }
+
+  if (!Parameter) {
+    return nullptr;
+  }
+
+  Parameter->ParameterName = FName(Name);
+  Parameter->MaterialExpressionEditorX = NodeX;
+  Parameter->MaterialExpressionEditorY = NodeY;
+  AutoGeneratedNodes.Add(Parameter);
+
+  return Parameter;
+}
+
+void GenerateNodesForMetadataPropertyTransforms(
+    const FCesiumMetadataPropertyDescription& Property,
+    const FString& PropertyName,
+    const FString& FullPropertyName,
+    TArray<UMaterialExpression*>& AutoGeneratedNodes,
+    UMaterialFunctionMaterialLayer* TargetMaterialLayer,
+    int32& NodeX,
+    int32& NodeY,
+    UMaterialExpressionCustom* GetPropertyValuesFunction,
+    int32 GetPropertyValuesOutputIndex) {
+  int32 SectionLeft = NodeX;
+  int32 SectionTop = NodeY;
+
+  UMaterialExpressionCustom* ApplyTransformsFunction = nullptr;
+  UMaterialExpressionCustom* GetNoDataValueFunction = nullptr;
+  UMaterialExpressionCustom* GetDefaultValueFunction = nullptr;
+
+  if (Property.PropertyDetails.bIsNormalized ||
+      Property.PropertyDetails.bHasScale ||
+      Property.PropertyDetails.bHasOffset) {
+
+    ApplyTransformsFunction =
+        NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
+    ApplyTransformsFunction->Code = "";
+    ApplyTransformsFunction->Description =
+        "Apply Value Transforms To " + PropertyName;
+    ApplyTransformsFunction->MaterialExpressionEditorX = SectionLeft + 2 * Incr;
+    ApplyTransformsFunction->MaterialExpressionEditorY = NodeY;
+
+    ApplyTransformsFunction->Inputs.Reserve(3);
+    ApplyTransformsFunction->Outputs.Reset(2);
+    ApplyTransformsFunction->AdditionalOutputs.Reserve(1);
+    ApplyTransformsFunction->Outputs.Add(FExpressionOutput(FName("Raw Value")));
+    ApplyTransformsFunction->bShowOutputNameOnPin = true;
+    AutoGeneratedNodes.Add(ApplyTransformsFunction);
+
+    FCustomInput& RawValueInput = ApplyTransformsFunction->Inputs[0];
+    RawValueInput.InputName = FName("RawValue");
+    RawValueInput.Input.Expression = GetPropertyValuesFunction;
+    RawValueInput.Input.OutputIndex = GetPropertyValuesOutputIndex;
+
+    FCustomOutput& TransformedOutput =
+        ApplyTransformsFunction->AdditionalOutputs.Emplace_GetRef();
+    TransformedOutput.OutputName = FName("TransformedValue");
+    ApplyTransformsFunction->Outputs.Add(
+        FExpressionOutput(TransformedOutput.OutputName));
+
+    TransformedOutput.OutputType =
+        GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+
+    FString TransformCode = "TransformedValue = ";
+
+    if (Property.PropertyDetails.bIsNormalized) {
+      // The normalization can be hardcoded since only normalized uint8s are
+      // supported.
+      TransformCode += "(RawValue / 255.0f)";
+    } else {
+      TransformCode += "RawValue";
+    }
+
+    if (Property.PropertyDetails.bHasScale) {
+      NodeY += 0.75 * Incr;
+
+      UMaterialExpressionParameter* Parameter =
+          GenerateParameterNodeWithGivenType(
+              Property.EncodingDetails.Type,
+              FullPropertyName + MaterialPropertyScaleSuffix,
+              AutoGeneratedNodes,
+              TargetMaterialLayer,
+              NodeX,
+              NodeY);
+
+      FString ScaleName = "Scale";
+
+      FCustomInput& DefaultInput =
+          ApplyTransformsFunction->Inputs.Emplace_GetRef();
+      DefaultInput.InputName = FName(ScaleName);
+      DefaultInput.Input.Expression = Parameter;
+
+      TransformCode += " * " + ScaleName;
+    }
+
+    if (Property.PropertyDetails.bHasOffset) {
+      NodeY += 0.75 * Incr;
+
+      UMaterialExpressionParameter* Parameter =
+          GenerateParameterNodeWithGivenType(
+              Property.EncodingDetails.Type,
+              FullPropertyName + MaterialPropertyOffsetSuffix,
+              AutoGeneratedNodes,
+              TargetMaterialLayer,
+              NodeX,
+              NodeY);
+
+      FString OffsetName = "Offset";
+
+      FCustomInput& DefaultInput =
+          ApplyTransformsFunction->Inputs.Emplace_GetRef();
+      DefaultInput.InputName = FName(OffsetName);
+      DefaultInput.Input.Expression = Parameter;
+
+      TransformCode += " + " + OffsetName;
+    }
+
+    NodeY += Incr;
+
+    // Example: TransformedValue = (RawValue / 255.0f) * Scale_VALUE +
+    // Offset_VALUE;
+    ApplyTransformsFunction->Code += TransformCode + ";\n";
+
+    // Return the raw value.
+    ApplyTransformsFunction->OutputType =
+        GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+    ApplyTransformsFunction->Code += "return RawValue;";
+  }
+
+  FString swizzle = GetSwizzleForEncodedType(Property.EncodingDetails.Type);
+
+  if (Property.PropertyDetails.bHasNoDataValue) {
+    UMaterialExpressionParameter* Parameter =
+        GenerateParameterNodeWithGivenType(
+            Property.EncodingDetails.Type,
+            FullPropertyName + MaterialPropertyNoDataSuffix,
+            AutoGeneratedNodes,
+            TargetMaterialLayer,
+            NodeX,
+            NodeY);
+
+    // This is equivalent to a "MakeFloatN" function.
+    GetNoDataValueFunction =
+        NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
+    GetNoDataValueFunction->Description =
+        "Get No Data Value For " + PropertyName;
+    GetNoDataValueFunction->MaterialExpressionEditorX = SectionLeft + 2 * Incr;
+    GetNoDataValueFunction->MaterialExpressionEditorY = NodeY;
+    NodeY += Incr;
+
+    GetNoDataValueFunction->Outputs.Reset(1);
+    GetNoDataValueFunction->bShowOutputNameOnPin = true;
+    AutoGeneratedNodes.Add(GetNoDataValueFunction);
+
+    FString NoDataName = "NoData";
+    FString InputName = NoDataName + MaterialPropertyValueSuffix;
+
+    FCustomInput& NoDataInput = GetNoDataValueFunction->Inputs[0];
+    NoDataInput.InputName = FName(InputName);
+    NoDataInput.Input.Expression = Parameter;
+
+    GetNoDataValueFunction->Outputs.Add(FExpressionOutput(FName(NoDataName)));
+    GetNoDataValueFunction->OutputType =
+        GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+
+    // Example: NoData = NoData_VALUE.xyz;
+    GetNoDataValueFunction->Code =
+        NoDataName + " = " + InputName + swizzle + ";\n";
+  }
+
+  if (Property.PropertyDetails.bHasDefaultValue) {
+    UMaterialExpressionParameter* Parameter =
+        GenerateParameterNodeWithGivenType(
+            Property.EncodingDetails.Type,
+            FullPropertyName + MaterialPropertyDefaultValueSuffix,
+            AutoGeneratedNodes,
+            TargetMaterialLayer,
+            NodeX,
+            NodeY);
+
+    // This is equivalent to a "MakeFloatN" function.
+    GetDefaultValueFunction =
+        NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
+    GetDefaultValueFunction->Description =
+        "Get Default Value For " + PropertyName;
+    GetDefaultValueFunction->MaterialExpressionEditorX = SectionLeft + 2 * Incr;
+    GetDefaultValueFunction->MaterialExpressionEditorY = NodeY;
+    NodeY += Incr;
+
+    GetDefaultValueFunction->Outputs.Reset(1);
+    GetDefaultValueFunction->bShowOutputNameOnPin = true;
+    AutoGeneratedNodes.Add(GetDefaultValueFunction);
+
+    FString DefaultName = "Default";
+    FString InputName = DefaultName + MaterialPropertyValueSuffix;
+
+    FCustomInput& DefaultInput = GetDefaultValueFunction->Inputs[0];
+    DefaultInput.InputName = FName(InputName);
+    DefaultInput.Input.Expression = Parameter;
+
+    GetDefaultValueFunction->Outputs.Add(
+        FExpressionOutput(FName("Default Value")));
+    GetDefaultValueFunction->OutputType =
+        GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
+
+    // Example: Default = Default_VALUE.xyz;
+    GetDefaultValueFunction->Code =
+        DefaultName + " = " + InputName + swizzle + ";\n";
+  }
+
+  // We want to return to the top of the section and work down again, without
+  // overwriting NodeY. At the end, we use the maximum value to determine the
+  // vertical extent of the entire section.
+  int32_t SectionNodeY = SectionTop;
+
+  NodeX += 4 * Incr;
+
+  // Add if statement for resolving the no data / default values
+  if (GetNoDataValueFunction) {
+    UMaterialExpressionIf* IfStatement =
+        NewObject<UMaterialExpressionIf>(TargetMaterialLayer);
+    IfStatement->MaterialExpressionEditorX = NodeX;
+    IfStatement->MaterialExpressionEditorY = SectionNodeY;
+
+    IfStatement->B.Expression = GetNoDataValueFunction;
+    IfStatement->AEqualsB.Expression = GetDefaultValueFunction;
+
+    if (ApplyTransformsFunction) {
+      IfStatement->A.Expression = ApplyTransformsFunction;
+      IfStatement->A.OutputIndex = 0;
+
+      IfStatement->AGreaterThanB.Expression = ApplyTransformsFunction;
+      IfStatement->AGreaterThanB.OutputIndex = 1;
+
+      IfStatement->ALessThanB.Expression = ApplyTransformsFunction;
+      IfStatement->ALessThanB.OutputIndex = 1;
+    } else {
+      IfStatement->A.Expression = GetPropertyValuesFunction;
+      IfStatement->A.OutputIndex = GetPropertyValuesOutputIndex;
+
+      IfStatement->AGreaterThanB.Expression = GetPropertyValuesFunction;
+      IfStatement->AGreaterThanB.OutputIndex = GetPropertyValuesOutputIndex;
+
+      IfStatement->ALessThanB.Expression = GetPropertyValuesFunction;
+      IfStatement->ALessThanB.OutputIndex = GetPropertyValuesOutputIndex;
+    }
+
+    AutoGeneratedNodes.Add(IfStatement);
+  }
+
+  // If the property has a default value defined, it may be omitted from an
+  // instance of a property table, texture, or attribute. In this case, the
+  // default value should be used without needing to execute the
+  // GetPropertyValues function. We denote this with a scalar parameter that
+  // acts as a boolean.
+  if (GetDefaultValueFunction) {
+    SectionNodeY += Incr;
+
+    UMaterialExpressionScalarParameter* OmittedParameter =
+        NewObject<UMaterialExpressionScalarParameter>(TargetMaterialLayer);
+    OmittedParameter->DefaultValue = 0.0f;
+    OmittedParameter->ParameterName =
+        FName(FullPropertyName + MaterialPropertyOmittedSuffix);
+    OmittedParameter->MaterialExpressionEditorX = NodeX;
+    OmittedParameter->MaterialExpressionEditorX = SectionNodeY;
+    SectionNodeY += Incr;
+
+    UMaterialExpressionConstant* Constant =
+        NewObject<UMaterialExpressionConstant>(TargetMaterialLayer);
+    Constant->R = 1.0f;
+
+    UMaterialExpressionIf* IfStatement =
+        NewObject<UMaterialExpressionIf>(TargetMaterialLayer);
+    IfStatement->MaterialExpressionEditorX = NodeX;
+    IfStatement->MaterialExpressionEditorY = SectionTop;
+
+    IfStatement->A.Expression = OmittedParameter;
+    IfStatement->B.Expression = Constant;
+
+    IfStatement->AGreaterThanB.Expression = GetDefaultValueFunction;
+    IfStatement->AEqualsB.Expression = GetDefaultValueFunction;
+
+    if (ApplyTransformsFunction) {
+      IfStatement->ALessThanB.Expression = ApplyTransformsFunction;
+      IfStatement->ALessThanB.OutputIndex = 1;
+    } else {
+      IfStatement->ALessThanB.Expression = GetPropertyValuesFunction;
+      IfStatement->ALessThanB.OutputIndex = GetPropertyValuesOutputIndex;
+    }
+
+    AutoGeneratedNodes.Add(IfStatement);
+  }
+
+  if (SectionNodeY > NodeY) {
+    NodeY = SectionNodeY;
+  }
 }
 
 void GenerateNodesForPropertyTable(
@@ -734,9 +1193,8 @@ void GenerateNodesForPropertyTable(
     int32& NodeY,
     UMaterialExpressionMaterialFunctionCall* GetFeatureIdCall) {
   int32 SectionLeft = NodeX;
-  int32 SectionTop = NodeY;
-
-  NodeX += 1.5 * Incr;
+  int32 PropertyDataSectionY = NodeY - 20;
+  int32 PropertyTransformsSectionY = NodeY - 20;
 
   UMaterialExpressionCustom* GetPropertyValuesFunction =
       NewObject<UMaterialExpressionCustom>(TargetMaterialLayer);
@@ -747,7 +1205,8 @@ void GenerateNodesForPropertyTable(
   GetPropertyValuesFunction->Code = "";
   GetPropertyValuesFunction->Description =
       "Get Property Values From " + PropertyTable.Name;
-  GetPropertyValuesFunction->MaterialExpressionEditorX = NodeX;
+  GetPropertyValuesFunction->MaterialExpressionEditorX =
+      SectionLeft + 1.5 * Incr;
   GetPropertyValuesFunction->MaterialExpressionEditorY = NodeY;
   AutoGeneratedNodes.Add(GetPropertyValuesFunction);
 
@@ -755,54 +1214,50 @@ void GenerateNodesForPropertyTable(
   FeatureIDInput.InputName = FName("FeatureID");
   FeatureIDInput.Input.Expression = GetFeatureIdCall;
 
-  if (PropertyTable.Properties.Num()) {
-    const FCesiumPropertyTablePropertyDescription& property =
-        PropertyTable.Properties[0];
-    FString PropertyDataName =
-        CesiumEncodedFeaturesMetadata::createHlslSafeName(property.Name) +
-        MaterialPropertyDataSuffix;
-
-    // Just get the dimensions of the first property. All the properties will
-    // have the same pixel dimensions since it is based on the feature count.
-    GetPropertyValuesFunction->Code += "uint _czm_width;\nuint _czm_height;\n";
-    GetPropertyValuesFunction->Code +=
-        PropertyDataName + ".GetDimensions(_czm_width, _czm_height);\n";
-    GetPropertyValuesFunction->Code +=
-        "uint _czm_pixelX = FeatureID % _czm_width;\n";
-    GetPropertyValuesFunction->Code +=
-        "uint _czm_pixelY = FeatureID / _czm_width;\n";
-  }
-
-  NodeX = SectionLeft;
-
   GetPropertyValuesFunction->AdditionalOutputs.Reserve(
       PropertyTable.Properties.Num());
-  for (const FCesiumPropertyTablePropertyDescription& property :
+
+  bool foundFirstProperty = false;
+  for (const FCesiumMetadataPropertyDescription& property :
        PropertyTable.Properties) {
     if (property.EncodingDetails.Conversion ==
-        ECesiumEncodedMetadataConversion::None) {
+            ECesiumEncodedMetadataConversion::None ||
+        !property.EncodingDetails.HasValidType()) {
       continue;
     }
 
-    NodeY += Incr;
+    PropertyDataSectionY += Incr;
 
     FString propertyName = createHlslSafeName(property.Name);
+    // Example: "roofColor_DATA"
+    FString PropertyDataName = propertyName + MaterialPropertyDataSuffix;
+
+    if (!foundFirstProperty) {
+      // Get the dimensions of the first valid property. All the properties
+      // will have the same pixel dimensions since it is based on the feature
+      // count.
+      GetPropertyValuesFunction->Code +=
+          "uint _czm_width;\nuint _czm_height;\n";
+      GetPropertyValuesFunction->Code +=
+          PropertyDataName + ".GetDimensions(_czm_width, _czm_height);\n";
+      GetPropertyValuesFunction->Code +=
+          "uint _czm_pixelX = FeatureID % _czm_width;\n";
+      GetPropertyValuesFunction->Code +=
+          "uint _czm_pixelY = FeatureID / _czm_width;\n";
+
+      foundFirstProperty = true;
+    }
 
     UMaterialExpressionTextureObjectParameter* PropertyData =
         NewObject<UMaterialExpressionTextureObjectParameter>(
             TargetMaterialLayer);
-    PropertyData->ParameterName = FName(getMaterialNameForPropertyTableProperty(
+    FString FullPropertyName = getMaterialNameForPropertyTableProperty(
         PropertyTable.Name,
-        propertyName));
-
-    PropertyData->MaterialExpressionEditorX = NodeX;
-    PropertyData->MaterialExpressionEditorY = NodeY;
+        propertyName);
+    PropertyData->ParameterName = FName(FullPropertyName);
+    PropertyData->MaterialExpressionEditorX = SectionLeft;
+    PropertyData->MaterialExpressionEditorY = PropertyDataSectionY;
     AutoGeneratedNodes.Add(PropertyData);
-
-    // Example: "roofColor_DATA"
-    FString PropertyDataName =
-        CesiumEncodedFeaturesMetadata::createHlslSafeName(property.Name) +
-        MaterialPropertyDataSuffix;
 
     FCustomInput& PropertyInput =
         GetPropertyValuesFunction->Inputs.Emplace_GetRef();
@@ -815,25 +1270,9 @@ void GenerateNodesForPropertyTable(
     GetPropertyValuesFunction->Outputs.Add(
         FExpressionOutput(PropertyOutput.OutputName));
 
-    FString swizzle = "";
-    switch (property.EncodingDetails.Type) {
-    case ECesiumEncodedMetadataType::Vec2:
-      PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float2;
-      swizzle = "rg";
-      break;
-    case ECesiumEncodedMetadataType::Vec3:
-      PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float3;
-      swizzle = "rgb";
-      break;
-    case ECesiumEncodedMetadataType::Vec4:
-      PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float4;
-      swizzle = "rgba";
-      break;
-    case ECesiumEncodedMetadataType::Scalar:
-      PropertyOutput.OutputType = ECustomMaterialOutputType::CMOT_Float1;
-      swizzle = "r";
-      break;
-    };
+    FString swizzle = GetSwizzleForEncodedType(property.EncodingDetails.Type);
+    PropertyOutput.OutputType =
+        GetOutputTypeForEncodedType(property.EncodingDetails.Type);
 
     FString asComponentString =
         property.EncodingDetails.ComponentType ==
@@ -846,13 +1285,31 @@ void GenerateNodesForPropertyTable(
     // 0)).rgb);"
     GetPropertyValuesFunction->Code +=
         propertyName + " = " + asComponentString + "(" + PropertyDataName +
-        ".Load(int3(_czm_pixelX, _czm_pixelY, 0))." + swizzle + ");\n";
+        ".Load(int3(_czm_pixelX, _czm_pixelY, 0))" + swizzle + ");\n";
+
+    if (property.PropertyDetails.HasValueTransforms()) {
+      int32 PropertyTransformsSectionX = SectionLeft + 3.75 * Incr;
+      GenerateNodesForMetadataPropertyTransforms(
+          property,
+          propertyName,
+          FullPropertyName,
+          AutoGeneratedNodes,
+          TargetMaterialLayer,
+          PropertyTransformsSectionX,
+          PropertyTransformsSectionY,
+          GetPropertyValuesFunction,
+          GetPropertyValuesFunction->Outputs.Num() - 1);
+
+      NodeX = FMath::Max(NodeX, PropertyTransformsSectionX);
+    }
   }
 
   // Return the feature ID.
   GetPropertyValuesFunction->OutputType =
       ECustomMaterialOutputType::CMOT_Float1;
   GetPropertyValuesFunction->Code += "return FeatureID;";
+
+  NodeY = FMath::Max(PropertyDataSectionY, PropertyTransformsSectionY);
 }
 
 void GenerateNodesForPropertyTexture(
@@ -982,7 +1439,6 @@ void GenerateNodesForPropertyTexture(
   //
   //    NodeX = SectionLeft;
   //  }
-  //
 }
 
 void GenerateMaterialNodes(
@@ -1049,13 +1505,13 @@ void GenerateMaterialNodes(
       }
     }
 
-    if (featureIdSet.NullFeatureId > -1) {
+    if (featureIdSet.bHasNullFeatureId) {
       // Spatial nitpicking; this aligns the if statement to the same Y as the
       // PropertyTableFunction node then resets the Y so that the next section
       // appears below all of the just-generated nodes.
       int32 OriginalY = NodeY;
 
-      NodeX += 3.5 * Incr;
+      NodeX += 2 * Incr;
       NodeY = SectionTop;
 
       GenerateNodesForNullFeatureId(

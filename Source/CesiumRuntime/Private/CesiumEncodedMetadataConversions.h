@@ -3,7 +3,7 @@
 #pragma once
 
 enum class ECesiumEncodedMetadataType : uint8;
-struct FCesiumPropertyTablePropertyDescription;
+struct FCesiumMetadataPropertyDescription;
 struct FCesiumPropertyTableProperty;
 struct FCesiumMetadataPropertyDetails;
 struct FCesiumMetadataEncodingDetails;
@@ -54,8 +54,7 @@ struct CesiumEncodedMetadataCoerce {
    *
    * @param description The property table property description.
    */
-  static bool
-  canEncode(const FCesiumPropertyTablePropertyDescription& description);
+  static bool canEncode(const FCesiumMetadataPropertyDescription& description);
 
   /**
    * Encodes the data of the property table property into the given texture data
@@ -68,7 +67,7 @@ struct CesiumEncodedMetadataCoerce {
    * @param pixelSize The size of a pixel from the given texture, in bytes.
    */
   static void encode(
-      const FCesiumPropertyTablePropertyDescription& propertyDescription,
+      const FCesiumMetadataPropertyDescription& propertyDescription,
       const FCesiumPropertyTableProperty& property,
       void* pTextureData,
       size_t pixelSize);
@@ -87,8 +86,7 @@ struct CesiumEncodedMetadataParseColorFromString {
    *
    * @param description The property table property description.
    */
-  static bool
-  canEncode(const FCesiumPropertyTablePropertyDescription& description);
+  static bool canEncode(const FCesiumMetadataPropertyDescription& description);
 
   /**
    * Encodes the data of the property table property into the given texture data
@@ -101,7 +99,7 @@ struct CesiumEncodedMetadataParseColorFromString {
    * @param pixelSize The size of a pixel from the given texture, in bytes.
    */
   static void encode(
-      const FCesiumPropertyTablePropertyDescription& propertyDescription,
+      const FCesiumMetadataPropertyDescription& propertyDescription,
       const FCesiumPropertyTableProperty& property,
       void* pTextureData,
       size_t pixelSize);

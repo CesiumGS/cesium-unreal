@@ -1950,15 +1950,120 @@ static void SetPropertyTableParameterValues(
     int32 index) {
   for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTableProperty&
            encodedProperty : encodedPropertyTable.properties) {
+    FString fullPropertyName =
+        CesiumEncodedFeaturesMetadata::getMaterialNameForPropertyTableProperty(
+            encodedPropertyTable.name,
+            encodedProperty.name);
     pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(CesiumEncodedFeaturesMetadata::
-                      getMaterialNameForPropertyTableProperty(
-                          encodedPropertyTable.name,
-                          encodedProperty.name)),
-            association,
-            index),
+        FMaterialParameterInfo(FName(fullPropertyName), association, index),
         encodedProperty.pTexture->pTexture.Get());
+
+    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
+            encodedProperty.offset)) {
+      FString parameterName =
+          fullPropertyName +
+          CesiumEncodedFeaturesMetadata::MaterialPropertyOffsetSuffix;
+
+      if (encodedProperty.type == ECesiumEncodedMetadataType::Scalar) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            UCesiumMetadataValueBlueprintLibrary::GetFloat(
+                encodedProperty.offset,
+                0.0f));
+      } else {
+        FVector4 value = UCesiumMetadataValueBlueprintLibrary::GetVector4(
+            encodedProperty.offset,
+            FVector4::Zero());
+
+        pMaterial->SetVectorParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            FLinearColor(
+                static_cast<float>(value.X),
+                static_cast<float>(value.Y),
+                static_cast<float>(value.Z),
+                static_cast<float>(value.W)));
+      }
+    }
+
+    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(encodedProperty.scale)) {
+      FString parameterName =
+          fullPropertyName +
+          CesiumEncodedFeaturesMetadata::MaterialPropertyScaleSuffix;
+
+      if (encodedProperty.type == ECesiumEncodedMetadataType::Scalar) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            UCesiumMetadataValueBlueprintLibrary::GetFloat(
+                encodedProperty.scale,
+                1.0f));
+      } else {
+        FVector4 value = UCesiumMetadataValueBlueprintLibrary::GetVector4(
+            encodedProperty.scale,
+            FVector4(1.0, 1.0, 1.0, 1.0));
+
+        pMaterial->SetVectorParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            FLinearColor(
+                static_cast<float>(value.X),
+                static_cast<float>(value.Y),
+                static_cast<float>(value.Z),
+                static_cast<float>(value.W)));
+      }
+    }
+
+    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
+            encodedProperty.noData)) {
+      FString parameterName =
+          fullPropertyName +
+          CesiumEncodedFeaturesMetadata::MaterialPropertyNoDataSuffix;
+
+      if (encodedProperty.type == ECesiumEncodedMetadataType::Scalar) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            UCesiumMetadataValueBlueprintLibrary::GetFloat(
+                encodedProperty.noData,
+                0.0f));
+      } else {
+        FVector4 value = UCesiumMetadataValueBlueprintLibrary::GetVector4(
+            encodedProperty.noData,
+            FVector4::Zero());
+
+        pMaterial->SetVectorParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            FLinearColor(
+                static_cast<float>(value.X),
+                static_cast<float>(value.Y),
+                static_cast<float>(value.Z),
+                static_cast<float>(value.W)));
+      }
+    }
+
+    if (!UCesiumMetadataValueBlueprintLibrary::IsEmpty(
+            encodedProperty.defaultValue)) {
+      FString parameterName =
+          fullPropertyName +
+          CesiumEncodedFeaturesMetadata::MaterialPropertyDefaultValueSuffix;
+
+      if (encodedProperty.type == ECesiumEncodedMetadataType::Scalar) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            UCesiumMetadataValueBlueprintLibrary::GetFloat(
+                encodedProperty.defaultValue,
+                0.0f));
+      } else {
+        FVector4 value = UCesiumMetadataValueBlueprintLibrary::GetVector4(
+            encodedProperty.defaultValue,
+            FVector4::Zero());
+
+        pMaterial->SetVectorParameterValueByInfo(
+            FMaterialParameterInfo(FName(parameterName), association, index),
+            FLinearColor(
+                static_cast<float>(value.X),
+                static_cast<float>(value.Y),
+                static_cast<float>(value.Z),
+                static_cast<float>(value.W)));
+      }
+    }
   }
 }
 
@@ -1985,6 +2090,17 @@ static void SetFeaturesMetadataParameterValues(
 
   for (CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet :
        loadResult.EncodedFeatures.featureIdSets) {
+    if (encodedFeatureIdSet.nullFeatureId) {
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(
+              FName(
+                  encodedFeatureIdSet.name +
+                  CesiumEncodedFeaturesMetadata::MaterialNullFeatureIdSuffix),
+              association,
+              index),
+          static_cast<float>(*encodedFeatureIdSet.nullFeatureId));
+    }
+
     if (!encodedFeatureIdSet.texture) {
       continue;
     }
@@ -2456,8 +2572,8 @@ static void loadPrimitiveGameThreadPart(
   PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
   // Doing the above std::move operations invalidates the pointers in the
-  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit awkward,
-  // but we have to reconstruct the metadata primitive here.
+  // FCesiumMetadataPrimitive constructed on the loadResult. It's a bit
+  // awkward, but we have to reconstruct the metadata primitive here.
   pMesh->Metadata_DEPRECATED = FCesiumMetadataPrimitive{
       pMesh->Features,
       pMesh->Metadata,
