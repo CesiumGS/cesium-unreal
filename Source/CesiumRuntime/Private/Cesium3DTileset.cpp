@@ -20,6 +20,7 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
@@ -474,13 +475,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       *this->GetName());
 
   struct CalculateECEFCameraPosition {
-
-    const GeoTransforms& localGeoTransforms;
-
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
       glm::dmat4 ENU =
-          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
+          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(center);
       glm::dvec3 offset =
           sphere.getRadius() *
           glm::normalize(
@@ -493,7 +491,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
       glm::dmat4 ENU =
-          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
+          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(center);
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset =
           glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
@@ -529,39 +527,35 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       pRootTile->getBoundingVolume();
 
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+
   // calculate unreal camera position
-  const glm::dmat4& transform =
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  glm::dvec3 ecefCameraPosition = std::visit(
-      CalculateECEFCameraPosition{
-          this->ResolveGeoreference()->GetGeoTransforms()},
-      boundingVolume);
-  glm::dvec3 unrealCameraPosition =
-      glm::dvec3(transform * glm::dvec4(ecefCameraPosition, 1.0));
+  glm::dvec3 ecefCameraPosition =
+      std::visit(CalculateECEFCameraPosition{}, boundingVolume);
+  FVector unrealCameraPosition =
+      pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
+          VecMath::createVector(ecefCameraPosition));
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter =
       Cesium3DTilesSelection::getBoundingVolumeCenter(boundingVolume);
-  glm::dvec3 unrealCenter = glm::dvec3(transform * glm::dvec4(ecefCenter, 1.0));
-  glm::dvec3 unrealCameraFront =
-      glm::normalize(unrealCenter - unrealCameraPosition);
-  glm::dvec3 unrealCameraRight =
-      glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), unrealCameraFront));
-  glm::dvec3 unrealCameraUp =
-      glm::normalize(glm::cross(unrealCameraFront, unrealCameraRight));
-  FRotator cameraRotator =
-      FMatrix(
-          FVector(
-              unrealCameraFront.x,
-              unrealCameraFront.y,
-              unrealCameraFront.z),
-          FVector(
-              unrealCameraRight.x,
-              unrealCameraRight.y,
-              unrealCameraRight.z),
-          FVector(unrealCameraUp.x, unrealCameraUp.y, unrealCameraUp.z),
-          FVector(0.0f, 0.0f, 0.0f))
-          .Rotator();
+  FVector unrealCenter =
+      pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
+          VecMath::createVector(ecefCenter));
+  FVector unrealCameraFront =
+      (unrealCenter - unrealCameraPosition).GetSafeNormal();
+  FVector unrealCameraRight =
+      FVector::CrossProduct(FVector::ZAxisVector, unrealCameraFront)
+          .GetSafeNormal();
+  FVector unrealCameraUp =
+      FVector::CrossProduct(unrealCameraFront, unrealCameraRight)
+          .GetSafeNormal();
+  FRotator cameraRotator = FMatrix(
+                               unrealCameraFront,
+                               unrealCameraRight,
+                               unrealCameraUp,
+                               FVector::ZeroVector)
+                               .Rotator();
 
   // Update all viewports.
   for (FLevelEditorViewportClient* LinkedViewportClient :
@@ -571,10 +565,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       FViewportCameraTransform& ViewTransform =
           LinkedViewportClient->GetViewTransform();
       LinkedViewportClient->SetViewRotation(cameraRotator);
-      LinkedViewportClient->SetViewLocation(FVector(
-          unrealCameraPosition.x,
-          unrealCameraPosition.y,
-          unrealCameraPosition.z));
+      LinkedViewportClient->SetViewLocation(unrealCameraPosition);
       LinkedViewportClient->Invalidate();
     }
   }
