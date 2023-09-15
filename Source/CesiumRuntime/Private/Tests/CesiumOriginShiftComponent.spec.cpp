@@ -111,21 +111,120 @@ void FCesiumOriginShiftComponentSpec::Define() {
         BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
           FEditorDelegates::PostPIEStarted.Remove(subscriptionPostPIEStarted);
 
+          // Start with the Actor at the origin at LLH 0,0,0.
+          UCesiumGlobeAnchorComponent* pGlobeAnchor =
+              findInPlay(pOriginShiftActor)
+                  ->FindComponentByClass<UCesiumGlobeAnchorComponent>();
+          pGlobeAnchor->MoveToLongitudeLatitudeHeight(FVector(0.0, 0.0, 0.0));
+          findInPlay(pGeoreference)
+              ->SetOriginLongitudeLatitudeHeight(FVector(0.0, 0.0, 0.0));
+          pGlobeAnchor->SnapToEastSouthUp();
+
+          // Activate georeference origin shifting
           findInPlay(pOriginShiftComponent)
               ->SetMode(ECesiumOriginShiftMode::ChangeCesiumGeoreference);
 
-          // Move to roughtly the other side of the Earth.
+          // Move it to 90 degrees longitude.
           FVector location = FVector(
+              CesiumGeospatial::Ellipsoid::WGS84.getMaximumRadius() * 100.0,
               0.0,
-              0.0,
-              -CesiumGeospatial::Ellipsoid::WGS84.getMaximumRadius());
+              -CesiumGeospatial::Ellipsoid::WGS84.getMaximumRadius() * 100.0);
           findInPlay(pOriginShiftActor)->SetActorLocation(location);
+          TestEqual("Longitude", pGlobeAnchor->GetLongitude(), 90.0);
+          TestEqual("Latitude", pGlobeAnchor->GetLatitude(), 0.0);
+          TestEqual("Height", pGlobeAnchor->GetHeight(), 0.0);
+          TestTrue(
+              "Rotation",
+              pGlobeAnchor->GetEastSouthUpRotation().Equals(FQuat::Identity));
         });
         It("", [this]() {
           TestEqual(
               "location",
               findInPlay(pOriginShiftActor)->GetActorLocation(),
               FVector::Zero());
+
+          UCesiumGlobeAnchorComponent* pGlobeAnchor =
+              findInPlay(pOriginShiftActor)
+                  ->FindComponentByClass<UCesiumGlobeAnchorComponent>();
+          TestEqual("Longitude", pGlobeAnchor->GetLongitude(), 90.0);
+          TestEqual("Latitude", pGlobeAnchor->GetLatitude(), 0.0);
+          TestEqual("Height", pGlobeAnchor->GetHeight(), 0.0);
+
+          // The Actor should still be aligned with the new East-South-Up
+          // because moving it will rotate it for globe curvature.
+          TestTrue(
+              "Rotation",
+              pGlobeAnchor->GetEastSouthUpRotation().Equals(FQuat::Identity));
+        });
+        AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          GEditor->RequestEndPlayMap();
+        });
+      });
+
+  Describe(
+      "shifts origin by changing OriginLocation when mode is ChangeWorldOriginLocation",
+      [this]() {
+        LatentBeforeEach(
+            EAsyncExecution::TaskGraphMainThread,
+            [this](const FDoneDelegate& done) {
+              subscriptionPostPIEStarted =
+                  FEditorDelegates::PostPIEStarted.AddLambda(
+                      [done](bool isSimulating) { done.Execute(); });
+              FRequestPlaySessionParams params{};
+              GEditor->RequestPlaySession(params);
+            });
+        BeforeEach(EAsyncExecution::TaskGraphMainThread, [this]() {
+          FEditorDelegates::PostPIEStarted.Remove(subscriptionPostPIEStarted);
+
+          // Start with the Actor at the origin at LLH 0,0,0.
+          UCesiumGlobeAnchorComponent* pGlobeAnchor =
+              findInPlay(pOriginShiftActor)
+                  ->FindComponentByClass<UCesiumGlobeAnchorComponent>();
+          pGlobeAnchor->MoveToLongitudeLatitudeHeight(FVector(0.0, 0.0, 0.0));
+          findInPlay(pGeoreference)
+              ->SetOriginLongitudeLatitudeHeight(FVector(0.0, 0.0, 0.0));
+          pGlobeAnchor->SnapToEastSouthUp();
+
+          // Activate georeference origin shifting
+          findInPlay(pOriginShiftComponent)
+              ->SetMode(ECesiumOriginShiftMode::ChangeWorldOriginLocation);
+
+          // Move it to 90 degrees longitude.
+          FVector location = FVector(
+              CesiumGeospatial::Ellipsoid::WGS84.getMaximumRadius() * 100.0,
+              0.0,
+              -CesiumGeospatial::Ellipsoid::WGS84.getMaximumRadius() * 100.0);
+          findInPlay(pOriginShiftActor)->SetActorLocation(location);
+          TestEqual("Longitude", pGlobeAnchor->GetLongitude(), 90.0);
+          TestEqual("Latitude", pGlobeAnchor->GetLatitude(), 0.0);
+          TestEqual("Height", pGlobeAnchor->GetHeight(), 0.0);
+          TestTrue(
+              "Rotation",
+              pGlobeAnchor->GetEastSouthUpRotation().Equals(FQuat::Identity));
+        });
+        It("", [this]() {
+          // Actor should be at the origin, but with a tolerance of 1.0 because
+          // the OriginLocation has integer coordinate values.
+          TestEqual(
+              "location",
+              findInPlay(pOriginShiftActor)->GetActorLocation(),
+              FVector::Zero(),
+              1.0);
+
+          UCesiumGlobeAnchorComponent* pGlobeAnchor =
+              findInPlay(pOriginShiftActor)
+                  ->FindComponentByClass<UCesiumGlobeAnchorComponent>();
+          TestEqual("Longitude", pGlobeAnchor->GetLongitude(), 90.0);
+          TestEqual("Latitude", pGlobeAnchor->GetLatitude(), 0.0);
+          TestEqual("Height", pGlobeAnchor->GetHeight(), 0.0);
+
+          // The Actor will have rotated for globe curvature when it moved, but
+          // because the georeference is still at the old location, the Actor is
+          // no longer aligned with that East-South-Up.
+          TestFalse(
+              "Rotation",
+              pGlobeAnchor->GetEastSouthUpRotation().Equals(
+                  FQuat::MakeFromRotator(FRotator(0.0, 0.0, 90.0))));
         });
         AfterEach(EAsyncExecution::TaskGraphMainThread, [this]() {
           GEditor->RequestEndPlayMap();
