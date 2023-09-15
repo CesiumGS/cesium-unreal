@@ -42,12 +42,9 @@
 // * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
 // not changing.
 //
-// ## Origin Rebased
+// ## OriginLocation Changed
 //
-// * Detected by a call to `ApplyWorldOffset`.
-// * Updates the Actor transform from the existing ECEF transform.
-// * Ignores `AdjustOrientationForGlobeWhenMoving` because the globe position is
-// not changing.
+// * Handled by Unreal's normal `ApplyWorldOffset` mechanism.
 
 namespace {
 

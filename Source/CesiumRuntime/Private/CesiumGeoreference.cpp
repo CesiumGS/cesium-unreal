@@ -208,11 +208,11 @@ void ACesiumGeoreference::SetScale(double NewValue) {
 }
 
 APlayerCameraManager* ACesiumGeoreference::GetSubLevelCamera() const {
-  return this->SubLevelCamera;
+  return this->SubLevelCamera_DEPRECATED;
 }
 
 void ACesiumGeoreference::SetSubLevelCamera(APlayerCameraManager* NewValue) {
-  this->SubLevelCamera = NewValue;
+  this->SubLevelCamera_DEPRECATED = NewValue;
 }
 
 #if WITH_EDITOR
@@ -403,10 +403,6 @@ void ACesiumGeoreference::Tick(float DeltaTime) {
 #if WITH_EDITOR
   _showSubLevelLoadRadii();
 #endif
-
-  // if (this->_shouldManageSubLevels()) {
-  //  _updateSublevelState();
-  //}
 }
 
 void ACesiumGeoreference::Serialize(FArchive& Ar) {
@@ -476,10 +472,10 @@ void ACesiumGeoreference::PostLoad() {
 
     AActor* SubLevelActor = nullptr;
 
-    if (this->SubLevelCamera) {
-      // An explicit SubLevelCamera is specified. If it has a target Actor,
-      // attach a CesiumOriginShiftComponent to that Actor.
-      SubLevelActor = this->SubLevelCamera->ViewTarget.Target.Get();
+    if (this->SubLevelCamera_DEPRECATED) {
+      // An explicit SubLevelCamera_DEPRECATED is specified. If it has a target
+      // Actor, attach a CesiumOriginShiftComponent to that Actor.
+      SubLevelActor = this->SubLevelCamera_DEPRECATED->ViewTarget.Target.Get();
 
       if (!SubLevelActor) {
         UE_LOG(
@@ -493,8 +489,8 @@ void ACesiumGeoreference::PostLoad() {
                  "should be used to control sub-level switching."));
       }
     } else {
-      // No explicit SubLevelCamera, so try to find a Pawn set to auto-possess
-      // player 0.
+      // No explicit SubLevelCamera_DEPRECATED, so try to find a Pawn set to
+      // auto-possess player 0.
       for (TActorIterator<APawn> it(
                GetWorld(),
                APawn::StaticClass(),
@@ -595,7 +591,7 @@ void ACesiumGeoreference::_createSubLevelsFromWorldComposition() {
   }
 
   if (this->CesiumSubLevels_DEPRECATED.IsEmpty() ||
-      !this->_shouldManageSubLevels())
+      !this->GetLevel()->IsPersistentLevel())
     return;
 
   this->Modify();
@@ -759,69 +755,6 @@ GeoTransforms ACesiumGeoreference::GetGeoTransforms() const noexcept {
 FName ACesiumGeoreference::DEFAULT_GEOREFERENCE_TAG =
     FName("DEFAULT_GEOREFERENCE");
 
-bool ACesiumGeoreference::_updateSublevelState() {
-  const TArray<TWeakObjectPtr<ALevelInstance>>& sublevels =
-      this->SubLevelSwitcher->GetRegisteredSubLevelsWeak();
-
-  if (sublevels.Num() == 0) {
-    // If we don't have any known sub-levels, bail quickly to save ourselves a
-    // little work.
-    return false;
-  }
-
-  if (!IsValid(this->SubLevelCamera)) {
-    return false;
-  }
-
-  UWorld* pWorld = this->GetWorld();
-  const FIntVector& originLocation = pWorld->OriginLocation;
-  const FMinimalViewInfo& pov = this->SubLevelCamera->ViewTarget.POV;
-  const FVector& cameraLocation = pov.Location;
-
-  // Transform camera from World to Georeference local frame
-  FVector cameraRelativeToGeoreference =
-      this->GetActorTransform().TransformPosition(cameraLocation);
-
-  // Transform camera from Georeference local frame to ECEF
-  FVector cameraEcef = this->TransformUnrealPositionToEarthCenteredEarthFixed(
-      cameraRelativeToGeoreference);
-
-  ALevelInstance* pClosestActiveLevel = nullptr;
-  double closestLevelDistance = std::numeric_limits<double>::max();
-
-  for (int32 i = 0; i < sublevels.Num(); ++i) {
-    ALevelInstance* pCurrent = sublevels[i].Get();
-    if (!IsValid(pCurrent))
-      continue;
-
-    UCesiumSubLevelComponent* pComponent =
-        pCurrent->FindComponentByClass<UCesiumSubLevelComponent>();
-    if (!IsValid(pComponent))
-      continue;
-
-    if (!pComponent->GetEnabled())
-      continue;
-
-    FVector levelEcef =
-        UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
-            FVector(
-                pComponent->GetOriginLongitude(),
-                pComponent->GetOriginLatitude(),
-                pComponent->GetOriginHeight()));
-
-    double levelDistance = FVector::Distance(levelEcef, cameraEcef);
-    if (levelDistance < pComponent->GetLoadRadius() &&
-        levelDistance < closestLevelDistance) {
-      pClosestActiveLevel = pCurrent;
-      closestLevelDistance = levelDistance;
-    }
-  }
-
-  this->SubLevelSwitcher->SetTargetSubLevel(pClosestActiveLevel);
-
-  return pClosestActiveLevel != nullptr;
-}
-
 void ACesiumGeoreference::_updateCoordinateSystem() {
   if (this->OriginPlacement == EOriginPlacement::CartographicOrigin) {
     FVector origin = this->GetOriginLongitudeLatitudeHeight();
@@ -841,9 +774,4 @@ void ACesiumGeoreference::_updateCoordinateSystem() {
         glm::dvec4(0.0, 0.0, 0.0, 1.0));
     this->_coordinateSystem = LocalHorizontalCoordinateSystem(localToEcef);
   }
-}
-
-bool ACesiumGeoreference::_shouldManageSubLevels() const {
-  // Only a Georeference in the PersistentLevel should manage sub-levels.
-  return this->GetLevel()->IsPersistentLevel();
 }
