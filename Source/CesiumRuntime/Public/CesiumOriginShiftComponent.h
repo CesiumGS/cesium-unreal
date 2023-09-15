@@ -36,7 +36,7 @@ enum class ECesiumOriginShiftMode : uint8 {
    * CesiumGlobeAnchorComponent will appear to move whenever the origin changes.
    *
    * When using this mode, all Cesium3DTileset instances as well as any Actors
-   * with a CesiumGlobeAnchorComponent need to be marked Moveable, because these
+   * with a CesiumGlobeAnchorComponent need to be marked Movable, because these
    * objects _will_ be moved when the origin is shifted.
    */
   ChangeCesiumGeoreference,
