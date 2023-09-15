@@ -38,6 +38,7 @@
 #include "DrawDebugHelpers.h"
 #include "Editor.h"
 #include "EditorViewportClient.h"
+#include "GameFramework/Pawn.h"
 #include "Slate/SceneViewport.h"
 #endif
 
