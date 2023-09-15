@@ -3530,7 +3530,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
         int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual("array size", arraySize, *classProperty.count);
+        TestEqual<int64>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,
@@ -3703,7 +3703,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
           UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(
               property,
               size - 1);
-      TestEqual(
+      TestEqual<int64>(
           "array size",
           UCesiumPropertyArrayBlueprintLibrary::GetSize(array),
           static_cast<int64_t>(0));
@@ -3761,7 +3761,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
         int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual("array size", arraySize, *classProperty.count);
+        TestEqual<int64>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,

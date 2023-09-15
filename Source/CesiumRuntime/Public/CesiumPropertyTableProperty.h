@@ -105,13 +105,6 @@ public:
   }
 
 private:
-  template <typename T, typename... VariantType>
-  static bool
-  holdsPropertyAlternative(const std::variant<VariantType...>& variant) {
-    return std::holds_alternative<CesiumGltf::PropertyTablePropertyView<T>>(
-        variant);
-  }
-
   ECesiumPropertyTablePropertyStatus _status;
 
   using PropertyType = std::variant<
