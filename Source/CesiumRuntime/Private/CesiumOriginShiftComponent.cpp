@@ -71,6 +71,9 @@ void UCesiumOriginShiftComponent::TickComponent(
     FActorComponentTickFunction* ThisTickFunction) {
   Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+  if (TickType != ELevelTick::LEVELTICK_All)
+    return;
+
   if (!this->IsActive() || this->Mode == ECesiumOriginShiftMode::Disabled)
     return;
 
