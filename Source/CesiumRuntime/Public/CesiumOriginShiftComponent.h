@@ -36,7 +36,8 @@ enum class ECesiumOriginShiftMode : uint8 {
    * CesiumGlobeAnchorComponent will appear to move whenever the origin changes.
    *
    * When using this mode, all Cesium3DTileset instances as well as any Actors
-   * with a CesiumGlobeAnchorComponent need to be marked Moveable.
+   * with a CesiumGlobeAnchorComponent need to be marked Moveable, because these
+   * objects _will_ be moved when the origin is shifted.
    */
   ChangeCesiumGeoreference,
 
@@ -52,31 +53,6 @@ enum class ECesiumOriginShiftMode : uint8 {
    */
   ChangeWorldOriginLocation
 };
-
-/// <summary>
-/// Automatically shifts the origin of a <see cref="CesiumGeoreference"/> as the
-/// object to which it is attached moves. This improves rendering precision by
-/// keeping coordinate values small.
-/// </summary>
-/// <remarks>
-/// <para>
-/// This component is typically attached to a camera, and it automatically
-/// updates the <see cref="CesiumGeoreference"/> to keep its origin near the
-/// location of the camera. This improves rendering precision by keeping the
-/// coordinate values of objects that are near the camera as small as possible.
-/// A game object with this component must be nested inside a <see
-/// cref="CesiumGeoreference"/>, and it must also have a <see
-/// cref="CesiumGlobeAnchor"/>. It is essential to add a <see
-/// cref="CesiumGlobeAnchor"/> to all other objects in the scene as well;
-/// otherwise, they will appear to move when the origin is shifted.
-/// </para>
-/// <para>
-/// This component also switches between <see cref="CesiumSubScene"/> instances
-/// based on the distance to them. When inside a sub-scene, the origin shifting
-/// described above is not performed. This allows relatively normal Unity scenes
-/// to be defined at different locations on the globe.
-/// </para>
-/// </remarks>
 
 /**
  * Automatically shifts the origin of the Unreal world coordinate system as the
@@ -132,7 +108,6 @@ private:
       Category = "Cesium",
       Meta = (AllowPrivateAccess))
   double Distance = 0.0;
-
 #pragma endregion
 
 #pragma region Property Accessors
