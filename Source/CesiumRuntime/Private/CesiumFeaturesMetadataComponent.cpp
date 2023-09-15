@@ -1034,7 +1034,6 @@ void GenerateNodesForMetadataPropertyTransforms(
   FString swizzle = GetSwizzleForEncodedType(Property.EncodingDetails.Type);
 
   if (Property.PropertyDetails.bHasNoDataValue) {
-    NodeY += Incr;
     UMaterialExpressionParameter* Parameter =
         GenerateParameterNodeWithGivenType(
             Property.EncodingDetails.Type,
@@ -1068,10 +1067,10 @@ void GenerateNodesForMetadataPropertyTransforms(
         GetOutputTypeForEncodedType(Property.EncodingDetails.Type);
 
     GetNoDataValueFunction->Code = "return " + InputName + swizzle + ";\n";
+    NodeY += Incr;
   }
 
   if (Property.PropertyDetails.bHasDefaultValue) {
-    NodeY += Incr;
     UMaterialExpressionParameter* Parameter =
         GenerateParameterNodeWithGivenType(
             Property.EncodingDetails.Type,
@@ -1107,6 +1106,7 @@ void GenerateNodesForMetadataPropertyTransforms(
 
     // Example: Default = Default_VALUE.xyz;
     GetDefaultValueFunction->Code = "return " + InputName + swizzle + ";\n";
+    NodeY += Incr;
   }
 
   NodeX += 3.5 * Incr;
@@ -1604,7 +1604,7 @@ void GenerateMaterialNodes(
     OneTimeGeneratedNodes.Add(InputMaterial);
   }
 
-  NodeX += PropertyTableSectionLeft + 6 * Incr;
+  NodeX += PropertyTableSectionLeft + 8 * Incr;
 
   UMaterialExpressionSetMaterialAttributes* SetMaterialAttributes = nullptr;
 #if ENGINE_MINOR_VERSION == 0

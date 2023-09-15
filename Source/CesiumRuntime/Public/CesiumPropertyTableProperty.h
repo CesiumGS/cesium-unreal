@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -66,9 +66,9 @@ public:
         _valueType(),
         _normalized(Normalized) {
     if constexpr (Normalized) {
-      _property = NormalizedPropertyTablePropertyViewType(Property);
+      _property = CesiumGltf::NormalizedPropertyTablePropertyViewType(Property);
     } else {
-      _property = PropertyTablePropertyViewType(Property);
+      _property = CesiumGltf::PropertyTablePropertyViewType(Property);
     }
 
     switch (Property.status()) {

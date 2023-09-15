@@ -4,6 +4,7 @@
 
 #include "CesiumGltf/PropertyArrayView.h"
 #include "CesiumGltf/PropertyType.h"
+#include "CesiumGltf/PropertyTypeTraits.h"
 #include "UObject/ObjectMacros.h"
 #include "CesiumMetadataValueType.generated.h"
 

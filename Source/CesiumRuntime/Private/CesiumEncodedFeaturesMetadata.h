@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumMetadataEncodingDetails.h"
 #include "CesiumMetadataValue.h"
 #include "CesiumTextureUtility.h"
 #include "Containers/Array.h"

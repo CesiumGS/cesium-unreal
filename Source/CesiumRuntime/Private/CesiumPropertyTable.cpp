@@ -26,7 +26,7 @@ FCesiumPropertyTable::FCesiumPropertyTable(
   }
 
   // A valid PropertyTableView should have a non-null class.
-  const Class* pClass = propertyTableView.getClass();
+  const CesiumGltf::Class* pClass = propertyTableView.getClass();
   assert(pClass);
 
   if (pClass->name) {

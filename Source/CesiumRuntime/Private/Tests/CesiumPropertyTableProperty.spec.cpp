@@ -3192,10 +3192,10 @@ void FCesiumPropertyTablePropertySpec::Define() {
           FPlane4d(0.0, 0.0, 1.0, -1.0),
           FPlane4d(0.0, 0.0, 0.0, 1.0));
       expected[1] = FMatrix(
-          FPlane4d(0.0,  1.0, 0.0, 0.0),
+          FPlane4d(0.0, 1.0, 0.0, 0.0),
           FPlane4d(-1.0, 0.0, 0.0, 0.0),
-          FPlane4d(0.0,  0.0, 1.0, 1.0),
-          FPlane4d(0.0,  0.0, 0.0, 1.0));
+          FPlane4d(0.0, 0.0, 1.0, 1.0),
+          FPlane4d(0.0, 0.0, 0.0, 1.0));
 
       for (size_t i = 0; i < values.size(); i++) {
         TestEqual(
@@ -3674,7 +3674,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
         FCesiumPropertyArray array =
             UCesiumPropertyTablePropertyBlueprintLibrary::GetArray(property, i);
         int64 arraySize = UCesiumPropertyArrayBlueprintLibrary::GetSize(array);
-        TestEqual("array size", arraySize, *classProperty.count);
+        TestEqual<int64>("array size", arraySize, *classProperty.count);
         FCesiumMetadataValueType valueType(
             ECesiumMetadataType::Scalar,
             ECesiumMetadataComponentType::Int32,
