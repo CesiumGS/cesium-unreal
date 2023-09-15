@@ -20,6 +20,14 @@ void UCesiumOriginShiftComponent::SetMode(ECesiumOriginShiftMode NewMode) {
   this->Mode = NewMode;
 }
 
+double UCesiumOriginShiftComponent::GetDistance() const {
+  return this->Distance;
+}
+
+void UCesiumOriginShiftComponent::SetDistance(double NewDistance) {
+  this->Distance = NewDistance;
+}
+
 UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
   this->PrimaryComponentTick.bCanEverTick = true;
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
@@ -125,8 +133,19 @@ void UCesiumOriginShiftComponent::TickComponent(
 
   Switcher->SetTargetSubLevel(ClosestActiveLevel);
 
-  if (Switcher->GetTargetSubLevel() == nullptr &&
-      Switcher->GetCurrentSubLevel() == nullptr) {
+  bool doOriginShift =
+      Switcher->GetTargetSubLevel() == nullptr &&
+      Switcher->GetCurrentSubLevel() == nullptr &&
+      this->Mode != ECesiumOriginShiftMode::SwitchSubLevelsOnly;
+
+  if (doOriginShift) {
+    AActor* Actor = this->GetOwner();
+    doOriginShift =
+        IsValid(Actor) && Actor->GetActorLocation().SquaredLength() >
+                              this->Distance * this->Distance;
+  }
+
+  if (doOriginShift) {
     if (this->Mode == ECesiumOriginShiftMode::ChangeCesiumGeoreference) {
       Georeference->SetOriginEarthCenteredEarthFixed(ActorEcef);
     } else if (
@@ -143,7 +162,10 @@ void UCesiumOriginShiftComponent::TickComponent(
         int32 X = clampedAdd(OriginLocation.X, WorldPositionInt.X);
         int32 Y = clampedAdd(OriginLocation.Y, WorldPositionInt.Y);
         int32 Z = clampedAdd(OriginLocation.Z, WorldPositionInt.Z);
-        World->SetNewWorldOrigin(FIntVector(X, Y, Z));
+        FIntVector NewOriginLocation(X, Y, Z);
+        if (NewOriginLocation != OriginLocation) {
+          World->SetNewWorldOrigin(NewOriginLocation);
+        }
       }
     }
   }

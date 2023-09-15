@@ -34,6 +34,9 @@ enum class ECesiumOriginShiftMode : uint8 {
    * as to keep the globe's local "up" direction aligned with the +Z axis. Any
    * objects that are not anchored to the globe with a
    * CesiumGlobeAnchorComponent will appear to move whenever the origin changes.
+   *
+   * When using this mode, all Cesium3DTileset instances as well as any Actors
+   * with a CesiumGlobeAnchorComponent need to be marked Moveable.
    */
   ChangeCesiumGeoreference,
 
@@ -50,6 +53,49 @@ enum class ECesiumOriginShiftMode : uint8 {
   ChangeWorldOriginLocation
 };
 
+/// <summary>
+/// Automatically shifts the origin of a <see cref="CesiumGeoreference"/> as the
+/// object to which it is attached moves. This improves rendering precision by
+/// keeping coordinate values small.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This component is typically attached to a camera, and it automatically
+/// updates the <see cref="CesiumGeoreference"/> to keep its origin near the
+/// location of the camera. This improves rendering precision by keeping the
+/// coordinate values of objects that are near the camera as small as possible.
+/// A game object with this component must be nested inside a <see
+/// cref="CesiumGeoreference"/>, and it must also have a <see
+/// cref="CesiumGlobeAnchor"/>. It is essential to add a <see
+/// cref="CesiumGlobeAnchor"/> to all other objects in the scene as well;
+/// otherwise, they will appear to move when the origin is shifted.
+/// </para>
+/// <para>
+/// This component also switches between <see cref="CesiumSubScene"/> instances
+/// based on the distance to them. When inside a sub-scene, the origin shifting
+/// described above is not performed. This allows relatively normal Unity scenes
+/// to be defined at different locations on the globe.
+/// </para>
+/// </remarks>
+
+/**
+ * Automatically shifts the origin of the Unreal world coordinate system as the
+ * object to which this component is attached moves. This improves rendering
+ * precision by keeping coordinate values small, and can also help world
+ * building by keeping the globe's local up direction aligned with the +Z axis.
+ *
+ * This component is typically attached to a camera or Pawn. By default, it only
+ * shifts the origin when entering a new sub-level (a Level Instance Actor with
+ * a CesiumSubLevelComponent attached to it). By changing the Mode and Distance
+ * properties, it can also shift the origin continually when in between
+ * sub-levels (or when not using sub-levels at all).
+ *
+ * It is essential to add a CesiumGlobeAnchorComponent to all other non-globe
+ * aware objects in the level; otherwise, they will appear to move when the
+ * origin is shifted. It is not necessary to anchor objects that are in
+ * sub-levels, because the origin remains constant for the entire time that a
+ * sub-level is active.
+ */
 UCLASS(ClassGroup = "Cesium", Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumOriginShiftComponent : public UActorComponent {
   GENERATED_BODY()
@@ -69,6 +115,24 @@ private:
       Meta = (AllowPrivateAccess))
   ECesiumOriginShiftMode Mode = ECesiumOriginShiftMode::SwitchSubLevelsOnly;
 
+  /**
+   * The maximum distance between the origin of the Unreal coordinate system and
+   * the Actor to which this component is attached. When this distance is
+   * exceeded, the origin is shifted to bring it close to the Actor. This
+   * property is ignored if the Mode property is set to "Disabled" or "Switch
+   * Sub Levels Only".
+   *
+   * When the value of this property is 0.0, the origin is shifted continuously.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      BlueprintReadWrite,
+      BlueprintGetter = GetDistance,
+      BlueprintSetter = SetDistance,
+      Category = "Cesium",
+      Meta = (AllowPrivateAccess))
+  double Distance = 0.0;
+
 #pragma endregion
 
 #pragma region Property Accessors
@@ -86,6 +150,30 @@ public:
    */
   UFUNCTION(BlueprintSetter)
   void SetMode(ECesiumOriginShiftMode NewMode);
+
+  /**
+   * Gets the maximum distance between the origin of the Unreal coordinate
+   * system and the Actor to which this component is attached. When this
+   * distance is exceeded, the origin is shifted to bring it close to the Actor.
+   * This property is ignored if the Mode proeprty is set to "Disabled" or
+   * "Switch Sub Levels Only".
+   *
+   * When the value of this property is 0.0, the origin is shifted continuously.
+   */
+  UFUNCTION(BlueprintGetter)
+  double GetDistance() const;
+
+  /**
+   * Sets the maximum distance between the origin of the Unreal coordinate
+   * system and the Actor to which this component is attached. When this
+   * distance is exceeded, the origin is shifted to bring it close to the Actor.
+   * This property is ignored if the Mode proeprty is set to "Disabled" or
+   * "Switch Sub Levels Only".
+   *
+   * When the value of this property is 0.0, the origin is shifted continuously.
+   */
+  UFUNCTION(BlueprintSetter)
+  void SetDistance(double NewDistance);
 #pragma endregion
 
 public:

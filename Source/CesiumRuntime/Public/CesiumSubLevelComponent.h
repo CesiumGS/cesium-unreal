@@ -38,11 +38,10 @@ class UCesiumSubLevelSwitcherComponent;
  * In the Editor, the currently-active sub-level is selected by clicking the
  * "Eye" icon next to the Level Instance in the Outliner.
  *
- * At runtime, the currently-active sub-level is selected by the object
- * identified by the "Sub Level Camera" property on the "Cesium Georeference".
- * Only if the "Sub Level Camera" is inside a sub-level's "Load Radius" will
- * that sub-level be activated. If multiple sub-levels are in range, only the
- * closest one will be activated.
+ * At runtime, the currently-active sub-level is selected by the Actor with a
+ * CesiumOriginShiftComponent attached to it. If this Actor is inside a
+ * sub-level's "Load Radius" will that sub-level be activated. If multiple
+ * sub-levels are in range, only the closest one will be activated.
  */
 UCLASS(ClassGroup = (Cesium), meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumSubLevelComponent : public UActorComponent {
