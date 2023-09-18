@@ -180,6 +180,9 @@ bool RunLoadTest(
         pass.verifyStep));
   }
 
+  // Wait a bit
+  ADD_LATENT_AUTOMATION_COMMAND(FWaitLatentCommand(2.0f));
+
   // End play in editor
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
 
