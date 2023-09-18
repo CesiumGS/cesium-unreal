@@ -344,7 +344,7 @@ getPixelFormat(FCesiumMetadataEncodingDetails encodingDetails) {
 }
 
 bool isValidPropertyTablePropertyDescription(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property) {
   if (propertyDescription.EncodingDetails.Type ==
       ECesiumEncodedMetadataType::None) {
@@ -424,10 +424,10 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
   for (const auto& pair : properties) {
     const FCesiumPropertyTableProperty& property = pair.Value;
 
-    const FCesiumMetadataPropertyDescription* pDescription =
+    const FCesiumPropertyTablePropertyDescription* pDescription =
         propertyTableDescription.Properties.FindByPredicate(
-            [&key = pair.Key](
-                const FCesiumMetadataPropertyDescription& expectedProperty) {
+            [&key = pair.Key](const FCesiumPropertyTablePropertyDescription&
+                                  expectedProperty) {
               return key == expectedProperty.Name;
             });
 

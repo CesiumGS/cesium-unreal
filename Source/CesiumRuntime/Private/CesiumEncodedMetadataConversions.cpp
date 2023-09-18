@@ -112,7 +112,7 @@ CesiumGetEncodedMetadataTypeComponentCount(ECesiumEncodedMetadataType type) {
 
 namespace {
 void coerceAndEncodeArrays(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -166,7 +166,7 @@ void coerceAndEncodeArrays(
 
 template <typename T>
 void coerceAndEncodeScalars(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData) {
   int64 propertySize =
@@ -190,7 +190,7 @@ void coerceAndEncodeScalars(
 
 template <typename T>
 void coerceAndEncodeVec2s(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -230,7 +230,7 @@ void coerceAndEncodeVec2s(
 
 template <typename T>
 void coerceAndEncodeVec3s(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -269,7 +269,7 @@ void coerceAndEncodeVec3s(
 
 template <typename T>
 void coerceAndEncodeVec4s(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -305,7 +305,7 @@ void coerceAndEncodeVec4s(
 } // namespace
 
 bool CesiumEncodedMetadataCoerce::canEncode(
-    const FCesiumMetadataPropertyDescription& description) {
+    const FCesiumPropertyTablePropertyDescription& description) {
   const ECesiumMetadataType type = description.PropertyDetails.Type;
 
   if (type == ECesiumMetadataType::Boolean ||
@@ -347,7 +347,7 @@ bool CesiumEncodedMetadataCoerce::canEncode(
 }
 
 void CesiumEncodedMetadataCoerce::encode(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {
@@ -480,7 +480,7 @@ glm::u8vec3 getRgbColorFromString(const FString& rgbString) {
 } // namespace
 
 bool CesiumEncodedMetadataParseColorFromString::canEncode(
-    const FCesiumMetadataPropertyDescription& description) {
+    const FCesiumPropertyTablePropertyDescription& description) {
   return description.PropertyDetails.Type == ECesiumMetadataType::String &&
          !description.PropertyDetails.bIsArray &&
          (description.EncodingDetails.Type ==
@@ -489,7 +489,7 @@ bool CesiumEncodedMetadataParseColorFromString::canEncode(
 }
 
 void CesiumEncodedMetadataParseColorFromString::encode(
-    const FCesiumMetadataPropertyDescription& propertyDescription,
+    const FCesiumPropertyTablePropertyDescription& propertyDescription,
     const FCesiumPropertyTableProperty& property,
     void* pTextureData,
     size_t pixelSize) {

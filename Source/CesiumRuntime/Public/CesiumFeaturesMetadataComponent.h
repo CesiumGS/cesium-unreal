@@ -118,7 +118,7 @@ struct CESIUMRUNTIME_API FCesiumPrimitiveFeaturesDescription {
  * access on the GPU.
  */
 USTRUCT()
-struct CESIUMRUNTIME_API FCesiumMetadataPropertyDescription {
+struct CESIUMRUNTIME_API FCesiumPropertyTablePropertyDescription {
   GENERATED_USTRUCT_BODY()
 
   /**
@@ -163,7 +163,7 @@ struct CESIUMRUNTIME_API FCesiumPropertyTableDescription {
    * @brief Descriptions of the properties to upload to the GPU.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
-  TArray<FCesiumMetadataPropertyDescription> Properties;
+  TArray<FCesiumPropertyTablePropertyDescription> Properties;
 };
 
 /**
@@ -183,8 +183,8 @@ struct CESIUMRUNTIME_API FCesiumPropertyTextureDescription {
   /**
    * @brief Descriptions of the properties to upload to the GPU.
    */
-  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
-  TArray<FCesiumMetadataPropertyDescription> Properties;
+  // UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty =
+  // "Name")) TArray<FCesiumPropertyTexturePropertyDescription> Properties;
 };
 
 /**
