@@ -233,8 +233,6 @@ FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable);
  *
  * This is used to name the texture parameter corresponding to this property in
  * the generated Unreal material.
- *
- * @param PropertyTable The property table
  */
 FString getMaterialNameForPropertyTableProperty(
     const FString& propertyTableName,

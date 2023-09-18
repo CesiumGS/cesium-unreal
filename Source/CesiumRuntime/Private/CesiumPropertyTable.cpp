@@ -25,15 +25,6 @@ FCesiumPropertyTable::FCesiumPropertyTable(
     return;
   }
 
-  // A valid PropertyTableView should have a non-null class.
-  const CesiumGltf::Class* pClass = propertyTableView.getClass();
-  assert(pClass);
-
-  if (pClass->name) {
-    // Prefer the class's display name over its definition name.
-    _className = FString(pClass->name->c_str());
-  }
-
   propertyTableView.forEachProperty([&properties = _properties](
                                         const std::string& propertyName,
                                         auto propertyValue) mutable {
