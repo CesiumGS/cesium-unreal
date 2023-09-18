@@ -201,6 +201,11 @@ void FSubLevelsSpec::Define() {
 
           pSubLevel2->SetIsTemporarilyHiddenInEditor(false);
         });
+        LatentBeforeEach(
+            EAsyncExecution::TaskGraphMainThread,
+            [this](const FDoneDelegate& done) {
+              waitForNextFrame(done, pWorld, 5.0f);
+            });
         It("", EAsyncExecution::TaskGraphMainThread, [this]() {
           TestTrue(
               "pSubLevel1 is hidden",

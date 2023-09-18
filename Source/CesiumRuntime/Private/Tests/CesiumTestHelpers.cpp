@@ -44,6 +44,17 @@ void TestRotatorsAreEquivalent(
   pSpec->TestEqual("zEcefActual", zEcefActual, zEcefExpected);
 }
 
+void waitForNextFrame(
+    const FDoneDelegate& done,
+    UWorld* pWorld,
+    float timeoutSeconds) {
+  uint64 start = GFrameCounter;
+  waitFor(done, pWorld, timeoutSeconds, [start]() {
+    uint64 current = GFrameCounter;
+    return current > start;
+  });
+}
+
 FName getUniqueTag(AActor* pActor) {
   return FName(FString::Printf(TEXT("%lld"), pActor));
 }
