@@ -64,6 +64,7 @@ private:
   // To allow the sub-level to register/unregister itself with the functions
   // below.
   friend class UCesiumSubLevelComponent;
+  friend class CesiumEditorSubLevelMutex;
 
   /**
    * Registers a sub-level with this switcher. The switcher will ensure that
