@@ -2032,10 +2032,14 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
   }
 
-  const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode
-          ? this->_pTileset->updateViewOffline(frustums)
-          : this->_pTileset->updateView(frustums, DeltaTime);
+  Cesium3DTilesSelection::ViewUpdateResult result;
+  if (this->_captureMovieMode) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
+    result = this->_pTileset->updateViewOffline(frustums);
+  } else {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
+    result = this->_pTileset->updateView(frustums, DeltaTime);
+  }
   updateLastViewUpdateResultState(result);
 
   removeCollisionForTiles(result.tilesFadingOut);
