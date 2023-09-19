@@ -1,5 +1,13 @@
 # Change Log
 
+### v1.31.0 - 2023-09-20
+
+##### Additions :tada:
+
+- Added support for Unreal Engine 5.3. There is current a known issue with `Cesium3DTileset` textures on iOS, so we recommend that you continue to use Unreal Engine 5.2 for the time being if you are deploying to iOS.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.1 to v0.27.2. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.30.1 - 2023-09-03
 
 This release fixes an important bug by updating [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.0 to v0.27.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
