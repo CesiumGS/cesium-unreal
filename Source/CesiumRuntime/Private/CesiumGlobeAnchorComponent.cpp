@@ -4,8 +4,10 @@
 #include "CesiumActors.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeoreference.h"
+#include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumRuntime.h"
 #include "CesiumTransforms.h"
+#include "CesiumWgs84Ellipsoid.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -103,9 +105,8 @@ void UCesiumGlobeAnchorComponent::SnapLocalUpToEllipsoidNormal() {
   const glm::dvec3 actorUp = glm::normalize(currentRotation[2]);
 
   // Compute the surface normal of the ellipsoid
-  const glm::dvec3 ellipsoidNormal =
-      this->ResolvedGeoreference->ComputeGeodeticSurfaceNormal(
-          VecMath::createVector3D(this->GetECEF()));
+  glm::dvec3 ellipsoidNormal = VecMath::createVector3D(
+      UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(this->GetECEF()));
 
   // Find the shortest rotation to align local up with the ellipsoid normal
   const glm::dquat R = glm::rotation(actorUp, ellipsoidNormal);
@@ -148,8 +149,8 @@ void UCesiumGlobeAnchorComponent::SnapToEastSouthUp() {
 
   // Compute the desired new orientation.
   glm::dmat3 newOrientation =
-      this->ResolvedGeoreference->GetGeoTransforms().ComputeEastNorthUpToEcef(
-          glm::dvec3(translation)) *
+      glm::dmat3(CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(
+          glm::dvec3(translation))) *
       glm::dmat3(CesiumTransforms::unrealToOrFromCesium);
 
   // Scale the new orientation
@@ -214,8 +215,8 @@ FVector UCesiumGlobeAnchorComponent::GetLongitudeLatitudeHeight() const {
     return FVector(0.0);
   }
 
-  return this->ResolvedGeoreference->TransformEcefToLongitudeLatitudeHeight(
-      this->GetECEF());
+  return UCesiumWgs84Ellipsoid::
+      EarthCenteredEarthFixedToLongitudeLatitudeHeight(this->GetECEF());
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
@@ -231,8 +232,8 @@ void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
   }
 
   this->MoveToECEF(
-      this->ResolvedGeoreference->TransformLongitudeLatitudeHeightToEcef(
-          TargetLongitudeLatitudeHeight));
+      UCesiumWgs84Ellipsoid::LongitudeLatitudeHeightToEarthCenteredEarthFixed(
+          VecMath::createVector(TargetLongitudeLatitudeHeight)));
 }
 
 void UCesiumGlobeAnchorComponent::MoveToLongitudeLatitudeHeight(
@@ -433,15 +434,22 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
   // Compute the surface normal rotation between the old and new positions.
   const glm::dvec3 newGlobePosition = glm::dvec3(newGlobeTransform[3]);
+
+  const glm::dmat3 ecefToUnreal =
+      glm::dmat3(this->ResolvedGeoreference->getCoordinateSystem()
+                     .getEcefToLocalTransformation());
+  const glm::dvec3 oldEllipsoidNormalUnreal = glm::normalize(
+      ecefToUnreal * CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+                         oldGlobePosition));
+  const glm::dvec3 newEllipsoidNormalUnreal = glm::normalize(
+      ecefToUnreal * CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(
+                         newGlobePosition));
   const glm::dquat ellipsoidNormalRotation =
-      this->ResolvedGeoreference->GetGeoTransforms()
-          .ComputeSurfaceNormalRotationUnreal(
-              oldGlobePosition,
-              newGlobePosition);
+      glm::rotation(oldEllipsoidNormalUnreal, newEllipsoidNormalUnreal);
 
   // Adjust the new rotation by the surface normal rotation
   const glm::dquat rotation = VecMath::createQuaternion(
-      InRootComponent->GetComponentRotation().Quaternion());
+      InRootComponent->GetRelativeRotation().Quaternion());
   const glm::dquat adjustedRotation = ellipsoidNormalRotation * rotation;
 
 #if WITH_EDITOR
@@ -451,7 +459,7 @@ void UCesiumGlobeAnchorComponent::_onActorTransformChanged(
 
   // Set the new Actor transform, taking care not to do this recursively.
   this->_updatingActorTransform = true;
-  InRootComponent->SetWorldRotation(
+  InRootComponent->SetRelativeRotation(
       VecMath::createQuaternion(adjustedRotation),
       false,
       nullptr,
@@ -507,7 +515,7 @@ UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
 
   // Get the relative world transform.
   glm::dmat4 actorTransform = VecMath::createMatrix4D(
-      pOwnerRoot->GetComponentTransform().ToMatrixWithScale());
+      pOwnerRoot->GetRelativeTransform().ToMatrixWithScale());
 
   // Convert to an absolute world transform
   actorTransform[3] += CesiumActors::getWorldOrigin4D(pOwner);
@@ -515,8 +523,8 @@ UCesiumGlobeAnchorComponent::_updateGlobeTransformFromActorTransform() {
 
   // Convert to ECEF
   const glm::dmat4& absoluteUnrealToEcef =
-      this->ResolvedGeoreference->GetGeoTransforms()
-          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
+      this->ResolvedGeoreference->getCoordinateSystem()
+          .getLocalToEcefTransformation();
 
   this->_actorToECEF = absoluteUnrealToEcef * actorTransform;
   this->_actorToECEFIsValid = true;
@@ -562,15 +570,15 @@ FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
         TEXT(
             "UCesiumGlobeAnchorComponent %s cannot update Actor transform from Globe transform because the Globe transform is not known."),
         *this->GetName());
-    return pOwnerRoot->GetComponentTransform();
+    return pOwnerRoot->GetRelativeTransform();
   }
 
-  const GeoTransforms& geoTransforms =
-      this->ResolveGeoreference()->GetGeoTransforms();
+  const CesiumGeospatial::LocalHorizontalCoordinateSystem& coordinateSystem =
+      this->ResolveGeoreference()->getCoordinateSystem();
 
   // Transform ECEF to UE absolute world
   const glm::dmat4& ecefToAbsoluteUnreal =
-      geoTransforms.GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+      coordinateSystem.getEcefToLocalTransformation();
   glm::dmat4 actorToUnreal = ecefToAbsoluteUnreal * this->_actorToECEF;
 
   // Transform UE absolute world to UE relative world
@@ -587,7 +595,7 @@ FTransform UCesiumGlobeAnchorComponent::_updateActorTransformFromGlobeTransform(
 
   // Set the Actor transform
   this->_updatingActorTransform = true;
-  pOwnerRoot->SetWorldTransform(
+  pOwnerRoot->SetRelativeTransform(
       actorTransform,
       false,
       nullptr,
@@ -623,10 +631,9 @@ const glm::dmat4& UCesiumGlobeAnchorComponent::_setGlobeTransform(
   // position on the globe.
 
   // Compute the surface normal rotation between the old and new positions.
-  const glm::dquat ellipsoidNormalRotation =
-      this->ResolveGeoreference()
-          ->GetGeoTransforms()
-          .ComputeSurfaceNormalRotation(oldPosition, newPosition);
+  const glm::dquat ellipsoidNormalRotation = glm::rotation(
+      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(oldPosition),
+      CesiumGeospatial::Ellipsoid::WGS84.geodeticSurfaceNormal(newPosition));
 
   // Adjust the new rotation by the surface normal rotation
   glm::dmat3 newRotation =
@@ -698,8 +705,11 @@ void UCesiumGlobeAnchorComponent::_applyCartographicProperties() {
 
   glm::dmat4 transform = this->_actorToECEF;
   glm::dvec3 newEcef =
-      pGeoreference->GetGeoTransforms().TransformLongitudeLatitudeHeightToEcef(
-          glm::dvec3(this->Longitude, this->Latitude, this->Height));
+      CesiumGeospatial::Ellipsoid::WGS84.cartographicToCartesian(
+          CesiumGeospatial::Cartographic::fromDegrees(
+              this->Longitude,
+              this->Latitude,
+              this->Height));
   transform[3] = glm::dvec4(newEcef, 1.0);
   this->_setGlobeTransform(transform);
 
@@ -721,11 +731,18 @@ void UCesiumGlobeAnchorComponent::_updateCartographicProperties() {
         *this->GetName());
   }
 
-  glm::dvec3 llh =
-      pGeoreference->GetGeoTransforms().TransformEcefToLongitudeLatitudeHeight(
+  std::optional<CesiumGeospatial::Cartographic> llh =
+      CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(
           glm::dvec3(this->_actorToECEF[3]));
-
-  this->Longitude = llh.x;
-  this->Latitude = llh.y;
-  this->Height = llh.z;
+  if (llh) {
+    this->Longitude = CesiumUtility::Math::radiansToDegrees(llh->longitude);
+    this->Latitude = CesiumUtility::Math::radiansToDegrees(llh->latitude);
+    this->Height = llh->height;
+  } else {
+    // Too close to the center of the Earth to compute
+    // Longitude/Latitude/Height. So use a default.
+    this->Longitude = 0.0;
+    this->Latitude = 0.0;
+    this->Height = 0.0;
+  }
 }

@@ -116,7 +116,7 @@ void FSubLevelsSpec::Define() {
               "pSubLevel1 is hidden",
               pSubLevel1->IsTemporarilyHiddenInEditor(true));
 
-          pGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+          pGeoreference->SetOriginLongitudeLatitudeHeight(
               FVector(1.0, 2.0, 3.0));
           TestEqual("Longitude", pLevelComponent1->GetOriginLongitude(), 1.0);
           TestEqual("Latitude", pLevelComponent1->GetOriginLatitude(), 2.0);
@@ -137,9 +137,9 @@ void FSubLevelsSpec::Define() {
 
           pLevelComponent1->SetOriginLongitudeLatitudeHeight(
               FVector(4.0, 5.0, 6.0));
-          TestEqual("Longitude", pGeoreference->OriginLongitude, 4.0);
-          TestEqual("Latitude", pGeoreference->OriginLatitude, 5.0);
-          TestEqual("Height", pGeoreference->OriginHeight, 6.0);
+          TestEqual("Longitude", pGeoreference->GetOriginLongitude(), 4.0);
+          TestEqual("Latitude", pGeoreference->GetOriginLatitude(), 5.0);
+          TestEqual("Height", pGeoreference->GetOriginHeight(), 6.0);
         });
       });
 
@@ -157,9 +157,9 @@ void FSubLevelsSpec::Define() {
         It("", EAsyncExecution::TaskGraphMainThread, [this]() {
           // Verify that the previously-active sub-level isn't affected by
           // georeference origin changes.
-          double expectedLongitude = pGeoreference->OriginLongitude;
-          double expectedLatitude = pGeoreference->OriginLatitude;
-          double expectedHeight = pGeoreference->OriginHeight;
+          double expectedLongitude = pGeoreference->GetOriginLongitude();
+          double expectedLatitude = pGeoreference->GetOriginLatitude();
+          double expectedHeight = pGeoreference->GetOriginHeight();
 
           TestNotEqual("Longitude", expectedLongitude, 7.0);
           TestNotEqual("Latitude", expectedLatitude, 8.0);
@@ -169,13 +169,13 @@ void FSubLevelsSpec::Define() {
               FVector(7.0, 8.0, 9.0));
           TestEqual(
               "Longitude",
-              pGeoreference->OriginLongitude,
+              pGeoreference->GetOriginLongitude(),
               expectedLongitude);
           TestEqual(
               "Latitude",
-              pGeoreference->OriginLatitude,
+              pGeoreference->GetOriginLatitude(),
               expectedLatitude);
-          TestEqual("Height", pGeoreference->OriginHeight, expectedHeight);
+          TestEqual("Height", pGeoreference->GetOriginHeight(), expectedHeight);
         });
       });
 
@@ -233,11 +233,12 @@ void FSubLevelsSpec::Define() {
       // Move the player within range of the first sub-level
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
           findInPlay(pLevelComponent1);
-      FVector origin1 = findInPlay(pGeoreference)
-                            ->TransformLongitudeLatitudeHeightToUnreal(FVector(
-                                pPlayLevelComponent1->GetOriginLongitude(),
-                                pPlayLevelComponent1->GetOriginLatitude(),
-                                pPlayLevelComponent1->GetOriginHeight()));
+      FVector origin1 =
+          findInPlay(pGeoreference)
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(FVector(
+                  pPlayLevelComponent1->GetOriginLongitude(),
+                  pPlayLevelComponent1->GetOriginLatitude(),
+                  pPlayLevelComponent1->GetOriginHeight()));
       findInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
@@ -284,11 +285,12 @@ void FSubLevelsSpec::Define() {
       // Move the player within range of the first sub-level
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
           findInPlay(pLevelComponent1);
-      FVector origin1 = findInPlay(pGeoreference)
-                            ->TransformLongitudeLatitudeHeightToUnreal(FVector(
-                                pPlayLevelComponent1->GetOriginLongitude(),
-                                pPlayLevelComponent1->GetOriginLatitude(),
-                                pPlayLevelComponent1->GetOriginHeight()));
+      FVector origin1 =
+          findInPlay(pGeoreference)
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(FVector(
+                  pPlayLevelComponent1->GetOriginLongitude(),
+                  pPlayLevelComponent1->GetOriginLatitude(),
+                  pPlayLevelComponent1->GetOriginHeight()));
       findInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(
@@ -305,7 +307,7 @@ void FSubLevelsSpec::Define() {
           findInPlay(pLevelComponent1);
       FVector origin1 =
           findInPlay(pGeoreference)
-              ->TransformLongitudeLatitudeHeightToUnreal(FVector(
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(FVector(
                   pPlayLevelComponent1->GetOriginLongitude(),
                   pPlayLevelComponent1->GetOriginLatitude(),
                   pPlayLevelComponent1->GetOriginHeight() + 100000.0));
@@ -316,11 +318,12 @@ void FSubLevelsSpec::Define() {
       // inside it.
       UCesiumSubLevelComponent* pPlayLevelComponent1 =
           findInPlay(pLevelComponent1);
-      FVector origin1 = findInPlay(pGeoreference)
-                            ->TransformLongitudeLatitudeHeightToUnreal(FVector(
-                                pPlayLevelComponent1->GetOriginLongitude(),
-                                pPlayLevelComponent1->GetOriginLatitude(),
-                                pPlayLevelComponent1->GetOriginHeight()));
+      FVector origin1 =
+          findInPlay(pGeoreference)
+              ->TransformLongitudeLatitudeHeightPositionToUnreal(FVector(
+                  pPlayLevelComponent1->GetOriginLongitude(),
+                  pPlayLevelComponent1->GetOriginLatitude(),
+                  pPlayLevelComponent1->GetOriginHeight()));
       findInPlay(pPawn)->SetActorLocation(origin1);
     });
     LatentBeforeEach(

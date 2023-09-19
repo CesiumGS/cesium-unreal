@@ -15,6 +15,10 @@ on:
       upload-package-base-name:
         required: true
         type: string
+      extra-choco-packages:
+        required: false
+        type: string
+        default: ''
 jobs:
   build:
     runs-on: ["self-hosted","windows","x64","${{ inputs.unreal-runner-label }}"]
@@ -24,9 +28,10 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0 # so that `git describe` works.
-      - name: Install dotnetcore-sdk
+      - name: Install Extra Dependencies
+        if: ${{ inputs.extra-choco-packages }}
         run: |
-          choco install -y dotnetcore-sdk
+          choco install -y ${{ inputs.extra-choco-packages }}
       - name: Set environment variables
         run: |
           $env:CESIUM_UNREAL_VERSION=$(git describe)
@@ -61,7 +66,7 @@ jobs:
         run: |
           ((Get-Content -path CesiumForUnreal.uplugin -Raw) -replace '"EngineVersion": "5.0.0"','"EngineVersion": "${{ inputs.unreal-engine-version }}"') | Set-Content -Path CesiumForUnreal.uplugin
       - name: Build CesiumForUnreal plugin
-        timeout-minutes: 120      
+        timeout-minutes: 120
         run: |
           echo "Temp directory: $env:TEMP"
           cd "$env:UNREAL_BATCH_FILES_PATH"

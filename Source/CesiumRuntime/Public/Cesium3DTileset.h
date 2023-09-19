@@ -81,31 +81,24 @@ public:
   virtual ~ACesium3DTileset();
 
 private:
-  /**
-   * The component mobility to use for the tileset.
-   */
+  UPROPERTY(VisibleAnywhere, Category = "Cesium")
+  USceneComponent* Root;
+
   UPROPERTY(
-      EditAnywhere,
-      BlueprintReadWrite,
-      BlueprintGetter = "GetMobility",
-      BlueprintSetter = "SetMobility",
-      Category = "Cesium",
-      Meta = (AllowPrivateAccess))
-  TEnumAsByte<EComponentMobility::Type> Mobility = EComponentMobility::Static;
+      Meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use the Mobility property on the RootComponent instead."))
+  TEnumAsByte<EComponentMobility::Type> Mobility_DEPRECATED =
+      EComponentMobility::Static;
 
 public:
-  /**
-   * Set a component mobility to use for this tileset.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(BlueprintCallable, meta = (DeprecatedFunction))
   EComponentMobility::Type GetMobility() const {
-    return (EComponentMobility::Type)Mobility;
+    return this->RootComponent->Mobility;
   }
-
-  /**
-   * Set a component mobility to use for this tileset.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  UFUNCTION(BlueprintCallable, meta = (DeprecatedFunction))
   void SetMobility(EComponentMobility::Type NewMobility);
 
 private:

@@ -23,10 +23,6 @@ UCesiumGltfPrimitiveComponent::~UCesiumGltfPrimitiveComponent() {}
 
 void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
     const glm::dmat4& CesiumToUnrealTransform) {
-  this->SetUsingAbsoluteLocation(true);
-  this->SetUsingAbsoluteRotation(true);
-  this->SetUsingAbsoluteScale(true);
-
   const FTransform transform = FTransform(VecMath::createMatrix(
       CesiumToUnrealTransform * this->HighPrecisionNodeTransform));
 
@@ -47,7 +43,7 @@ void UCesiumGltfPrimitiveComponent::UpdateTransformFromCesium(
     // too, so in a relative sense the object isn't actually moving. This isn't
     // a perfect assumption, of course.
     this->SetRelativeTransform_Direct(transform);
-    this->SetComponentToWorld(transform);
+    this->UpdateComponentToWorld();
     this->MarkRenderTransformDirty();
     this->SendPhysicsTransform(ETeleportType::ResetPhysics);
   }
