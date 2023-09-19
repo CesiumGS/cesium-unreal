@@ -241,11 +241,13 @@ Previously, a `UCesiumEncodedMetadataComponent` could be attached to a Cesium3DT
 
 ![CesiumFeaturesMetadataComponent](Images/cesiumFeaturesMetadataComponent.jpeg)
 
-Like its predecessor, the `UCesiumFeaturesMetadataComponent` contains descriptions of the feature ID sets and metadata in the tileset. These descriptions can be manually specified, or automatically generated using the **"Auto Fill"** button. **"Auto Fill"** will populate the descriptions based on the tiles currently in-view in the editor.
+Like its predecessor, the `UCesiumFeaturesMetadataComponent` contains descriptions of the feature ID sets and metadata properties in the tileset. These descriptions can be manually specified, or automatically generated using the **"Auto Fill"** button. **"Auto Fill"** will populate the descriptions based on the tiles currently in-view in the editor.
 
 ![Auto Fill button on the CesiumFeaturesMetadataComponent](Images/autoFill.jpeg)
 
-These descriptions indicate which feature ID sets or metadata should be *encoded* for access on the GPU. Encoding involves converting property values to a GPU-accessible type, then passing them into Unreal materials via texture. Everything that is listed in the descriptions will be encoded, and anything not listed will be skipped. As such, only include feature ID sets and metadata that will be actually used by the application. Otherwise, the unused properties may affect memory and performance.
+These descriptions indicate which feature ID sets or metadata should be made accessible to Unreal materials through the GPU. This may involve *encoding* – converting property values to a GPU-accessible type, then passing them to materials via texture. The descriptions will later be used by **"Generate Material"** to populate a material layer with the described elements.
+
+Everything that is listed in the descriptions will be encoded or otherwise passed to the material, and anything not listed will be skipped. As such, only include feature ID sets and metadata that will be actually used by the application. Otherwise, the unused properties may affect memory and performance.
 
 ### Feature ID Set Descriptions
 
@@ -261,7 +263,7 @@ The glTF primitives across the tileset can contain different and multiple featur
 
 ### Property Table Descriptions
 
-Property tables across the tileset will be distinguished by name. If a property table is not named in the `EXT_structural_metadata` extension, then the name of its class will be used instead. For example, if an unnamed property table provides data for the class `buildings`, it will labeled as "`buildings`" in the metadata description.
+Property tables across the tileset will also be distinguished by name. If a property table is not named in the `EXT_structural_metadata` extension, then the name of its class will be used instead. For example, if an unnamed property table provides data for the class `buildings`, it will labeled as "`buildings`" in the metadata description.
 
 ![Multiple property table descriptions](Images/propertyTableDescriptionExample.jpeg)
 
@@ -269,17 +271,18 @@ Each property table description contains a list of properties, also distinguishe
 
 ![Multiple property table property descriptions](Images/propertyTablePropertyDescriptionExample.jpeg)
 
-> **Note**: glTF models across a tileset can contain property tables with the same name, but different schemas. Additionally, property tables with the same name may only contain subsets of the properties defined in the schema. As such, not all properties in a property table description are necessary present in every glTF model.
->
-> If a property is missing from a property table, it will pass default values to its corresponding parameter in the Unreal material. For example, if a scalar property is missing from a model, the material will receive zero values.
+> **Note**: glTF models across a tileset can contain property tables with the same name, but potentially different schemas. As such, not all properties in a property table description are necessary present in every glTF model. If a property is missing from a property table, it will pass default values to its corresponding parameter in the Unreal material. For example, if a scalar property is missing from a model, the material will receive zero values.
 
-### Property Descriptions (WIP)
+### Property Descriptions
 
-The "Property Details" display detailed information about the type of the property, as well as any special characteristics it has (e.g., if it is normalized). This information is taken from its class property definition in the `EXT_structural_metadata` extension.
+Metadata properties are distinguished by their names relative to the property tables that they belong to. This means that the same property name may found on different property tables, but each instance represents a separate property.
+
+Each property contains a "Property Details" section, which displays detailed information about the property's type. This also indicates if the property has any special characteristics it has, e.g., if it is normalized, or if it has an offset or scale. This information is taken from its class property definition in the `EXT_structural_metadata` extension.
 
 ![Example property details](Images/propertyDetailsExample.jpeg)
 
-The "Encoding Details" describe how this property should be encoded for access in the Unreal material.
+These property details inform what nodes will be
+For property table properties, the raw data is stored in parallel buffers, which cannot be passed as-is to the GPU. Instead, their data is encoded into textures. The "Encoding Details" of a property describes how a property should be encoded for access in the Unreal material.
 
 ![Example encoding details](Images/encodingDetailsExample.jpeg)
 
@@ -292,3 +295,6 @@ Unfortunately, not all properties can be neatly encoded into textures. The follo
 - Arrays of non-scalar and non-boolean elements
 
 Additionally, if a property contains arrays of fixed length, only up to the first four components will be encoded.
+
+### Generating Materials
+
