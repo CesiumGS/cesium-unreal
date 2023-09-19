@@ -140,7 +140,7 @@ void setupForGoogleTiles(LoadTestContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+  context.georeference->SetOriginLongitudeLatitudeHeight(
       targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
@@ -167,7 +167,7 @@ void setupForDenver(LoadTestContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
+  context.georeference->SetOriginLongitudeLatitudeHeight(
       targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
