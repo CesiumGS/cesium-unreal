@@ -2083,73 +2083,71 @@ static void SetFeaturesMetadataParameterValues(
     UMaterialInstanceDynamic* pMaterial,
     EMaterialParameterAssociation association,
     int32 index) {
-  if (!encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
-    return;
-  }
+  if (encodePrimitiveFeaturesGameThreadPart(loadResult.EncodedFeatures)) {
+    for (const auto& textureCoordinateSet :
+         loadResult.featuresMetadataTexCoordParameters) {
+      pMaterial->SetScalarParameterValueByInfo(
+          FMaterialParameterInfo(
+              FName(textureCoordinateSet.Key),
+              association,
+              index),
+          textureCoordinateSet.Value);
+    }
 
-  for (const auto& textureCoordinateSet :
-       loadResult.featuresMetadataTexCoordParameters) {
-    pMaterial->SetScalarParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(textureCoordinateSet.Key),
-            association,
-            index),
-        textureCoordinateSet.Value);
-  }
+    for (CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet&
+             encodedFeatureIdSet : loadResult.EncodedFeatures.featureIdSets) {
+      if (encodedFeatureIdSet.nullFeatureId) {
+        pMaterial->SetScalarParameterValueByInfo(
+            FMaterialParameterInfo(
+                FName(
+                    encodedFeatureIdSet.name +
+                    CesiumEncodedFeaturesMetadata::MaterialNullFeatureIdSuffix),
+                association,
+                index),
+            static_cast<float>(*encodedFeatureIdSet.nullFeatureId));
+      }
 
-  for (CesiumEncodedFeaturesMetadata::EncodedFeatureIdSet& encodedFeatureIdSet :
-       loadResult.EncodedFeatures.featureIdSets) {
-    if (encodedFeatureIdSet.nullFeatureId) {
+      if (!encodedFeatureIdSet.texture) {
+        continue;
+      }
+
+      CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture& texture =
+          *encodedFeatureIdSet.texture;
+
+      pMaterial->SetTextureParameterValueByInfo(
+          FMaterialParameterInfo(
+              FName(
+                  encodedFeatureIdSet.name +
+                  CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
+              association,
+              index),
+          texture.pTexture->pTexture.Get());
+
+      size_t numChannels = texture.channels.size();
       pMaterial->SetScalarParameterValueByInfo(
           FMaterialParameterInfo(
               FName(
                   encodedFeatureIdSet.name +
-                  CesiumEncodedFeaturesMetadata::MaterialNullFeatureIdSuffix),
+                  CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
               association,
               index),
-          static_cast<float>(*encodedFeatureIdSet.nullFeatureId));
+          static_cast<float>(numChannels));
+
+      std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
+      for (size_t i = 0; i < numChannels; i++) {
+        channelsAsFloats[i] = static_cast<float>(texture.channels[i]);
+      }
+
+      FLinearColor channels;
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(
+              FName(
+                  encodedFeatureIdSet.name +
+                  CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
+              association,
+              index),
+          channels);
     }
-
-    if (!encodedFeatureIdSet.texture) {
-      continue;
-    }
-
-    CesiumEncodedFeaturesMetadata::EncodedFeatureIdTexture& texture =
-        *encodedFeatureIdSet.texture;
-
-    pMaterial->SetTextureParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(
-                encodedFeatureIdSet.name +
-                CesiumEncodedFeaturesMetadata::MaterialTextureSuffix),
-            association,
-            index),
-        texture.pTexture->pTexture.Get());
-
-    size_t numChannels = texture.channels.size();
-    pMaterial->SetScalarParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(
-                encodedFeatureIdSet.name +
-                CesiumEncodedFeaturesMetadata::MaterialNumChannelsSuffix),
-            association,
-            index),
-        static_cast<float>(numChannels));
-
-    std::vector<float> channelsAsFloats{0.0f, 0.0f, 0.0f, 0.0f};
-    for (size_t i = 0; i < numChannels; i++) {
-      channelsAsFloats[i] = static_cast<float>(texture.channels[i]);
-    }
-
-    FLinearColor channels;
-    pMaterial->SetVectorParameterValueByInfo(
-        FMaterialParameterInfo(
-            FName(
-                encodedFeatureIdSet.name +
-                CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
-            association,
-            index),
-        channels);
   }
 
   /* for (const FString& featureTextureName :
@@ -2217,9 +2215,7 @@ static void SetMetadataParameterValues_DEPRECATED(
     int32 index) {
 
   /**
-   * TODO: Write down this convention somewhere more permanent / accessible.
-   *
-   * The following is the naming convention for encoded metadata:
+   * The following is the naming convention for deprecated encoded metadata:
    *
    * Feature Id Textures:
    *  - Base: "FIT_<feature table name>_"...

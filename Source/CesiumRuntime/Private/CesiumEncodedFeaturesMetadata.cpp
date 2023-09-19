@@ -526,43 +526,65 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
       void* pTextureData = pMip->BulkData.Realloc(
           textureDimension * textureDimension * encodedFormat.pixelSize);
 
+      gsl::span<std::byte> textureData(
+          reinterpret_cast<std::byte*>(pTextureData),
+          static_cast<size_t>(pMip->BulkData.GetBulkDataSize()));
+
       if (encodingDetails.Conversion ==
           ECesiumEncodedMetadataConversion::ParseColorFromString) {
         CesiumEncodedMetadataParseColorFromString::encode(
             *pDescription,
             property,
-            pTextureData,
+            textureData,
             encodedFormat.pixelSize);
       } else /* info.Conversion == ECesiumEncodedMetadataConversion::Coerce */ {
         CesiumEncodedMetadataCoerce::encode(
             *pDescription,
             property,
-            pTextureData,
+            textureData,
             encodedFormat.pixelSize);
       }
       pMip->BulkData.Unlock();
     }
 
     if (pDescription->PropertyDetails.bHasOffset) {
-      encodedProperty.offset =
+      // If no offset is provided, default to 0, as specified by the spec.
+      FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetOffset(property);
+      encodedProperty.offset =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(value)
+              ? value
+              : FCesiumMetadataValue(0);
     }
 
     if (pDescription->PropertyDetails.bHasScale) {
-      encodedProperty.scale =
+      // If no scale is provided, default to 1, as specified by the spec.
+      FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetScale(property);
+      encodedProperty.scale =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(value)
+              ? value
+              : FCesiumMetadataValue(1);
     }
 
     if (pDescription->PropertyDetails.bHasNoDataValue) {
-      encodedProperty.noData =
+      FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetNoDataValue(
               property);
+      encodedProperty.noData =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(value)
+              ? value
+              : FCesiumMetadataValue(0);
     }
 
     if (pDescription->PropertyDetails.bHasDefaultValue) {
-      encodedProperty.defaultValue =
+      FCesiumMetadataValue value =
           UCesiumPropertyTablePropertyBlueprintLibrary::GetDefaultValue(
               property);
+      encodedProperty.defaultValue =
+          !UCesiumMetadataValueBlueprintLibrary::IsEmpty(value)
+              ? value
+              : FCesiumMetadataValue(0);
     }
   }
 

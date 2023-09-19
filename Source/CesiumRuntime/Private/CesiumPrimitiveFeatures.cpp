@@ -131,7 +131,7 @@ int64 UCesiumPrimitiveFeaturesBlueprintLibrary::GetFeatureIDFromFace(
     int64 FaceIndex,
     int64 FeatureIDSetIndex) {
   if (FeatureIDSetIndex < 0 ||
-      FeatureIDSetIndex > PrimitiveFeatures._featureIDSets.Num()) {
+      FeatureIDSetIndex >= PrimitiveFeatures._featureIDSets.Num()) {
     return -1;
   }
 
