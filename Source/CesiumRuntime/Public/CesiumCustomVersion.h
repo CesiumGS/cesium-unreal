@@ -17,6 +17,10 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // The Georeferencing system was refactored.
     GeoreferenceRefactoring = 2,
 
+    // The explicit Mobility property on Cesium3DTileset was removed, in favor
+    // of the normal Mobility property on the RootComponent.
+    TilesetMobilityRemoved = 3,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };

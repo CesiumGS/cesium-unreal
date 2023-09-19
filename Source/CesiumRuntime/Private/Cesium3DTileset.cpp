@@ -20,6 +20,7 @@
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/Cartographic.h"
 #include "CesiumGeospatial/Ellipsoid.h"
+#include "CesiumGeospatial/GlobeTransforms.h"
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
@@ -56,6 +57,7 @@
 #include "PixelFormat.h"
 #include "SceneTypes.h"
 #include "StereoRendering.h"
+#include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/trigonometric.hpp>
@@ -108,6 +110,7 @@ ACesium3DTileset::ACesium3DTileset()
 
   this->RootComponent =
       CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
+  this->Root = this->RootComponent;
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -119,8 +122,8 @@ TSoftObjectPtr<ACesiumGeoreference> ACesium3DTileset::GetGeoreference() const {
 }
 
 void ACesium3DTileset::SetMobility(EComponentMobility::Type NewMobility) {
-  if (NewMobility != this->Mobility) {
-    this->Mobility = NewMobility;
+  if (NewMobility != this->RootComponent->Mobility) {
+    this->RootComponent->SetMobility(NewMobility);
     DestroyTileset();
   }
 }
@@ -472,13 +475,10 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       *this->GetName());
 
   struct CalculateECEFCameraPosition {
-
-    const GeoTransforms& localGeoTransforms;
-
     glm::dvec3 operator()(const CesiumGeometry::BoundingSphere& sphere) {
       const glm::dvec3& center = sphere.getCenter();
       glm::dmat4 ENU =
-          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
+          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(center);
       glm::dvec3 offset =
           sphere.getRadius() *
           glm::normalize(
@@ -491,7 +491,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
     operator()(const CesiumGeometry::OrientedBoundingBox& orientedBoundingBox) {
       const glm::dvec3& center = orientedBoundingBox.getCenter();
       glm::dmat4 ENU =
-          glm::dmat4(localGeoTransforms.ComputeEastNorthUpToEcef(center));
+          CesiumGeospatial::GlobeTransforms::eastNorthUpToFixedFrame(center);
       const glm::dmat3& halfAxes = orientedBoundingBox.getHalfAxes();
       glm::dvec3 offset =
           glm::length(halfAxes[0] + halfAxes[1] + halfAxes[2]) *
@@ -527,39 +527,35 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
   const Cesium3DTilesSelection::BoundingVolume& boundingVolume =
       pRootTile->getBoundingVolume();
 
+  ACesiumGeoreference* pGeoreference = this->ResolveGeoreference();
+
   // calculate unreal camera position
-  const glm::dmat4& transform =
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
-  glm::dvec3 ecefCameraPosition = std::visit(
-      CalculateECEFCameraPosition{
-          this->ResolveGeoreference()->GetGeoTransforms()},
-      boundingVolume);
-  glm::dvec3 unrealCameraPosition =
-      glm::dvec3(transform * glm::dvec4(ecefCameraPosition, 1.0));
+  glm::dvec3 ecefCameraPosition =
+      std::visit(CalculateECEFCameraPosition{}, boundingVolume);
+  FVector unrealCameraPosition =
+      pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
+          VecMath::createVector(ecefCameraPosition));
 
   // calculate unreal camera orientation
   glm::dvec3 ecefCenter =
       Cesium3DTilesSelection::getBoundingVolumeCenter(boundingVolume);
-  glm::dvec3 unrealCenter = glm::dvec3(transform * glm::dvec4(ecefCenter, 1.0));
-  glm::dvec3 unrealCameraFront =
-      glm::normalize(unrealCenter - unrealCameraPosition);
-  glm::dvec3 unrealCameraRight =
-      glm::normalize(glm::cross(glm::dvec3(0.0, 0.0, 1.0), unrealCameraFront));
-  glm::dvec3 unrealCameraUp =
-      glm::normalize(glm::cross(unrealCameraFront, unrealCameraRight));
-  FRotator cameraRotator =
-      FMatrix(
-          FVector(
-              unrealCameraFront.x,
-              unrealCameraFront.y,
-              unrealCameraFront.z),
-          FVector(
-              unrealCameraRight.x,
-              unrealCameraRight.y,
-              unrealCameraRight.z),
-          FVector(unrealCameraUp.x, unrealCameraUp.y, unrealCameraUp.z),
-          FVector(0.0f, 0.0f, 0.0f))
-          .Rotator();
+  FVector unrealCenter =
+      pGeoreference->TransformEarthCenteredEarthFixedPositionToUnreal(
+          VecMath::createVector(ecefCenter));
+  FVector unrealCameraFront =
+      (unrealCenter - unrealCameraPosition).GetSafeNormal();
+  FVector unrealCameraRight =
+      FVector::CrossProduct(FVector::ZAxisVector, unrealCameraFront)
+          .GetSafeNormal();
+  FVector unrealCameraUp =
+      FVector::CrossProduct(unrealCameraFront, unrealCameraRight)
+          .GetSafeNormal();
+  FRotator cameraRotator = FMatrix(
+                               unrealCameraFront,
+                               unrealCameraRight,
+                               unrealCameraUp,
+                               FVector::ZeroVector)
+                               .Rotator();
 
   // Update all viewports.
   for (FLevelEditorViewportClient* LinkedViewportClient :
@@ -569,10 +565,7 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
       FViewportCameraTransform& ViewTransform =
           LinkedViewportClient->GetViewTransform();
       LinkedViewportClient->SetViewRotation(cameraRotator);
-      LinkedViewportClient->SetViewLocation(FVector(
-          unrealCameraPosition.x,
-          unrealCameraPosition.y,
-          unrealCameraPosition.z));
+      LinkedViewportClient->SetViewLocation(unrealCameraPosition);
       LinkedViewportClient->Invalidate();
     }
   }
@@ -927,8 +920,6 @@ getCesiumViewExtension() {
 void ACesium3DTileset::LoadTileset() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::LoadTileset)
 
-  this->RootComponent->SetMobility(Mobility);
-
   if (this->_pTileset) {
     // Tileset already loaded, do nothing.
     return;
@@ -995,7 +986,6 @@ void ACesium3DTileset::LoadTileset() {
         GetCesiumTilesetToUnrealRelativeWorldTransform();
     this->BoundingVolumePoolComponent =
         NewObject<UCesiumBoundingVolumePoolComponent>(this);
-    this->BoundingVolumePoolComponent->SetUsingAbsoluteLocation(true);
     this->BoundingVolumePoolComponent->SetFlags(
         RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
     this->BoundingVolumePoolComponent->RegisterComponent();
@@ -2017,13 +2007,25 @@ void ACesium3DTileset::Tick(float DeltaTime) {
     return;
   }
 
-  glm::dmat4 unrealWorldToTileset = glm::affineInverse(
-      this->GetCesiumTilesetToUnrealRelativeWorldTransform());
+  glm::dmat4 ueTilesetToUeWorld =
+      VecMath::createMatrix4D(this->GetActorTransform().ToMatrixWithScale());
+
+  const glm::dmat4& cesiumTilesetToUeTileset =
+      this->GetCesiumTilesetToUnrealRelativeWorldTransform();
+  glm::dmat4 unrealWorldToCesiumTileset =
+      glm::affineInverse(ueTilesetToUeWorld * cesiumTilesetToUeTileset);
+
+  if (glm::isnan(unrealWorldToCesiumTileset[3].x) ||
+      glm::isnan(unrealWorldToCesiumTileset[3].y) ||
+      glm::isnan(unrealWorldToCesiumTileset[3].z)) {
+    // Probably caused by a zero scale.
+    return;
+  }
 
   std::vector<Cesium3DTilesSelection::ViewState> frustums;
   for (const FCesiumCamera& camera : cameras) {
     frustums.push_back(
-        CreateViewStateFromViewParameters(camera, unrealWorldToTileset));
+        CreateViewStateFromViewParameters(camera, unrealWorldToCesiumTileset));
   }
 
   const Cesium3DTilesSelection::ViewUpdateResult& result =
@@ -2094,6 +2096,10 @@ void ACesium3DTileset::Serialize(FArchive& Ar) {
       this->TilesetSource = ETilesetSource::FromCesiumIon;
     }
   }
+
+  if (CesiumVersion < FCesiumCustomVersion::TilesetMobilityRemoved) {
+    this->RootComponent->SetMobility(this->Mobility_DEPRECATED);
+  }
 }
 
 #if WITH_EDITOR
@@ -2134,7 +2140,6 @@ void ACesium3DTileset::PostEditChangeProperty(
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, EnableOcclusionCulling) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, UseLodTransitions) ||
-      PropName == GET_MEMBER_NAME_CHECKED(ACesium3DTileset, Mobility) ||
       PropName ==
           GET_MEMBER_NAME_CHECKED(ACesium3DTileset, ShowCreditsOnScreen) ||
       // For properties nested in structs, GET_MEMBER_NAME_CHECKED will prefix

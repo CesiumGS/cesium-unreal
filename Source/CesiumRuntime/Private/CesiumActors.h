@@ -5,6 +5,13 @@
 #include "GameFramework/Actor.h"
 #include <glm/glm.hpp>
 
+#define CESIUM_POST_EDIT_CHANGE(changedPropertyName, ClassName, PropertyName)  \
+  if (changedPropertyName ==                                                   \
+      GET_MEMBER_NAME_CHECKED(ClassName, PropertyName)) {                      \
+    this->Set##PropertyName(this->PropertyName);                               \
+    return;                                                                    \
+  }
+
 /**
  * @brief Utility functions related to Unreal actors
  */

@@ -254,14 +254,15 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
   // target level and there is no current level.
   if (pCurrent == pOwner || (pCurrent == nullptr && pTarget == pOwner)) {
     // Apply the sub-level's origin to the georeference, if it's different.
-    if (this->OriginLongitude != this->ResolvedGeoreference->OriginLongitude ||
-        this->OriginLatitude != this->ResolvedGeoreference->OriginLatitude ||
-        this->OriginHeight != this->ResolvedGeoreference->OriginHeight) {
-      this->ResolvedGeoreference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-          glm::dvec3(
-              this->OriginLongitude,
-              this->OriginLatitude,
-              this->OriginHeight));
+    if (this->OriginLongitude !=
+            this->ResolvedGeoreference->GetOriginLongitude() ||
+        this->OriginLatitude !=
+            this->ResolvedGeoreference->GetOriginLatitude() ||
+        this->OriginHeight != this->ResolvedGeoreference->GetOriginHeight()) {
+      this->ResolvedGeoreference->SetOriginLongitudeLatitudeHeight(FVector(
+          this->OriginLongitude,
+          this->OriginLatitude,
+          this->OriginHeight));
     }
   }
 }
@@ -278,9 +279,9 @@ void UCesiumSubLevelComponent::OnComponentCreated() {
 
   UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
   if (pSwitcher && this->ResolvedGeoreference) {
-    this->OriginLongitude = this->ResolvedGeoreference->OriginLongitude;
-    this->OriginLatitude = this->ResolvedGeoreference->OriginLatitude;
-    this->OriginHeight = this->ResolvedGeoreference->OriginHeight;
+    this->OriginLongitude = this->ResolvedGeoreference->GetOriginLongitude();
+    this->OriginLatitude = this->ResolvedGeoreference->GetOriginLatitude();
+    this->OriginHeight = this->ResolvedGeoreference->GetOriginHeight();
 
     // In Editor worlds, make the newly-created sub-level the active one. Unless
     // it's already hidden.
