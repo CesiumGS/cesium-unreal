@@ -2,8 +2,10 @@
 
 #include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
+#if WITH_EDITOR
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
+#endif
 #include "Engine/Selection.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
