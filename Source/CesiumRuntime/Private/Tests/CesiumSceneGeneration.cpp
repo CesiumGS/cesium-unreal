@@ -126,8 +126,7 @@ void setupForGoogleTiles(SceneGenerationContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-      targetOrigin);
+  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
   context.pawn->SetActorRotation(FRotator(-25, 95, 0));
@@ -151,8 +150,7 @@ void setupForDenver(SceneGenerationContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-      targetOrigin);
+  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
   context.pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
@@ -199,8 +197,7 @@ void setupForMontrealPointCloud(SceneGenerationContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetGeoreferenceOriginLongitudeLatitudeHeight(
-      targetOrigin);
+  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
   context.pawn->SetActorRotation(FRotator(-90.0, 0.0, 0.0));
