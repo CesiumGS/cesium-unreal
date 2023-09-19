@@ -2,6 +2,9 @@
 
 #include "CesiumLifetime.h"
 #include "CesiumRuntime.h"
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
+#include "Engine/Selection.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture2D.h"
 #include "PhysicsEngine/BodySetup.h"
@@ -37,6 +40,15 @@ CesiumLifetime::destroyComponentRecursively(USceneComponent* pComponent) {
   for (USceneComponent* pChild : children) {
     destroyComponentRecursively(pChild);
   }
+
+#if WITH_EDITOR
+  // If the editor is currently selecting this, remove the reference
+  if (GEditor) {
+    USelection* editorSelection = GEditor->GetSelectedComponents();
+    if (editorSelection && editorSelection->IsSelected(pComponent))
+      editorSelection->Deselect(pComponent);
+  }
+#endif
 
   pComponent->DestroyPhysicsState();
   pComponent->DestroyComponent();
