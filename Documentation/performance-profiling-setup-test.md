@@ -16,11 +16,11 @@ We need an area of code to execute repeatedly, with as many variables locked dow
 
 ### Build Release Code
 
-We need to make sure all our C++ code is building in release mode.
+We need to make sure all our C++ code is building in release mode, preferably with debug symbols.
 
 > This assumes that you have already built your code successfully and are familiar with the concepts from our [developer setup guide](https://github.com/CesiumGS/cesium-unreal/blob/ue5-main/Documentation/developer-setup-windows.md). Although you could profile a debug build, it is typically more useful to build in release, since this is how a game is usually packaged.
 
-1) If building the cesium-native library, make sure you are using a Release configuration
+1) If building the cesium-native library, make sure you are using a release configuration derived from "RelWithDebInfo"
 2) Open your Unreal project's Visual Studio solution (.sln). This example uses the solution generated from [cesium-unreal-samples](https://github.com/CesiumGS/cesium-unreal-samples)
 3) Choose "Development Editor"
 
