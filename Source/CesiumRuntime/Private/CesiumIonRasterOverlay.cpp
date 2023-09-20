@@ -7,6 +7,10 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
+
 void UCesiumIonRasterOverlay::TroubleshootToken() {
   OnCesiumRasterOverlayIonTroubleshooting.Broadcast(this);
 }
@@ -41,5 +45,11 @@ UCesiumIonRasterOverlay::CreateOverlay(
 void UCesiumIonRasterOverlay::PostLoad() {
   Super::PostLoad();
 
-  CesiumActors::validateActorComponentFlags(this);
+#if WITH_EDITOR
+  // Only fixup flags in the editor, when not in play mode
+  // We want to exclude fixing up any objects that aren't in this level
+  if (!GEditor->IsPlaySessionInProgress()) {
+    CesiumActors::validateActorComponentFlags(this);
+  }
+#endif
 }

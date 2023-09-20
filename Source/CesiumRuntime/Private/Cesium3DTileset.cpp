@@ -2089,7 +2089,13 @@ void ACesium3DTileset::PostLoad() {
 
   Super::PostLoad();
 
-  CesiumActors::validateActorFlags(this);
+#if WITH_EDITOR
+  // Only do this in the editor, when not in play mode
+  // We want to exclude fixing up any objects that aren't in this level
+  if (!GEditor->IsPlaySessionInProgress()) {
+    CesiumActors::validateActorFlags(this);
+  }
+#endif
 }
 
 void ACesium3DTileset::Serialize(FArchive& Ar) {
