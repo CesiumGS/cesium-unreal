@@ -7,6 +7,10 @@
 #include "StaticMeshResources.h"
 #include <glm/glm.hpp>
 
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
+
 using namespace CesiumGeospatial;
 
 ACesiumCartographicPolygon::ACesiumCartographicPolygon() : AActor() {
@@ -84,5 +88,11 @@ void ACesiumCartographicPolygon::MakeLinear() {
 void ACesiumCartographicPolygon::PostLoad() {
   Super::PostLoad();
 
-  CesiumActors::validateActorFlags(this);
+#if WITH_EDITOR
+  // Only do this in the editor, when not in play mode
+  // We want to exclude fixing up any objects that aren't in this level
+  if (!GEditor->IsPlaySessionInProgress()) {
+    CesiumActors::validateActorFlags(this);
+  }
+#endif
 }
