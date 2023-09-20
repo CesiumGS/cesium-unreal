@@ -29,6 +29,7 @@ public:
    */
   static glm::dvec4 getWorldOrigin4D(const AActor* actor);
 
+  static bool shouldValidateFlags(UObject* object);
   static void validateActorFlags(AActor* actor);
   static void validateActorComponentFlags(UActorComponent* component);
 

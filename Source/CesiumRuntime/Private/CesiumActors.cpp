@@ -4,6 +4,10 @@
 #include "CesiumRuntime.h"
 #include "Engine/World.h"
 
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
+
 #include <glm/glm.hpp>
 
 glm::dvec4 CesiumActors::getWorldOrigin4D(const AActor* actor) {
@@ -22,6 +26,24 @@ glm::dvec4 CesiumActors::getWorldOrigin4D(const AActor* actor) {
   }
   const FIntVector& originLocation = world->OriginLocation;
   return glm::dvec4(originLocation.X, originLocation.Y, originLocation.Z, 1.0);
+}
+
+bool CesiumActors::shouldValidateFlags(UObject* object) {
+#if WITH_EDITOR
+  // Only fixup flags in the editor, when not in play mode
+  if (GEditor->IsPlaySessionInProgress())
+    return false;
+
+  // In addition, don't fix when loading from an asset file, which sets the
+  // RF_ClassDefaultObject and RF_ArchetypeObject flags.
+  if (object->HasAnyFlags(RF_ClassDefaultObject) ||
+      object->HasAnyFlags(RF_ArchetypeObject))
+    return false;
+  else
+    return true;
+#else
+  return false;
+#endif
 }
 
 void CesiumActors::validatePublicFlag(UObject* object, const FString& label) {
