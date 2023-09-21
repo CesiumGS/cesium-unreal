@@ -111,6 +111,10 @@ void createCommonWorldObjects(SceneGenerationContext& context) {
       Cast<UClass>(DynamicPawn.LoadSynchronous()));
 
   context.pawn->AutoPossessPlayer = EAutoReceiveInput::Player0;
+
+  AWorldSettings* pWorldSettings = context.world->GetWorldSettings();
+  if (pWorldSettings)
+    pWorldSettings->bEnableWorldBoundsChecks = false;
 }
 
 void setupForGoogleTiles(SceneGenerationContext& context) {
