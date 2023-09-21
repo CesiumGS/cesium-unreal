@@ -60,6 +60,16 @@ public:
   UPROPERTY(BlueprintAssignable, Category = "Cesium")
   FGeoreferenceUpdated OnGeoreferenceUpdated;
 
+  /**
+   * Event called whenever the Georeference is modified in a way that affects
+   * its computations.
+   */
+  UFUNCTION(
+      BlueprintImplementableEvent,
+      Category = "Cesium",
+      meta = (DisplayName = "GeoreferenceUpdated"))
+  void ReceiveGeoreferenceUpdated();
+
 #pragma region Properties
 
 private:
