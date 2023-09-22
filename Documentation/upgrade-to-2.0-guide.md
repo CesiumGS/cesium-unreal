@@ -1,6 +1,6 @@
 # Cesium for Unreal v2.0 Upgrade Guide
 
-As of v2.0.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_structural_metadata` extensions from 3D Tiles 1.1. Models with `EXT_features_metadata` will still load, but their feature IDs and metadata will no longer be accessible. Some differences between the extensions – in particular, differences between possible metadata types and the ways that property collections were accessed or stored – required an overhaul of the metadata-accessing API in Unreal.
+As of v2.0, Cesium for Unreal supports the `EXT_mesh_features` and `EXT_structural_metadata` extensions from 3D Tiles 1.1. Models with `EXT_features_metadata` will still load, but their feature IDs and metadata will no longer be accessible. Some differences between the extensions – in particular, differences between possible metadata types and the ways that property collections were accessed or stored – required an overhaul of the metadata-accessing API in Unreal.
 
  This guide intends to inform users of the differences between the old and new metadata APIs. While there are measures in-place to ensure backwards compatibility, be sure to make a backup of your project before switching Cesium for Unreal versions.
 
@@ -62,7 +62,7 @@ Furthermore, if the **"Get As Feature ID Attribute"** or **"Get As Feature ID Te
 
 The `FCesiumPrimitiveFeatures` struct acts as a Blueprints-accessible version of `EXT_mesh_features`. It allows access to all of the feature ID sets of a primitive using the **"Get Feature ID Sets"** Blueprints function. The **"Get Feature ID Sets Of Type"** function can also be used to filter for a specific type of feature IDs.
 
-Previously, users could use the **"Get Feature ID From Face ID"** function to sample feature IDs from a `FCesiumMetadataPrimitive`. This function has been deprecated in Cesium for Unreal v2.0.0. Instead, use **"Get Feature ID From Face"**. This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures`. A primitive may have multiple feature ID sets, so this node allows a feature ID set to be specified by index. The index corresponds to the array retrieved by **"Get Feature ID Sets"**.
+Previously, users could use the **"Get Feature ID From Face ID"** function to sample feature IDs from a `FCesiumMetadataPrimitive`. This function has been deprecated in Cesium for Unreal v2.0. Instead, use **"Get Feature ID From Face"**. This function retrieves the feature ID associated with a given face index, from the specified `FCesiumPrimitiveFeatures`. A primitive may have multiple feature ID sets, so this node allows a feature ID set to be specified by index. The index corresponds to the array retrieved by **"Get Feature ID Sets"**.
 
 Here's an example of how one might retrieve feature IDs from a primitive hit by a `LineTrace`:
 
@@ -100,7 +100,7 @@ Below are some example type definitions and their interpretations.
 
 ### Expanded Blueprint Types
 
-The `ECesiumMetadataBlueprintType` enum is still used to indicate the best-fitting Blueprints type for a metadata property or value. In Cesium for Unreal v2.0.0, it has been expanded to include the vector and matrix types possible with the `EXT_structural_metadata` extension. Many of these do not have an exact representation in Blueprints, but can be converted to a sufficiently compatible Blueprints type.
+The `ECesiumMetadataBlueprintType` enum is still used to indicate the best-fitting Blueprints type for a metadata property or value. In Cesium for Unreal v2.0, it has been expanded to include the vector and matrix types possible with the `EXT_structural_metadata` extension. Many of these do not have an exact representation in Blueprints, but can be converted to a sufficiently compatible Blueprints type.
 
 The newly supported Blueprints types include:
 - `FIntPoint`
@@ -157,7 +157,7 @@ Functions have also been added to retrieve the data of a `FCesiumMetadataValue` 
 
 `FCesiumMetadataArray` has been renamed to `FCesiumPropertyArray`. It still represents an array of metadata entities where values are retrieved by index.
 
-Accordingly, `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary`. In previous versions, values were retrieved from arrays with a specific type (e.g., **"Get Integer"** or **"Get Boolean"**). However, in v2.0.0, only the **"Get Value"** function exists. This returns the value at the specified index as a `FCesiumMetadataValue`. The type of this value can be found by using **"Get Value Type"** on the resulting `FCesiumMetadataValue`, or **"Get Element Value Type"** on the `FCesiumPropertyArray` it came from. Then, the value can be converted to the appropriate type.
+Accordingly, `UCesiumMetadataArrayBlueprintLibrary` has been renamed to `UCesiumPropertyArrayBlueprintLibrary`. In previous versions, values were retrieved from arrays with a specific type (e.g., **"Get Integer"** or **"Get Boolean"**). However, in v2.0, only the **"Get Value"** function exists. This returns the value at the specified index as a `FCesiumMetadataValue`. The type of this value can be found by using **"Get Value Type"** on the resulting `FCesiumMetadataValue`, or **"Get Element Value Type"** on the `FCesiumPropertyArray` it came from. Then, the value can be converted to the appropriate type.
 
 ![Get Value node in Blueprints](Images/getValue.jpeg)
 
@@ -211,9 +211,9 @@ Finally, `UCesiumMetadataPropertyBlueprintLibrary` has been renamed to `UCesiumP
 
 ### Metadata Picking
 
-*Picking* refers to the act of selecting a feature (e.g., selecting by mouse click), and querying it for information. Typically, picking is used to access the metadata of a particular feature.
+*Picking* refers to the act of selecting a feature (e.g., selecting by mouse click) and querying it for information. Typically, picking is used to access the metadata of a particular feature.
 
-in Cesium for Unreal v2.0.0, metadata picking can be easily implemented using a new Blueprint library. Using **"Line Trace By Channel"**, trace a line into the scene upon mouse click. Then, retrieve the **"Hit Component"** and **"Face Index"** from the resulting hit.
+in Cesium for Unreal v2.0, metadata picking can be easily implemented using a new Blueprint library. Using **"Line Trace By Channel"**, trace a line into the scene upon mouse click. Then, retrieve the **"Hit Component"** and **"Face Index"** from the resulting hit.
 
 ![Break the hit result of a Line Trace By Channel](Images/breakHitResult.jpeg)
 
@@ -237,56 +237,149 @@ To retrieve the values as strings, use **"Get Metadata Values For Face As String
 
 <h2 id="styling">Styling with EXT_mesh_features and EXT_structural_metadata</h2>
 
-Previously, a `UCesiumEncodedMetadataComponent` could be attached to a Cesium3DTileset to make its `EXT_feature_metadata` accessible in Unreal materials. This component has been deprecated in Cesium for Unreal v2.0.0. Instead, use the `UCesiumFeaturesMetadataComponent`, which handles `EXT_mesh_features` and `EXT_structural_metadata` instead.
+*Styling* refers to the visual modification of data based on some information – usually metadata – and rules built around it by the developer. Previous versions of Cesium for Unreal allowed styling with the `UCesiumEncodedMetadataComponent`, which made `EXT_feature_metadata` accessible in Unreal materials. In this way, Unreal's material editor and rendering systems could be leveraged to visually alter tilesets based on their metadata.
+
+In Cesium for Unreal v2.0, `UCesiumEncodedMetadataComponent` has been deprecated and replaced by `UCesiumFeaturesMetadataComponent`. The new component is functionally similar, but it handles the `EXT_mesh_features` and `EXT_structural_metadata` extensions instead. Styling with `EXT_feature_metadata` is no longer supported.
 
 ![CesiumFeaturesMetadataComponent](Images/cesiumFeaturesMetadataComponent.jpeg)
 
-Like its predecessor, the `UCesiumFeaturesMetadataComponent` contains descriptions of the feature ID sets and metadata properties in the tileset. These descriptions can be manually specified, or automatically generated using the **"Auto Fill"** button. **"Auto Fill"** will populate the descriptions based on the tiles currently in-view in the editor.
+### Auto Fill 
+
+Like its predecessor, the `UCesiumFeaturesMetadataComponent` contains descriptions of the feature ID sets and metadata properties in the tileset. These descriptions indicate which feature ID sets or metadata should be made available for styling in Unreal materials. The contents can be manually specified by a developer or automatically generated using the **Auto Fill** button. 
 
 ![Auto Fill button on the CesiumFeaturesMetadataComponent](Images/autoFill.jpeg)
 
-These descriptions indicate which feature ID sets or metadata should be made accessible to Unreal materials through the GPU. This may involve *encoding* – converting property values to a GPU-accessible type, then passing them to materials via texture. The descriptions will later be used by **"Generate Material"** to populate a material layer with the described elements.
+**Auto Fill** populates the descriptions based on the tiles currently in-view in the editor. This is a *cumulative* view, so it is possible for listed properties to only apply to a portion of the tileset.
 
-Everything that is listed in the descriptions will be encoded or otherwise passed to the material, and anything not listed will be skipped. As such, only include feature ID sets and metadata that will be actually used by the application. Otherwise, the unused properties may affect memory and performance.
+Everything that is listed in the descriptions will be passed to the material on the tileset, and anything not listed will be skipped. Passing metadata values may involve *encoding* – converting property values to GPU-accessible types, then passing them to the material as a texture. This requires time and storage, so **only include feature ID sets and metadata that will actually be used by the application**. Unused properties may affect memory and performance.
 
-### Feature ID Set Descriptions
+### Generate Material
 
-In this description system, feature ID sets across the tileset will be distinguished by their type and name. If a feature ID set is not labeled in the `EXT_mesh_features` extension, a name will be generated for it. Additionally, a feature ID set can specify what property table it is associated with. 
+Once the relevant descriptions are included, the component can generate an Unreal material layer using the described feature ID sets and metadata properties. This is done through the **Generate Material** function.
+
+![Generate Material button on the CesiumFeaturesMetadataComponent](Images/generateMaterial.jpeg)
+
+**Generate Material** creates all of the nodes necessary for retrieving feature IDs and metadata in the **Target Material Layer**. This includes the required parameters, custom function nodes, and other "boilerplate" code that can be confusing to set up. The **Target Material Layer** can point to an existing asset so that it receives the generated nodes. If **Target Material Layer** is left empty, a new material layer asset will be created instead.
+
+Feature ID sets and metadata properties have specific naming schemes for their corresponding material parameters, which **Generate Material** will handle. All nodes generated by this function will have an `"AUTOGENERATED DO NOT EDIT"` message in their node descriptions. **Modifying these autogenerated nodes in any way is discouraged.** Otherwise, feature IDs and metadata values may not be properly retrieved by the material layer.
+
+![Example autogenerated message](Images/autogeneratedMessage.jpeg)
+
+Once the material layer has been generated, it can be added to a material instance with the **"FeaturesMetadata"** label.
+
+![Material Layer in the Material Editor](Images/featuresMetadataMaterialLayer.jpeg)
+>  Previous versions of Cesium for Unreal required the "Metadata" label in the material instance. This label is reserved for backwards compatibility with `UCesiumEncodedMetadataComponent`. However, it will not work for the newer `UCesiumFeaturesMetadataComponent`. **Use the "FeaturesMetadata" label**, or else the feature IDs and metadata will not be passed to the material layer.
+
+### Feature ID Sets
+
+Cesium for Unreal v2.0 supports styling with all types of feature ID sets – attribute, texture, and implicit. Feature ID sets can now be passed to materials without requiring an association with property tables. This reflects how `EXT_mesh_features` can exist independently of the `EXT_structural_metadata` extension in a glTF.
+
+`UCesiumFeaturesMetadataComponent` will distinguish feature ID sets across the same tileset by type and name. This name attempts to use the `label` of the feature ID set in the `EXT_mesh_features` extension. If `label` is not defined, a name will be automatically generated for the feature ID set based on its type. Additionally, a feature ID set can specify if it is associated with a property table from the model's `EXT_structural_metadata`.
 
 ![An example feature ID set description](Images/featureIdDescriptionExample.jpeg)
 
-> **Note**: This implementation assumes that feature ID sets with the same name will have the same definition throughout the tileset. If a feature ID set is defined differently between two glTF primitives, it may lead to undefined behavior.
+> **Note**: This implementation assumes that feature ID sets with the same name will have identical definitions throughout the tileset. If a feature ID set is defined differently between two glTF primitives, it may lead to undefined behavior.
 >
-> For example, suppose that a primitive's `EXT_mesh_features` contains a feature ID attribute named **"FeatureIDSet0"**. In the same tileset, another primitive can contain a feature ID set named **"FeatureIdSet0"**, but define it as a feature ID texture instead. If the `UCesiumFeaturesMetadataComponent` finds the feature ID attribute first, it will assume that all subsequent instances of **"FeatureIdSet0"** are also attributes. This will result in unexpected behavior when it tries to handle **"FeatureIdSet0"** in the second primitive.
+> For example, suppose that one primitive's `EXT_mesh_features` contains a feature ID attribute named **"FeatureIDSet0"**. Theoretically, another primitive in the tileset can also contain a **"FeatureIdSet0"**, but defined instead as a feature ID texture. If the feature ID attribute is discovered first, the `UCesiumFeaturesMetadataComponent` assumes that all subsequent instances of **"FeatureIdSet0"** are also attributes. This will result in unexpected behavior when it tries to handle **"FeatureIdSet0"** in the second primitive.
+ 
+In general, the list of feature ID sets populated by **Auto Fill** may be larger than the list of feature ID sets that a glTF primitive actually has. All feature ID sets can be simultaneously handled in the Unreal material layer, but they may have nonexistent values depending on the primitive.
 
-The glTF primitives across the tileset can contain different and multiple feature IDs. As such, when using **"Auto Fill"**, the list of feature ID sets is aggregated from the `EXT_mesh_features` extensions across the *entire* tileset. This may not necessarily match the number or types of feature ID sets that a single primitive has.
+Below are examples of the nodes added by **Generate Material** for each type of feature ID set.
 
-### Property Table Descriptions
+| Type | Example |
+| ---- | ------- |
+| Attribute | <img src="Images/materialGetFeatureIdsFromAttribute.jpeg" width="500px"/> |
+| Texture | <img src="Images/materialGetFeatureIdsFromTexture.jpeg" width="500px"/> |
+| Implicit | <img src="Images/materialGetFeatureIdsFromImplicit.jpeg" width="500px"/> |
 
-Property tables across the tileset will also be distinguished by name. If a property table is not named in the `EXT_structural_metadata` extension, then the name of its class will be used instead. For example, if an unnamed property table provides data for the class `buildings`, it will labeled as "`buildings`" in the metadata description.
+>  Implicit feature IDs are passed as an attribute to the material because there is no way (currently) to retrieve the vertex index with a material node.
+
+**Auto Fill** can also detect whether a feature ID set contains a `nullFeatureId` in the `EXT_mesh_features` extension. If so, it will tick the **Has Null Feature Id** checkbox, allowing the `nullFeatureId` to be passed to the material layer as a parameter. An **If** node will also be added to the material to allow feature IDs to be compared against the null value.
+
+![Null feature ID parameter in material](Images/materialNullFeatureID.jpeg)
+
+The null feature ID provides a way to specify fallback behavior for "feature-less" vertices, i.e., vertices whose feature IDs are equal to the null feature ID value. This can help avoid visual errors when attempting to access property table values with the null feature ID.
+
+### Property Tables
+
+Feature ID sets are often used in combination with property tables in `EXT_structural_metadata`, specifying how the metadata values apply per-feature. In Cesium for Unreal v2.0, property tables can be used both with or without feature ID sets for styling. It is also possible to sample the same property table using multiple feature ID sets, with performance implications in mind.
+
+`UCesiumFeaturesMetadataComponent` will distinguish property tables across the same tileset by their name. This comes directly from their `name` in the `EXT_structural_metadata` extension. If a property table has no `name`, it will substitute its `class` as its name instead. For example, an unnamed property table providing data for the `buildings` class will appear as "`buildings`" in its description.
 
 ![Multiple property table descriptions](Images/propertyTableDescriptionExample.jpeg)
 
-Each property table description contains a list of properties, also distinguished by name. **"Auto Fill"** will include *all* of the properties belonging to *all* property tables across the tileset. Remember to delete all unused properties to avoid unnecessary encoding.
+Each property table description contains a list of properties that are also distinguished their names. **Auto Fill** will find all of the properties belonging to this property table name across the tileset. Remember to **delete any and all unused properties** to avoid unnecessary metadata encoding.
 
 ![Multiple property table property descriptions](Images/propertyTablePropertyDescriptionExample.jpeg)
 
-> **Note**: glTF models across a tileset can contain property tables with the same name, but potentially different schemas. As such, not all properties in a property table description are necessary present in every glTF model. If a property is missing from a property table, it will pass default values to its corresponding parameter in the Unreal material. For example, if a scalar property is missing from a model, the material will receive zero values.
+> **Note**: Within a tileset, it is possible for property tables from different models to have different schemas, despite sharing the same name or class. This is especially true if the glTFs were upgraded from the legacy `b3dm` (Batched 3D Model) format. As such, not all properties listed under the description are necessarily present in every individual model.
+>
+> If a property is listed in the description but missing from a model's property table, it will fall back on default values. For example, if a scalar property is missing from a model, its texture will be encoded with all zeroes.
 
-### Property Descriptions
-
-Metadata properties are distinguished by their names relative to the property tables that they belong to. This means that the same property name may found on different property tables, but each instance represents a separate property.
-
-Each property contains a "Property Details" section, which displays detailed information about the property's type. This also indicates if the property has any special characteristics it has, e.g., if it is normalized, or if it has an offset or scale. This information is taken from its class property definition in the `EXT_structural_metadata` extension.
+Every property table property displays **Property Details** that capture detailed information about the property's type. This also includes any special characteristics about the property, e.g., if it is `normalized` or has an `offset` and `scale`. This information is taken from its corresponding `classProperty` definition in `EXT_structural_metadata`, but the `offset` and `scale` may be defined on individual instances of the property. **Auto Fill** will detect these instance definitions as it is gathering the other information.
 
 ![Example property details](Images/propertyDetailsExample.jpeg)
+> **Note**: This implementation assumes that same-name properties will have identical definitions if they are under same-name property tables In other words, the **Property Details** of the first found property are assumed to represent all other instances of that property table property throughout the tileset. If any instance of the property has different property details, they will not overwrite the existing details in the description. This may affect how its values are transferred to the Unreal material.
 
-These property details inform what nodes will be
-For property table properties, the raw data is stored in parallel buffers, which cannot be passed as-is to the GPU. Instead, their data is encoded into textures. The "Encoding Details" of a property describes how a property should be encoded for access in the Unreal material.
+Below the **Property Details** are the **Encoding Details**, which determine how a property's values will be encoded to a texture and how they will be retrieved from the texture parameter. 
+The **Property Details** inform how a property table property can be best encoded during **Auto Fill**. However, the **Encoding Details** of the property may be manually set if desired.
 
 ![Example encoding details](Images/encodingDetailsExample.jpeg)
 
-Unfortunately, not all properties can be neatly encoded into textures. The following property types will not be encoded:
+Once the necessary **Property Details** and **Encoding Details** are filled out, **Generate Material** will create a custom node that retrieves the values for the listed properties. As previously described, the values for the properties will be passed in as texture parameters.
+
+<img src="Images/materialGetPropertyValues.jpeg" width="600px"/>
+
+The options in **Property Details** can prompt additional nodes to be generated. For instance, if any of **Is Normalized**, **Has Offset**, or **Has Scale** are true, a custom node will be created to handle the transforms. 
+
+<img src="Images/materialApplyValueTransforms.jpeg" width="800px"/>
+
+When value transforms are present in the property, the property's *raw* values will be encoded. They can then be transformed by the body of the custom function. The `scale` and `offset` are passed to the material as parameters, and the **TransformedValue** output provides the value with normalization, scale, and offset applied.
+
+Then, if **Has No Data Value** is true, another parameter node and an **If** node will be generated. The "no data" value acts as a sentinel value, indicating when a feature has no associated data for that property. This **If** node enables fallback behavior to be executed when the "no data" value is encountered.
+
+<img src="Images/materialNoData.jpeg" width="800px"/>
+
+> **Note**: The "no data" value is compared against raw property values, not the transformed ones.
+
+Finally, if **Has Default Value** is true, nodes can be autogenerated to handle the default value. It is entirely possible (and allowed by the spec) for a property to omitted from the property table, if it is not marked `required` in the `classProperty`. If the `classProperty` provides a `default` value, the default value should be used instead. **Generate Material** adds parameters and an **If** node to check for this case.
+
+<img src="Images/materialDefaultValue.jpeg" width="800px"/>
+
+> The `B` of the **If** node is set to a constant 1.0.
+
+If an instance of the property table property actually contains a buffer of values, they can be encoded to a texture that gets sampled in the material, as expected. However, if this property has been omitted from an instance of the property table, then only the `default` value can be used. The `HAS_VALUE` parameter acts as a boolean to indicate when this property has been omitted, and if so, to ignore the invalid texture sample in favor of the default value.
+
+If the property has a "no data" value as well, the default value will automatically be used as a fallback when encountering the "no data" value.
+
+<img src="Images/materialNoDataAndDefault.jpeg" width="800px"/>
+
+If all of **Has Offset**, **Has Scale**, **Has No Data Value**, and **Has Default Value** are simultaneously enabled on the same property, **Generate Material** will produce a material graph that contains a combination of the aforementioned nodes.
+
+<img src="Images/materialAllPossibleNodes.jpeg" width="800px"/>
+
+The logic of this graph can be summarized as the following pseudocode:
+
+```
+if (propertyHasValue) {
+  if (rawValue == noDataValue) {
+    return defaultValue;
+  }
+
+  transformedValue = rawValue * scale + offset;
+  return transformedValue;
+  
+} else {
+  return defaultValue;
+}
+
+```
+
+### Supported Properties
+
+Cesium for Unreal v2.0 only supports texture formats with up to four channels, and only with `Uint8` or `Float` components. This unfortunately limits the types of properties that can be made accessible to the material. Still, it is possible to configure the property's **Conversion** method to manipulates the values into a texture-compatible format. The built-in conversion methods include **Coerce** – converting to a numeric value that fits in the specified **Component Type** – and **Parse Color From String** – attemping to parse hexcode or RGB colors from a string property. Additional conversions can be implemented in C++ by following the structure of the other two methods.
+
+Unfortunately, these conversion methods are not compatible with all property types, and such types are explicitly unsupported. The following property types cannot be encoded or accessed in Unreal materials:
 
 - Enums
 - Strings that cannot be parsed as numbers or colors
@@ -294,7 +387,5 @@ Unfortunately, not all properties can be neatly encoded into textures. The follo
 - Variable-length arrays
 - Arrays of non-scalar and non-boolean elements
 
-Additionally, if a property contains arrays of fixed length, only up to the first four components will be encoded.
-
-### Generating Materials
+Additionally, if a property contains arrays of fixed length, only up to the first four elements will be encoded.
 

@@ -499,18 +499,19 @@ void parseAndEncodeColors(
     }
 
     if constexpr (std::is_same_v<T, uint8>) {
-      for (int32 j = 0; j < 3; j++) {
+      for (int64 j = 0; j < 3; j++) {
         *(pWritePos + j) = color[j];
       }
     } else if constexpr (std::is_same_v<T, float>) {
       // Floats are encoded backwards (e.g., ABGR)
       float* pWritePosF = reinterpret_cast<float*>(pWritePos + pixelSize) - 1;
-      for (int64 j = 0; j < 3; ++j) {
+      for (int64 j = 0; j < 3; j++) {
         *pWritePosF =
             CesiumMetadataConversions<float, uint8_t>::convert(color[j], 0.0f);
         --pWritePosF;
       }
     }
+
     pWritePos += pixelSize;
   }
 }

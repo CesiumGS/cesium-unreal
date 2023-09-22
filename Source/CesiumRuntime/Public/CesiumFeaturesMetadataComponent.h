@@ -254,6 +254,7 @@ class CESIUMRUNTIME_API UCesiumFeaturesMetadataComponent
   GENERATED_BODY()
 
 public:
+#if WITH_EDITOR
   /**
    * Populate the description of metadata and feature IDs using the current view
    * of the tileset. This determines what to encode to the GPU based on the
@@ -265,7 +266,6 @@ public:
   UFUNCTION(CallInEditor, Category = "Cesium")
   void AutoFill();
 
-#if WITH_EDITOR
   /**
    * @brief This button can be used to create a boiler-plate material layer that
    * exposes the requested metadata properties in the current description. The
