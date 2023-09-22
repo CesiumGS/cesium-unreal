@@ -37,7 +37,6 @@
 #include "UObject/Package.h"
 
 extern UNREALED_API class UEditorEngine* GEditor;
-#endif
 
 using namespace CesiumEncodedFeaturesMetadata;
 
@@ -312,7 +311,6 @@ void UCesiumFeaturesMetadataComponent::AutoFill() {
   Super::PostEditChange();
 }
 
-#if WITH_EDITOR
 template <typename ObjClass>
 static FORCEINLINE ObjClass* LoadObjFromPath(const FName& Path) {
   if (Path == NAME_None)
