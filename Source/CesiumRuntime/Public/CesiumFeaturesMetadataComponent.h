@@ -78,7 +78,7 @@ struct CESIUMRUNTIME_API FCesiumFeatureIdSetDescription {
  * EXT_mesh_features on a glTF's primitives.
  *
  * This aggregates the feature ID sets of all visible glTF primitives in the
- * feature ID sets. This describes the feature IDs that can be made accessible
+ * model. This describes the feature IDs that can be made accessible
  * to Unreal Engine materials.
  */
 USTRUCT()
@@ -167,6 +167,31 @@ struct CESIUMRUNTIME_API FCesiumPropertyTableDescription {
 };
 
 /**
+ * @brief Description of a property texture property that should be made
+ * accessible to Unreal materials. A property texture property's data is
+ * already available through a texture, so no additional encoding details need
+ * to be specified.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumPropertyTexturePropertyDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * The name of this property. This will be how it is referenced in the
+   * material.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FString Name;
+
+  /**
+   * Describes the underlying type of this property and other relevant
+   * information from its EXT_structural_metadata definition.
+   */
+  UPROPERTY(EditAnywhere, Category = "Cesium")
+  FCesiumMetadataPropertyDetails PropertyDetails;
+};
+
+/**
  * @brief Description of a property texture with properties that should be
  * made accessible to Unreal materials.
  */
@@ -183,8 +208,32 @@ struct CESIUMRUNTIME_API FCesiumPropertyTextureDescription {
   /**
    * @brief Descriptions of the properties to upload to the GPU.
    */
-  // UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty =
-  // "Name")) TArray<FCesiumPropertyTexturePropertyDescription> Properties;
+  UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
+  TArray<FCesiumPropertyTexturePropertyDescription> Properties;
+};
+
+/**
+ * @brief Names of the metadata entities referenced by the
+ * EXT_structural_metadata on a glTF's primitives.
+ *
+ * This aggregates the metadata of all visible glTF primitives in the model.
+ * This lists the names of the property textures actually used by the glTF
+ * primitive, indicating it can be sampled with the primitive's texture
+ * coordinates in the Unreal material.
+ */
+USTRUCT()
+struct CESIUMRUNTIME_API FCesiumPrimitiveMetadataDescription {
+  GENERATED_USTRUCT_BODY()
+
+  /**
+   * @brief The names of the property textures used by the glTF primitives
+   * across the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata",
+      Meta = (TitleProperty = "Name"))
+  TArray<FString> PropertyTextureNames;
 };
 
 /**
@@ -205,14 +254,15 @@ struct CESIUMRUNTIME_API FCesiumModelMetadataDescription {
       Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTableDescription> PropertyTables;
 
-  ///**
-  // * @brief Descriptions of property textures to upload to the GPU.
-  // */
-  // UPROPERTY(
-  //    EditAnywhere,
-  //    Category = "Metadata",
-  //    Meta = (TitleProperty = "Name"))
-  // TArray<FCesiumPropertyTextureDescription> PropertyTextures;
+  /**
+   * @brief Descriptions of property textures to make accessible to Unreal
+   * materials.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata",
+      Meta = (TitleProperty = "Name"))
+  TArray<FCesiumPropertyTextureDescription> PropertyTextures;
 };
 
 #pragma endregion
@@ -227,11 +277,18 @@ USTRUCT()
 struct CESIUMRUNTIME_API FCesiumFeaturesMetadataDescription {
   GENERATED_USTRUCT_BODY()
 
+public:
   /**
    * @brief Description of the feature ID sets available from the
    * EXT_mesh_features on a glTF's primitives.
    */
   FCesiumPrimitiveFeaturesDescription Features;
+
+  /**
+   * @brief Description of the metadata used by the EXT_structural_metadata on a
+   * glTF's primitives.
+   */
+  FCesiumPrimitiveMetadataDescription PrimitiveMetadata;
 
   /**
    * @brief Description of metadata from a glTF's EXT_structural_metadata
@@ -301,9 +358,29 @@ public:
   TArray<FCesiumFeatureIdSetDescription> FeatureIdSets;
 
   /**
+   * @brief The names of the property textures used by the glTF primitives
+   * across the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata",
+      Meta = (TitleProperty = "Name"))
+  TSet<FString> PropertyTextureNames;
+
+  /**
    * @brief Descriptions of the property tables in the visible glTF
    * models across the tileset.
    */
   UPROPERTY(EditAnywhere, Category = "Cesium", Meta = (TitleProperty = "Name"))
   TArray<FCesiumPropertyTableDescription> PropertyTables;
+
+  /**
+   * @brief Descriptions of property textures in the visible glTF models across
+   * the tileset.
+   */
+  UPROPERTY(
+      EditAnywhere,
+      Category = "Metadata",
+      Meta = (TitleProperty = "Name"))
+  TArray<FCesiumPropertyTextureDescription> PropertyTextures;
 };

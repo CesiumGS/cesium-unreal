@@ -2569,7 +2569,7 @@ void FCesiumPropertyTablePropertySpec::Define() {
       }
     });
 
-    It("gets from glm::i8vec3 property", [this]() {
+    It("gets from normalized glm::i8vec3 property", [this]() {
       PropertyTableProperty propertyTableProperty;
       ClassProperty classProperty;
       classProperty.type = ClassProperty::Type::VEC3;

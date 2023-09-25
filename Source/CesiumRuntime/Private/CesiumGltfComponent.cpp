@@ -2150,36 +2150,39 @@ static void SetFeaturesMetadataParameterValues(
     }
   }
 
-  /* for (const FString& featureTextureName :
-        loadResult.EncodedMetadata.featureTextureNames) {
-     EncodedFeatureTexture* pEncodedFeatureTexture =
-         gltfComponent.EncodedMetadata.encodedFeatureTextures.Find(
-             featureTextureName);
+  /*for (int64 index : loadResult.EncodedMetadata.propertyTextureIndices) {
+    if (index < 0 ||
+        index >= gltfComponent.EncodedMetadata.propertyTextures.Num()) {
+      continue;
+    }
 
-     if (pEncodedFeatureTexture) {
-       for (EncodedFeatureTextureProperty& encodedProperty :
-            pEncodedFeatureTexture->properties) {
+    const CesiumEncodedFeaturesMetadata::EncodedPropertyTexture&
+        encodedPropertyTexture =
+            gltfComponent.EncodedMetadata.propertyTextures[index];
 
-         pMaterial->SetTextureParameterValueByInfo(
-             FMaterialParameterInfo(
-                 FName(encodedProperty.baseName + "TX"),
-                 association,
-                 index),
-             encodedProperty.pTexture->pTexture.Get());
+    for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTextureProperty&
+             encodedProperty : encodedPropertyTexture.properties) {
+      pMaterial->SetTextureParameterValueByInfo(
+          FMaterialParameterInfo(
+              FName(encodedProperty.name),
+              association,
+              index),
+          encodedProperty.pTexture->pTexture.Get());
 
-         pMaterial->SetVectorParameterValueByInfo(
-             FMaterialParameterInfo(
-                 FName(encodedProperty.baseName + "SW"),
-                 association,
-                 index),
-             FLinearColor(
-                 encodedProperty.channelOffsets[0],
-                 encodedProperty.channelOffsets[1],
-                 encodedProperty.channelOffsets[2],
-                 encodedProperty.channelOffsets[3]));
-       }
-     }
-   }*/
+      pMaterial->SetVectorParameterValueByInfo(
+          FMaterialParameterInfo(
+              FName(
+                  encodedProperty.name +
+                  CesiumEncodedFeaturesMetadata::MaterialChannelsSuffix),
+              association,
+              index),
+          FLinearColor(
+              encodedProperty.channels[0],
+              encodedProperty.channels[1],
+              encodedProperty.channels[2],
+              encodedProperty.channels[3]));
+    }
+  }*/
 
   for (const CesiumEncodedFeaturesMetadata::EncodedPropertyTable&
            propertyTable : gltfComponent.EncodedMetadata.propertyTables) {

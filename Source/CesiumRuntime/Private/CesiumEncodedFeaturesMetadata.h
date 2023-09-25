@@ -57,16 +57,24 @@ static const FString MaterialNullFeatureIdSuffix = "_NULL_ID";
 /**
  * Naming convention for metadata parameters
  * - Property Table: "PTABLE_" + PropertyTableName
+ * - Property Texture: "PTEXTURE_" + PropertyTableName
  * - Property Table Property: "PTABLE_" + PropertyTableName + PropertyName
- * - Property Offset: "PTABLE_" + PropertyTableName + PropertyName + "_OFFSET"
- * - Property Scale: "PTABLE_" + PropertyTableName + PropertyName + "_SCALE"
- * - Property NoData: "PTABLE_" + PropertyTableName + PropertyName + "_NO_DATA"
- * - Property Default Value: "PTABLE_" + PropertyTableName + PropertyName +
- * "_DEFAULT"
- * - Property Has Value Qualifier: "PTABLE_" + PropertyTableName + PropertyName
- * + "_HAS_VALUE"
+ * - Property Texture Property: "PTEXTURE_" + PropertyTableName + PropertyName
+ * - Property Texture Property Channels: "PTEXTURE_" + PropertyTableName +
+ * PropertyName + "_CHANNELS"
  */
 static const FString MaterialPropertyTablePrefix = "PTABLE_";
+static const FString MaterialPropertyTexturePrefix = "PTEXTURE_";
+
+/**
+ * - Property Offset: Prefix + PropertyTableName + PropertyName + "_OFFSET"
+ * - Property Scale: Prefix + PropertyTableName + PropertyName + "_SCALE"
+ * - Property NoData: Prefix + PropertyTableName + PropertyName + "_NO_DATA"
+ * - Property Default Value: Prefix + PropertyTableName + PropertyName +
+ * "_DEFAULT"
+ * - Property Has Value Qualifier: Prefix + PropertyTableName + PropertyName
+ * + "_HAS_VALUE"
+ */
 static const FString MaterialPropertyOffsetSuffix = "_OFFSET";
 static const FString MaterialPropertyScaleSuffix = "_SCALE";
 static const FString MaterialPropertyNoDataSuffix = "_NO_DATA";
@@ -226,6 +234,20 @@ void destroyEncodedPrimitiveFeatures(EncodedPrimitiveFeatures& encodedFeatures);
 FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable);
 
 /**
+ * @brief Generates a name for a property texture in a glTF model's
+ * EXT_structural_metadata. If the property texture already has a name, this
+ * will return the name. Otherwise, if the property texture is unlabeled, its
+ * corresponding class will be substituted.
+ *
+ * This is used by FCesiumPropertyTextureDescription to display the names of
+ * the property textures across a tileset.
+ *
+ * @param PropertyTexture The property texture
+ */
+FString
+getNameForPropertyTexture(const FCesiumPropertyTexture& PropertyTexture);
+
+/**
  * @brief Generates a name for a property table property in a glTF model's
  * EXT_structural_metadata. This is formatted like so:
  *
@@ -235,6 +257,19 @@ FString getNameForPropertyTable(const FCesiumPropertyTable& PropertyTable);
  * the generated Unreal material.
  */
 FString getMaterialNameForPropertyTableProperty(
+    const FString& propertyTableName,
+    const FString& propertyName);
+
+/**
+ * @brief Generates a name for a property texture property in a glTF model's
+ * EXT_structural_metadata. This is formatted like so:
+ *
+ * "PTEXTURE_<texture name>_<property name>"
+ *
+ * This is used to name the texture parameter corresponding to this property in
+ * the generated Unreal material.
+ */
+FString getMaterialNameForPropertyTextureProperty(
     const FString& propertyTableName,
     const FString& propertyName);
 
@@ -294,19 +329,76 @@ struct EncodedPropertyTable {
   TArray<EncodedPropertyTableProperty> properties;
 };
 
+/**
+ * A property texture property that has been made accessible to Unreal materials
+ * through the GPU.
+ */
 struct EncodedPropertyTextureProperty {
-  FString baseName;
+  /**
+   * @brief The name of the property texture property.
+   */
+  FString name;
+
+  /**
+   * @brief The texture used by the property texture property.
+   */
   TSharedPtr<CesiumTextureUtility::LoadedTextureResult> pTexture;
-  int64 textureCoordinateAttributeId;
-  int32 channelOffsets[4];
+
+  /**
+   * @brief The set index of the texture coordinates used to sample this
+   * property texture.
+   */
+  int64 textureCoordinateSetIndex;
+
+  /**
+   * @brief The channels to use when constructing a value from texture data.
+   */
+  std::array<int32, 4> channels;
+
+  /**
+   * @brief The property table property's offset.
+   */
+  FCesiumMetadataValue offset;
+
+  /**
+   * @brief The property table property's scale.
+   */
+  FCesiumMetadataValue scale;
+
+  /**
+   * @brief The property table property's "no data" value.
+   */
+  FCesiumMetadataValue noData;
+
+  /**
+   * @brief The property table property's default value.
+   */
+  FCesiumMetadataValue defaultValue;
 };
 
+/**
+ * A property texture whose properties have been made accessible to Unreal
+ * materials.
+ */
 struct EncodedPropertyTexture {
+  /**
+   * @brief The name assigned to this property texture. This will be used to
+   * construct variable names in the generated Unreal material.
+   */
+  FString name;
+
+  /**
+   * @brief The encoded properties in this property texture.
+   */
   TArray<EncodedPropertyTextureProperty> properties;
 };
 
+/**
+ * @brief The encoded representation of the EXT_structural_metadata of a glTF
+ * primitive.
+ */
 struct EncodedPrimitiveMetadata {
-  TArray<FString> propertyTextureNames;
+  TArray<int64> propertyTextureIndices;
 };
 
 /**

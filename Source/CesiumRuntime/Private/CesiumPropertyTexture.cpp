@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumPropertyTexture.h"
 #include "CesiumGltf/Model.h"
@@ -12,14 +12,15 @@ static FCesiumPropertyTextureProperty EmptyPropertyTextureProperty;
 FCesiumPropertyTexture::FCesiumPropertyTexture(
     const CesiumGltf::Model& Model,
     const CesiumGltf::PropertyTexture& PropertyTexture)
-    : _status(ECesiumPropertyTextureStatus::ErrorInvalidMetadataExtension),
-      _name(PropertyTexture.name.value_or("").c_str()) {
+    : _status(ECesiumPropertyTextureStatus::ErrorInvalidPropertyTextureClass),
+      _name(PropertyTexture.name.value_or("").c_str()),
+      _className(PropertyTexture.classProperty.c_str()) {
   PropertyTextureView propertyTextureView(Model, PropertyTexture);
   switch (propertyTextureView.status()) {
   case PropertyTextureViewStatus::Valid:
     break;
-  case PropertyTextureViewStatus::ErrorMissingMetadataExtension:
   default:
+    // Status was already set in initializer list.
     return;
   }
 
@@ -27,7 +28,7 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
                                           const std::string& propertyName,
                                           auto propertyValue) mutable {
     FString key(UTF8_TO_TCHAR(propertyName.data()));
-    // properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
+    properties.Add(key, FCesiumPropertyTextureProperty(propertyValue));
   });
 }
 
@@ -43,12 +44,10 @@ UCesiumPropertyTextureBlueprintLibrary::GetPropertyTextureName(
   return PropertyTexture._name;
 }
 
-/*static*/ const TArray<FCesiumPropertyTextureProperty>
+/*static*/ const TMap<FString, FCesiumPropertyTextureProperty>
 UCesiumPropertyTextureBlueprintLibrary::GetProperties(
     UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture) {
-  TArray<FCesiumPropertyTextureProperty> properties;
-  PropertyTexture._properties.GenerateValueArray(properties);
-  return properties;
+  return PropertyTexture._properties;
 }
 
 /*static*/ const TArray<FString>
@@ -66,4 +65,68 @@ UCesiumPropertyTextureBlueprintLibrary::FindProperty(
   const FCesiumPropertyTextureProperty* property =
       PropertyTexture._properties.Find(PropertyName);
   return property ? *property : EmptyPropertyTextureProperty;
+}
+
+TMap<FString, FCesiumMetadataValue>
+UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUV(
+    UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
+    const FVector2D& UV) {
+  TMap<FString, FCesiumMetadataValue> values;
+
+  for (const auto& pair : PropertyTexture._properties) {
+    const FCesiumPropertyTextureProperty& property = pair.Value;
+    ECesiumPropertyTexturePropertyStatus status =
+        UCesiumPropertyTexturePropertyBlueprintLibrary::
+            GetPropertyTexturePropertyStatus(property);
+    if (status == ECesiumPropertyTexturePropertyStatus::Valid) {
+      values.Add(
+          pair.Key,
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
+              pair.Value,
+              UV));
+    } else if (
+        status ==
+        ECesiumPropertyTexturePropertyStatus::EmptyPropertyWithDefault) {
+      values.Add(
+          pair.Key,
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
+              pair.Value));
+    }
+  }
+
+  return values;
+}
+
+TMap<FString, FString>
+UCesiumPropertyTextureBlueprintLibrary::GetMetadataValuesForUVAsStrings(
+    UPARAM(ref) const FCesiumPropertyTexture& PropertyTexture,
+    const FVector2D& UV) {
+  TMap<FString, FString> values;
+
+  for (const auto& pair : PropertyTexture._properties) {
+    const FCesiumPropertyTextureProperty& property = pair.Value;
+    ECesiumPropertyTexturePropertyStatus status =
+        UCesiumPropertyTexturePropertyBlueprintLibrary::
+            GetPropertyTexturePropertyStatus(property);
+    if (status == ECesiumPropertyTexturePropertyStatus::Valid) {
+      FCesiumMetadataValue value =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetValue(
+              pair.Value,
+              UV);
+      values.Add(
+          pair.Key,
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
+    } else if (
+        status ==
+        ECesiumPropertyTexturePropertyStatus::EmptyPropertyWithDefault) {
+      FCesiumMetadataValue value =
+          UCesiumPropertyTexturePropertyBlueprintLibrary::GetDefaultValue(
+              pair.Value);
+      values.Add(
+          pair.Key,
+          UCesiumMetadataValueBlueprintLibrary::GetString(value, FString()));
+    }
+  }
+
+  return values;
 }

@@ -12,6 +12,11 @@ BEGIN_DEFINE_SPEC(
         EAutomationTestFlags::ProductFilter)
 Model model;
 MeshPrimitive* pPrimitive;
+const std::vector<glm::vec2> texCoords{
+    glm::vec2(0, 0),
+    glm::vec2(0.5, 0),
+    glm::vec2(0, 0.5),
+    glm::vec2(0.5, 0.5)};
 END_DEFINE_SPEC(FCesiumFeatureIdTextureSpec)
 
 void FCesiumFeatureIdTextureSpec::Define() {
@@ -92,11 +97,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("constructs valid instance", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -235,11 +235,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("returns correct value for valid attribute", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -310,11 +305,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("returns -1 for out-of-bounds index", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,
@@ -355,11 +345,6 @@ void FCesiumFeatureIdTextureSpec::Define() {
 
     It("returns correct value for valid texture", [this]() {
       const std::vector<uint8_t> featureIDs{0, 3, 1, 2};
-      const std::vector<glm::vec2> texCoords{
-          glm::vec2(0, 0),
-          glm::vec2(0.5, 0),
-          glm::vec2(0, 0.5),
-          glm::vec2(0.5, 0.5)};
 
       FeatureId& featureId = AddFeatureIDsAsTextureToModel(
           model,

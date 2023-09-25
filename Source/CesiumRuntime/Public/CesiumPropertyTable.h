@@ -151,6 +151,7 @@ public:
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
    * @param featureID The ID of the feature.
+   * @return The property values mapped by property name.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -171,6 +172,7 @@ public:
    * If the feature ID is out-of-bounds, the returned map will be empty.
    *
    * @param FeatureID The ID of the feature.
+   * @return The property values as strings mapped by property name.
    */
   UFUNCTION(
       BlueprintCallable,
