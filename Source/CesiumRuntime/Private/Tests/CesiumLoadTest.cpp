@@ -2,6 +2,7 @@
 
 #if WITH_EDITOR
 
+#include "Framework/Application/SlateApplication.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
