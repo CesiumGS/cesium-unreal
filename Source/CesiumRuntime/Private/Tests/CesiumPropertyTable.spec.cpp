@@ -129,10 +129,6 @@ void FCesiumPropertyTableSpec::Define() {
 
   Describe("GetProperties", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-      pExtension->schema = Schema();
-      pPropertyTable = &pExtension->propertyTables.emplace_back();
       pPropertyTable->classProperty = "testClass";
     });
 
@@ -294,10 +290,6 @@ void FCesiumPropertyTableSpec::Define() {
 
   Describe("GetPropertyNames", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-      pExtension->schema = Schema();
-      pPropertyTable = &pExtension->propertyTables.emplace_back();
       pPropertyTable->classProperty = "testClass";
     });
 
@@ -379,10 +371,6 @@ void FCesiumPropertyTableSpec::Define() {
 
   Describe("FindProperty", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-      pExtension->schema.emplace();
-      pPropertyTable = &pExtension->propertyTables.emplace_back();
       pPropertyTable->classProperty = "testClass";
     });
 
@@ -499,10 +487,6 @@ void FCesiumPropertyTableSpec::Define() {
 
   Describe("GetMetadataValuesForFeature", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-      pExtension->schema.emplace();
-      pPropertyTable = &pExtension->propertyTables.emplace_back();
       pPropertyTable->classProperty = "testClass";
     });
 
@@ -690,10 +674,6 @@ void FCesiumPropertyTableSpec::Define() {
 
   Describe("GetMetadataValuesForFeatureAsStrings", [this]() {
     BeforeEach([this]() {
-      model = Model();
-      pExtension = &model.addExtension<ExtensionModelExtStructuralMetadata>();
-      pExtension->schema.emplace();
-      pPropertyTable = &pExtension->propertyTables.emplace_back();
       pPropertyTable->classProperty = "testClass";
     });
 

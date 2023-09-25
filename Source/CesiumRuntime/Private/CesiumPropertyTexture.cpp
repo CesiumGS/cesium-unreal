@@ -18,6 +18,7 @@ FCesiumPropertyTexture::FCesiumPropertyTexture(
   PropertyTextureView propertyTextureView(Model, PropertyTexture);
   switch (propertyTextureView.status()) {
   case PropertyTextureViewStatus::Valid:
+    _status = ECesiumPropertyTextureStatus::Valid;
     break;
   default:
     // Status was already set in initializer list.
