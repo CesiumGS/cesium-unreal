@@ -883,6 +883,12 @@ void ACesium3DTileset::UpdateLoadStatus() {
 
   this->LoadProgress = this->_pTileset->computeLoadProgress();
 
+  // If we have tiles to hide next frame, we haven't completely finished loading
+  // yet. We need to tick once more
+  if (!this->_tilesToHideNextFrame.empty()) {
+    this->LoadProgress = glm::min(this->LoadProgress, 99.9999f);
+  }
+
   if (this->LoadProgress < 100 ||
       this->_lastTilesWaitingForOcclusionResults > 0) {
     this->_activeLoading = true;
@@ -2028,12 +2034,15 @@ void ACesium3DTileset::Tick(float DeltaTime) {
         CreateViewStateFromViewParameters(camera, unrealWorldToCesiumTileset));
   }
 
-  const Cesium3DTilesSelection::ViewUpdateResult& result =
-      this->_captureMovieMode
-          ? this->_pTileset->updateViewOffline(frustums)
-          : this->_pTileset->updateView(frustums, DeltaTime);
+  Cesium3DTilesSelection::ViewUpdateResult result;
+  if (this->_captureMovieMode) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateViewOffline)
+    result = this->_pTileset->updateViewOffline(frustums);
+  } else {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::updateView)
+    result = this->_pTileset->updateView(frustums, DeltaTime);
+  }
   updateLastViewUpdateResultState(result);
-  this->UpdateLoadStatus();
 
   removeCollisionForTiles(result.tilesFadingOut);
 
@@ -2066,6 +2075,8 @@ void ACesium3DTileset::Tick(float DeltaTime) {
       updateTileFade(pTile, false);
     }
   }
+
+  this->UpdateLoadStatus();
 }
 
 void ACesium3DTileset::EndPlay(const EEndPlayReason::Type EndPlayReason) {

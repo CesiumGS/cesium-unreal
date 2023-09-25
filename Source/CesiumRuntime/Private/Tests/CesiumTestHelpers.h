@@ -172,6 +172,8 @@ template <typename T> T* findInPlay(T* pEditorObject) {
       return nullptr;
     return getComponentWithTag<T>(pPlayOwner, getUniqueTag(pEditorObject));
   }
+
+  return nullptr;
 }
 
 /// <summary>
