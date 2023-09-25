@@ -1,6 +1,7 @@
 // Copyright 2020-2021 CesiumGS, Inc. and Contributors
 
 #include "CesiumCartographicPolygon.h"
+#include "CesiumActors.h"
 #include "CesiumUtility/Math.h"
 #include "Components/SceneComponent.h"
 #include "StaticMeshResources.h"
@@ -78,4 +79,11 @@ void ACesiumCartographicPolygon::MakeLinear() {
   for (size_t i = 0; i < this->Polygon->GetNumberOfSplinePoints(); ++i) {
     this->Polygon->SetSplinePointType(i, ESplinePointType::Linear);
   }
+}
+
+void ACesiumCartographicPolygon::PostLoad() {
+  Super::PostLoad();
+
+  if (CesiumActors::shouldValidateFlags(this))
+    CesiumActors::validateActorFlags(this);
 }
