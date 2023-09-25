@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Components/ActorComponent.h"
+#include "CesiumActorComponentWithGlobeAnchor.h"
 #include "CoreMinimal.h"
 #include "CesiumOriginShiftComponent.generated.h"
 
@@ -73,7 +73,8 @@ enum class ECesiumOriginShiftMode : uint8 {
  * sub-level is active.
  */
 UCLASS(ClassGroup = "Cesium", Meta = (BlueprintSpawnableComponent))
-class CESIUMRUNTIME_API UCesiumOriginShiftComponent : public UActorComponent {
+class CESIUMRUNTIME_API UCesiumOriginShiftComponent
+    : public UCesiumActorComponentWithGlobeAnchor {
   GENERATED_BODY()
 
 #pragma region Properties
@@ -155,18 +156,8 @@ public:
   UCesiumOriginShiftComponent();
 
 protected:
-  virtual void OnRegister() override;
-  virtual void BeginPlay() override;
   virtual void TickComponent(
       float DeltaTime,
       ELevelTick TickType,
       FActorComponentTickFunction* ThisTickFunction) override;
-
-private:
-  void ResolveGlobeAnchor();
-
-  // The globe anchor attached to the same Actor as this component. Don't
-  // save/load or copy this. It is set in BeginPlay.
-  UPROPERTY(Transient, DuplicateTransient, TextExportTransient)
-  UCesiumGlobeAnchorComponent* GlobeAnchor;
 };
