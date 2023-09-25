@@ -161,6 +161,7 @@ protected:
 
 private:
   bool _flightInProgress = false;
+  bool _canInterruptByMoving;
   FVector _destinationEcef;
   FQuat _sourceRotation;
   FQuat _destinationRotation;
@@ -171,4 +172,5 @@ private:
   double _destinationHeight;
   FVector _sourceDirection;
   double _maxHeight;
+  FVector _previousPositionEcef;
 };

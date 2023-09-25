@@ -41,6 +41,8 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   FQuat flyQuat = FQuat::FindBetween(ecefSource, this->_destinationEcef);
   flyQuat.ToAxisAndAngle(this->_rotationAxis, this->_totalAngle);
 
+  this->_totalAngle = CesiumUtility::Math::radiansToDegrees(this->_totalAngle);
+
   this->_currentFlyTime = 0.0f;
 
   // We will not create a curve projected along the ellipsoid as we want to take
@@ -88,6 +90,8 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
   }
 
   // Tell the tick we will be flying from now
+  this->_canInterruptByMoving = CanInterruptByMoving;
+  this->_previousPositionEcef = ecefSource;
   this->_flightInProgress = true;
 }
 
@@ -121,15 +125,38 @@ void UCesiumFlyToComponent::FlyToLocationUnreal(
     return;
   }
 
+  ACesiumGeoreference* Georeference = GlobeAnchor->ResolveGeoreference();
+  if (!IsValid(Georeference)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumFlyToComponent cannot FlyToLocationUnreal because the globe anchor has no associated CesiumGeoreference."));
+    return;
+  }
+
   this->FlyToLocationEarthCenteredEarthFixed(
-      GlobeAnchor->GetEarthCenteredEarthFixedPosition(),
+      Georeference->TransformUnrealPositionToEarthCenteredEarthFixed(
+          UnrealDestination),
       YawAtDestination,
       PitchAtDestination,
       CanInterruptByMoving);
 }
 
 void UCesiumFlyToComponent::InterruptFlight() {
-  // TODO
+  this->_flightInProgress = false;
+
+  UCesiumGlobeAnchorComponent* GlobeAnchor = this->GetGlobeAnchor();
+  if (IsValid(GlobeAnchor)) {
+    // fix Actor roll to 0.0
+    FRotator currentRotator = GlobeAnchor->GetEastSouthUpRotation().Rotator();
+    currentRotator.Roll = 0.0;
+    GlobeAnchor->SetEastSouthUpRotation(currentRotator.Quaternion());
+  }
+
+  // Trigger callback accessible from BP
+  UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnFlightInterrupt"));
+  OnFlightInterrupted.Broadcast();
 }
 
 void UCesiumFlyToComponent::TickComponent(
@@ -149,6 +176,13 @@ void UCesiumFlyToComponent::TickComponent(
 
   AActor* Owner = this->GetOwner();
   if (!IsValid(Owner)) {
+    return;
+  }
+
+  if (this->_canInterruptByMoving &&
+      this->_previousPositionEcef !=
+          GlobeAnchor->GetEarthCenteredEarthFixedPosition()) {
+    this->InterruptFlight();
     return;
   }
 
@@ -225,4 +259,7 @@ void UCesiumFlyToComponent::TickComponent(
       this->_destinationRotation,
       flyPercentage);
   Owner->SetActorRelativeRotation(currentQuat);
+
+  this->_previousPositionEcef =
+      GlobeAnchor->GetEarthCenteredEarthFixedPosition();
 }
