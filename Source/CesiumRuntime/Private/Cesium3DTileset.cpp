@@ -881,33 +881,41 @@ private:
 void ACesium3DTileset::UpdateLoadStatus() {
   TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::UpdateLoadStatus)
 
-  this->LoadProgress = this->_pTileset->computeLoadProgress();
+  float nativeLoadProgress = this->_pTileset->computeLoadProgress();
 
-  // If we have tiles to hide next frame, we haven't completely finished loading
-  // yet. We need to tick once more
-  if (!this->_tilesToHideNextFrame.empty()) {
-    this->LoadProgress = glm::min(this->LoadProgress, 99.9999f);
+  // If native tileset still loading, just copy its progress
+  if (nativeLoadProgress < 100) {
+    this->LoadProgress = nativeLoadProgress;
+    return;
   }
 
-  if (this->LoadProgress < 100 ||
-      this->_lastTilesWaitingForOcclusionResults > 0) {
-    this->_activeLoading = true;
-  } else if (this->_activeLoading && this->LoadProgress == 100) {
+  // Native tileset is 100% loaded, but there might be a few frames where
+  // nothing needs to be loaded as we are waiting for occlusion results to come
+  // back, which means we are not done with loading all the tiles in the tileset
+  // yet. Interpret this as 99% (almost) done
+  if (this->_lastTilesWaitingForOcclusionResults > 0) {
+    this->LoadProgress = 99;
+    return;
+  }
 
-    // There might be a few frames where nothing needs to be loaded as we
-    // are waiting for occlusion results to come back, which means we are not
-    // done with loading all the tiles in the tileset yet.
-    if (this->_lastTilesWaitingForOcclusionResults == 0) {
-      TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BroadcastOnTilesetLoaded)
+  // If we have tiles to hide next frame, we haven't completely finished loading
+  // yet. We need to tick once more. We're really close to done.
+  if (!this->_tilesToHideNextFrame.empty()) {
+    this->LoadProgress = glm::min(this->LoadProgress, 99.9999f);
+    return;
+  }
 
-      // Tileset just finished loading, we broadcast the update
-      UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
-      OnTilesetLoaded.Broadcast();
+  // We can now report 100 percent loaded
+  float lastLoadProgress = this->LoadProgress;
+  this->LoadProgress = 100;
 
-      // Tileset remains 100% loaded if we don't have to reload it
-      // so we don't want to keep on sending finished loading updates
-      this->_activeLoading = false;
-    }
+  // Only broadcast the update when we first hit 100%, not everytime
+  if (lastLoadProgress != LoadProgress) {
+    TRACE_CPUPROFILER_EVENT_SCOPE(Cesium::BroadcastOnTilesetLoaded)
+
+    // Tileset just finished loading, we broadcast the update
+    UE_LOG(LogCesium, Verbose, TEXT("Broadcasting OnTileLoaded"));
+    OnTilesetLoaded.Broadcast();
   }
 }
 
@@ -1018,6 +1026,8 @@ void ACesium3DTileset::LoadTileset() {
           : nullptr};
 
   this->_startTime = std::chrono::high_resolution_clock::now();
+
+  this->LoadProgress = 0;
 
   Cesium3DTilesSelection::TilesetOptions options;
 

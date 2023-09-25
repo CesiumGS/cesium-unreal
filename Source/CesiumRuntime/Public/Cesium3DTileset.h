@@ -1204,7 +1204,6 @@ private:
   uint32_t _lastTilesRendered;
   uint32_t _lastWorkerThreadTileLoadQueueLength;
   uint32_t _lastMainThreadTileLoadQueueLength;
-  bool _activeLoading;
 
   uint32_t _lastTilesVisited;
   uint32_t _lastCulledTilesVisited;
