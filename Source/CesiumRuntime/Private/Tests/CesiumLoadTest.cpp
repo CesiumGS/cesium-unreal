@@ -2,6 +2,7 @@
 
 #if WITH_EDITOR
 
+#include "Framework/Application/SlateApplication.h"
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Tests/AutomationEditorCommon.h"
@@ -140,8 +141,7 @@ void setupForGoogleTiles(LoadTestContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetOriginLongitudeLatitudeHeight(
-      targetOrigin);
+  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
   context.pawn->SetActorRotation(FRotator(-25, 95, 0));
@@ -167,8 +167,7 @@ void setupForDenver(LoadTestContext& context) {
   camera.FieldOfViewDegrees = 90;
   context.setCamera(camera);
 
-  context.georeference->SetOriginLongitudeLatitudeHeight(
-      targetOrigin);
+  context.georeference->SetOriginLongitudeLatitudeHeight(targetOrigin);
 
   context.pawn->SetActorLocation(FVector(0, 0, 0));
   context.pawn->SetActorRotation(FRotator(-5.2, -149.4, 0));
