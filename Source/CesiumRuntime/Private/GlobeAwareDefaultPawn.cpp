@@ -238,30 +238,30 @@ void AGlobeAwareDefaultPawn::PostLoad() {
     this->RerunConstructionScripts();
 
     UCesiumFlyToComponent* FlyTo =
-        pPawn->FindComponentByClass<UCesiumFlyToComponent>();
+        this->FindComponentByClass<UCesiumFlyToComponent>();
     if (FlyTo == nullptr) {
-      FlyTo = Cast<UCesiumFlyToComponent>(pPawn->AddComponentByClass(
+      FlyTo = Cast<UCesiumFlyToComponent>(this->AddComponentByClass(
           UCesiumFlyToComponent::StaticClass(),
           false,
           FTransform::Identity,
           false));
       FlyTo->SetFlags(RF_Transactional);
-      pPawn->AddInstanceComponent(FlyTo);
+      this->AddInstanceComponent(FlyTo);
 
       UE_LOG(
           LogCesium,
           Warning,
           TEXT(
               "Added CesiumFlyToComponent to %s in order to preserve backward compatibility."),
-          *pPawn->GetName());
+          *this->GetName());
     }
 
     FlyTo->RotationToUse = ECesiumFlyToRotation::ControlRotationInEastSouthUp;
-    FlyTo->ProgressCurve = pPawn->FlyToProgressCurve_DEPRECATED;
-    FlyTo->HeightPercentageCurve = pPawn->FlyToAltitudeProfileCurve_DEPRECATED;
+    FlyTo->ProgressCurve = this->FlyToProgressCurve_DEPRECATED;
+    FlyTo->HeightPercentageCurve = this->FlyToAltitudeProfileCurve_DEPRECATED;
     FlyTo->MaximumHeightByDistanceCurve =
-        pPawn->FlyToMaximumAltitudeCurve_DEPRECATED;
-    FlyTo->Duration = pPawn->FlyToDuration_DEPRECATED;
+        this->FlyToMaximumAltitudeCurve_DEPRECATED;
+    FlyTo->Duration = this->FlyToDuration_DEPRECATED;
   }
 }
 
