@@ -174,11 +174,6 @@ void UCesiumFlyToComponent::TickComponent(
     return;
   }
 
-  AActor* Owner = this->GetOwner();
-  if (!IsValid(Owner)) {
-    return;
-  }
-
   if (this->_canInterruptByMoving &&
       this->_previousPositionEcef !=
           GlobeAnchor->GetEarthCenteredEarthFixedPosition()) {
@@ -209,7 +204,7 @@ void UCesiumFlyToComponent::TickComponent(
       (this->_totalAngle == 0.0 &&
        this->_sourceRotation == this->_destinationRotation)) {
     GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(this->_destinationEcef);
-    Owner->SetActorRelativeRotation(this->_destinationRotation);
+    GlobeAnchor->SetEastSouthUpRotation(this->_destinationRotation);
     this->_flightInProgress = false;
     this->_currentFlyTime = 0.0f;
 
@@ -258,7 +253,7 @@ void UCesiumFlyToComponent::TickComponent(
       this->_sourceRotation,
       this->_destinationRotation,
       flyPercentage);
-  Owner->SetActorRelativeRotation(currentQuat);
+  GlobeAnchor->SetEastSouthUpRotation(currentQuat);
 
   this->_previousPositionEcef =
       GlobeAnchor->GetEarthCenteredEarthFixedPosition();

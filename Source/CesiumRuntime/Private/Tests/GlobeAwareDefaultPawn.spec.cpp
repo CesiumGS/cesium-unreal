@@ -54,7 +54,7 @@ void FGlobeAwareDefaultPawnSpec::Define() {
 
           TActorIterator<AGlobeAwareDefaultPawn> it(pWorld);
           AGlobeAwareDefaultPawn* pPawn = *it;
-          pPawn->FlyToDuration = 5.0f;
+          pPawn->FlyToDuration_DEPRECATED = 5.0f;
           UCesiumGlobeAnchorComponent* pGlobeAnchor =
               pPawn->FindComponentByClass<UCesiumGlobeAnchorComponent>();
           TestNotNull("pGlobeAnchor", pGlobeAnchor);
