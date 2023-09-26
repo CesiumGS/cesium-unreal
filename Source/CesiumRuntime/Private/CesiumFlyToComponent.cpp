@@ -4,8 +4,30 @@
 #include "CesiumWgs84Ellipsoid.h"
 #include "Curves/CurveFloat.h"
 #include "GameFramework/Controller.h"
+#include "UObject/ConstructorHelpers.h"
 
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
+  // Structure to hold one-time initialization
+  struct FConstructorStatics {
+    ConstructorHelpers::FObjectFinder<UCurveFloat> ProgressCurve;
+    ConstructorHelpers::FObjectFinder<UCurveFloat> HeightPercentageCurve;
+    ConstructorHelpers::FObjectFinder<UCurveFloat> MaximumHeightByDistanceCurve;
+    FConstructorStatics()
+        : ProgressCurve(TEXT(
+              "/CesiumForUnreal/Curves/FlyTo/Curve_CesiumFlyToDefaultProgress_Float.Curve_CesiumFlyToDefaultProgress_Float")),
+          HeightPercentageCurve(TEXT(
+              "/CesiumForUnreal/Curves/FlyTo/Curve_CesiumFlyToDefaultHeightPercentage_Float.Curve_CesiumFlyToDefaultHeightPercentage_Float")),
+          MaximumHeightByDistanceCurve(TEXT(
+              "/CesiumForUnreal/Curves/FlyTo/Curve_CesiumFlyToDefaultMaximumHeightByDistance_Float.Curve_CesiumFlyToDefaultMaximumHeightByDistance_Float")) {
+    }
+  };
+  static FConstructorStatics ConstructorStatics;
+
+  this->ProgressCurve = ConstructorStatics.ProgressCurve.Object;
+  this->HeightPercentageCurve = ConstructorStatics.HeightPercentageCurve.Object;
+  this->MaximumHeightByDistanceCurve =
+      ConstructorStatics.MaximumHeightByDistanceCurve.Object;
+
   this->PrimaryComponentTick.bCanEverTick = true;
 }
 
