@@ -74,57 +74,6 @@ public:
    */
   virtual FRotator GetBaseAimRotation() const override;
 
-  /**
-   * This curve dictates what percentage of the max altitude the pawn should
-   * take at a given time on the curve. This curve must be kept in the 0 to
-   * 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} dictates the
-   * actual max altitude at each point along the curve.
-   */
-  UPROPERTY(
-      meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Use HeightPercentageCurve on CesiumFlyToComponent instead."))
-  UCurveFloat* FlyToAltitudeProfileCurve_DEPRECATED;
-
-  /**
-   * This curve is used to determine the progress percentage for all the other
-   * curves. This allows us to accelerate and deaccelerate as wanted throughout
-   * the curve.
-   */
-  UPROPERTY(
-      meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Use ProgressCurve on CesiumFlyToComponent instead."))
-  UCurveFloat* FlyToProgressCurve_DEPRECATED;
-
-  /**
-   * This curve dictates the maximum altitude at each point along the curve.
-   * This can be used in conjunction with the {@see FlyToAltitudeProfileCurve}
-   * to allow the pawn to take some altitude during the flight.
-   */
-  UPROPERTY(
-      meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Use MaximumHeightByDistanceCurve on CesiumFlyToComponent instead."))
-  UCurveFloat* FlyToMaximumAltitudeCurve_DEPRECATED;
-
-  /**
-   * The length in seconds that the flight should last.
-   */
-  UPROPERTY(
-      meta =
-          (DeprecatedProperty,
-           DeprecationMessage =
-               "Use Duration on CesiumFlyToComponent instead."))
-  float FlyToDuration_DEPRECATED = 5.0f;
-
-  /**
-   * The granularity in degrees with which keypoints should be generated for
-   * the flight interpolation.
-   */
   UPROPERTY(
       meta =
           (DeprecatedProperty,
@@ -132,10 +81,6 @@ public:
                "FlyToGranularityDegrees has been deprecated. This property no longer needs to be set."))
   float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
-  /**
-   * A delegate that will be called whenever the pawn finishes flying
-   *
-   */
   UPROPERTY(
       meta =
           (DeprecatedProperty,
@@ -143,10 +88,6 @@ public:
                "Use OnFlightComplete on CesiumFlyToComponent instead."))
   FCompletedFlight OnFlightComplete_DEPRECATED;
 
-  /**
-   * A delegate that will be called when a pawn's flying is interrupted
-   *
-   */
   UPROPERTY(
       meta =
           (DeprecatedProperty,
@@ -173,7 +114,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       meta =
-          (DeprecatedProperty,
+          (DeprecatedFunction,
            DeprecationMessage =
                "Use FlyToEarthCenteredEarthFixed on CesiumFlyToComponent instead."))
   void FlyToLocationECEF(
@@ -193,7 +134,7 @@ public:
   UFUNCTION(
       BlueprintCallable,
       meta =
-          (DeprecatedProperty,
+          (DeprecatedFunction,
            DeprecationMessage =
                "Use FlyToLocationLongitudeLatitudeHeight on CesiumFlyToComponent instead."))
   void FlyToLocationLongitudeLatitudeHeight(
@@ -202,10 +143,10 @@ public:
       double PitchAtDestination,
       bool CanInterruptByMoving);
 
-  virtual void PostLoad() override;
-  // virtual void Serialize(FArchive& Ar) override;
-
 protected:
+  virtual void Serialize(FArchive& Ar) override;
+  virtual void PostLoad() override;
+
   /**
    * THIS PROPERTY IS DEPRECATED.
    *
@@ -235,9 +176,64 @@ protected:
   UCesiumGlobeAnchorComponent* GlobeAnchor;
 
 private:
+  UPROPERTY(
+      BlueprintGetter = GetFlyToProgressCurve_DEPRECATED,
+      BlueprintSetter = SetFlyToProgressCurve_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use ProgressCurve on CesiumFlyToComponent instead."))
+  UCurveFloat* FlyToProgressCurve_DEPRECATED;
+  UFUNCTION(BlueprintGetter)
+  UCurveFloat* GetFlyToProgressCurve_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToProgressCurve_DEPRECATED(UCurveFloat* NewValue);
+
+  UPROPERTY(
+      BlueprintGetter = GetFlyToAltitudeProfileCurve_DEPRECATED,
+      BlueprintSetter = SetFlyToAltitudeProfileCurve_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use HeightPercentageCurve on CesiumFlyToComponent instead."))
+  UCurveFloat* FlyToAltitudeProfileCurve_DEPRECATED;
+  UFUNCTION(BlueprintGetter)
+  UCurveFloat* GetFlyToAltitudeProfileCurve_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToAltitudeProfileCurve_DEPRECATED(UCurveFloat* NewValue);
+
+  UPROPERTY(
+      BlueprintGetter = GetFlyToMaximumAltitudeCurve_DEPRECATED,
+      BlueprintSetter = SetFlyToMaximumAltitudeCurve_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use MaximumHeightByDistanceCurve on CesiumFlyToComponent instead."))
+  UCurveFloat* FlyToMaximumAltitudeCurve_DEPRECATED;
+  UFUNCTION(BlueprintGetter)
+  UCurveFloat* GetFlyToMaximumAltitudeCurve_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToMaximumAltitudeCurve_DEPRECATED(UCurveFloat* NewValue);
+
+  UPROPERTY(
+      BlueprintGetter = GetFlyToDuration_DEPRECATED,
+      BlueprintSetter = SetFlyToDuration_DEPRECATED,
+      meta =
+          (AllowPrivateAccess,
+           DeprecatedProperty,
+           DeprecationMessage =
+               "Use Duration on CesiumFlyToComponent instead."))
+  float FlyToDuration_DEPRECATED = 5.0f;
+  UFUNCTION(BlueprintGetter)
+  float GetFlyToDuration_DEPRECATED() const;
+  UFUNCTION(BlueprintSetter)
+  void SetFlyToDuration_DEPRECATED(float NewValue);
+
   void _moveAlongViewAxis(EAxis::Type axis, double Val);
   void _moveAlongVector(const FVector& axis, double Val);
-  UCesiumFlyToComponent* _createOrUpdateFlyToComponent();
 
   UFUNCTION()
   void _onFlightComplete();

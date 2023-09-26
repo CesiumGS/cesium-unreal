@@ -29,6 +29,8 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // built into the CesiumGeoreference.
     OriginShiftComponent = 5,
 
+    FlyToComponent = 6,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };

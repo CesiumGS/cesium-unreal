@@ -15,6 +15,7 @@
 #include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "UObject/ConstructorHelpers.h"
 #include "VecMath.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_double3.hpp>
@@ -28,7 +29,27 @@
 #endif
 
 AGlobeAwareDefaultPawn::AGlobeAwareDefaultPawn() : ADefaultPawn() {
-  PrimaryActorTick.bCanEverTick = true;
+  // Structure to hold one-time initialization
+  struct FConstructorStatics {
+    ConstructorHelpers::FObjectFinder<UCurveFloat> ProgressCurve;
+    ConstructorHelpers::FObjectFinder<UCurveFloat> HeightPercentageCurve;
+    ConstructorHelpers::FObjectFinder<UCurveFloat> MaximumHeightByDistanceCurve;
+    FConstructorStatics()
+        : ProgressCurve(TEXT(
+              "/CesiumForUnreal/Curves/FlyTo/Curve_CesiumFlyToDefaultProgress_Float.Curve_CesiumFlyToDefaultProgress_Float")),
+          HeightPercentageCurve(TEXT(
+              "/CesiumForUnreal/Curves/FlyTo/Curve_CesiumFlyToDefaultHeightPercentage_Float.Curve_CesiumFlyToDefaultHeightPercentage_Float")),
+          MaximumHeightByDistanceCurve(TEXT(
+              "/CesiumForUnreal/Curves/FlyTo/Curve_CesiumFlyToDefaultMaximumHeightByDistance_Float.Curve_CesiumFlyToDefaultMaximumHeightByDistance_Float")) {
+    }
+  };
+  static FConstructorStatics ConstructorStatics;
+
+  this->FlyToProgressCurve_DEPRECATED = ConstructorStatics.ProgressCurve.Object;
+  this->FlyToAltitudeProfileCurve_DEPRECATED =
+      ConstructorStatics.HeightPercentageCurve.Object;
+  this->FlyToMaximumAltitudeCurve_DEPRECATED =
+      ConstructorStatics.MaximumHeightByDistanceCurve.Object;
 
 #if WITH_EDITOR
   this->SetIsSpatiallyLoaded(false);
@@ -129,7 +150,25 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
     double YawAtDestination,
     double PitchAtDestination,
     bool CanInterruptByMoving) {
-  UCesiumFlyToComponent* FlyTo = this->_createOrUpdateFlyToComponent();
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Cannot call deprecated FlyToLocationLongitudeLatitudeHeight because the GlobeAwareDefaultPawn does not have a CesiumFlyToComponent."))
+    return;
+  }
+
+  // Make sure functions attached to the deprecated delegates will be called.
+  FlyTo->OnFlightComplete.AddUniqueDynamic(
+      this,
+      &AGlobeAwareDefaultPawn::_onFlightComplete);
+  FlyTo->OnFlightInterrupted.AddUniqueDynamic(
+      this,
+      &AGlobeAwareDefaultPawn::_onFlightInterrupted);
+
   FlyTo->FlyToLocationEarthCenteredEarthFixed(
       ECEFDestination,
       YawAtDestination,
@@ -142,12 +181,36 @@ void AGlobeAwareDefaultPawn::FlyToLocationLongitudeLatitudeHeight(
     double YawAtDestination,
     double PitchAtDestination,
     bool CanInterruptByMoving) {
-  UCesiumFlyToComponent* FlyTo = this->_createOrUpdateFlyToComponent();
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo)) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "Cannot call deprecated FlyToLocationLongitudeLatitudeHeight because the GlobeAwareDefaultPawn does not have a CesiumFlyToComponent."))
+    return;
+  }
+
+  // Make sure functions attached to the deprecated delegates will be called.
+  FlyTo->OnFlightComplete.AddUniqueDynamic(
+      this,
+      &AGlobeAwareDefaultPawn::_onFlightComplete);
+  FlyTo->OnFlightInterrupted.AddUniqueDynamic(
+      this,
+      &AGlobeAwareDefaultPawn::_onFlightInterrupted);
+
   FlyTo->FlyToLocationLongitudeLatitudeHeight(
       LongitudeLatitudeHeightDestination,
       YawAtDestination,
       PitchAtDestination,
       CanInterruptByMoving);
+}
+
+void AGlobeAwareDefaultPawn::Serialize(FArchive& Ar) {
+  Super::Serialize(Ar);
+
+  Ar.UsingCustomVersion(FCesiumCustomVersion::GUID);
 }
 
 void AGlobeAwareDefaultPawn::PostLoad() {
@@ -164,6 +227,41 @@ void AGlobeAwareDefaultPawn::PostLoad() {
         this->GlobeAnchor->GetGeoreference() == nullptr) {
       this->GlobeAnchor->SetGeoreference(this->Georeference_DEPRECATED);
     }
+  }
+
+  if (CesiumVersion < FCesiumCustomVersion::FlyToComponent &&
+      !HasAnyFlags(RF_ClassDefaultObject)) {
+    // If this is a Blueprint object, like DynamicPawn, its construction
+    // scripts may not have been run yet at this point. Doing so might cause
+    // a Fly To component to be added. So we force it to happen here so
+    // that we don't end up adding a duplicate CesiumFlyToComponent.
+    this->RerunConstructionScripts();
+
+    UCesiumFlyToComponent* FlyTo =
+        pPawn->FindComponentByClass<UCesiumFlyToComponent>();
+    if (FlyTo == nullptr) {
+      FlyTo = Cast<UCesiumFlyToComponent>(pPawn->AddComponentByClass(
+          UCesiumFlyToComponent::StaticClass(),
+          false,
+          FTransform::Identity,
+          false));
+      FlyTo->SetFlags(RF_Transactional);
+      pPawn->AddInstanceComponent(FlyTo);
+
+      UE_LOG(
+          LogCesium,
+          Warning,
+          TEXT(
+              "Added CesiumFlyToComponent to %s in order to preserve backward compatibility."),
+          *pPawn->GetName());
+    }
+
+    FlyTo->RotationToUse = ECesiumFlyToRotation::ControlRotationInEastSouthUp;
+    FlyTo->ProgressCurve = pPawn->FlyToProgressCurve_DEPRECATED;
+    FlyTo->HeightPercentageCurve = pPawn->FlyToAltitudeProfileCurve_DEPRECATED;
+    FlyTo->MaximumHeightByDistanceCurve =
+        pPawn->FlyToMaximumAltitudeCurve_DEPRECATED;
+    FlyTo->Duration = pPawn->FlyToDuration_DEPRECATED;
   }
 }
 
@@ -192,6 +290,75 @@ ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
   return pGeoreference;
 }
 
+UCurveFloat* AGlobeAwareDefaultPawn::GetFlyToProgressCurve_DEPRECATED() const {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return nullptr;
+  return FlyTo->ProgressCurve;
+}
+
+void AGlobeAwareDefaultPawn::SetFlyToProgressCurve_DEPRECATED(
+    UCurveFloat* NewValue) {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return;
+  FlyTo->ProgressCurve = NewValue;
+}
+
+UCurveFloat*
+AGlobeAwareDefaultPawn::GetFlyToAltitudeProfileCurve_DEPRECATED() const {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return nullptr;
+  return FlyTo->HeightPercentageCurve;
+}
+
+void AGlobeAwareDefaultPawn::SetFlyToAltitudeProfileCurve_DEPRECATED(
+    UCurveFloat* NewValue) {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return;
+  FlyTo->HeightPercentageCurve = NewValue;
+}
+
+UCurveFloat*
+AGlobeAwareDefaultPawn::GetFlyToMaximumAltitudeCurve_DEPRECATED() const {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return nullptr;
+  return FlyTo->MaximumHeightByDistanceCurve;
+}
+
+void AGlobeAwareDefaultPawn::SetFlyToMaximumAltitudeCurve_DEPRECATED(
+    UCurveFloat* NewValue) {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return;
+  FlyTo->MaximumHeightByDistanceCurve = NewValue;
+}
+
+float AGlobeAwareDefaultPawn::GetFlyToDuration_DEPRECATED() const {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return 0.0f;
+  return FlyTo->Duration;
+}
+
+void AGlobeAwareDefaultPawn::SetFlyToDuration_DEPRECATED(float NewValue) {
+  UCesiumFlyToComponent* FlyTo =
+      this->FindComponentByClass<UCesiumFlyToComponent>();
+  if (!IsValid(FlyTo))
+    return;
+  FlyTo->Duration = NewValue;
+}
+
 void AGlobeAwareDefaultPawn::_moveAlongViewAxis(EAxis::Type axis, double Val) {
   if (Val == 0.0) {
     return;
@@ -212,44 +379,6 @@ void AGlobeAwareDefaultPawn::_moveAlongVector(
 
   FRotator worldRotation = this->GetViewRotation();
   AddMovementInput(vector, Val);
-}
-
-UCesiumFlyToComponent* AGlobeAwareDefaultPawn::_createOrUpdateFlyToComponent() {
-  UCesiumFlyToComponent* FlyTo =
-      this->FindComponentByClass<UCesiumFlyToComponent>();
-  if (!IsValid(FlyTo)) {
-    // Add the missing CesiumFlyToComponent.
-    FlyTo = Cast<UCesiumFlyToComponent>(this->AddComponentByClass(
-        UCesiumFlyToComponent::StaticClass(),
-        false,
-        FTransform::Identity,
-        false));
-    FlyTo->SetFlags(RF_Transactional);
-    FlyTo->RotationToUse = ECesiumFlyToRotation::ControlRotationInEastSouthUp;
-    this->AddInstanceComponent(FlyTo);
-
-    // Force the Editor to refresh to show the newly-added component
-#if WITH_EDITOR
-    this->Modify();
-    if (this->IsSelectedInEditor()) {
-      GEditor->SelectActor(this, true, true, true, true);
-    }
-#endif
-  }
-
-  FlyTo->ProgressCurve = this->FlyToProgressCurve_DEPRECATED;
-  FlyTo->HeightPercentageCurve = this->FlyToAltitudeProfileCurve_DEPRECATED;
-  FlyTo->MaximumHeightByDistanceCurve =
-      this->FlyToMaximumAltitudeCurve_DEPRECATED;
-  FlyTo->Duration = this->FlyToDuration_DEPRECATED;
-  FlyTo->OnFlightComplete.AddUniqueDynamic(
-      this,
-      &AGlobeAwareDefaultPawn::_onFlightComplete);
-  FlyTo->OnFlightInterrupted.AddUniqueDynamic(
-      this,
-      &AGlobeAwareDefaultPawn::_onFlightInterrupted);
-
-  return FlyTo;
 }
 
 void AGlobeAwareDefaultPawn::_onFlightComplete() {
