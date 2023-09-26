@@ -45,6 +45,10 @@ enum class ECesiumFlyToRotation : uint8 {
    * CesiumFlyToComponent is attached. The ControlRotation is interpreted as
    * being relative to the Pawn's local East-South-Up coordinate system.
    *
+   * This is the option to use with a GlobeAwareDefaultPawn or a DynamicPawn,
+   * because those classes interpret the ControlRotation as being relative to
+   * East-South-Up.
+   *
    * If the component is attached to an Actor that is not a Pawn, or if the Pawn
    * does not have a Controller, this option is equivalent to the the "Actor"
    * option.
