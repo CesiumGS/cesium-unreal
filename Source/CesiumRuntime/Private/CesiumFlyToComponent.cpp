@@ -3,6 +3,7 @@
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumWgs84Ellipsoid.h"
 #include "Curves/CurveFloat.h"
+#include "GameFramework/Controller.h"
 
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
   this->PrimaryComponentTick.bCanEverTick = true;
@@ -32,7 +33,7 @@ void UCesiumFlyToComponent::FlyToLocationEarthCenteredEarthFixed(
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
-  this->_sourceRotation = GlobeAnchor->GetEastSouthUpRotation();
+  this->_sourceRotation = this->GetCurrentRotationEastSouthUp();
   this->_destinationRotation =
       FRotator(PitchAtDestination, YawAtDestination, 0.0).Quaternion();
   this->_destinationEcef = EarthCenteredEarthFixedDestination;
@@ -149,9 +150,10 @@ void UCesiumFlyToComponent::InterruptFlight() {
   UCesiumGlobeAnchorComponent* GlobeAnchor = this->GetGlobeAnchor();
   if (IsValid(GlobeAnchor)) {
     // fix Actor roll to 0.0
-    FRotator currentRotator = GlobeAnchor->GetEastSouthUpRotation().Rotator();
+    FRotator currentRotator = this->GetCurrentRotationEastSouthUp().Rotator();
     currentRotator.Roll = 0.0;
-    GlobeAnchor->SetEastSouthUpRotation(currentRotator.Quaternion());
+    FQuat eastSouthUpRotation = currentRotator.Quaternion();
+    this->SetCurrentRotationEastSouthUp(eastSouthUpRotation);
   }
 
   // Trigger callback accessible from BP
@@ -204,7 +206,7 @@ void UCesiumFlyToComponent::TickComponent(
       (this->_totalAngle == 0.0 &&
        this->_sourceRotation == this->_destinationRotation)) {
     GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(this->_destinationEcef);
-    GlobeAnchor->SetEastSouthUpRotation(this->_destinationRotation);
+    this->SetCurrentRotationEastSouthUp(this->_destinationRotation);
     this->_flightInProgress = false;
     this->_currentFlyTime = 0.0f;
 
@@ -253,8 +255,65 @@ void UCesiumFlyToComponent::TickComponent(
       this->_sourceRotation,
       this->_destinationRotation,
       flyPercentage);
-  GlobeAnchor->SetEastSouthUpRotation(currentQuat);
+  this->SetCurrentRotationEastSouthUp(currentQuat);
 
   this->_previousPositionEcef =
       GlobeAnchor->GetEarthCenteredEarthFixedPosition();
+}
+
+FQuat UCesiumFlyToComponent::GetCurrentRotationEastSouthUp() {
+  if (this->RotationToUse != ECesiumFlyToRotation::Actor) {
+    APawn* Pawn = Cast<APawn>(this->GetOwner());
+    const TObjectPtr<AController> Controller =
+        IsValid(Pawn) ? Pawn->Controller : nullptr;
+    if (Controller) {
+      FRotator rotator = Controller->GetControlRotation();
+      if (this->RotationToUse ==
+          ECesiumFlyToRotation::ControlRotationInUnreal) {
+        USceneComponent* PawnRoot = Pawn->GetRootComponent();
+        if (IsValid(PawnRoot)) {
+          rotator = GetGlobeAnchor()
+                        ->ResolveGeoreference()
+                        ->TransformUnrealRotatorToEastSouthUp(
+                            Controller->GetControlRotation(),
+                            PawnRoot->GetRelativeLocation());
+        }
+      }
+      return rotator.Quaternion();
+    }
+  }
+
+  return this->GetGlobeAnchor()->GetEastSouthUpRotation();
+}
+
+void UCesiumFlyToComponent::SetCurrentRotationEastSouthUp(
+    const FQuat& EastSouthUpRotation) {
+  bool controlRotationSet = false;
+
+  if (this->RotationToUse != ECesiumFlyToRotation::Actor) {
+    APawn* Pawn = Cast<APawn>(this->GetOwner());
+    const TObjectPtr<AController> Controller =
+        IsValid(Pawn) ? Pawn->Controller : nullptr;
+    if (Controller) {
+      FRotator rotator = EastSouthUpRotation.Rotator();
+      if (this->RotationToUse ==
+          ECesiumFlyToRotation::ControlRotationInUnreal) {
+        USceneComponent* PawnRoot = Pawn->GetRootComponent();
+        if (IsValid(PawnRoot)) {
+          rotator = GetGlobeAnchor()
+                        ->ResolveGeoreference()
+                        ->TransformEastSouthUpRotatorToUnreal(
+                            EastSouthUpRotation.Rotator(),
+                            PawnRoot->GetRelativeLocation());
+        }
+      }
+
+      Controller->SetControlRotation(EastSouthUpRotation.Rotator());
+      controlRotationSet = true;
+    }
+  }
+
+  if (!controlRotationSet) {
+    this->GetGlobeAnchor()->SetEastSouthUpRotation(EastSouthUpRotation);
+  }
 }

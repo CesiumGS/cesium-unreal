@@ -225,6 +225,7 @@ UCesiumFlyToComponent* AGlobeAwareDefaultPawn::_createOrUpdateFlyToComponent() {
         FTransform::Identity,
         false));
     FlyTo->SetFlags(RF_Transactional);
+    FlyTo->RotationToUse = ECesiumFlyToRotation::ControlRotationInEastSouthUp;
     this->AddInstanceComponent(FlyTo);
 
     // Force the Editor to refresh to show the newly-added component

@@ -19,6 +19,40 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCesiumFlightCompleted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCesiumFlightInterrupted);
 
 /**
+ * Indicates which rotation to use for orienting the object during flights.
+ */
+UENUM(BlueprintType)
+enum class ECesiumFlyToRotation : uint8 {
+  /**
+   * Uses the relative rotation of the root component of the Actor to which the
+   * CesiumFlyToComponent is attached.
+   */
+  Actor,
+
+  /**
+   * Uses the ControlRotation of the Controller of the Pawn to which the
+   * CesiumFlyToComponent is attached. The ControlRotation is interpreted as
+   * being relative to the Unreal coordinate system.
+   *
+   * If the component is attached to an Actor that is not a Pawn, or if the Pawn
+   * does not have a Controller, this option is equivalent to the the "Actor"
+   * option.
+   */
+  ControlRotationInUnreal,
+
+  /**
+   * Uses the ControlRotation of the Controller of the Pawn to which the
+   * CesiumFlyToComponent is attached. The ControlRotation is interpreted as
+   * being relative to the Pawn's local East-South-Up coordinate system.
+   *
+   * If the component is attached to an Actor that is not a Pawn, or if the Pawn
+   * does not have a Controller, this option is equivalent to the the "Actor"
+   * option.
+   */
+  ControlRotationInEastSouthUp
+};
+
+/**
  * Smoothly animates the Actor to which it is attached on a flight to a new
  * location on the globe.
  */
@@ -76,6 +110,12 @@ public:
       Category = "Cesium",
       meta = (ClampMin = 0.0))
   float Duration = 5.0f;
+
+  /**
+   * Indicates which rotation to use during flights.
+   */
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cesium")
+  ECesiumFlyToRotation RotationToUse = ECesiumFlyToRotation::Actor;
 
   /**
    * A delegate that will be called when the Actor finishes flying.
@@ -160,6 +200,9 @@ protected:
       FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
+  FQuat GetCurrentRotationEastSouthUp();
+  void SetCurrentRotationEastSouthUp(const FQuat& EastSouthUpRotation);
+
   bool _flightInProgress = false;
   bool _canInterruptByMoving;
   FVector _destinationEcef;
