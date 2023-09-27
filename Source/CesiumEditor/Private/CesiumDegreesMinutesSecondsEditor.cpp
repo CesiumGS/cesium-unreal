@@ -3,9 +3,8 @@
 #include "CesiumDegreesMinutesSecondsEditor.h"
 #include "CesiumEditor.h"
 
-#include "PropertyCustomizationHelpers.h"
-#include "PropertyEditing.h"
-
+#include "DetailLayoutBuilder.h"
+#include "DetailWidgetRow.h"
 #include "Widgets/Input/SSpinBox.h"
 #include "Widgets/Input/STextComboBox.h"
 #include "Widgets/Text/STextBlock.h"

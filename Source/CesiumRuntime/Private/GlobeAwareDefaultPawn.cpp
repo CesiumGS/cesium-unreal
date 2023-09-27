@@ -229,6 +229,7 @@ void AGlobeAwareDefaultPawn::PostLoad() {
     }
   }
 
+#if WITH_EDITOR
   if (CesiumVersion < FCesiumCustomVersion::FlyToComponent &&
       !HasAnyFlags(RF_ClassDefaultObject)) {
     // If this is a Blueprint object, like DynamicPawn, its construction
@@ -263,6 +264,7 @@ void AGlobeAwareDefaultPawn::PostLoad() {
         this->FlyToMaximumAltitudeCurve_DEPRECATED;
     FlyTo->Duration = this->FlyToDuration_DEPRECATED;
   }
+#endif
 }
 
 ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
