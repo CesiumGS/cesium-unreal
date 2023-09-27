@@ -110,9 +110,6 @@ bool TimeLoadingCommand::Update() {
     if (verifyStep)
       verifyStep(context.playContext);
 
-    // Turn on the editor tileset updates so we can see what we loaded
-    gLoadTestContext.creationContext.setSuspendUpdate(false);
-
     context.testInProgress = false;
 
     // Command is done
@@ -121,6 +118,16 @@ bool TimeLoadingCommand::Update() {
 
   // Let world tick, we'll come back to this command
   return false;
+}
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(
+    TestCleanupCommand,
+    LoadTestContext&,
+    context);
+bool TestCleanupCommand::Update() {
+  // Turn on the editor tileset updates so we can see what we loaded
+  gLoadTestContext.creationContext.setSuspendUpdate(false);
+  return true;
 }
 
 struct TestPass {
@@ -186,6 +193,8 @@ bool RunLoadTest(
 
   // End play in editor
   ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
+
+  ADD_LATENT_AUTOMATION_COMMAND(TestCleanupCommand(gLoadTestContext));
 
   return true;
 }
