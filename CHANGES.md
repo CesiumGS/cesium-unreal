@@ -15,6 +15,12 @@
   - `MoveToECEF` renamed to `MoveToEarthCenteredEarthFixedPosition`
 - Deprecated the `InvalidateResolvedGeoreference` function on `CesiumGlobeAnchorComponent`.
 - The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` that should trigger sub-level loading. We attempt to add the necessary component automatically when loading old levels containing sub-levels.
+- Removed the old `FloatingPawn` that has been deprecated since v1.3.0.
+- Deprecated the flight functionality in `GlobeAwareDefaultPawn`. This functionality is now found in `CesiumFlyToComponent` and can be used with any Pawn or Actor. Existing Blueprints should continue to work, but C++ code will likely require changes.
+- Renamed the various Curve assets used with flights to have more descriptive names and moved them to the `Curves/FlyTo` folder. Redirectors should upgrade references to the old names.
+  - `Curve_AltitudeProfile_Float` was renamed to `Curve_CesiumFlyToDefaultHeightPercentage_Float`
+  - `Curve_MaxAltitude_Float` was renamed to `Curve_CesiumFlyToDefaultMaximumHeightByDistance_Float`
+  - `Curve_Progress_Float` was renamed to `Curve_CesiumFlyToDefaultProgress_Float`
 
 ##### Additions :tada:
 
@@ -31,6 +37,7 @@
 - Added `ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation` function to `CesiumGeoreference`.
 - Added `CesiumOriginShiftComponent`. In addition to triggering transitions between sub-levels, this component optionally allows the Unreal world origin to be shifted as the Actor to which it is attached moves. The shifting may be done by either changing the `CesiumGeoreference` origin or by setting Unreal's `OriginLocation` property.
 - Sub-level transitions can now be triggered manually from Blueprints using functions on the `CesiumSubLevelSwitcherComponent` attached to the `CesiumGeoreference`. Be sure to disable any `CesiumOriginShiftComponent` instances in your level if you want manual control of sub-level switching.
+- Added `CesiumFlyToComponent` to allow animated flights of any Actor or Pawn.
 
 ##### Fixes :wrench:
 
