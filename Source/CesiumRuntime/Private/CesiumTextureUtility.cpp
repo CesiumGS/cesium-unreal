@@ -348,7 +348,6 @@ public:
       // RHICreateTexture2D can actually copy over all the mips in one shot,
       // but it expects a particular memory layout. Might be worth configuring
       // Cesium Native's mip-map generation to obey a standard memory layout.
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
       rhiTexture = RHICreateTexture(
           FRHITextureCreateDesc::Create2D(createInfo.DebugName)
               .SetExtent(int32(this->_width), int32(this->_height))
@@ -361,16 +360,6 @@ public:
               .SetBulkData(createInfo.BulkData)
               .SetGPUMask(createInfo.GPUMask)
               .SetClearValue(createInfo.ClearValueBinding));
-#else
-      rhiTexture = RHICreateTexture2D(
-          this->_width,
-          this->_height,
-          this->_format,
-          mipCount,
-          1,
-          textureFlags,
-          createInfo);
-#endif
 
       // Copies over rest of the mips
       for (uint32 i = 1; i < mipCount; ++i) {
@@ -888,13 +877,9 @@ UTexture2D* loadTextureGameThreadPart(LoadedTextureResult* pHalfLoadedTexture) {
       pHalfLoadedTexture->addressX,
       pHalfLoadedTexture->addressY,
       pHalfLoadedTexture->sRGB,
-      pTexture->PlatformData->GetExtData());
+      pTexture->GetPlatformData()->GetExtData());
 
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 27
-  pTexture->Resource = pCesiumTextureResource;
-#else
   pTexture->SetResource(pCesiumTextureResource);
-#endif
 
   ENQUEUE_RENDER_COMMAND(Cesium_InitResource)
   ([pTexture, pCesiumTextureResource](FRHICommandListImmediate& RHICmdList) {

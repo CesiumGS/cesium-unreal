@@ -294,7 +294,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
             .ClientSize(FVector2D(800, 600))
                 [SNew(SBorder)
                      .Visibility(EVisibility::Visible)
-                     .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
+                     .BorderImage(FAppStyle::GetBrush("Menu.Background"))
                      .Padding(FMargin(10.0f, 20.0f, 10.0f, 20.0f))
                          [SNew(STextBlock)
                               .AutoWrapText(true)
@@ -453,7 +453,7 @@ void CesiumIonTokenTroubleshooting::Construct(const FArguments& InArgs) {
           .ClientSize(FVector2D(800, 600))
               [SNew(SBorder)
                    .Visibility(EVisibility::Visible)
-                   .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
+                   .BorderImage(FAppStyle::GetBrush("Menu.Background"))
                    .Padding(
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pMainVerticalBox]]);
 }

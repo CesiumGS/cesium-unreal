@@ -343,7 +343,7 @@ void SelectCesiumIonToken::Construct(const FArguments& InArgs) {
           .ClientSize(FVector2D(635, 450))
               [SNew(SBorder)
                    .Visibility(EVisibility::Visible)
-                   .BorderImage(FEditorStyle::GetBrush("Menu.Background"))
+                   .BorderImage(FAppStyle::GetBrush("Menu.Background"))
                    .Padding(
                        FMargin(10.0f, 10.0f, 10.0f, 10.0f))[pLoaderOrContent]]);
 
