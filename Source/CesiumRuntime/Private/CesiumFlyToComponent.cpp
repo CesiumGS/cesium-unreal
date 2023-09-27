@@ -4,6 +4,7 @@
 #include "CesiumWgs84Ellipsoid.h"
 #include "Curves/CurveFloat.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/Pawn.h"
 #include "UObject/ConstructorHelpers.h"
 
 UCesiumFlyToComponent::UCesiumFlyToComponent() {
