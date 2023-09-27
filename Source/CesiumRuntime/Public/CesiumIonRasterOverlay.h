@@ -50,6 +50,9 @@ public:
   UFUNCTION(CallInEditor, Category = "Cesium")
   void TroubleshootToken();
 
+  // UActorComponent overrides
+  virtual void PostLoad() override;
+
 protected:
   virtual std::unique_ptr<Cesium3DTilesSelection::RasterOverlay> CreateOverlay(
       const Cesium3DTilesSelection::RasterOverlayOptions& options = {})
