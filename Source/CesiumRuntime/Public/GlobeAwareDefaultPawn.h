@@ -153,8 +153,8 @@ protected:
    * Get the Georeference instance from the Globe Anchor Component instead.
    */
   UPROPERTY(
-      BlueprintReadOnly,
       Category = "Cesium",
+      BlueprintReadOnly,
       BlueprintGetter = GetGeoreference,
       Meta =
           (DeprecatedProperty,
@@ -177,6 +177,7 @@ protected:
 
 private:
   UPROPERTY(
+      Category = "Cesium",
       BlueprintGetter = GetFlyToProgressCurve_DEPRECATED,
       BlueprintSetter = SetFlyToProgressCurve_DEPRECATED,
       meta =
@@ -191,6 +192,7 @@ private:
   void SetFlyToProgressCurve_DEPRECATED(UCurveFloat* NewValue);
 
   UPROPERTY(
+      Category = "Cesium",
       BlueprintGetter = GetFlyToAltitudeProfileCurve_DEPRECATED,
       BlueprintSetter = SetFlyToAltitudeProfileCurve_DEPRECATED,
       meta =
@@ -205,6 +207,7 @@ private:
   void SetFlyToAltitudeProfileCurve_DEPRECATED(UCurveFloat* NewValue);
 
   UPROPERTY(
+      Category = "Cesium",
       BlueprintGetter = GetFlyToMaximumAltitudeCurve_DEPRECATED,
       BlueprintSetter = SetFlyToMaximumAltitudeCurve_DEPRECATED,
       meta =
@@ -219,6 +222,7 @@ private:
   void SetFlyToMaximumAltitudeCurve_DEPRECATED(UCurveFloat* NewValue);
 
   UPROPERTY(
+      Category = "Cesium",
       BlueprintGetter = GetFlyToDuration_DEPRECATED,
       BlueprintSetter = SetFlyToDuration_DEPRECATED,
       meta =

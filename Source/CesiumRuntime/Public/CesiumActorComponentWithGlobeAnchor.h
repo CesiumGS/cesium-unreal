@@ -26,6 +26,7 @@ private:
   // The globe anchor attached to the same Actor as this component. Don't
   // save/load or copy this. It is set in BeginPlay and OnRegister.
   UPROPERTY(
+      Category = "Cesium",
       BlueprintReadOnly,
       BlueprintGetter = GetGlobeAnchor,
       Transient,
