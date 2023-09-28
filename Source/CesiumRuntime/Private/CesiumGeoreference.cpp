@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumGeoreference.h"
 #include "Camera/PlayerCameraManager.h"
@@ -296,8 +296,16 @@ FMatrix ACesiumGeoreference::ComputeEastSouthUpToUnrealTransformation(
     const FVector& UnrealLocation) const {
   FVector ecef =
       this->TransformUnrealPositionToEarthCenteredEarthFixed(UnrealLocation);
+  return this
+      ->ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+          ecef);
+}
+
+FMatrix ACesiumGeoreference::
+    ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation(
+        const FVector& EarthCenteredEarthFixedPosition) const {
   LocalHorizontalCoordinateSystem newLocal =
-      createCoordinateSystem(ecef, this->GetScale());
+      createCoordinateSystem(EarthCenteredEarthFixedPosition, this->GetScale());
   return VecMath::createMatrix(
       newLocal.computeTransformationToAnotherLocal(this->_coordinateSystem));
 }

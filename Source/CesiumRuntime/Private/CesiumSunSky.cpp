@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "CesiumSunSky.h"
 #include "CesiumCustomVersion.h"
@@ -114,7 +114,7 @@ ACesiumSunSky::ACesiumSunSky() : AActor() {
 
   this->GlobeAnchor =
       CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
-  this->GlobeAnchor->AdjustOrientationForGlobeWhenMoving = false;
+  this->GlobeAnchor->SetAdjustOrientationForGlobeWhenMoving(false);
 }
 
 void ACesiumSunSky::_handleTransformUpdated(
@@ -136,7 +136,8 @@ void ACesiumSunSky::OnConstruction(const FTransform& Transform) {
       TEXT("Called OnConstruction for CesiumSunSky %s"),
       *this->GetName());
 
-  this->GlobeAnchor->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
+  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   UE_LOG(
       LogCesium,
@@ -172,9 +173,10 @@ void ACesiumSunSky::_spawnSkySphere() {
           SkySphereActor,
           TEXT("GlobeAnchor"));
   this->SkySphereActor->AddInstanceComponent(GlobeAnchorComponent);
-  GlobeAnchorComponent->AdjustOrientationForGlobeWhenMoving = false;
+  GlobeAnchorComponent->SetAdjustOrientationForGlobeWhenMoving(false);
   GlobeAnchorComponent->SetGeoreference(this->GlobeAnchor->GetGeoreference());
-  GlobeAnchorComponent->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
+  GlobeAnchorComponent->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   _wantsSpawnMobileSkySphere = false;
 
@@ -201,7 +203,8 @@ void ACesiumSunSky::UpdateSkySphere() {
 void ACesiumSunSky::BeginPlay() {
   Super::BeginPlay();
 
-  this->GlobeAnchor->MoveToECEF(glm::dvec3(0.0, 0.0, 0.0));
+  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   this->_transformUpdatedSubscription =
       this->RootComponent->TransformUpdated.AddUObject(

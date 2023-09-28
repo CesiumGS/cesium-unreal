@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "GlobeAwareDefaultPawn.h"
 #include "Camera/CameraComponent.h"
@@ -51,7 +51,7 @@ void AGlobeAwareDefaultPawn::MoveUp_World(float Val) {
   }
 
   FVector upEcef = UCesiumWgs84Ellipsoid::GeodeticSurfaceNormal(
-      this->GlobeAnchor->GetECEF());
+      this->GlobeAnchor->GetEarthCenteredEarthFixedPosition());
   FVector up =
       pGeoreference->TransformEarthCenteredEarthFixedDirectionToUnreal(upEcef);
 
@@ -181,7 +181,8 @@ void AGlobeAwareDefaultPawn::FlyToLocationECEF(
 
   PitchAtDestination = glm::clamp(PitchAtDestination, -89.99, 89.99);
   // Compute source location in ECEF
-  glm::dvec3 ECEFSource = VecMath::createVector3D(this->GlobeAnchor->GetECEF());
+  glm::dvec3 ECEFSource = VecMath::createVector3D(
+      this->GlobeAnchor->GetEarthCenteredEarthFixedPosition());
 
   // The source and destination rotations are expressed in East-South-Up
   // coordinates.
@@ -328,7 +329,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   // If we reached the end, set actual destination location and
   // orientation
   if (flyPercentage >= 1.0f) {
-    this->GlobeAnchor->MoveToECEF(this->_flyToECEFDestination);
+    this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+        VecMath::createVector(this->_flyToECEFDestination));
     Controller->SetControlRotation(this->_flyToDestinationRotation.Rotator());
     this->_bFlyingToLocation = false;
     this->_currentFlyTime = 0.0f;
@@ -347,7 +349,8 @@ void AGlobeAwareDefaultPawn::_handleFlightStep(float DeltaSeconds) {
   _interpolateFlightPosition(flyPercentage, currentPosition);
 
   // Set Location
-  this->GlobeAnchor->MoveToECEF(currentPosition);
+  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+      VecMath::createVector(currentPosition));
 
   // Interpolate rotation in the ESU frame. The local ESU ControlRotation will
   // be transformed to the appropriate world rotation as we fly.
