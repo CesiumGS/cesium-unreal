@@ -1,6 +1,6 @@
 #include "CesiumTileExcluder.h"
-#include "CesiumTileExcluderAdapter.h"
 #include "CesiumLifetime.h"
+#include "CesiumTileExcluderAdapter.h"
 
 using namespace Cesium3DTilesSelection;
 
