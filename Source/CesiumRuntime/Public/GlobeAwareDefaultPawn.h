@@ -82,6 +82,7 @@ public:
   float FlyToGranularityDegrees_DEPRECATED = 0.01f;
 
   UPROPERTY(
+      BlueprintAssignable,
       meta =
           (DeprecatedProperty,
            DeprecationMessage =
@@ -89,6 +90,7 @@ public:
   FCompletedFlight OnFlightComplete_DEPRECATED;
 
   UPROPERTY(
+      BlueprintAssignable,
       meta =
           (DeprecatedProperty,
            DeprecationMessage =
