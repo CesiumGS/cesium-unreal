@@ -86,7 +86,7 @@ ACesiumGeoreference* UCesiumSubLevelComponent::ResolveGeoreference() {
     this->ResolvedGeoreference = this->Georeference.Get();
   } else {
     this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->GetOwner());
   }
 
   return this->ResolvedGeoreference;

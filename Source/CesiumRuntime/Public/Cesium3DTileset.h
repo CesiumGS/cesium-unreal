@@ -130,6 +130,7 @@ private:
    */
   UPROPERTY(
       Transient,
+      VisibleAnywhere,
       BlueprintReadOnly,
       Category = "Cesium",
       Meta = (AllowPrivateAccess))

@@ -53,6 +53,9 @@ void FCesiumGlobeAnchorCustomization::CustomizeDetails(
       GET_MEMBER_NAME_CHECKED(UCesiumGlobeAnchorComponent, Georeference));
   CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
       UCesiumGlobeAnchorComponent,
+      ResolvedGeoreference));
+  CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
+      UCesiumGlobeAnchorComponent,
       AdjustOrientationForGlobeWhenMoving));
   CesiumCategory.AddProperty(GET_MEMBER_NAME_CHECKED(
       UCesiumGlobeAnchorComponent,

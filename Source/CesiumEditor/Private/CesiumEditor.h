@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "CesiumEditorReparentHandler.h"
 #include "CesiumEditorSubLevelMutex.h"
 #include "CesiumIonSession.h"
 #include "CoreMinimal.h"
@@ -103,6 +104,7 @@ private:
   FDelegateHandle _rasterOverlayIonTroubleshootingSubscription;
 
   CesiumEditorSubLevelMutex _subLevelMutex;
+  CesiumEditorReparentHandler _reparentHandler;
 
   static TSharedPtr<FSlateStyleSet> StyleSet;
   static FCesiumEditorModule* _pModule;

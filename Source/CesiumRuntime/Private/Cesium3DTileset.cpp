@@ -130,7 +130,7 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
     this->ResolvedGeoreference = this->Georeference.Get();
   } else {
     this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this);
   }
 
   UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
