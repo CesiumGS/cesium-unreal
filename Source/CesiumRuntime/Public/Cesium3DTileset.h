@@ -163,7 +163,27 @@ public:
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   void InvalidateResolvedGeoreference();
 
+  /**
+   * Gets the Globe Anchor Component that precisely ties this tileset to the
+   * Globe.
+   */
+  UFUNCTION(BlueprintGetter, Category = "Cesium")
+  UCesiumGlobeAnchorComponent* GetGlobeAnchor() const {
+    return this->GlobeAnchor;
+  }
+
 private:
+  /**
+   * The Globe Anchor Component that precisely ties this tileset to the Globe.
+   */
+  UPROPERTY(
+      VisibleAnywhere,
+      BlueprintReadOnly,
+      BlueprintGetter = GetGlobeAnchor,
+      Category = "Cesium",
+      meta = (AllowPrivateAccess))
+  UCesiumGlobeAnchorComponent* GlobeAnchor;
+
   /**
    * The actor managing this tileset's content attributions.
    *
@@ -1069,7 +1089,7 @@ public:
    * See {@link
    * Cesium3DTilesetRoot::GetCesiumTilesetToUnrealRelativeWorldTransform}.
    */
-  const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
+  glm::dmat4 GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
   Cesium3DTilesSelection::Tileset* GetTileset() {
     return this->_pTileset.Get();

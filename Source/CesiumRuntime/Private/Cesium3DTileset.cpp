@@ -17,6 +17,7 @@
 #include "CesiumCommon.h"
 #include "CesiumCustomVersion.h"
 #include "CesiumGeospatial/GlobeTransforms.h"
+#include "CesiumGlobeAnchorComponent.h"
 #include "CesiumGltf/ImageCesium.h"
 #include "CesiumGltf/Ktx2TranscodeTargets.h"
 #include "CesiumGltfComponent.h"
@@ -95,8 +96,15 @@ ACesium3DTileset::ACesium3DTileset()
   this->SetActorEnableCollision(true);
 
   this->RootComponent =
-      CreateDefaultSubobject<UCesium3DTilesetRoot>(TEXT("Tileset"));
+      CreateDefaultSubobject<UCesium3DTilesetRoot>(
+          TEXT("Tileset"));
   this->Root = this->RootComponent;
+
+  this->GlobeAnchor =
+      CreateDefaultSubobject<UCesiumGlobeAnchorComponent>(TEXT("GlobeAnchor"));
+  this->GlobeAnchor->SetAdjustOrientationForGlobeWhenMoving(false);
+  this->GlobeAnchor->MoveToEarthCenteredEarthFixedPosition(
+      FVector(0.0, 0.0, 0.0));
 
   PlatformName = UGameplayStatics::GetPlatformName();
 }
@@ -133,15 +141,15 @@ ACesiumGeoreference* ACesium3DTileset::ResolveGeoreference() {
         ACesiumGeoreference::GetDefaultGeoreferenceForActor(this);
   }
 
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (pRoot) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        pRoot,
-        &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
+  // UCesium3DTilesetRoot* pRoot =
+  // Cast<UCesium3DTilesetRoot>(this->RootComponent); if (pRoot) {
+  //   this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+  //       pRoot,
+  //       &UCesium3DTilesetRoot::HandleGeoreferenceUpdated);
 
-    // Update existing tile positions, if any.
-    pRoot->HandleGeoreferenceUpdated();
-  }
+  //  // Update existing tile positions, if any.
+  //  pRoot->HandleGeoreferenceUpdated();
+  //}
 
   return this->ResolvedGeoreference;
 }
@@ -558,15 +566,15 @@ void ACesium3DTileset::OnFocusEditorViewportOnThis() {
 }
 #endif
 
-const glm::dmat4&
+glm::dmat4
 ACesium3DTileset::GetCesiumTilesetToUnrealRelativeWorldTransform() const {
-  return Cast<UCesium3DTilesetRoot>(this->RootComponent)
-      ->GetCesiumTilesetToUnrealRelativeWorldTransform();
+  return VecMath::createMatrix4D(
+      this->GlobeAnchor->GetActorToEarthCenteredEarthFixedMatrix().Inverse());
 }
 
 void ACesium3DTileset::UpdateTransformFromCesium() {
 
-  const glm::dmat4& CesiumToUnreal =
+  glm::dmat4 CesiumToUnreal =
       this->GetCesiumTilesetToUnrealRelativeWorldTransform();
   TArray<UCesiumGltfComponent*> gltfComponents;
   this->GetComponents<UCesiumGltfComponent>(gltfComponents);
@@ -1950,10 +1958,10 @@ void ACesium3DTileset::Tick(float DeltaTime) {
   this->ResolveCameraManager();
   this->ResolveCreditSystem();
 
-  UCesium3DTilesetRoot* pRoot = Cast<UCesium3DTilesetRoot>(this->RootComponent);
-  if (!pRoot) {
-    return;
-  }
+  // UCesium3DTilesetRoot* pRoot =
+  // Cast<UCesium3DTilesetRoot>(this->RootComponent); if (!pRoot) {
+  //   return;
+  // }
 
   if (this->SuspendUpdate) {
     return;
