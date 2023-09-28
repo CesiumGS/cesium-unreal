@@ -353,7 +353,7 @@ public:
    * registered with this georeference.
    */
   UFUNCTION(BlueprintGetter)
-  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() {
+  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
     return this->SubLevelSwitcher;
   }
 
