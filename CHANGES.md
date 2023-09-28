@@ -14,7 +14,7 @@
   - `GetECEF` renamed to `GetEarthCenteredEarthFixedPosition`
   - `MoveToECEF` renamed to `MoveToEarthCenteredEarthFixedPosition`
 - Deprecated the `InvalidateResolvedGeoreference` function on `CesiumGlobeAnchorComponent`.
-- The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` that should trigger sub-level loading. We attempt to add the necessary component automatically when loading old levels containing sub-levels.
+- The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` to trigger sub-level loading. When loading old levels that contain sub-levels, the plugin will automatically attempt to add this component.
 
 ##### Additions :tada:
 
