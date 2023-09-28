@@ -40,17 +40,23 @@ public:
    */
   static const double kMinimumScale;
 
-  UE_DEPRECATED(
-      "Cesium For Unreal v2.0",
-      "Use GetDefaultGeoreferenceForActor or GetDefaultGeoreferenceForComponent instead.")
+  /**
+   * Finds and returns a CesiumGeoreference in the world. It searches in the
+   * following order:
+   *
+   * 1. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 2. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 3. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
+   */
   UFUNCTION(
       BlueprintCallable,
       Category = "Cesium",
-      meta =
-          (WorldContext = "WorldContextObject",
-           DeprecatedFunction,
-           DeprecationMessage =
-               "Use GetDefaultGeoreferenceForActor or GetDefaultGeoreferenceForComponent instead."))
+      meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
 
@@ -66,7 +72,7 @@ public:
    * 4. Any CesiumGeoreference in the PersistentLevel.
    *
    * If no CesiumGeoreference is found with this search, a new one is created in
-   * the persistent level.
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   static ACesiumGeoreference* GetDefaultGeoreferenceForActor(AActor* Actor);

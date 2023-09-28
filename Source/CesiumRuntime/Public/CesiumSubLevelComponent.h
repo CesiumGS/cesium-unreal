@@ -171,18 +171,10 @@ public:
    * the value of the Georeference property if it is set. Otherwise, finds a
    * Georeference in the World and returns it, creating it if necessary. The
    * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance.
+   * return the same instance, unless ForceReresolve is true.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
-  ACesiumGeoreference* ResolveGeoreference();
-
-  /**
-   * Invalidates the cached resolved georeference, unsubscribing from it and
-   * setting it to null. The next time ResolveGeoreference is called, the
-   * Georeference will be re-resolved and re-subscribed.
-   */
-  UFUNCTION(BlueprintCallable, Category = "Cesium")
-  void InvalidateResolvedGeoreference();
+  ACesiumGeoreference* ResolveGeoreference(bool bForceReresolve = false);
 
   /**
    * Sets the longitude (X), latitude (Y), and height (Z) of this sub-level's
@@ -346,6 +338,7 @@ private:
    */
   UPROPERTY(
       Transient,
+      VisibleAnywhere,
       BlueprintReadOnly,
       BlueprintGetter = GetResolvedGeoreference,
       Category = "Cesium",
@@ -365,4 +358,11 @@ private:
    * warning and returns nullptr.
    */
   ALevelInstance* _getLevelInstance() const noexcept;
+
+  /**
+   * Invalidates the cached resolved georeference, unsubscribing from it and
+   * setting it to null. The next time ResolveGeoreference is called, the
+   * Georeference will be re-resolved and re-subscribed.
+   */
+  void _invalidateResolvedGeoreference();
 };

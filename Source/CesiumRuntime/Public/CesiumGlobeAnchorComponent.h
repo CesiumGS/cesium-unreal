@@ -174,7 +174,7 @@ public:
    * the value of the Georeference property if it is set. Otherwise, finds a
    * Georeference in the World and returns it, creating it if necessary. The
    * resolved Georeference is cached so subsequent calls to this function will
-   * return the same instance, unless ForceReResolve is true.
+   * return the same instance, unless ForceReresolve is true.
    */
   UFUNCTION(BlueprintCallable, Category = "Cesium")
   ACesiumGeoreference* ResolveGeoreference(bool bForceReresolve = false);

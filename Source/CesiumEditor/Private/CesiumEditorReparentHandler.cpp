@@ -3,6 +3,7 @@
 #include "CesiumEditorReparentHandler.h"
 #include "Cesium3DTileset.h"
 #include "CesiumGlobeAnchorComponent.h"
+#include "CesiumSubLevelComponent.h"
 #include "Engine/Engine.h"
 
 CesiumEditorReparentHandler::CesiumEditorReparentHandler() {
@@ -32,5 +33,11 @@ void CesiumEditorReparentHandler::OnLevelActorAttached(
       Actor->FindComponentByClass<UCesiumGlobeAnchorComponent>();
   if (IsValid(GlobeAnchor)) {
     GlobeAnchor->ResolveGeoreference(true);
+  }
+
+  UCesiumSubLevelComponent* SubLevel =
+      Actor->FindComponentByClass<UCesiumSubLevelComponent>();
+  if (IsValid(SubLevel)) {
+    SubLevel->ResolveGeoreference(true);
   }
 }
