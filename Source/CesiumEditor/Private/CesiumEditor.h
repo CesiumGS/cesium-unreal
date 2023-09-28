@@ -86,6 +86,18 @@ public:
    */
   static AActor* SpawnDynamicPawn();
 
+  /**
+   * Spawns a new Cesium3DTileset with default values in the current level of
+   * the edited world.
+   */
+  static AActor* SpawnBlankTileset();
+
+  /**
+   * Spawns a new CesiumCartographicPolygon in the current level of the edited
+   * world.
+   */
+  static AActor* SpawnCartographicPolygon();
+
 private:
   TSharedRef<SDockTab> SpawnCesiumTab(const FSpawnTabArgs& TabSpawnArgs);
   TSharedRef<SDockTab>

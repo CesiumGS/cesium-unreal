@@ -3,6 +3,7 @@
 #include "CesiumEditor.h"
 #include "Cesium3DTilesSelection/Tileset.h"
 #include "Cesium3DTileset.h"
+#include "CesiumCartographicPolygon.h"
 #include "CesiumCommands.h"
 #include "CesiumGeoreferenceCustomization.h"
 #include "CesiumGlobeAnchorCustomization.h"
@@ -709,6 +710,14 @@ AActor* FCesiumEditorModule::SpawnDynamicPawn() {
 
 UClass* FCesiumEditorModule::GetCesiumSunSkyClass() {
   return ACesiumSunSky::StaticClass();
+}
+
+AActor* FCesiumEditorModule::SpawnBlankTileset() {
+  return SpawnActorWithClass(ACesium3DTileset::StaticClass());
+}
+
+AActor* FCesiumEditorModule::SpawnCartographicPolygon() {
+  return SpawnActorWithClass(ACesiumCartographicPolygon::StaticClass());
 }
 
 UClass* FCesiumEditorModule::GetDynamicPawnBlueprintClass() {
