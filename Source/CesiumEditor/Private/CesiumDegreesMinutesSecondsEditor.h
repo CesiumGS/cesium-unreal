@@ -9,13 +9,13 @@
 #include "Widgets/Input/STextComboBox.h"
 
 /**
- * A class that allows configuring a Details View row that shows
- * a latitude or longitude.
+ * A class that allows configuring a Details View row for a
+ * latitude or longitude property.
  *
- * Assuming that the property was given as a (double) property
- * that contains the decimal degrees, the Details View row
- * that is created with this class shows the value additionally
- * in a DMS (Degree-Minutes-Seconds) view.
+ * Latitude and longitude properties are often computed with doubles
+ * representing decimal-point degrees. This Details View row will show the
+ * property with an additional Degree-Minutes-Seconds (DMS) view for easier
+ * usability and editing.
  *
  * See FCesiumGeoreferenceCustomization::CustomizeDetails for
  * an example of how to use this class.
@@ -30,7 +30,7 @@ public:
    * The given property handle must be a handle to a 'double'
    * property!
    *
-   * @param InputDecimalDegreesHandle The property hande for the
+   * @param InputDecimalDegreesHandle The property handle for the
    * decimal degrees property
    * @param InputIsLongitude Whether the edited property is a
    * longitude (as opposed to a latitude) property
