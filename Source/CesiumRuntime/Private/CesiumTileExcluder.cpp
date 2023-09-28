@@ -1,5 +1,6 @@
 #include "CesiumTileExcluder.h"
 #include "CesiumTileExcluderAdapter.h"
+#include "CesiumLifetime.h"
 
 using namespace Cesium3DTilesSelection;
 
@@ -38,10 +39,17 @@ void UCesiumTileExcluder::AddToTileset() {
   if (it != excluders.end())
     return;
 
-  CesiumTile = NewObject<UCesiumTile>();
+  CesiumTile = NewObject<UCesiumTile>(this);
+  CesiumTile->SetVisibility(false);
+  CesiumTile->SetMobility(EComponentMobility::Movable);
+  CesiumTile->SetFlags(
+      RF_Transient | RF_DuplicateTransient | RF_TextExportTransient);
+  CesiumTile->SetupAttachment(CesiumTileset->GetRootComponent());
+  CesiumTile->RegisterComponent();
+
   auto pAdapter = std::make_shared<CesiumTileExcluderAdapter>(
       TWeakObjectPtr<UCesiumTileExcluder>(this),
-      CesiumTileset,
+      CesiumTileset->ResolveGeoreference(),
       CesiumTile);
   pExcluderAdapter = pAdapter.get();
   excluders.push_back(std::move(pAdapter));
@@ -62,6 +70,8 @@ void UCesiumTileExcluder::RemoveFromTileset() {
   if (it != excluders.end()) {
     excluders.erase(it);
   }
+
+  CesiumLifetime::destroyComponentRecursively(CesiumTile);
 }
 
 void UCesiumTileExcluder::Refresh() {

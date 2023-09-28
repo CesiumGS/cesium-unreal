@@ -6,30 +6,28 @@ bool CesiumTileExcluderAdapter::shouldExclude(
   if (!this->IsExcluderValid) {
     return false;
   }
-  Tile->_pTile = &tile;
+  Tile->_tileBounds = tile.getBoundingVolume();
+  Tile->UpdateBounds();
   return Excluder->ShouldExclude(Tile);
 }
 
 void CesiumTileExcluderAdapter::startNewFrame() noexcept {
-  if (!Excluder.IsValid() || !IsValid(Tile) || !IsValid(Georeference) ||
-      !IsValid(Tileset)) {
+  if (!Excluder.IsValid() || !IsValid(Tile) || !IsValid(Georeference)) {
     IsExcluderValid = false;
     return;
   }
 
   IsExcluderValid = true;
-  Tile->_transform =
-      VecMath::createMatrix4D(Tileset->GetTransform().ToMatrixWithScale()) *
+  Tile->_tileTransform =
       Georeference->GetGeoTransforms()
-          .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
+          .GetAbsoluteUnrealWorldToEllipsoidCenteredTransform();
 }
 
 CesiumTileExcluderAdapter::CesiumTileExcluderAdapter(
     TWeakObjectPtr<UCesiumTileExcluder> pExcluder,
-    ACesium3DTileset* pTileset,
+    ACesiumGeoreference* pGeoreference,
     UCesiumTile* pTile)
     : Excluder(pExcluder),
-      Tileset(pTileset),
       Tile(pTile),
-      Georeference(pTileset->ResolveGeoreference()),
+      Georeference(pGeoreference),
       IsExcluderValid(true){};

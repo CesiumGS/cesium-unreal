@@ -20,7 +20,7 @@ UCLASS(
     meta = (BlueprintSpawnableComponent),
     Blueprintable,
     Abstract)
-class CESIUMRUNTIME_API UCesiumTileExcluder : public UActorComponent {
+class CESIUMRUNTIME_API UCesiumTileExcluder : public USceneComponent {
   GENERATED_BODY()
 private:
   CesiumTileExcluderAdapter* pExcluderAdapter;
