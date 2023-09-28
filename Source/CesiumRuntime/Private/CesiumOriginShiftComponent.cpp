@@ -87,7 +87,7 @@ void UCesiumOriginShiftComponent::TickComponent(
   // If we don't have any known sub-levels, and aren't origin shifting outside
   // of sub-levels, then bail quickly to save ourselves a little work.
   if (Sublevels.IsEmpty() &&
-      this->Mode == ECesiumOriginShiftMode::SwitchSublevelsOnly) {
+      this->Mode == ECesiumOriginShiftMode::SwitchSubLevelsOnly) {
     return;
   }
 
