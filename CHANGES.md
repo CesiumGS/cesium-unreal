@@ -8,6 +8,15 @@
 - Removed `FCesiumIntegerColor`, `FCesiumFloatColor`, `UCesiumPropertyTextureProperty::GetIntegerColorFromTextureCoordinates` and `UCesiumPropertyTextureProperty::GetFloatColorFromTextureCoordinates`. Check out the [upgrade guide](Documentation/upgrade-to-2.0-guide.md) for how retrieve metadata from property textures with the new API.
 - Removed `CesiumMetadataFeatureTable`, `UCesiumMetadataFeatureTableBlueprintLibrary`, `UCesiumMetadataPrimitiveBlueprintLibrary::GetFeatureTables`, and `UCesiumMetadataUtilityBlueprintLibrary::GetFeatureIDForFace`. These have been deprecated since Unreal Engine 4.26.
 - The old sub-level system, based on Unreal's old (and now deprecated) World Composition system, has been removed. Instead, create Level Instance Actors and attach the "Cesium Sub Level Component" to them to achieve similar functionality. Old levels will automatically be converted to the new system when they are loaded in the Editor.
+- `CesiumSunSky` now uses a default `TransmittanceMinLightElevationAngle` value on its `SkyAtmosphere` component of 90.0 degrees instead of -90.0 degrees. This will generally improve lighting when far from the CesiumGeoreference origin, but it is a breaking change because it may change the lighting conditions in existing levels, particularly at sunrise and sunset.
+- The `Mobility` property on `ACesium3DTileset` is now obsolete. Instead, use the normal mechanism of setting the root component's mobility.
+- Removed many methods that from the C++ interface of `ACesiumGeoreference` and `UCesiumGlobeAnchorComponent` that used `glm` vector types. Use the versions that work with Unreal types instead.
+- The `ComputeEastSouthUpToUnreal` function on `ACesiumGeoreference` has been renamed to `ComputeEastSouthUpToUnrealTransformation` and now returns a matrix that includes the translation component of the transformation. Previously it only included the rotation component.
+- Numerous properties on `CesiumGlobeAnchorComponent` must now be accessed with get/set functions from C++, instead of direct field access.
+- Renamed the following on `CesiumGlobeAnchorComponent`:
+  - `GetECEF` renamed to `GetEarthCenteredEarthFixedPosition`
+  - `MoveToECEF` renamed to `MoveToEarthCenteredEarthFixedPosition`
+- Deprecated the `InvalidateResolvedGeoreference` function on `CesiumGlobeAnchorComponent`.
 
 ##### Additions :tada:
 
@@ -16,12 +25,20 @@
 - The `CesiumCameraManager` instance to use with a `Cesium3DTileset` can now be specified with a property on the tileset. In addition to offering more flexibility, this avoids the work of finding the camera manager in the level every frame.
 - Cesium Actors created with the Quick Add or Cesium ion panels are now created inside the active sub-level, if there is one.
 - Cesium objects in sub-levels can now explicitly reference `ACesiumGeoreference`, `ACesiumCreditSystem`, and `ACesiumCameraManager` instances in the Persistent Level.
+- `ACesiumGeoreference` can now act as a parent Actor. By adjusting the georeference's transformation, the entire globe can be located, rotated, and scaled within the Unreal Engine world.
+- Added `AtmosphereHeight`, `AerialPerspectiveViewDistanceScale`, `RayleighExponentialDistribution`, and `MieExponentialDistribution` properties to `ACesiumSunSky`. These have the same function as the properties of the same name on Unreal's built-in SkyAtmosphere component, except that they automatically respond to the scale of the globe.
+- Added `UCesiumWgs84Ellipsoid` Blueprint function library class.
+- Longitude / Latitude / Height properties on CesiumGeoreference and CesiumGlobeAnchorComponent are now settable using degrees-minutes-seconds in addition to decimal degrees.
+- Added the ability to interactively set the orientation of a `CesiumGlobeAnchorComponent` relative to an East-South-Up coordinate system.
+- Added `ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation` function to `CesiumGeoreference`.
 
 ##### Fixes :wrench:
 
 - Fixed a bug in `ACesiumSunSky` that could cause an error when it was created inside a sub-level.
 - `ACesiumGeoreference`, `ACesiumCameraManager`, and `ACesiumCreditSystem` are now created in the Persistent Level, even if the object that triggered their automatic creation (such as `ACesium3DTileset`) exists in a sub-level. It is very rarely useful to have instances of these objects within a sub-level.
 - An instance of `ACesiumCreditSystem` in a sub-level will no longer cause overlapping and broken-looking credits. However, we still recommend deleting credit system instances from sub-levels.
+- `ACesiumCartographicPolygon` now operates on the parts of the tileset that are shown in the Editor viewport, even if it is used with a Cesium3DTileset with a non-identity transformation.
+- Fixed bug where older scenes that used Cesium UI created actors could have their `RF_Public` flag set. This could cause problems when converting an existing level to World Partition, or perhaps cause other subtle issues that we haven't realized yet.
 
 ### v1.30.1 - 2023-09-03
 

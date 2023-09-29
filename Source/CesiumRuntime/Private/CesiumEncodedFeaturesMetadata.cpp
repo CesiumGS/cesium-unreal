@@ -131,6 +131,7 @@ std::optional<EncodedFeatureIdSet> encodeFeatureIdTexture(
     encodedFeatureIdTexture.pTexture = pMappedUnrealImageIt->Pin();
   } else {
     encodedFeatureIdTexture.pTexture = MakeShared<LoadedTextureResult>();
+    encodedFeatureIdTexture.pTexture->sRGB = false;
     // TODO: upgrade to new texture creation path
     encodedFeatureIdTexture.pTexture->textureSource = LegacyTextureSource{};
     featureIdTextureMap.Emplace(
@@ -557,6 +558,7 @@ EncodedPropertyTable encodePropertyTableAnyThreadPart(
               : (floorSqrtFeatureCount + 1);
 
       encodedProperty.pTexture = MakeUnique<LoadedTextureResult>();
+      encodedProperty.pTexture->sRGB = false;
       // TODO: upgrade to new texture creation path.
       encodedProperty.pTexture->textureSource = LegacyTextureSource{};
       encodedProperty.pTexture->pTextureData = createTexturePlatformData(

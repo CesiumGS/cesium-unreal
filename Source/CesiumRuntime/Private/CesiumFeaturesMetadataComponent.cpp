@@ -1367,9 +1367,11 @@ void GenerateNodesForPropertyTable(
       GetPropertyValuesFunction->Code +=
           PropertyDataName + ".GetDimensions(_czm_width, _czm_height);\n";
       GetPropertyValuesFunction->Code +=
-          "uint _czm_pixelX = FeatureID % _czm_width;\n";
+          "uint _czm_featureIndex = round(FeatureID);\n";
       GetPropertyValuesFunction->Code +=
-          "uint _czm_pixelY = FeatureID / _czm_width;\n";
+          "uint _czm_pixelX = _czm_featureIndex % _czm_width;\n";
+      GetPropertyValuesFunction->Code +=
+          "uint _czm_pixelY = _czm_featureIndex / _czm_width;\n";
 
       foundFirstProperty = true;
     }
@@ -1946,6 +1948,7 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
     UAssetEditorSubsystem* pAssetEditor =
         GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
     if (pAssetEditor) {
+      GEngine->EndTransaction();
       pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
       IMaterialEditor* pMaterialEditor = static_cast<IMaterialEditor*>(
           pAssetEditor->FindEditorForAsset(this->TargetMaterialLayer, true));
