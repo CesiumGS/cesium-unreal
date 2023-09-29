@@ -12,6 +12,7 @@ public class CesiumRuntime : ModuleRules
     public CesiumRuntime(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        ShadowVariableWarningLevel = WarningLevel.Off;
 
         PublicIncludePaths.AddRange(
             new string[] {

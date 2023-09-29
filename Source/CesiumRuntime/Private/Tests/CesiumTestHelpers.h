@@ -5,6 +5,7 @@
 #include "CesiumRuntime.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "Math/MathFwd.h"
 #include "Misc/AutomationTest.h"
 #include "TimerManager.h"
 
@@ -13,10 +14,24 @@
 #endif
 
 class UWorld;
+class ACesiumGeoreference;
 
 namespace CesiumTestHelpers {
 
 UWorld* getGlobalWorldContext();
+
+/// <summary>
+/// Verify that two rotations (expressed relative to two different
+/// georeferences) are equivalent by using them to rotate the principal axis
+/// vectors and then transforming those vectors to ECEF. The ECEF vectors should
+/// be the same in both cases.
+/// </summary>
+void TestRotatorsAreEquivalent(
+    FAutomationTestBase* pSpec,
+    ACesiumGeoreference* pGeoreferenceExpected,
+    const FRotator& rotatorExpected,
+    ACesiumGeoreference* pGeoreferenceActual,
+    const FRotator& rotatorActual);
 
 template <typename T>
 void waitForImpl(

@@ -3,6 +3,7 @@
 #include "CesiumIonRasterOverlay.h"
 #include "Cesium3DTilesSelection/IonRasterOverlay.h"
 #include "Cesium3DTilesSelection/Tileset.h"
+#include "CesiumActors.h"
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 
@@ -35,4 +36,11 @@ UCesiumIonRasterOverlay::CreateOverlay(
       this->IonAssetID,
       TCHAR_TO_UTF8(*token),
       options);
+}
+
+void UCesiumIonRasterOverlay::PostLoad() {
+  Super::PostLoad();
+
+  if (CesiumActors::shouldValidateFlags(this))
+    CesiumActors::validateActorComponentFlags(this);
 }

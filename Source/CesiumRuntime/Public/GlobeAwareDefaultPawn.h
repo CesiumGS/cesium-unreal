@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -132,6 +132,15 @@ public:
    */
   UPROPERTY(BlueprintAssignable, Category = "Cesium");
   FInterruptedFlight OnFlightInterrupt;
+
+  /**
+   * Gets the transformation from globe's reference frame to the Unreal world
+   * (relative to the floating origin). This is equivalent to calling
+   * GetActorTransform on this pawn's attach parent, if it has one. If this pawn
+   * does not have an attach parent, an identity transformation is returned.
+   */
+  UFUNCTION(BlueprintPure, Category = "Cesium")
+  const FTransform& GetGlobeToUnrealWorldTransform() const;
 
   /**
    * Begin a smooth camera flight to the given Earth-Centered, Earth-Fixed

@@ -97,4 +97,6 @@ private:
 
   bool _doExtraChecksOnNextTick = false;
   bool _isTransitioningSubLevels = false;
+
+  friend class CesiumEditorSubLevelMutex;
 };

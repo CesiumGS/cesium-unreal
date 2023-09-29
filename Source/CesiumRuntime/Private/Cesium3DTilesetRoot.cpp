@@ -82,7 +82,7 @@ void UCesium3DTilesetRoot::_updateAbsoluteLocation() {
 void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
   ACesium3DTileset* pTileset = this->GetOwner<ACesium3DTileset>();
 
-  const glm::dmat4& ellipsoidCenteredToUnrealWorld =
+  const glm::dmat4 ellipsoidCenteredToUnrealWorld =
       pTileset->ResolveGeoreference()
           ->GetGeoTransforms()
           .GetEllipsoidCenteredToAbsoluteUnrealWorldTransform();
@@ -91,7 +91,7 @@ void UCesium3DTilesetRoot::_updateTilesetToUnrealRelativeWorldTransform() {
       this->_absoluteLocation - this->_worldOriginLocation;
 
   FMatrix tilesetActorToUeLocal =
-      this->GetComponentToWorld().ToMatrixWithScale();
+      this->GetRelativeTransform().ToMatrixWithScale();
   glm::dmat4 ueAbsoluteToUeLocal =
       VecMath::createMatrix4D(tilesetActorToUeLocal, relativeLocation);
 

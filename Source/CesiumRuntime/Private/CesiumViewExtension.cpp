@@ -2,6 +2,7 @@
 #include "CesiumViewExtension.h"
 
 #include "Cesium3DTileset.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 using namespace Cesium3DTilesSelection;
 
@@ -91,6 +92,19 @@ void CesiumViewExtension::PreRenderView_RenderThread(
     FRHICommandListImmediate& RHICmdList,
     FSceneView& InView) {}
 
+namespace {
+
+const TSet<FPrimitiveOcclusionHistory, FPrimitiveOcclusionHistoryKeyFuncs>&
+getOcclusionHistorySet(const FSceneViewState* pViewState) {
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+  return pViewState->Occlusion.PrimitiveOcclusionHistorySet;
+#else
+  return pViewState->PrimitiveOcclusionHistorySet;
+#endif
+}
+
+} // namespace
+
 void CesiumViewExtension::PostRenderViewFamily_RenderThread(
     FRHICommandListImmediate& RHICmdList,
     FSceneViewFamily& InViewFamily) {
@@ -114,7 +128,7 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
       continue;
 
     const FSceneViewState* pViewState = pView->State->GetConcreteViewState();
-    if (pViewState && pViewState->PrimitiveOcclusionHistorySet.Num()) {
+    if (pViewState && getOcclusionHistorySet(pViewState).Num()) {
       SceneViewOcclusionResults& occlusionResults =
           _currentAggregation_renderThread.occlusionResultsByView
               .emplace_back();
@@ -133,8 +147,8 @@ void CesiumViewExtension::PostRenderViewFamily_RenderThread(
       }
 
       occlusionResults.PrimitiveOcclusionResults.Reserve(
-          pViewState->PrimitiveOcclusionHistorySet.Num());
-      for (const auto& element : pViewState->PrimitiveOcclusionHistorySet) {
+          getOcclusionHistorySet(pViewState).Num());
+      for (const auto& element : getOcclusionHistorySet(pViewState)) {
         occlusionResults.PrimitiveOcclusionResults.Emplace(element);
       }
 
