@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <gsl/span>
+
 enum class ECesiumEncodedMetadataType : uint8;
 struct FCesiumPropertyTablePropertyDescription;
 struct FCesiumPropertyTableProperty;
