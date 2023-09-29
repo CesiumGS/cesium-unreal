@@ -246,40 +246,4 @@ private:
 
   UFUNCTION()
   void _onFlightInterrupted();
-
-  /**
-   * @brief Advance the camera flight based on the given time delta.
-   *
-   * NOTE: This function requires the Georefence to be valid. If it
-   * is not valid, then this function will do nothing.
-   *
-   * The given delta will be added to the _currentFlyTime, and the position
-   * and orientation will be computed by interpolating based on this time.
-   *
-   * The position will be set as the SetECEFCameraLocation, and the
-   * orientation will be assigned GetController()->SetControlRotation.
-   *
-   * @param DeltaSeconds The time delta, in seconds
-   */
-  void _handleFlightStep(float DeltaSeconds);
-
-  // helper variables for FlyToLocation
-  bool _bFlyingToLocation = false;
-  bool _bCanInterruptFlight = false;
-  float _currentFlyTime = 0.0f;
-
-  double _flyToSourceAltitude = 0.0;
-  double _flyToDestinationAltitude = 0.0;
-  double _flyToMaxAltitude = 0.0;
-
-  double _flyToTotalAngle = 0.0;
-  glm::dvec3 _flyToSourceDirection;
-  glm::dvec3 _flyToRotationAxis;
-
-  FQuat _flyToSourceRotation;
-  FQuat _flyToDestinationRotation;
-  glm::dvec3 _flyToECEFDestination;
-
-  const CesiumGeospatial::Ellipsoid& _ellipsoid =
-      CesiumGeospatial::Ellipsoid::WGS84;
 };
