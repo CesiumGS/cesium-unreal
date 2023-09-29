@@ -1,4 +1,5 @@
 #include "CesiumTileExcluder.h"
+#include "Cesium3DTileset.h"
 #include "CesiumLifetime.h"
 #include "CesiumTileExcluderAdapter.h"
 
@@ -25,7 +26,7 @@ UCesiumTileExcluder::UCesiumTileExcluder(
 }
 
 void UCesiumTileExcluder::AddToTileset() {
-  CesiumTileset = this->GetOwner<ACesium3DTileset>();
+  ACesium3DTileset* CesiumTileset = this->GetOwner<ACesium3DTileset>();
   if (!CesiumTileset)
     return;
   Tileset* pTileset = CesiumTileset->GetTileset();
@@ -56,7 +57,7 @@ void UCesiumTileExcluder::AddToTileset() {
 }
 
 void UCesiumTileExcluder::RemoveFromTileset() {
-  CesiumTileset = this->GetOwner<ACesium3DTileset>();
+  ACesium3DTileset* CesiumTileset = this->GetOwner<ACesium3DTileset>();
   if (!CesiumTileset)
     return;
   Tileset* pTileset = CesiumTileset->GetTileset();
