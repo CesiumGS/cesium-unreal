@@ -1,6 +1,6 @@
 // Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
-#include "CesiumActorComponentWithGlobeAnchor.h"
+#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CesiumGlobeAnchorComponent.h"
 
 #if WITH_EDITOR
@@ -8,21 +8,21 @@
 #endif
 
 UCesiumGlobeAnchorComponent*
-UCesiumActorComponentWithGlobeAnchor::GetGlobeAnchor() {
+UCesiumGlobeAnchoredActorComponent::GetGlobeAnchor() {
   return this->GlobeAnchor;
 }
 
-void UCesiumActorComponentWithGlobeAnchor::OnRegister() {
+void UCesiumGlobeAnchoredActorComponent::OnRegister() {
   Super::OnRegister();
   this->ResolveGlobeAnchor();
 }
 
-void UCesiumActorComponentWithGlobeAnchor::BeginPlay() {
+void UCesiumGlobeAnchoredActorComponent::BeginPlay() {
   Super::BeginPlay();
   this->ResolveGlobeAnchor();
 }
 
-void UCesiumActorComponentWithGlobeAnchor::ResolveGlobeAnchor() {
+void UCesiumGlobeAnchoredActorComponent::ResolveGlobeAnchor() {
   this->GlobeAnchor = nullptr;
 
   AActor* Owner = this->GetOwner();

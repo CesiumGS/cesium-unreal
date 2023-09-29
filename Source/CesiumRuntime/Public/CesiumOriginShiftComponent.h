@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumActorComponentWithGlobeAnchor.h"
+#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CoreMinimal.h"
 #include "CesiumOriginShiftComponent.generated.h"
 
@@ -74,7 +74,7 @@ enum class ECesiumOriginShiftMode : uint8 {
  */
 UCLASS(ClassGroup = "Cesium", Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumOriginShiftComponent
-    : public UCesiumActorComponentWithGlobeAnchor {
+    : public UCesiumGlobeAnchoredActorComponent {
   GENERATED_BODY()
 
 #pragma region Properties

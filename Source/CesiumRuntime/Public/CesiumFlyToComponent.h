@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumActorComponentWithGlobeAnchor.h"
+#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CesiumFlyToComponent.generated.h"
 
 class UCurveFloat;
@@ -62,7 +62,7 @@ enum class ECesiumFlyToRotation : uint8 {
  */
 UCLASS(ClassGroup = "Cesium", Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumFlyToComponent
-    : public UCesiumActorComponentWithGlobeAnchor {
+    : public UCesiumGlobeAnchoredActorComponent {
   GENERATED_BODY()
 
 public:
