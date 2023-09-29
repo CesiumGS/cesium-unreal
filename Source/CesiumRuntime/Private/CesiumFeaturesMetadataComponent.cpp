@@ -1845,6 +1845,7 @@ void UCesiumFeaturesMetadataComponent::GenerateMaterial() {
     UAssetEditorSubsystem* pAssetEditor =
         GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
     if (pAssetEditor) {
+      GEngine->EndTransaction();
       pAssetEditor->OpenEditorForAsset(this->TargetMaterialLayer);
       IMaterialEditor* pMaterialEditor = static_cast<IMaterialEditor*>(
           pAssetEditor->FindEditorForAsset(this->TargetMaterialLayer, true));
