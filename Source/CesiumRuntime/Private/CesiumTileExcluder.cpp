@@ -83,3 +83,29 @@ bool UCesiumTileExcluder::ShouldExclude_Implementation(
     const UCesiumTile* TileObject) {
   return false;
 }
+
+void UCesiumTileExcluder::Activate(bool bReset) {
+  Super::Activate(bReset);
+  this->AddToTileset();
+}
+
+void UCesiumTileExcluder::Deactivate() {
+  Super::Deactivate();
+  this->RemoveFromTileset();
+}
+
+void UCesiumTileExcluder::OnComponentDestroyed(bool bDestroyingHierarchy) {
+  this->RemoveFromTileset();
+  Super::OnComponentDestroyed(bDestroyingHierarchy);
+}
+
+#if WITH_EDITOR
+// Called when properties are changed in the editor
+void UCesiumTileExcluder::PostEditChangeProperty(
+    FPropertyChangedEvent& PropertyChangedEvent) {
+  Super::PostEditChangeProperty(PropertyChangedEvent);
+
+  this->RemoveFromTileset();
+  this->AddToTileset();
+}
+#endif

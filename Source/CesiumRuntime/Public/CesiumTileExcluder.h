@@ -20,7 +20,7 @@ UCLASS(
     meta = (BlueprintSpawnableComponent),
     Blueprintable,
     Abstract)
-class CESIUMRUNTIME_API UCesiumTileExcluder : public USceneComponent {
+class CESIUMRUNTIME_API UCesiumTileExcluder : public UActorComponent {
   GENERATED_BODY()
 private:
   CesiumTileExcluderAdapter* pExcluderAdapter;
@@ -34,6 +34,16 @@ protected:
 
 public:
   UCesiumTileExcluder(const FObjectInitializer& ObjectInitializer);
+
+  virtual void Activate(bool bReset) override;
+  virtual void Deactivate() override;
+  virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
+
+#if WITH_EDITOR
+  // Called when properties are changed in the editor
+  virtual void
+  PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
   /**
    * Adds this tile excluder to its owning Cesium 3D Tileset Actor. If the
