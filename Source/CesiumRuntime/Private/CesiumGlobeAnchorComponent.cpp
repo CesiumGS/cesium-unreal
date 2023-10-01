@@ -75,12 +75,6 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   // georeference. If it's not, this will happen when it becomes registered.
   if (this->IsRegistered()) {
     this->ResolveGeoreference();
-
-    // If we switched to a different georeference, synchronize the state based
-    // on the new one.
-    if (pOriginal != this->Georeference && IsValid(pOriginal)) {
-      this->Sync();
-    }
   }
 }
 
@@ -233,22 +227,38 @@ void UCesiumGlobeAnchorComponent::Sync() {
   }
 }
 
-ACesiumGeoreference* UCesiumGlobeAnchorComponent::ResolveGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
+ACesiumGeoreference*
+UCesiumGlobeAnchorComponent::ResolveGeoreference(bool bForceReresolve) {
+  if (IsValid(this->ResolvedGeoreference) && !bForceReresolve) {
     return this->ResolvedGeoreference;
   }
 
-  if (IsValid(this->Georeference.Get())) {
-    this->ResolvedGeoreference = this->Georeference.Get();
-  } else {
-    this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
-  }
+  ACesiumGeoreference* Previous = this->ResolvedGeoreference;
+  ACesiumGeoreference* Next =
+      IsValid(this->Georeference.Get())
+          ? this->ResolvedGeoreference = this->Georeference.Get()
+          : ACesiumGeoreference::GetDefaultGeoreferenceForActor(
+                this->GetOwner());
 
-  if (this->ResolvedGeoreference) {
-    this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
-        this,
-        &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
+  if (Previous != Next) {
+    if (IsValid(Previous)) {
+      // If we previously had a valid georeference, first synchronize using the
+      // old one so that the ECEF and Actor transforms are both up-to-date.
+      this->Sync();
+
+      Previous->OnGeoreferenceUpdated.RemoveAll(this);
+    }
+
+    this->ResolvedGeoreference = Next;
+
+    if (this->ResolvedGeoreference) {
+      this->ResolvedGeoreference->OnGeoreferenceUpdated.AddUniqueDynamic(
+          this,
+          &UCesiumGlobeAnchorComponent::_onGeoreferenceChanged);
+
+      // Now synchronize based on the new georeference.
+      this->Sync();
+    }
   }
 
   return this->ResolvedGeoreference;
@@ -494,7 +504,6 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   this->ResolveGeoreference();
-  this->Sync();
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {

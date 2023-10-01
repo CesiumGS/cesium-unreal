@@ -41,6 +41,9 @@
 - Added `CesiumOriginShiftComponent`. In addition to triggering transitions between sub-levels, this component optionally allows the Unreal world origin to be shifted as the Actor to which it is attached moves. The shifting may be done by either changing the `CesiumGeoreference` origin or by setting Unreal's `OriginLocation` property.
 - Sub-level transitions can now be triggered manually from Blueprints using functions on the `CesiumSubLevelSwitcherComponent` attached to the `CesiumGeoreference`. Be sure to disable any `CesiumOriginShiftComponent` instances in your level if you want manual control of sub-level switching.
 - Added `CesiumFlyToComponent` to allow animated flights of any Actor or Pawn.
+- Globe aware objects now find their associated CesiumGeoreference by using `ACesiumGeoreference::GetDefaultDefaultGeoreferenceForActor`, which checks first for an attachment parent that is a CesiumGeoreference. This way a `Cesium3DTileset` or similar object will by associated with the CesiumGeoreference it is nested inside by default.
+- The Quick Add panel now creates Actors nested inside a `CesiumGeoreference`.
+- The `ResolvedGeoreference` is now shown in the Editor Details UI for georeferenced objects, next to the `Georeference` property.
 
 ##### Fixes :wrench:
 

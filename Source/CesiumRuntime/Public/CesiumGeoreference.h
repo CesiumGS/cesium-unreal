@@ -41,10 +41,17 @@ public:
   static const double kMinimumScale;
 
   /**
-   * Finds and returns the actor labeled `CesiumGeoreferenceDefault` in the
-   * persistent level of the calling object's world. If not found, it creates a
-   * new default Georeference.
-   * @param WorldContextObject Any `UObject`.
+   * Finds and returns a CesiumGeoreference in the world. It searches in the
+   * following order:
+   *
+   * 1. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 2. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 3. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
    */
   UFUNCTION(
       BlueprintCallable,
@@ -52,6 +59,23 @@ public:
       meta = (WorldContext = "WorldContextObject"))
   static ACesiumGeoreference*
   GetDefaultGeoreference(const UObject* WorldContextObject);
+
+  /**
+   * Finds and returns the CesiumGeoreference suitable for use with the given
+   * Actor. It searches in the following order:
+   *
+   * 1. A CesiumGeoreference that is an attachment parent of the given Actor.
+   * 2. A CesiumGeoreference that is tagged with "DEFAULT_GEOREFERENCE" and
+   * found in the PersistentLevel.
+   * 3. A CesiumGeoreference with the name "CesiumGeoreferenceDefault" and found
+   * in the PersistentLevel.
+   * 4. Any CesiumGeoreference in the PersistentLevel.
+   *
+   * If no CesiumGeoreference is found with this search, a new one is created in
+   * the persistent level and given the "DEFAULT_GEOREFERENCE" tag.
+   */
+  UFUNCTION(BlueprintCallable, Category = "Cesium")
+  static ACesiumGeoreference* GetDefaultGeoreferenceForActor(AActor* Actor);
 
   /**
    * A delegate that will be called whenever the Georeference is

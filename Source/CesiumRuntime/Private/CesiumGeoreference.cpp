@@ -57,83 +57,124 @@ createCoordinateSystem(const FVector& center, double scale) {
       Ellipsoid::WGS84);
 }
 
-} // namespace
+ACesiumGeoreference* FindGeoreferenceAncestor(AActor* Actor) {
+  AActor* Current = Actor;
 
-/*static*/ const double ACesiumGeoreference::kMinimumScale = 1.0e-6;
-
-/*static*/ ACesiumGeoreference*
-ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
-  UWorld* world = WorldContextObject->GetWorld();
-  // This method can be called by actors even when opening the content browser.
-  if (!IsValid(world)) {
-    return nullptr;
+  while (IsValid(Current)) {
+    ACesiumGeoreference* Georeference = Cast<ACesiumGeoreference>(Current);
+    if (IsValid(Georeference)) {
+      return Georeference;
+    }
+    Current = Current->GetAttachParentActor();
   }
-  UE_LOG(
-      LogCesium,
-      Verbose,
-      TEXT("World name for GetDefaultGeoreference: %s"),
-      *world->GetFullName());
+
+  return nullptr;
+}
+
+ACesiumGeoreference*
+FindGeoreferenceWithTag(const UObject* WorldContextObject, const FName& Tag) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
 
   // Note: The actor iterator will be created with the
   // "EActorIteratorFlags::SkipPendingKill" flag,
   // meaning that we don't have to handle objects
   // that have been deleted. (This is the default,
   // but made explicit here)
-  ACesiumGeoreference* pGeoreference = nullptr;
+  ACesiumGeoreference* Georeference = nullptr;
   EActorIteratorFlags flags = EActorIteratorFlags::OnlyActiveLevels |
                               EActorIteratorFlags::SkipPendingKill;
   for (TActorIterator<AActor> actorIterator(
-           world,
+           World,
            ACesiumGeoreference::StaticClass(),
            flags);
        actorIterator;
        ++actorIterator) {
     AActor* actor = *actorIterator;
-    if (actor->GetLevel() == world->PersistentLevel &&
-        actor->ActorHasTag(DEFAULT_GEOREFERENCE_TAG)) {
-      pGeoreference = Cast<ACesiumGeoreference>(actor);
+    if (actor->GetLevel() == World->PersistentLevel &&
+        actor->ActorHasTag(Tag)) {
+      Georeference = Cast<ACesiumGeoreference>(actor);
       break;
     }
   }
-  if (!pGeoreference) {
-    // Legacy method of finding Georeference, for backwards compatibility with
-    // existing projects
-    ACesiumGeoreference* pGeoreferenceCandidate =
-        FindObject<ACesiumGeoreference>(
-            world->PersistentLevel,
-            TEXT("CesiumGeoreferenceDefault"));
-    // Test if PendingKill
-    if (IsValid(pGeoreferenceCandidate)) {
-      pGeoreference = pGeoreferenceCandidate;
-    }
-  }
-  if (!pGeoreference) {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Creating default Georeference for actor %s"),
-        *WorldContextObject->GetName());
-    // Spawn georeference in the persistent level
-    FActorSpawnParameters spawnParameters;
-    spawnParameters.SpawnCollisionHandlingOverride =
-        ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    spawnParameters.OverrideLevel = world->PersistentLevel;
-    pGeoreference = world->SpawnActor<ACesiumGeoreference>(spawnParameters);
-    // Null check so the editor doesn't crash when it makes arbitrary calls to
-    // this function without a valid world context object.
-    if (pGeoreference) {
-      pGeoreference->Tags.Add(DEFAULT_GEOREFERENCE_TAG);
-    }
 
-  } else {
-    UE_LOG(
-        LogCesium,
-        Verbose,
-        TEXT("Using existing Georeference %s for actor %s"),
-        *pGeoreference->GetName(),
-        *WorldContextObject->GetName());
+  return Georeference;
+}
+
+ACesiumGeoreference*
+FindGeoreferenceWithDefaultName(const UObject* WorldContextObject) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  ACesiumGeoreference* Candidate = FindObject<ACesiumGeoreference>(
+      World->PersistentLevel,
+      TEXT("CesiumGeoreferenceDefault"));
+
+  // Test if PendingKill
+  if (IsValid(Candidate)) {
+    return Candidate;
   }
-  return pGeoreference;
+
+  return nullptr;
+}
+
+ACesiumGeoreference*
+CreateDefaultGeoreference(const UObject* WorldContextObject, const FName& Tag) {
+  UWorld* World = WorldContextObject->GetWorld();
+  if (!IsValid(World))
+    return nullptr;
+
+  // Spawn georeference in the persistent level
+  FActorSpawnParameters spawnParameters;
+  spawnParameters.SpawnCollisionHandlingOverride =
+      ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+  spawnParameters.OverrideLevel = World->PersistentLevel;
+
+  ACesiumGeoreference* Georeference =
+      World->SpawnActor<ACesiumGeoreference>(spawnParameters);
+  if (Georeference) {
+    Georeference->Tags.Add(Tag);
+  }
+
+  return Georeference;
+}
+
+} // namespace
+
+/*static*/ const double ACesiumGeoreference::kMinimumScale = 1.0e-6;
+
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultGeoreference(const UObject* WorldContextObject) {
+  if (!IsValid(WorldContextObject))
+    return nullptr;
+
+  ACesiumGeoreference* Georeference =
+      FindGeoreferenceWithTag(WorldContextObject, DEFAULT_GEOREFERENCE_TAG);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  Georeference = FindGeoreferenceWithDefaultName(WorldContextObject);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  Georeference =
+      CreateDefaultGeoreference(WorldContextObject, DEFAULT_GEOREFERENCE_TAG);
+
+  return Georeference;
+}
+
+/*static*/ ACesiumGeoreference*
+ACesiumGeoreference::GetDefaultGeoreferenceForActor(AActor* Actor) {
+  if (!IsValid(Actor))
+    return nullptr;
+
+  ACesiumGeoreference* Georeference = FindGeoreferenceAncestor(Actor);
+  if (IsValid(Georeference))
+    return Georeference;
+
+  return ACesiumGeoreference::GetDefaultGeoreference(Actor);
 }
 
 FVector ACesiumGeoreference::GetOriginLongitudeLatitudeHeight() const {

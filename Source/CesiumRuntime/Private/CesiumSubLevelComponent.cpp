@@ -62,7 +62,7 @@ UCesiumSubLevelComponent::GetGeoreference() const {
 void UCesiumSubLevelComponent::SetGeoreference(
     TSoftObjectPtr<ACesiumGeoreference> NewGeoreference) {
   this->Georeference = NewGeoreference;
-  this->InvalidateResolvedGeoreference();
+  this->_invalidateResolvedGeoreference();
 
   ALevelInstance* pOwner = this->_getLevelInstance();
   if (pOwner) {
@@ -77,32 +77,28 @@ ACesiumGeoreference* UCesiumSubLevelComponent::GetResolvedGeoreference() const {
   return this->ResolvedGeoreference;
 }
 
-ACesiumGeoreference* UCesiumSubLevelComponent::ResolveGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
+ACesiumGeoreference*
+UCesiumSubLevelComponent::ResolveGeoreference(bool bForceReresolve) {
+  if (IsValid(this->ResolvedGeoreference) && !bForceReresolve) {
     return this->ResolvedGeoreference;
   }
 
+  ACesiumGeoreference* Previous = this->ResolvedGeoreference;
+  ACesiumGeoreference* Next = nullptr;
+
   if (IsValid(this->Georeference.Get())) {
-    this->ResolvedGeoreference = this->Georeference.Get();
+    Next = this->Georeference.Get();
   } else {
-    this->ResolvedGeoreference =
-        ACesiumGeoreference::GetDefaultGeoreference(this);
+    Next =
+        ACesiumGeoreference::GetDefaultGeoreferenceForActor(this->GetOwner());
   }
 
+  if (Previous != Next) {
+    this->_invalidateResolvedGeoreference();
+  }
+
+  this->ResolvedGeoreference = Next;
   return this->ResolvedGeoreference;
-}
-
-void UCesiumSubLevelComponent::InvalidateResolvedGeoreference() {
-  if (IsValid(this->ResolvedGeoreference)) {
-    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
-    if (pSwitcher) {
-      ALevelInstance* pOwner = this->_getLevelInstance();
-      if (pOwner) {
-        pSwitcher->UnregisterSubLevel(Cast<ALevelInstance>(pOwner));
-      }
-    }
-  }
-  this->ResolvedGeoreference = nullptr;
 }
 
 void UCesiumSubLevelComponent::SetOriginLongitudeLatitudeHeight(
@@ -268,7 +264,7 @@ void UCesiumSubLevelComponent::UpdateGeoreferenceIfSubLevelIsActive() {
 }
 
 void UCesiumSubLevelComponent::BeginDestroy() {
-  this->InvalidateResolvedGeoreference();
+  this->_invalidateResolvedGeoreference();
   Super::BeginDestroy();
 }
 
@@ -424,4 +420,17 @@ ALevelInstance* UCesiumSubLevelComponent::_getLevelInstance() const noexcept {
             "A CesiumSubLevelComponent can only be attached a LevelInstance Actor."));
   }
   return pOwner;
+}
+
+void UCesiumSubLevelComponent::_invalidateResolvedGeoreference() {
+  if (IsValid(this->ResolvedGeoreference)) {
+    UCesiumSubLevelSwitcherComponent* pSwitcher = this->_getSwitcher();
+    if (pSwitcher) {
+      ALevelInstance* pOwner = this->_getLevelInstance();
+      if (pOwner) {
+        pSwitcher->UnregisterSubLevel(Cast<ALevelInstance>(pOwner));
+      }
+    }
+  }
+  this->ResolvedGeoreference = nullptr;
 }
