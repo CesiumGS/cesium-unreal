@@ -153,25 +153,8 @@ void UCesiumOriginShiftComponent::TickComponent(
   if (doOriginShift) {
     if (this->Mode == ECesiumOriginShiftMode::ChangeCesiumGeoreference) {
       Georeference->SetOriginEarthCenteredEarthFixed(ActorEcef);
-    } else if (
-        this->Mode == ECesiumOriginShiftMode::ChangeWorldOriginLocation) {
-      UWorld* World = GetWorld();
-      AActor* Actor = this->GetOwner();
-      if (IsValid(World) && IsValid(Actor)) {
-        const FIntVector& OriginLocation = World->OriginLocation;
-        FVector WorldPosition = Actor->GetActorLocation();
-        FIntVector WorldPositionInt(
-            int32(WorldPosition.X),
-            int32(WorldPosition.Y),
-            int32(WorldPosition.Z));
-        int32 X = clampedAdd(OriginLocation.X, WorldPositionInt.X);
-        int32 Y = clampedAdd(OriginLocation.Y, WorldPositionInt.Y);
-        int32 Z = clampedAdd(OriginLocation.Z, WorldPositionInt.Z);
-        FIntVector NewOriginLocation(X, Y, Z);
-        if (NewOriginLocation != OriginLocation) {
-          World->SetNewWorldOrigin(NewOriginLocation);
-        }
-      }
+    } else {
+      check(false && "Missing ECesiumOriginShiftMode implementation.")
     }
   }
 }
