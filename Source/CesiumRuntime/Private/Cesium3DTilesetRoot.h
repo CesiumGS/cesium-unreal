@@ -34,9 +34,6 @@ public:
    */
   const glm::dmat4& GetCesiumTilesetToUnrealRelativeWorldTransform() const;
 
-  virtual void
-  ApplyWorldOffset(const FVector& InOffset, bool bWorldShift) override;
-
   UFUNCTION()
   void HandleGeoreferenceUpdated();
 
@@ -54,7 +51,6 @@ private:
   void _updateAbsoluteLocation();
   void _updateTilesetToUnrealRelativeWorldTransform();
 
-  glm::dvec3 _worldOriginLocation;
   glm::dvec3 _absoluteLocation;
   glm::dmat4 _tilesetToUnrealRelativeWorld;
 };

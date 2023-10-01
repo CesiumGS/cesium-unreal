@@ -16,6 +16,7 @@
   - `GetECEF` renamed to `GetEarthCenteredEarthFixedPosition`
   - `MoveToECEF` renamed to `MoveToEarthCenteredEarthFixedPosition`
 - Deprecated the `InvalidateResolvedGeoreference` function on `CesiumGlobeAnchorComponent`.
+- The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` to trigger sub-level loading. When loading old levels that contain sub-levels, the plugin will automatically attempt to add this component.
 
 ##### Additions :tada:
 
@@ -31,6 +32,8 @@
 - Longitude / Latitude / Height properties on CesiumGeoreference and CesiumGlobeAnchorComponent are now settable using degrees-minutes-seconds in addition to decimal degrees.
 - Added the ability to interactively set the orientation of a `CesiumGlobeAnchorComponent` relative to an East-South-Up coordinate system.
 - Added `ComputeEastSouthUpAtEarthCenteredEarthFixedPositionToUnrealTransformation` function to `CesiumGeoreference`.
+- Added `CesiumOriginShiftComponent`. In addition to triggering transitions between sub-levels, this component optionally allows the Unreal world origin to be shifted as the Actor to which it is attached moves. The shifting may be done by either changing the `CesiumGeoreference` origin or by setting Unreal's `OriginLocation` property.
+- Sub-level transitions can now be triggered manually from Blueprints using functions on the `CesiumSubLevelSwitcherComponent` attached to the `CesiumGeoreference`. Be sure to disable any `CesiumOriginShiftComponent` instances in your level if you want manual control of sub-level switching.
 
 ##### Fixes :wrench:
 

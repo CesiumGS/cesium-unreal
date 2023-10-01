@@ -62,20 +62,29 @@ void UCesiumSubLevelSwitcherComponent::UnregisterSubLevel(
   this->_doExtraChecksOnNextTick = true;
 }
 
-const TArray<TWeakObjectPtr<ALevelInstance>>&
+TArray<ALevelInstance*>
 UCesiumSubLevelSwitcherComponent::GetRegisteredSubLevels() const noexcept {
-  return this->_sublevels;
+  TArray<ALevelInstance*> result;
+  result.Reserve(this->_sublevels.Num());
+  for (const TWeakObjectPtr<ALevelInstance>& pWeak : this->_sublevels) {
+    ALevelInstance* p = pWeak.Get();
+    if (p)
+      result.Add(p);
+  }
+  return result;
 }
 
-ALevelInstance* UCesiumSubLevelSwitcherComponent::GetCurrent() const noexcept {
+ALevelInstance*
+UCesiumSubLevelSwitcherComponent::GetCurrentSubLevel() const noexcept {
   return this->_pCurrent.Get();
 }
 
-ALevelInstance* UCesiumSubLevelSwitcherComponent::GetTarget() const noexcept {
+ALevelInstance*
+UCesiumSubLevelSwitcherComponent::GetTargetSubLevel() const noexcept {
   return this->_pTarget.Get();
 }
 
-void UCesiumSubLevelSwitcherComponent::SetTarget(
+void UCesiumSubLevelSwitcherComponent::SetTargetSubLevel(
     ALevelInstance* pLevelInstance) noexcept {
   if (this->_pTarget != pLevelInstance) {
     if (pLevelInstance) {
@@ -93,24 +102,6 @@ void UCesiumSubLevelSwitcherComponent::SetTarget(
   }
 }
 
-#if WITH_EDITOR
-
-void UCesiumSubLevelSwitcherComponent::
-    NotifySubLevelIsTemporarilyHiddenInEditorChanged(
-        ALevelInstance* pLevelInstance,
-        bool bIsHidden) {
-  if (bIsHidden) {
-    // The previous target level has been hidden, so clear out the target.
-    if (this->_pTarget == pLevelInstance) {
-      this->SetTarget(nullptr);
-    }
-  } else {
-    this->SetTarget(pLevelInstance);
-  }
-}
-
-#endif
-
 void UCesiumSubLevelSwitcherComponent::TickComponent(
     float DeltaTime,
     enum ELevelTick TickType,
@@ -121,7 +112,7 @@ void UCesiumSubLevelSwitcherComponent::TickComponent(
     if (this->_pTarget != nullptr &&
         this->_sublevels.Find(this->_pTarget) == INDEX_NONE) {
       // Target level is no longer registered, so the new target is "none".
-      this->SetTarget(nullptr);
+      this->SetTargetSubLevel(nullptr);
     }
 
     // In game, make sure that any sub-levels that aren't pCurrent or pTarget
@@ -303,7 +294,8 @@ void UCesiumSubLevelSwitcherComponent::_updateSubLevelStateGame() {
 
       // Double-check that we're not actively trying to unload this level
       // already. If we are, wait longer.
-      if (IsValid(pStreaming) && pStreaming->ShouldBeLoaded()) {
+      if ((IsValid(pStreaming) && pStreaming->ShouldBeLoaded()) ||
+          this->_pTarget.Get()->GetWorldAsset().IsNull()) {
         this->_pCurrent = this->_pTarget;
       } else {
         this->_isTransitioningSubLevels = true;

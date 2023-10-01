@@ -42,10 +42,10 @@ void CesiumEditorSubLevelMutex::OnMarkRenderStateDirty(
   bool needsTick = false;
 
   if (!pLevelInstance->IsTemporarilyHiddenInEditor(true)) {
-    pSwitcher->SetTarget(pLevelInstance);
+    pSwitcher->SetTargetSubLevel(pLevelInstance);
     needsTick = true;
-  } else if (pSwitcher->GetTarget() == pLevelInstance) {
-    pSwitcher->SetTarget(nullptr);
+  } else if (pSwitcher->GetTargetSubLevel() == pLevelInstance) {
+    pSwitcher->SetTargetSubLevel(nullptr);
     needsTick = true;
   }
 
