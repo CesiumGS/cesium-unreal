@@ -1,5 +1,15 @@
 # Change Log
 
+### v1.31.1 - 2023-10-02
+
+This is the last release of Cesium for Unreal that will support Unreal Engine v5.0. Future versions will require Unreal Engine v5.1+.
+
+##### Fixes :wrench:
+
+- Fixed a bug that could crash the editor when selecting an individual tile in the viewport, then moving the camera to look at something else.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.2 to v0.27.3. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
+
 ### v1.31.0 - 2023-09-20
 
 ##### Additions :tada:
@@ -11,10 +21,6 @@ In addition to the above, this release updates [cesium-native](https://github.co
 ### v1.30.1 - 2023-09-03
 
 This release fixes an important bug by updating [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.0 to v0.27.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
-
-##### Fixes :wrench:
-
-- Fixed a bug that could crash the editor when selecting an individual tile in the viewport, then moving the camera to look at something else.
 
 ### v1.30.0 - 2023-09-01
 
