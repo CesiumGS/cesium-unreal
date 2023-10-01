@@ -24,6 +24,7 @@
 - The `CesiumCameraManager` instance to use with a `Cesium3DTileset` can now be specified with a property on the tileset. In addition to offering more flexibility, this avoids the work of finding the camera manager in the level every frame.
 - Cesium Actors created with the Quick Add or Cesium ion panels are now created inside the active sub-level, if there is one.
 - Cesium objects in sub-levels can now explicitly reference `ACesiumGeoreference`, `ACesiumCreditSystem`, and `ACesiumCameraManager` instances in the Persistent Level.
+- Added support for excluding Cesium Tiles from a tileset using the new `CesiumTileExcluder` actor component. This component can be used to implement custom logic for determining whether a tile should be excluded, either in C++ or Blueprints.
 - `ACesiumGeoreference` can now act as a parent Actor. By adjusting the georeference's transformation, the entire globe can be located, rotated, and scaled within the Unreal Engine world.
 - Added `AtmosphereHeight`, `AerialPerspectiveViewDistanceScale`, `RayleighExponentialDistribution`, and `MieExponentialDistribution` properties to `ACesiumSunSky`. These have the same function as the properties of the same name on Unreal's built-in SkyAtmosphere component, except that they automatically respond to the scale of the globe.
 - Added `UCesiumWgs84Ellipsoid` Blueprint function library class.

@@ -27,6 +27,7 @@
 #include "CesiumRuntime.h"
 #include "CesiumRuntimeSettings.h"
 #include "CesiumTextureUtility.h"
+#include "CesiumTileExcluder.h"
 #include "CesiumViewExtension.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "CreateGltfOptions.h"
@@ -962,6 +963,9 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
+  TArray<UCesiumTileExcluder*> tileExcluders;
+  this->GetComponents<UCesiumTileExcluder>(tileExcluders);
+
   const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
       this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
 
@@ -1147,6 +1151,12 @@ void ACesium3DTileset::LoadTileset() {
     }
   }
 
+  for (UCesiumTileExcluder* pTileExcluder : tileExcluders) {
+    if (pTileExcluder->IsActive()) {
+      pTileExcluder->AddToTileset();
+    }
+  }
+
   switch (this->TilesetSource) {
   case ETilesetSource::FromUrl:
     UE_LOG(
@@ -1211,6 +1221,14 @@ void ACesium3DTileset::DestroyTileset() {
   for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
     if (pOverlay->IsActive()) {
       pOverlay->RemoveFromTileset();
+    }
+  }
+
+  TArray<UCesiumTileExcluder*> tileExcluders;
+  this->GetComponents<UCesiumTileExcluder>(tileExcluders);
+  for (UCesiumTileExcluder* pTileExcluder : tileExcluders) {
+    if (pTileExcluder->IsActive()) {
+      pTileExcluder->RemoveFromTileset();
     }
   }
 
@@ -2180,6 +2198,12 @@ void ACesium3DTileset::PostEditChangeProperty(
 
     for (UCesiumRasterOverlay* pOverlay : rasterOverlays) {
       pOverlay->Refresh();
+    }
+    TArray<UCesiumTileExcluder*> tileExcluders;
+    this->GetComponents<UCesiumTileExcluder>(tileExcluders);
+
+    for (UCesiumTileExcluder* pTileExcluder : tileExcluders) {
+      pTileExcluder->Refresh();
     }
 
     // Maximum Screen Space Error can affect how attenuated points are rendered,
