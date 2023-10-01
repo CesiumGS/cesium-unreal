@@ -28,20 +28,10 @@ void UCesiumOriginShiftComponent::SetDistance(double NewDistance) {
   this->Distance = NewDistance;
 }
 
-UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() : Super() {
+UCesiumOriginShiftComponent::UCesiumOriginShiftComponent() {
   this->PrimaryComponentTick.bCanEverTick = true;
   this->PrimaryComponentTick.TickGroup = ETickingGroup::TG_PrePhysics;
   this->bAutoActivate = true;
-}
-
-void UCesiumOriginShiftComponent::OnRegister() {
-  Super::OnRegister();
-  this->ResolveGlobeAnchor();
-}
-
-void UCesiumOriginShiftComponent::BeginPlay() {
-  Super::BeginPlay();
-  this->ResolveGlobeAnchor();
 }
 
 namespace {
@@ -77,12 +67,13 @@ void UCesiumOriginShiftComponent::TickComponent(
   if (!this->IsActive() || this->Mode == ECesiumOriginShiftMode::Disabled)
     return;
 
-  if (!this->GlobeAnchor)
+  UCesiumGlobeAnchorComponent* GlobeAnchor = this->GetGlobeAnchor();
+  if (!IsValid(GlobeAnchor))
     return;
 
-  ACesiumGeoreference* Georeference = this->GlobeAnchor->ResolveGeoreference();
+  ACesiumGeoreference* Georeference = GlobeAnchor->ResolveGeoreference();
 
-  if (!Georeference)
+  if (!IsValid(Georeference))
     return;
 
   UCesiumSubLevelSwitcherComponent* Switcher =
@@ -100,7 +91,7 @@ void UCesiumOriginShiftComponent::TickComponent(
     return;
   }
 
-  FVector ActorEcef = this->GlobeAnchor->GetEarthCenteredEarthFixedPosition();
+  FVector ActorEcef = GlobeAnchor->GetEarthCenteredEarthFixedPosition();
 
   ALevelInstance* ClosestActiveLevel = nullptr;
   double ClosestLevelDistance = std::numeric_limits<double>::max();
@@ -156,34 +147,5 @@ void UCesiumOriginShiftComponent::TickComponent(
     } else {
       check(false && "Missing ECesiumOriginShiftMode implementation.")
     }
-  }
-}
-
-void UCesiumOriginShiftComponent::ResolveGlobeAnchor() {
-  this->GlobeAnchor = nullptr;
-
-  AActor* Owner = this->GetOwner();
-  if (!IsValid(Owner))
-    return;
-
-  this->GlobeAnchor =
-      Owner->FindComponentByClass<UCesiumGlobeAnchorComponent>();
-  if (!IsValid(this->GlobeAnchor)) {
-    // A globe anchor is missing and required, so add one.
-    this->GlobeAnchor =
-        Cast<UCesiumGlobeAnchorComponent>(Owner->AddComponentByClass(
-            UCesiumGlobeAnchorComponent::StaticClass(),
-            false,
-            FTransform::Identity,
-            false));
-    Owner->AddInstanceComponent(this->GlobeAnchor);
-
-    // Force the Editor to refresh to show the newly-added component
-#if WITH_EDITOR
-    Owner->Modify();
-    if (Owner->IsSelectedInEditor()) {
-      GEditor->SelectActor(Owner, true, true, true, true);
-    }
-#endif
   }
 }

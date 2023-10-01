@@ -2,6 +2,7 @@
 
 #if WITH_EDITOR
 
+#include "CesiumFlyToComponent.h"
 #include "CesiumGlobeAnchorComponent.h"
 #include "CesiumTestHelpers.h"
 #include "Editor.h"
@@ -30,12 +31,16 @@ void FGlobeAwareDefaultPawnSpec::Define() {
             [this](const FDoneDelegate& done) {
               UWorld* pWorld = FAutomationEditorCommonUtils::CreateNewMap();
 
-              TSoftObjectPtr<UObject> DynamicPawn =
-                  TSoftObjectPtr<UObject>(FSoftObjectPath(TEXT(
-                      "Class'/CesiumForUnreal/DynamicPawn.DynamicPawn_C'")));
               AGlobeAwareDefaultPawn* pPawn =
-                  pWorld->SpawnActor<AGlobeAwareDefaultPawn>(
-                      Cast<UClass>(DynamicPawn.LoadSynchronous()));
+                  pWorld->SpawnActor<AGlobeAwareDefaultPawn>();
+              UCesiumFlyToComponent* pFlyTo =
+                  Cast<UCesiumFlyToComponent>(pPawn->AddComponentByClass(
+                      UCesiumFlyToComponent::StaticClass(),
+                      false,
+                      FTransform::Identity,
+                      false));
+              pFlyTo->RotationToUse =
+                  ECesiumFlyToRotation::ControlRotationInEastSouthUp;
 
               subscriptionPostPIEStarted =
                   FEditorDelegates::PostPIEStarted.AddLambda(
@@ -54,20 +59,27 @@ void FGlobeAwareDefaultPawnSpec::Define() {
 
           TActorIterator<AGlobeAwareDefaultPawn> it(pWorld);
           AGlobeAwareDefaultPawn* pPawn = *it;
-          pPawn->FlyToDuration = 5.0f;
+          UCesiumFlyToComponent* pFlyTo =
+              pPawn->FindComponentByClass<UCesiumFlyToComponent>();
+          TestNotNull("pFlyTo", pFlyTo);
+          pFlyTo->Duration = 5.0f;
+
           UCesiumGlobeAnchorComponent* pGlobeAnchor =
               pPawn->FindComponentByClass<UCesiumGlobeAnchorComponent>();
           TestNotNull("pGlobeAnchor", pGlobeAnchor);
 
           // Start flying somewhere else
-          pPawn->FlyToLocationLongitudeLatitudeHeight(
+          pFlyTo->FlyToLocationLongitudeLatitudeHeight(
               FVector(25.0, 10.0, 100.0),
               0.0,
               0.0,
               false);
 
           // Tick almost to the end
-          pPawn->Tick(4.9999f);
+          Cast<UActorComponent>(pFlyTo)->TickComponent(
+              4.9999f,
+              ELevelTick::LEVELTICK_All,
+              nullptr);
 
           // The height should be close to the final height.
           FVector llh = pGlobeAnchor->GetLongitudeLatitudeHeight();

@@ -29,6 +29,10 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // built into the CesiumGeoreference.
     OriginShiftComponent = 5,
 
+    // Fly-to behavior became an independent component rather than built into
+    // the GlobeAwareDefaultPawn.
+    FlyToComponent = 6,
+
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
   };
