@@ -134,7 +134,9 @@ CreateDefaultGeoreference(const UObject* WorldContextObject, const FName& Tag) {
 
   ACesiumGeoreference* Georeference =
       World->SpawnActor<ACesiumGeoreference>(spawnParameters);
-  Georeference->Tags.Add(Tag);
+  if (Georeference) {
+    Georeference->Tags.Add(Tag);
+  }
 
   return Georeference;
 }
@@ -172,17 +174,7 @@ ACesiumGeoreference::GetDefaultGeoreferenceForActor(AActor* Actor) {
   if (IsValid(Georeference))
     return Georeference;
 
-  Georeference = FindGeoreferenceWithTag(Actor, DEFAULT_GEOREFERENCE_TAG);
-  if (IsValid(Georeference))
-    return Georeference;
-
-  Georeference = FindGeoreferenceWithDefaultName(Actor);
-  if (IsValid(Georeference))
-    return Georeference;
-
-  Georeference = CreateDefaultGeoreference(Actor, DEFAULT_GEOREFERENCE_TAG);
-
-  return Georeference;
+  return ACesiumGeoreference::GetDefaultGeoreference(Actor);
 }
 
 FVector ACesiumGeoreference::GetOriginLongitudeLatitudeHeight() const {

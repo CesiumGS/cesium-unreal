@@ -75,12 +75,6 @@ void UCesiumGlobeAnchorComponent::SetGeoreference(
   // georeference. If it's not, this will happen when it becomes registered.
   if (this->IsRegistered()) {
     this->ResolveGeoreference();
-
-    // If we switched to a different georeference, synchronize the state based
-    // on the new one.
-    if (pOriginal != this->Georeference && IsValid(pOriginal)) {
-      this->Sync();
-    }
   }
 }
 
@@ -510,7 +504,6 @@ void UCesiumGlobeAnchorComponent::OnRegister() {
   }
 
   this->ResolveGeoreference();
-  this->Sync();
 }
 
 void UCesiumGlobeAnchorComponent::OnUnregister() {
