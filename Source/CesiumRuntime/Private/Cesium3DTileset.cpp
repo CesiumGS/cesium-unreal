@@ -58,6 +58,9 @@ FCesium3DTilesetLoadFailure OnCesium3DTilesetLoadFailure{};
 #include "LevelEditorViewport.h"
 #endif
 
+// Avoid complaining about the deprecated metadata struct
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 // Sets default values
 ACesium3DTileset::ACesium3DTileset()
     : AActor(),
@@ -102,6 +105,7 @@ ACesium3DTileset::ACesium3DTileset()
 }
 
 ACesium3DTileset::~ACesium3DTileset() { this->DestroyTileset(); }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 TSoftObjectPtr<ACesiumGeoreference> ACesium3DTileset::GetGeoreference() const {
   return this->Georeference;
@@ -686,8 +690,13 @@ public:
     options.ignoreKhrMaterialsUnlit =
         this->_pActor->GetIgnoreKhrMaterialsUnlit();
 
-    options.pEncodedMetadataDescription =
-        &this->_pActor->_encodedMetadataDescription;
+    if (this->_pActor->_featuresMetadataDescription) {
+      options.pFeaturesMetadataDescription =
+          &(*this->_pActor->_featuresMetadataDescription);
+    } else if (this->_pActor->_metadataDescription_DEPRECATED) {
+      options.pEncodedMetadataDescription_DEPRECATED =
+          &(*this->_pActor->_metadataDescription_DEPRECATED);
+    }
 
     TUniquePtr<UCesiumGltfComponent::HalfConstructed> pHalf =
         UCesiumGltfComponent::CreateOffGameThread(transform, options);
@@ -953,15 +962,35 @@ void ACesium3DTileset::LoadTileset() {
   TArray<UCesiumRasterOverlay*> rasterOverlays;
   this->GetComponents<UCesiumRasterOverlay>(rasterOverlays);
 
-  const UCesiumEncodedMetadataComponent* pEncodedMetadataDescriptionComponent =
-      this->FindComponentByClass<UCesiumEncodedMetadataComponent>();
-  if (pEncodedMetadataDescriptionComponent) {
-    this->_encodedMetadataDescription = {
-        pEncodedMetadataDescriptionComponent->FeatureTables,
-        pEncodedMetadataDescriptionComponent->FeatureTextures};
-  } else {
-    this->_encodedMetadataDescription = {};
+  const UCesiumFeaturesMetadataComponent* pFeaturesMetadataComponent =
+      this->FindComponentByClass<UCesiumFeaturesMetadataComponent>();
+
+  // Check if this component exists for backwards compatibility.
+  PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+  const UDEPRECATED_CesiumEncodedMetadataComponent* pEncodedMetadataComponent =
+      this->FindComponentByClass<UDEPRECATED_CesiumEncodedMetadataComponent>();
+
+  this->_featuresMetadataDescription = std::nullopt;
+  this->_metadataDescription_DEPRECATED = std::nullopt;
+
+  if (pFeaturesMetadataComponent) {
+    FCesiumFeaturesMetadataDescription& description =
+        this->_featuresMetadataDescription.emplace();
+    description.Features = {pFeaturesMetadataComponent->FeatureIdSets};
+    description.ModelMetadata = {pFeaturesMetadataComponent->PropertyTables};
+  } else if (pEncodedMetadataComponent) {
+    UE_LOG(
+        LogCesium,
+        Warning,
+        TEXT(
+            "CesiumEncodedMetadataComponent is deprecated. Use CesiumFeaturesMetadataComponent instead."));
+    this->_metadataDescription_DEPRECATED = {
+        pEncodedMetadataComponent->FeatureTables,
+        pEncodedMetadataComponent->FeatureTextures};
   }
+
+  PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
   this->_cesiumViewExtension = cesiumViewExtension;
 
