@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 #pragma once
 
 #include "CoreMinimal.h"
@@ -29,6 +29,8 @@ struct CESIUMRUNTIME_API FCesiumCustomVersion {
     // built into the CesiumGeoreference.
     OriginShiftComponent = 5,
 
+    // Fly-to behavior became an independent component rather than built into
+    // the GlobeAwareDefaultPawn.
     FlyToComponent = 6,
 
     VersionPlusOne,

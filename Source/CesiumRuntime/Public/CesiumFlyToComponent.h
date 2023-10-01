@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CesiumActorComponentWithGlobeAnchor.h"
+#include "CesiumGlobeAnchoredActorComponent.h"
 #include "CesiumFlyToComponent.generated.h"
 
 class UCurveFloat;
@@ -35,7 +35,7 @@ enum class ECesiumFlyToRotation : uint8 {
    * being relative to the Unreal coordinate system.
    *
    * If the component is attached to an Actor that is not a Pawn, or if the Pawn
-   * does not have a Controller, this option is equivalent to the the "Actor"
+   * does not have a Controller, this option is equivalent to the "Actor"
    * option.
    */
   ControlRotationInUnreal,
@@ -50,7 +50,7 @@ enum class ECesiumFlyToRotation : uint8 {
    * East-South-Up.
    *
    * If the component is attached to an Actor that is not a Pawn, or if the Pawn
-   * does not have a Controller, this option is equivalent to the the "Actor"
+   * does not have a Controller, this option is equivalent to the "Actor"
    * option.
    */
   ControlRotationInEastSouthUp
@@ -62,7 +62,7 @@ enum class ECesiumFlyToRotation : uint8 {
  */
 UCLASS(ClassGroup = "Cesium", Meta = (BlueprintSpawnableComponent))
 class CESIUMRUNTIME_API UCesiumFlyToComponent
-    : public UCesiumActorComponentWithGlobeAnchor {
+    : public UCesiumGlobeAnchoredActorComponent {
   GENERATED_BODY()
 
 public:
@@ -81,7 +81,7 @@ public:
   /**
    * A curve that controls what percentage of the maximum height the Actor
    * should take at a given time on the flight. This curve must be kept in the 0
-   * to 1 range on both axes. The {@see FlyToMaximumAltitudeCurve} controls the
+   * to 1 range on both axes. The MaximumHeightByDistanceCurve controls the
    * actual maximum height that is achieved during the flight.
    *
    * If this curve is not specified, the height will be a smooth interpolation

@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -377,7 +377,7 @@ public:
    * registered with this georeference.
    */
   UFUNCTION(BlueprintGetter)
-  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() {
+  UCesiumSubLevelSwitcherComponent* GetSubLevelSwitcher() const {
     return this->SubLevelSwitcher;
   }
 

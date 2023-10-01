@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #pragma once
 
@@ -85,7 +85,6 @@ private:
   UPROPERTY(
       EditAnywhere,
       BlueprintReadWrite,
-      Category = "Cesium",
       BlueprintGetter = GetAdjustOrientationForGlobeWhenMoving,
       BlueprintSetter = SetAdjustOrientationForGlobeWhenMoving,
       Category = "Cesium",
@@ -277,7 +276,7 @@ public:
 public:
   /**
    * Gets the longitude in degrees (X), latitude in degrees (Y),
-   * and height in meters about the ellipsoid (Z) of the actor.
+   * and height in meters above the ellipsoid (Z) of the actor.
    *
    * Do not confuse the ellipsoid height with a geoid height or height above
    * mean sea level, which can be tens of meters higher or lower depending on
@@ -336,7 +335,7 @@ public:
   void MoveToLongitudeLatitudeHeight(const FVector& LongitudeLatitudeHeight);
 
   /**
-   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the actor in
+   * Gets the Earth-Centered, Earth-Fixed (ECEF) coordinates of the Actor in
    * meters.
    */
   UFUNCTION(

@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "CesiumActorComponentWithGlobeAnchor.generated.h"
+#include "CesiumGlobeAnchoredActorComponent.generated.h"
 
 class UCesiumGlobeAnchorComponent;
 
 UCLASS(ClassGroup = "Cesium", Abstract)
-class CESIUMRUNTIME_API UCesiumActorComponentWithGlobeAnchor
+class CESIUMRUNTIME_API UCesiumGlobeAnchoredActorComponent
     : public UActorComponent {
   GENERATED_BODY()
 

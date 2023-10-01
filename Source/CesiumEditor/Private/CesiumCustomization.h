@@ -43,7 +43,7 @@ public:
   /// <param name="LocalizedDisplayName">The display name of the group.</param>
   /// <param name="bForAdvanced">True if the group should appear in the advanced
   /// section of the category.</param>
-  /// <param name="bForAdvanced">True if the group should start
+  /// <param name="bStartExpanded">True if the group should start
   /// expanded.</param>
   /// <returns>The newly-created group.</returns>
   static IDetailGroup& CreateGroup(

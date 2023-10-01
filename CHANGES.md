@@ -14,7 +14,7 @@
   - `GetECEF` renamed to `GetEarthCenteredEarthFixedPosition`
   - `MoveToECEF` renamed to `MoveToEarthCenteredEarthFixedPosition`
 - Deprecated the `InvalidateResolvedGeoreference` function on `CesiumGlobeAnchorComponent`.
-- The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` that should trigger sub-level loading. We attempt to add the necessary component automatically when loading old levels containing sub-levels.
+- The `SubLevelCamera` property on `CesiumGeoreference` has been deprecated, and the georeference no longer automatically handles sub-level transitions. Instead, you must add a `CesiumOriginShiftComponent` to the `Actor` to trigger sub-level loading. When loading old levels that contain sub-levels, the plugin will automatically attempt to add this component.
 - Removed the old `FloatingPawn` that has been deprecated since v1.3.0.
 - Deprecated the flight functionality in `GlobeAwareDefaultPawn`. This functionality is now found in `CesiumFlyToComponent` and can be used with any Pawn or Actor. Existing Blueprints should continue to work, but C++ code will likely require changes.
 - Renamed the various Curve assets used with flights to have more descriptive names and moved them to the `Curves/FlyTo` folder. Redirectors should upgrade references to the old names.

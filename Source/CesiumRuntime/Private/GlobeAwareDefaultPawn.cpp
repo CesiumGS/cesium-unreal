@@ -1,4 +1,4 @@
-// Copyright 2020-2021 CesiumGS, Inc. and Contributors
+// Copyright 2020-2023 CesiumGS, Inc. and Contributors
 
 #include "GlobeAwareDefaultPawn.h"
 #include "Camera/CameraComponent.h"
@@ -240,7 +240,7 @@ void AGlobeAwareDefaultPawn::PostLoad() {
 
     UCesiumFlyToComponent* FlyTo =
         this->FindComponentByClass<UCesiumFlyToComponent>();
-    if (FlyTo == nullptr) {
+    if (!FlyTo) {
       FlyTo = Cast<UCesiumFlyToComponent>(this->AddComponentByClass(
           UCesiumFlyToComponent::StaticClass(),
           false,
@@ -284,7 +284,7 @@ ACesiumGeoreference* AGlobeAwareDefaultPawn::GetGeoreference() const {
         LogCesium,
         Error,
         TEXT(
-            "GlobeAwareDefaultPawn %s does not have a valie CesiumGeoreference."),
+            "GlobeAwareDefaultPawn %s does not have a valid CesiumGeoreference."),
         *this->GetName());
     pGeoreference = nullptr;
   }

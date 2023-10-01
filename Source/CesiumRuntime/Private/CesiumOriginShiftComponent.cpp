@@ -87,8 +87,7 @@ void UCesiumOriginShiftComponent::TickComponent(
   // If we don't have any known sub-levels, and aren't origin shifting outside
   // of sub-levels, then bail quickly to save ourselves a little work.
   if (Sublevels.IsEmpty() &&
-      this->Mode != ECesiumOriginShiftMode::ChangeCesiumGeoreference &&
-      this->Mode != ECesiumOriginShiftMode::ChangeWorldOriginLocation) {
+      this->Mode == ECesiumOriginShiftMode::SwitchSubLevelsOnly) {
     return;
   }
 
@@ -127,12 +126,15 @@ void UCesiumOriginShiftComponent::TickComponent(
 
   Switcher->SetTargetSubLevel(ClosestActiveLevel);
 
+  // Only shift the origin when we're outside of all sub-levels.
   bool doOriginShift =
       Switcher->GetTargetSubLevel() == nullptr &&
       Switcher->GetCurrentSubLevel() == nullptr &&
       this->Mode != ECesiumOriginShiftMode::SwitchSubLevelsOnly;
 
   if (doOriginShift) {
+    // We're between sub-levels, but we also only want to shift the origin when
+    // the Actor has traveled more than Distance from the old origin.
     AActor* Actor = this->GetOwner();
     doOriginShift =
         IsValid(Actor) && Actor->GetActorLocation().SquaredLength() >
