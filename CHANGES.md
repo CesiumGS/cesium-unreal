@@ -1,6 +1,6 @@
 # Change Log
 
-### ? - ?
+### v2.0.0 Preview 1 - 2023-10-02
 
 ##### Breaking Changes :mega:
 
@@ -36,6 +36,8 @@
 - An instance of `ACesiumCreditSystem` in a sub-level will no longer cause overlapping and broken-looking credits. However, we still recommend deleting credit system instances from sub-levels.
 - `ACesiumCartographicPolygon` now operates on the parts of the tileset that are shown in the Editor viewport, even if it is used with a Cesium3DTileset with a non-identity transformation.
 - Fixed bug where older scenes that used Cesium UI created actors could have their `RF_Public` flag set. This could cause problems when converting an existing level to World Partition, or perhaps cause other subtle issues that we haven't realized yet.
+
+In addition to the above, this release updates [cesium-native](https://github.com/CesiumGS/cesium-native) from v0.27.3 to v0.28.1. See the [changelog](https://github.com/CesiumGS/cesium-native/blob/main/CHANGES.md) for a complete list of changes in cesium-native.
 
 ### v1.31.1 - 2023-10-02
 
