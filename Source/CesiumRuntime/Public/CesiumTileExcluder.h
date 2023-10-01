@@ -23,7 +23,6 @@ class CESIUMRUNTIME_API UCesiumTileExcluder : public UActorComponent {
 private:
   CesiumTileExcluderAdapter* pExcluderAdapter;
 
-protected:
   UPROPERTY()
   UCesiumTile* CesiumTile;
 

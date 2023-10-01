@@ -10,7 +10,7 @@ bool UCesiumTile::TileBoundsOverlapsPrimitive(
     return Bounds.GetBox().Intersect(Other->Bounds.GetBox()) &&
            Bounds.GetSphere().Intersects(Other->Bounds.GetSphere());
   } else {
-    return true;
+    return false;
   }
 }
 
@@ -20,7 +20,7 @@ bool UCesiumTile::PrimitiveBoxFullyContainsTileBounds(
     return Bounds.GetBox().Intersect(Other->Bounds.GetBox()) ||
            Bounds.GetSphere().Intersects(Other->Bounds.GetSphere());
   } else {
-    return true;
+    return false;
   }
 }
 
