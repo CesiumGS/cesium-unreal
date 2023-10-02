@@ -38,7 +38,7 @@ jobs:
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
           $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
-          $env:UNREAL_BUILD_LOG_PATH="C:/Users/ec2-user/AppData/Roaming/Unreal Engine/AutomationTool/Logs\C+Program+Files+Epic+Games+${{ inputs.unreal-program-name }}"
+          $env:UNREAL_BUILD_LOG_PATH="C:/Users/ec2-user/AppData/Roaming/Unreal Engine/AutomationTool/Logs/C+Program+Files+Epic+Games+${{ inputs.unreal-program-name }}"
 
           # Store temp files on the D drive, which is much faster than the EBS-backed C drive.
           mkdir -p d:\cesium\temp
