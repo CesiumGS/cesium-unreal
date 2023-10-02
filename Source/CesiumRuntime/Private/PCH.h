@@ -19,9 +19,9 @@
 #endif
 #endif
 
-//#include "Components/MeshComponent.h"
-//#include "Components/PrimitiveComponent.h"
-//#include "Engine/Engine.h"
-//#include "Engine/World.h"
-//#include "Physics/PhysicsInterfaceCore.h"
-//#include "PhysicsEngine/BodyInstance.h"
+#include "Components/MeshComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "Physics/PhysicsInterfaceCore.h"
+#include "PhysicsEngine/BodyInstance.h"
