@@ -9,7 +9,7 @@ on:
       unreal-runner-label:
         required: true
         type: string
-      unreal-batch-files-path:
+      unreal-program-name:
         required: true
         type: string
       upload-package-base-name:
@@ -37,7 +37,8 @@ jobs:
           $env:CESIUM_UNREAL_VERSION=$(git describe)
           $env:BUILD_CESIUM_UNREAL_PACKAGE_NAME="${{ inputs.upload-package-base-name }}-${env:CESIUM_UNREAL_VERSION}"
           $env:BUILD_CESIUM_UNREAL_PACKAGE_PATH="$env:GITHUB_WORKSPACE/packages/CesiumForUnreal"
-          $env:UNREAL_BATCH_FILES_PATH="${{ inputs.unreal-batch-files-path }}"
+          $env:UNREAL_BATCH_FILES_PATH="C:/Program Files/Epic Games/${{ inputs.unreal-program-name }}/Engine/Build/BatchFiles"
+          $env:UNREAL_BUILD_LOG_PATH="C:/Users/ec2-user/AppData/Roaming/Unreal Engine/AutomationTool/Logs\C+Program+Files+Epic+Games+${{ inputs.unreal-program-name }}"
 
           # Store temp files on the D drive, which is much faster than the EBS-backed C drive.
           mkdir -p d:\cesium\temp
@@ -47,6 +48,7 @@ jobs:
           echo "BUILD_CESIUM_UNREAL_PACKAGE_NAME=${env:BUILD_CESIUM_UNREAL_PACKAGE_NAME}" >> $env:GITHUB_ENV
           echo "BUILD_CESIUM_UNREAL_PACKAGE_PATH=${env:BUILD_CESIUM_UNREAL_PACKAGE_PATH}" >> $env:GITHUB_ENV
           echo "UNREAL_BATCH_FILES_PATH=${env:UNREAL_BATCH_FILES_PATH}" >> $env:GITHUB_ENV
+          echo "UNREAL_BUILD_LOG_PATH=${env:UNREAL_BUILD_LOG_PATH}" >> $env:GITHUB_ENV
           echo "TEMP=${env:TEMP}" >> $env:GITHUB_ENV
 
           # Confirm vars to the console
@@ -54,6 +56,7 @@ jobs:
           echo BUILD_CESIUM_UNREAL_PACKAGE_NAME=$env:BUILD_CESIUM_UNREAL_PACKAGE_NAME
           echo BUILD_CESIUM_UNREAL_PACKAGE_PATH=$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH
           echo UNREAL_BATCH_FILES_PATH=$env:UNREAL_BATCH_FILES_PATH
+          echo UNREAL_BUILD_LOG_PATH=$env:UNREAL_BUILD_LOG_PATH
           echo TEMP=$env:TEMP
       - name: Install nasm
         uses: ilammy/setup-nasm@v1.4.0
@@ -70,7 +73,19 @@ jobs:
         run: |
           echo "Temp directory: $env:TEMP"
           cd "$env:UNREAL_BATCH_FILES_PATH"
-          ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
+          $exitCode = ./RunUAT.bat BuildPlugin -Plugin="$env:GITHUB_WORKSPACE/CesiumForUnreal.uplugin" -Package="$env:BUILD_CESIUM_UNREAL_PACKAGE_PATH" -CreateSubFolder -TargetPlatforms=Win64
+          if ($exitCode -eq 0) {
+            exit 0
+          }
+          else {
+            exit -1
+          }
+       - name: Display build log 
+        if: always()
+        run: |
+          cd "$env:UNREAL_BUILD_LOG_PATH"  
+          dir 
+          Get-Content Log.txt
       - name: Upload plugin artifact
         if: ${{ success() }}
         uses: actions/upload-artifact@v3

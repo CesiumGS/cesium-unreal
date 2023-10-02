@@ -16,7 +16,7 @@ jobs:
     with:
       unreal-engine-version: "5.1.0"
       unreal-runner-label: "unreal-51"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.1/Engine/Build/BatchFiles"
+      unreal-program-name: "UE_5.1"
       upload-package-base-name: "CesiumForUnreal-51-windows"
     secrets: inherit
   TestWindows51:
@@ -262,7 +262,7 @@ jobs:
     with:
       unreal-engine-version: "5.2.0"
       unreal-runner-label: "unreal-52"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.2/Engine/Build/BatchFiles"
+      unreal-program-name: "UE_5.2"
       upload-package-base-name: "CesiumForUnreal-52-windows"
   TestWindows52:
     needs: [Windows52]
@@ -531,7 +531,7 @@ jobs:
     with:
       unreal-engine-version: "5.3.0"
       unreal-runner-label: "unreal-53"
-      unreal-batch-files-path: "C:/Program Files/Epic Games/UE_5.3/Engine/Build/BatchFiles"
+      unreal-program-name: "UE_5.3"
       upload-package-base-name: "CesiumForUnreal-53-windows"
   TestWindows53:
     needs: [Windows53]
