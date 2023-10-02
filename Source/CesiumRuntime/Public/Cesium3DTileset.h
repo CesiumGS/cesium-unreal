@@ -81,8 +81,6 @@ public:
   ACesium3DTileset();
   virtual ~ACesium3DTileset();
 
-  This is an error
-  
 private:
   UPROPERTY(VisibleAnywhere, Category = "Cesium")
   USceneComponent* Root;
