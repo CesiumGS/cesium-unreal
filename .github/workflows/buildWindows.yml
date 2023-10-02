@@ -80,7 +80,7 @@ jobs:
           else {
             exit -1
           }
-       - name: Display build log 
+      - name: Display build log 
         if: always()
         run: |
           cd "$env:UNREAL_BUILD_LOG_PATH"  
